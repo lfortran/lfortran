@@ -59,6 +59,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--static`: Create a static executable
 - `--no-warnings`: Turn off all warnings
 - `--no-error-banner`: Turn off error banner
+- `--continue-compilation`: Collect error messages and continue compilation after encountering semantic errors
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
 - `--openmp`: Enable OpenMP
@@ -78,7 +79,8 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--dump-all-passes`: Apply all the passes and dump the ASR into a file
 - `--dump-all-passes-fortran`: Apply all passes and dump the ASR after each pass into a Fortran file
 - `--cumulative`: Apply all the passes cumulatively till the given pass
-- `--realloc-lhs`: Reallocate left-hand side automatically
+- `--realloc-lhs-arrays`: Reallocate left hand side automatically for arrays
+- `--disable-realloc-lhs-arrays`: Disables reallocating left hand side automatically for arrays
 - `--module-mangling`: Mangles the module name
 - `--global-mangling`: Mangles all the global symbols
 - `--intrinsic-mangling`: Mangles all the intrinsic symbols

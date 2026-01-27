@@ -25,8 +25,8 @@ program dict_test_01
    call _lfortran_set_item(dict_r, -14, 6.4)
    if (_lfortran_len(dict_r) /= 4) error stop
 
-   if (abs(_lfortran_get_item(dict_i, -14) - 6.4) < eps) error stop
-   if (abs(_lfortran_get_item(dict_i, 2) - 2.5) < eps) error stop
+   if (abs(_lfortran_get_item(dict_r, -14) - 6.4) > eps) error stop
+   if (abs(_lfortran_get_item(dict_r, 2) - 2.5) > eps) error stop
 
 end program dict_test_01
 

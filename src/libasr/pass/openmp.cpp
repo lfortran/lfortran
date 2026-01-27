@@ -1230,6 +1230,7 @@ class ParallelRegionVisitor :
                             if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
                                 bool dimension_empty = ASRUtils::is_dimension_empty(*array_type->m_dims);
+                                bool is_arg = check_is_argument(current_scope, ASRUtils::symbol_name(sym));
                                 Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
                                 ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
                                 empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
@@ -1240,12 +1241,13 @@ class ParallelRegionVisitor :
                                         ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                 ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                                 array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                            check_is_argument(current_scope, ASRUtils::symbol_name(sym)) ? ASR::intentType::InOut : ASR::intentType::Local);
+                                            is_arg ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
+                                    We skip allocation for dummy arguments as the caller provides the memory.
                                 */
-                                if (!is_interface && !dimension_empty) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                if (!is_interface && !dimension_empty && !is_arg) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                             }
                         }
                         for (size_t i = 0; i < func->n_body; i++) {
@@ -3222,7 +3224,6 @@ class ParallelRegionVisitor :
 
         int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
             int64_t total_size = 0;
-            const int STRUCT_VTABLE_SIZE = 8;
             ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
             SymbolTable* m_symtab = task_data_struct->m_symtab;
             for (size_t i=0;i< task_data_struct->n_members; i++) {
@@ -3249,7 +3250,7 @@ class ParallelRegionVisitor :
                     total_size += 8;
                 }
             }
-            return total_size + STRUCT_VTABLE_SIZE;
+            return total_size;
         }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,

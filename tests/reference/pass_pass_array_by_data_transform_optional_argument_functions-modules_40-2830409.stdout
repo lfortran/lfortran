@@ -250,10 +250,10 @@
                                                     (SymbolTable
                                                         7
                                                         {
-                                                            is_n_present_:
+                                                            __libasr_is_present_n:
                                                                 (Variable
                                                                     7
-                                                                    is_n_present_
+                                                                    __libasr_is_present_n
                                                                     []
                                                                     In
                                                                     ()
@@ -362,7 +362,7 @@
                                                     []
                                                     [(Var 7 stack)
                                                     (Var 7 n)
-                                                    (Var 7 is_n_present_)]
+                                                    (Var 7 __libasr_is_present_n)]
                                                     []
                                                     ()
                                                     Public

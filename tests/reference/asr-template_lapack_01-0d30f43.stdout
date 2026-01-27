@@ -2080,14 +2080,14 @@
                                         ((ArrayPhysicalCast
                                             (Var 15 a)
                                             DescriptorArray
-                                            PointerArray
+                                            UnboundedPointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
                                                 ())
                                                 (()
                                                 ())]
-                                                PointerArray
+                                                UnboundedPointerArray
                                             )
                                             ()
                                         ))
@@ -2095,14 +2095,14 @@
                                         ((ArrayPhysicalCast
                                             (Var 15 b)
                                             DescriptorArray
-                                            PointerArray
+                                            UnboundedPointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
                                                 ())
                                                 (()
                                                 ())]
-                                                PointerArray
+                                                UnboundedPointerArray
                                             )
                                             ()
                                         ))
@@ -2118,7 +2118,30 @@
                                             ()
                                             ()
                                         ))
-                                        ((Var 15 c))
+                                        ((ArrayPhysicalCast
+                                            (Var 15 c)
+                                            PointerArray
+                                            UnboundedPointerArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (ArraySize
+                                                    (Var 15 a)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))
+                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                (ArraySize
+                                                    (Var 15 b)
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                UnboundedPointerArray
+                                            )
+                                            ()
+                                        ))
                                         ((Var 15 m))]
                                         ()
                                         .false.
@@ -2149,7 +2172,7 @@
                                                         (Var 12 lda))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2198,7 +2221,7 @@
                                                         (Var 12 ldb))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2247,7 +2270,7 @@
                                                         (Var 12 ldc))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2477,7 +2500,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)
                                         (Array
@@ -2490,7 +2513,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)
                                         (Real 8)
@@ -2504,7 +2527,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)]
                                         ()
@@ -2560,7 +2583,7 @@
                                                         (Var 11 lda))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2609,7 +2632,7 @@
                                                         (Var 11 ldb))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2658,7 +2681,7 @@
                                                         (Var 11 ldc))
                                                         (()
                                                         ())]
-                                                        PointerArray
+                                                        UnboundedPointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2858,7 +2881,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)
                                         (Array
@@ -2871,7 +2894,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)
                                         (Real 4)
@@ -2885,7 +2908,7 @@
                                             ))
                                             (()
                                             ())]
-                                            PointerArray
+                                            UnboundedPointerArray
                                         )
                                         (Integer 4)]
                                         ()
@@ -4169,14 +4192,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 24 a)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4184,14 +4207,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 24 b)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4207,7 +4230,30 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((Var 24 c))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 24 c)
+                                                            PointerArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 24 a)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 24 b)
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                UnboundedPointerArray
+                                                            )
+                                                            ()
+                                                        ))
                                                         ((Var 24 m))]
                                                         ()
                                                         .false.
@@ -4519,14 +4565,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 25 a)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4534,14 +4580,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 25 b)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4557,7 +4603,30 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((Var 25 c))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 25 c)
+                                                            PointerArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 8)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 25 a)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 25 b)
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                UnboundedPointerArray
+                                                            )
+                                                            ()
+                                                        ))
                                                         ((Var 25 m))]
                                                         ()
                                                         .false.
@@ -5067,14 +5136,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 22 a)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5082,14 +5151,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 22 b)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5105,7 +5174,30 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((Var 22 c))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 22 c)
+                                                            PointerArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 8)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 22 a)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 22 b)
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                UnboundedPointerArray
+                                                            )
+                                                            ()
+                                                        ))
                                                         ((Var 22 m))]
                                                         ()
                                                         .false.
@@ -5417,14 +5509,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 21 a)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5432,14 +5524,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 21 b)
                                                             DescriptorArray
-                                                            PointerArray
+                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                PointerArray
+                                                                UnboundedPointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5455,7 +5547,30 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((Var 21 c))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 21 c)
+                                                            PointerArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 21 a)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 21 b)
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                UnboundedPointerArray
+                                                            )
+                                                            ()
+                                                        ))
                                                         ((Var 21 m))]
                                                         ()
                                                         .false.

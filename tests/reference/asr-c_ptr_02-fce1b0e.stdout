@@ -255,6 +255,16 @@
                                     c_long_long
                                     Public
                                 ),
+                            c_new_line:
+                                (ExternalSymbol
+                                    2
+                                    c_new_line
+                                    4 c_new_line
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_new_line
+                                    Public
+                                ),
                             c_null_char:
                                 (ExternalSymbol
                                     2

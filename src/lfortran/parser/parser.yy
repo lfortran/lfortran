@@ -387,6 +387,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> designator
 %type <ast> signed_numeric_constant
 %type <ast> expr
+%type <ast> def_unary_operand
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
 %type <ast> id
@@ -1216,6 +1217,9 @@ implicit_spec
     | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$);
 	    WARN_CHARACTERSTAR($3, @2);}
+    | KW_CHARACTER "*" "(" expr ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_EXPR(Character, $4, @$), $7, @$);
+	    WARN_CHARACTERSTAR_EXPR(@2);}
     | KW_CHARACTER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
 
@@ -1346,7 +1350,13 @@ var_decl_star
     ;
 
 var_decl
-    : var_type var_modifier_list "::" var_sym_decl_list sep {
+    : TK_LABEL var_type var_modifier_list "::" var_sym_decl_list sep {
+        LLOC(@$, @5); $$ = VAR_DECL1a($2, $3, $5, TRIVIA_AFTER($6, @$), @$); }
+    | TK_LABEL var_type "::" var_sym_decl_list sep {
+        LLOC(@$, @4); $$ = VAR_DECL1b($2, $4, TRIVIA_AFTER($5, @$), @$); }
+    | TK_LABEL var_type var_sym_decl_list sep {
+        LLOC(@$, @3); $$ = VAR_DECL1c($2, $3, TRIVIA_AFTER($4, @$), @$); }
+    | var_type var_modifier_list "::" var_sym_decl_list sep {
         LLOC(@$, @4); $$ = VAR_DECL1a($1, $2, $4, TRIVIA_AFTER($5, @$), @$); }
     | var_type "::" var_sym_decl_list sep {
         LLOC(@$, @3); $$ = VAR_DECL1b($1, $3, TRIVIA_AFTER($4, @$), @$); }
@@ -1546,6 +1556,8 @@ intrinsic_type_spec
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
     | KW_CHARACTER "*" "(" "*" ")" {
             $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
+    | KW_CHARACTER "*" "(" expr ")" {
+            $$ = ATTR_TYPE_EXPR(Character, $4, @$); WARN_CHARACTERSTAR_EXPR(@$); }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); WARN_REALSTAR($3, @$); }
@@ -2416,6 +2428,16 @@ designator
     | struct_member_star id "(" fnarray_arg_list_opt ")" "[" coarray_arg_list "]" {
             $$ = COARRAY4($1, $2, $4, $7, @$); }
     ;
+def_unary_operand
+    : designator
+    | TK_INTEGER        { $$ = INTEGER($1, @$); }
+    | TK_REAL           { $$ = REAL($1, @$); }
+    | TK_STRING         { $$ = STRING($1, @$); }
+    | TK_BOZ_CONSTANT   { $$ = BOZ($1, @$); }
+    | ".true."          { $$ = TRUE(@$); }
+    | ".false."         { $$ = FALSE(@$); }
+    | "(" expr ")"      { $$ = PAREN($2, @$); }
+    ;
 
 expr
 // ### primary
@@ -2445,7 +2467,7 @@ expr
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
 
 // ### level-1
-    | TK_DEF_OP expr { $$ = UNARY_DEFOP($1, $2, @$); }
+    | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }
 
 // ### level-2
     | expr "+" expr { $$ = ADD($1, $3, @$); }

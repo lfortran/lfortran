@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocated_05-d9e0943",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/allocated_05.f90",
+    "infile_hash": "06e26c9602e3608378d62fe2e84bb74ddd344d2d5c988fe08778dbce",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocated_05-d9e0943.stderr",
+    "stderr_hash": "8a80dbd437cbd75ad29730d8845d3bcaef6715569481205a56be5276",
+    "returncode": 1
+}

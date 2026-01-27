@@ -108,6 +108,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
+        app.add_flag("--runtime-color", opts.arg_runtime_color, "Enable colored runtime errors")->group(group_output_debugging_options);
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
@@ -168,6 +169,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)")->group(group_mangling_options);
         app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax")->group(group_mangling_options);
         app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore")->group(group_mangling_options);
+        app.add_flag("--mangle-underscore-external", compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
 
         // Miscellaneous flags
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
@@ -180,6 +182,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
+        app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
@@ -312,6 +315,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         compiler_options.use_colors = !opts.arg_no_color;
+        compiler_options.use_runtime_colors = opts.arg_runtime_color;
         compiler_options.indent = !opts.arg_no_indent;
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
@@ -323,6 +327,8 @@ namespace LCompilers::CommandLineInterface {
                 // We do this by default, so we ignore for now
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;
+                compiler_options.descriptor_index_64 = true;
+                compiler_options.po.descriptor_index_64 = true;
             } else {
                 throw lc::LCompilersException(
                     "The flag `-f" + f_flag + "` is not supported"
@@ -359,7 +365,7 @@ namespace LCompilers::CommandLineInterface {
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
+        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 
@@ -383,6 +389,11 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.c_preprocessor = true;
         } else {
             compiler_options.c_preprocessor = false;
+        }
+
+        // Propagate descriptor_index_64 to PassOptions
+        if (compiler_options.descriptor_index_64) {
+            compiler_options.po.descriptor_index_64 = true;
         }
     }
 

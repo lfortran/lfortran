@@ -56,5 +56,7 @@ program test_iso_c_binding_constants
 
    print *, c_null_char
    if (c_null_char /= char(0)) error stop
-   
+
+   print *, c_new_line
+   if (c_new_line /= char(10)) error stop
 end program test_iso_c_binding_constants

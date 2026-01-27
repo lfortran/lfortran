@@ -131,18 +131,25 @@ private :
      *  to get it due to name mangling -- So just create a one.
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
+        ASR::Module_t *sym_mod = ASRUtils::get_sym_module(sym);
         if(ASR::symbol_t* func = current_scope_->resolve_symbol(ASRUtils::symbol_name(sym))){
             auto const sym_deep  =  ASRUtils::symbol_get_past_external(sym);
             auto const func_deep =  ASRUtils::symbol_get_past_external(func);
             if(sym_deep == func_deep) return func; // Found In Current Scope -- Do Nothing
+            if (!sym_mod) {
+                return func;
+            }
         }
-        
+        if (!sym_mod) {
+            return sym;
+        }
+
         /* Not Found In Current Scope -- Create An External Symbol */
         char* const unique_name = s2c(al_, current_scope_->get_unique_name(ASRUtils::symbol_name(sym)));
         auto ext_sym = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
                                     current_scope_, unique_name, sym,
-                                    ASRUtils::get_sym_module(sym)->m_name, nullptr, 0,
+                                    sym_mod->m_name, nullptr, 0,
                                     ASRUtils::symbol_name(sym), ASR::Private));
         current_scope_->add_symbol(unique_name, ext_sym);
         return ext_sym;
@@ -490,10 +497,15 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
+            bool is_pointer_return = false;
+            bool use_temp_var_for_return = false;
             if (ASR::is_a<ASR::Assignment_t>(xx)) {
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 value = assignment->m_value;
                 target = assignment->m_target;
+                use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
+                                            !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
+                is_pointer_return = use_temp_var_for_return;
             } else if (ASR::is_a<ASR::Associate_t>(xx)) {
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
@@ -515,7 +527,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
             }
 
-            bool use_temp_var_for_return = false;
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
@@ -535,9 +546,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASR::expr_t *result_var = nullptr;
 
                 if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
-                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 } else {
-                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
 
                 // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable

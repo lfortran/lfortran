@@ -31,7 +31,14 @@ FINALIZE_SYMTABLE_volatile_03:                    ; preds = %return
 Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_volatile_03
   %7 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
+  %9 = icmp eq i8* %8, null
+  br i1 %9, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_x
   call void @_lfortran_free(i8* %8)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_x
   ret i32 0
 }
 

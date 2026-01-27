@@ -1267,6 +1267,8 @@ public:
             int64_t len;
             require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
+        } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
@@ -1310,6 +1312,10 @@ public:
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
+        }
+        if(ASRUtils::is_class_type(x.m_type)){
+            require(x.m_physical_type != ASR::FixedSizeArray,
+                "Array of classes can't be of physical type \"FixedSizeArray\"")
         }
         _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {

@@ -61,14 +61,14 @@
             0
             ()
             [(String "1" ())
-            (String "1 \"\" ' 2 \"\"\"\" 3 ! also not comment finish string" ())]
+            (String "1 \" ' 2 \"\" 3 ! also not comment finish string" ())]
             ()
         )
         (Print
             0
             ()
             [(String "1" ())
-            (String "1 '' \" 2 '''' 3 ! also not comment finish string" ())]
+            (String "1 ' \" 2 '' 3 ! also not comment finish string" ())]
             ()
         )]
         []

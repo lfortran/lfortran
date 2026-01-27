@@ -807,7 +807,66 @@
                                     )
                                     []
                                     [(Var 9 self)]
-                                    [(Assignment
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
+                                                    (Var 9 self)
+                                                    9 1_dependency_config_t_git
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Allocate
+                                            [((StructInstanceMember
+                                                (Var 9 self)
+                                                9 1_dependency_config_t_git
+                                                (Allocatable
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            []
+                                            ()
+                                            ()
+                                            ())]
+                                            ()
+                                            ()
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_dependency_config_t_git

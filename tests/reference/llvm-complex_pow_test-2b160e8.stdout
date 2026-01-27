@@ -10,41 +10,52 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %2 = alloca %complex_4, align 8
+  %3 = alloca %complex_4, align 8
+  %4 = alloca %complex_4, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %x = alloca %complex_4, align 8
   %y = alloca %complex_4, align 8
   %z = alloca %complex_4, align 8
   store %complex_4 <{ float 3.000000e+00, float 4.000000e+00 }>, %complex_4* %x, align 1
   store %complex_4 <{ float 3.000000e+00, float 2.000000e+00 }>, %complex_4* %y, align 1
-  %2 = load %complex_4, %complex_4* %x, align 1
-  %3 = load %complex_4, %complex_4* %y, align 1
-  %4 = alloca %complex_4, align 8
-  store %complex_4 %2, %complex_4* %4, align 1
-  %5 = alloca %complex_4, align 8
-  store %complex_4 %3, %complex_4* %5, align 1
-  %6 = alloca %complex_4, align 8
-  call void @_lfortran_complex_pow_32(%complex_4* %4, %complex_4* %5, %complex_4* %6)
-  %7 = load %complex_4, %complex_4* %6, align 1
-  store %complex_4 %7, %complex_4* %z, align 1
-  %8 = alloca i64, align 8
-  %9 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i64* %8, i32 0, i32 0, %complex_4* %z)
-  %10 = load i64, i64* %8, align 4
+  %5 = load %complex_4, %complex_4* %x, align 1
+  %6 = load %complex_4, %complex_4* %y, align 1
+  %7 = extractvalue %complex_4 %5, 0
+  %8 = extractvalue %complex_4 %5, 1
+  %9 = extractvalue %complex_4 %6, 0
+  %10 = extractvalue %complex_4 %6, 1
+  store %complex_4 %5, %complex_4* %4, align 1
+  store %complex_4 %6, %complex_4* %3, align 1
+  call void @_lfortran_complex_pow_32(%complex_4* %4, %complex_4* %3, %complex_4* %2)
+  %11 = load %complex_4, %complex_4* %2, align 1
+  store %complex_4 %11, %complex_4* %z, align 1
+  %12 = alloca i64, align 8
+  %13 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i64* %12, i32 0, i32 0, %complex_4* %z)
+  %14 = load i64, i64* %12, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %9, i8** %11, align 8
-  %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %10, i64* %12, align 4
-  %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %14 = load i8*, i8** %13, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %16 = load i64, i64* %15, align 4
-  %17 = trunc i64 %16 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %14, i32 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %9)
+  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %13, i8** %15, align 8
+  %16 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %14, i64* %16, align 4
+  %17 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %18 = load i8*, i8** %17, align 8
+  %19 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %20 = load i64, i64* %19, align 4
+  %21 = trunc i64 %20 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %18, i32 %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %22 = icmp eq i8* %13, null
+  br i1 %22, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(i8* %13)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_complex2
 
 FINALIZE_SYMTABLE_complex2:                       ; preds = %return

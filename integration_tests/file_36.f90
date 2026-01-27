@@ -3,7 +3,7 @@ program file_36
     integer :: unit_num
     character(len=100) :: result
 
-    open(file="test.txt", newunit=unit_num, delim="quote")
+    open(file="file_36_test.txt", newunit=unit_num, delim="quote")
     write(unit_num,*) "hello world"
 
     rewind(unit_num)

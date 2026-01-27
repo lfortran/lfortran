@@ -54,6 +54,7 @@ struct PassOptions {
     bool bindc_mangling = false;
     bool fortran_mangling = false;
     bool mangle_underscore = false;
+    bool mangle_underscore_external = false;
     bool json = false;
     bool clojure = false;
     bool no_loc = false;
@@ -69,6 +70,7 @@ struct PassOptions {
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
+    bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     std::vector<std::string> vector_of_time_report;
 };
 
@@ -87,6 +89,7 @@ struct CompilerOptions {
     bool symtab_only = false;
     bool show_stacktrace = false;
     bool use_colors = true;
+    bool use_runtime_colors = false;
     bool indent = true;
     bool json = false;
     bool tree = false;
@@ -139,6 +142,7 @@ struct CompilerOptions {
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
+    bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;
     std::string emcc_embed;

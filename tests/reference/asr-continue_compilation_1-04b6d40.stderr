@@ -20,6 +20,50 @@ semantic error: Dummy argument 'c' not defined
 75 |        end subroutine s
    | ...^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Assumed-size '*' is only permitted in the last dimension
+  --> tests/errors/continue_compilation_1.f90:88:31
+   |
+88 |         real, intent(in) :: a(*, 10)
+   |                               ^ 
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_1.f90:87:5 - 89:18
+   |
+87 |        subroutine assumed_size_star_pos_1(a)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+89 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-size '*' is only permitted in the last dimension
+  --> tests/errors/continue_compilation_1.f90:92:19
+   |
+92 |         real :: a(*, 10)
+   |                   ^ 
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_1.f90:91:5 - 93:18
+   |
+91 |        subroutine assumed_size_star_pos_2(a)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+93 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'f_missing' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:22:9
+   |
+22 |         procedure(f_missing), pointer, nopass :: fn => null()
+   |         ^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: Interface 'missing_global_interface' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:25:5
+   |
+25 |     procedure(missing_global_interface), pointer :: p => null()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
     |
@@ -140,6 +184,108 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
     |
 177 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:181:42
+    |
+181 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable `uninitialized_param_local` with parameter attribute is not initialised
+   --> tests/errors/continue_compilation_1.f90:189:5
+    |
+189 |     type(MyClass), parameter :: uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol not found: `non_existent_symbol`
+   --> tests/errors/continue_compilation_1.f90:190:5
+    |
+190 |     type(MyClass) :: err_obj1 = non_existent_symbol
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Named initialization not supported with: my_func
+   --> tests/errors/continue_compilation_1.f90:191:5
+    |
+191 |     type(MyClass) :: err_obj2 = my_func
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization with non-constant variable `non_parameter_var` is not allowed
+   --> tests/errors/continue_compilation_1.f90:193:5
+    |
+193 |     type(MyClass) :: err_obj3 = non_parameter_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+192 |     integer :: non_parameter_var = 5
+    |                ~~~~~~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+   --> tests/errors/continue_compilation_1.f90:194:5
+    |
+194 |     type(MyClass) :: err_obj4 = myclass_array
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+155 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
+
+semantic error: Symbol not found: `uninitialized_param_local`
+   --> tests/errors/continue_compilation_1.f90:195:5
+    |
+195 |     type(MyClass) :: err_obj5 = uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:82:18
+   |
+82 |         print *, ubound(a, 1)
+   |                  ^^^^^^^^^^^^ 
+
+semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
+  --> tests/errors/continue_compilation_1.f90:83:18
+   |
+83 |         print *, ubound(b)
+   |                  ^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:84:18
+   |
+84 |         print *, ubound(c, 2)
+   |                  ^^^^^^^^^^^^ 
+
+semantic error: Character intrinsic 'trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:106:18
+    |
+106 |         print *, trim(generic)
+    |                  ^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'adjustl' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:107:18
+    |
+107 |         print *, adjustl(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'adjustr' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:108:18
+    |
+108 |         print *, adjustr(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'len_trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:109:18
+    |
+109 |         print *, len_trim(generic)
+    |                  ^^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Intrinsic 'not_real' is not recognized
+   --> tests/errors/continue_compilation_1.f90:179:14
+    |
+179 |     call sub(not_real)
+    |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
+semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
+   --> tests/errors/continue_compilation_1.f90:219:14
+    |
+219 |     print *, a(10)
+    |              ^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
@@ -793,6 +939,12 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
 425 |     print *, ["aa", "aaa"]
     |                     ^^^^^ 
 
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:426:5
+    |
+426 |     cc_a3 = cc_temp3(cc_i0:cc_i0)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
    --> tests/errors/continue_compilation_1.f90:427:25
     |
@@ -804,6 +956,12 @@ semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot a
     |
 430 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:431:5
+    |
+431 |     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid syntax of derived type for array constructor
    --> tests/errors/continue_compilation_1.f90:432:12
@@ -850,3 +1008,153 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `p`: expected a procedure but got `integer`
+   --> tests/errors/continue_compilation_1.f90:459:21
+    |
+459 |     call proc_param(42)
+    |                     ^^ 
+
+semantic error: `end` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:462:18
+    |
+462 |     read (*, end=x) x
+    |                  ^ 
+
+semantic error: `end` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:463:18
+    |
+463 |     read (*, end=9011.0) x
+    |                  ^^^^^^ 
+
+semantic error: `err` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:465:18
+    |
+465 |     read (*, err=x) x
+    |                  ^ 
+
+semantic error: `err` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:466:18
+    |
+466 |     read (*, err=9013.0) x
+    |                  ^^^^^^ 
+
+semantic error: `end` is only supported for READ statements
+   --> tests/errors/continue_compilation_1.f90:467:5
+    |
+467 |     write (*, end=9014) x
+    |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: end= label 999 is not defined
+   --> tests/errors/continue_compilation_1.f90:472:20
+    |
+472 |     read(*, *, end=999) x   
+    |                    ^^^ 
+
+semantic error: err= label 500 is not defined
+   --> tests/errors/continue_compilation_1.f90:473:20
+    |
+473 |     read(*, *, err=500) x
+    |                    ^^^ 
+
+semantic error: Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:475:5
+    |
+475 |     OPEN(unit=10, recl=10, recl=20)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `recl` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:476:5
+    |
+476 |     OPEN(unit=10, recl=10.5)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
+   --> tests/errors/continue_compilation_1.f90:479:14
+    |
+479 |     print *, string(i,i)
+    |              ^^^^^^^^^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+   --> tests/errors/continue_compilation_1.f90:481:14
+    |
+481 |     allocate(strx)
+    |              ^^^^ 'strx' is not allocatable or pointer
+
+semantic error: Type mismatch: allocatable character dummy argument 's' has length 5 but actual argument has length 10.
+   --> tests/errors/continue_compilation_1.f90:483:32
+    |
+483 |     call modify_and_deallocate(strx)
+    |                                ^^^^ dummy argument 's' declared here
+
+semantic error: Intrinsic `allocated` can be called only on allocatable argument
+   --> tests/errors/continue_compilation_1.f90:484:14
+    |
+484 |     print *, allocated(strx)
+    |              ^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `encoding` found
+   --> tests/errors/continue_compilation_1.f90:488:5
+    |
+488 |     OPEN(unit=10, encoding="UTF-8", encoding="UTF-8")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `encoding` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:489:5
+    |
+489 |     OPEN(unit=10, encoding=10)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:492:5
+    |
+492 |     read(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:493:5
+    |
+493 |     write(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `rec` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:494:5
+    |
+494 |     read(unit=10, rec=1, rec=2) y
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `rec` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:495:5
+    |
+495 |     write(unit=10, rec=1, rec=2) y
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:496:5
+    |
+496 |     read(10, rec=1.5) y
+    |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:497:5
+    |
+497 |     write(10, rec=2.5) y
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `bad` is not defined or imported
+   --> tests/errors/continue_compilation_1.f90:500:13
+    |
+500 |     bad_x = .bad. 10
+    |             ^^^^^^^^ 
+
+semantic error: Operands of comparison operator '==' are not comparable: ieee_class_type == ieee_class_type
+   --> tests/errors/continue_compilation_1.f90:503:10
+    |
+503 |     b = (ieee_cls == ieee_quiet_nan)
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:503:5
+    |
+503 |     b = (ieee_cls == ieee_quiet_nan)
+    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)

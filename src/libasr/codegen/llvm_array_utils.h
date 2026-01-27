@@ -153,14 +153,14 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    llvm::Module* module, bool realloc=false) = 0;
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type,llvm::Value* arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
-                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
+                    llvm::Type* type, llvm::Value* arr, llvm::Type* source_arr_type, llvm::Value* source_arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
@@ -190,6 +190,12 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false) = 0;
+
+                /*
+                * Returns the llvm::Type* used for array indices (i32 or i64).
+                */
+                virtual
+                llvm::Type* get_index_type() const = 0;
 
                 /*
                 * Returns pointer to data in the input
@@ -286,6 +292,7 @@ namespace LCompilers {
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
+                    ASR::symbol_t* variable_type_decl,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
@@ -350,6 +357,7 @@ namespace LCompilers {
                 LLVMUtils* llvm_utils;
                 llvm::IRBuilder<>* builder;
 
+                llvm::Type* index_type;  // i32 or i64 for descriptor indices
                 llvm::StructType* dim_des;
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
@@ -368,7 +376,11 @@ namespace LCompilers {
 
                 SimpleCMODescriptor(llvm::LLVMContext& _context,
                     llvm::IRBuilder<>* _builder,
-                    LLVMUtils* _llvm_utils, CompilerOptions& co_);
+                    LLVMUtils* _llvm_utils, CompilerOptions& co_,
+                    llvm::Type* _index_type = nullptr);
+
+                // Get the index type used by this descriptor (i32 or i64)
+                llvm::Type* get_index_type() const { return index_type; }
 
                 virtual
                 bool is_array(ASR::ttype_t* asr_type);
@@ -411,14 +423,14 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    llvm::Module* module, bool realloc=false);
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false);
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims);
 
                 virtual
                 void reset_array_details(
-                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims);
+                    llvm::Type* type, llvm::Value* arr, llvm::Type* source_arr_type, llvm::Value* source_arr, int n_dims);
 
                 virtual
                 void reset_array_details(
@@ -492,6 +504,7 @@ namespace LCompilers {
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
+                    ASR::symbol_t* variable_type_decl,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,

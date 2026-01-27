@@ -550,7 +550,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::ListLen:
         case ASR::exprType::ListConstant:
-        case ASR::exprType::ListConcat: {
+        case ASR::exprType::ListConcat:
+        case ASR::exprType::PointerAssociated: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {
@@ -1113,7 +1114,22 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     loaded_submodules.insert(std::string(mod->m_name));
 
     for (size_t i=0;i<mod->n_dependencies;i++) {
-        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
+        std::string dep_name = std::string(mod->m_dependencies[i]);
+        ASR::symbol_t *dep_sym = symtab->get_symbol(dep_name);
+        if (dep_sym == nullptr) {
+            bool is_intrinsic = startswith(dep_name, "lfortran_intrinsic");
+            load_module(al, symtab, dep_name, loc, is_intrinsic, loaded_submodules,
+                        pass_options, run_verify, err, lm, false, true);
+            dep_sym = symtab->get_symbol(dep_name);
+        }
+        if (dep_sym == nullptr) {
+            continue;
+        }
+        if (!ASR::is_a<ASR::Module_t>(*dep_sym)) {
+            err("The symbol '" + dep_name + "' must be a module", loc);
+            continue;
+        }
+        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(dep_sym);
         load_dependent_submodules(al, symtab, dep_mod, loc,
                                   loaded_submodules, pass_options,
                                   run_verify, err, lm);
@@ -2507,10 +2523,24 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
-                Allocator al(512);
-                if (!types_equal(arg1, arg2, args[i].m_value,
-                    ASRUtils::get_expr_from_sym(al, &f->base), false)) {
-                    return false;
+
+                // Check if actual argument is an implicit interface procedure
+                // (FunctionType with no arg types and Interface deftype).
+                // Implicit interfaces are compatible with any explicit interface
+                // - actual compatibility is checked at call site.
+                bool arg1_is_implicit = false;
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                    ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                    arg1_is_implicit = (ft->n_arg_types == 0 &&
+                        ft->m_deftype == ASR::deftypeType::Interface);
+                }
+
+                if (!arg1_is_implicit) {
+                    Allocator al(512);
+                    if (!types_equal(arg1, arg2, args[i].m_value,
+                        ASRUtils::get_expr_from_sym(al, &f->base), false)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -2999,7 +3029,8 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
             const_elements += 1;
         }
     }
-    if( const_elements > 1 ) {
+    // Include scalar elements in the implied-do body so mixed forms compute correctly per iteration.
+    if( const_elements > 0 ) {
         if( implied_doloop_size_ == nullptr ) {
             implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
                 make_Integer_t, const_elements, kind, loc);

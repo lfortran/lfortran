@@ -1,4 +1,11 @@
-At 4:3 of file tests/errors/array_bounds_check_08.f90
-Runtime error: Array shape mismatch in subroutine 'ff'
-
-Tried to match size 5 of dimension 1 of argument number 1, but expected size is 100000
+runtime error: Array shape mismatch in subroutine 'ff'. Tried to match size 5 of dimension 1 of argument number 1, but expected size is 100000
+ --> tests/errors/array_bounds_check_08.f90:4:3
+  |
+4 |   arr = ff()
+  |   ^^^
+  |
+8 |     function ff() result(res)
+  |              ~~ Here
+  |
+9 |         integer :: res(100000)
+  |                        ~~~~~~ Expected size

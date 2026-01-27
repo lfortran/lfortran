@@ -1418,6 +1418,132 @@
                                     (SymbolTable
                                         5
                                         {
+                                            __libasr_is_present_c_flags:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_c_flags
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_cxx_flags:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_cxx_flags
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_file_scope_flags:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_file_scope_flags
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_flags:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_flags
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_is_built_in:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_is_built_in
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_link_time_flags:
+                                                (Variable
+                                                    5
+                                                    __libasr_is_present_link_time_flags
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             c_flags:
                                                 (Variable
                                                     5
@@ -1537,132 +1663,6 @@
                                                 (Variable
                                                     5
                                                     is_built_in
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_c_flags_present_:
-                                                (Variable
-                                                    5
-                                                    is_c_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_cxx_flags_present_:
-                                                (Variable
-                                                    5
-                                                    is_cxx_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_file_scope_flags_present_:
-                                                (Variable
-                                                    5
-                                                    is_file_scope_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_flags_present_:
-                                                (Variable
-                                                    5
-                                                    is_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_is_built_in_present_:
-                                                (Variable
-                                                    5
-                                                    is_is_built_in_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_link_time_flags_present_:
-                                                (Variable
-                                                    5
-                                                    is_link_time_flags_present_
                                                     []
                                                     In
                                                     ()
@@ -1883,17 +1883,17 @@
                                     (Var 5 compiler)
                                     (Var 5 os_type)
                                     (Var 5 flags)
-                                    (Var 5 is_flags_present_)
+                                    (Var 5 __libasr_is_present_flags)
                                     (Var 5 c_flags)
-                                    (Var 5 is_c_flags_present_)
+                                    (Var 5 __libasr_is_present_c_flags)
                                     (Var 5 cxx_flags)
-                                    (Var 5 is_cxx_flags_present_)
+                                    (Var 5 __libasr_is_present_cxx_flags)
                                     (Var 5 link_time_flags)
-                                    (Var 5 is_link_time_flags_present_)
+                                    (Var 5 __libasr_is_present_link_time_flags)
                                     (Var 5 file_scope_flags)
-                                    (Var 5 is_file_scope_flags_present_)
+                                    (Var 5 __libasr_is_present_file_scope_flags)
                                     (Var 5 is_built_in)
-                                    (Var 5 is_is_built_in_present_)]
+                                    (Var 5 __libasr_is_present_is_built_in)]
                                     []
                                     (Var 5 profile)
                                     Public

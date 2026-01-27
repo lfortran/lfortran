@@ -97,6 +97,20 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
+        void visit_Assignment(const ASR::Assignment_t& x) {
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_Assignment(x);
+            if (x.m_move_allocation) {
+                if( ASR::is_a<ASR::Var_t>(*x.m_target) ) {
+                    scope2var[current_scope].push_back(
+                        ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                }
+                if( ASR::is_a<ASR::Var_t>(*x.m_value) ) {
+                    scope2var[current_scope].push_back(
+                        ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+                }
+            }
+        }
+
 };
 
 class PromoteAllocatableToNonAllocatable:

@@ -32,6 +32,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
         INTRINSIC_SUBROUTINE_NAME_CASE(MoveAlloc)
         INTRINSIC_SUBROUTINE_NAME_CASE(Mvbits)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Abort)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -42,9 +43,12 @@ inline std::string get_intrinsic_subroutine_name(int x) {
 
 namespace IntrinsicImpureSubroutineRegistry {
 
-    static const std::map<int64_t,
+    inline const std::map<int64_t,
         std::tuple<impl_subroutine,
-                   verify_subroutine>>& intrinsic_subroutine_by_id_db = {
+                   verify_subroutine>>& get_intrinsic_subroutine_by_id_db() {
+        static const std::map<int64_t,
+            std::tuple<impl_subroutine,
+                       verify_subroutine>> intrinsic_subroutine_by_id_db = {
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomNumber),
             {&RandomNumber::instantiate_RandomNumber, &RandomNumber::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
@@ -69,42 +73,18 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
             {&MoveAlloc::instantiate_MoveAlloc, &MoveAlloc::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Abort),
+            {&Abort::instantiate_Abort, &Abort::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
-    };
+        };
+        return intrinsic_subroutine_by_id_db;
+    }
 
-    static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomNumber),
-            "random_number"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
-            "random_init"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
-            "random_seed"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
-            "srand"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
-            "get_command"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
-            "get_command_argument"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
-            "system_clock"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
-            "date_and_time"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
-            "get_environment_variable"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
-            "execute_command_line"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
-            "cpu_time"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
-            "move_alloc"},
-        {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
-            "mvbits"},
-    };
-
-
-    static const std::map<std::string,
-        create_intrinsic_subroutine>& intrinsic_subroutine_by_name_db = {
+    inline const std::map<std::string,
+        create_intrinsic_subroutine>& get_intrinsic_subroutine_by_name_db() {
+        static const std::map<std::string,
+            create_intrinsic_subroutine> intrinsic_subroutine_by_name_db = {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
                 {"random_seed", &RandomSeed::create_RandomSeed},
@@ -118,37 +98,37 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"date_and_time", &DateAndTime::create_DateAndTime},
                 {"move_alloc", &MoveAlloc::create_MoveAlloc},
                 {"mvbits", &Mvbits::create_Mvbits},
-    };
+                {"abort", &Abort::create_Abort},
+        };
+        return intrinsic_subroutine_by_name_db;
+    }
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
-        return intrinsic_subroutine_by_name_db.find(name) != intrinsic_subroutine_by_name_db.end();
+        return get_intrinsic_subroutine_by_name_db().find(name) != get_intrinsic_subroutine_by_name_db().end();
     }
 
     static inline bool is_intrinsic_subroutine(int64_t id) {
-        return intrinsic_subroutine_by_id_db.find(id) != intrinsic_subroutine_by_id_db.end();
+        return get_intrinsic_subroutine_by_id_db().find(id) != get_intrinsic_subroutine_by_id_db().end();
     }
 
     static inline create_intrinsic_subroutine get_create_subroutine(const std::string& name) {
-        return  intrinsic_subroutine_by_name_db.at(name);
+        return  get_intrinsic_subroutine_by_name_db().at(name);
     }
 
     static inline verify_subroutine get_verify_subroutine(int64_t id) {
-        return std::get<1>(intrinsic_subroutine_by_id_db.at(id));
+        return std::get<1>(get_intrinsic_subroutine_by_id_db().at(id));
     }
 
     static inline impl_subroutine get_instantiate_subroutine(int64_t id) {
-        if( intrinsic_subroutine_by_id_db.find(id) == intrinsic_subroutine_by_id_db.end() ) {
+        if( get_intrinsic_subroutine_by_id_db().find(id) == get_intrinsic_subroutine_by_id_db().end() ) {
             return nullptr;
         }
-        return std::get<0>(intrinsic_subroutine_by_id_db.at(id));
+        return std::get<0>(get_intrinsic_subroutine_by_id_db().at(id));
     }
 
-    inline std::string get_intrinsic_subroutine_name(int64_t id) {
-        if( intrinsic_subroutine_id_to_name.find(id) == intrinsic_subroutine_id_to_name.end() ) {
-            throw LCompilersException("IntrinsicSubroutine with ID " + std::to_string(id) +
-                                      " has no name registered for it");
-        }
-        return intrinsic_subroutine_id_to_name.at(id);
+    inline std::string get_intrinsic_subroutine_name_from_registry(int64_t id) {
+        // Use switch statement instead of lazy map for zero runtime overhead
+        return ASRUtils::get_intrinsic_subroutine_name(static_cast<int>(id));
     }
 
 } // namespace IntrinsicImpureSubroutineRegistry

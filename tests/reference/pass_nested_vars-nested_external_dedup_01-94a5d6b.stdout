@@ -1,0 +1,280 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __lcompilers_created__nested_context__outer_:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            a:
+                                (Variable
+                                    6
+                                    a
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    __lcompilers_created__nested_context__outer_
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            nested_external_dedup_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            outer:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a1:
+                                                (ExternalSymbol
+                                                    3
+                                                    a1
+                                                    6 a
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    a
+                                                    Public
+                                                ),
+                                            a2:
+                                                (ExternalSymbol
+                                                    3
+                                                    a2
+                                                    6 a
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    a
+                                                    Public
+                                                ),
+                                            inner1:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            a:
+                                                                (ExternalSymbol
+                                                                    4
+                                                                    a
+                                                                    6 a
+                                                                    __lcompilers_created__nested_context__outer_
+                                                                    []
+                                                                    a
+                                                                    Public
+                                                                )
+                                                        })
+                                                    inner1
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    []
+                                                    [(Assignment
+                                                        (Var 4 a)
+                                                        (IntegerBinOp
+                                                            (Var 4 a)
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            inner2:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            a:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    a
+                                                                    6 a
+                                                                    __lcompilers_created__nested_context__outer_
+                                                                    []
+                                                                    a
+                                                                    Public
+                                                                )
+                                                        })
+                                                    inner2
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    []
+                                                    [(Assignment
+                                                        (Var 5 a)
+                                                        (IntegerBinOp
+                                                            (Var 5 a)
+                                                            Add
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    outer
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 3 a1)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a2)
+                                        (Var 3 a)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (SubroutineCall
+                                        3 inner1
+                                        ()
+                                        []
+                                        ()
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a)
+                                        (Var 3 a2)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a2)
+                                        (Var 3 a)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (SubroutineCall
+                                        3 inner2
+                                        ()
+                                        []
+                                        ()
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a)
+                                        (Var 3 a2)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    nested_external_dedup_01
+                    []
+                    [(SubroutineCall
+                        2 outer
+                        ()
+                        []
+                        ()
+                        .false.
+                    )]
+                )
+        })
+    []
+)

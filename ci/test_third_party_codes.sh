@@ -98,13 +98,12 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing fortran-regex" '
-  git clone https://github.com/jinangshah21/fortran-regex.git
+  git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf1
   micromamba install -c conda-forge fpm
 
-  git checkout c3807f49bf3a88df9b1527b2c49fc956abb77398
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
   fpm --compiler=$FC test
 
@@ -113,13 +112,12 @@ time_section "🧪 Testing fortran-regex" '
 '
 
 time_section "🧪 Testing fortran-shlex" '
-  git clone https://github.com/jinangshah21/fortran-shlex.git
+  git clone https://github.com/perazz/fortran-shlex.git
   cd fortran-shlex
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-1
   micromamba install -c conda-forge fpm
 
-  git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
+  git checkout e20b6f86c82e33fae78b54b074bab5369efde6a3
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -128,13 +126,12 @@ time_section "🧪 Testing fortran-shlex" '
 '
 
 time_section "🧪 Testing toml-f" '
-  git clone https://github.com/jinangshah21/toml-f.git
+  git clone https://github.com/toml-f/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
   micromamba install -c conda-forge fpm
 
-  git checkout 8c191574db70fe65c3b07d187fdea1e3504b1b5e
+  git checkout 27abd768e79c7c790ffa58fe5ccfb105ba00883d
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
@@ -146,10 +143,10 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-5
+  git checkout lf-7
   micromamba install -c conda-forge fpm
 
-  git checkout 92077d0c678a9ca85f4937a139c45938f51a3271
+  git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
@@ -160,9 +157,9 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
+  git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
+  git checkout 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -266,9 +263,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-12
+  git checkout lf-21
   micromamba install -c conda-forge fpm
-  git checkout 37228e3d202fc7b4832245901144a1b85919683e
+  git checkout d763021e03bb48fac4f5bcb6cece42b55ce14d36
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
@@ -880,15 +877,19 @@ time_section "🧪 Testing LAPACK" '
 
 
 ##########################
-# Section 14: Vanilla Reference-LAPACK
+# Section 14: Reference-LAPACK with BUILD_TESTING (Full Suite)
 ##########################
-time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
+time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING (Full Suite)" '
     export PATH="$(pwd)/../src/bin:$PATH"
-    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-vanilla
-    cd lapack-vanilla
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    cd lapack-testing
 
     # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
     sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # Patch dgd.in to use custom seed that avoids FMA-sensitive ill-conditioned matrix
+    # See: https://github.com/Reference-LAPACK/lapack/issues/1186
+    sed -i "s/^0                 Code to interpret the seed$/2                 Code to interpret the seed\n1234 5678 9012 3456/" TESTING/dgd.in
 
     # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
     CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
@@ -898,44 +899,98 @@ time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
         TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
     fi
 
-    # Configure with LFortran
+    # Configure with LFortran and BUILD_TESTING=ON (full suite including complex)
     cmake -S . -B build -G Ninja \
       $TOOLCHAIN_OPT \
       -DCMAKE_Fortran_COMPILER=lfortran \
-      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_INDEX64=OFF \
       -DBUILD_INDEX64_EXT_API=OFF \
-      -DBUILD_COMPLEX=OFF \
-      -DBUILD_COMPLEX16=OFF \
-      -DBUILD_TESTING=OFF
+      -DBUILD_COMPLEX=ON \
+      -DBUILD_COMPLEX16=ON \
+      -DBUILD_TESTING=ON
 
-    # Build BLAS and LAPACK libraries
-    cmake --build build --target blas lapack -j8
+    # Build BLAS, LAPACK, and test executables
+    cmake --build build -j8
 
-    # Test DGESV: solve 3x3 linear system
-    cat > test_dgesv.f90 << "TESTEOF"
-program test_dgesv
-    implicit none
-    integer, parameter :: n = 3
-    double precision :: A(n,n), b(n), x_expected(n)
-    integer :: ipiv(n), info, i
-    A(1,:) = [2.0d0, 1.0d0, 1.0d0]
-    A(2,:) = [4.0d0, 3.0d0, 3.0d0]
-    A(3,:) = [8.0d0, 7.0d0, 9.0d0]
-    b = [4.0d0, 10.0d0, 24.0d0]
-    x_expected = [1.0d0, 1.0d0, 1.0d0]
-    call dgesv(n, 1, A, n, ipiv, b, n, info)
-    if (info /= 0) error stop "DGESV failed"
-    do i = 1, n
-        if (abs(b(i) - x_expected(i)) > 1.0d-10) error stop "Wrong solution"
-    end do
-    print *, "DGESV test passed!"
-end program
-TESTEOF
+    cd build
 
-    lfortran --implicit-interface test_dgesv.f90 -L build/lib -llapack -lblas -o test_dgesv
-    ./test_dgesv
+    # Helper function to run LAPACK test and check results
+    run_lapack_test() {
+        local TEST_EXE="$1"
+        local INPUT_FILE="$2"
+        local TEST_NAME="$3"
+
+        print_subsection "Running $TEST_NAME"
+        set +e
+        timeout 300 ./bin/$TEST_EXE < ../TESTING/$INPUT_FILE 2>&1 | tee ${TEST_EXE}_${INPUT_FILE%.in}.out
+        exit_code=$?
+        set -e
+
+        if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 124 ]; then
+            echo "ERROR: $TEST_NAME exited with code $exit_code"
+            exit 1
+        fi
+
+        if grep -qE "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: threshold failures in $TEST_NAME"
+            grep "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out | head -20
+            exit 1
+        fi
+
+        if grep -E "[1-9][0-9]* error messages recorded" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: error messages recorded in $TEST_NAME"
+            exit 1
+        fi
+
+        print_success "$TEST_NAME passed"
+    }
+
+    # === LINEAR EQUATION TESTS ===
+    print_section "Linear Equation Tests"
+    run_lapack_test xlintsts stest.in "Single Real Linear Equations"
+    run_lapack_test xlintstd dtest.in "Double Real Linear Equations"
+    run_lapack_test xlintstc ctest.in "Single Complex Linear Equations"
+    run_lapack_test xlintstz ztest.in "Double Complex Linear Equations"
+    run_lapack_test xlintstrfs stest_rfp.in "Single Real RFP Linear Equations"
+    run_lapack_test xlintstrfd dtest_rfp.in "Double Real RFP Linear Equations"
+    run_lapack_test xlintstrfc ctest_rfp.in "Single Complex RFP Linear Equations"
+    run_lapack_test xlintstrfz ztest_rfp.in "Double Complex RFP Linear Equations"
+
+    # === EIGENVALUE TESTS ===
+    print_section "Eigenvalue Tests"
+
+    # Single Real Eigenvalue Tests
+    for input in nep sep se2 svd sec sed sgg sgd ssb ssg sbal sbak sgbal sgbak sbb glm gqr gsv csd lse sdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtsts ${input}.in "Single Real Eigenvalue: ${input}"
+        fi
+    done
+
+    # Double Real Eigenvalue Tests
+    for input in nep sep se2 svd sec ded dgg dgd dsb dsg dbal dbak dgbal dgbak dbb glm gqr gsv csd lse ddmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstd ${input}.in "Double Real Eigenvalue: ${input}"
+        fi
+    done
+
+    # Single Complex Eigenvalue Tests
+    for input in nep sep se2 svd ced cgg cgd csb csg cbal cbak cgbal cgbak cbb glm gqr gsv csd lse cdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstc ${input}.in "Single Complex Eigenvalue: ${input}"
+        fi
+    done
+
+    # Double Complex Eigenvalue Tests
+    for input in nep sep se2 svd zed zgg zgd zsb zsg zbal zbak zgbal zgbak zbb glm gqr gsv csd lse zdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstz ${input}.in "Double Complex Eigenvalue: ${input}"
+        fi
+    done
+
+    print_success "All LAPACK tests passed"
+    cd ../..
 '
 
 ##################################

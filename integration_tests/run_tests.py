@@ -9,7 +9,8 @@ NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'fortran',
                       'c_nopragma', 'llvm_nopragma', 'llvm_wasm', 'llvm_wasm_emcc',
-                      'llvm_omp', 'llvm_submodule', 'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc', 'target_offload']
+                      'llvm_omp', 'llvm_submodule', 'mlir', 'mlir_omp', 'mlir_llvm_omp',
+                      'llvm_goc', 'target_offload', 'llvm_single_invocation']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
@@ -17,6 +18,8 @@ LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 fast_tests = "no"
 nofast_llvm16 = "no"
 separate_compilation = "no"
+use_ninja = False
+user_specified_threads = False
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -25,7 +28,7 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def run_test(backend, std):
+def run_test(backend, std, test_pattern=None):
     run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
     if std == "f23":
         std_string = "-DSTD_F23=yes"
@@ -37,7 +40,20 @@ def run_test(backend, std):
         raise Exception("Unsupported standard")
 
     cwd=f"{BASE_DIR}/test-{backend}"
-    common=f" -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
+
+    # Conditionally use Ninja or Make (default)
+    if use_ninja:
+        # Use Ninja generator for faster builds
+        # Add flags to skip Fortran compiler detection issues with CMake 3.29+
+        # Set CMAKE_Fortran_PREPROCESS_SOURCE which is required by Ninja but missing for lfortran
+        generator_flags = ("-G Ninja -DCMAKE_Fortran_COMPILER_WORKS=1 -DCMAKE_Fortran_COMPILER_FORCED=1 "
+                          "-DCMAKE_Fortran_PREPROCESS_SOURCE=\"<CMAKE_Fortran_COMPILER> <DEFINES> <INCLUDES> <FLAGS> "
+                          "-E <SOURCE> -o <PREPROCESSED_SOURCE>\"")
+    else:
+        # Use default Make generator
+        generator_flags = ""
+
+    common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
@@ -54,17 +70,64 @@ def run_test(backend, std):
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
                 f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
                 cwd=cwd)
-    run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
-    run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
+
+    # If a test pattern is provided, find matching tests and build only those
+    if test_pattern:
+        # Query ctest to find which tests match the pattern
+        result = sp.run(f"ctest -N -R {test_pattern}", shell=True, cwd=cwd,
+                       stdout=sp.PIPE, stderr=sp.PIPE, text=True)
+        if result.returncode != 0:
+            print("Failed to query tests with ctest")
+            exit(1)
+
+        # Parse the output to extract test names
+        # Output format: "  Test #123: test_name"
+        import re
+        test_names = []
+        for line in result.stdout.split('\n'):
+            match = re.match(r'\s+Test\s+#\d+:\s+(\S+)', line)
+            if match:
+                test_names.append(match.group(1))
+
+        if not test_names:
+            print(f"No tests match pattern: {test_pattern}")
+            exit(1)
+
+        print(f"Building {len(test_names)} test(s): {', '.join(test_names)}")
+        # Build only the matching test targets
+        build_cmd = "ninja" if use_ninja else "make"
+        # Ninja uses all cores by default, so only specify -j if user provided it
+        # Make needs -j specified, so use default or user-provided value
+        if use_ninja and not user_specified_threads:
+            # User didn't specify -j, let ninja use all cores
+            j_flag = ""
+        else:
+            j_flag = f" -j{NO_OF_THREADS}"
+        for test_name in test_names:
+            run_cmd(f"{build_cmd}{j_flag} {test_name}", cwd=cwd)
+    else:
+        # Build all tests
+        build_cmd = "ninja" if use_ninja else "make"
+        if use_ninja and not user_specified_threads:
+            j_flag = ""
+        else:
+            j_flag = f" -j{NO_OF_THREADS}"
+        run_cmd(f"{build_cmd}{j_flag}", cwd=cwd)
+
+    # Build ctest command with optional test pattern filter
+    ctest_cmd = f"ctest -j{NO_OF_THREADS} --output-on-failure"
+    if test_pattern:
+        ctest_cmd += f" -R {test_pattern}"
+    run_cmd(ctest_cmd, cwd=cwd)
 
 
-def test_backend(backend, std):
+def test_backend(backend, std, test_pattern=None):
     if backend not in SUPPORTED_BACKENDS:
         raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
         raise Exception(f"Unsupported Backend: {std}\n")
 
-    run_test(backend, std)
+    run_test(backend, std, test_pattern)
 
 def check_module_names():
     from glob import glob
@@ -103,6 +166,10 @@ def get_args():
                 help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
                 help="Don't run unsupported tests with --fast when LLVM < 17")
+    parser.add_argument("-t", "--test", type=str,
+                help="Run specific tests matching pattern (regex)")
+    parser.add_argument("--ninja", action='store_true',
+                help="Use Ninja build system instead of Make (faster builds)")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     return parser.parse_args()
@@ -115,7 +182,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
@@ -123,12 +190,16 @@ def main():
     for backend in SUPPORTED_BACKENDS:
         run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
 
-    NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
+    if args.no_of_threads:
+        NO_OF_THREADS = args.no_of_threads
+        user_specified_threads = True
     fast_tests = "yes" if args.fast else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
+    use_ninja = args.ninja
+    test_pattern = args.test
     for backend in args.backends:
-        test_backend(backend, args.std)
+        test_backend(backend, args.std, test_pattern)
 
 if __name__ == "__main__":
     main()
