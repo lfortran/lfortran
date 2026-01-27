@@ -242,7 +242,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* position, int64_t position_len,
     char* blank, int64_t blank_len,
     char* encoding, int64_t encoding_len,
-    int32_t *recl);
+    int32_t *recl,
+    char* sign, int64_t sign_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_inquire(

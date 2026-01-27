@@ -265,7 +265,7 @@ public:
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
-            *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr;
+            *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -644,6 +644,52 @@ public:
                         )
                     );
                 }
+            } else if (m_arg_str == std::string("sign")) {
+                if (a_sign != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `sign` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                this->visit_expr(*kwarg.m_value);
+                a_sign = ASRUtils::EXPR(tmp);
+
+                ASR::ttype_t *a_sign_type = ASRUtils::expr_type(a_sign);
+                if (!ASRUtils::is_character(*a_sign_type)) {
+                    diag.add(Diagnostic(
+                        "`sign` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (ASR::is_a<ASR::StringConstant_t>(*a_sign)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_sign)->m_s);
+                    rtrim(str);
+                    a_sign = ASRUtils::EXPR(
+                        ASR::make_StringConstant_t(
+                            al, x.base.base.loc, s2c(al, str),
+                            ASRUtils::TYPE(
+                                ASR::make_String_t(
+                                    al, a_sign->base.loc, 1,
+                                    ASRUtils::EXPR(
+                                        ASR::make_IntegerConstant_t(
+                                            al, a_sign->base.loc, str.length(),
+                                            ASRUtils::TYPE(
+                                                ASR::make_Integer_t(al, a_sign->base.loc, 4)
+                                            )
+                                        )
+                                    ),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::DescriptorString
+                                )
+                            )
+                        )
+                    );
+                }
             }
             else {
                 const std::unordered_set<std::string> unsupported_args {"err", "fileopt", "pad"};
@@ -686,7 +732,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
