@@ -585,13 +585,15 @@ public:
             DBuilder->getOrCreateTypeArray(return_type_info));
         SP = DBuilder->createFunction(
             FContext, fn_debug_name, llvm::StringRef(), debug_Unit,
+#if LLVM_VERSION_MAJOR < 8
+            line, return_type,
+            /*isLocalToUnit=*/false, /*isDefinition=*/true,
+            /*ScopeLine=*/0, llvm::DINode::FlagPrototyped,
+            /*isOptimized=*/false);
+#else
             line, return_type, 0, // TODO: ScopeLine
             llvm::DINode::FlagPrototyped,
-#if LLVM_VERSION_MAJOR >= 8
             llvm::DISubprogram::SPFlagDefinition);
-#else
-            // LLVM 7: SPFlag enum doesn't exist, use DIDescriptor::FlagPrototyped
-            llvm::DINode::FlagZero);
 #endif
         debug_current_scope = SP;
     }
