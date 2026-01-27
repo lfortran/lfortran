@@ -1197,7 +1197,6 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         diag::Diagnostics& diag) {
-    // Default kind is 4; caller sets kind argument based on default_integer_kind
     const int64_t array_id       = 0;
     const int64_t array_mask     = 1;
     const int64_t array_dim      = 2;
@@ -3517,7 +3516,6 @@ namespace FindLoc {
 
     static inline ASR::asr_t* create_FindLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        // Default kind is 4; caller sets kind argument based on default_integer_kind
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
