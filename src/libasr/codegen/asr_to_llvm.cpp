@@ -585,13 +585,15 @@ public:
             DBuilder->getOrCreateTypeArray(return_type_info));
         SP = DBuilder->createFunction(
             FContext, fn_debug_name, llvm::StringRef(), debug_Unit,
+#if LLVM_VERSION_MAJOR < 8
+            line, return_type,
+            /*isLocalToUnit=*/false, /*isDefinition=*/true,
+            /*ScopeLine=*/0, llvm::DINode::FlagPrototyped,
+            /*isOptimized=*/false);
+#else
             line, return_type, 0, // TODO: ScopeLine
             llvm::DINode::FlagPrototyped,
-#if LLVM_VERSION_MAJOR >= 8
             llvm::DISubprogram::SPFlagDefinition);
-#else
-            // LLVM 7: SPFlag enum doesn't exist, use DIDescriptor::FlagPrototyped
-            llvm::DINode::FlagZero);
 #endif
         debug_current_scope = SP;
     }
@@ -3989,6 +3991,7 @@ public:
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
+        ASR::expr_t* member_expr = const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x));
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
         if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
@@ -4016,16 +4019,31 @@ public:
         member_idx = name2memidx[current_der_type_name][member_name];
 
         xtype = name2dertype[current_der_type_name];
+        ASR::ttype_t* base_array_type = nullptr;
+        llvm::Value* base_array_desc = nullptr;
+        ASR::array_physical_typeType base_array_ptype = ASR::array_physical_typeType::DescriptorArray;
         if (tmp->getType()->isPointerTy()) {
             ASR::ttype_t* base_t = ASRUtils::expr_type(x.m_v);
             base_t = ASRUtils::type_get_past_allocatable(base_t);
             base_t = ASRUtils::type_get_past_pointer(base_t);
-            if (ASRUtils::is_array(base_t)) {// If nested derived type
-                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
+            if (ASRUtils::is_array(base_t)) {
+                base_array_type = base_t;
+                base_array_ptype = ASRUtils::extract_physical_type(base_t);
+                if (base_array_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                    base_array_desc = tmp;
+                }
+                // If nested derived type
+                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
+                    if (base_array_ptype ==
+                            ASR::array_physical_typeType::DescriptorArray) {
+                        tmp = llvm_utils->CreateLoad2(
+                            llvm_utils->get_type_from_ttype_t_util(x.m_v, elem_t, module.get())->getPointerTo(),
+                            tmp);
+                    }
                     base_t = elem_t;
                 }
             }
@@ -4057,12 +4075,53 @@ public:
         // association). When the local variable type (x.m_type) differs from
         // the struct member type (member->m_type), we must bitcast the pointer
         // to match the local view. Details handled by the helper function.
-        tmp = llvm_utils->apply_common_block_alias_cast(
-            tmp,
-            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            x.m_type,
-            member->m_type
-        );
+        bool is_component_array = base_array_type &&
+            ASRUtils::is_array(x.m_type) &&
+            !ASRUtils::is_array(member->m_type);
+        if (!is_component_array) {
+            tmp = llvm_utils->apply_common_block_alias_cast(
+                tmp,
+                member_expr,
+                x.m_type,
+                member->m_type
+            );
+        } else {
+            ASR::array_physical_typeType component_ptype = ASRUtils::extract_physical_type(x.m_type);
+            if (component_ptype == ASR::array_physical_typeType::FixedSizeArray) {
+                llvm::Type* component_array_type = llvm_utils->get_type_from_ttype_t_util(
+                    member_expr, x.m_type, module.get());
+                tmp = builder->CreateBitCast(tmp, component_array_type->getPointerTo());
+            } else {
+                llvm::Type* component_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    member_expr, x.m_type, module.get());
+                llvm::AllocaInst* component_desc = llvm_utils->CreateAlloca(
+                    *builder, component_desc_type, nullptr, "component_array_desc");
+                llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                    member_expr,
+                    x.m_type, component_desc, module.get());
+                builder->CreateStore(tmp, data_ptr_ptr);
+                if (base_array_desc) {
+                    arr_descr->fill_array_details(
+                        x.m_v,
+                        member_expr,
+                        base_array_desc,
+                        component_desc,
+                        base_array_type,
+                        x.m_type,
+                        module.get(),
+                        true);
+                } else {
+                    ASR::dimension_t* base_dims = nullptr;
+                    int base_rank = ASRUtils::extract_dimensions_from_ttype(base_array_type, base_dims);
+                    LCOMPILERS_ASSERT(base_rank > 0)
+                    llvm::Type* component_el_type = llvm_utils->get_el_type(
+                        member_expr, ASRUtils::extract_type(x.m_type), module.get());
+                    fill_array_details(component_desc_type, component_desc, component_el_type,
+                        base_dims, base_rank, false, false);
+                }
+                tmp = component_desc;
+            }
+        }
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
@@ -7409,8 +7468,15 @@ public:
                                         llvm_utils->create_gep2(llvm_target_type, llvm_target_, 2));
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), src_dim_ptr, llvm::MaybeAlign(8),
+#if LLVM_VERSION_MAJOR < 11
+                                    unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
                                         dim_desc_size*(int)n_dims);
+#else
+                                    llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
+                                        dim_desc_size*(int)n_dims);
+#endif
 
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(llvm_target_type, llvm_target_, 1);
@@ -7564,7 +7630,13 @@ public:
                                                                 llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
+#if LLVM_VERSION_MAJOR < 11
+                                    unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
+#else
+                                    llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
+#endif
                                     // Copy offset
                                     llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
                                     llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
