@@ -7454,7 +7454,7 @@ public:
                                         llvm_utils->create_gep2(llvm_target_type, llvm_target_, 2));
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-#if LLVM_VERSION_MAJOR < 8
+#if LLVM_VERSION_MAJOR < 11
                                     unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
                                         dim_desc_size*(int)n_dims);
@@ -7616,7 +7616,7 @@ public:
                                                                 llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-#if LLVM_VERSION_MAJOR < 8
+#if LLVM_VERSION_MAJOR < 11
                                     unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
 #else
