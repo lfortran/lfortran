@@ -1197,6 +1197,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         diag::Diagnostics& diag) {
+    // Default kind is 4; caller sets kind argument based on default_integer_kind
     const int64_t array_id       = 0;
     const int64_t array_mask     = 1;
     const int64_t array_dim      = 2;
@@ -1572,7 +1573,8 @@ namespace Shape {
         ASRBuilder b(al, loc);
         Vec<ASR::expr_t *>m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
-        int kind = 4; // default kind
+        // Default kind is 4; caller sets kind argument based on default_integer_kind
+        int kind = 4;
         if (args[1]) {
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
                 append_error(diag, "`kind` argument of `shape` must be a scalar integer", loc);
@@ -3516,6 +3518,7 @@ namespace FindLoc {
 
     static inline ASR::asr_t* create_FindLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        // Default kind is 4; caller sets kind argument based on default_integer_kind
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
