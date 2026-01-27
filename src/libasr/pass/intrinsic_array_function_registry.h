@@ -1573,7 +1573,7 @@ namespace Shape {
         ASRBuilder b(al, loc);
         Vec<ASR::expr_t *>m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
-        int kind = 4;
+        int kind = 4; // default kind
         if (args[1]) {
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
                 append_error(diag, "`kind` argument of `shape` must be a scalar integer", loc);
