@@ -1065,6 +1065,62 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     return array_var_temporary;
 }
 
+ASR::expr_t* create_and_allocate_temporary_variable_for_component_array(
+    ASR::StructInstanceMember_t* sim, const std::string& name_hint, Allocator& al,
+    Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+    ExprsWithTargetType& exprs_with_target) {
+    ASR::expr_t* array_expr = ASRUtils::EXPR(reinterpret_cast<ASR::asr_t*>(sim));
+    const Location& loc = array_expr->base.loc;
+    ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+        al, array_expr, current_scope, name_hint, false);
+    if (ASRUtils::is_value_constant(ASRUtils::expr_value(array_expr))) {
+        return array_var_temporary;
+    }
+    insert_allocate_stmt_for_array(al, array_var_temporary, array_expr, current_body);
+    int array_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_expr));
+    if (array_rank <= 0) {
+        return array_var_temporary;
+    }
+
+    ASR::expr_t* base_array = ASRUtils::get_past_array_physical_cast(sim->m_v);
+    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(array_expr));
+    Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, array_rank);
+    PassUtils::create_idx_vars(idx_vars, array_rank, loc, al, current_scope, "_t");
+
+    Vec<ASR::stmt_t*> inner_body; inner_body.reserve(al, 1);
+    ASR::expr_t* lhs = PassUtils::create_array_ref(
+        array_var_temporary, idx_vars, al, current_scope);
+    ASR::expr_t* base_item = PassUtils::create_array_ref(
+        base_array, idx_vars, al, current_scope);
+    ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+        al, loc, base_item, sim->m_m, element_type, nullptr));
+    inner_body.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+        al, loc, lhs, rhs, nullptr, exprs_with_target)));
+
+    ASR::stmt_t* loop = nullptr;
+    for( int i = array_rank - 1; i >= 0; i-- ) {
+        ASR::do_loop_head_t head;
+        head.m_v = idx_vars[i];
+        head.m_start = PassUtils::get_bound(base_array, i + 1, "lbound", al);
+        head.m_end = PassUtils::get_bound(base_array, i + 1, "ubound", al);
+        head.m_increment = nullptr;
+        head.loc = head.m_v->base.loc;
+
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        if( loop == nullptr ) {
+            body.push_back(al, inner_body[0]);
+        } else {
+            body.push_back(al, loop);
+        }
+        loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+            body.p, body.size(), nullptr, 0));
+    }
+    if( loop ) {
+        current_body->push_back(al, loop);
+    }
+    return array_var_temporary;
+}
+
 ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
     Vec<ASR::alloc_arg_t> alloc_args;
     alloc_args.reserve(al, 1);
@@ -1117,6 +1173,22 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         }
     } 
     return struct_var_temporary;
+}
+
+bool is_component_array_expr(ASR::expr_t* expr) {
+    if( !expr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+        return false;
+    }
+    ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+    if( !ASRUtils::is_array(sim->m_type) ) {
+        return false;
+    }
+    ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
+        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(sim->m_v)));
+    ASR::ttype_t* member_type = ASRUtils::symbol_type(sim->m_m);
+    member_type = ASRUtils::type_get_past_pointer(
+        ASRUtils::type_get_past_allocatable(member_type));
+    return ASRUtils::is_array(base_type) && !ASRUtils::is_array(member_type);
 }
 
 bool is_elemental_expr(ASR::expr_t* value) {
@@ -2001,9 +2073,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void force_replace_current_expr_for_array(ASR::expr_t** &current_expr, const std::string& name_hint, Allocator& al,
         Vec<ASR::stmt_t*>* &current_body, SymbolTable* &current_scope, ExprsWithTargetType& exprs_with_target,
         bool is_assignment_target_array_section_item) {
-        *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, name_hint, al, current_body,
-                current_scope, exprs_with_target, is_assignment_target_array_section_item);
+        if( is_component_array_expr(*current_expr) ) {
+            *current_expr = create_and_allocate_temporary_variable_for_component_array(
+                ASR::down_cast<ASR::StructInstanceMember_t>(*current_expr),
+                name_hint, al, current_body, current_scope, exprs_with_target);
+        } else {
+            *current_expr = create_and_allocate_temporary_variable_for_array(
+                    *current_expr, name_hint, al, current_body,
+                    current_scope, exprs_with_target, is_assignment_target_array_section_item);
+        }
     }
 
     void force_replace_current_expr_for_struct(ASR::expr_t** &current_expr, const std::string& name_hint, Allocator& al,
@@ -2034,6 +2112,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
         replace_current_expr(x, "_complex_constructor_");
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        if (!is_component_array_expr(ASRUtils::EXPR(reinterpret_cast<ASR::asr_t*>(x)))) {
+            return;
+        }
+        if (is_current_expr_linked_to_target_then_return(
+                current_expr, exprs_with_target, current_body, realloc_lhs, al)) {
+            return;
+        }
+        *current_expr = create_and_allocate_temporary_variable_for_component_array(
+            x, "_struct_member_array_", al, current_body, current_scope, exprs_with_target);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -2487,7 +2577,15 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
-    void visit_Associate(const ASR::Associate_t& /*x*/) {
+    void visit_Associate(const ASR::Associate_t& x) {
+        ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &(xx.m_value);
+        call_replacer();
+        current_expr = current_expr_copy;
+        if( xx.m_value && visit_expr_after_replacement ) {
+            visit_expr(*xx.m_value);
+        }
     }
 
 };
