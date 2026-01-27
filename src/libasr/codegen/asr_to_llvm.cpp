@@ -12819,14 +12819,24 @@ public:
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
             bool is_string = false;
+            bool is_string_array = false;
 
             if (x.m_unit == nullptr) {
                 unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
             } else {
-                is_string = ASRUtils::is_character(*expr_type(x.m_unit));
+                ASR::ttype_t* unit_type = expr_type(x.m_unit);
+                is_string = ASRUtils::is_character(*unit_type);
+                is_string_array = is_string && ASRUtils::is_array(unit_type);
                 if (is_string) {
-                    this->visit_expr_load_wrapper(x.m_unit, 0, true);
-                    unit_val = tmp;
+                    if (is_string_array) {
+                        // For character arrays, we need the address of the first element
+                        this->visit_expr_wrapper(x.m_unit, false);
+                        unit_val = tmp;
+                    } else {
+                        // For scalar strings
+                        this->visit_expr_load_wrapper(x.m_unit, 0, true);
+                        unit_val = tmp;
+                    }
                 } else {
                     this->visit_expr_wrapper(x.m_unit, true);
                     unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -12847,7 +12857,14 @@ public:
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
 
             // Get or create _lfortran_namelist_read function
-            std::string func_name = is_string ? "_lfortran_namelist_read_str" : "_lfortran_namelist_read";
+            std::string func_name;
+            if (is_string_array) {
+                func_name = "_lfortran_namelist_read_str_array";
+            } else if (is_string) {
+                func_name = "_lfortran_namelist_read_str";
+            } else {
+                func_name = "_lfortran_namelist_read";
+            }
             llvm::Function* fn = module->getFunction(func_name);
             if (!fn) {
                 // Define item struct type (must match build_namelist_descriptor)
@@ -12865,7 +12882,15 @@ public:
                     item_type->getPointerTo()
                 );
                 std::vector<llvm::Type*> args;
-                if (is_string) {
+                if (is_string_array) {
+                    args = {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), // data
+                        llvm::Type::getInt64Ty(context),        // elem_len
+                        llvm::Type::getInt64Ty(context),        // n_elems
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                        group_type->getPointerTo()              // group
+                    };
+                } else if (is_string) {
                     args = {
                         character_type,                         // data
                         llvm::Type::getInt64Ty(context),        // data_len
@@ -12885,7 +12910,50 @@ public:
                     llvm::Function::ExternalLinkage, func_name, module.get());
             }
 
-            if (is_string) {
+            if (is_string_array) {
+                // Get array dimensions and element length
+                ASR::ttype_t* unit_type = expr_type(x.m_unit);
+                ASR::dimension_t* dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
+                LCOMPILERS_ASSERT(n_dims >= 1);
+
+                // Get element length
+                ASR::String_t* str_type = ASRUtils::get_string_type(unit_type);
+                llvm::Value* elem_len;
+                if (str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_len)) {
+                    ASR::IntegerConstant_t* len_const = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_len);
+                    elem_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        llvm::APInt(64, len_const->m_n));
+                } else {
+                    // Dynamic length - need to evaluate the expression
+                    this->visit_expr_wrapper(str_type->m_len, true);
+                    elem_len = tmp;
+                    tmp = nullptr;
+                }
+
+                // Calculate total number of elements
+                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+                llvm::Value* n_elems = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val));
+
+                // Get data pointer from array
+                llvm::Value* data_ptr;
+                ASR::array_physical_typeType storage_type = ASRUtils::extract_physical_type(unit_type);
+                if (storage_type == ASR::PointerArray && ASRUtils::is_array_of_strings(unit_type)) {
+                    // For pointer arrays of strings, use get_stringArray_data
+                    data_ptr = llvm_utils->get_stringArray_data(unit_type, unit_val);
+                } else if (storage_type == ASR::PointerArray) {
+                    // For pointer arrays of other types
+                    data_ptr = arr_descr->get_pointer_to_data(x.m_unit, unit_type, unit_val, module.get());
+                } else {
+                    // For fixed arrays, unit_val is already the data pointer
+                    data_ptr = unit_val;
+                }
+                data_ptr = builder->CreateBitCast(data_ptr,
+                    llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+            } else if (is_string) {
                 llvm::Value *data_ptr, *data_len;
                 std::tie(data_ptr, data_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(x.m_unit), unit_val);
