@@ -12238,6 +12238,17 @@ public:
         }
     }
 
+    std::string get_namelist_var_name(ASR::symbol_t *var_sym, ASR::Variable_t *var) {
+        std::string var_name = std::string(var->m_name);
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*var_sym)) {
+            ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(var_sym);
+            if (ext->m_original_name) {
+                var_name = ext->m_original_name;
+            }
+        }
+        return LCompilers::to_lower(var_name);
+    }
+
     // Helper to build namelist descriptor and call runtime function
     llvm::Value* build_namelist_descriptor(ASR::symbol_t* nml_sym) {
         // Unwrap external symbol if needed
@@ -12524,10 +12535,11 @@ public:
 
         for (size_t i = 0; i < nml->n_var_list; i++) {
             ASR::symbol_t* var_sym = nml->m_var_list[i];
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+            ASR::symbol_t* var_sym_past = ASRUtils::symbol_get_past_external(var_sym);
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym_past);
 
             // Get variable name (lowercase)
-            std::string var_name = LCompilers::to_lower(var->m_name);
+            std::string var_name = get_namelist_var_name(var_sym, var);
 
             uint32_t var_hash = get_hash((ASR::asr_t*)var);
             llvm::Value* data_ptr = llvm_symtab[var_hash];
