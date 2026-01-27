@@ -8393,6 +8393,11 @@ typedef struct {
     const char *data;
     int64_t data_len;
     int64_t offset;
+    // For character array internal files
+    int64_t elem_len;   // Length of each element
+    int64_t n_elems;    // Number of elements
+    int64_t elem_idx;   // Current element index
+    bool is_array;      // True if reading from character array
 } nml_reader_t;
 
 // Helper to read a line from a buffer (internal file)
@@ -8419,9 +8424,43 @@ static int64_t nml_getline_from_buffer(char **line_buf, size_t *line_len,
     return len;
 }
 
+// Helper to read a line from a character array (each element is a record)
+static int64_t nml_getline_from_array(char **line_buf, size_t *line_len,
+                                      const char *data, int64_t elem_len,
+                                      int64_t n_elems, int64_t *elem_idx) {
+    if (*elem_idx >= n_elems) return -1;
+
+    // Get pointer to current element
+    const char *elem = data + (*elem_idx * elem_len);
+
+    // Find the actual length (trim trailing spaces/nulls)
+    int64_t len = elem_len;
+    while (len > 0 && (elem[len-1] == ' ' || elem[len-1] == '\0')) {
+        len--;
+    }
+
+    // Allocate buffer if needed
+    if ((size_t)(len + 2) > *line_len) {
+        *line_len = (size_t)(len + 2);
+        *line_buf = (char*)realloc(*line_buf, *line_len);
+    }
+
+    // Copy element data
+    memcpy(*line_buf, elem, (size_t)len);
+    (*line_buf)[len] = '\0';
+
+    (*elem_idx)++;
+    return len;
+}
+
 static int64_t nml_getline(nml_reader_t *reader, char **line_buf, size_t *line_len) {
     if (reader->fp) {
         return lfortran_getline(line_buf, line_len, reader->fp);
+    }
+    if (reader->is_array) {
+        return nml_getline_from_array(line_buf, line_len, reader->data,
+                                      reader->elem_len, reader->n_elems,
+                                      &reader->elem_idx);
     }
     return nml_getline_from_buffer(line_buf, line_len, reader->data,
                                    reader->data_len, &reader->offset);
@@ -9038,6 +9077,23 @@ LFORTRAN_API void _lfortran_namelist_read_str(
     reader.data = data;
     reader.data_len = data_len;
     reader.offset = 0;
+    reader.is_array = false;
+    namelist_read_impl(&reader, iostat, group);
+}
+
+LFORTRAN_API void _lfortran_namelist_read_str_array(
+    const char *data,
+    int64_t elem_len,
+    int64_t n_elems,
+    int32_t *iostat,
+    lfortran_nml_group_t *group)
+{
+    nml_reader_t reader = {0};
+    reader.data = data;
+    reader.elem_len = elem_len;
+    reader.n_elems = n_elems;
+    reader.elem_idx = 0;
+    reader.is_array = true;
     namelist_read_impl(&reader, iostat, group);
 }
 

@@ -371,6 +371,14 @@ LFORTRAN_API void _lfortran_namelist_read_str(
     lfortran_nml_group_t *group
 );
 
+LFORTRAN_API void _lfortran_namelist_read_str_array(
+    const char *data,
+    int64_t elem_len,
+    int64_t n_elems,
+    int32_t *iostat,
+    lfortran_nml_group_t *group
+);
+
 typedef struct Span {
     const char *filename;
     uint32_t start_l, start_c;
