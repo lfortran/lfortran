@@ -1,0 +1,13 @@
+{
+    "basename": "asr-ilp64_implicit_interface_array-41b0bc6",
+    "cmd": "lfortran --show-asr --implicit-argument-casting --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/ilp64_implicit_interface_array.f90",
+    "infile_hash": "150d0c5c3eaece5382b45e1c1c45bc7e4dc200e0588ac1f3a9c8c3a7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-ilp64_implicit_interface_array-41b0bc6.stderr",
+    "stderr_hash": "32ddc1c39780b86336875b484f62bb5c7cff32e7bee4338edcb09a85",
+    "returncode": 2
+}

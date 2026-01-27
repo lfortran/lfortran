@@ -7241,10 +7241,8 @@ public:
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
-                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran_expr(extracted_type, expr) 
-                    + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_type))) + ")" +
-                        "` array constructor is `" + ASRUtils::type_to_str_fortran_expr(extracted_new_type, expr) 
-                        + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_new_type))) + ")" + "`",
+                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran_expr(extracted_type, expr)
+                        + "` array constructor is `" + ASRUtils::type_to_str_fortran_expr(extracted_new_type, expr) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
                 }

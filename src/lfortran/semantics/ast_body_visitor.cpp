@@ -5746,13 +5746,28 @@ public:
                                 }
                             }
                         }
-                        // Skip type checking for implicit argument_casting, 
-                        // polymorphic types (class), function types, and intrinsics
-                        bool skip_check = compiler_options.implicit_argument_casting ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                        // Skip type checking for polymorphic types (class), function types
+                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                        // For implicit_argument_casting, skip type checking in most cases
+                        // EXCEPT for arrays where both are integers but with different kinds -
+                        // Call_t_body cannot handle this case and would assert
+                        if (compiler_options.implicit_argument_casting && !skip_check) {
+                            ASR::ttype_t* passed_elem = ASRUtils::type_get_past_array(passed_type);
+                            ASR::ttype_t* param_elem = ASRUtils::type_get_past_array(param_type);
+                            bool both_are_arrays = ASRUtils::is_array(passed_type) && ASRUtils::is_array(param_type);
+                            bool both_are_integers = ASR::is_a<ASR::Integer_t>(*passed_elem) &&
+                                                     ASR::is_a<ASR::Integer_t>(*param_elem);
+                            bool different_kinds = ASRUtils::extract_kind_from_ttype_t(passed_elem) !=
+                                                   ASRUtils::extract_kind_from_ttype_t(param_elem);
+                            // Only reject arrays of integers with different kinds
+                            // All other cases can be handled by Call_t_body
+                            if (!(both_are_arrays && both_are_integers && different_kinds)) {
+                                skip_check = true;
+                            }
+                        }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
                             std::string passed_type_str = ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);

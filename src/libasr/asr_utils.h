@@ -907,16 +907,28 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
-            return "integer";
+            ASR::Integer_t* int_t = ASR::down_cast<ASR::Integer_t>(t);
+            if (int_t->m_kind == 4) {
+                return "integer";
+            }
+            return "integer(" + std::to_string(int_t->m_kind) + ")";
         }
         case ASR::ttypeType::UnsignedInteger: {
             return "type(unsigned)";
         }
         case ASR::ttypeType::Real: {
-            return "real";
+            ASR::Real_t* real_t = ASR::down_cast<ASR::Real_t>(t);
+            if (real_t->m_kind == 4) {
+                return "real";
+            }
+            return "real(" + std::to_string(real_t->m_kind) + ")";
         }
         case ASR::ttypeType::Complex: {
-            return "complex";
+            ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
+            if (complex_t->m_kind == 4) {
+                return "complex";
+            }
+            return "complex(" + std::to_string(complex_t->m_kind) + ")";
         }
         case ASR::ttypeType::String: {
             return "string";

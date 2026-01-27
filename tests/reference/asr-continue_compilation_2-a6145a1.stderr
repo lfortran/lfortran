@@ -458,19 +458,19 @@ semantic error: Different `character` lengths 2 and 5 in array constructor
 281 |     print *, ["a1", "b1", "ball1", "cat1"]
     |                           ^^^^^^^ 
 
-semantic error: Element in `real(8)` array constructor is `real(4)`
+semantic error: Element in `real(8)` array constructor is `real`
    --> tests/errors/continue_compilation_2.f90:284:20
     |
 284 |     print *, [x_3, [1., 2.]]
     |                    ^^^^^^^^ 
 
-semantic error: Element in `integer(4)` array constructor is `real(4)`
+semantic error: Element in `integer` array constructor is `real`
    --> tests/errors/continue_compilation_2.f90:286:18
     |
 286 |     print *, [1, 2.]
     |                  ^^ 
 
-semantic error: Element in `integer(4)` array constructor is `real(4)`
+semantic error: Element in `integer` array constructor is `real`
    --> tests/errors/continue_compilation_2.f90:288:18
     |
 288 |     print *, [1, [1., 2.]]
