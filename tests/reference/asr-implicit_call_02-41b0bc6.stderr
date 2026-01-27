@@ -1,5 +1,0 @@
-semantic error: Type mismatch in argument `x`: expected `integer[:]` but got `integer(8)[:]`
-  --> tests/errors/ilp64_implicit_interface_array.f90:11:19
-   |
-11 |     call test_sub(arr)
-   |                   ^^^ 
