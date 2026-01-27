@@ -1374,7 +1374,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                         b.Assignment(result, LBound(args[0], 1, index_kind))
                     }, {}));
                 }
-            }, [=, &al, &b, &idx_vars, &doloop_body, &index_kind] () {
+            }, [=, &al, &b, &idx_vars, &doloop_body] () {
                 ASR::expr_t* result_check = !ASRUtils::is_array(return_type) ?
                     result : b.ArrayItem_01(result, {b.i_t(1, type)});
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
