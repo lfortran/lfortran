@@ -1573,7 +1573,6 @@ namespace Shape {
         ASRBuilder b(al, loc);
         Vec<ASR::expr_t *>m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
-        // Default kind is 4; caller sets kind argument based on default_integer_kind
         int kind = 4;
         if (args[1]) {
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
