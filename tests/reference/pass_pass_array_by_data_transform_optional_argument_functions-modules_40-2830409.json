@@ -6,11 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_pass_array_by_data_transform_optional_argument_functions-modules_40-2830409.stdout",
-<<<<<<< HEAD
-    "stdout_hash": "c3134002a0efb25dc9ddb530c819701a5c31e42d37a1818b4965a209",
-=======
-    "stdout_hash": "95f6b5da72c37691ddc22fa178d4abce5844ac26a1369f8b85e08d2e",
->>>>>>> upstream/main
+    "stdout_hash": "43ced22bfa06ef85bb3130fc8d41e4cc37c7a0088b5b0be6a111efce",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
