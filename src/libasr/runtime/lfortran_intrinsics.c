@@ -5565,6 +5565,55 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+
+    if (unit_num == -1) {
+        for (int i = 0; i < array_size; i++) {
+            _lfortran_read_logical(&p[i], unit_num, iostat);
+            if (iostat && *iostat != 0) {
+                return;
+            }
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    bool read_access, write_access;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL);
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id == 0) {
+            int32_t record_marker_start;
+            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read record marker.\n");
+                exit(1);
+            }
+        }
+        if (fread(p, sizeof(bool), array_size, filep) != (size_t)array_size) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+            exit(1);
+        }
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            _lfortran_read_logical(&p[i], unit_num, iostat);
+            if (iostat && *iostat != 0) {
+                return;
+            }
+        }
+    }
+}
+
+
 LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;

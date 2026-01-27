@@ -12764,6 +12764,9 @@ public:
                 } else if (ASR::is_a<ASR::String_t>(*type)) {
                     runtime_func_name = "_lfortran_read_array_char";
                     type_arg = llvm::Type::getInt8Ty(context);
+                } else if (ASR::is_a<ASR::Logical_t>(*type)) {
+                    runtime_func_name = "_lfortran_read_array_logical";
+                    type_arg = llvm::Type::getInt8Ty(context);
                 } else {
                     throw CodeGenError("Type not supported.");
                 }
