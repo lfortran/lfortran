@@ -1,0 +1,13 @@
+{
+    "basename": "run-file_open_06-cc72219",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/file_open_06.f90",
+    "infile_hash": "38c29295a37c9aac5fa968468906167d4e5ae77bcf9aa7cce4be6d1b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-file_open_06-cc72219.stdout",
+    "stdout_hash": "a8b3c28327d978bed230e9f55e67dc389ca40a82fbc5251d574c636e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

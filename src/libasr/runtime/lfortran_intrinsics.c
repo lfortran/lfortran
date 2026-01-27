@@ -5630,7 +5630,7 @@ LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t 
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
