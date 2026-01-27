@@ -3865,6 +3865,12 @@ LFORTRAN_API void* _lfortran_string_malloc(int64_t length) {
 }
 
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size) {
+    // When size is 0, realloc(ptr, 0) may return NULL (implementation-defined).
+    // For Fortran semantics, a size-0 allocatable array is still "allocated",
+    // so we must ensure a non-null pointer by allocating at least 1 byte.
+    if (size == 0) {
+        size = 1;
+    }
     return (int8_t*) realloc(ptr, (size_t)size);
 }
 
