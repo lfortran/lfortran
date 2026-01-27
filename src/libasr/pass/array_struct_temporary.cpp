@@ -1191,6 +1191,21 @@ bool is_component_array_expr(ASR::expr_t* expr) {
     return ASRUtils::is_array(base_type) && !ASRUtils::is_array(member_type);
 }
 
+bool is_component_array_expr_or_section(ASR::expr_t* expr) {
+    if( is_component_array_expr(expr) ) {
+        return true;
+    }
+    if( ASR::is_a<ASR::ArraySection_t>(*expr) ) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(expr);
+        return is_component_array_expr(section->m_v);
+    }
+    if( ASR::is_a<ASR::ArrayItem_t>(*expr) ) {
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+        return is_component_array_expr(item->m_v);
+    }
+    return false;
+}
+
 bool is_elemental_expr(ASR::expr_t* value) {
     value = ASRUtils::get_past_array_physical_cast(value);
     switch( value->type ) {
@@ -2579,6 +2594,9 @@ class ReplaceExprWithTemporaryVisitor:
 
     void visit_Associate(const ASR::Associate_t& x) {
         ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
+        if( !is_component_array_expr_or_section(xx.m_value) ) {
+            return;
+        }
         ASR::expr_t** current_expr_copy = current_expr;
         current_expr = &(xx.m_value);
         call_replacer();
