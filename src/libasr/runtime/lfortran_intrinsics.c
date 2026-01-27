@@ -1672,21 +1672,51 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
 
 static void format_float_fortran(char* result, float val) {
     float abs_val = fabsf(val);
-    // Use exponential notation for very small or very large values
-    if ((abs_val > 0.0f && abs_val < 0.1f) || abs_val >= 1.0e8f) {
-        sprintf(result, "%.8E", val);
-    } else {
-        sprintf(result, "%.8f", val);
+    
+    if (abs_val == 0.0f) {
+        sprintf(result, "0.00000000");
+        return;
     }
+    if (abs_val < 0.1f || abs_val >= 1.0e8f) {
+        sprintf(result, "%.8E", val);
+        return;
+    }
+
+    int magnitude = (int)floor(log10f(abs_val)) + 1;
+    int decimal_places = 9 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%df", decimal_places);
+    sprintf(result, format_str, val);
 }
 
 static void format_double_fortran(char* result, double val) {
     double abs_val = fabs(val);
-    if ((abs_val > 0.0 && abs_val < 0.1) || abs_val >= 1.0e15) {
-        sprintf(result, "%.16E", val);
-    } else {
-        sprintf(result, "%.16f", val);
+    
+    if (abs_val == 0.0) {
+        sprintf(result, "0.0000000000000000");
+        return;
     }
+
+    if (abs_val < 0.1 || abs_val >= 1.0e16) {
+        sprintf(result, "%.16E", val);
+        char* e_pos = strchr(result, 'E');
+        if (e_pos != NULL) {
+            char sign = e_pos[1];
+            int exp_val = atoi(e_pos + 2);
+            sprintf(e_pos, "E%c%03d", sign, abs(exp_val));
+        }
+        return;
+    }
+    
+    int magnitude = (int)floor(log10(abs_val)) + 1;
+    int decimal_places = 17 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%df", decimal_places);
+    sprintf(result, format_str, val);
 }
 
 // Returns the length of the string that is printed inside result
