@@ -629,10 +629,15 @@ public:
         ptr_loads = ptr_loads_copy;
         if( is_data_only ) {
             if( !ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
-                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                // Use the descriptor's index type for consistent bit width (i32 or i64)
+                llvm::Type* index_type = arr_descr->get_index_type();
+                unsigned index_bit_width = index_type->getIntegerBitWidth();
+                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
                 llvm::Value* prod = const_1;
                 for( int r = 0; r < n_dims; r++ ) {
                     llvm::Value* dim_size = llvm_dims[r].second;
+                    // Ensure dim_size matches index_type
+                    dim_size = builder->CreateSExtOrTrunc(dim_size, index_type);
                     prod = builder->CreateMul(prod, dim_size);
                 }
                 llvm::Value* arr_first = nullptr;
@@ -640,7 +645,7 @@ public:
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                     prod = builder->CreateMul(prod,
-                        llvm::ConstantInt::get(context, llvm::APInt(32, size)));
+                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, size)));
                     llvm::Value* arr_first_i8 = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, prod);
                     arr_first = builder->CreateBitCast(
@@ -1985,18 +1990,23 @@ public:
         LCOMPILERS_ASSERT(x.n_args == 1);
         handle_allocated(x.m_args[0].m_a);
         llvm::Value* is_allocated = tmp;
+        // Use the descriptor's index type for consistent bit width (i32 or i64)
+        llvm::Type* index_type = arr_descr->get_index_type();
+        unsigned index_bit_width = index_type->getIntegerBitWidth();
+        int index_kind = index_bit_width / 8;
         llvm::Value* size = llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+            index_type, llvm::APInt(index_bit_width, 1));
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.m_args[0].n_dims; i++ ) {
             ptr_loads = 2 - !LLVM::is_llvm_pointer(*
                 ASRUtils::expr_type(x.m_args[0].m_dims[i].m_length));
             this->visit_expr_wrapper(x.m_args[0].m_dims[i].m_length, true);
+            tmp = builder->CreateSExtOrTrunc(tmp, index_type);
             size = builder->CreateMul(size, tmp);
         }
         ptr_loads = ptr_loads_copy;
         visit_ArraySizeUtil(x.m_args[0].m_a,
-            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, index_kind)));
         llvm::Value* arg_array_size = tmp;
         llvm::Value* realloc_condition = builder->CreateOr(
             builder->CreateNot(is_allocated), builder->CreateAnd(
