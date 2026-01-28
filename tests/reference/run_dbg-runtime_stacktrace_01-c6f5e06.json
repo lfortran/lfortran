@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run_dbg-runtime_stacktrace_01-c6f5e06.stderr",
-    "stderr_hash": "8165747dc354ffba253ec2e3b68b4eabc074dede9e15f1791881b9dc",
-    "returncode": 0
+    "stderr_hash": "eb3c044e48ac8bbaa776077b6c9cef2ef164ade8cddef1d6a7f06792",
+    "returncode": 1
 }
