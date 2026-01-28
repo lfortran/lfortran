@@ -1998,6 +1998,13 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
+        if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+            ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);
+            ASR::ttype_t* var_type = ASRUtils::expr_type(array_section->m_v);
+            if (ASRUtils::is_pointer(var_type)) {
+                is_target_pointer = true;
+            }
+        }
         if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
             diag.add(Diagnostic(
                 "Only a pointer variable can be associated with another variable.",
