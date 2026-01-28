@@ -6704,7 +6704,9 @@ public:
             llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
                 ASRUtils::get_contained_type(fptr_type), module.get());
             llvm_fptr = llvm_utils->CreateLoad2(llvm_fptr_type->getPointerTo(), llvm_fptr);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+            llvm::Type* idx_type = arr_descr->get_index_type();
+            unsigned idx_bit_width = idx_type->getIntegerBitWidth();
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bit_width, 0)),
                 arr_descr->get_offset(llvm_fptr_type, llvm_fptr, false));
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
@@ -6740,7 +6742,7 @@ public:
             }
             builder->CreateStore(llvm_cptr, fptr_data);
 
-            llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(idx_bit_width, 1));
             for( int i = 0; i < fptr_rank; i++ ) {
                 llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                 llvm::Value* desi = arr_descr->get_pointer_to_dimension_descriptor(fptr_des, curr_dim);
@@ -6748,25 +6750,25 @@ public:
                 llvm::Value* desi_lb = arr_descr->get_lower_bound(desi, false);
                 llvm::Value* desi_size = arr_descr->get_dimension_size(fptr_des, curr_dim, false);
                 builder->CreateStore(prod, desi_stride);
-                llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-                llvm::Value* new_lb = i32_one;
+                llvm::Value* idx_one = llvm::ConstantInt::get(context, llvm::APInt(idx_bit_width, 1));
+                llvm::Value* new_lb = idx_one;
                 if( x.m_lower_bounds ) {
                     int ptr_loads_copy = ptr_loads;
                     ptr_loads = 2;
                     this->visit_expr_wrapper(x.m_lower_bounds, true);
                     ptr_loads = ptr_loads_copy;
-                    tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context), tmp,  i);
-                    new_lb = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), tmp);
+                    tmp = llvm_utils->create_ptr_gep2(idx_type, tmp,  i);
+                    new_lb = llvm_utils->CreateLoad2(idx_type, tmp);
                 }
                 llvm::Value* new_size = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerArray ) {
-                    new_size = shape_data ? llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context),shape_data, i)) : i32_one;
+                    new_size = shape_data ? builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(
+                        idx_type, llvm_utils->create_ptr_gep2(idx_type, shape_data, i)), idx_type) : idx_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
                     llvm::Type* shape_llvm_type = llvm_utils->get_type_from_ttype_t_util(shape, asr_shape_type, module.get());
-                    new_size = shape_data ? llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_llvm_type, shape_data, i)) : i32_one;
+                    new_size = shape_data ? builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(
+                        idx_type, llvm_utils->create_gep2(shape_llvm_type, shape_data, i)), idx_type) : idx_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 builder->CreateStore(new_size, desi_size);
