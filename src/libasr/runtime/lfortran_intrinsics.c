@@ -365,17 +365,20 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
+static void format_float_fortran(char* result, float val);
+static void format_double_fortran(char* result, double val);
+
 void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     val = val * pow(10, scale); // scale the value
     if (strcmp(format,"f-64") == 0) { //use c formatting.
-        char* float_str = (char*)malloc(50 * sizeof(char));
-        sprintf(float_str,"%23.17e",val);
+        char* float_str = (char*)malloc(64 * sizeof(char));
+        format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     } else if(strcmp(format,"f-32") == 0){ //use c formatting.
-        char* float_str = (char*)malloc(40 * sizeof(char));
-        sprintf(float_str,"%13.8e",val);
+        char* float_str = (char*)malloc(64 * sizeof(char));
+        format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
@@ -550,7 +553,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
         
         // Adjust exp_digits dynamically if no explicit Ee was given
         if (original_exp_digits <= 0) {
-            int abs_exp = abs(exponent);
+            int abs_exp = (exponent < 0 ? -exponent : exponent);
             if (abs_exp >= 100) {
                 exp_digits = 3;
             } else if (abs_exp >= 10) {
@@ -725,10 +728,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp = 2;
     if (exp_digits > 0) {
         exp = exp_digits;
-    } else if (is_s_format && abs(exponent_value) >= 10) {
-        int abs_exp = abs(exponent_value);
+    } else if (is_s_format && (exponent_value < 0 ? -exponent_value : exponent_value) >= 10) {
+        int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value) >= 100) {
+    } else if ((exponent_value < 0 ? -exponent_value : exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -753,7 +756,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
     // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
     // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
-    bool drop_e = (exp_digits <= 0 && abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    bool drop_e = (exp_digits <= 0 && (exponent_value < 0 ? -exponent_value : exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
     int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
@@ -796,7 +799,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     if (scale <= 0) {
         strcat(formatted_value, "0.");
-        for (int k = 0; k < abs(scale); k++) {
+        for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
             strcat(formatted_value, "0");
         }
         int zeros = 0;
@@ -1667,6 +1670,55 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
     }
 }
 
+static void format_float_fortran(char* result, float val) {
+    float abs_val = fabsf(val);
+    
+    if (abs_val == 0.0f) {
+        sprintf(result, "0.00000000");
+        return;
+    }
+    if (abs_val < 0.1f || abs_val >= 1.0e8f) {
+        sprintf(result, "%.8E", val);
+        return;
+    }
+
+    int magnitude = (int)floor(log10f(abs_val)) + 1;
+    int decimal_places = 9 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%df", decimal_places);
+    sprintf(result, format_str, val);
+}
+
+static void format_double_fortran(char* result, double val) {
+    double abs_val = fabs(val);
+    
+    if (abs_val == 0.0) {
+        sprintf(result, "0.0000000000000000");
+        return;
+    }
+
+    if (abs_val < 0.1 || abs_val >= 1.0e16) {
+        sprintf(result, "%.16E", val);
+        char* e_pos = strchr(result, 'E');
+        if (e_pos != NULL) {
+            char sign = e_pos[1];
+            int exp_val = atoi(e_pos + 2);
+            sprintf(e_pos, "E%c%03d", sign, (exp_val < 0 ? -exp_val : exp_val));
+        }
+        return;
+    }
+    
+    int magnitude = (int)floor(log10(abs_val)) + 1;
+    int decimal_places = 17 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%df", decimal_places);
+    sprintf(result, format_str, val);
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
@@ -1700,19 +1752,25 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 double real = *(double*)arg;
                 move_to_next_element(s_info, false);
                 double imag = *(double*)s_info->current_arg_info.current_arg;
-                sprintf(result, "(%23.17e, %23.17e)", real, imag);
+                char real_str[64], imag_str[64];
+                format_double_fortran(real_str, real);
+                format_double_fortran(imag_str, imag);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
-                sprintf(result, "%23.17e", *(double*)arg);
+                format_double_fortran(result, *(double*)arg);
             }
             break;
         case FLOAT_32_TYPE:
             if(s_info->current_arg_info.is_complex){
                 float real = *(float*)arg;
                 move_to_next_element(s_info, false);
-                double imag = *(float*)s_info->current_arg_info.current_arg;
-                sprintf(result, "(%13.8e, %13.8e)", real, imag);
+                float imag = *(float*)s_info->current_arg_info.current_arg;
+                char real_str[64], imag_str[64];
+                format_float_fortran(real_str, real);
+                format_float_fortran(imag_str, imag);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
-                sprintf(result, "%13.8e", *(float*)arg);
+                format_float_fortran(result, *(float*)arg);
             }
             break;
         case LOGICAL_TYPE:
@@ -3069,7 +3127,7 @@ uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_s
 LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
     uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
-    uint32_t shift = abs(shift_signed);
+    uint32_t shift = (shift_signed < 0 ? -shift_signed : shift_signed);
 
     uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
     uint64_t result;
@@ -3617,7 +3675,7 @@ LFORTRAN_API char* _lfortran_int_to_str8(int64_t num)
 LFORTRAN_API int32_t _lpython_bit_length1(int8_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -3628,7 +3686,7 @@ LFORTRAN_API int32_t _lpython_bit_length1(int8_t num)
 LFORTRAN_API int32_t _lpython_bit_length2(int16_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -3639,7 +3697,7 @@ LFORTRAN_API int32_t _lpython_bit_length2(int16_t num)
 LFORTRAN_API int32_t _lpython_bit_length4(int32_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -4080,8 +4138,8 @@ LFORTRAN_API void _lfortran_zone(char* result) {
     int offset_minutes = offset_seconds / 60;
 #endif
     char sign = offset_minutes >= 0 ? '+' : '-';
-    int offset_hours = abs(offset_minutes / 60);
-    int remaining_minutes = abs(offset_minutes % 60);
+    int offset_hours = (offset_minutes < 0 ? -(offset_minutes / 60) : (offset_minutes / 60));
+    int remaining_minutes = (offset_minutes < 0 ? -(offset_minutes % 60) : (offset_minutes % 60));
     snprintf(result, 12, "%c%02d%02d", sign, offset_hours, remaining_minutes);
 }
 
