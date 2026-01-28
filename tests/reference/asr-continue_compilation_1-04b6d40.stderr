@@ -648,13 +648,13 @@ semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:349:14
     |
 349 |     print *, v**str
-    |              ^  ^^^ type mismatch (real(4) and string)
+    |              ^  ^^^ type mismatch (real and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:350:14
     |
 350 |     print *, str**v
-    |              ^^^  ^ type mismatch (string and real(4))
+    |              ^^^  ^ type mismatch (string and real)
 
 semantic error: The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer
    --> tests/errors/continue_compilation_1.f90:352:24
@@ -704,37 +704,37 @@ semantic error: Input to `Product` is expected to be numeric, but got string[:]
 360 |     print *, product([c1])
     |                      ^^^^ must be integer, real or complex type
 
-semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex(4)[:]
+semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex[:]
    --> tests/errors/continue_compilation_1.f90:361:21
     |
 361 |     print *, minval([c])
     |                     ^^^ must be integer, real or character type
 
-semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex(4)[:]
+semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex[:]
    --> tests/errors/continue_compilation_1.f90:362:21
     |
 362 |     print *, maxval([c])
     |                     ^^^ must be integer, real or character type
 
-semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer(4)
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
    --> tests/errors/continue_compilation_1.f90:364:14
     |
 364 |     print *, sum(q1)
     |              ^^^^^^^ 
 
-semantic error: Argument to intrinsic `Product` is expected to be an array, found: real(4)
+semantic error: Argument to intrinsic `Product` is expected to be an array, found: real
    --> tests/errors/continue_compilation_1.f90:365:14
     |
 365 |     print *, product(r1)
     |              ^^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer(4)
+semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer
    --> tests/errors/continue_compilation_1.f90:366:14
     |
 366 |     print *, minval(q1)
     |              ^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real(4)
+semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real
    --> tests/errors/continue_compilation_1.f90:367:14
     |
 367 |     print *, maxval(r1)
@@ -750,27 +750,27 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:370:5
     |
 370 |     z1 = y 
-    |     ^^   ^ type mismatch (real(4) and logical)
+    |     ^^   ^ type mismatch (real and logical)
 
-semantic error: reshape accepts arrays for `pad` argument, found integer(4) instead.
+semantic error: reshape accepts arrays for `pad` argument, found integer instead.
    --> tests/errors/continue_compilation_1.f90:372:50
     |
 372 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
     |                                                  ^ 
 
-semantic error: reshape accepts arrays for `order` argument, found integer(4) instead.
+semantic error: reshape accepts arrays for `order` argument, found integer instead.
    --> tests/errors/continue_compilation_1.f90:373:55
     |
 373 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
     |                                                       ^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real(4)[:] and kind 4 source type integer(4)[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
    --> tests/errors/continue_compilation_1.f90:374:50
     |
 374 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
     |                                                  ^^^^^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer(8)[:] and kind 8 source type integer(4)[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
    --> tests/errors/continue_compilation_1.f90:375:50
     |
 375 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
@@ -804,7 +804,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:383:5
     |
 383 |     a_real = [logical::]
-    |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real(4)[:] and logical[:])
+    |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
    --> tests/errors/continue_compilation_1.f90:386:22
@@ -897,7 +897,7 @@ semantic error: Shape mismatch in `allocate` statement.
     |              ^^^^^^^         ^^^^^^^^^ shape mismatch in dimension 1
 
 semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.
-Expected type: integer(4)[:] allocatable, but got: real(4).
+Expected type: integer[:] allocatable, but got: real.
    --> tests/errors/continue_compilation_1.f90:415:14
     |
 415 |     allocate(arr4(5), source=v)
@@ -1009,7 +1009,7 @@ semantic error: Assigned format (using integer variable as format specifier) is 
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument `p`: expected a procedure but got `integer(4)`
+semantic error: Type mismatch in argument `p`: expected a procedure but got `integer`
    --> tests/errors/continue_compilation_1.f90:459:21
     |
 459 |     call proc_param(42)
@@ -1157,4 +1157,4 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:503:5
     |
 503 |     b = (ieee_cls == ieee_quiet_nan)
-    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer(4)[:] and ieee_class_type)
+    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)

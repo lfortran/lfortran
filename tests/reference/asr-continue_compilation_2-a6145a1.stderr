@@ -327,7 +327,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:235:5
     |
 235 |     str_t_2 = prefix // 10
-    |     ^^^^^^^             ^^ type mismatch (string_t and integer(4))
+    |     ^^^^^^^             ^^ type mismatch (string_t and integer)
 
 semantic error: No custom operator exists for this expression
    --> tests/errors/continue_compilation_2.f90:236:15
@@ -798,19 +798,19 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:425:5
     |
 425 |     tm1_x = "x"
-    |     ^^^^^   ^^^ type mismatch (integer(4) and string)
+    |     ^^^^^   ^^^ type mismatch (integer and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:427:13
     |
 427 |     tm2_x = 5 + "x"
-    |             ^   ^^^ type mismatch (integer(4) and string)
+    |             ^   ^^^ type mismatch (integer and string)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:427:5
     |
 427 |     tm2_x = 5 + "x"
-    |     ^^^^^       ^^^ type mismatch (integer(4) and string)
+    |     ^^^^^       ^^^ type mismatch (integer and string)
 
 semantic error: Variable 'foo' is not declared
    --> tests/errors/continue_compilation_2.f90:429:13

@@ -5770,8 +5770,8 @@ public:
                         }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
-                            std::string passed_type_str = ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
-                            std::string param_type_str = ASRUtils::type_to_str_fortran_expr(param_type, nullptr);
+                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, nullptr);
                             diag.add(diag::Diagnostic(
                                 "Type mismatch in argument `" + std::string(v->m_name) +
                                 "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
@@ -6057,9 +6057,9 @@ public:
         ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
-                ASRUtils::type_to_str_fortran_expr(test_type, test) + " instead",
+                ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
                 diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label(ASRUtils::type_to_str_fortran_expr(test_type, test) + " expression, expected logical", {test->base.loc})}));
+                diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) + " expression, expected logical", {test->base.loc})}));
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;

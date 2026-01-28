@@ -7241,8 +7241,8 @@ public:
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
-                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran_expr(extracted_type, expr)
-                        + "` array constructor is `" + ASRUtils::type_to_str_fortran_expr(extracted_new_type, expr) + "`",
+                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_kind(extracted_type, expr)
+                        + "` array constructor is `" + ASRUtils::type_to_str_with_kind(extracted_new_type, expr) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
                 }
@@ -8062,8 +8062,8 @@ public:
                         allow_mismatch = true;
                     }
                     if (!allow_mismatch) {
-                        std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
-                        std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
+                        std::string arg_str = ASRUtils::type_to_str_with_kind(arg_type, arg);
+                        std::string orig_arg_str = ASRUtils::type_to_str_with_kind(orig_arg_type, func->m_args[i]);
                         diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                             "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                             Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
