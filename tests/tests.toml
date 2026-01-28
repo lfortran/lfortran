@@ -2015,6 +2015,10 @@ filename = "../integration_tests/format_53.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/print_09.f90"
+run = true
+
+[[test]]
 filename = "interop/mod1-14.mod"
 mod_to_asr = true
 
