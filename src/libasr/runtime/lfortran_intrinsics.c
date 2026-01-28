@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#include <stdint.h>
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -5043,103 +5044,119 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     }
     return true;
 }
-// --- 1. Define the descriptor structure (Add this outside or at the top of the function) ---
-// --- 1. DEFINE INTERNAL STRUCTURES ---
 typedef struct {
     char *data;
     int64_t len;
 } lfortran_dest_t;
 
 typedef struct {
-    char* str_data;
-    int64_t str_len;
-    void* dests;
-    int32_t no_of_args;
-} read_payload_t;
+    // This 8-byte header covers both 'unit' and the 'padding'
+     int32_t unit;
+     int32_t __pad0;
+
+    void* iostat;    // Offset 8
+    void* chunk;     // Offset 16
+    char* adv;       // Offset 24
+    int64_t adv_len; // Offset 32
+    char* fmt;       // Offset 40
+    int64_t fmt_len; // Offset 48
+    char* src_data;  // Offset 56 (Matches LLVM Index 8)
+    int64_t src_len; // Offset 64
+    void* dests;     // Offset 72
+    int32_t n_args;  // Offset 80
+} read_master_t;
 
 // --- 2. IMPLEMENTATION ---
-// Use void* for the payload to match the header's declaration exactly
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, 
-                                          char* advance, int64_t adv_len, char* fmt, 
-                                          int64_t fmt_len, void* payload_ptr) 
-{
-    // Cast the generic pointer to our internal structure
-    read_payload_t* payload = (read_payload_t*)payload_ptr;
-    
-    // Extract everything from the payload safely
-    char* str_data = payload->str_data;
-    int64_t str_len = payload->str_len;
-    lfortran_dest_t* dests = (lfortran_dest_t*)payload->dests;
-    int32_t no_of_args = payload->no_of_args;
-    
-    int width = -1;
+LFORTRAN_API void _lfortran_formatted_read(void* master_void) {
+    if (!master_void) return;
+    read_master_t* m = (read_master_t*)master_void;
 
-    // --- 1. PARSE FORMAT ---
-    if (fmt && is_streql_NCS(fmt, fmt_len, "(a)", 3)) {
-        width = -1;
-    } else if (fmt && (fmt_len > 2) && is_streql_NCS(fmt, fmt_len, "(a", 2)) {
-        int i = 2;
-        while ((i < fmt_len) && isdigit((unsigned char)fmt[i])) i++;
-        if (i < fmt_len && fmt[i] == ')' && i > 2) {
-            char width_str[16];
-            int w_len = i - 2;
-            if (w_len > 15) w_len = 15;
-            memcpy(width_str, fmt + 2, w_len);
-            width_str[w_len] = '\0';
-            width = atoi(width_str);
+    // --- 1. ABI-SAFE VARIABLE INITIALIZATION ---
+    int32_t unit_num            = m->unit;
+    char* str_data              = m->src_data;
+    int64_t str_len             = m->src_len;
+    lfortran_dest_t* dest_array = (lfortran_dest_t*)m->dests;
+    int32_t no_of_args          = m->n_args;
+
+    // --- 2. CORE DEBUGGING PRINTS ---
+    printf("\n[RUNTIME DEBUG] Master Void Address: %p\n", master_void);
+    printf("[RUNTIME DEBUG] Offset of src_data:  %ld\n", (char*)&m->src_data - (char*)m);
+    printf("[RUNTIME DEBUG] Value of unit:       %d\n",  unit_num);
+    printf("[RUNTIME DEBUG] Value of src_data:   %p\n",  (void*)str_data);
+    printf("[RUNTIME DEBUG] Value of src_len:    %ld\n", str_len);
+    printf("[RUNTIME DEBUG] Number of args:      %d\n",  no_of_args);
+    
+    // --- FIX 2: PROTECT RAW BYTE LOOP (CAP AT 256) ---
+    if (str_data && str_len > 0) {
+        printf("[RUNTIME DEBUG] RAW SRC BYTES: ");
+        for (int i = 0; i < str_len && i < 256; i++) {
+            printf("%02x ", (unsigned char)str_data[i]);
         }
+        printf("\n");
+        printf("[RUNTIME DEBUG] RAW SRC TEXT:  '%.*s'\n", (int)(str_len > 256 ? 256 : str_len), str_data);
     }
+    fflush(stdout);
 
-    // --- 2. DETERMINE BUFFER WIDTH ---
-    if (width == -1) {
-        width = (unit_num == -1) ? (int)str_len : 1024;
-    }
+    if (m->iostat) *(int32_t*)(m->iostat) = 0;
 
+    // --- 3. VALIDATION ---
+    if (str_data == NULL && unit_num == -1) return; 
+
+    // --- FIX 1: PREVENT NEGATIVE STR_LEN CASTING ---
+    int width = (unit_num == -1 && str_len > 0) ? (int)str_len : 1024;
     char *buffer = (char*)calloc(width + 1, sizeof(char));
     if (!buffer) return;
 
-    // --- 3. FILL THE BUFFER ---
+    // --- 4. FILL THE BUFFER ---
     if (unit_num == -1) {
-        if (str_data == NULL) {
-            if (iostat) *iostat = -1;
-            free(buffer); return;
+        if (!str_data) { 
+            if (m->iostat) *(int32_t*)(m->iostat) = -1; 
+            free(buffer); return; 
         }
-        size_t to_copy = ((size_t)str_len < (size_t)width) ? (size_t)str_len : (size_t)width;
+        size_t to_copy = (size_t)((str_len > width) ? width : str_len);
         memcpy(buffer, str_data, to_copy);
         buffer[to_copy] = '\0';
     } else {
-        bool unit_file_bin;
-        FILE *filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
-        if (filep == NULL || fgets(buffer, width + 1, filep) == NULL) {
-             if (iostat) *iostat = -1;
-             free(buffer); return;
+        bool bin;
+        FILE *f = get_file_pointer_from_unit(unit_num, &bin, NULL, NULL, NULL, NULL);
+        if (!f || !fgets(buffer, width + 1, f)) { 
+            if (m->iostat) *(int32_t*)(m->iostat) = -1;
+            free(buffer); return; 
         }
     }
 
-    // --- 4. DISTRIBUTE TO FORTRAN VARIABLES ---
-    buffer[strcspn(buffer, "\r\n")] = '\0'; 
-    size_t input_length = strlen(buffer);
+    // --- FIX 3: SAFE TRIMMING ---
+    size_t trim = strcspn(buffer, "\r\n");
+    if (trim < (size_t)width) buffer[trim] = '\0';
+    size_t in_len = strlen(buffer);
 
-    if (dests && no_of_args > 0) {
+    // --- 5. DISTRIBUTE TO FORTRAN VARIABLES ---
+    if (dest_array && no_of_args > 0) {
         for (int i = 0; i < no_of_args; i++) {
-            char* dest_ptr = dests[i].data;
-            int64_t dest_len = dests[i].len;
+            // --- FIX 4: PREVENT WRITE IF LEN <= 0 ---
+            if (dest_array[i].len <= 0 || !dest_array[i].data) continue;
 
-            if (dest_ptr) {
-                // Initialize with spaces (Fortran style)
-                memset(dest_ptr, ' ', (size_t)dest_len);
-                size_t to_copy = (input_length < (size_t)dest_len) ? input_length : (size_t)dest_len;
-                memcpy(dest_ptr, buffer, to_copy);
-                
-                printf("RUNTIME: Copied '%.*s' to address %p\n", (int)to_copy, dest_ptr, (void*)dest_ptr);
-                fflush(stdout);
+            size_t dest_cap = (size_t)dest_array[i].len;
+            size_t to_copy = (in_len < dest_cap) ? in_len : dest_cap;
+
+            // Padded Copy (Fortran ABI Style)
+            memset(dest_array[i].data, ' ', dest_cap);
+            memcpy(dest_array[i].data, buffer, to_copy);
+            
+            // --- FIX 5: PRINT DEST SAFELY ---
+            printf("[RUNTIME DEBUG] FINAL DEST[%d] CONTENT: ", i);
+            for (size_t k = 0; k < dest_cap; k++) {
+                char c = dest_array[i].data[k];
+                // Print printable chars or space for junk
+                putchar((c >= 32 && c <= 126) ? c : ' ');
             }
+            printf("\n");
         }
     }
     
+    fflush(stdout);
     free(buffer);
 }
-
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     if (unit_num == -1) {
         // Read from stdin
