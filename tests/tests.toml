@@ -5005,3 +5005,7 @@ options = "< tests/stdin_read_blank_lines_01.in"
 filename = "mangle_underscore_external_01.f90"
 llvm = true
 options = "--mangle-underscore-external"
+
+[[test]]
+filename = "../integration_tests/file_open_06.f90"
+run = true
