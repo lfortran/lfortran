@@ -1,0 +1,224 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            simd_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
+                                        SIMDArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
+                                        SIMDArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
+                                        SIMDArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    simd_01
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (ArrayPhysicalCast
+                            (ArrayBroadcast
+                                (Cast
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                )
+                                (ArrayConstant
+                                    4
+                                    [8]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 8 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    32
+                                    [1.00000000e+00, 1.00000000e+00, 1.00000000e+00, ...., 1.00000000e+00, 1.00000000e+00, 1.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            FixedSizeArray
+                            SIMDArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 8 (Integer 4) Decimal))]
+                                SIMDArray
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayPhysicalCast
+                            (ArrayBroadcast
+                                (Cast
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                )
+                                (ArrayConstant
+                                    4
+                                    [8]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 8 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    32
+                                    [2.00000000e+00, 2.00000000e+00, 2.00000000e+00, ...., 2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            FixedSizeArray
+                            SIMDArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 8 (Integer 4) Decimal))]
+                                SIMDArray
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (RealBinOp
+                            (Var 2 a)
+                            Add
+                            (Var 2 b)
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 8 (Integer 4) Decimal))]
+                                SIMDArray
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                )
+        })
+    []
+)

@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-matmul_01-90b582d",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/matmul_01.f90",
+    "infile_hash": "ec3292a2c15be93d0603a137188615c65b2ac61e21b928e5ac85740b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-matmul_01-90b582d.stdout",
+    "stdout_hash": "e13742364ffa99bb9e91ba7d2a9c5f3526ba65a90d07f017f1a9746a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
