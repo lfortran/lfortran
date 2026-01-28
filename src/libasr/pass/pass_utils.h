@@ -121,8 +121,8 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
-        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, 
-            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var, 
+        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc,
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var,
             ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx);
 
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
@@ -161,13 +161,13 @@ namespace LCompilers {
                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var));
         }
 
-        /*  Checks for any non-primitive-function-return type 
+        /*  Checks for any non-primitive-function-return type
             like fixed strings or allocatables.
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_string_only(x) || 
-                    (x && (ASR::is_a<ASR::List_t>(*x) 
+            return ASRUtils::is_string_only(x) ||
+                    (x && (ASR::is_a<ASR::List_t>(*x)
                        || ASR::is_a<ASR::Dict_t>(*x)
                        || ASR::is_a<ASR::Set_t>(*x)
                        || ASR::is_a<ASR::Tuple_t>(*x)));
@@ -188,7 +188,7 @@ namespace LCompilers {
         }
 
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
-            return  is_aggregate_or_array_type(var) || 
+            return  is_aggregate_or_array_type(var) ||
                     is_non_primitive_return_type(ASRUtils::expr_type(var));
         }
 
@@ -462,7 +462,7 @@ namespace LCompilers {
                     current_scope = x.m_symtab;
                     BaseWalkVisitor::visit_Program(x);
                     current_scope = current_scope_copy;
-                } 
+                }
 
                 void visit_Module(const ASR::Module_t& x) {
                     SymbolTable *parent_symtab = current_scope;
@@ -666,7 +666,7 @@ namespace LCompilers {
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, 
+                                    result_var_name, replacer->al, replacer->current_scope, x->m_type,
                                     ASR::Local, x->m_dt_sym, nullptr);
                 *replacer->current_expr = replacer->result_var;
             } else {
@@ -735,7 +735,7 @@ namespace LCompilers {
                     }
                     ASR::stmt_t* assign;
                     if (ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args_i))) {
-                        assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al, 
+                        assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref, x_m_args_i));
                     } else {
                         assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
@@ -749,10 +749,27 @@ namespace LCompilers {
         }
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
-        ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
+        ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
         ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
         ASR::ttype_t* casted_type=nullptr) {
+            // According to Fortran standard, the loop variable in an implied-DO
+            // within an array constructor is local to the implied-DO and should
+            // not affect any outer variable with the same name. To implement this,
+            // we save the loop variable's value before the loop and restore it after.
+            ASR::ttype_t* loop_var_type = ASRUtils::expr_type(idoloop->m_var);
+            const Location& loc = idoloop->m_var->base.loc;
+
+            // Create a temporary variable to save the loop variable's original value
+            static int idl_save_counter = 0;
+            ASR::expr_t* save_var = PassUtils::create_var(idl_save_counter++, "_idl_save_",
+                loc, loop_var_type, al, current_scope);
+
+            // Save the loop variable's value before the loop
+            ASR::stmt_t* save_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                save_var, idoloop->m_var, nullptr, false, false));
+            result_vec->push_back(al, save_stmt);
+
             ASR::do_loop_head_t head;
             head.m_v = idoloop->m_var;
             head.m_start = idoloop->m_start;
@@ -801,7 +818,7 @@ namespace LCompilers {
                                             ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
-                                   arr_var, &doloop_body, arr_idx, perform_cast, cast_kind, casted_type);
+                                   arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type);
                 } else {
                     ASR::expr_t* idoloop_m_values_i = idoloop->m_values[i];
                     if( perform_cast ) {
@@ -825,6 +842,11 @@ namespace LCompilers {
             ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, arr_var->base.loc,
                 nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
             result_vec->push_back(al, doloop);
+
+            // Restore the loop variable's original value after the loop
+            ASR::stmt_t* restore_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                idoloop->m_var, save_var, nullptr, false, false));
+            result_vec->push_back(al, restore_stmt);
         }
 
         template <typename LOOP_BODY>
@@ -859,7 +881,7 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop(Allocator& al, const Location& loc,
-            ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars, 
+            ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
             int value_rank = array_item->n_args;
@@ -870,7 +892,7 @@ namespace LCompilers {
                 if(ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))){
                     ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_args[i].m_right, idx_vars[i], al, current_scope);
                     temp_idx_vars.push_back(al, ref);
-                } else { 
+                } else {
                     temp_idx_vars.push_back(al, array_item->m_args[i].m_right);
                 }
             }
@@ -884,7 +906,7 @@ namespace LCompilers {
                     head.m_increment = nullptr;
                 } else {
                     continue;
-                } 
+                }
                 head.loc = head.m_v->base.loc;
 
                 doloop_body.reserve(al, 1);
@@ -911,7 +933,7 @@ namespace LCompilers {
                 if ( ASRUtils::is_array(ASRUtils::expr_type(array_section->m_args[i].m_right)) ) {
                     ASR::expr_t* ref = PassUtils::create_array_ref(array_section->m_args[i].m_right, idx_vars[i], al, current_scope);
                     temp_idx_vars.push_back(al, ref);
-                } else if ( array_section->m_args[i].m_step != nullptr ) { 
+                } else if ( array_section->m_args[i].m_step != nullptr ) {
                     temp_idx_vars.push_back(al, idx_vars[i]);
                 } else {
                     temp_idx_vars.push_back(al, array_section->m_args[i].m_right);
@@ -950,8 +972,8 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop_assign(Allocator& al, const Location& loc,
-            ASR::expr_t* lhs, ASR::expr_t* rhs, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars_lhs, 
-            Vec<ASR::expr_t*>& temp_idx_vars_rhs, Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, 
+            ASR::expr_t* lhs, ASR::expr_t* rhs, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars_lhs,
+            Vec<ASR::expr_t*>& temp_idx_vars_rhs, Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body,
             SymbolTable* current_scope, Vec<ASR::stmt_t*>* result_vec) {
             if (ASR::is_a<ASR::ArrayItem_t>(*lhs) && ASR::is_a<ASR::ArrayItem_t>(*rhs)) {
                 // Case : A([1,2,3]) = B([1,2,3])
@@ -972,7 +994,7 @@ namespace LCompilers {
                         ASR::expr_t* ref = PassUtils::create_array_ref(rhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
                         temp_idx_vars_rhs.push_back(al, ref);
                         j++;
-                    } else { 
+                    } else {
                         temp_idx_vars_rhs.push_back(al, rhs_array->m_args[i].m_right);
                     }
                 }
@@ -981,7 +1003,7 @@ namespace LCompilers {
                         ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
                         temp_idx_vars_lhs.push_back(al, ref);
                         j++;
-                    } else { 
+                    } else {
                         temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
                     }
                 }
@@ -997,7 +1019,7 @@ namespace LCompilers {
                         j++;
                     } else {
                         continue;
-                    } 
+                    }
                     head.loc = head.m_v->base.loc;
 
                     doloop_body.reserve(al, 1);
@@ -1026,7 +1048,7 @@ namespace LCompilers {
                         ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
                         temp_idx_vars_lhs.push_back(al, ref);
                         j++;
-                    } else { 
+                    } else {
                         temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
                     }
                 }
@@ -1042,7 +1064,7 @@ namespace LCompilers {
                         j++;
                     } else {
                         continue;
-                    } 
+                    }
                     head.loc = head.m_v->base.loc;
 
                     doloop_body.reserve(al, 1);
@@ -1299,7 +1321,7 @@ namespace LCompilers {
     static inline bool handle_fn_return_var(Allocator &al, ASR::Function_t *x,
             bool (*is_array_or_struct_or_symbolic)(ASR::expr_t*)) {
         if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython) return false;
-        
+
         bool success = false; // Function Transformed INTO Subroutine
         if (x->m_return_var) {
             /*
