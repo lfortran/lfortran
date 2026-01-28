@@ -3484,7 +3484,9 @@ public:
                         this->visit_expr_wrapper(m_dims[idim].m_start, true);
                         dim_start = tmp;
                     } else {
-                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                     }
                     llvm::Value* dim_size = nullptr;
                     if (m_dims[idim].m_length) {
@@ -3496,7 +3498,9 @@ public:
                         }
                         dim_size = tmp;
                     } else {
-                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
                         check_for_bounds = false;
                     }
                     llvm_diminfo.push_back(al, dim_start);
@@ -3512,7 +3516,9 @@ public:
                         this->visit_expr_wrapper(m_dims[idim].m_start, true);
                         dim_start = tmp;
                     } else {
-                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                     }
                     llvm::Value* dim_size = nullptr;
                     if (m_dims[idim].m_length) {
@@ -3525,7 +3531,9 @@ public:
                         dim_size = tmp;
                     } else {
                         // Last dimension of assumed-size array has no length
-                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
                     }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
