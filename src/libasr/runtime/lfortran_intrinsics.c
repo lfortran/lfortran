@@ -553,7 +553,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
         
         // Adjust exp_digits dynamically if no explicit Ee was given
         if (original_exp_digits <= 0) {
-            int abs_exp = abs(exponent);
+            int abs_exp = (exponent < 0 ? -exponent : exponent);
             if (abs_exp >= 100) {
                 exp_digits = 3;
             } else if (abs_exp >= 10) {
@@ -728,10 +728,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp = 2;
     if (exp_digits > 0) {
         exp = exp_digits;
-    } else if (is_s_format && abs(exponent_value) >= 10) {
-        int abs_exp = abs(exponent_value);
+    } else if (is_s_format && (exponent_value < 0 ? -exponent_value : exponent_value) >= 10) {
+        int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value) >= 100) {
+    } else if ((exponent_value < 0 ? -exponent_value : exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -756,7 +756,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
     // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
     // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
-    bool drop_e = (exp_digits <= 0 && abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    bool drop_e = (exp_digits <= 0 && (exponent_value < 0 ? -exponent_value : exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
     int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
@@ -799,7 +799,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     if (scale <= 0) {
         strcat(formatted_value, "0.");
-        for (int k = 0; k < abs(scale); k++) {
+        for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
             strcat(formatted_value, "0");
         }
         int zeros = 0;
@@ -1705,7 +1705,7 @@ static void format_double_fortran(char* result, double val) {
         if (e_pos != NULL) {
             char sign = e_pos[1];
             int exp_val = atoi(e_pos + 2);
-            sprintf(e_pos, "E%c%03d", sign, abs(exp_val));
+            sprintf(e_pos, "E%c%03d", sign, (exp_val < 0 ? -exp_val : exp_val));
         }
         return;
     }
@@ -3127,7 +3127,7 @@ uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_s
 LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
     uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
-    uint32_t shift = abs(shift_signed);
+    uint32_t shift = (shift_signed < 0 ? -shift_signed : shift_signed);
 
     uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
     uint64_t result;
@@ -3675,7 +3675,7 @@ LFORTRAN_API char* _lfortran_int_to_str8(int64_t num)
 LFORTRAN_API int32_t _lpython_bit_length1(int8_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -3686,7 +3686,7 @@ LFORTRAN_API int32_t _lpython_bit_length1(int8_t num)
 LFORTRAN_API int32_t _lpython_bit_length2(int16_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -3697,7 +3697,7 @@ LFORTRAN_API int32_t _lpython_bit_length2(int16_t num)
 LFORTRAN_API int32_t _lpython_bit_length4(int32_t num)
 {
     int32_t res = 0;
-    num = abs((int)num);
+    num = (num < 0 ? -num : num);
     while (num > 0) {
         num = num >> 1;
         res++;
@@ -4138,8 +4138,8 @@ LFORTRAN_API void _lfortran_zone(char* result) {
     int offset_minutes = offset_seconds / 60;
 #endif
     char sign = offset_minutes >= 0 ? '+' : '-';
-    int offset_hours = abs(offset_minutes / 60);
-    int remaining_minutes = abs(offset_minutes % 60);
+    int offset_hours = (offset_minutes < 0 ? -(offset_minutes / 60) : (offset_minutes / 60));
+    int remaining_minutes = (offset_minutes < 0 ? -(offset_minutes % 60) : (offset_minutes % 60));
     snprintf(result, 12, "%c%02d%02d", sign, offset_hours, remaining_minutes);
 }
 
