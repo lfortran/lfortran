@@ -3050,8 +3050,50 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 if( ASRUtils::is_array(alloc_type->m_type) ) {// non-primitive type
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_character(*alloc_type->m_type)) {
-                        // TODO: handle string arrays
-                        LLVM::CreateStore(*builder, src, dest);
+                        dest = CreateLoad2(llvm_type->getPointerTo(), dest);
+                        llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
+                            ASRUtils::type_get_past_allocatable_pointer(alloc_type->m_type), module);
+                        llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
+                            src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
+                        ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(alloc_type->m_type));
+                        int64_t str_len;
+                        ASRUtils::extract_value(str_t->m_len, str_len);
+                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                        llvm::Value* total_bytes = builder->CreateMul(
+                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(context, llvm::APInt(64, str_len)));
+                        // Get src string_descriptor and char data
+                        llvm::Value* src_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, src);
+                        llvm::Value* src_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), src_data_ptr);
+                        llvm::Value* src_char_ptr = CreateLoad2(i8_ptr, create_gep2(llvm_str_desc_type, src_str_desc, 0));
+                        // Allocate new heap string_descriptor for dest
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        llvm::Value* new_str_desc_raw = LLVMArrUtils::lfortran_malloc(context, *module, *builder,
+                            llvm::ConstantInt::get(context, llvm::APInt(64, data_layout.getTypeAllocSize(llvm_str_desc_type))));
+                        llvm::Value* new_str_desc = builder->CreateBitCast(new_str_desc_raw, llvm_str_desc_type->getPointerTo());
+                        // Allocate heap char data and copy from source
+                        llvm::Value* new_char_data = LLVMArrUtils::lfortran_malloc(context, *module, *builder, total_bytes);
+                        builder->CreateMemCpy(new_char_data, llvm::MaybeAlign(), src_char_ptr, llvm::MaybeAlign(), total_bytes);
+                        // Set up the new string_descriptor
+                        builder->CreateStore(builder->CreateBitCast(new_char_data, i8_ptr),
+                            create_gep2(llvm_str_desc_type, new_str_desc, 0));
+                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, str_len)),
+                            create_gep2(llvm_str_desc_type, new_str_desc, 1));
+                        // Store new string_descriptor pointer in dest array descriptor's data field
+                        llvm::Value* dest_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, dest);
+                        builder->CreateStore(new_str_desc, dest_data_ptr);
+                        // Copy dimension descriptors
+                        llvm::Value* src_dim_ptr = arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, src, true);
+                        llvm::Value* dest_dim_ptr = arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, dest, true);
+                        llvm::Value* n_dims = arr_api->get_rank(llvm_array_type, src, false);
+                        llvm::Type* dim_des = arr_api->get_dimension_descriptor_type(false);
+                        llvm::Value* total_dim_bytes = builder->CreateMul(
+                            builder->CreateSExtOrBitCast(n_dims, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(context, llvm::APInt(64, data_layout.getTypeAllocSize(dim_des))));
+                        builder->CreateMemCpy(dest_dim_ptr, llvm::MaybeAlign(), src_dim_ptr, llvm::MaybeAlign(), total_dim_bytes);
+                        // Copy rank
+                        builder->CreateStore(n_dims, arr_api->get_rank(llvm_array_type, dest, true));
                     } else {
                         dest = CreateLoad2(llvm_type->getPointerTo(), dest);
                         deepcopy(src_expr, src, dest,
