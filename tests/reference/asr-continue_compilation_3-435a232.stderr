@@ -439,6 +439,12 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
+semantic error: Unequal character lengths (11 / 7) in MERGE intrinsic
+   --> tests/errors/continue_compilation_3.f90:205:14
+    |
+205 |     print *, merge("fail caught", "no fail", merge_i /= 0)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:208:23
     |
