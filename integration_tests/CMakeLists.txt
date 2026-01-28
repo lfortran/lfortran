@@ -1928,6 +1928,7 @@ RUN(NAME associate_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES associate_21_mod.f90)
 RUN(NAME associate_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME associate_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2823,6 +2824,9 @@ RUN(NAME legacy_array_sections_13 LABELS gfortran llvm EXTRA_ARGS --legacy-array
 RUN(NAME legacy_array_sections_14 LABELS gfortran llvm
     EXTRAFILES legacy_array_sections_14_foo.f90
     EXTRA_ARGS --legacy-array-sections --implicit-interface --separate-compilation)
+RUN(NAME legacy_array_sections_15 LABELS gfortran llvm
+    EXTRA_ARGS --legacy-array-sections -fdefault-integer-8
+    GFORTRAN_ARGS -fdefault-integer-8)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

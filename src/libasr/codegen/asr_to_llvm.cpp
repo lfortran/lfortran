@@ -3592,34 +3592,38 @@ public:
         ASR::dimension_t* m_dims;
         [[maybe_unused]] int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_v), m_dims);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_v)) &&
-                        n_dims == 0);
-        // String indexing:
-        if (x.n_args == 1) {
-            throw CodeGenError("Only string(a:b) supported for now.", x.base.base.loc);
-        }
 
-        LCOMPILERS_ASSERT(x.m_args[0].m_left)
-        LCOMPILERS_ASSERT(x.m_args[0].m_right)
-        //throw CodeGenError("Only string(a:b) for a,b variables for now.", x.base.base.loc);
-        // Use the "right" index for now
-        this->visit_expr_wrapper(x.m_args[0].m_right, true);
-        llvm::Value *idx2 = tmp;
-        this->visit_expr_wrapper(x.m_args[0].m_left, true);
-        llvm::Value *idx1 = tmp;
-        // idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-        //std::vector<llvm::Value*> idx_vec = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx};
-        // std::vector<llvm::Value*> idx_vec = {idx};
-        llvm::Value *str_data, *str_len;
-        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_v), array);
-        // llvm::Value *p = CreateGEP(str, idx_vec);
-        // TODO: Currently the string starts at the right location, but goes to the end of the original string.
-        // We have to allocate a new string, copy it and add null termination.
-        llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-        llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
-        llvm::Value *p = lfortran_str_slice(str_data, str_len, idx1, idx2, step, present, present);
-        tmp = llvm_utils->CreateAlloca(*builder, character_type);
-        builder->CreateStore(p, tmp);
+        bool is_string_section = ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_v)) && n_dims == 0;
+        if (is_string_section) {
+            // String indexing:
+            if (x.n_args == 1) {
+                throw CodeGenError("Only string(a:b) supported for now.", x.base.base.loc);
+            }
+
+            LCOMPILERS_ASSERT(x.m_args[0].m_left)
+            LCOMPILERS_ASSERT(x.m_args[0].m_right)
+            //throw CodeGenError("Only string(a:b) for a,b variables for now.", x.base.base.loc);
+            // Use the "right" index for now
+            this->visit_expr_wrapper(x.m_args[0].m_right, true);
+            llvm::Value *idx2 = tmp;
+            this->visit_expr_wrapper(x.m_args[0].m_left, true);
+            llvm::Value *idx1 = tmp;
+            // idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            //std::vector<llvm::Value*> idx_vec = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx};
+            // std::vector<llvm::Value*> idx_vec = {idx};
+            llvm::Value *str_data, *str_len;
+            std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_v), array);
+            // llvm::Value *p = CreateGEP(str, idx_vec);
+            // TODO: Currently the string starts at the right location, but goes to the end of the original string.
+            // We have to allocate a new string, copy it and add null termination.
+            llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+            llvm::Value *p = lfortran_str_slice(str_data, str_len, idx1, idx2, step, present, present);
+            tmp = llvm_utils->CreateAlloca(*builder, character_type);
+            builder->CreateStore(p, tmp);
+        } else {
+            tmp = array;
+        }
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
@@ -6899,6 +6903,137 @@ public:
         tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
     }
 
+    void handle_pointer_section_target(const ASR::Associate_t& x) {
+        ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+        
+        // Get the base pointer variable from the target section
+        [[maybe_unused]] ASR::Variable_t* ptr_var = ASRUtils::EXPR2VAR(target_section->m_v);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+        
+        // Get the llvm values
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*target_section->m_v);
+        llvm::Value* target_desc = tmp;
+        
+        ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_type);
+        visit_expr(*x.m_value);
+        llvm::Value* value_desc = tmp;
+        ptr_loads = ptr_loads_copy;
+        
+        
+        llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value,
+            ASRUtils::extract_type(value_type), module.get());
+        
+        // Create a new descriptor for the pointer with the specified bounds
+        ASR::ttype_t* desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(value_type)),
+             ASR::array_physical_typeType::DescriptorArray, true);
+        llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(
+            target_section->m_v, desc_type, module.get());
+        llvm::AllocaInst *new_desc = llvm_utils->CreateAlloca(
+            target_type_llvm, nullptr, "pointer_section_descriptor");
+        
+        // Extract bounds from the target section
+        int target_rank = 0;
+        Vec<llvm::Value*> lbs; lbs.reserve(al, target_section->n_args);
+        Vec<llvm::Value*> ubs; ubs.reserve(al, target_section->n_args);
+        
+        for (size_t i = 0; i < target_section->n_args; i++) {
+            ASR::array_index_t& idx = target_section->m_args[i];
+            // For pointer section, we have left:right bounds
+            if (idx.m_left != nullptr) {
+                visit_expr_wrapper(idx.m_left, true);
+                lbs.push_back(al, tmp);
+                
+                if (idx.m_right != nullptr) {
+                    visit_expr_wrapper(idx.m_right, true);
+                    ubs.push_back(al, tmp);
+                } else {
+                    // Use left as both bounds for single element
+                    ubs.push_back(al, lbs.p[i]);
+                }
+                target_rank++;
+            } else if (idx.m_right != nullptr) {
+                // Single index - treat as 1:right
+                lbs.push_back(al, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                visit_expr_wrapper(idx.m_right, true);
+                ubs.push_back(al, tmp);
+                target_rank++;
+            }
+        }
+        
+        // Fill the descriptor with the value's data and the target's bounds
+        llvm::Value* dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(
+            target_type_llvm, new_desc, false);
+        llvm::Value* dim_des_val = llvm_utils->CreateAlloca(
+            arr_descr->get_dimension_descriptor_type(false),
+            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
+        builder->CreateStore(dim_des_val, dim_des_ptr);
+        
+        // Get value data pointer
+        llvm::Value* value_data = nullptr;
+        ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
+        if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+            value_data = arr_descr->get_pointer_to_data(x.m_value, value_type, value_desc, module.get());
+            value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
+        } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                   value_physical_type == ASR::array_physical_typeType::PointerArray) {
+            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(value_type)),
+                module.get());
+            value_data = llvm_utils->create_gep2(val_type, value_desc, 0);
+        } else {
+            value_data = value_desc;
+        }
+        
+        // Store data pointer in descriptor
+        builder->CreateStore(value_data, arr_descr->get_pointer_to_data(
+            target_type_llvm, new_desc));
+        
+        // Set offset to 0
+        llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
+        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_ptr);
+        
+        // Set rank
+        builder->CreateStore(
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, target_rank)),
+            arr_descr->get_rank(target_type_llvm, new_desc, true));
+        
+        // Set dimension descriptors with the target bounds
+        for (int i = 0; i < target_rank; i++) {
+            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+            llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_idx);
+            
+            // Get pointers to dimension descriptor fields
+            // Structure: index 0 = stride, index 1 = lower_bound, index 2 = size
+            llvm::Value* stride_ptr = arr_descr->get_stride(dim_des, false);
+            llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
+            llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
+            
+            // Set stride to 1 for contiguous data  
+            builder->CreateStore(
+                llvm::ConstantInt::get(context, llvm::APInt(32, 1)), 
+                stride_ptr);
+            
+            // Set lower bound from target section
+            llvm::Value* lb_i32 = builder->CreateSExtOrTrunc(lbs.p[i], llvm::Type::getInt32Ty(context));
+            builder->CreateStore(lb_i32, lb_ptr);
+            
+            // Calculate and set size: ub - lb + 1
+            llvm::Value* ub_i32 = builder->CreateSExtOrTrunc(ubs.p[i], llvm::Type::getInt32Ty(context));
+            llvm::Value* size = builder->CreateAdd(
+                builder->CreateSub(ub_i32, lb_i32),
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+            builder->CreateStore(size, size_ptr);
+        }
+        
+        // Store the new descriptor to the target pointer
+        builder->CreateStore(new_desc, target_desc);
+    }
+
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
@@ -7053,7 +7188,17 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
-        if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
+        bool is_target_pointer_section = false;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+            ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            ASR::ttype_t* target_section_type = ASRUtils::expr_type(target_section->m_v);
+            if (ASRUtils::is_pointer(target_section_type)) {
+                is_target_pointer_section = true;
+            }
+        }
+        if (is_target_pointer_section) {
+            handle_pointer_section_target(x);
+        } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
             handle_array_section_association_to_pointer(x);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
