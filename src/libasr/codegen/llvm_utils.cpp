@@ -2989,11 +2989,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         case ASR::array_physical_typeType::DescriptorArray: {
                             // realloc_lhs_arrays
                             if (ASRUtils::is_allocatable(ASRUtils::expr_type(src_expr))) {
+                                // Use descriptor's index type for consistent bit width (i32 or i64)
+                                llvm::Type* index_type = arr_api->get_index_type();
+                                unsigned index_bit_width = index_type->getIntegerBitWidth();
+                                int index_kind = index_bit_width / 8;
                                 uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
-                                llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                                llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, index_kind);
                                 llvm::Value* total_memory = builder->CreateMul(num_elements,
-                                    llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
-                                llvm::Value* ptr_to_data = arr_api->get_pointer_to_data(llvm_array_type, dest);  
+                                    llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
+                                llvm::Value* ptr_to_data = arr_api->get_pointer_to_data(llvm_array_type, dest);
                                 llvm::Value* dest_data  = CreateLoad2(
                                     llvm_data_type->getPointerTo(), ptr_to_data);
                                 llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(context, *module, *builder, dest_data, total_memory);
@@ -3001,7 +3005,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     reallocated_arr, llvm_data_type->getPointerTo()), ptr_to_data);
                                 // Store Offset
                                 llvm::Value* offset_val = create_gep2(llvm_array_type, dest, 1);
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                                                         offset_val);
                             }
                             llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, src_expr);
@@ -8986,15 +8990,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* src_data = nullptr;
             llvm::DataLayout data_layout(module->getDataLayout());
 
+            // Use descriptor's index type for consistent bit width (i32 or i64)
+            llvm::Type* index_type = llvm_utils->arr_api->get_index_type();
+            unsigned index_bit_width = index_type->getIntegerBitWidth();
+            int index_kind = index_bit_width / 8;
+
             if (is_descriptor_array) {
-                num_elements = llvm_utils->arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                num_elements = llvm_utils->arr_api->get_array_size(llvm_array_type, src, nullptr, index_kind);
                 dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
                                                     llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
                 src_data  = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
                                                     llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, src));
             } else if (ASRUtils::is_fixed_size_array(src_ty)) {
                 int64_t size = ASRUtils::get_fixed_size_of_array(src_ty);
-                num_elements = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                num_elements = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, size));
                 src_data = llvm_utils->create_gep2(llvm_array_type, src, 0);
                 dest_data = llvm_utils->create_gep2(llvm_array_type, dest, 0);
             } else {
@@ -9008,7 +9017,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm_utils->create_if_else(src_data_not_null, [&]() {
                     uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                     llvm::Value* total_memory = builder->CreateMul(num_elements,
-                        llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
+                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
                     llvm_utils->lfortran_free(dest_data);
                     llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
                     llvm::Value* reloaded_dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
@@ -9018,7 +9027,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         reallocated_arr, llvm_data_type->getPointerTo());
                     builder->CreateStore(reloaded_dest_data, llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
                     llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
-                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                                             offset_val);
                 }, [&]() {});
                 // Reload dest_data after reallocation since it may have changed
@@ -9043,12 +9052,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
-            llvm::Value* i = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), i);
+            llvm::Value* i = llvm_utils->CreateAlloca(*builder, index_type);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), i);
 
             // head
             llvm_utils->start_new_block(loopHead);
-            llvm::Value* i_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), i);
+            llvm::Value* i_val = llvm_utils->CreateLoad2(index_type, i);
             llvm::Value* cond = builder->CreateICmpSLT(i_val, num_elements);
             llvm::Value* src_not_null = builder->CreateICmpNE(
                 src_data, llvm::Constant::getNullValue(src_data->getType())
@@ -9058,7 +9067,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
             // body
             llvm_utils->start_new_block(loopBody);
-            i_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), i);
+            i_val = llvm_utils->CreateLoad2(index_type, i);
             llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
@@ -9113,7 +9122,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
             }
 
-            llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
             builder->CreateStore(i_next, i);
             builder->CreateBr(loopHead);
 
@@ -9147,7 +9156,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
                                         src_dim_val, llvm::MaybeAlign(),
                                         llvm::ConstantInt::get(
-                                        context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+                                        context, llvm::APInt(index_bit_width, data_layout.getTypeAllocSize(dim_des))));
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 builder->CreateStore(r_val, r);
                 builder->CreateBr(loophead);
