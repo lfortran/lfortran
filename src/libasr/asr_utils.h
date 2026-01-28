@@ -1004,6 +1004,52 @@ static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::e
     return type_to_str_fortran_symbol(t, struct_sym);
 }
 
+// Returns type string with kind specifier for error messages (e.g., "integer(4)", "real(8)")
+// Use this ONLY in error message contexts where kind differences need to be shown.
+// For symbol names, variable names, and ASR dumps, use type_to_str_fortran_symbol instead.
+static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr_t* expr)
+{
+    ASR::symbol_t* struct_sym = nullptr;
+
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
+        if (expr != nullptr) {
+            struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+        }
+    }
+
+    switch (t->type) {
+        case ASR::ttypeType::Integer: {
+            ASR::Integer_t* int_t = ASR::down_cast<ASR::Integer_t>(t);
+            return "integer(" + std::to_string(int_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::Real: {
+            ASR::Real_t* real_t = ASR::down_cast<ASR::Real_t>(t);
+            return "real(" + std::to_string(real_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
+            return "complex(" + std::to_string(complex_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::Pointer: {
+            return type_to_str_with_kind(ASRUtils::type_get_past_pointer(
+                        const_cast<ASR::ttype_t*>(t)), expr) + " pointer";
+        }
+        case ASR::ttypeType::Allocatable: {
+            return type_to_str_with_kind(ASRUtils::type_get_past_allocatable(
+                        const_cast<ASR::ttype_t*>(t)), expr) + " allocatable";
+        }
+        case ASR::ttypeType::Array: {
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+            std::string res = type_to_str_with_kind(array_t->m_type, expr);
+            encode_dimensions(array_t->n_dims, res, false);
+            return res;
+        }
+        default:
+            // For other types, fall back to the standard function
+            return type_to_str_fortran_symbol(t, struct_sym);
+    }
+}
+
 static inline std::string type_to_str_with_substitution(ASR::expr_t* expr, const ASR::ttype_t *t,
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs)
 {

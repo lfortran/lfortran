@@ -542,17 +542,17 @@ semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
 317 |     print *, iparity(arr3, mask = mask3, dim = -1)
     |                                                ^^ Must have 0 < dim <= 3 for array of rank 3
 
-semantic error: Expected logical expression in if statement, but recieved integer instead
+semantic error: Expected logical expression in if statement, but recieved integer(4) instead
    --> tests/errors/continue_compilation_1.f90:319:9
     |
 319 |     if (q1) q1 = 1
-    |         ^^ integer expression, expected logical
+    |         ^^ integer(4) expression, expected logical
 
-semantic error: Expected logical expression in if statement, but recieved real instead
+semantic error: Expected logical expression in if statement, but recieved real(4) instead
    --> tests/errors/continue_compilation_1.f90:320:9
     |
 320 |     if (r1) r1 = 1.0
-    |         ^^ real expression, expected logical
+    |         ^^ real(4) expression, expected logical
 
 semantic error: Expected logical expression in if statement, but recieved string instead
    --> tests/errors/continue_compilation_1.f90:321:9

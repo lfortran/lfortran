@@ -378,6 +378,11 @@ filename = "errors/type_mismatch2.f90"
 asr = true
 
 [[test]]
+filename = "errors/implicit_call_02.f90"
+asr_implicit_interface = true
+asr_implicit_argument_casting = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
