@@ -9112,6 +9112,12 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             break;
         }
 
+        // Skip comma separators (they're optional between assignments)
+        if (strcmp(token, ",") == 0) {
+            free(token);
+            continue;
+        }
+
         // Parse name=value (may include array subscript like "arr(2,3)")
         to_lowercase(token);
         char *name = token;
