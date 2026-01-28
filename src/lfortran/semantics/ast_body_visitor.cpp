@@ -22,6 +22,26 @@ namespace LCompilers::LFortran {
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
+    // The Fortran standard allows the stop code to be a default integer,
+    // but the runtime ABI expects a 32-bit (kind=4) integer. When
+    // -fdefault-integer-8 is active, integer literals become kind=8.
+    // This helper inserts an explicit Cast to kind=4 when needed.
+    ASR::expr_t* cast_stop_code_to_int32(ASR::expr_t* code,
+                                         const Location& loc) {
+        if (code && ASR::is_a<ASR::Integer_t>(
+                *ASRUtils::expr_type(code))) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(code));
+            if (kind != 4) {
+                ASR::ttype_t* int32_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+                code = CastingUtil::perform_casting(
+                    code, int32_type, al, loc);
+            }
+        }
+        return code;
+    }
+
 public:
     ASR::asr_t *asr;
     bool from_block;
@@ -6767,6 +6787,7 @@ public:
         if (x.m_code) {
             visit_expr(*x.m_code);
             code = ASRUtils::EXPR(tmp);
+            code = cast_stop_code_to_int32(code, x.base.base.loc);
         } else {
             code = nullptr;
         }
@@ -6778,6 +6799,7 @@ public:
         if (x.m_code) {
             visit_expr(*x.m_code);
             code = ASRUtils::EXPR(tmp);
+            code = cast_stop_code_to_int32(code, x.base.base.loc);
         } else {
             code = nullptr;
         }
