@@ -1354,43 +1354,66 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     }
     Vec<ASR::expr_t*> idx_vars, target_idx_vars;
     Vec<ASR::stmt_t*> doloop_body;
-    int index_kind = extract_kind_from_ttype_t(type);
+    int result_kind = extract_kind_from_ttype_t(type);
+    // Determine index_kind from array dimension type (matches descriptor index type)
+    // When -fdefault-integer-8 is used, dimensions are i64, otherwise i32
+    ASR::dimension_t* m_dims = nullptr;
+    extract_dimensions_from_ttype(arg_types[0], m_dims);
+    int index_kind = 4; // default to i32
+    if (m_dims && m_dims[0].m_length) {
+        index_kind = extract_kind_from_ttype_t(expr_type(m_dims[0].m_length));
+    } else if (m_dims && m_dims[0].m_start) {
+        index_kind = extract_kind_from_ttype_t(expr_type(m_dims[0].m_start));
+    }
     if (overload_id < 2) {
         b.generate_reduction_intrinsic_stmts_for_scalar_output(
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
-            [=, &al, &body, &b, &index_kind] () {
+            [=, &al, &body, &b, &index_kind, &result_kind] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
                 if (ASRUtils::is_array(arg_types[2])) {
-                    ASR::expr_t *i = declare("i", type, Local);
+                    // Use index_kind for loop variable to match array bounds
+                    ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
+                    ASR::expr_t *i = declare("i", idx_type, Local);
                     ASR::expr_t *maskval = ASRUtils::is_array_t(args[2])? b.ArrayItem_01(args[2], {i}) : args[2];
+                    // Cast i to result type if needed when assigning to result
+                    ASR::expr_t *i_result = (result_kind != index_kind) ? b.i2i_t(i, type) : i;
                     body.push_back(al, b.DoLoop(i, LBound(args[0], 1, index_kind), UBound(args[0], 1, index_kind), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
-                            b.Assignment(result, i),
+                            b.Assignment(result, i_result),
                             b.Exit()
                         }, {})
                     }, nullptr));
                 } else {
+                    // Cast LBound to result type if needed
+                    ASR::expr_t *lb = LBound(args[0], 1, index_kind);
+                    if (result_kind != index_kind) {
+                        lb = b.i2i_t(lb, type);
+                    }
                     body.push_back(al, b.If(b.Eq(args[2], b.bool_t(1, logical)), {
-                        b.Assignment(result, LBound(args[0], 1, index_kind))
+                        b.Assignment(result, lb)
                     }, {}));
                 }
-            }, [=, &al, &b, &idx_vars, &doloop_body] () {
+            }, [=, &al, &b, &idx_vars, &doloop_body, &result_kind, &index_kind] () {
                 ASR::expr_t* result_check = !ASRUtils::is_array(return_type) ?
                     result : b.ArrayItem_01(result, {b.i_t(1, type)});
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                 Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
+                ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
                 for (int i = 0; i < n_dims; i++) {
                     ASR::expr_t *idx = b.ArrayItem_01(result, {b.i_t(i + 1, type)});
-                    if (extract_kind_from_ttype_t(type) != 4) {
+                    if (result_kind != index_kind) {
+                        // idx_vars have index_kind type, cast to result type for assignment
                         if_body.push_back(b.Assignment(idx, b.i2i_t(idx_vars[i], type)));
-                        result_idx.push_back(al, b.i2i_t(idx, int32));
+                        // idx is result type, cast back to index_kind for array indexing
+                        result_idx.push_back(al, b.i2i_t(idx, idx_type));
                     } else {
                         if_body.push_back(b.Assignment(idx, idx_vars[i]));
                         result_idx.push_back(al, idx);
                     }
                 }
+                // idx_vars have index_kind type, use directly for array indexing
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
-                ASR::expr_t *mask_val = ASRUtils::is_array_t(arg_types[2]) ? 
+                ASR::expr_t *mask_val = ASRUtils::is_array_t(arg_types[2]) ?
                     ArrayItem_02(args[2], idx_vars) : args[2];
                 Vec<ASR::stmt_t*> comparison_body;
                 comparison_body.reserve(al, 1);
@@ -1433,41 +1456,54 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         b.generate_reduction_intrinsic_stmts_for_array_output(
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
-            [=, &al, &body, &b] () {
+            [=, &al, &body, &b, &result_kind, &index_kind] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
                 if (ASRUtils::is_array(arg_types[2])) {
-                    ASR::expr_t *i = declare("i", type, Local);
-                   ASR::expr_t *maskval = ASRUtils::is_array_t(args[2]) ? b.ArrayItem_01(args[2], {i}) : args[2];
-                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+                    // Use index_kind for loop variable to match array bounds
+                    ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
+                    ASR::expr_t *i = declare("i", idx_type, Local);
+                    ASR::expr_t *maskval = ASRUtils::is_array_t(args[2]) ? b.ArrayItem_01(args[2], {i}) : args[2];
+                    // Cast i to result type if needed when assigning to result
+                    ASR::expr_t *i_result = (result_kind != index_kind) ? b.i2i_t(i, type) : i;
+                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1, index_kind), UBound(args[0], 1, index_kind), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
-                            b.Assignment(result, i),
+                            b.Assignment(result, i_result),
                             b.Exit()
                         }, {})
                     }, nullptr));
                 } else {
+                    // Cast LBound to result type if needed
+                    ASR::expr_t *lb = LBound(args[0], dim, index_kind);
+                    if (result_kind != index_kind) {
+                        lb = b.i2i_t(lb, type);
+                    }
                     body.push_back(al, b.If(b.Eq(args[2], b.bool_t(1, logical)), {
-                        b.Assignment(result, LBound(args[0], dim))
+                        b.Assignment(result, lb)
                     }, {}));
                 }
-            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
+            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind] () {
                 ASR::expr_t *result_ref, *array_ref_02;
+                ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
                 bool condition = is_array(return_type);
                 condition = condition && n_dims > 1;
                 if (condition) {
                     result_ref = ArrayItem_02(result, target_idx_vars);
                     Vec<ASR::expr_t*> tmp_idx_vars;
                     tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
-                    tmp_idx_vars.p[dim - 1] = b.i2i_t(result_ref, int32);
+                    tmp_idx_vars.p[dim - 1] = b.i2i_t(result_ref, idx_type);
                     array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
                 } else {
-                    // 1D scalar output
+                    // 1D scalar output - cast result to index_kind for array indexing if needed
                     result_ref = result;
-                    array_ref_02 = b.ArrayItem_01(args[0], {result});
+                    ASR::expr_t *result_idx = (result_kind != index_kind) ? b.i2i_t(result, idx_type) : result;
+                    array_ref_02 = b.ArrayItem_01(args[0], {result_idx});
                 }
                 ASR::expr_t* result_check = result_ref;
+                // idx_vars have index_kind type, use directly for array indexing
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *res_idx = idx_vars.p[dim - 1];
-                if (extract_kind_from_ttype_t(type) != 4) {
+                // Cast to result type if needed when assigning to result
+                if (result_kind != index_kind) {
                     res_idx = b.i2i_t(res_idx, type);
                 }
                 ASR::expr_t *mask_val = ASRUtils::is_array_t(args[2]) ? ArrayItem_02(args[2], idx_vars) : args[2];

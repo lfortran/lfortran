@@ -9941,16 +9941,6 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
-        // Ensure operand types match for comparison (use the larger type)
-        if (left->getType() != right->getType()) {
-            unsigned left_bits = left->getType()->getIntegerBitWidth();
-            unsigned right_bits = right->getType()->getIntegerBitWidth();
-            if (left_bits > right_bits) {
-                right = builder->CreateSExt(right, left->getType());
-            } else {
-                left = builder->CreateSExt(left, right->getType());
-            }
-        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10777,15 +10767,6 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
-        // Ensure operand types match the result type to avoid LLVM verifier errors
-        llvm::Type* result_type = llvm_utils->getIntType(
-            ASRUtils::extract_kind_from_ttype_t(x.m_type));
-        if (left_val->getType() != result_type) {
-            left_val = builder->CreateSExtOrTrunc(left_val, result_type);
-        }
-        if (right_val->getType() != result_type) {
-            right_val = builder->CreateSExtOrTrunc(right_val, result_type);
-        }
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 tmp = builder->CreateAdd(left_val, right_val);
