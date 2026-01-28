@@ -1,0 +1,13 @@
+{
+    "basename": "asr-illegal_intent_5-ab5ed0d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/illegal_intent_5.f90",
+    "infile_hash": "85a953e77f38b09a9f61b4e2ce0374841b02dccc1672075f117cffea",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-illegal_intent_5-ab5ed0d.stderr",
+    "stderr_hash": "6833882153ef6dce2e781f86b80616b1dc48bb85962762f5a668c24c",
+    "returncode": 2
+}
