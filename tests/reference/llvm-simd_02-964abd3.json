@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-simd_02-964abd3",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/simd_02.f90",
+    "infile_hash": "fb87c460c164f3f10bdb641496f41a0b8ecbc8d53738d7b8a0516490",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-simd_02-964abd3.stdout",
+    "stdout_hash": "dc08dee29df3fd2d7dee12643fd4c95229aa20bf13624db33eed0808",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

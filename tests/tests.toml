@@ -4114,6 +4114,17 @@ c = true
 [[test]]
 filename = "../integration_tests/matmul_01.f90"
 asr = true
+llvm = true
+
+[[test]]
+filename = "../integration_tests/simd_01.f90"
+asr = true
+llvm = true
+
+[[test]]
+filename = "../integration_tests/simd_02.f90"
+asr = true
+llvm = true
 
 [[test]]
 filename = "errors/external1.f90"
