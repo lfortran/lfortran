@@ -8953,6 +8953,11 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
             }
         } else if (*line_ptr && (**line_ptr == '/' || **line_ptr == '&')) {
             return 2;  // Found terminator
+        } else {
+            // No comma - check if the next thing looks like a new variable assignment
+            if (peek_next_is_assignment(*line_ptr)) {
+                break;
+            }
         }
         if (done) {
             break;
