@@ -76,7 +76,7 @@ semantic error: Non-variable expression in variable definition context (actual a
 71 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
    |                            ^^^^^ 
 
-semantic error: Type mismatch in argument `i`: expected `real` but got `integer`
+semantic error: Type mismatch in argument `i`: expected `real(4)` but got `integer(4)`
   --> tests/errors/continue_compilation_3.f90:72:34
    |
 72 |     call check_incompatible_type(i)  ! Error: incompatible type passed
@@ -281,19 +281,19 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_3.f90:160:5
     |
 160 |     x = "x"
-    |     ^   ^^^ type mismatch (integer and string)
+    |     ^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_3.f90:162:9
     |
 162 |     x = 5 + "x"
-    |         ^   ^^^ type mismatch (integer and string)
+    |         ^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_3.f90:162:5
     |
 162 |     x = 5 + "x"
-    |     ^       ^^^ type mismatch (integer and string)
+    |     ^       ^^^ type mismatch (integer(4) and string)
 
 semantic error: Subroutine `bpe` called as a function
    --> tests/errors/continue_compilation_3.f90:165:9

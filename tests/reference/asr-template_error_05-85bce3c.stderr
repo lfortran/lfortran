@@ -9,11 +9,11 @@ semantic error: Restriction type mismatch with provided function argument
 ...
    |
 11 |            end function
-   | ...^^^^^^^^^^^^^^^^^^^^ Requirement's return type real
+   | ...^^^^^^^^^^^^^^^^^^^^ Requirement's return type real(4)
    |
 28 |        integer function func_arg_real(x, y) result(z)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
 31 |        end function
-   | ...^^^^^^^^^^^^^^^^ Function's return type integer
+   | ...^^^^^^^^^^^^^^^^ Function's return type integer(4)

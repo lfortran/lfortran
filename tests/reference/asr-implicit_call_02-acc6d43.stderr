@@ -1,4 +1,4 @@
-semantic error: Type mismatch in argument `x`: expected `integer[:]` but got `integer(8)[:]`
+semantic error: Type mismatch in argument `x`: expected `integer(4)[:]` but got `integer(8)[:]`
  --> tests/errors/implicit_call_02.f90:9:19
   |
 9 |     call test_sub(arr)

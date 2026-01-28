@@ -1092,10 +1092,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            real:
+                                            real(4):
                                                 (Variable
                                                     7
-                                                    real
+                                                    real(4)
                                                     []
                                                     In
                                                     ()
@@ -1148,7 +1148,7 @@
                                     )
                                     (Require
                                         cast_r
-                                        [real
+                                        [real(4)
                                         t
                                         cast_to_t]
                                     )]
@@ -3426,10 +3426,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            real:
+                                            real(4):
                                                 (Variable
                                                     16
-                                                    real
+                                                    real(4)
                                                     []
                                                     In
                                                     ()
@@ -3881,7 +3881,7 @@
                                     )
                                     (Require
                                         cast_r
-                                        [real
+                                        [real(4)
                                         t
                                         cast_to_t]
                                     )]

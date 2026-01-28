@@ -1285,10 +1285,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            integer:
+                                            integer(4):
                                                 (Variable
                                                     15
-                                                    integer
+                                                    integer(4)
                                                     []
                                                     In
                                                     ()
@@ -1348,7 +1348,7 @@
                                     (Require
                                         operator_r
                                         [t
-                                        integer
+                                        integer(4)
                                         div]
                                     )]
                                 ),
