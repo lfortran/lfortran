@@ -13,5 +13,9 @@ program intrinsics_387
     print *, "Exit status:", stat
     if ( stat /= 0 ) error stop 
 
+    call execute_command_line("exit 2", exitstat=stat)
+    print *, "exitstat =", stat
+    if (stat /= 2) error stop
+
 end program intrinsics_387
 
