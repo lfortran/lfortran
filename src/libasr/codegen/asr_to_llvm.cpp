@@ -6965,7 +6965,9 @@ public:
                 target_rank++;
             } else if (idx.m_right != nullptr) {
                 // Single index - treat as 1:right
-                lbs.push_back(al, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                unsigned idx_bits = idx_type->getIntegerBitWidth();
+                lbs.push_back(al, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)));
                 visit_expr_wrapper(idx.m_right, true);
                 ubs.push_back(al, tmp);
                 target_rank++;
@@ -7003,7 +7005,9 @@ public:
         
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
-        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_ptr);
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        unsigned idx_bits = idx_type->getIntegerBitWidth();
+        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         // Set rank
         builder->CreateStore(
@@ -7012,29 +7016,29 @@ public:
         
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
-            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
             llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_idx);
-            
+
             // Get pointers to dimension descriptor fields
             // Structure: index 0 = stride, index 1 = lower_bound, index 2 = size
             llvm::Value* stride_ptr = arr_descr->get_stride(dim_des, false);
             llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
             llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
-            
-            // Set stride to 1 for contiguous data  
+
+            // Set stride to 1 for contiguous data
             builder->CreateStore(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 1)), 
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)),
                 stride_ptr);
-            
+
             // Set lower bound from target section
-            llvm::Value* lb_i32 = builder->CreateSExtOrTrunc(lbs.p[i], llvm::Type::getInt32Ty(context));
-            builder->CreateStore(lb_i32, lb_ptr);
-            
+            llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
+            builder->CreateStore(lb_idx, lb_ptr);
+
             // Calculate and set size: ub - lb + 1
-            llvm::Value* ub_i32 = builder->CreateSExtOrTrunc(ubs.p[i], llvm::Type::getInt32Ty(context));
+            llvm::Value* ub_idx = builder->CreateSExtOrTrunc(ubs.p[i], idx_type);
             llvm::Value* size = builder->CreateAdd(
-                builder->CreateSub(ub_i32, lb_i32),
-                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                builder->CreateSub(ub_idx, lb_idx),
+                llvm::ConstantInt::get(idx_type, 1));
             builder->CreateStore(size, size_ptr);
         }
         
