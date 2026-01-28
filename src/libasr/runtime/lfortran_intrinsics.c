@@ -21,6 +21,9 @@
 #  define ftruncate _chsize_s
 #else
 #  include <unistd.h>
+#if !defined(COMPILE_TO_WASM)
+#  include <sys/wait.h>
+#endif
 #endif
 
 static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
@@ -8278,7 +8281,16 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     int result = system(c_cmd);
     free(c_cmd);
 
+    // On POSIX systems, system() returns a wait status, not the exit code directly.
+    // Use WEXITSTATUS to extract the actual exit code.
+#if defined(_WIN32) || defined(_WIN64) || defined(COMPILE_TO_WASM)
     return result;
+#else
+    if (WIFEXITED(result)) {
+        return WEXITSTATUS(result);
+    }
+    return result;
+#endif
 }
 
 // ============================================================================
