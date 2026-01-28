@@ -1827,7 +1827,7 @@ public:
                             }
                         }
                         if (!arg_type) {
-                            arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                            arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
                             return_type = arg_type;
                         }
                         
