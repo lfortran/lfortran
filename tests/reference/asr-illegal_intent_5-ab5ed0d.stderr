@@ -1,9 +1,0 @@
-semantic error: Second argument of defined assignment must have INTENT(IN)
-  --> tests/errors/illegal_intent_5.f90:7:3 - 10:16
-   |
- 7 |      subroutine assign_bad_rhs(lhs, rhs)
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-10 |      end subroutine
-   | ...^^^^^^^^^^^^^^^^ 

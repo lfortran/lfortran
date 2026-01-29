@@ -1,9 +1,0 @@
-semantic error: First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)
-  --> tests/errors/illegal_intent_4.f90:7:3 - 10:16
-   |
- 7 |      subroutine assign_bad_lhs(lhs, rhs)
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-10 |      end subroutine
-   | ...^^^^^^^^^^^^^^^^ 

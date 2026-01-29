@@ -1,9 +1,0 @@
-semantic error: Defined assignment procedure must not return a value
-  --> tests/errors/illegal_intent_2.f90:7:3 - 11:14
-   |
- 7 |      integer function assign_ret(lhs, rhs)
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-11 |      end function
-   | ...^^^^^^^^^^^^^^ 

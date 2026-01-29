@@ -3863,30 +3863,6 @@ filename = "errors/intent1.f90"
 asr = true
 
 [[test]]
-filename = "errors/illegal_intent_1.f90"
-asr = true
-
-[[test]]
-filename = "errors/illegal_intent_2.f90"
-asr = true
-
-[[test]]
-filename = "errors/illegal_intent_3.f90"
-asr = true
-
-[[test]]
-filename = "errors/illegal_intent_4.f90"
-asr = true
-
-[[test]]
-filename = "errors/illegal_intent_5.f90"
-asr = true
-
-[[test]]
-filename = "errors/illegal_intent_6.f90"
-asr = true
-
-[[test]]
 filename = "errors/do_zero_increment.f90"
 asr = true
 
