@@ -290,6 +290,7 @@
                                     []
                                     []
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -1595,6 +1596,7 @@
                                     link_time_flags
                                     file_scope_flags
                                     is_built_in]
+                                    []
                                     []
                                     Source
                                     Public

@@ -334,7 +334,7 @@ public:
             current_scope, s2c(al, new_sym_name),
             nullptr,
             nullptr, 0,
-            data_member_names.p, data_member_names.size(), nullptr, 0,
+            data_member_names.p, data_member_names.size(), nullptr, 0, nullptr, 0,
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             nullptr, 0, m_alignment, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
@@ -1229,7 +1229,7 @@ public:
 
         ASR::asr_t* result = ASR::make_Struct_t(al, x->base.base.loc,
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
-            data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
+            data_member_names.size(), nullptr, 0, nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
             x->m_is_abstract, nullptr, 0, m_alignment, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);

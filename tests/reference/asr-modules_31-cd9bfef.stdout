@@ -389,6 +389,7 @@
                                     [working_dir
                                     verbose]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -494,6 +495,7 @@
                                     fetch_only
                                     clean]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -582,6 +584,7 @@
                                     []
                                     [name
                                     path]
+                                    []
                                     []
                                     Source
                                     Public
@@ -716,6 +719,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     []
                                     Source
                                     Public
@@ -941,6 +945,7 @@
                                     dep
                                     cache]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -989,6 +994,7 @@
                                     )
                                     []
                                     [message]
+                                    []
                                     []
                                     Source
                                     Public

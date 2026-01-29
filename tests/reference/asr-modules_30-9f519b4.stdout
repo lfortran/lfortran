@@ -279,6 +279,7 @@
                                     source_dir
                                     main]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -693,6 +694,7 @@
                                     []
                                     [name
                                     executable]
+                                    []
                                     []
                                     Source
                                     Public
