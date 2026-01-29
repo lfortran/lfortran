@@ -1,3 +1,4 @@
+#include <cctype>
 #include <iostream>
 #include <map>
 
@@ -730,6 +731,37 @@ std::string token(unsigned char *tok, unsigned char* cur)
     return std::string((char *)tok, cur - tok);
 }
 
+std::string stringize_macro_argument(const std::string &arg)
+{
+    size_t start = 0;
+    while (start < arg.size() && std::isspace(static_cast<unsigned char>(arg[start]))) {
+        start++;
+    }
+    size_t end = arg.size();
+    while (end > start && std::isspace(static_cast<unsigned char>(arg[end - 1]))) {
+        end--;
+    }
+
+    std::string body;
+    bool in_space = false;
+    for (size_t i = start; i < end; i++) {
+        unsigned char ch = static_cast<unsigned char>(arg[i]);
+        if (std::isspace(ch)) {
+            if (!in_space) {
+                body.push_back(' ');
+                in_space = true;
+            }
+            continue;
+        }
+        in_space = false;
+        if (ch == '\\' || ch == '"') {
+            body.push_back('\\');
+        }
+        body.push_back(static_cast<char>(ch));
+    }
+    return "\"" + body + "\"";
+}
+
 }
 
 std::string function_like_macro_expansion(
@@ -749,6 +781,18 @@ std::string function_like_macro_expansion(
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = "unsigned char";
 
+            "#" name {
+                std::string t = token(tok + 1, cur);
+                auto search = std::find(def_args.begin(), def_args.end(), t);
+                if (search != def_args.end()) {
+                    size_t i = std::distance(def_args.begin(), search);
+                    output.append(stringize_macro_argument(call_args[i]));
+                } else {
+                    output.append("#");
+                    output.append(t);
+                }
+                continue;
+            }
             * {
                 output.append(token(tok, cur));
                 continue;
