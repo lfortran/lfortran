@@ -352,7 +352,12 @@ public:
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
-        add_assignment_procedures();
+        try {
+            add_assignment_procedures();
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw;
+        }
+
         tmp = tmp0;
         // Add module dependencies
         R *m = ASR::down_cast2<R>(tmp);
@@ -2558,6 +2563,7 @@ public:
         if( assgn_proc_names.empty() ) {
             return ;
         }
+        bool any_error = false;
         for (const std::string &name : assgn_proc_names) {
             ASR::symbol_t *sym = current_scope->resolve_symbol(name);
             if (!sym) {
@@ -2566,7 +2572,9 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
             sym = ASRUtils::symbol_get_past_external(sym);
             // Must be a subroutine
@@ -2576,7 +2584,9 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {sym->base.loc})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
 
@@ -2586,7 +2596,9 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {sym->base.loc})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
             if (f->n_args != 2) {
                 diag.add(Diagnostic(
@@ -2594,7 +2606,9 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {sym->base.loc})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
             ASR::Var_t *lhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[0]);
             ASR::Var_t *rhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[1]);
@@ -2613,7 +2627,9 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {sym->base.loc})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
             if (rhs->m_intent != ASR::intentType::In) {
                 diag.add(Diagnostic(
@@ -2621,13 +2637,17 @@ public:
                     Level::Error, Stage::Semantic,
                     {Label("", {sym->base.loc})}
                 ));
-                throw SemanticAbort();
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
             }
         }
-        std::pair<const std::string, std::vector<std::string>>
-            proc = {"~assign", assgn_proc_names};
+        if(!any_error) {
+            std::pair<const std::string, std::vector<std::string>>
+                proc = {"~assign", assgn_proc_names};
 
-        add_custom_operator(proc, assgn[current_scope]);
+            add_custom_operator(proc, assgn[current_scope]);
+        }
     }
 
     void add_generic_procedures() {

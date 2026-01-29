@@ -1,1 +1,9 @@
 semantic error: Defined assignment procedure must have exactly two arguments
+ --> tests/errors/illegal_intent_3.f90:7:3 - 9:16
+  |
+7 |      subroutine assign_one(lhs)
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |      end subroutine
+  | ...^^^^^^^^^^^^^^^^ 
