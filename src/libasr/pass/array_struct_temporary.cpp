@@ -689,7 +689,7 @@ bool set_allocation_size(
                     }
                     break;
                 }
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): 
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
@@ -1171,7 +1171,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
             current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                 al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
         }
-    } 
+    }
     return struct_var_temporary;
 }
 
@@ -1229,9 +1229,9 @@ bool is_temporary_needed(ASR::expr_t* value) {
     bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
         (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
         ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
-    return is_expr_with_no_type 
+    return is_expr_with_no_type
         && !ASRUtils::is_stringToArray_cast(value)
-        && !is_elemental_expr(value) 
+        && !is_elemental_expr(value)
         && is_non_empty_fixed_size_array;
 }
 
@@ -1312,7 +1312,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
-        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) &&
         ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
             x_m_args_i = expr;
         }
@@ -1810,8 +1810,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
         // Argument `to` in `move_alloc` can be an unallocated struct type variable, so creating a
         // temporary and assigning `to` to it will lead to a segfault during deepcopying the values.
-        // Hence, skip creating temporaries for `move_alloc` arguments and pass directly. 
-        // This also saves an extra overhead of copying back the allocated pointers from the temporary 
+        // Hence, skip creating temporaries for `move_alloc` arguments and pass directly.
+        // This also saves an extra overhead of copying back the allocated pointers from the temporary
         // to the actual variable.
         // Please see `integration_tests/derived_types_78.f90` for an example.
         if (ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id) != "MoveAlloc") {
@@ -1931,7 +1931,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
         if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_array) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_array)->m_old ==
             ASR::array_physical_typeType::AssumedRankArray ) {
-            return ; 
+            return ;
         }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
@@ -2023,23 +2023,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
      *     END DO
      */
     void visit_WhileLoop(const ASR::WhileLoop_t &x){
-        Vec<ASR::stmt_t*>* const current_body_temp = current_body; 
+        Vec<ASR::stmt_t*>* const current_body_temp = current_body;
         Vec<ASR::stmt_t*> while_test_body_{};
         while_test_body_.reserve(al, 0);
-        current_body = &while_test_body_; 
+        current_body = &while_test_body_;
         visit_expr(*x.m_test);
-        if (!while_test_body_.empty()){ // Temps Created! 
+        if (!while_test_body_.empty()){ // Temps Created!
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
             while_test_body_.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 while_test_body_.push_back(al, x.m_body[i]);
             }
-            const_cast<ASR::WhileLoop_t&>(x).m_body = while_test_body_.p; 
+            const_cast<ASR::WhileLoop_t&>(x).m_body = while_test_body_.p;
             const_cast<ASR::WhileLoop_t&>(x).n_body = while_test_body_.n;
-            const_cast<ASR::WhileLoop_t&>(x).m_test = builder.logical_true(); 
+            const_cast<ASR::WhileLoop_t&>(x).m_test = builder.logical_true();
         }
         current_body = current_body_temp;
-        CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);      
+        CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);
     }
 };
 
@@ -2592,18 +2592,11 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
-    void visit_Associate(const ASR::Associate_t& x) {
-        ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
-        if( !is_component_array_expr_or_section(xx.m_value) ) {
-            return;
-        }
-        ASR::expr_t** current_expr_copy = current_expr;
-        current_expr = &(xx.m_value);
-        call_replacer();
-        current_expr = current_expr_copy;
-        if( xx.m_value && visit_expr_after_replacement ) {
-            visit_expr(*xx.m_value);
-        }
+    void visit_Associate(const ASR::Associate_t& /*x*/) {
+        // Component array associations (e.g., token%first where token is an
+        // array of structs) should NOT be replaced with temporary copies.
+        // The LLVM codegen handles these by setting up a descriptor with
+        // appropriate stride pointing to the original data.
     }
 
 };
@@ -2851,7 +2844,7 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        bool is_value_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) && 
+        bool is_value_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) &&
             ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray;
         if( !ASRUtils::is_simd_array(x.m_value) && !is_value_assumed_rank) {
             LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
