@@ -738,9 +738,11 @@ namespace LCompilers {
                         assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref, x_m_args_i));
                     } else {
+                        bool member_realloc = realloc_lhs ||
+                            ASRUtils::is_allocatable(ASRUtils::expr_type(derived_ref));
                         assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref,
-                                                    x_m_args_i, nullptr, realloc_lhs, false));
+                                                    x_m_args_i, nullptr, member_realloc, false));
                     }
                     result_vec->push_back(replacer->al, assign);
                 }

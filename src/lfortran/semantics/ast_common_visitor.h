@@ -698,6 +698,34 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
     }
 }
 
+// Set default integer kind for intrinsics that return integer arrays
+// (maxloc, minloc, shape, findloc) when user didn't specify kind argument
+inline static void set_intrinsic_return_kind(Allocator& al, const Location& loc,
+        const std::string& intrinsic_name, Vec<ASR::expr_t*>& args,
+        int default_int_kind) {
+    if (default_int_kind == 4) return;
+
+    size_t kind_pos = 0;
+    if (intrinsic_name == "maxloc" || intrinsic_name == "minloc") {
+        kind_pos = 3;  // array, dim, mask, kind, back
+    } else if (intrinsic_name == "findloc") {
+        kind_pos = 4;  // array, value, dim, mask, kind, back
+    } else if (intrinsic_name == "shape") {
+        kind_pos = 1;  // source, kind
+    } else {
+        return;
+    }
+
+    while (args.size() <= kind_pos) {
+        args.push_back(al, nullptr);
+    }
+    if (args[kind_pos] == nullptr) {
+        ASR::ttype_t* int4_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        args.p[kind_pos] = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, default_int_kind, int4_type));
+    }
+}
+
 inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
@@ -1827,7 +1855,7 @@ public:
                             }
                         }
                         if (!arg_type) {
-                            arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                            arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
                             return_type = arg_type;
                         }
                         
@@ -8341,6 +8369,8 @@ public:
                 for (size_t i = 0; i < args.size(); i++) {
                     expr_args.push_back(al, args[i].m_value);
                 }
+                CommonVisitorMethods::set_intrinsic_return_kind(al, loc, intrinsic_name,
+                    expr_args, compiler_options.po.default_integer_kind);
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(intrinsic_name);
                 return create_func(al, loc, expr_args, diag);
@@ -11080,6 +11110,8 @@ public:
                         args.p[0] = matrix_a;
                         args.p[1] = matrix_b;
                     }
+                    CommonVisitorMethods::set_intrinsic_return_kind(al, x.base.base.loc, var_name,
+                        args, compiler_options.po.default_integer_kind);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);

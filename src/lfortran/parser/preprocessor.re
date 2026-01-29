@@ -1,3 +1,4 @@
+#include <cctype>
 #include <iostream>
 #include <map>
 
@@ -608,10 +609,26 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                             throw PreprocessorError("expected ')'", loc);
                         }
                         cur++;
+                        std::vector<std::string> expanded_args = args;
+                        for (size_t i = 0; i < args.size(); i++) {
+                            LocationManager lm_tmp = lm;
+                            uint32_t pos = cur - string_start;
+                            uint32_t line, col;
+                            std::string filename;
+                            lm.pos_to_linecol(pos, line, col, filename);
+                            lm_tmp.files.back().current_line = line;
+                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics);
+                            if (res.ok) {
+                                expanded_args[i] = res.result;
+                            } else {
+                                return res.error;
+                            }
+                        }
                         expansion = function_like_macro_expansion(
                             macro_definitions[t].args,
                             macro_definitions[t].expansion,
-                            args);
+                            args,
+                            expanded_args);
                     } else {
                         if (t == "__LINE__") {
                             uint32_t line;
@@ -730,12 +747,44 @@ std::string token(unsigned char *tok, unsigned char* cur)
     return std::string((char *)tok, cur - tok);
 }
 
+std::string stringize_macro_argument(const std::string &arg)
+{
+    size_t start = 0;
+    while (start < arg.size() && std::isspace(static_cast<unsigned char>(arg[start]))) {
+        start++;
+    }
+    size_t end = arg.size();
+    while (end > start && std::isspace(static_cast<unsigned char>(arg[end - 1]))) {
+        end--;
+    }
+
+    std::string body;
+    bool in_space = false;
+    for (size_t i = start; i < end; i++) {
+        unsigned char ch = static_cast<unsigned char>(arg[i]);
+        if (std::isspace(ch)) {
+            if (!in_space) {
+                body.push_back(' ');
+                in_space = true;
+            }
+            continue;
+        }
+        in_space = false;
+        if (ch == '\\' || ch == '"') {
+            body.push_back('\\');
+        }
+        body.push_back(static_cast<char>(ch));
+    }
+    return "\"" + body + "\"";
+}
+
 }
 
 std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
-            std::vector<std::string> &call_args) {
+            std::vector<std::string> &call_args,
+            std::vector<std::string> &expanded_args) {
     LCOMPILERS_ASSERT(expansion[expansion.size()] == '\0');
     unsigned char *string_start=(unsigned char*)(&expansion[0]);
     unsigned char *cur = string_start;
@@ -749,6 +798,18 @@ std::string function_like_macro_expansion(
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = "unsigned char";
 
+            "#" name {
+                std::string t = token(tok + 1, cur);
+                auto search = std::find(def_args.begin(), def_args.end(), t);
+                if (search != def_args.end()) {
+                    size_t i = std::distance(def_args.begin(), search);
+                    output.append(stringize_macro_argument(call_args[i]));
+                } else {
+                    output.append("#");
+                    output.append(t);
+                }
+                continue;
+            }
             * {
                 output.append(token(tok, cur));
                 continue;
@@ -761,7 +822,7 @@ std::string function_like_macro_expansion(
                 auto search = std::find(def_args.begin(), def_args.end(), t);
                 if (search != def_args.end()) {
                     size_t i = std::distance(def_args.begin(), search);
-                    output.append(call_args[i]);
+                    output.append(expanded_args[i]);
                 } else {
                     output.append(t);
                 }
@@ -1067,6 +1128,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
                 v = function_like_macro_expansion(
                     margs,
                     mexpansion,
+                    args,
                     args);
             } else {
                 v = macro_definitions.at(str).expansion;

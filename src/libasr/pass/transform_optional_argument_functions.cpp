@@ -526,6 +526,13 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
                 ASR::ttype_t* dummy_variable_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
+
+                // We make dummy variable allocatable if class type because 
+                // local class variable should be llvm pointer
+                if (ASRUtils::is_class_type(dummy_variable_type)) {
+                    dummy_variable_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(
+                        al, dummy_variable_type->base.loc, dummy_variable_type));
+                }
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
                     dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 }
