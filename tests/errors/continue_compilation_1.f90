@@ -501,7 +501,7 @@ program continue_compilation_1
 
     ieee_cls = ieee_class(0.0)
     b = (ieee_cls == ieee_quiet_nan)
-    
+
     contains
     subroutine sub(f)
         interface
