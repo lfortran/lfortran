@@ -202,7 +202,7 @@ program continue_compilation_3
     print *, "8356" .eqv. 8356.00
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
-
+    print *, merge("fail caught", "no fail", merge_i /= 0)
     contains 
     subroutine bpe()
         print *, size(bpe)
