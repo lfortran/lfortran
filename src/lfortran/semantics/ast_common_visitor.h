@@ -1281,7 +1281,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
 }; // class CommonVisitorMethods
 
-static void validate_format_string(const std::string& fmt_str, const Location& loc,
+inline void validate_format_string(const std::string& fmt_str, const Location& loc,
                                    diag::Diagnostics& diag) {
     enum class DescType { NONE, DATA, SLASH, COLON, CONTROL };
     
