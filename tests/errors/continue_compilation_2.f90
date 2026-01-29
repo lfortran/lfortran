@@ -464,6 +464,7 @@ program continue_compilation_2
     lhs = rhs
     print *, index( substring = 'de', back = .true. )
     print *, compiler_options()
+    print "(AF9.6)", 'pi =', 4*atan(1.0)
     contains
     logical function f(x)
         integer, intent(in), optional :: x
