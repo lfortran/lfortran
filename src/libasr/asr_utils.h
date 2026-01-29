@@ -5797,10 +5797,10 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
 
 template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
-                                     std::string bound, Allocator& al, diag::Diagnostics &diag) {
-    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
+                                     std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, index_kind));
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
-                                                                       dim, int32_type));
+                                                                       dim, int_type));
     ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
     if( bound == "ubound" ) {
         bound_type = ASR::arrayboundType::UBound;
@@ -5861,7 +5861,7 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                 LCOMPILERS_ASSERT(false);
             }
             bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, arr_expr->base.loc, const_lbound, int32_type));
+                            al, arr_expr->base.loc, const_lbound, int_type));
         } else if( bound_type == ASR::arrayboundType::UBound &&
             ASRUtils::is_value_constant(arr_start) &&
             ASRUtils::is_value_constant(arr_length) ) {
@@ -5875,11 +5875,11 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
             }
             bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                             al, arr_expr->base.loc,
-                            const_lbound + const_length - 1, int32_type));
+                            const_lbound + const_length - 1, int_type));
         }
     }
     return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
-                int32_type, bound_type, bound_value));
+                int_type, bound_type, bound_value));
 }
 
 static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,

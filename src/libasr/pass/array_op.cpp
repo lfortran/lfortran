@@ -964,10 +964,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
-    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars) {
+    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool per_assign_realloc = false) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         bool array_copy = ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target);
-        if (!realloc_lhs) {
+        if (!realloc_lhs && !per_assign_realloc) {
             return;
         }
         if( (!ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
@@ -1161,7 +1161,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
-            insert_realloc_for_target(xx.m_target, xx.m_value, vars);
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars, xx.m_realloc_lhs);
         }
 
         if (bounds_checking && 

@@ -748,7 +748,7 @@ namespace LCompilers {
         ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims) {
             ASRUtils::ASRBuilder b(al, loc);
             if (n_dims == 1) {
-                return b.ArraySize(array, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));   
+                return b.ArraySize(array, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
             }
             ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             return b.Mul(b.ArraySize(array, dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))), create_array_size_pack(al, loc, array, n_dims-1));
@@ -784,7 +784,7 @@ namespace LCompilers {
                 array_vars.push_back(array_var);
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     array_vars.push_back(do_loop_variables[i]);
-                } 
+                }
                 std::vector<ASR::expr_t*> res_vars;
                 res_vars.push_back(res_var);
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
@@ -793,7 +793,7 @@ namespace LCompilers {
                 return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), UBound(array, curr_idx + 2), {
                     b.Assignment(b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars)),
                 }, nullptr);
-            } 
+            }
             return b.DoLoop(do_loop_variables[curr_idx], LBound(array, curr_idx + 2), UBound(array, curr_idx + 2), {
                 create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1)
             }, nullptr);
@@ -866,7 +866,7 @@ namespace LCompilers {
             const int lhs_kind = ASRUtils::extract_kind_from_ttype_t(l_type);
             const int rhs_kind = ASRUtils::extract_kind_from_ttype_t(r_type);
             // Cast to largest kind
-            if (lhs_kind > rhs_kind) { 
+            if (lhs_kind > rhs_kind) {
                 right = b.t2t(right, r_type, l_type);
             } else if (lhs_kind < rhs_kind){
                 left = b.t2t(left, l_type, r_type);
@@ -1585,7 +1585,7 @@ namespace LCompilers {
                 }
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
                     ASR::ImpliedDoLoop_t* idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(curr_init);
-                    create_do_loop(al, idoloop, arr_var, result_vec, idx_var, perform_cast, cast_kind, casted_type);
+                    create_do_loop(al, idoloop, arr_var, result_vec, current_scope, idx_var, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::ArrayConstant_t>(*curr_init) ) {
                     ASR::ArrayConstant_t* array_constant_t = ASR::down_cast<ASR::ArrayConstant_t>(curr_init);
                     visit_ArrayConstant(array_constant_t, al, arr_var, result_vec,
