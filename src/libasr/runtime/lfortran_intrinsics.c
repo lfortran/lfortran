@@ -8647,12 +8647,24 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
     if (**line_ptr == '\'' || **line_ptr == '"') {
         char quote = **line_ptr;
         (*line_ptr)++;
-        while (**line_ptr && **line_ptr != quote) {
-            token[pos++] = **line_ptr;
-            (*line_ptr)++;
+        while (**line_ptr) {
+            if (**line_ptr == quote) {
+                (*line_ptr)++;
+                // Check for doubled quote (escape sequence)
+                if (**line_ptr == quote) {
+                    // Doubled quote: add one quote and continue
+                    token[pos++] = quote;
+                    (*line_ptr)++;
+                } else {
+                    // End of string
+                    break;
+                }
+            } else {
+                token[pos++] = **line_ptr;
+                (*line_ptr)++;
+            }
             if (pos >= 255) break;
         }
-        if (**line_ptr == quote) (*line_ptr)++;
         token[pos] = '\0';
         return token;
     }
