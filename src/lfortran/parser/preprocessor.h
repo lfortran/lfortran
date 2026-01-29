@@ -43,7 +43,8 @@ public:
 std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
-            std::vector<std::string> &call_args);
+            std::vector<std::string> &call_args,
+            std::vector<std::string> &expanded_args);
 
 } // namespace LCompilers::LFortran
 
