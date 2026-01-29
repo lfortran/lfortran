@@ -14321,9 +14321,8 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
-        unit_val = tmp;
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         builder->CreateCall(fn, {unit_val});
     }
 
@@ -14339,7 +14338,8 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
-        builder->CreateCall(fn, {tmp});
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        builder->CreateCall(fn, {unit_val});
     }
 
     void visit_FileBackspace(const ASR::FileBackspace_t &x) {
@@ -14354,7 +14354,8 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
-        builder->CreateCall(fn, {tmp});
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        builder->CreateCall(fn, {unit_val});
     }
 
     void visit_FileClose(const ASR::FileClose_t &x) {
