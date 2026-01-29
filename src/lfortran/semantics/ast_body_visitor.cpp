@@ -6218,6 +6218,12 @@ public:
                     }));
                 throw SemanticAbort();
             }
+            
+            if (ASR::is_a<ASR::StringConstant_t>(*fmt)) {
+                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(fmt);
+                std::string fmt_str = std::string(fmt_const->m_s);
+                validate_format_string(fmt_str, fmt->base.loc, diag);
+            }
         } else {
             if (compiler_options.print_leading_space) {
                 current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));

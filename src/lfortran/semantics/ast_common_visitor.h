@@ -1281,6 +1281,168 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
 }; // class CommonVisitorMethods
 
+static void validate_format_string(const std::string& fmt_str, const Location& loc,
+                                   diag::Diagnostics& diag) {
+    enum class DescType { NONE, DATA, SLASH, COLON, CONTROL };
+    
+    if (fmt_str.empty()) return;
+    size_t start = fmt_str.find('(');
+    size_t end = fmt_str.rfind(')');
+    if (start == std::string::npos || end == std::string::npos || start >= end) {
+        return;
+    }
+    
+    std::string content = fmt_str.substr(start + 1, end - start - 1);
+    DescType prev_desc = DescType::NONE;
+    
+    for (size_t i = 0; i < content.length(); ) {
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        char c = content[i];
+        if (c == ',') {
+            prev_desc = DescType::NONE;
+            i++;
+            continue;
+        }
+        if (c == ':') {
+            prev_desc = DescType::COLON;
+            i++;
+            continue;
+        }
+        if (c == '/') {
+            while (i < content.length() && content[i] == '/') {
+                i++;
+            }
+            while (i < content.length() && std::isspace(content[i])) {
+                i++;
+            }
+            prev_desc = DescType::SLASH;
+            continue;
+        }
+        
+        if (c == '(') {
+            int depth = 1;
+            i++;
+            while (i < content.length() && depth > 0) {
+                if (content[i] == '(') depth++;
+                else if (content[i] == ')') depth--;
+                i++;
+            }
+            prev_desc = DescType::NONE;
+            continue;
+        }
+        
+        if (c == '\'' || c == '"') {
+            char quote = c;
+            i++;
+            while (i < content.length()) {
+                if (content[i] == quote) {
+                    if (i + 1 < content.length() && content[i + 1] == quote) {
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            prev_desc = DescType::DATA;
+            continue;
+        }
+        
+        bool had_repeat_count = false;
+        while (i < content.length() && std::isdigit(content[i])) {
+            had_repeat_count = true;
+            i++;
+        }
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        c = content[i];
+        
+        DescType current_desc = DescType::NONE;
+        
+        if (c == 'A' || c == 'I' || c == 'B' || c == 'O' || c == 'Z' ||
+            c == 'F' || c == 'E' || c == 'D' || c == 'G' || c == 'L') {
+            current_desc = DescType::DATA;
+            
+            if (c == 'E' && i + 1 < content.length()) {
+                char next = content[i + 1];
+                if (next == 'N' || next == 'S' || next == 'X') {
+                    i++;
+                }
+            }
+        } else if (c == 'X' || c == 'T') {
+            current_desc = DescType::CONTROL;
+        } else if (c == 'P') {
+            i++;
+            while (i < content.length() && std::isspace(content[i])) i++;
+            
+            if (i < content.length()) {
+                char next = content[i];
+                if (next == 'F' || next == 'E' || next == 'D' || next == 'G') {
+                    prev_desc = DescType::NONE;
+                    continue;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c == 'S') {
+            if (i + 1 < content.length()) {
+                char next = content[i + 1];
+                if (next == 'S' || next == 'P') {
+                    i++;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c == '+' || c == '-') {
+            i++;
+            continue;
+        } else {
+            i++;
+            continue;
+        }
+        
+        if (current_desc != DescType::NONE && !had_repeat_count) {
+            if (prev_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            } else if (prev_desc == DescType::CONTROL && current_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+        
+        prev_desc = current_desc;
+        i++;
+        
+        while (i < content.length() && (std::isdigit(content[i]) || content[i] == '.')) {
+            i++;
+        }
+        
+        if (i < content.length() && content[i] == 'E' && 
+            (current_desc == DescType::DATA)) {
+            i++;
+            while (i < content.length() && std::isdigit(content[i])) {
+                i++;
+            }
+        }
+    }
+}
+
 
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
@@ -5560,6 +5722,15 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+                    
+                    if (is_char_type && ASR::is_a<ASR::StringConstant_t>(*init_expr)) {
+                        ASR::StringConstant_t *str_const = ASR::down_cast<ASR::StringConstant_t>(init_expr);
+                        std::string str_value = std::string(str_const->m_s);
+                        if (!str_value.empty() && str_value[0] == '(' && str_value.find_last_of(')') != std::string::npos) {
+                            validate_format_string(str_value, x.base.base.loc, diag);
+                        }
+                    }
+                    
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
