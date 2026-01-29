@@ -8234,7 +8234,14 @@ public:
                     deepcopy_var = x.m_target;
                 } else {
                     vptr_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
-                    target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
+                    if (is_value_class) {
+                        llvm::Type* value_cstruct_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))),
+                            module.get(), false);
+                        target_struct = builder->CreateBitCast(target_struct, value_cstruct_type->getPointerTo());
+                    } else {
+                        target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
+                    }
                     deepcopy_type = ASRUtils::make_StructType_t_util(al, x.m_value->base.loc, vptr_sym, true);
                     deepcopy_var = x.m_value;
                 }
