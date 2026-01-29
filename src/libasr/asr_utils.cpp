@@ -3454,7 +3454,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
         //     return derived_type->m_struct_signature;
         // }
 
-        if ( is_cstruct == false && struct_type->m_is_cstruct != is_cstruct ) {
+        if ( struct_type->m_is_cstruct != is_cstruct ) {
             /*
                 This if for the cases where a struct type is declared as class(XX) in Fortran
                 For the example given below, in subroutine method, `list` is used as a class type

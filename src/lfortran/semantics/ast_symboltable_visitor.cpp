@@ -3704,6 +3704,16 @@ public:
                 if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&
                     AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
                     local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
+                    remote_sym = to_lower(remote_sym);
+                    if (remote_sym != local_sym) {
+                        ASR::symbol_t* existing = current_scope->resolve_symbol(remote_sym);
+                        if (existing && ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
+                            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(existing);
+                            if (std::string(ext_sym->m_module_name) == msym) {
+                                current_scope->erase_symbol(remote_sym);
+                            }
+                        }
+                    }
                 } else {
                     remote_sym = to_lower(remote_sym);
                     local_sym = remote_sym;

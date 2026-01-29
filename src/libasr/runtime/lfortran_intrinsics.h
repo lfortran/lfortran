@@ -242,7 +242,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* position, int64_t position_len,
     char* blank, int64_t blank_len,
     char* encoding, int64_t encoding_len,
-    int32_t *recl);
+    int32_t *recl,
+    char* sign, int64_t sign_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_inquire(
@@ -270,6 +271,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num, int32_t *iostat);
@@ -366,6 +368,14 @@ LFORTRAN_API void _lfortran_namelist_read(
 LFORTRAN_API void _lfortran_namelist_read_str(
     const char *data,
     int64_t data_len,
+    int32_t *iostat,
+    lfortran_nml_group_t *group
+);
+
+LFORTRAN_API void _lfortran_namelist_read_str_array(
+    const char *data,
+    int64_t elem_len,
+    int64_t n_elems,
     int32_t *iostat,
     lfortran_nml_group_t *group
 );

@@ -2015,6 +2015,10 @@ filename = "../integration_tests/format_53.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/print_09.f90"
+run = true
+
+[[test]]
 filename = "interop/mod1-14.mod"
 mod_to_asr = true
 
@@ -5005,3 +5009,7 @@ options = "< tests/stdin_read_blank_lines_01.in"
 filename = "mangle_underscore_external_01.f90"
 llvm = true
 options = "--mangle-underscore-external"
+
+[[test]]
+filename = "../integration_tests/file_open_06.f90"
+run = true
