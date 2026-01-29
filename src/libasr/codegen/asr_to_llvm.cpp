@@ -6919,7 +6919,14 @@ public:
     // accessing a scalar struct member across an array of structs
     // e.g., token%first where token is array of structs and first is scalar member
     bool is_component_array_expr(ASR::expr_t* expr) {
-        if (!expr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        if (!expr) {
+            return false;
+        }
+        // Look past ArrayPhysicalCast
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        }
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
             return false;
         }
         ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
@@ -6938,7 +6945,12 @@ public:
     // e.g., associate(first => token%first)
     // This creates a descriptor with proper stride to access struct members
     void handle_component_array_association(const ASR::Associate_t& x) {
-        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_value);
+        ASR::expr_t* value_expr = x.m_value;
+        // Look past ArrayPhysicalCast
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value_expr)) {
+            value_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(value_expr)->m_arg;
+        }
+        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(value_expr);
         ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(
             ASRUtils::symbol_get_past_external(sim->m_m));
 
