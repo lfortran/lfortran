@@ -1985,7 +1985,6 @@ public:
         LCOMPILERS_ASSERT(x.n_args == 1);
         handle_allocated(x.m_args[0].m_a);
         llvm::Value* is_allocated = tmp;
-        // Use the descriptor's index type for consistent bit width (i32 or i64)
         llvm::Type* index_type = arr_descr->get_index_type();
         unsigned index_bit_width = index_type->getIntegerBitWidth();
         int index_kind = index_bit_width / 8;
