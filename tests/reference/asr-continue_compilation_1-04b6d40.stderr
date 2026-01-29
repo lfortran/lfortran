@@ -233,6 +233,18 @@ semantic error: Symbol not found: `uninitialized_param_local`
 195 |     type(MyClass) :: err_obj5 = uninitialized_param_local
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Intent attribute can only be applied to procedure arguments
+   --> tests/errors/continue_compilation_1.f90:505:14
+    |
+505 |     integer, intent(out) :: out_intent
+    |              ^^^^^^^^^^^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+   --> tests/errors/continue_compilation_1.f90:506:14
+    |
+506 |     integer, intent(in) :: in_intent
+    |              ^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
   --> tests/errors/continue_compilation_1.f90:82:18
    |
