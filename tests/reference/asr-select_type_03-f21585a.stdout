@@ -71,6 +71,7 @@
                                     [success
                                     fatal]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -562,6 +563,7 @@
                                     [implicit
                                     inline]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -629,6 +631,7 @@
                                     []
                                     [int
                                     float]
+                                    []
                                     []
                                     Source
                                     Public

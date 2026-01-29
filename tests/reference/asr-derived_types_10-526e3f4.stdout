@@ -117,6 +117,7 @@
                                     []
                                     [x]
                                     []
+                                    [2 finalize]
                                     Source
                                     Public
                                     .false.
@@ -243,6 +244,7 @@
                                     [my_super_type]
                                     [x
                                     super]
+                                    []
                                     []
                                     Source
                                     Public

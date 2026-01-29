@@ -212,6 +212,7 @@
                                     []
                                     [myarr]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -355,6 +356,7 @@
                                     []
                                     [myint
                                     myzero]
+                                    []
                                     []
                                     Source
                                     Public
