@@ -2563,7 +2563,8 @@ public:
             if (!sym) {
                 diag.add(Diagnostic(
                     "Assignment procedure `" + name + "` not found",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {})}
                 ));
                 throw SemanticAbort();
             }
@@ -2572,7 +2573,8 @@ public:
             if (!ASR::is_a<ASR::Function_t>(*sym)) {
                 diag.add(Diagnostic(
                     "Defined assignment procedure must be a subroutine",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
                 ));
                 throw SemanticAbort();
             }
@@ -2581,14 +2583,16 @@ public:
             if (f->m_return_var != nullptr) {
                 diag.add(Diagnostic(
                     "Defined assignment procedure must not return a value",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
                 ));
                 throw SemanticAbort();
             }
             if (f->n_args != 2) {
                 diag.add(Diagnostic(
                     "Defined assignment procedure must have exactly two arguments",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
                 ));
                 throw SemanticAbort();
             }
@@ -2606,14 +2610,16 @@ public:
                 lhs->m_intent == ASR::intentType::InOut)) {
                 diag.add(Diagnostic(
                     "First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
                 ));
                 throw SemanticAbort();
             }
             if (rhs->m_intent != ASR::intentType::In) {
                 diag.add(Diagnostic(
                     "Second argument of defined assignment must have INTENT(IN)",
-                    Level::Error, Stage::Semantic, {}
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
                 ));
                 throw SemanticAbort();
             }
