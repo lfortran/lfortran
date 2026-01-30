@@ -603,17 +603,27 @@ FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
   %248 = load %array*, %array** %c, align 8
-  %249 = getelementptr %array, %array* %248, i32 0, i32 0
-  %250 = load i32*, i32** %249, align 8
-  %251 = icmp eq i32* %250, null
-  br i1 %251, label %free_done46, label %free_nonnull45
+  %249 = icmp ne %array* %248, null
+  br i1 %249, label %is_allocated.then, label %is_allocated.else
 
-free_nonnull45:                                   ; preds = %Finalize_Variable_c
-  %252 = bitcast i32* %250 to i8*
-  call void @_lfortran_free(i8* %252)
+is_allocated.then:                                ; preds = %Finalize_Variable_c
+  %250 = getelementptr %array, %array* %248, i32 0, i32 0
+  %251 = load i32*, i32** %250, align 8
+  %252 = icmp eq i32* %251, null
+  br i1 %252, label %free_done46, label %free_nonnull45
+
+free_nonnull45:                                   ; preds = %is_allocated.then
+  %253 = bitcast i32* %251 to i8*
+  call void @_lfortran_free(i8* %253)
   br label %free_done46
 
-free_done46:                                      ; preds = %free_nonnull45, %Finalize_Variable_c
+free_done46:                                      ; preds = %free_nonnull45, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable_c
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done46
   ret i32 0
 }
 
