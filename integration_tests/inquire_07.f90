@@ -1,4 +1,4 @@
-program inquire3
+program inquire_07
   implicit none
 
   integer :: i, iolen
@@ -7,6 +7,8 @@ program inquire3
   real :: r
 
   inquire (iolength=iolen) l, s, i, r
-  print *, 'iolength =', iolen
-
-end program
+  
+  if (iolen /= 16) then
+     error stop "inquire(iolength=...) produced wrong result"
+  end if
+end program inquire_07
