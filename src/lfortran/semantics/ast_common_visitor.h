@@ -13773,14 +13773,26 @@ public:
         this->visit_expr(*x.m_re);
         ASR::expr_t *re = ASRUtils::EXPR(tmp);
         ASR::expr_t *re_value = ASRUtils::expr_value(re);
-        int a_kind_r = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(re));
+        ASR::ttype_t *re_type = ASRUtils::expr_type(re);
         this->visit_expr(*x.m_im);
         ASR::expr_t *im = ASRUtils::EXPR(tmp);
         ASR::expr_t *im_value = ASRUtils::expr_value(im);
-        int a_kind_i = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(im));
-        // TODO: Add semantic checks what type are allowed
+        ASR::ttype_t *im_type = ASRUtils::expr_type(im);
+        // Determine complex kind per Fortran standard:
+        // - Complex literal kind is determined by real arguments only
+        // - Integer arguments are converted to the result complex kind
+        // - If both parts are integer: use default complex kind (4)
+        int complex_kind = 4;
+        if (ASRUtils::is_real(*re_type)) {
+            complex_kind = std::max(complex_kind,
+                ASRUtils::extract_kind_from_ttype_t(re_type));
+        }
+        if (ASRUtils::is_real(*im_type)) {
+            complex_kind = std::max(complex_kind,
+                ASRUtils::extract_kind_from_ttype_t(im_type));
+        }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
-                std::max(a_kind_r, a_kind_i)));
+                complex_kind));
         ASR::expr_t *value = nullptr;
         if (re_value && im_value) {
             double re_double;
