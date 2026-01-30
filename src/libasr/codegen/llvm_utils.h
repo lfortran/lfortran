@@ -197,6 +197,8 @@ class ASRToLLVMVisitor;
             llvm::IRBuilder<>* builder;
             llvm::AllocaInst *str_cmp_itr;
 
+            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
+
         public:
 
             LLVMTuple* tuple_api;
@@ -276,6 +278,11 @@ class ASRToLLVMVisitor;
             llvm::AllocaInst* CreateAlloca(llvm::IRBuilder<> &builder,
                 llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
                 bool is_llvm_ptr=false);
+
+            llvm::Value* allocate_array_descriptor_on_heap(llvm::Type* array_desc_type, size_t n_dims);
+            llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
+            void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
+                llvm::Type* string_desc_type);
 
             /// Check llvm SSA is matching some type.
             void validate_llvm_SSA([[maybe_unused]] llvm::Type* type_to_check_against, [[maybe_unused]] llvm::Value* llvm_SSA);

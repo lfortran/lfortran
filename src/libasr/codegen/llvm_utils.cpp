@@ -1620,6 +1620,56 @@ namespace LCompilers {
         return alloca;
     }
 
+    llvm::Value* LLVMUtils::allocate_zeroed_bytes(llvm::Value* size) {
+        llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(context, *module, *builder, size);
+        builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+            context, llvm::APInt(8, 0)), size, llvm::MaybeAlign());
+        return malloc_ptr;
+    }
+
+    llvm::Value* LLVMUtils::allocate_array_descriptor_on_heap(llvm::Type* array_desc_type, size_t n_dims) {
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
+        llvm::Value* desc_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
+            getIntType(4), llvm::APInt(32, desc_size)));
+        llvm::Value* desc_ptr = builder->CreateBitCast(desc_mem, array_desc_type->getPointerTo());
+
+        llvm::Type* dim_desc_type = arr_api->get_dimension_descriptor_type();
+        int64_t dim_size = data_layout.getTypeAllocSize(dim_desc_type);
+        llvm::Value* dim_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
+            getIntType(4), llvm::APInt(32, n_dims * dim_size)));
+        llvm::Value* ptr_to_dim_desc = create_gep2(array_desc_type, desc_ptr, 2);
+        builder->CreateStore(builder->CreateBitCast(
+            dim_mem, arr_api->get_dimension_descriptor_type(true)), ptr_to_dim_desc);
+
+        builder->CreateStore(llvm::ConstantInt::get(
+            context, llvm::APInt(32, n_dims)),
+            arr_api->get_rank(array_desc_type, desc_ptr, true));
+
+        return desc_ptr;
+    }
+
+    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(llvm::Type* string_desc_type) {
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t str_desc_size = data_layout.getTypeAllocSize(string_desc_type);
+        llvm::Value* str_desc_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
+            context, llvm::APInt(64, str_desc_size)));
+        return builder->CreateBitCast(str_desc_mem, string_desc_type->getPointerTo());
+    }
+
+    void LLVMUtils::ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
+        llvm::Type* string_desc_type) {
+        llvm::Value* data_ptr_ptr = arr_api->get_pointer_to_data(array_desc_type, array_desc);
+        llvm::Value* str_desc = CreateLoad2(string_desc_type->getPointerTo(), data_ptr_ptr);
+        llvm::Value* str_desc_null = builder->CreateICmpEQ(
+            builder->CreatePtrToInt(str_desc, llvm::Type::getInt64Ty(context)),
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+        create_if_else(str_desc_null, [&]() {
+            llvm::Value* new_str_desc = allocate_string_descriptor_on_heap(string_desc_type);
+            builder->CreateStore(new_str_desc, data_ptr_ptr);
+        }, [](){});
+    }
+
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
@@ -3059,51 +3109,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         create_if_else(desc_is_null, [&]() {
-                            llvm::DataLayout data_layout(module->getDataLayout());
-                            int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
-                            llvm::Value* malloc_size = llvm::ConstantInt::get(
-                                getIntType(4), llvm::APInt(32, type_size));
-                            llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, malloc_size);
-                            builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
-                                context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
-                            llvm::Value* new_descr = builder->CreateBitCast(malloc_ptr, llvm_type->getPointerTo());
-
                             ASR::dimension_t* m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(alloc_type->m_type, m_dims);
-                            llvm::Type* dim_desc_type = arr_api->get_dimension_descriptor_type();
-                            int64_t dim_size = data_layout.getTypeAllocSize(dim_desc_type);
-                            llvm::Value* dim_malloc_size = llvm::ConstantInt::get(
-                                getIntType(4), llvm::APInt(32, n_dims * dim_size));
-                            llvm::Value* dim_malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, dim_malloc_size);
-                            builder->CreateMemSet(dim_malloc_ptr, llvm::ConstantInt::get(
-                                context, llvm::APInt(8, 0)), dim_malloc_size, llvm::MaybeAlign());
-                            llvm::Value* ptr_to_dim_desc = create_gep2(llvm_type, new_descr, 2);
-                            builder->CreateStore(builder->CreateBitCast(
-                                dim_malloc_ptr, arr_api->get_dimension_descriptor_type(true)), ptr_to_dim_desc);
-                            builder->CreateStore(llvm::ConstantInt::get(
-                                context, llvm::APInt(32, n_dims)),
-                                arr_api->get_rank(llvm_type, new_descr, true));
-
+                            llvm::Value* new_descr = allocate_array_descriptor_on_heap(llvm_type, n_dims);
                             if (ASRUtils::is_character(*alloc_type->m_type)) {
                                 llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
                                     src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
-                                int64_t str_desc_size = data_layout.getTypeAllocSize(llvm_str_desc_type);
-                                llvm::Value* str_desc_malloc = LLVMArrUtils::lfortran_malloc(
-                                    context, *module, *builder,
-                                    llvm::ConstantInt::get(context, llvm::APInt(64, str_desc_size)));
-                                builder->CreateMemSet(str_desc_malloc, llvm::ConstantInt::get(
-                                    context, llvm::APInt(8, 0)), str_desc_size, llvm::MaybeAlign());
-                                llvm::Value* str_desc = builder->CreateBitCast(
-                                    str_desc_malloc, llvm_str_desc_type->getPointerTo());
+                                llvm::Value* str_desc = allocate_string_descriptor_on_heap(llvm_str_desc_type);
                                 builder->CreateStore(str_desc, arr_api->get_pointer_to_data(llvm_type, new_descr));
                             } else {
                                 llvm::Type* llvm_data_type = get_el_type(
                                     src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
                                 arr_api->reset_is_allocated_flag(llvm_type, new_descr, llvm_data_type);
                             }
-
                             builder->CreateStore(new_descr, dest_descr_ptr);
                         }, [](){});
                         dest = CreateLoad2(llvm_type->getPointerTo(), dest_descr_ptr);
