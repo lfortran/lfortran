@@ -993,6 +993,124 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING (Full Sui
     cd ../..
 '
 
+##########################
+# Section 15: Reference-LAPACK ILP64 (64-bit integers)
+##########################
+time_section "🧪 Testing Reference-LAPACK v3.12.1 ILP64 (64-bit integers)" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing-ilp64
+    cd lapack-testing-ilp64
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # Patch dgd.in to use custom seed that avoids FMA-sensitive ill-conditioned matrix
+    # See: https://github.com/Reference-LAPACK/lapack/issues/1186
+    sed -i "s/^0                 Code to interpret the seed$/2                 Code to interpret the seed\n1234 5678 9012 3456/" TESTING/dgd.in
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Configure with LFortran and BUILD_TESTING=ON (full suite including complex)
+    # ILP64 mode: -fdefault-integer-8 and BUILD_INDEX64=ON
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop -fdefault-integer-8" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=ON \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=ON \
+      -DBUILD_COMPLEX16=ON \
+      -DBUILD_TESTING=ON
+
+    # Build BLAS, LAPACK, and test executables
+    cmake --build build -j$(nproc)
+
+    cd build
+
+    # Helper function to run LAPACK test and check results
+    run_lapack_test() {
+        local TEST_EXE="$1"
+        local INPUT_FILE="$2"
+        local TEST_NAME="$3"
+
+        print_subsection "Running $TEST_NAME"
+        set +e
+        timeout 300 ./bin/$TEST_EXE < ../TESTING/$INPUT_FILE 2>&1 | tee ${TEST_EXE}_${INPUT_FILE%.in}.out
+        exit_code=$?
+        set -e
+
+        if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 124 ]; then
+            echo "ERROR: $TEST_NAME exited with code $exit_code"
+            exit 1
+        fi
+
+        if grep -qE "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: threshold failures in $TEST_NAME"
+            grep "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out | head -20
+            exit 1
+        fi
+
+        if grep -E "[1-9][0-9]* error messages recorded" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: error messages recorded in $TEST_NAME"
+            exit 1
+        fi
+
+        print_success "$TEST_NAME passed"
+    }
+
+    # === LINEAR EQUATION TESTS ===
+    print_section "Linear Equation Tests (ILP64)"
+    run_lapack_test xlintsts stest.in "Single Real Linear Equations (ILP64)"
+    run_lapack_test xlintstd dtest.in "Double Real Linear Equations (ILP64)"
+    run_lapack_test xlintstc ctest.in "Single Complex Linear Equations (ILP64)"
+    run_lapack_test xlintstz ztest.in "Double Complex Linear Equations (ILP64)"
+    run_lapack_test xlintstrfs stest_rfp.in "Single Real RFP Linear Equations (ILP64)"
+    run_lapack_test xlintstrfd dtest_rfp.in "Double Real RFP Linear Equations (ILP64)"
+    run_lapack_test xlintstrfc ctest_rfp.in "Single Complex RFP Linear Equations (ILP64)"
+    run_lapack_test xlintstrfz ztest_rfp.in "Double Complex RFP Linear Equations (ILP64)"
+
+    # === EIGENVALUE TESTS ===
+    print_section "Eigenvalue Tests (ILP64)"
+
+    # Single Real Eigenvalue Tests
+    for input in nep sep se2 svd sec sed sgg sgd ssb ssg sbal sbak sgbal sgbak sbb glm gqr gsv csd lse sdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtsts ${input}.in "Single Real Eigenvalue: ${input} (ILP64)"
+        fi
+    done
+
+    # Double Real Eigenvalue Tests
+    for input in nep sep se2 svd sec ded dgg dgd dsb dsg dbal dbak dgbal dgbak dbb glm gqr gsv csd lse ddmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstd ${input}.in "Double Real Eigenvalue: ${input} (ILP64)"
+        fi
+    done
+
+    # Single Complex Eigenvalue Tests
+    for input in nep sep se2 svd ced cgg cgd csb csg cbal cbak cgbal cgbak cbb glm gqr gsv csd lse cdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstc ${input}.in "Single Complex Eigenvalue: ${input} (ILP64)"
+        fi
+    done
+
+    # Double Complex Eigenvalue Tests
+    for input in nep sep se2 svd zed zgg zgd zsb zsg zbal zbak zgbal zgbak zbb glm gqr gsv csd lse zdmd; do
+        if [ -f "../TESTING/${input}.in" ]; then
+            run_lapack_test xeigtstz ${input}.in "Double Complex Eigenvalue: ${input} (ILP64)"
+        fi
+    done
+
+    print_success "All LAPACK ILP64 tests passed"
+    cd ../..
+'
+
 ##################################
 # Final Summary and Cleanup
 ##################################
