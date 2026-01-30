@@ -14575,7 +14575,12 @@ public:
                 args.push_back(sep_len);
             }
             if (!x.m_is_formatted) {
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                ASR::ttype_t* value_type = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+                ASR::ttype_t* value_type_base = ASRUtils::type_get_past_array(value_type);
+                int kind = ASRUtils::extract_kind_from_ttype_t(value_type_base);
+                if (ASR::is_a<ASR::Complex_t>(*value_type_base)) {
+                    kind *= 2;
+                }
                 llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                 if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
