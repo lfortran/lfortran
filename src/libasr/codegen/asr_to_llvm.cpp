@@ -14370,36 +14370,48 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type)));
                 
-                // Get the kind (size in bytes for basic types)
-                int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
-                
-                // For complex types, size is 2 * kind
-                if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {
-                    kind *= 2;
-                }
-                
-                llvm::Value* element_size = llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(context), kind);
                 llvm::Value* var_size = nullptr;
-                
-                if (ASRUtils::is_array(var_type)) {
-                    // For arrays, multiply element size by number of elements
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
-                    llvm::Value* num_elements = builder->CreateZExtOrTrunc(
+                // Get the kind (size in bytes for basic types)
+                if (ASR::is_a<ASR::String_t>(*var_type_base)) {
+                    ASR::String_t *s = ASR::down_cast<ASR::String_t>(var_type_base);
+                    this->visit_expr_wrapper(s->m_len, true);
+                    llvm::Value *char_len = builder->CreateZExtOrTrunc(
                         tmp, llvm::Type::getInt64Ty(context));
-                    var_size = builder->CreateMul(element_size, num_elements);
-                } else if (ASR::is_a<ASR::String_t>(*var_type_base)) {
-                    // For characters, get the string length
-                    this->visit_expr_wrapper(var_expr, true);
-                    llvm::Value* str_len = llvm_utils->get_string_length(
-                        ASRUtils::get_string_type(var_type), tmp);
-                    var_size = builder->CreateZExtOrTrunc(
-                        str_len, llvm::Type::getInt64Ty(context));
-                } else {
-                    // For scalars, size is just the kind
-                    var_size = element_size;
+                        if (ASRUtils::is_array(var_type)) {
+                        // array of CHARACTER: len * number of elements
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
+                        llvm::Value* num_elements = builder->CreateZExtOrTrunc(
+                            tmp, llvm::Type::getInt64Ty(context));
+                        var_size = builder->CreateMul(char_len, num_elements);
+                    } else {
+                        // scalar CHARACTER
+                        var_size = char_len;
+                    }
+                }
+                else {
+                    int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
+                
+                    // For complex types, size is 2 * kind
+                    if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {
+                        kind *= 2;
+                    }
+                    llvm::Value* element_size = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), kind);
+                    if (ASRUtils::is_array(var_type)) {
+                        // For arrays, multiply element size by number of elements
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
+                        llvm::Value* num_elements = builder->CreateZExtOrTrunc(
+                            tmp, llvm::Type::getInt64Ty(context));
+                        var_size = builder->CreateMul(element_size, num_elements);
+                    }
+                    else {
+                        // For scalars, size is just the kind
+                        var_size = element_size;
+                    }
                 }
                 
                 total_size = builder->CreateAdd(total_size, var_size);
