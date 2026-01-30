@@ -293,6 +293,7 @@
                                         ColMajor
                                     )
                                     ColMajor
+                                    ()
                                 )
                                 FixedSizeArray
                                 DescriptorArray
@@ -330,6 +331,7 @@
                                     )
                                     ()
                                     ColMajor
+                                    ()
                                 )
                                 FixedSizeArray
                                 DescriptorArray
@@ -371,6 +373,7 @@
                                 )
                                 ()
                                 ColMajor
+                                ()
                             )]
                             0
                             (Logical 4)
