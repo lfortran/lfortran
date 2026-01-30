@@ -7180,7 +7180,7 @@ public:
             } else {
                 // For fixed-size arrays, extract dims from the type
                 ASR::dimension_t* dims = nullptr;
-                int rank = ASRUtils::extract_dimensions_from_ttype(base_struct_array_type, dims);
+                [[maybe_unused]] int rank = ASRUtils::extract_dimensions_from_ttype(base_struct_array_type, dims);
                 LCOMPILERS_ASSERT(rank > 0 && i < rank);
 
                 // Lower bound (default 1)
