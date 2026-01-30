@@ -1,0 +1,5 @@
+semantic error: No implicit type found for variable 'x'
+ --> tests/errors/statement_func.f90:4:5
+  |
+4 |     stmt_func(x) = x + 1
+  |     ^^^^^^^^^^^^^^^^^^^^ 
