@@ -1,10 +1,10 @@
-program pointer_array_to_struct
+program associate_26
    implicit none
 
    type :: str
        integer :: data
        integer(1) :: a
-   end type  
+   end type
 
    type(str), target :: e(8)
 
@@ -14,7 +14,7 @@ program pointer_array_to_struct
 
    ! Set data
    e%data = idx
-   
+
    !dd=>idx    ! OK
    dd=>e%data ! ICE
 
@@ -22,7 +22,7 @@ program pointer_array_to_struct
    loop_sum  = 0
    do j=1,size(dd)
        loop_sum = loop_sum+idx(dd(j))
-   end do 
+   end do
 
    print *, 'expected =',sum(idx)
    print *, 'array_sum=',array_sum
