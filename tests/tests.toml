@@ -3000,6 +3000,10 @@ filename = "../integration_tests/format_03.f"
 ast = true
 
 [[test]]
+filename = "../integration_tests/format_08.f90"
+run = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 
