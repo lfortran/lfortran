@@ -906,6 +906,11 @@ class ASRToLLVMVisitor;
                         finalize_type(ptr, t_past, struct_sym, in_struct);
                         free_allocatable_ptr(ptr, t, in_struct);
                 });
+            } else if (t_past->type == ASR::Array) {
+                check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() {
+                    finalize_type(ptr, t_past, struct_sym, in_struct);
+                    free_allocatable_ptr(ptr, t, in_struct);
+                });
             } else {
                 finalize_type(ptr, t_past, struct_sym, in_struct);
                 free_allocatable_ptr(ptr, t, in_struct);

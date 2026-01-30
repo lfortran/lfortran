@@ -3052,9 +3052,65 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(asr_src_type);
                 llvm::Type* llvm_type = get_type_from_ttype_t_util(src_expr, alloc_type->m_type, module);
                 if( ASRUtils::is_array(alloc_type->m_type) ) {// non-primitive type
+                    auto ensure_dest_array_descriptor = [&]() {
+                        llvm::Value* dest_descr_ptr = dest;
+                        llvm::Value* dest_descr = CreateLoad2(llvm_type->getPointerTo(), dest_descr_ptr);
+                        llvm::Value* desc_is_null = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        create_if_else(desc_is_null, [&]() {
+                            llvm::DataLayout data_layout(module->getDataLayout());
+                            int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
+                            llvm::Value* malloc_size = llvm::ConstantInt::get(
+                                getIntType(4), llvm::APInt(32, type_size));
+                            llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, malloc_size);
+                            builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+                                context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+                            llvm::Value* new_descr = builder->CreateBitCast(malloc_ptr, llvm_type->getPointerTo());
+
+                            ASR::dimension_t* m_dims = nullptr;
+                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(alloc_type->m_type, m_dims);
+                            llvm::Type* dim_desc_type = arr_api->get_dimension_descriptor_type();
+                            int64_t dim_size = data_layout.getTypeAllocSize(dim_desc_type);
+                            llvm::Value* dim_malloc_size = llvm::ConstantInt::get(
+                                getIntType(4), llvm::APInt(32, n_dims * dim_size));
+                            llvm::Value* dim_malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, dim_malloc_size);
+                            builder->CreateMemSet(dim_malloc_ptr, llvm::ConstantInt::get(
+                                context, llvm::APInt(8, 0)), dim_malloc_size, llvm::MaybeAlign());
+                            llvm::Value* ptr_to_dim_desc = create_gep2(llvm_type, new_descr, 2);
+                            builder->CreateStore(builder->CreateBitCast(
+                                dim_malloc_ptr, arr_api->get_dimension_descriptor_type(true)), ptr_to_dim_desc);
+                            builder->CreateStore(llvm::ConstantInt::get(
+                                context, llvm::APInt(32, n_dims)),
+                                arr_api->get_rank(llvm_type, new_descr, true));
+
+                            if (ASRUtils::is_character(*alloc_type->m_type)) {
+                                llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
+                                    src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
+                                int64_t str_desc_size = data_layout.getTypeAllocSize(llvm_str_desc_type);
+                                llvm::Value* str_desc_malloc = LLVMArrUtils::lfortran_malloc(
+                                    context, *module, *builder,
+                                    llvm::ConstantInt::get(context, llvm::APInt(64, str_desc_size)));
+                                builder->CreateMemSet(str_desc_malloc, llvm::ConstantInt::get(
+                                    context, llvm::APInt(8, 0)), str_desc_size, llvm::MaybeAlign());
+                                llvm::Value* str_desc = builder->CreateBitCast(
+                                    str_desc_malloc, llvm_str_desc_type->getPointerTo());
+                                builder->CreateStore(str_desc, arr_api->get_pointer_to_data(llvm_type, new_descr));
+                            } else {
+                                llvm::Type* llvm_data_type = get_el_type(
+                                    src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
+                                arr_api->reset_is_allocated_flag(llvm_type, new_descr, llvm_data_type);
+                            }
+
+                            builder->CreateStore(new_descr, dest_descr_ptr);
+                        }, [](){});
+                        dest = CreateLoad2(llvm_type->getPointerTo(), dest_descr_ptr);
+                    };
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_character(*alloc_type->m_type)) {
-                        dest = CreateLoad2(llvm_type->getPointerTo(), dest);
+                        ensure_dest_array_descriptor();
                         llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
                             ASRUtils::type_get_past_allocatable_pointer(alloc_type->m_type), module);
                         llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
@@ -3099,7 +3155,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         // Copy rank
                         builder->CreateStore(n_dims, arr_api->get_rank(llvm_array_type, dest, true));
                     } else {
-                        dest = CreateLoad2(llvm_type->getPointerTo(), dest);
+                        ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
                                 alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
                                 module);
@@ -9466,6 +9522,50 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     {builder->CreateLoad(llvm_utils->character_type, str_data)});
                                 builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm_utils->character_type), str_data);
                                 builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+                            } else if (ASRUtils::is_allocatable(member_type) && ASRUtils::is_array(member_type)) {
+                                // If source allocatable array is not allocated, then
+                                // deallocate the destination allocatable array and reset its descriptor
+                                llvm::Value* dest_descr = dest_member;
+                                if (dest_descr->getType()->isPointerTy()) {
+                                    dest_descr = llvm_utils->CreateLoad2(mem_type, dest_descr);
+                                }
+                                llvm::Value* desc_not_null = builder->CreateICmpNE(
+                                    builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                llvm_utils->create_if_else(desc_not_null, [&]() {
+                                    llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
+                                        ASRUtils::get_expr_from_sym(al, mem_sym),
+                                        ASRUtils::type_get_past_allocatable_pointer(member_type), module);
+                                    if (ASRUtils::is_array_of_strings(member_type)) {
+                                        llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                            ASRUtils::get_expr_from_sym(al, mem_sym),
+                                            ASRUtils::extract_type(member_type), module);
+                                        llvm::Value* data_ptr_ptr = llvm_utils->arr_api->get_pointer_to_data(
+                                            llvm_array_type, dest_descr);
+                                        llvm::Value* dest_str_desc = llvm_utils->CreateLoad2(
+                                            llvm_str_desc_type->getPointerTo(), data_ptr_ptr);
+                                        llvm::Value* str_desc_not_null = builder->CreateICmpNE(
+                                            builder->CreatePtrToInt(dest_str_desc, llvm::Type::getInt64Ty(context)),
+                                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                        llvm_utils->create_if_else(str_desc_not_null, [&]() {
+                                            llvm_utils->free_strings(ASRUtils::get_expr_from_sym(al, mem_sym), dest_descr);
+                                        }, [](){});
+                                    } else {
+                                        llvm::Type* llvm_data_type = llvm_utils->get_el_type(
+                                            ASRUtils::get_expr_from_sym(al, mem_sym),
+                                            ASRUtils::extract_type(member_type), module);
+                                        llvm::Value* data_ptr_ptr = llvm_utils->arr_api->get_pointer_to_data(
+                                            llvm_array_type, dest_descr);
+                                        llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                                            llvm_data_type->getPointerTo(), data_ptr_ptr);
+                                        llvm::Value* data_not_null = builder->CreateICmpNE(
+                                            dest_data, llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()));
+                                        llvm_utils->create_if_else(data_not_null, [&]() {
+                                            llvm_utils->lfortran_free(dest_data);
+                                        }, [](){});
+                                        llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest_descr, llvm_data_type);
+                                    }
+                                }, [](){});
                             }
                         });
                     }
