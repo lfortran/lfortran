@@ -13064,16 +13064,10 @@ public:
             }
 
             case (ASR::ttypeType::Logical):{
-                std::string runtime_func_name;
-                llvm::Type *type_arg;
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-
-                if (a_kind == 4) {
-                    runtime_func_name = "_lfortran_read_logical";
-                    type_arg = llvm::Type::getInt1Ty(context);
-                } else {
-                    throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
-                }
+                // All logical kinds use the same runtime function - it reads T/F
+                // into a bool. The LLVM type is i1 regardless of Fortran kind.
+                std::string runtime_func_name = "_lfortran_read_logical";
+                llvm::Type *type_arg = llvm::Type::getInt1Ty(context);
 
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
