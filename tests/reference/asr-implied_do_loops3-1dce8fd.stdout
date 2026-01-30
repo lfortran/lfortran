@@ -63,6 +63,7 @@
                                                 ColMajor
                                             )
                                             ColMajor
+                                            ()
                                         )
                                         IntegerToReal
                                         (Array
@@ -168,6 +169,7 @@
                                                 ColMajor
                                             )
                                             ColMajor
+                                            ()
                                         )
                                         IntegerToReal
                                         (Array

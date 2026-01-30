@@ -7193,11 +7193,11 @@ public:
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
         ASR::ttype_t *type = nullptr;
+        ASR::symbol_t *type_declaration = nullptr;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
             std::string sym = "";
-            ASR::symbol_t *type_declaration;
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false, false,
                 dims, nullptr, type_declaration, ASR::abiType::Source);
             if (ASR::is_a<ASR::StructType_t>(*type)) {
@@ -7211,7 +7211,7 @@ public:
             }
         } else if (x.m_classtype) {
             std::string sym = x.m_classtype;
-            ASR::symbol_t* type_declaration = ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(to_lower(sym)));
+            type_declaration = current_scope->resolve_symbol(to_lower(sym));
             if (type_declaration == nullptr) {
                 diag.add(Diagnostic(
                     "Class type `" + sym + "` is not defined",
@@ -7219,7 +7219,7 @@ public:
                         Label("",{x.base.base.loc})
                     }));
                 throw SemanticAbort();
-            } else if (ASR::is_a<ASR::Struct_t>(*type_declaration)) {
+            } else if (ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(type_declaration))) {
                 type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, type_declaration, true);
             }
         } else {
@@ -7269,10 +7269,8 @@ public:
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
-                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran_expr(extracted_type, expr) 
-                    + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_type))) + ")" +
-                        "` array constructor is `" + ASRUtils::type_to_str_fortran_expr(extracted_new_type, expr) 
-                        + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_new_type))) + ")" + "`",
+                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_kind(extracted_type, expr)
+                        + "` array constructor is `" + ASRUtils::type_to_str_with_kind(extracted_new_type, expr) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
                 }
@@ -7359,8 +7357,12 @@ public:
             }
         }
 
+        ASR::expr_t* struct_var = nullptr;
+        if (type_declaration != nullptr) {
+            struct_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, type_declaration));
+        }
         tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
-            body.size(), type, ASR::arraystorageType::ColMajor);
+            body.size(), type, ASR::arraystorageType::ColMajor, struct_var);
     }
 
     void fill_expr_in_ttype_t(std::vector<ASR::expr_t*>& exprs, ASR::dimension_t* dims, size_t n_dims) {
@@ -8096,8 +8098,8 @@ public:
                         allow_mismatch = true;
                     }
                     if (!allow_mismatch) {
-                        std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
-                        std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
+                        std::string arg_str = ASRUtils::type_to_str_with_kind(arg_type, arg);
+                        std::string orig_arg_str = ASRUtils::type_to_str_with_kind(orig_arg_type, func->m_args[i]);
                         diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                             "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                             Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
@@ -13771,14 +13773,26 @@ public:
         this->visit_expr(*x.m_re);
         ASR::expr_t *re = ASRUtils::EXPR(tmp);
         ASR::expr_t *re_value = ASRUtils::expr_value(re);
-        int a_kind_r = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(re));
+        ASR::ttype_t *re_type = ASRUtils::expr_type(re);
         this->visit_expr(*x.m_im);
         ASR::expr_t *im = ASRUtils::EXPR(tmp);
         ASR::expr_t *im_value = ASRUtils::expr_value(im);
-        int a_kind_i = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(im));
-        // TODO: Add semantic checks what type are allowed
+        ASR::ttype_t *im_type = ASRUtils::expr_type(im);
+        // Determine complex kind per Fortran standard:
+        // - Complex literal kind is determined by real arguments only
+        // - Integer arguments are converted to the result complex kind
+        // - If both parts are integer: use default complex kind (4)
+        int complex_kind = 4;
+        if (ASRUtils::is_real(*re_type)) {
+            complex_kind = std::max(complex_kind,
+                ASRUtils::extract_kind_from_ttype_t(re_type));
+        }
+        if (ASRUtils::is_real(*im_type)) {
+            complex_kind = std::max(complex_kind,
+                ASRUtils::extract_kind_from_ttype_t(im_type));
+        }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
-                std::max(a_kind_r, a_kind_i)));
+                complex_kind));
         ASR::expr_t *value = nullptr;
         if (re_value && im_value) {
             double re_double;
