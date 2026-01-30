@@ -1946,7 +1946,7 @@ public:
                             llvm::Value* ptr_;
 
                             if (is_struct_member) {
-                                ptr_ = llvm_utils->allocate_array_descriptor_on_heap(type, n_dims);
+                                ptr_ = arr_descr->allocate_descriptor_on_heap(type, n_dims);
                                 if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
                                     llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                                         tmp_expr, ASRUtils::extract_type(array_type), module.get());
@@ -5239,7 +5239,7 @@ public:
                                 ASRUtils::type_get_past_allocatable(v->m_type)), module.get(), v->m_abi);
                         
                         if (compiler_options.new_classes) {
-                            llvm::Value* arr = llvm_utils->allocate_array_descriptor_on_heap(type_, n_dims);
+                            llvm::Value* arr = arr_descr->allocate_descriptor_on_heap(type_, n_dims);
                             builder->CreateStore(arr, ptr_member);
 
                             llvm::Value* ptr_to_dim_desc = llvm_utils->CreateLoad2(

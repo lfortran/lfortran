@@ -279,7 +279,6 @@ class ASRToLLVMVisitor;
                 llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
                 bool is_llvm_ptr=false);
 
-            llvm::Value* allocate_array_descriptor_on_heap(llvm::Type* array_desc_type, size_t n_dims);
             llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
             void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);

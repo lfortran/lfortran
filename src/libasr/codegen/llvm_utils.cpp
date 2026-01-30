@@ -1627,28 +1627,6 @@ namespace LCompilers {
         return malloc_ptr;
     }
 
-    llvm::Value* LLVMUtils::allocate_array_descriptor_on_heap(llvm::Type* array_desc_type, size_t n_dims) {
-        llvm::DataLayout data_layout(module->getDataLayout());
-        int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
-        llvm::Value* desc_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
-            getIntType(4), llvm::APInt(32, desc_size)));
-        llvm::Value* desc_ptr = builder->CreateBitCast(desc_mem, array_desc_type->getPointerTo());
-
-        llvm::Type* dim_desc_type = arr_api->get_dimension_descriptor_type();
-        int64_t dim_size = data_layout.getTypeAllocSize(dim_desc_type);
-        llvm::Value* dim_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
-            getIntType(4), llvm::APInt(32, n_dims * dim_size)));
-        llvm::Value* ptr_to_dim_desc = create_gep2(array_desc_type, desc_ptr, 2);
-        builder->CreateStore(builder->CreateBitCast(
-            dim_mem, arr_api->get_dimension_descriptor_type(true)), ptr_to_dim_desc);
-
-        builder->CreateStore(llvm::ConstantInt::get(
-            context, llvm::APInt(32, n_dims)),
-            arr_api->get_rank(array_desc_type, desc_ptr, true));
-
-        return desc_ptr;
-    }
-
     llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(llvm::Type* string_desc_type) {
         llvm::DataLayout data_layout(module->getDataLayout());
         int64_t str_desc_size = data_layout.getTypeAllocSize(string_desc_type);
@@ -3111,7 +3089,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         create_if_else(desc_is_null, [&]() {
                             ASR::dimension_t* m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(alloc_type->m_type, m_dims);
-                            llvm::Value* new_descr = allocate_array_descriptor_on_heap(llvm_type, n_dims);
+                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type, n_dims);
                             if (ASRUtils::is_character(*alloc_type->m_type)) {
                                 llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
                                     src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
