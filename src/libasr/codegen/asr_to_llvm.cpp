@@ -6915,6 +6915,211 @@ public:
         tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
     }
 
+    // Check if the expression is a component array: an array formed by
+    // accessing a scalar struct member across an array of structs
+    // e.g., token%first where token is array of structs and first is scalar member
+    bool is_component_array_expr(ASR::expr_t* expr) {
+        if (!expr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return false;
+        }
+        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        if (!ASRUtils::is_array(sim->m_type)) {
+            return false;
+        }
+        ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(sim->m_v)));
+        ASR::ttype_t* member_type = ASRUtils::symbol_type(sim->m_m);
+        member_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(member_type));
+        return ASRUtils::is_array(base_type) && !ASRUtils::is_array(member_type);
+    }
+
+    // Handle associate statement where the value is a component array
+    // e.g., associate(first => token%first)
+    // This creates a descriptor with proper stride to access struct members
+    void handle_component_array_association(const ASR::Associate_t& x) {
+        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_value);
+        ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(sim->m_m));
+
+        // Get the base struct array
+        ASR::ttype_t* base_type = ASRUtils::expr_type(sim->m_v);
+        ASR::ttype_t* base_struct_array_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(base_type));
+        ASR::ttype_t* struct_elem_type = ASRUtils::type_get_past_array(base_struct_array_type);
+
+        // Get the target and value types
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* component_elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_pointer(target_type));
+
+        // Visit target (the pointer variable)
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*x.m_target);
+        llvm::Value* target_ptr = tmp;
+        ptr_loads = ptr_loads_copy;
+
+        // Visit the base struct array
+        ptr_loads_copy = ptr_loads;
+        ptr_loads = 1 - !LLVM::is_llvm_pointer(*base_type);
+        visit_expr(*sim->m_v);
+        llvm::Value* base_array_desc = tmp;
+        ptr_loads = ptr_loads_copy;
+
+        // Get LLVM types
+        llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
+        llvm::Type* base_array_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            sim->m_v, base_struct_array_type, module.get());
+        llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            sim->m_v, struct_elem_type, module.get());
+        llvm::Type* component_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_target, component_elem_type, module.get());
+
+        // Create a new descriptor for the component array
+        llvm::AllocaInst* new_desc = llvm_utils->CreateAlloca(
+            target_desc_type, nullptr, "component_array_desc");
+
+        // Get the struct symbol name for member index lookup
+        ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(sim->m_v);
+        std::string struct_name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        std::string member_name = std::string(member->m_name);
+
+        // Find the member index in the struct
+        int member_idx = 0;
+        std::string current_type_name = struct_name;
+        while (name2memidx[current_type_name].find(member_name) == name2memidx[current_type_name].end()) {
+            if (dertype2parent.find(current_type_name) == dertype2parent.end()) {
+                throw CodeGenError(current_type_name + " doesn't have member " + member_name,
+                                  x.base.base.loc);
+            }
+            current_type_name = dertype2parent[current_type_name];
+        }
+        member_idx = name2memidx[current_type_name][member_name];
+
+        // Get the base array data pointer (pointer to first struct)
+        ASR::array_physical_typeType base_ptype = ASRUtils::extract_physical_type(base_struct_array_type);
+        llvm::Value* base_data_ptr = nullptr;
+
+        if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
+            base_data_ptr = arr_descr->get_pointer_to_data(
+                sim->m_v, base_struct_array_type, base_array_desc, module.get());
+            base_data_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(), base_data_ptr);
+        } else if (base_ptype == ASR::array_physical_typeType::FixedSizeArray) {
+            base_data_ptr = llvm_utils->create_gep2(base_array_llvm_type, base_array_desc, 0);
+        } else {
+            base_data_ptr = base_array_desc;
+        }
+
+        // Get pointer to the first struct's member
+        llvm::Value* first_member_ptr = llvm_utils->create_gep2(
+            struct_llvm_type, base_data_ptr, member_idx);
+
+        // Store data pointer (pointing to first element's member)
+        builder->CreateStore(first_member_ptr,
+            arr_descr->get_pointer_to_data(target_desc_type, new_desc));
+
+        // Set offset to 0
+        unsigned index_bit_width = arr_descr->get_index_type()->getIntegerBitWidth();
+        builder->CreateStore(
+            llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+            arr_descr->get_offset(target_desc_type, new_desc, false));
+
+        // Get rank from base array
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
+
+        // Set rank
+        builder->CreateStore(
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, n_dims)),
+            arr_descr->get_rank(target_desc_type, new_desc, true));
+
+        // Allocate dimension descriptors
+        llvm::Type* dim_des_type = arr_descr->get_dimension_descriptor_type(false);
+        llvm::Value* dim_des_array = llvm_utils->CreateAlloca(
+            dim_des_type,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims),
+            "component_dim_des");
+        builder->CreateStore(dim_des_array,
+            arr_descr->get_pointer_to_dimension_descriptor_array(target_desc_type, new_desc, false));
+
+        // Compute the stride multiplier: sizeof(struct) / sizeof(component)
+        // This is the number of component-sized elements between consecutive struct elements
+        llvm::DataLayout data_layout(module->getDataLayout());
+        uint64_t struct_size = data_layout.getTypeAllocSize(struct_llvm_type);
+        uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
+        uint64_t stride_multiplier = struct_size / component_size;
+
+        // Copy dimension info from base array with adjusted stride
+        for (int i = 0; i < n_dims; i++) {
+            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+            llvm::Value* target_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                dim_des_array, dim_idx);
+
+            if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                // Get base array dimension descriptor
+                llvm::Value* base_dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    base_array_llvm_type, base_array_desc);
+                llvm::Value* base_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                    base_dim_des_array, dim_idx);
+
+                // Copy lower bound
+                llvm::Value* base_lb = arr_descr->get_lower_bound(base_dim_des, true);
+                builder->CreateStore(base_lb, arr_descr->get_lower_bound(target_dim_des, false));
+
+                // Copy dimension size
+                llvm::Value* base_size = arr_descr->get_dimension_size(base_dim_des, true);
+                builder->CreateStore(base_size, arr_descr->get_dimension_size(target_dim_des, false));
+
+                // Set stride: base_stride * stride_multiplier
+                llvm::Value* base_stride = arr_descr->get_stride(base_dim_des, true);
+                llvm::Value* new_stride = builder->CreateMul(
+                    base_stride,
+                    llvm::ConstantInt::get(arr_descr->get_index_type(), stride_multiplier));
+                builder->CreateStore(new_stride, arr_descr->get_stride(target_dim_des, false));
+            } else {
+                // For fixed-size arrays, extract dims from the type
+                ASR::dimension_t* dims = nullptr;
+                [[maybe_unused]] int rank = ASRUtils::extract_dimensions_from_ttype(base_struct_array_type, dims);
+                LCOMPILERS_ASSERT(rank > 0 && i < rank);
+
+                // Lower bound (default 1)
+                llvm::Value* lb = llvm::ConstantInt::get(arr_descr->get_index_type(), 1);
+                if (dims[i].m_start) {
+                    visit_expr_wrapper(dims[i].m_start, true);
+                    lb = builder->CreateSExtOrTrunc(tmp, arr_descr->get_index_type());
+                }
+                builder->CreateStore(lb, arr_descr->get_lower_bound(target_dim_des, false));
+
+                // Dimension size
+                llvm::Value* dim_size = llvm::ConstantInt::get(arr_descr->get_index_type(), 1);
+                if (dims[i].m_length) {
+                    visit_expr_wrapper(dims[i].m_length, true);
+                    dim_size = builder->CreateSExtOrTrunc(tmp, arr_descr->get_index_type());
+                }
+                builder->CreateStore(dim_size, arr_descr->get_dimension_size(target_dim_des, false));
+
+                // Stride for first dimension is stride_multiplier, for subsequent it's cumulative
+                llvm::Value* stride = llvm::ConstantInt::get(
+                    arr_descr->get_index_type(), stride_multiplier);
+                if (i > 0) {
+                    // Get previous dimension's stride and size
+                    llvm::Value* prev_dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i - 1));
+                    llvm::Value* prev_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                        dim_des_array, prev_dim_idx);
+                    llvm::Value* prev_stride = arr_descr->get_stride(prev_dim_des, true);
+                    llvm::Value* prev_size = arr_descr->get_dimension_size(prev_dim_des, true);
+                    stride = builder->CreateMul(prev_stride, prev_size);
+                }
+                builder->CreateStore(stride, arr_descr->get_stride(target_dim_des, false));
+            }
+        }
+
+        // Store the new descriptor to the target pointer
+        builder->CreateStore(new_desc, target_ptr);
+    }
+
     void handle_pointer_section_target(const ASR::Associate_t& x) {
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
         
@@ -7204,6 +7409,8 @@ public:
             handle_pointer_section_target(x);
         } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
             handle_array_section_association_to_pointer(x);
+        } else if (is_component_array_expr(x.m_value)) {
+            handle_component_array_association(x);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
