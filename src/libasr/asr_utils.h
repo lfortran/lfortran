@@ -6643,7 +6643,8 @@ inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, A
 }
 
 inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
-    ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format) {
+    ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format,
+    ASR::expr_t* a_struct_var=nullptr) {
     if( !ASRUtils::is_array(a_type) ) {
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
@@ -6716,7 +6717,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
             ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
-            value, a_storage_format);
+            value, a_storage_format, a_struct_var);
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
