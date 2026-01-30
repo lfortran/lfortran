@@ -932,6 +932,16 @@ int find_matching_parentheses(const fchar* format, const int64_t format_len, int
 }
 
 /**
+ * Check if a character is a data or control descriptor that requires comma separation
+ */
+static bool is_descriptor_requiring_comma(char c) {
+    c = tolower(c);
+    return (c == 'a' || c == 'i' || c == 'f' || c == 'e' || c == 'd' || 
+            c == 'g' || c == 'l' || c == 'b' || c == 'z' ||
+            c == 't' || c == 's' || c == 'r');
+}
+
+/**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
  *
@@ -947,6 +957,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
+    bool last_was_descriptor = false;
+    bool comma_seen = false;
 
     while (index < format_len) {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
@@ -957,11 +969,16 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
             format_values_2 = ptr;
         }
         switch (tolower(cformat[index])) {
+            case ' ' :
+                break;
             case ',' :
+                comma_seen = true;
                 break;
             case '/' :
             case ':' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
+                last_was_descriptor = false;
+                comma_seen = false;
                 break;
             case '*' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
@@ -982,14 +999,24 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 format_values_2[format_values_count++] = substring(cformat, start, index+1);
                 break;
             case 'a' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 while (isdigit(cformat[index])) {
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 'e' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 bool edot = false;
                 if (tolower(cformat[index]) == 'n') index++;
@@ -1009,14 +1036,83 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
+                break;
+            case 'b' :
+                start = index++;
+                if (tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                } else {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    bool dot = false;
+                    while (isdigit(cformat[index])) index++;
+                    if (cformat[index] == '.') {
+                        dot = true;
+                        index++;
+                    }
+                    while (isdigit(cformat[index])) index++;
+                    if (dot && tolower(cformat[index]) == 'e') {
+                        index++;
+                        while (isdigit(cformat[index])) index++;
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                }
+                break;
+            case 'd' :
+                start = index++;
+                if (tolower(cformat[index]) == 't') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                } else {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    bool dot = false;
+                    if(tolower(cformat[index]) == 's') index++;
+                    while (isdigit(cformat[index])) index++;
+                    if (cformat[index] == '.') {
+                        dot = true;
+                        index++;
+                    }
+                    while (isdigit(cformat[index])) index++;
+                    if (dot && tolower(cformat[index]) == 'e') {
+                        index++;
+                        while (isdigit(cformat[index])) index++;
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                }
                 break;
             case 'i' :
-            case 'd' :
             case 'f' :
             case 'l' :
-            case 'b' :
             case 'g' :
             case 'z' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 bool dot = false;
                 if(tolower(cformat[index]) == 's') index++;
@@ -1032,8 +1128,14 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 's': 
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if( cformat[index] == ','          || // 'S'  (default sign)
                     tolower(cformat[index]) == 'p' || // 'SP' (sign plus)
@@ -1045,6 +1147,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     fprintf(stderr, "Error: Invalid format specifier. After 's' specifier\n");
                     exit(1);
                 }
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case '(' :
                 start = index;
@@ -1054,6 +1158,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if (tolower(cformat[index]) == 'l' || tolower(cformat[index]) == 'r') {
                      index++;  // move past 'L' or 'R'
@@ -1071,13 +1179,21 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 'r':  // Rounding mode: RU, RD, RN, RZ
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if (tolower(cformat[index]) == 'u' || tolower(cformat[index]) == 'd' ||
                     tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z' ||
                     tolower(cformat[index]) == 'c' || tolower(cformat[index]) == 'p') {
                     format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
                 } else {
                     fprintf(stderr, "Error: Invalid rounding mode after 'R'\n");
                     exit(1);
