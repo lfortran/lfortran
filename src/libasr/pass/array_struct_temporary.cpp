@@ -523,6 +523,11 @@ bool set_allocation_size(
                     allocate_dims.push_back(al, allocate_dim);
                 }
             }
+            // Set len_allocte_expr for deferred-length character arrays
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(array_section_t->m_v);
+            }
             break;
         }
         case ASR::exprType::ArrayItem: {
@@ -560,6 +565,11 @@ bool set_allocation_size(
                         al, loc, value, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
                 }
                 allocate_dims.push_back(al, m_dims[i]);
+            }
+            // Set len_allocte_expr for deferred-length character arrays
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(value);
             }
             break;
         }
