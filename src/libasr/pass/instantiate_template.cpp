@@ -499,7 +499,7 @@ public:
             m_args.push_back(al, self().duplicate_expr(x->m_args[i]));
         }
         ASR::ttype_t* m_type = substitute_type(&x->base, x->m_type);
-        return make_ArrayConstructor_t(al, x->base.base.loc, m_args.p, x->n_args, m_type, x->m_value, x->m_storage_format);
+        return make_ArrayConstructor_t(al, x->base.base.loc, m_args.p, x->n_args, m_type, x->m_value, x->m_storage_format, nullptr);
     }
 
     ASR::asr_t* duplicate_ListItem(ASR::ListItem_t *x) {
