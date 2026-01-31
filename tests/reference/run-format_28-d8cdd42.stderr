@@ -1,0 +1,5 @@
+semantic error: Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments
+  --> tests/../integration_tests/format_28.f90:11:7
+   |
+11 |       write(*,fmt,iostat=io) fmt//' ',3e20
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

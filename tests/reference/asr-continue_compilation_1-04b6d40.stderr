@@ -1123,7 +1123,7 @@ semantic error: Duplicate value of `rec` found, it has already been specified vi
 494 |     read(unit=10, rec=1, rec=2) y
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Duplicate value of `rec` found, it has already been specified via arguments or keyword arguments
+semantic error: Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
    --> tests/errors/continue_compilation_1.f90:495:5
     |
 495 |     write(unit=10, rec=1, rec=2) y

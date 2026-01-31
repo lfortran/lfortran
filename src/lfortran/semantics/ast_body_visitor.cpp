@@ -1251,6 +1251,46 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        if (_type == AST::stmtType::Write && a_unit == nullptr) {
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+            a_unit = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 6, int_type)); //default output/input unit is 6
+        }
+        // Ensure iostat is always present for WRITE
+        if (_type == AST::stmtType::Write && a_iostat == nullptr) {
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+
+            std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
+
+            ASR::symbol_t* iostat_sym = declare_implicit_variable2(
+                loc, iostat_name, ASRUtils::intent_local, int_type);
+
+            a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
+        }
+        // Ensure iomsg is always present for WRITE
+        if (_type == AST::stmtType::Write && a_iomsg == nullptr) {
+            // Create empty string iomsg
+            ASR::ttype_t *str_type = ASRUtils::TYPE(
+                ASR::make_String_t(
+                    al, loc, 1,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 0,
+                        ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, loc, compiler_options.po.default_integer_kind)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+
+            std::string iomsg_name =
+                current_scope->get_unique_name("__lfortran_iomsg");
+
+            ASR::symbol_t *iomsg_sym = declare_implicit_variable2(
+                loc, iomsg_name, ASRUtils::intent_local, str_type);
+
+            a_iomsg = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, iomsg_sym));
+        }
+
         //check positional fmt argument (second arg)
         if (a_fmt != nullptr) {
             ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
