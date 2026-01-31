@@ -85,6 +85,12 @@ semantic error: Duplicate DIMENSION attribute specified
 35 |         common /rowns/ rowns(209)
    |                        ^^^^^^^^^^ 
 
+semantic error: Intent attribute can only be applied to procedure arguments
+  --> tests/errors/continue_compilation_2.f90:58:18
+   |
+58 |         INTEGER, INTENT(IN) :: sub_a
+   |                  ^^^^^^^^^^ 
+
 semantic error: Dummy argument 'a' not defined
   --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
    |

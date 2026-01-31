@@ -6,7 +6,7 @@ module template_add_03_m
     requirement r(t, f)
         type, deferred :: t
         function f(x, y) result(z)
-            type(t), intent(in) :: x, y, a
+            type(t), intent(in) :: x, y
             type(t) :: z
         end function
     end requirement

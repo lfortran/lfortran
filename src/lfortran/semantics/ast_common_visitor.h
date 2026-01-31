@@ -4711,6 +4711,18 @@ public:
                     ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
                     if ( orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl) ) {
                         ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                        // Check if intent is used on a non-argument variable
+                        bool is_argument = std::find(current_procedure_args.begin(),
+                                current_procedure_args.end(), sym) !=
+                                current_procedure_args.end();
+                        if (!is_argument) {
+                            diag.add(Diagnostic(
+                                "Intent attribute can only be applied to procedure arguments",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.m_attributes[i]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         orig_decl_variable->m_intent = s_intent;
                     }
                 } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -4873,6 +4885,15 @@ public:
                         if (AST::is_a<AST::AttrIntent_t>(*a)) {
                             AST::AttrIntent_t *ai =
                                 AST::down_cast<AST::AttrIntent_t>(a);
+                            // Check if intent is used on a non-argument variable
+                            if (!is_argument) {
+                                diag.add(Diagnostic(
+                                    "Intent attribute can only be applied to procedure arguments",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{a->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
                             switch (ai->m_intent) {
                                 case (AST::attr_intentType::In) : {
                                     s_intent = ASRUtils::intent_in;

@@ -17,7 +17,7 @@ module template_error_02_m
         public :: add_generic
     contains
         function add_generic(x, y) result(z)
-            type(T), intent(in) :: x, y, a
+            type(T), intent(in) :: x, y
             type(T) :: z
             z = F(x, y)
         end function
