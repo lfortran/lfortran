@@ -608,13 +608,13 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, curr_idx), b.GetUBound(mask, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
                         b.Assignment(res, b.Add(res, b.i_t(1, ASRUtils::expr_type(res))))
                     }, {}),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, curr_idx), b.GetUBound(mask, curr_idx), {
                 create_do_loop_helper_count(al, loc, do_loop_variables, mask, res, curr_idx - 1)
             }, nullptr);
         }
@@ -625,14 +625,14 @@ namespace LCompilers {
             ASRUtils::ASRBuilder b(al, loc);
 
             if (curr_idx == (int) do_loop_variables.size() - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))),
                     inner_most_do_loop,
                     b.Assignment(b.ArrayItem_01(res, {res_idx}), c)
                 });
             }
             if (curr_idx != dim - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     create_do_loop_helper_count_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, mask, res, curr_idx + 1, dim)
                 });
             } else {
@@ -648,11 +648,11 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, curr_idx), b.GetUBound(mask, curr_idx), {
                     b.Assignment(res, b.Xor(res, b.ArrayItem_01(mask, vars)))
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, curr_idx), b.GetUBound(mask, curr_idx), {
                 create_do_loop_helper_parity(al, loc, do_loop_variables, mask, res, curr_idx - 1)
             }, nullptr);
         }
@@ -663,14 +663,14 @@ namespace LCompilers {
             ASRUtils::ASRBuilder b(al, loc);
 
             if (curr_idx == (int) do_loop_variables.size() - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))))),
                     inner_most_do_loop,
                     b.Assignment(b.ArrayItem_01(res, {res_idx}), c)
                 });
             }
             if (curr_idx != dim - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     create_do_loop_helper_parity_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, mask, res, curr_idx + 1, dim)
                 });
             } else {
@@ -686,11 +686,11 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
                         b.Assignment(res, b.Add(res, b.Mul(b.ArrayItem_01(array, vars), b.ArrayItem_01(array, vars)))),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
                 create_do_loop_helper_norm2(al, loc, do_loop_variables, array, res, curr_idx - 1)
             }, nullptr);
         }
@@ -701,14 +701,14 @@ namespace LCompilers {
             ASRUtils::ASRBuilder b(al, loc);
 
             if (curr_idx == (int) do_loop_variables.size() - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(array, curr_idx + 1), UBound(array, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 1), b.GetUBound(array, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, 0.0, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))))),
                     inner_most_do_loop,
                     b.Assignment(b.ArrayItem_01(res, {res_idx}), c)
                 });
             }
             if (curr_idx != dim - 1) {
-                return b.DoLoop(do_loop_variables[curr_idx], LBound(array, curr_idx + 1), UBound(array, curr_idx + 1), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 1), b.GetUBound(array, curr_idx + 1), {
                     create_do_loop_helper_norm2_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, array, res, curr_idx + 1, dim)
                 });
             } else {
@@ -726,21 +726,21 @@ namespace LCompilers {
                     vars.push_back(do_loop_variables[i]);
                 }
                 if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0) {
-                    return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                    return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
                         b.If(mask, {
                             b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
                             b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
                         }, {}),
                     }, nullptr);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
                         b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
                         b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
                     }, {}),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
                 create_do_loop_helper_pack(al, loc, do_loop_variables, array, mask, res, idx, curr_idx - 1)
             }, nullptr);
         }
@@ -761,14 +761,14 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, 1), UBound(mask, 1), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, 1), b.GetUBound(mask, 1), {
                     b.If(b.ArrayItem_01(mask, vars), {
                         b.Assignment(b.ArrayItem_01(res, vars), b.ArrayItem_01(vector, {idx})),
                         b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
                     }, {}),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(mask, curr_idx), b.GetUBound(mask, curr_idx), {
                 create_do_loop_helper_unpack(al, loc, do_loop_variables, vector, mask, res, idx, curr_idx - 1)
             }, nullptr);
         }
@@ -790,11 +790,11 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     res_vars.push_back(do_loop_variables[i]);
                 }
-                return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), UBound(array, curr_idx + 2), {
+                return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), b.GetUBound(array, curr_idx + 2), {
                     b.Assignment(b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars)),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx], LBound(array, curr_idx + 2), UBound(array, curr_idx + 2), {
+            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 2), b.GetUBound(array, curr_idx + 2), {
                 create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1)
             }, nullptr);
         }
@@ -805,11 +805,11 @@ namespace LCompilers {
             if (curr_idx == (int)do_loop_variables.size()) {
                 // ASR::expr_t* arr_item = b.ArrayItem_01(arr, do_loop_variables);
                 Vec<ASR::expr_t*> args; args.reserve(al, 1); args.push_back(al, arr_item);
-                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(arr, curr_idx), UBound(arr, curr_idx), {
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(arr, curr_idx), b.GetUBound(arr, curr_idx), {
                     stmt
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(arr, curr_idx), UBound(arr, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(arr, curr_idx), b.GetUBound(arr, curr_idx), {
                 create_do_loop_helper_random_number(al, loc, do_loop_variables, s, arr, return_type, arr_item, stmt, curr_idx + 1)
             }, nullptr);
 
