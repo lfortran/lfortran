@@ -1,5 +1,0 @@
-semantic error: Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
- --> tests/write2.f90:4:1
-  |
-4 | write(unit=*, fmt='(a)', advance='no') "Some text: "
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -1251,6 +1251,9 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        bool unit_explicit = false;
+        bool iostat_explicit = false;
+        bool iomsg_explicit = false;
         if (_type == AST::stmtType::Write && a_unit == nullptr) {
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
@@ -1310,7 +1313,7 @@ public:
             std::string m_arg_str(kwarg.m_arg);
             m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("unit") ) {
-                if( a_unit != nullptr ) {
+                if( unit_explicit ) {
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
                         Level::Error, Stage::Semantic, {
@@ -1318,6 +1321,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+                unit_explicit = true;
                 if (kwarg.m_value != nullptr) {
                     this->visit_expr(*kwarg.m_value);
                     a_unit = ASRUtils::EXPR(tmp);
@@ -1332,7 +1336,7 @@ public:
                     }
                 }
             } else if( m_arg_str == std::string("iostat") ) {
-                if( a_iostat != nullptr ) {
+                if( iostat_explicit ) {
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments)""",
                         Level::Error, Stage::Semantic, {
@@ -1340,6 +1344,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+                iostat_explicit = true;
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
@@ -1368,7 +1373,7 @@ public:
                         throw SemanticAbort();
                 }
             } else if( m_arg_str == std::string("iomsg") ) {
-                if( a_iomsg != nullptr ) {
+                if( iomsg_explicit ) {
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `iomsg` found, it has already been specified via arguments or keyword arguments)""",
                         Level::Error, Stage::Semantic, {
@@ -1376,6 +1381,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+                iomsg_explicit = true;
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
