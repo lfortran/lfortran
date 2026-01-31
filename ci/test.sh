@@ -67,8 +67,8 @@ if [[ $WIN != "1" ]]; then
     ctest -L llvm -j${NPROC}
     cd ..
 
-    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8
+    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f
     ./run_tests.py -b llvm -f -nf16
     cd ..
 
