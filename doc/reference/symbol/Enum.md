@@ -1,3 +1,4 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # Enum
 
 Enum, a **symbol** node.
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 

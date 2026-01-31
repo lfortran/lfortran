@@ -1,6 +1,7 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # UnionType
 
-UnionType, a **ttype** node.
+UnionType, a **type (ttype)** node.
 
 ## Declaration
 
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 

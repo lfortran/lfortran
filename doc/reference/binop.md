@@ -1,3 +1,4 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # binop
 
 `binop` is an **enum**.

@@ -1,6 +1,7 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # ArraySize
 
-ArraySize, a **expr** node.
+ArraySize, a **expression (expr)** node.
 
 ## Declaration
 
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 

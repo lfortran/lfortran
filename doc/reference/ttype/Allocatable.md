@@ -1,6 +1,7 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # Allocatable
 
-Allocatable, a **ttype** node.
+Allocatable, a **type (ttype)** node.
 
 ## Declaration
 
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 

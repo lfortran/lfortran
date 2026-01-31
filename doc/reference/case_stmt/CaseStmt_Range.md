@@ -1,6 +1,7 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # CaseStmt_Range
 
-CaseStmt_Range, a **case_stmt** node.
+CaseStmt_Range, a **case statement (case_stmt)** node.
 
 ## Declaration
 
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 

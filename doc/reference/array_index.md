@@ -1,3 +1,4 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # array_index
 
 `array_index` is a **struct**.

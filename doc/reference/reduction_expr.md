@@ -1,3 +1,4 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # reduction_expr
 
 `reduction_expr` is a **struct**.

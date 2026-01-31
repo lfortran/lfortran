@@ -184,7 +184,7 @@ def test_generate_node_content_uses_placeholder_when_no_existing():
     )
 
     assert "_No documentation yet._" in content
-    assert "_No ASR example yet._" in content
+    assert "<!-- Generate ASR using pickle. -->" in content
 
 
 def test_generate_node_content_preserves_asr_section():
@@ -250,7 +250,11 @@ def test_auto_markers_present_in_output():
     assert "<!-- BEGIN AUTO: restrictions -->" in content
     assert "<!-- END AUTO: restrictions -->" in content
     assert "## ASR" in content
-    assert "_No ASR example yet._" in content
+    assert "<!-- Generate ASR using pickle. -->" in content
+    # Check header comment
+    assert "<!-- This is an automatically generated file." in content
+    # Check category format
+    assert "**statement (stmt)**" in content
 
 
 def test_format_code_elements_qualified_names():

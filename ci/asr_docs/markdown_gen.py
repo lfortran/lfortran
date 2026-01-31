@@ -7,6 +7,18 @@ Generates properly formatted markdown for nodes, enums, and structs.
 import re
 
 
+# Category name mappings for documentation
+CATEGORY_NAMES = {
+    'stmt': 'statement (stmt)',
+    'expr': 'expression (expr)',
+    'ttype': 'type (ttype)',
+    'symbol': 'symbol',
+    'case_stmt': 'case statement (case_stmt)',
+    'attribute': 'attribute',
+    'omp_clause': 'OpenMP clause (omp_clause)',
+}
+
+
 def generate_node_content(category, name, signature, restrictions, existing_sections=None):
     """
     Generate markdown content for a node, preserving existing documentation.
@@ -50,13 +62,17 @@ def generate_node_content(category, name, signature, restrictions, existing_sect
         doc_text = existing_sections["documentation"]
 
     # Get existing ASR example or use placeholder
-    asr_text = "_No ASR example yet._"
+    asr_text = "<!-- Generate ASR using pickle. -->"
     if existing_sections and "asr" in existing_sections:
         asr_text = existing_sections["asr"]
 
-    md = f"""# {name}
+    # Get full category name
+    category_full = CATEGORY_NAMES.get(category, category)
 
-{name}, a **{category}** node.
+    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
+# {name}
+
+{name}, a **{category_full}** node.
 
 ## Declaration
 
@@ -103,7 +119,8 @@ def generate_enum_content(name, values, existing_sections=None):
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
-    md = f"""# {name}
+    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
+# {name}
 
 `{name}` is an **enum**.
 
@@ -137,7 +154,8 @@ def generate_struct_content(name, fields, existing_sections=None):
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
-    md = f"""# {name}
+    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
+# {name}
 
 `{name}` is a **struct**.
 

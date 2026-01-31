@@ -1,3 +1,4 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # array_physical_type
 
 `array_physical_type` is an **enum**.

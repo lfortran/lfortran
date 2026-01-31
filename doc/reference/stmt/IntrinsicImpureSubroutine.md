@@ -1,6 +1,7 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
 # IntrinsicImpureSubroutine
 
-IntrinsicImpureSubroutine, a **stmt** node.
+IntrinsicImpureSubroutine, a **statement (stmt)** node.
 
 ## Declaration
 
@@ -28,7 +29,7 @@ _No documentation yet._
 
 ## ASR
 
-_No ASR example yet._
+<!-- Generate ASR using pickle. -->
 
 ## Restrictions
 
