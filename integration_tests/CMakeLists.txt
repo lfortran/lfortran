@@ -254,7 +254,7 @@ endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NOFAST_TILL_LLVM16 NO_FAST NO_STD_F23 OLD_CLASSES NO_LLVM_GOC)
-    set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
+    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -265,7 +265,12 @@ macro(RUN)
         endif()
     endforeach()
 
-    set(RUN_FILE_NAME ${RUN_NAME})
+    # Use FILE if provided, otherwise use NAME as the file name
+    if (RUN_FILE)
+        set(RUN_FILE_NAME ${RUN_FILE})
+    else()
+        set(RUN_FILE_NAME ${RUN_NAME})
+    endif()
 
     if (RUN_INCLUDE_PATH)
         # Only one include path supported for now
@@ -1912,7 +1917,7 @@ RUN(NAME allocate_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME realloc_lhs_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays
     GFORTRAN_ARGS -fdefault-integer-8)
-RUN(NAME realloc_lhs_17 LABELS gfortran llvm
+RUN(NAME realloc_lhs_17 FILE realloc_lhs_16 LABELS llvm
     EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
