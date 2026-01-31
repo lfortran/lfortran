@@ -3310,14 +3310,22 @@ public:
                         && ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out) {
                         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(var->m_type_declaration));
-                        SymbolTable* sym_table_of_struct = struct_type->m_symtab;
-                        for(auto struct_member : sym_table_of_struct->get_scope()){
-                            if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
-                                ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
-                                del_syms.push_back(al, ASRUtils::EXPR(
-                                    ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
-                                    (ASR::asr_t*)subrout_call->m_args[i].m_value,
-                                    const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
+                        while (struct_type) {
+                            SymbolTable* sym_table_of_struct = struct_type->m_symtab;
+                            for(auto struct_member : sym_table_of_struct->get_scope()){
+                                if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
+                                    ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
+                                    del_syms.push_back(al, ASRUtils::EXPR(
+                                        ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
+                                        (ASR::asr_t*)subrout_call->m_args[i].m_value,
+                                        const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
+                                }
+                            }
+                            if (struct_type->m_parent) {
+                                struct_type = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(struct_type->m_parent));
+                            } else {
+                                struct_type = nullptr;
                             }
                         }
                     }
