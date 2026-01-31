@@ -13682,6 +13682,274 @@ public:
         emit_seek_record(unit_val, rec_val, iostat);
     }
 
+    void emit_formatted_read_with_idl(const ASR::FileRead_t &x, llvm::Value *unit_val,
+            llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
+            llvm::Value *advance_length, bool is_string, ASR::expr_t* fmt_expr) {
+        ASR::expr_t** values = x.m_values;
+        size_t n_values = x.n_values;
+        
+        llvm::Value* fmt_data;
+        llvm::Value* fmt_len;
+        std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
+        
+        llvm::Constant *no_advance_const = llvm::ConstantDataArray::getString(context, "NO", false);
+        llvm::GlobalVariable *no_advance_global = new llvm::GlobalVariable(
+            *module,
+            no_advance_const->getType(),
+            true,
+            llvm::GlobalValue::PrivateLinkage,
+            no_advance_const,
+            ".str.no_advance_idl"
+        );
+        no_advance_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        no_advance_global->setAlignment(llvm::Align(1));
+        llvm::Value* no_advance_str = builder->CreateBitCast(no_advance_global, character_type);
+        llvm::Value* no_advance_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2);
+
+        llvm::AllocaInst* loop_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "loop_iostat");
+        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), loop_iostat);
+
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::expr_t* val_expr = values[i];
+            
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val_expr)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(val_expr);
+                
+                int ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr_wrapper(idl->m_start, true);
+                ptr_loads = ptr_copy;
+                llvm::Value* loop_start = tmp;
+                if (loop_start->getType()->isPointerTy()) {
+                    ASR::ttype_t* t = ASRUtils::expr_type(idl->m_start);
+                    llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(idl->m_start, t, module.get());
+                    loop_start = llvm_utils->CreateLoad2(ty, loop_start);
+                }
+                loop_start = llvm_utils->convert_kind(loop_start, llvm::Type::getInt64Ty(context));
+                
+                ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr_wrapper(idl->m_end, true);
+                ptr_loads = ptr_copy;
+                llvm::Value* loop_end = tmp;
+                if (loop_end->getType()->isPointerTy()) {
+                    ASR::ttype_t* t = ASRUtils::expr_type(idl->m_end);
+                    llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(idl->m_end, t, module.get());
+                    loop_end = llvm_utils->CreateLoad2(ty, loop_end);
+                }
+                loop_end = llvm_utils->convert_kind(loop_end, llvm::Type::getInt64Ty(context));
+                
+                llvm::Value* loop_step = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1);
+                if (idl->m_increment) {
+                    ptr_copy = ptr_loads;
+                    ptr_loads = 0;
+                    this->visit_expr_wrapper(idl->m_increment, true);
+                    ptr_loads = ptr_copy;
+                    loop_step = tmp;
+                    if (loop_step->getType()->isPointerTy()) {
+                        ASR::ttype_t* t = ASRUtils::expr_type(idl->m_increment);
+                        llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(idl->m_increment, t, module.get());
+                        loop_step = llvm_utils->CreateLoad2(ty, loop_step);
+                    }
+                    loop_step = llvm_utils->convert_kind(loop_step, llvm::Type::getInt64Ty(context));
+                }
+                
+                llvm::AllocaInst* loop_var_alloca = builder->CreateAlloca(
+                    llvm::Type::getInt64Ty(context), nullptr);
+                builder->CreateStore(loop_start, loop_var_alloca);
+                
+                llvm::Function* fn_ptr = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(context, "idl_cond", fn_ptr);
+                llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(context, "idl_body", fn_ptr);
+                llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(context, "idl_end", fn_ptr);
+                
+                builder->CreateBr(loop_cond_bb);
+                builder->SetInsertPoint(loop_cond_bb);
+                
+                llvm::Value* cur = builder->CreateLoad(llvm::Type::getInt64Ty(context), loop_var_alloca);
+                llvm::Value* is_pos = builder->CreateICmpSGT(loop_step, 
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                llvm::Value* cond_pos = builder->CreateICmpSLE(cur, loop_end);
+                llvm::Value* cond_neg = builder->CreateICmpSGE(cur, loop_end);
+                llvm::Value* cond = builder->CreateSelect(is_pos, cond_pos, cond_neg);
+                builder->CreateCondBr(cond, loop_body_bb, loop_end_bb);
+                
+                builder->SetInsertPoint(loop_body_bb);
+                
+                for (size_t j = 0; j < idl->n_values; ++j) {
+                    ASR::expr_t* idl_val = idl->m_values[j];
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl_val)) {
+                        throw CodeGenError("Nested implied-do in formatted READ not yet supported");
+                    }
+                    
+                    llvm::Value* cur_val = builder->CreateLoad(llvm::Type::getInt64Ty(context), loop_var_alloca);
+                    llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
+                        idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+                    cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
+
+                    ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+                    llvm::AllocaInst* temp_loop_var = builder->CreateAlloca(loop_var_type, nullptr);
+                    builder->CreateStore(cur_val, temp_loop_var);
+                    
+                    uint64_t var_hash = (uint64_t)loop_var_sym;
+                    llvm::Value* prev_symtab_val = nullptr;
+                    auto it = llvm_symtab.find(var_hash);
+                    if (it != llvm_symtab.end()) {
+                        prev_symtab_val = it->second;
+                    }
+                    llvm_symtab[var_hash] = temp_loop_var;
+
+                    {
+                        int ptr_copy_inner = ptr_loads;
+                        ptr_loads = 0;
+                        bool iat_copy_inner = is_assignment_target;
+                        is_assignment_target = true;
+                        this->visit_expr(*idl->m_var);
+                        llvm::Value* real_var_ptr = tmp;
+                        is_assignment_target = iat_copy_inner;
+                        ptr_loads = ptr_copy_inner;
+                        
+                        if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
+                             builder->CreateStore(cur_val, real_var_ptr);
+                        }
+                    }
+                    
+                    int pc = ptr_loads;
+                    ptr_loads = 0;
+                    bool iat_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    this->visit_expr(*idl_val);
+                    is_assignment_target = iat_copy;
+                    llvm::Value* elem_ptr = tmp;
+                    ptr_loads = pc;
+                    
+                    if (prev_symtab_val) {
+                        llvm_symtab[var_hash] = prev_symtab_val;
+                    } else {
+                        llvm_symtab.erase(var_hash);
+                    }
+                    
+                    ASR::ttype_t* idl_val_type = ASRUtils::expr_type(idl_val);
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable_pointer(idl_val_type));
+                    
+                    std::vector<llvm::Value*> args;
+                    if (is_string) {
+                        llvm::Value *src_data, *src_len;
+                        std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                            ASRUtils::get_string_type(x.m_unit), unit_val);
+                        args.push_back(src_data);
+                        args.push_back(src_len);
+                    } else {
+                        args.push_back(unit_val);
+                    }
+                    
+                    args.push_back(loop_iostat);                    
+                    args.push_back(read_size);                    
+                    args.push_back(no_advance_str);
+                    args.push_back(no_advance_len);                    
+                    args.push_back(fmt_data);
+                    args.push_back(fmt_len);
+                    args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                    add_formatted_read_arg(args, elem_type, elem_ptr);
+                    
+                    std::string runtime_func_name = is_string ? 
+                        "_lfortran_string_formatted_read" : "_lfortran_formatted_read";
+                    llvm::Function *fn = module->getFunction(runtime_func_name);
+                    if (!fn) {
+                        std::vector<llvm::Type*> param_types;
+                        if (is_string) {
+                            param_types.push_back(character_type);
+                            param_types.push_back(llvm::Type::getInt64Ty(context));
+                        } else {
+                            param_types.push_back(llvm::Type::getInt32Ty(context));
+                        }
+                        param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                        param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                        param_types.push_back(character_type);
+                        param_types.push_back(llvm::Type::getInt64Ty(context));
+                        param_types.push_back(character_type);
+                        param_types.push_back(llvm::Type::getInt64Ty(context));
+                        param_types.push_back(llvm::Type::getInt32Ty(context));
+                        
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), param_types, true);
+                        fn = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                    }
+                    builder->CreateCall(fn, args);
+                }
+                
+                cur = builder->CreateLoad(llvm::Type::getInt64Ty(context), loop_var_alloca);
+                cur = builder->CreateAdd(cur, loop_step);
+                builder->CreateStore(cur, loop_var_alloca);
+                builder->CreateBr(loop_cond_bb);
+                
+                builder->SetInsertPoint(loop_end_bb);
+            } else {
+                // Non-implied-do
+                ASR::ttype_t* expr_type_full = ASRUtils::expr_type(val_expr);
+                ASR::ttype_t* single_val_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*val_expr);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* var_ptr = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                std::vector<llvm::Value*> single_args;
+                if (is_string) {
+                    llvm::Value *src_data, *src_len;
+                    std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(x.m_unit), unit_val);
+                    single_args.push_back(src_data);
+                    single_args.push_back(src_len);
+                } else {
+                    single_args.push_back(unit_val);
+                }
+                single_args.push_back(iostat);
+                single_args.push_back(read_size);
+                single_args.push_back(advance);
+                single_args.push_back(advance_length);
+                single_args.push_back(fmt_data);
+                single_args.push_back(fmt_len);
+                single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+
+                add_formatted_read_arg(single_args, single_val_type, var_ptr);
+
+                std::string runtime_func_name = is_string ?
+                    "_lfortran_string_formatted_read" : "_lfortran_formatted_read";
+                llvm::Function *fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                     std::vector<llvm::Type*> param_types;
+                    if (is_string) {
+                        param_types.push_back(character_type);
+                        param_types.push_back(llvm::Type::getInt64Ty(context));
+                    } else {
+                        param_types.push_back(llvm::Type::getInt32Ty(context));
+                    }
+                    param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                    param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                    param_types.push_back(character_type);
+                    param_types.push_back(llvm::Type::getInt64Ty(context));
+                    param_types.push_back(character_type);
+                    param_types.push_back(llvm::Type::getInt64Ty(context));
+                    param_types.push_back(llvm::Type::getInt32Ty(context));
+
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), param_types, true);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                }
+                builder->CreateCall(fn, single_args);
+            }
+        }
+    }
+
     void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
             llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
             llvm::Value *advance_length, bool is_string) {
@@ -13699,13 +13967,113 @@ public:
 
         // Counting number of values including array elements
         size_t total_scalar_values = 0;
+        bool has_implied_do = false;
+        size_t first_idl_idx = n_values;
+        
         for (size_t i = 0; i < n_values; i++) {
-            ASR::ttype_t* expr_type = ASRUtils::expr_type(values[i]);
+            ASR::expr_t* val_expr = values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val_expr)) {
+                has_implied_do = true;
+                if (first_idl_idx == n_values) first_idl_idx = i;
+            }
+            ASR::ttype_t* expr_type = ASRUtils::expr_type(val_expr);
             if (ASRUtils::is_array(expr_type) && ASRUtils::is_fixed_size_array(expr_type)) {
                 total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type);
             } else {
                 total_scalar_values++;
             }
+        }
+
+        
+        if (has_implied_do) {
+            llvm::Value* fmt_data;
+            llvm::Value* fmt_len;
+            std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
+            
+            llvm::Constant *no_advance_const = llvm::ConstantDataArray::getString(context, "NO", false);
+            llvm::GlobalVariable *no_advance_global = new llvm::GlobalVariable(
+                *module,
+                no_advance_const->getType(),
+                true,
+                llvm::GlobalValue::PrivateLinkage,
+                no_advance_const,
+                ".str.no_advance"
+            );
+            no_advance_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            no_advance_global->setAlignment(llvm::Align(1));
+            llvm::Value* no_advance_str = builder->CreateBitCast(no_advance_global, character_type);
+            
+            llvm::Value* no_advance_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2);
+            llvm::AllocaInst* phase1_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "phase1_iostat");
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), phase1_iostat);
+
+            for (size_t k = 0; k < first_idl_idx; ++k) {
+                ASR::expr_t* v = values[k];
+                ASR::ttype_t* expr_type_full = ASRUtils::expr_type(v);
+                ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*v);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* var_ptr = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                std::vector<llvm::Value*> single_args;
+                if (is_string) {
+                    llvm::Value *src_data, *src_len;
+                    std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(x.m_unit), unit_val);
+                    single_args.push_back(src_data);
+                    single_args.push_back(src_len);
+                } else {
+                    single_args.push_back(unit_val);
+                }
+                
+                single_args.push_back(phase1_iostat);                
+                single_args.push_back(read_size);
+                single_args.push_back(no_advance_str);
+                single_args.push_back(no_advance_len);                
+                single_args.push_back(fmt_data);
+                single_args.push_back(fmt_len);
+                single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+
+                add_formatted_read_arg(single_args, val_type, var_ptr);
+
+                std::string runtime_func_name = is_string ?
+                    "_lfortran_string_formatted_read" : "_lfortran_formatted_read";
+                llvm::Function *fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                     std::vector<llvm::Type*> param_types;
+                    if (is_string) {
+                        param_types.push_back(character_type);
+                        param_types.push_back(llvm::Type::getInt64Ty(context));
+                    } else {
+                        param_types.push_back(llvm::Type::getInt32Ty(context));
+                    }
+                    param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                    param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+                    param_types.push_back(character_type);
+                    param_types.push_back(llvm::Type::getInt64Ty(context));
+                    param_types.push_back(character_type);
+                    param_types.push_back(llvm::Type::getInt64Ty(context));
+                    param_types.push_back(llvm::Type::getInt32Ty(context));
+
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), param_types, true);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                }
+                builder->CreateCall(fn, single_args);
+            }            
+            ASR::FileRead_t x2 = x;
+            x2.m_values = values + first_idl_idx;
+            x2.n_values = n_values - first_idl_idx;
+            emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, is_string, fmt_expr);
+            return;
         }
 
         std::vector<llvm::Value*> args;
