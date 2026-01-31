@@ -130,6 +130,92 @@ def test_generate_node_content_uses_placeholder_when_no_existing():
     )
 
     assert "_No documentation yet._" in content
+    assert "_No ASR example yet._" in content
+
+
+def test_parse_existing_doc_preserves_asr_section():
+    """Test that human-written ASR examples are preserved."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.md"
+
+        content = """# TestNode
+
+TestNode, a **expr** node.
+
+## Declaration
+
+### Syntax
+
+<!-- BEGIN AUTO: syntax -->
+```
+TestNode(int x)
+```
+<!-- END AUTO: syntax -->
+
+### Arguments
+
+<!-- BEGIN AUTO: arguments -->
+Input argument is `x` of type `int`.
+<!-- END AUTO: arguments -->
+
+### Return values
+
+None.
+
+## Documentation
+
+_No documentation yet._
+
+## ASR
+
+Example Fortran code:
+```fortran
+integer :: x = 5
+```
+
+ASR output:
+```
+(Variable
+    2
+    x
+    []
+    Local
+    (IntegerConstant 5 (Integer 4) Decimal)
+    ...
+)
+```
+
+## Restrictions
+
+<!-- BEGIN AUTO: restrictions -->
+None.
+<!-- END AUTO: restrictions -->
+"""
+        test_file.write_text(content)
+
+        sections = grd.parse_existing_doc(test_file)
+
+        assert sections is not None
+        assert "asr" in sections
+        assert "Example Fortran code:" in sections["asr"]
+        assert "integer :: x = 5" in sections["asr"]
+        assert "Variable" in sections["asr"]
+
+
+def test_generate_node_content_preserves_asr_section():
+    """Test that existing ASR example is included in generated content."""
+    existing = {"asr": "This is a preserved ASR example."}
+
+    content = grd.generate_node_content(
+        category="expr",
+        name="TestNode",
+        signature="TestNode(int x)",
+        restrictions=[],
+        existing_sections=existing
+    )
+
+    assert "This is a preserved ASR example." in content
+    assert "_No ASR example yet._" not in content
 
 
 def test_generate_enum_content_preserves_documentation():
@@ -163,7 +249,7 @@ def test_generate_struct_content_preserves_documentation():
 
 
 def test_auto_markers_present_in_output():
-    """Test that auto-generated sections have proper markers."""
+    """Test that auto-generated sections have proper markers and ASR section exists."""
     content = grd.generate_node_content(
         category="stmt",
         name="TestStmt",
@@ -178,6 +264,9 @@ def test_auto_markers_present_in_output():
     assert "<!-- END AUTO: arguments -->" in content
     assert "<!-- BEGIN AUTO: restrictions -->" in content
     assert "<!-- END AUTO: restrictions -->" in content
+    # ASR section should exist (not auto-generated, but preservable)
+    assert "## ASR" in content
+    assert "_No ASR example yet._" in content
 
 
 def test_cpp_restriction_parsing():
@@ -383,9 +472,9 @@ def test_obsolete_file_removal():
 
 
 def test_full_regeneration_preserves_docs():
-    """Integration test: full regeneration cycle preserves documentation."""
+    """Integration test: full regeneration cycle preserves documentation and ASR examples."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Create a test file with documentation
+        # Create a test file with documentation and ASR example
         test_dir = Path(tmpdir) / "doc" / "reference" / "expr"
         test_dir.mkdir(parents=True)
         test_file = test_dir / "TestExpr.md"
@@ -423,6 +512,18 @@ It includes:
 - **Bold text**
 - Code: `example()`
 
+## ASR
+
+Example showing TestExpr in action:
+```fortran
+x = test_expr(5)
+```
+
+ASR output:
+```
+(TestExpr 5 (Integer 4))
+```
+
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
@@ -448,6 +549,11 @@ It includes:
         assert "Lists" in new_content
         assert "Bold text" in new_content
 
+        # Verify ASR example is preserved
+        assert "Example showing TestExpr in action:" in new_content
+        assert "x = test_expr(5)" in new_content
+        assert "(TestExpr 5 (Integer 4))" in new_content
+
         # Verify auto-generated sections are updated
         assert "new_value" in new_content
         assert "extra" in new_content
@@ -465,8 +571,10 @@ if __name__ == "__main__":
     tests = [
         test_parse_existing_doc_preserves_documentation,
         test_parse_existing_doc_ignores_placeholder,
+        test_parse_existing_doc_preserves_asr_section,
         test_generate_node_content_includes_documentation,
         test_generate_node_content_uses_placeholder_when_no_existing,
+        test_generate_node_content_preserves_asr_section,
         test_generate_enum_content_preserves_documentation,
         test_generate_struct_content_preserves_documentation,
         test_auto_markers_present_in_output,

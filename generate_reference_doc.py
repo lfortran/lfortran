@@ -293,6 +293,13 @@ def parse_existing_doc(path):
         if doc_content and doc_content != "_No documentation yet._":
             sections["documentation"] = doc_content
 
+    # Extract ASR section (between ## ASR and next ##)
+    asr_match = re.search(r'## ASR\n\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
+    if asr_match:
+        asr_content = asr_match.group(1).strip()
+        if asr_content and asr_content != "_No ASR example yet._":
+            sections["asr"] = asr_content
+
     return sections
 
 
@@ -326,6 +333,11 @@ def generate_node_content(category, name, signature, restrictions, existing_sect
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
+    # Get existing ASR example or use placeholder
+    asr_text = "_No ASR example yet._"
+    if existing_sections and "asr" in existing_sections:
+        asr_text = existing_sections["asr"]
+
     md = f"""# {name}
 
 {name}, a **{category}** node.
@@ -353,6 +365,10 @@ None.
 ## Documentation
 
 {doc_text}
+
+## ASR
+
+{asr_text}
 
 ## Restrictions
 
