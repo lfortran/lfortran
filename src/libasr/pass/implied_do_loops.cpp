@@ -471,8 +471,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 // Keep fixed-size type as is; allocation will handle string length.
             }
         }
+        ASR::expr_t* struct_var = nullptr;
+        if (x->m_struct_var) {
+            struct_var = x->m_struct_var;
+        } else if (x->m_args[0]) {
+            struct_var = x->m_args[0];
+        }
         result_var = PassUtils::create_var(result_counter, "_array_constructor_",
-                        loc, result_type_, al, current_scope, x->m_args[0] ? x->m_args[0] : nullptr);
+                        loc, result_type_, al, current_scope, struct_var);
         result_counter += 1;
         *current_expr = result_var;
 

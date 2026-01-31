@@ -1377,7 +1377,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     ASR::expr_t *maskval = ASRUtils::is_array_t(args[2])? b.ArrayItem_01(args[2], {i}) : args[2];
                     // Cast i to result type if needed when assigning to result
                     ASR::expr_t *i_result = (result_kind != index_kind) ? b.i2i_t(i, type) : i;
-                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1, index_kind), UBound(args[0], 1, index_kind), {
+                    body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1, index_kind), b.GetUBound(args[0], 1, index_kind), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                             b.Assignment(result, i_result),
                             b.Exit()
@@ -1385,7 +1385,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }, nullptr));
                 } else {
                     // Cast LBound to result type if needed
-                    ASR::expr_t *lb = LBound(args[0], 1, index_kind);
+                    ASR::expr_t *lb = b.GetLBound(args[0], 1, index_kind);
                     if (result_kind != index_kind) {
                         lb = b.i2i_t(lb, type);
                     }
@@ -1465,7 +1465,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     ASR::expr_t *maskval = ASRUtils::is_array_t(args[2]) ? b.ArrayItem_01(args[2], {i}) : args[2];
                     // Cast i to result type if needed when assigning to result
                     ASR::expr_t *i_result = (result_kind != index_kind) ? b.i2i_t(i, type) : i;
-                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1, index_kind), UBound(args[0], 1, index_kind), {
+                    body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1, index_kind), b.GetUBound(args[0], 1, index_kind), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                             b.Assignment(result, i_result),
                             b.Exit()
@@ -1473,7 +1473,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }, nullptr));
                 } else {
                     // Cast LBound to result type if needed
-                    ASR::expr_t *lb = LBound(args[0], dim, index_kind);
+                    ASR::expr_t *lb = b.GetLBound(args[0], dim, index_kind);
                     if (result_kind != index_kind) {
                         lb = b.i2i_t(lb, type);
                     }
@@ -1599,7 +1599,7 @@ namespace Shape {
                     type, ASR::arraystorageType::ColMajor));
             } else {
                 value = EXPR(ASR::make_ArrayConstructor_t(al, loc, m_shapes.p, m_shapes.n,
-                    type, nullptr, ASR::arraystorageType::ColMajor));
+                    type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
         }
         return value;
@@ -1642,7 +1642,7 @@ namespace Shape {
         result = declare(fn_name, return_type, Out);
         args.push_back(al, result);
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
-        auto i = declare("i", int_idx(index_kind), Local);
+        auto i = declare("i", b.int_type(index_kind), Local);
         body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
         body.push_back(al, b.While(b.Lt(i, b.i_idx(iter, index_kind)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
@@ -1811,26 +1811,26 @@ namespace Cshift {
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
-        ASR::expr_t *i = declare("i", int_idx(index_kind), Local);
-        ASR::expr_t *j = declare("j", int_idx(index_kind), Local);
+        ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
+        ASR::expr_t *j = declare("j", b.int_type(index_kind), Local);
         int n_dims = extract_n_dims_from_ttype(return_type);
-        ASR::expr_t* shift_val = declare("shift_val", int_idx(index_kind), Local);
+        ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.If(b.Lt(args[1], b.i_idx(0, index_kind)), {
-            b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1, index_kind)))
+            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], 1, index_kind)))
         }, {
             b.Assignment(shift_val, shift_val)
         }
         ));
         std::vector<ASR::expr_t*> do_loop_variables;
         for(int i=0; i<n_dims-1; i++) {
-            ASR::expr_t* var = declare("i_" + std::to_string(i), int_idx(index_kind), Local);
+            ASR::expr_t* var = declare("i_" + std::to_string(i), b.int_type(index_kind), Local);
             do_loop_variables.push_back(var);
         }
         body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
         ASR::stmt_t *do_loop = PassUtils::create_do_loop_helper_cshift(al, loc, do_loop_variables, j, i, args[0], result, 0);
-        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), UBound(args[0], 1, index_kind), {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
-        body.push_back(al, b.DoLoop(j, LBound(args[0], 1, index_kind), shift_val, {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
+        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), b.GetUBound(args[0], 1, index_kind), {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
+        body.push_back(al, b.DoLoop(j, b.GetLBound(args[0], 1, index_kind), shift_val, {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2212,7 +2212,7 @@ namespace Spread {
             result = declare("result", return_type, Out);
         }
         args.push_back(al, result);
-        ASR::expr_t *i = declare("i", int_idx(index_kind), Local);
+        ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
         ASR::stmt_t* current_else = generate_loop(al, loc, n_dims_return_type,
             n_dims_return_type, i, result, source, ncopies, return_type);
@@ -2442,11 +2442,11 @@ namespace Eoshift {
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
-        ASR::expr_t *i = declare("i", int_idx(index_kind), Local);
-        ASR::expr_t *j = declare("j", int_idx(index_kind), Local);
-        ASR::expr_t* abs_shift = declare("z", int_idx(index_kind), Local);
-        ASR::expr_t* abs_shift_val = declare("k", int_idx(index_kind), Local);
-        ASR::expr_t* shift_val = declare("shift_val", int_idx(index_kind), Local);;
+        ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
+        ASR::expr_t *j = declare("j", b.int_type(index_kind), Local);
+        ASR::expr_t* abs_shift = declare("z", b.int_type(index_kind), Local);
+        ASR::expr_t* abs_shift_val = declare("k", b.int_type(index_kind), Local);
+        ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);;
         ASR::expr_t* final_boundary = declare("final_boundary", character(2), Local);   //TODO: It does not handle character type
         ASR::expr_t* boundary = args[2];
 
@@ -2455,24 +2455,24 @@ namespace Eoshift {
         body.push_back(al, b.Assignment(abs_shift_val, shift_val));
 
         body.push_back(al, b.If(b.Lt(args[1], b.i_idx(0, index_kind)), {
-            b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1, index_kind))),
+            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], 1, index_kind))),
             b.Assignment(abs_shift, b.Mul(abs_shift, b.i_idx(-1, index_kind)))
         }, {
             b.Assignment(shift_val, shift_val)
         }
         ));
         body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
-        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), UBound(args[0], 1, index_kind), {
+        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), b.GetUBound(args[0], 1, index_kind), {
             b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
             b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
         }, nullptr));
-        body.push_back(al, b.DoLoop(j, LBound(args[0], 1, index_kind), shift_val, {
+        body.push_back(al, b.DoLoop(j, b.GetLBound(args[0], 1, index_kind), shift_val, {
             b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
             b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
         }, nullptr));
 
         body.push_back(al, b.If(b.GtE(abs_shift_val, b.i_idx(0, index_kind)), {
-            b.Assignment(i, UBound(args[0], 1, index_kind)),
+            b.Assignment(i, b.GetUBound(args[0], 1, index_kind)),
             b.Assignment(i, b.Sub(i, abs_shift)),
             b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
         }, {
@@ -3760,7 +3760,7 @@ namespace FindLoc {
             mask_new = mask;
         }
         body.push_back(al, b.Assignment(result, b.i_t(0, ASRUtils::type_get_past_array(return_type))));
-        body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+        body.push_back(al, b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
             b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
                 b.If(b.NotEq(back, b.bool_t(1, logical)), {
@@ -3772,7 +3772,7 @@ namespace FindLoc {
         int array_rank = ASRUtils::extract_n_dims_from_ttype(array_type);
         if (array_rank == 1) {
             body.push_back(al, b.Assignment(result, b.i_t(0, type)));
-            body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+            body.push_back(al, b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
                 b.If(b.Eq(ArrayItem_02(array, i), value), {
                     b.Assignment(result, i),
                     b.If(b.NotEq(back, b.bool_t(1, logical)), {
@@ -3787,9 +3787,9 @@ namespace FindLoc {
             idx_vars_ji.push_back(al, j); idx_vars_ji.push_back(al, i);
             body.push_back(al,b.Assignment(result, b.i_t(0, type)));
             body.push_back(al, b.If(b.Eq(dim, b.i_t(-1, expr_type(dim))), {
-                b.DoLoop(i, b.i_t(1, type), UBound(array, 2), {
+                b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
                     b.Assignment(found_value, b.bool_t(0, logical)),
-                    b.DoLoop(j, b.i_t(1, type), UBound(array, 1), {
+                    b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
                         b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ji), value), b.Or(b.Not(found_value), back)), {
                             b.Assignment(b.ArrayItem_01(result, {b.i_t(1, type)}), j),
                             b.Assignment(b.ArrayItem_01(result, {b.i_t(2, type)}), i),
@@ -3803,9 +3803,9 @@ namespace FindLoc {
             },
             {
                 b.If(b.Eq(dim, b.i_t(1, expr_type(dim))), {
-                    b.DoLoop(i, b.i_t(1, type), UBound(array, 2), {
+                    b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
                         b.Assignment(found_value, b.bool_t(0, logical)),
-                        b.DoLoop(j, b.i_t(1, type), UBound(array, 1), {
+                        b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
                             b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ji), value), b.Or(b.Not(found_value), back)), {
                                 b.Assignment(b.ArrayItem_01(result, {i}), j),
                                 b.Assignment(found_value, b.bool_t(1, logical)),
@@ -3816,9 +3816,9 @@ namespace FindLoc {
                         }),
                     })
                 }, {
-                    b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+                    b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
                         b.Assignment(found_value, b.bool_t(0, logical)),
-                        b.DoLoop(j, b.i_t(1, type), UBound(array, 2), {
+                        b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 2), {
                             b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ij), value), b.Or(b.Not(found_value), back)), {
                                 b.Assignment(b.ArrayItem_01(result, {i}), j),
                                 b.Assignment(found_value, b.bool_t(1, logical)),
@@ -4086,9 +4086,9 @@ namespace MatMul {
         extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
         ASR::expr_t *res_ref, *a_ref, *b_ref, *a_lbound, *b_lbound;
         ASR::expr_t *dim_mismatch_check, *a_ubound, *b_ubound;
-        dim_mismatch_check = b.Eq(UBound(args[0], 2), UBound(args[1], 1));
-        a_lbound = LBound(args[0], 1); a_ubound = UBound(args[0], 1);
-        b_lbound = LBound(args[1], 2); b_ubound = UBound(args[1], 2);
+        dim_mismatch_check = b.Eq(b.GetUBound(args[0], 2), b.GetUBound(args[1], 1));
+        a_lbound = b.GetLBound(args[0], 1); a_ubound = b.GetUBound(args[0], 1);
+        b_lbound = b.GetLBound(args[1], 2); b_ubound = b.GetUBound(args[1], 2);
         std::string assert_msg = "'MatMul' intrinsic dimension mismatch: "
             "please make sure the dimensions are ";
         Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, 1);
@@ -4098,24 +4098,24 @@ namespace MatMul {
             a_ref   = b.ArrayItem_01(args[0], {k});
             b_ref   = b.ArrayItem_01(args[1], {k, j});
             a_ubound = a_lbound;
-            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
-            dim_mismatch_check = b.Eq(UBound(args[0], 1), UBound(args[1], 1));
+            alloc_dims.push_back(al, b.set_dim(b.GetLBound(args[1], 2), b.GetUBound(args[1], 2)));
+            dim_mismatch_check = b.Eq(b.GetUBound(args[0], 1), b.GetUBound(args[1], 1));
             assert_msg += "`matrix_a(k)` and `matrix_b(k, j)`";
         } else if ( overload_id == 2 ) {
             // r(i) = r(i) + a(i, k) * b(k)
             res_ref = b.ArrayItem_01(result,  {i});
             a_ref   = b.ArrayItem_01(args[0], {i, k});
             b_ref   = b.ArrayItem_01(args[1], {k});
-            b_ubound = b_lbound = LBound(args[1], 1);
-            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
+            b_ubound = b_lbound = b.GetLBound(args[1], 1);
+            alloc_dims.push_back(al, b.set_dim(b.GetLBound(args[0], 1), b.GetUBound(args[0], 1)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k)`";
         } else {
             // r(i, j) = r(i, j) + a(i, k) * b(k, j)
             res_ref = b.ArrayItem_01(result,  {i, j});
             a_ref   = b.ArrayItem_01(args[0], {i, k});
             b_ref   = b.ArrayItem_01(args[1], {k, j});
-            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
-            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
+            alloc_dims.push_back(al, b.set_dim(b.GetLBound(args[0], 1), b.GetUBound(args[0], 1)));
+            alloc_dims.push_back(al, b.set_dim(b.GetLBound(args[1], 2), b.GetUBound(args[1], 2)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
         // Note: allocation/reallocation for allocatable results is handled by
@@ -4146,7 +4146,7 @@ namespace MatMul {
         body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
             b.DoLoop(j, b_lbound, b_ubound, {
                 b.Assign_Constant(res_ref, 0),
-                b.DoLoop(k, LBound(args[1], 1), UBound(args[1], 1), {
+                b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
                     b.Assignment(res_ref, b.Add(res_ref, mul_value))
                 }),
             })
@@ -4342,7 +4342,7 @@ namespace Count {
                                 idx.push_back(res_idx[i]);
                 }
             }
-            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
+            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim), b.GetUBound(args[0], dim), {
                 b.If(b.ArrayItem_01(args[0], idx), {
                     b.Assignment(c, b.Add(c, b.i32(1))),
                 }, {})
@@ -4531,7 +4531,7 @@ namespace Parity {
                                 idx.push_back(res_idx[i]);
                 }
             }
-            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
+            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim), b.GetUBound(args[0], dim), {
                 b.Assignment(c, b.Xor(c, b.ArrayItem_01(args[0], idx)))
             });
 
@@ -4722,7 +4722,7 @@ namespace Norm2 {
                                 idx.push_back(res_idx[i]);
                 }
             }
-            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
+            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim), b.GetUBound(args[0], dim), {
                 b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
             });
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2_dim(al, loc,
@@ -5018,7 +5018,7 @@ namespace Pack {
             } else {
                 mask = EXPR(ASR::make_ArrayConstructor_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
                     TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
-                    nullptr, ASR::arraystorageType::ColMajor));
+                    nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
             type_mask = expr_type(mask);
             mask_rank = extract_dimensions_from_ttype(type_mask, mask_dims);
@@ -5154,7 +5154,7 @@ namespace Pack {
         body.push_back(al, do_loop);
 
         if (overload_id == 3) {
-            body.push_back(al, b.DoLoop(do_loop_variables[0], k, UBound(args[2], 1), {
+            body.push_back(al, b.DoLoop(do_loop_variables[0], k, b.GetUBound(args[2], 1), {
                 b.Assignment(b.ArrayItem_01(result, {k}), b.ArrayItem_01(args[2], {k})),
                 b.Assignment(k, b.Add(k, b.i32(1)))
             }));
@@ -5488,7 +5488,7 @@ namespace Unpack {
             do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
         }
         ASR::expr_t *k = declare("k", int32, Local);
-        body.push_back(al, b.Assignment(k, LBound(args[0], 1)));
+        body.push_back(al, b.Assignment(k, b.GetLBound(args[0], 1)));
         body.push_back(al, b.Assignment(result, args[2]));
         ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_unpack(al, loc, do_loop_variables, args[0], args[1], result, k, mask_rank);
         body.push_back(al, do_loop);
@@ -5738,13 +5738,13 @@ namespace DotProduct {
         ASR::expr_t *i = declare("i", int32, Local);
         /*
             res = 0
-            do i = LBound(matrix_a, 1), UBound(matrix_a, 1)
+            do i = b.GetLBound(matrix_a, 1), b.GetUBound(matrix_a, 1)
                 res = res + matrix_a(i) * matrix_b(i)
             end do
         */
         if (is_logical(*return_type)) {
             body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, return_type))));
-            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Or(result, b.And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i}))))
             }));
         } else if (is_complex(*return_type)) {
@@ -5759,17 +5759,17 @@ namespace DotProduct {
             arg_types_conjg.push_back(al, return_type);
 
             ASR::expr_t* func_call_conjg = Conjg::instantiate_Conjg(al, loc, scope, arg_types_conjg, return_type, new_args_conjg, 0, index_kind);
-            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, b.ArrayItem_01(args[1], {i}), return_type, nullptr))))
             }, nullptr));
         } else if (is_real(*return_type)) {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
-            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));
         } else {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc)));
-            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.i2i_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));
         }
@@ -5874,8 +5874,8 @@ namespace Transpose {
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
-        body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-            b.DoLoop(j, LBound(args[0], 2), UBound(args[0], 2), {
+        body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
+            b.DoLoop(j, b.GetLBound(args[0], 2), b.GetUBound(args[0], 2), {
                 b.Assignment(b.ArrayItem_01(result, {j, i}), b.ArrayItem_01(args[0], {i, j}))
             }, nullptr)
         }, nullptr));

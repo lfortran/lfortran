@@ -896,7 +896,7 @@ public:
         _is_return_type_string = false;
 
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
-                || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
+                || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s) || is_a<ASR::Struct_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
         require(symtab_in_scope(current_symtab, x.m_v),
@@ -1254,6 +1254,10 @@ public:
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
+        if (x.m_struct_var != nullptr) {
+            require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
+                "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 

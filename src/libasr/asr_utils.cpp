@@ -226,6 +226,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::ArrayConstructor: {
             ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expression);
+            // First check if type_declaration is available
+            if (array_constructor->m_struct_var != nullptr) {
+                return get_struct_sym_from_struct_expr(array_constructor->m_struct_var);
+            }
             for (size_t i = 0; i < array_constructor->n_args; i++) {
                 ASR::expr_t* arg = array_constructor->m_args[i];
                 if (arg != nullptr) {
