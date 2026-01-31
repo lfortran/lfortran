@@ -112,7 +112,7 @@ class ASRBuilder {
     #define int16        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 2))
     #define int32        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
     #define int64        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))
-    #define int_idx(k)   ASRUtils::TYPE(ASR::make_Integer_t(al, loc, k))
+    // int_idx replaced with member function below
     #define real32       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))
     #define real64       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8))
     #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
@@ -223,7 +223,7 @@ class ASRBuilder {
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_idx(index_kind), ASR::arrayboundType::UBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_type(index_kind), ASR::arrayboundType::UBound, value));
     }
 
     ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim, int index_kind = 4) {
@@ -245,7 +245,22 @@ class ASRBuilder {
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_idx(index_kind), ASR::arrayboundType::LBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_type(index_kind), ASR::arrayboundType::LBound, value));
+    }
+
+    // Get upper bound using PassUtils::get_bound (handles data-only arrays in structs)
+    ASR::expr_t* GetUBound(ASR::expr_t* arr, int dim, int integer_kind = 4) {
+        return PassUtils::get_bound(arr, dim, "ubound", al, integer_kind);
+    }
+
+    // Get lower bound using PassUtils::get_bound (handles data-only arrays in structs)
+    ASR::expr_t* GetLBound(ASR::expr_t* arr, int dim, int integer_kind = 4) {
+        return PassUtils::get_bound(arr, dim, "lbound", al, integer_kind);
+    }
+
+    // Get integer type with specified kind (replaces int_idx macro)
+    inline ASR::ttype_t* int_type(int kind) {
+        return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
     }
 
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
@@ -270,7 +285,7 @@ class ASRBuilder {
 
     // Integer constant with specified kind (4 or 8)
     inline ASR::expr_t* i_idx(int64_t x, int index_kind) {
-        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int_idx(index_kind)));
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int_type(index_kind)));
     }
 
     inline ASR::expr_t* i_neg(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -1094,9 +1109,6 @@ class ASRBuilder {
     ASR::stmt_t* Deallocate(Vec<ASR::expr_t*> &m_a){
         return ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, m_a.p, m_a.n));
     }
-
-    #define UBound(arr, dim, ...) PassUtils::get_bound(arr, dim, "ubound", al, ##__VA_ARGS__)
-    #define LBound(arr, dim, ...) PassUtils::get_bound(arr, dim, "lbound", al, ##__VA_ARGS__)
 
     ASR::stmt_t *DoLoop(ASR::expr_t *m_v, ASR::expr_t *start, ASR::expr_t *end,
             std::vector<ASR::stmt_t*> loop_body, ASR::expr_t *step=nullptr) {
