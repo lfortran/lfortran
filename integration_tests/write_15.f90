@@ -23,9 +23,9 @@ contains
 
 end module test
 
-program testing_test
+program write_15
    use test
    type(MyType) :: x
 
    write(*,*) x
-end program testing_test
+end program write_15
