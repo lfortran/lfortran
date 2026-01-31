@@ -33,5 +33,5 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* ArrayItemSection::m_type can only be an Array
+* `ArrayItemSection::m_type` can only be an Array
 <!-- END AUTO: restrictions -->

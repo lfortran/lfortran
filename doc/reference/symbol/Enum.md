@@ -33,8 +33,8 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The common type of EnumType cannot be nullptr. [...] doesn't seem to follow this rule.
+* The common type of EnumType cannot be `nullptr`. [...] doesn't seem to follow this rule.
 * All members of EnumType must have their values to be set. [...] doesn't seem to follow this rule in [...] EnumType.
 * All members of EnumType must the same type. [...] doesn't seem to follow this rule in [...] EnumType.
-* Properties of enum value members don't match correspond to Enum::m_enum_value_type
+* Properties of enum value members don't match correspond to `Enum::m_enum_value_type`
 <!-- END AUTO: restrictions -->

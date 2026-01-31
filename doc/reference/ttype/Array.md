@@ -37,6 +37,6 @@ _No ASR example yet._
 * Assumed-rank arrays must have 0 dimensions
 * Array type cannot have 0 dimensions.
 * Array type cannot be nested.
-* Array of strings' physical type shouldn't be "FixedSizeArray"
-* Array of classes can't be of physical type "FixedSizeArray"
+* Array of strings' physical type shouldn't be `FixedSizeArray`
+* Array of classes can't be of physical type `FixedSizeArray`
 <!-- END AUTO: restrictions -->

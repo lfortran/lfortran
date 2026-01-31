@@ -33,5 +33,5 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* Select_t::m_enable_fall_through should be [...]
+* `Select_t::m_enable_fall_through` should be [...]
 <!-- END AUTO: restrictions -->

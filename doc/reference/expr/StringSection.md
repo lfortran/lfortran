@@ -37,5 +37,5 @@ _No ASR example yet._
 * StringSection end member must be provided
 * StringSection step member must be provided
 * StringSection return type must be a string
-* StringSection's string-return node must have length expression (NOT nullptr)
+* StringSection's string-return node must have length expression (NOT `nullptr`)
 <!-- END AUTO: restrictions -->

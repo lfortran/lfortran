@@ -33,8 +33,8 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* DebugCheckArrayBounds::m_target must have an Array type
-* DebugCheckArrayBounds::n_components should be greater than 0
-* DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant
-* DebugCheckArrayBounds::m_components element must have an Array type
+* `DebugCheckArrayBounds::m_target` must have an Array type
+* `DebugCheckArrayBounds::n_components` should be greater than 0
+* `DebugCheckArrayBounds::m_components` element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant
+* `DebugCheckArrayBounds::m_components` element must have an Array type
 <!-- END AUTO: restrictions -->

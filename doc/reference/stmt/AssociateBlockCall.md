@@ -33,5 +33,5 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* AssociateBlockCall::m_name '[...]' cannot point outside of its symbol table
+* `AssociateBlockCall::m_name` '[...]' cannot point outside of its symbol table
 <!-- END AUTO: restrictions -->

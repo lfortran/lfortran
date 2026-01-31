@@ -33,7 +33,7 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* Var_t::m_v cannot be nullptr
-* Var_t::m_v [...] does not point to a Variable_t, Function_t, or Enum_t (possibly behind ExternalSymbol_t)
-* Var::m_v `[...]` cannot point outside of its symbol table
+* `Var_t::m_v` cannot be `nullptr`
+* `Var_t::m_v` [...] does not point to a `Variable_t`, `Function_t`, or `Enum_t` (possibly behind `ExternalSymbol_t`)
+* `Var::m_v` `[...]` cannot point outside of its symbol table
 <!-- END AUTO: restrictions -->

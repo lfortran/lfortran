@@ -33,5 +33,5 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* ArraySize::m_v must be an array
+* `ArraySize::m_v` must be an array
 <!-- END AUTO: restrictions -->

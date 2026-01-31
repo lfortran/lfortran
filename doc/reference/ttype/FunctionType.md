@@ -33,5 +33,5 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* ASR::ttype_t in ASR::FunctionType cannot be tied to a scope.
+* `ASR::ttype_t` in `ASR::FunctionType` cannot be tied to a scope.
 <!-- END AUTO: restrictions -->

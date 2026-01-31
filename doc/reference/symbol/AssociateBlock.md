@@ -33,9 +33,9 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The AssociateBlock::m_symtab cannot be nullptr
-* The AssociateBlock::m_symtab->parent is not the right parent
-* AssociateBlock::m_symtab->counter must be unique
-* The X::m_symtab::asr_owner must point to X
+* The `AssociateBlock::m_symtab` cannot be `nullptr`
+* The `AssociateBlock::m_symtab`->parent is not the right parent
+* `AssociateBlock::m_symtab`->counter must be unique
+* The `X::m_symtab::asr_owner` must point to X
 * The asr_owner invariant failed
 <!-- END AUTO: restrictions -->

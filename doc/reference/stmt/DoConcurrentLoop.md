@@ -33,6 +33,6 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* DoConcurrentLoop::m_local must be a Var
-* DoConcurrentLoop::m_shared must be a Var
+* `DoConcurrentLoop::m_local` must be a Var
+* `DoConcurrentLoop::m_shared` must be a Var
 <!-- END AUTO: restrictions -->

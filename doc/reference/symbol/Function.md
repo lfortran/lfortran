@@ -33,10 +33,10 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The Function::m_symtab cannot be nullptr
-* The Function::m_symtab->parent is not the right parent
-* The X::m_symtab::asr_owner must point to X
-* Function::m_symtab->counter must be unique
+* The `Function::m_symtab` cannot be `nullptr`
+* The `Function::m_symtab`->parent is not the right parent
+* The `X::m_symtab::asr_owner` must point to X
+* `Function::m_symtab`->counter must be unique
 * The asr_owner invariant failed
 * Function name is required
 * Type signature is required for `[...]`

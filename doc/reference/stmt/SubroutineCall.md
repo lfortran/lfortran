@@ -33,8 +33,8 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* SubroutineCall::m_name '[...]' cannot point outside of its symbol table
-* SubroutineCall::m_name '[...]' is a Variable, but does not point to Function
-* SubroutineCall::m_name '[...]' is a Variable, but the type is not FunctionType
-* SubroutineCall::m_name '[...]' must be a Function or StructMethodDeclaration.
+* `SubroutineCall::m_name` '[...]' cannot point outside of its symbol table
+* `SubroutineCall::m_name` '[...]' is a Variable, but does not point to Function
+* `SubroutineCall::m_name` '[...]' is a Variable, but the type is not FunctionType
+* `SubroutineCall::m_name` '[...]' must be a Function or StructMethodDeclaration.
 <!-- END AUTO: restrictions -->

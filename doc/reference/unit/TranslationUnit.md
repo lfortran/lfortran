@@ -33,10 +33,10 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The TranslationUnit::m_symtab cannot be nullptr
-* The TranslationUnit::m_symtab->parent must be nullptr
-* TranslationUnit::m_symtab->counter must be unique
-* The TranslationUnit::m_symtab::asr_owner must point to itself
+* The `TranslationUnit::m_symtab` cannot be `nullptr`
+* The `TranslationUnit::m_symtab`->parent must be `nullptr`
+* `TranslationUnit::m_symtab`->counter must be unique
+* The `TranslationUnit::m_symtab::asr_owner` must point to itself
 * The asr_owner invariant failed
-* TranslationUnit::m_items must be either stmt or expr
+* `TranslationUnit::m_items` must be either stmt or expr
 <!-- END AUTO: restrictions -->

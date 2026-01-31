@@ -33,8 +33,8 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* FunctionCall::m_name must be present
-* FunctionCall::m_name `[...]` cannot point outside of its symbol table
-* FunctionCall::m_name must be a Function or Variable with FunctionType
-* FunctionCall::m_name [...] must be returning a non-void value.
+* `FunctionCall::m_name` must be present
+* `FunctionCall::m_name` `[...]` cannot point outside of its symbol table
+* `FunctionCall::m_name` must be a Function or Variable with FunctionType
+* `FunctionCall::m_name` [...] must be returning a non-void value.
 <!-- END AUTO: restrictions -->

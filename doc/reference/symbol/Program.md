@@ -33,12 +33,12 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The Program::m_symtab cannot be nullptr
-* The Program::m_symtab->parent is not the right parent
-* The Program::m_symtab's parent must be TranslationUnit
-* Program::m_symtab->counter must be unique
-* The X::m_symtab::asr_owner must point to X
+* The `Program::m_symtab` cannot be `nullptr`
+* The `Program::m_symtab`->parent is not the right parent
+* The `Program::m_symtab`'s parent must be TranslationUnit
+* `Program::m_symtab`->counter must be unique
+* The `X::m_symtab::asr_owner` must point to X
 * The asr_owner invariant failed
 * Program name is required
-* ::m_dependencies is required
+* ::`m_dependencies` is required
 <!-- END AUTO: restrictions -->

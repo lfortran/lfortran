@@ -33,11 +33,11 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* ExternalSymbol::m_external cannot be nullptr
-* ExternalSymbol::m_external cannot be an ExternalSymbol
-* ExternalSymbol::m_original_name must match external->m_name
-* ExternalSymbol::m_external '[...]' is not in a module or struct type, owner: [...]
-* ExternalSymbol::m_module_name `[...]` must match external's module name `[...]`
-* ExternalSymbol::m_original_name ('[...]') + scope_names not found in a module '[...]'
-* ExternalSymbol::m_name + scope_names found but not equal to m_external, [...]original_name [...].
+* `ExternalSymbol::m_external` cannot be `nullptr`
+* `ExternalSymbol::m_external` cannot be an ExternalSymbol
+* `ExternalSymbol::m_original_name` must match external->`m_name`
+* `ExternalSymbol::m_external` '[...]' is not in a module or struct type, owner: [...]
+* `ExternalSymbol::m_module_name` `[...]` must match external's module name `[...]`
+* `ExternalSymbol::m_original_name` ('[...]') + scope_names not found in a module '[...]'
+* `ExternalSymbol::m_name` + scope_names found but not equal to `m_external`, [...]original_name [...].
 <!-- END AUTO: restrictions -->

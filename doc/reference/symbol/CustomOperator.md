@@ -33,6 +33,6 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* CustomOperator::m_name cannot be nullptr
-* ::m_parent_symtab cannot be nullptr
+* `CustomOperator::m_name` cannot be `nullptr`
+* ::`m_parent_symtab` cannot be `nullptr`
 <!-- END AUTO: restrictions -->

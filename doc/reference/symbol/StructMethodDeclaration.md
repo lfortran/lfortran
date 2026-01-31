@@ -33,12 +33,12 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The StructMethodDeclaration::m_name cannot be nullptr
-* The StructMethodDeclaration::m_proc cannot be nullptr
-* The StructMethodDeclaration::m_proc_name cannot be nullptr
-* StructMethodDeclaration::m_parent_symtab cannot be nullptr
+* The `StructMethodDeclaration::m_name` cannot be `nullptr`
+* The `StructMethodDeclaration::m_proc` cannot be `nullptr`
+* The `StructMethodDeclaration::m_proc_name` cannot be `nullptr`
+* `StructMethodDeclaration::m_parent_symtab` cannot be `nullptr`
 * StructMethodDeclaration '[...]' not found in parent_symtab symbol table
 * StructMethodDeclaration's parent symbol table does not point to it
-* StructMethodDeclaration::m_parent_symtab must be present in the ASR ([...])
+* `StructMethodDeclaration::m_parent_symtab` must be present in the ASR ([...])
 * must be present in [...] procedures.
 <!-- END AUTO: restrictions -->

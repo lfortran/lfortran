@@ -34,5 +34,5 @@ _No ASR example yet._
 
 <!-- BEGIN AUTO: restrictions -->
 * Type of ArrayConstructor must be an array
-* ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol
+* `ArrayConstructor::m_struct_vars` must be `nullptr` or var to struct symbol
 <!-- END AUTO: restrictions -->

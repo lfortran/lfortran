@@ -35,5 +35,5 @@ _No ASR example yet._
 <!-- BEGIN AUTO: restrictions -->
 * Type of ArrayConstant must be an array
 * Constant array of strings should have constant string length
-* ArrayConstant::m_n_data must match the byte size of the array
+* `ArrayConstant::m_n_data` must match the byte size of the array
 <!-- END AUTO: restrictions -->

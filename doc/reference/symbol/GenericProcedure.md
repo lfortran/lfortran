@@ -33,6 +33,6 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* GenericProcedure::m_name cannot be nullptr
-* ::m_parent_symtab cannot be nullptr
+* `GenericProcedure::m_name` cannot be `nullptr`
+* ::`m_parent_symtab` cannot be `nullptr`
 <!-- END AUTO: restrictions -->

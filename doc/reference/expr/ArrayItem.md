@@ -33,6 +33,6 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* ArrayItem::m_type with array indices must be an array.
-* ArrayItem::m_type cannot be array.
+* `ArrayItem::m_type` with array indices must be an array.
+* `ArrayItem::m_type` cannot be array.
 <!-- END AUTO: restrictions -->

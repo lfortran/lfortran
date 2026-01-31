@@ -33,14 +33,14 @@ _No ASR example yet._
 ## Restrictions
 
 <!-- BEGIN AUTO: restrictions -->
-* The Module::m_symtab cannot be nullptr
-* The Module::m_symtab->parent is not the right parent
-* The Module::m_symtab's parent must be TranslationUnit
-* Module::m_symtab->counter must be unique
-* The X::m_symtab::asr_owner must point to X
+* The `Module::m_symtab` cannot be `nullptr`
+* The `Module::m_symtab`->parent is not the right parent
+* The `Module::m_symtab`'s parent must be TranslationUnit
+* `Module::m_symtab`->counter must be unique
+* The `X::m_symtab::asr_owner` must point to X
 * Module name is required
 * The asr_owner invariant failed
-* A module dependency must not be a nullptr
+* A module dependency must not be a `nullptr`
 * A module dependency must not be an empty string
 * A module dependency must be a valid string
 * Module [...] dependencies must contain [...] because a function present in it is getting called in [...].
