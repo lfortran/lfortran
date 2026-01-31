@@ -1728,7 +1728,7 @@ public:
                                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(tmp_expr))),
                             x_arr,
                             curr_arg_m_a_type);
-                        if (m_source && !m_source_is_class) {
+                        if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             int64_t ptr_loads_copy = ptr_loads;
                             if (ASRUtils::is_allocatable(m_source)) {
                                 ptr_loads = 1;
@@ -1877,7 +1877,7 @@ public:
                         if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
                             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(dest_class_sym), x_arr, ASRUtils::symbol_type(dest_class_sym));
                         }
-                        if (m_source && !m_source_is_class) {
+                        if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
                                 const auto load = ASRUtils::is_allocatable(m_source) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
                                 this->visit_expr_load_wrapper(m_source, load);
