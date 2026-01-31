@@ -14829,7 +14829,12 @@ public:
                 args.push_back(sep_len);
             }
             if (!x.m_is_formatted) {
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                ASR::ttype_t* value_type = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+                ASR::ttype_t* value_type_base = ASRUtils::type_get_past_array(value_type);
+                int kind = ASRUtils::extract_kind_from_ttype_t(value_type_base);
+                if (ASR::is_a<ASR::Complex_t>(*value_type_base)) {
+                    kind *= 2;
+                }
                 llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                 if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
@@ -14847,6 +14852,20 @@ public:
                     ptr_loads = ptr_loads_copy;
                     llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
                     args.push_back(str_data);
+                    continue;
+                } else if (ASR::is_a<ASR::Logical_t>(*value_type_base)) {
+                    args.push_back(kind_val);
+                    this->visit_expr_wrapper(m_values[i], true);
+                    llvm::Value* logical_val = tmp;
+                    if (logical_val->getType()->isPointerTy()) {
+                        logical_val = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), logical_val);
+                    }
+                    llvm::Value* logical_i32 = builder->CreateZExt(
+                        logical_val, llvm::Type::getInt32Ty(context));
+                    llvm::Value* logical_ptr = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt32Ty(context));
+                    builder->CreateStore(logical_i32, logical_ptr);
+                    args.push_back(logical_ptr);
                     continue;
                 } else {
                     args.push_back(kind_val);
