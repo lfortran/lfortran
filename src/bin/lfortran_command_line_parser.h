@@ -110,6 +110,8 @@ namespace LCompilers::CommandLineInterface {
 #endif // WITH_LSP
 
         auto parse() -> void;
+
+        static void setup_options(CLI::App &app);
     private:
         int argc;
         const char *const *argv = nullptr;
