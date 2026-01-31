@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # Where
 
-Where, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 Where(expr test, stmt* body, stmt* orelse)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `test` of type `expr`, `body` of type `stmt*`, `orelse` of type `stmt*`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 None.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # StringConstant
 
-StringConstant, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 StringConstant(string s, ttype type)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `s` of type `string`, `type` of type `ttype`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 None.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

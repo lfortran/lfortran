@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # AssociateBlockCall
 
-AssociateBlockCall, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 AssociateBlockCall(symbol m)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input argument is `m` of type `symbol`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `AssociateBlockCall::m_name` '[...]' cannot point outside of its symbol table
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

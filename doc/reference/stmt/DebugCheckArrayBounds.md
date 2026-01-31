@@ -1,41 +1,22 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # DebugCheckArrayBounds
 
-DebugCheckArrayBounds, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `target` of type `expr`, `components` of type `expr*`, `move_allocation` of type `bool`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `DebugCheckArrayBounds::m_target` must have an Array type
 * `DebugCheckArrayBounds::n_components` should be greater than 0
 * `DebugCheckArrayBounds::m_components` element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant
 * `DebugCheckArrayBounds::m_components` element must have an Array type
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

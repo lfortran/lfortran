@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # IfArithmetic
 
-IfArithmetic, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `test` of type `expr`, `lt_label` of type `int`, `eq_label` of type `int`, `gt_label` of type `int`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 None.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

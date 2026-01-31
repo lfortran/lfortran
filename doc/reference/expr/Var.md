@@ -1,40 +1,21 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # Var
 
-Var, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 Var(symbol v)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input argument is `v` of type `symbol`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `Var_t::m_v` cannot be `nullptr`
 * `Var_t::m_v` [...] does not point to a `Variable_t`, `Function_t`, or `Enum_t` (possibly behind `ExternalSymbol_t`)
 * `Var::m_v` `[...]` cannot point outside of its symbol table
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

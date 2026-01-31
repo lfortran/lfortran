@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # OMPRegion
 
-OMPRegion, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `region` of type `omp_region_type`, `clauses` of type `omp_clause*`, `body` of type `stmt*`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 None.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

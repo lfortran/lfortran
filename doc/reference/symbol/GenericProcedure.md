@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # GenericProcedure
 
-GenericProcedure, a **symbol** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `parent_symtab` of type `symbol_table`, `name` of type `identifier`, `procs` of type `symbol*`, `access` of type `access`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `GenericProcedure::m_name` cannot be `nullptr`
 * ::`m_parent_symtab` cannot be `nullptr`
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

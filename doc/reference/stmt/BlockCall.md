@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # BlockCall
 
-BlockCall, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 BlockCall(int label, symbol m)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `label` of type `int`, `m` of type `symbol`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Block call made to inexisting block
 * Block [...] should resolve in current scope.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

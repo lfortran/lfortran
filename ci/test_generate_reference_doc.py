@@ -8,13 +8,14 @@ Tests verify:
 3. Code elements are properly formatted with backticks
 4. Documentation preservation across regeneration
 5. Correct handling of new/removed nodes
+
+Format follows certik's example from issue #7006.
 """
 
 import sys
 import tempfile
 from pathlib import Path
 
-# Add parent directory to path to import the modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ci.asr_docs.asdl_parser import parse_asdl
@@ -40,27 +41,13 @@ def test_parse_existing_doc_preserves_documentation():
 
         content = """# TestNode
 
-TestNode, a **expr** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 TestNode(int x)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input argument is `x` of type `int`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
@@ -72,15 +59,11 @@ It has multiple paragraphs and **formatting**.
 
 With a subsection too.
 
-## ASR
+## Verify
 
-_No ASR example yet._
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Some restriction
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->
 """
         test_file.write_text(content)
 
@@ -100,15 +83,23 @@ def test_parse_existing_doc_ignores_placeholder():
 
         content = """# TestNode
 
+## ASR
+
+<!-- BEGIN AUTO: asr -->
+```
+TestNode(int x)
+```
+<!-- END AUTO: asr -->
+
 ## Documentation
 
 _No documentation yet._
 
-## Restrictions
+## Verify
 
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 None.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->
 """
         test_file.write_text(content)
 
@@ -116,45 +107,6 @@ None.
 
         assert sections is not None
         assert "documentation" not in sections
-
-
-def test_parse_existing_doc_preserves_asr_section():
-    """Test that human-written ASR examples are preserved."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        test_file = Path(tmpdir) / "test.md"
-
-        content = """# TestNode
-
-## Documentation
-
-_No documentation yet._
-
-## ASR
-
-Example Fortran code:
-```fortran
-integer :: x = 5
-```
-
-ASR output:
-```
-(Variable 2 x [] Local ...)
-```
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
-None.
-<!-- END AUTO: restrictions -->
-"""
-        test_file.write_text(content)
-
-        sections = parse_existing_doc(test_file)
-
-        assert sections is not None
-        assert "asr" in sections
-        assert "Example Fortran code:" in sections["asr"]
-        assert "integer :: x = 5" in sections["asr"]
 
 
 def test_generate_node_content_includes_documentation():
@@ -184,23 +136,27 @@ def test_generate_node_content_uses_placeholder_when_no_existing():
     )
 
     assert "_No documentation yet._" in content
-    assert "<!-- Generate ASR using pickle. -->" in content
 
 
-def test_generate_node_content_preserves_asr_section():
-    """Test that existing ASR example is included in generated content."""
-    existing = {"asr": "This is a preserved ASR example."}
-
+def test_generate_node_content_certik_format():
+    """Test that output matches certik's format from issue #7006."""
     content = generate_node_content(
-        category="expr",
-        name="TestNode",
-        signature="TestNode(int x)",
-        restrictions=[],
-        existing_sections=existing
+        category="ttype",
+        name="String",
+        signature="String(int kind, expr? len, bool is_assumed_length)",
+        restrictions=["Must have valid kind"],
+        existing_sections=None
     )
 
-    assert "This is a preserved ASR example." in content
-    assert "_No ASR example yet._" not in content
+    # Check certik's format: # Name, ## ASR, ## Documentation, ## Verify
+    assert "# String" in content
+    assert "## ASR" in content
+    assert "## Documentation" in content
+    assert "## Verify" in content
+    # No "do not edit" header
+    assert "do not edit" not in content.lower()
+    # ASR contains signature in code block
+    assert "```\nString(int kind, expr? len, bool is_assumed_length)\n```" in content
 
 
 def test_generate_enum_content_preserves_documentation():
@@ -234,7 +190,7 @@ def test_generate_struct_content_preserves_documentation():
 
 
 def test_auto_markers_present_in_output():
-    """Test that auto-generated sections have proper markers and ASR section exists."""
+    """Test that auto-generated sections have proper markers."""
     content = generate_node_content(
         category="stmt",
         name="TestStmt",
@@ -243,18 +199,10 @@ def test_auto_markers_present_in_output():
         existing_sections=None
     )
 
-    assert "<!-- BEGIN AUTO: syntax -->" in content
-    assert "<!-- END AUTO: syntax -->" in content
-    assert "<!-- BEGIN AUTO: arguments -->" in content
-    assert "<!-- END AUTO: arguments -->" in content
-    assert "<!-- BEGIN AUTO: restrictions -->" in content
-    assert "<!-- END AUTO: restrictions -->" in content
-    assert "## ASR" in content
-    assert "<!-- Generate ASR using pickle. -->" in content
-    # Check header comment
-    assert "<!-- This is an automatically generated file." in content
-    # Check category format
-    assert "**statement (stmt)**" in content
+    assert "<!-- BEGIN AUTO: asr -->" in content
+    assert "<!-- END AUTO: asr -->" in content
+    assert "<!-- BEGIN AUTO: verify -->" in content
+    assert "<!-- END AUTO: verify -->" in content
 
 
 def test_format_code_elements_qualified_names():
@@ -308,7 +256,6 @@ def test_cpp_restriction_parsing():
     }
     '''
 
-    # Write to temp file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False) as f:
         f.write(cpp_code)
         cpp_path = f.name
@@ -386,7 +333,6 @@ def test_cpp_restriction_parsing_escaped_quotes():
     restrictions = parse_cpp_verifiers(cpp_path)
 
     assert "Variable" in restrictions
-    # After formatting, "DeferredLength" should become `DeferredLength`
     assert "`DeferredLength`" in restrictions["Variable"][0]
 
     Path(cpp_path).unlink()
@@ -435,7 +381,6 @@ def test_obsolete_file_removal():
     with tempfile.TemporaryDirectory() as tmpdir:
         docs_dir = Path(tmpdir) / "doc" / "reference"
 
-        # Create directory structure with obsolete file
         expr_dir = docs_dir / "expr"
         expr_dir.mkdir(parents=True)
 
@@ -445,14 +390,11 @@ def test_obsolete_file_removal():
         obsolete_file = expr_dir / "ObsoleteNode.md"
         obsolete_file.write_text("# ObsoleteNode\n\nThis should be deleted.")
 
-        # Verify files exist before
         assert valid_file.exists()
         assert obsolete_file.exists()
 
-        # Simulate generated_files set
         generated_files = {valid_file}
 
-        # Run removal logic
         removed_files = []
         for path in docs_dir.rglob("*.md"):
             if path not in generated_files:
@@ -463,14 +405,13 @@ def test_obsolete_file_removal():
                 except OSError:
                     pass
 
-        # Verify valid file still exists, obsolete is removed
         assert valid_file.exists()
         assert not obsolete_file.exists()
         assert obsolete_file in removed_files
 
 
 def test_full_regeneration_preserves_docs():
-    """Integration test: full regeneration cycle preserves documentation and ASR."""
+    """Integration test: full regeneration cycle preserves documentation."""
     with tempfile.TemporaryDirectory() as tmpdir:
         test_dir = Path(tmpdir) / "doc" / "reference" / "expr"
         test_dir.mkdir(parents=True)
@@ -478,27 +419,13 @@ def test_full_regeneration_preserves_docs():
 
         original_content = """# TestExpr
 
-TestExpr, a **expr** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 TestExpr(int old_value)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input argument is `old_value` of type `int`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
@@ -509,25 +436,16 @@ It includes:
 - **Bold text**
 - Code: `example()`
 
-## ASR
+## Verify
 
-Example showing TestExpr in action:
-```fortran
-x = test_expr(5)
-```
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Old restriction
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->
 """
         test_file.write_text(original_content)
 
-        # Parse existing
         sections = parse_existing_doc(test_file)
 
-        # Generate new content with updated signature
         new_content = generate_node_content(
             category="expr",
             name="TestExpr",
@@ -539,10 +457,6 @@ x = test_expr(5)
         # Verify documentation is preserved
         assert "written by a human and must survive" in new_content
         assert "Lists" in new_content
-
-        # Verify ASR example is preserved
-        assert "Example showing TestExpr in action:" in new_content
-        assert "x = test_expr(5)" in new_content
 
         # Verify auto-generated sections are updated
         assert "new_value" in new_content
@@ -560,10 +474,9 @@ if __name__ == "__main__":
     tests = [
         test_parse_existing_doc_preserves_documentation,
         test_parse_existing_doc_ignores_placeholder,
-        test_parse_existing_doc_preserves_asr_section,
         test_generate_node_content_includes_documentation,
         test_generate_node_content_uses_placeholder_when_no_existing,
-        test_generate_node_content_preserves_asr_section,
+        test_generate_node_content_certik_format,
         test_generate_enum_content_preserves_documentation,
         test_generate_struct_content_preserves_documentation,
         test_auto_markers_present_in_output,

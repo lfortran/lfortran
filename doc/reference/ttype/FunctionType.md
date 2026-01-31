@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # FunctionType
 
-FunctionType, a **type (ttype)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `arg_types` of type `ttype*`, `return_var_type` of type `ttype?`, `abi` of type `abi`, `deftype` of type `deftype`, `bindc_name` of type `string?`, `elemental` of type `bool`, `pure` of type `bool`, `module` of type `bool`, `inline` of type `bool`, `static` of type `bool`, `restrictions` of type `symbol*`, `is_restriction` of type `bool`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `ASR::ttype_t` in `ASR::FunctionType` cannot be tied to a scope.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

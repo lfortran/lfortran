@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # ArrayConstructor
 
-ArrayConstructor, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 ArrayConstructor(expr* args, ttype type, expr? value, arraystorage storage_format, expr? struct_var)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `args` of type `expr*`, `type` of type `ttype`, `value` of type `expr?`, `storage_format` of type `arraystorage`, `struct_var` of type `expr?`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Type of ArrayConstructor must be an array
 * `ArrayConstructor::m_struct_vars` must be `nullptr` or var to struct symbol
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

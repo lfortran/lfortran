@@ -1,38 +1,19 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # Select
 
-Select, a **statement (stmt)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 Select(identifier? name, expr test, case_stmt* body, stmt* default, bool enable_fall_through)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `name` of type `identifier?`, `test` of type `expr`, `body` of type `case_stmt*`, `default` of type `stmt*`, `enable_fall_through` of type `bool`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `Select_t::m_enable_fall_through` should be [...]
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

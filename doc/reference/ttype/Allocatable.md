@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # Allocatable
 
-Allocatable, a **type (ttype)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 Allocatable(ttype type)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input argument is `type` of type `ttype`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Allocatable type conflicts with Pointer type
 * Length of allocatable should be deferred (empty).
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

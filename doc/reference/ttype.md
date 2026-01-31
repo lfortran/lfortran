@@ -1,4 +1,3 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # ttype
 
 `ttype` is an **enum**.

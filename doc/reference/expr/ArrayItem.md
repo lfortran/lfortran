@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # ArrayItem
 
-ArrayItem, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `v` of type `expr`, `args` of type `array_index*`, `type` of type `ttype`, `storage_format` of type `arraystorage`, `value` of type `expr?`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `ArrayItem::m_type` with array indices must be an array.
 * `ArrayItem::m_type` cannot be array.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

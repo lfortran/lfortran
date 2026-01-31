@@ -1,42 +1,23 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # StringSection
 
-StringSection, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 StringSection(expr arg, expr? start, expr? end, expr? step, ttype type, expr? value)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `arg` of type `expr`, `start` of type `expr?`, `end` of type `expr?`, `step` of type `expr?`, `type` of type `ttype`, `value` of type `expr?`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * StringSection start member must be provided
 * StringSection end member must be provided
 * StringSection step member must be provided
 * StringSection return type must be a string
 * StringSection's string-return node must have length expression (NOT `nullptr`)
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

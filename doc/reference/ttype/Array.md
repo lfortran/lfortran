@@ -1,43 +1,24 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # Array
 
-Array, a **type (ttype)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 Array(ttype type, dimension* dims, array_physical_type physical_type)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `type` of type `ttype`, `dims` of type `dimension*`, `physical_type` of type `array_physical_type`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Allocatable cannot be inside array
 * Assumed-rank arrays must have 0 dimensions
 * Array type cannot have 0 dimensions.
 * Array type cannot be nested.
 * Array of strings' physical type shouldn't be `FixedSizeArray`
 * Array of classes can't be of physical type `FixedSizeArray`
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

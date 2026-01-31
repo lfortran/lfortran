@@ -1,41 +1,22 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # FunctionCall
 
-FunctionCall, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 FunctionCall(symbol name, symbol? original_name, call_arg* args, ttype type, expr? value, expr? dt)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `name` of type `symbol`, `original_name` of type `symbol?`, `args` of type `call_arg*`, `type` of type `ttype`, `value` of type `expr?`, `dt` of type `expr?`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * `FunctionCall::m_name` must be present
 * `FunctionCall::m_name` `[...]` cannot point outside of its symbol table
 * `FunctionCall::m_name` must be a Function or Variable with FunctionType
 * `FunctionCall::m_name` [...] must be returning a non-void value.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

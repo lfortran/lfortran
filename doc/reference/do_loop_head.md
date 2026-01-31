@@ -1,4 +1,3 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # do_loop_head
 
 `do_loop_head` is a **struct**.

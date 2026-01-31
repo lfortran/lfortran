@@ -1,4 +1,3 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # omp_region_type
 
 `omp_region_type` is an **enum**.

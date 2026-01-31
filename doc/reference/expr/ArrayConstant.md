@@ -1,40 +1,21 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # ArrayConstant
 
-ArrayConstant, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 ArrayConstant(int n_data, void data, ttype type, arraystorage storage_format)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `n_data` of type `int`, `data` of type `void`, `type` of type `ttype`, `storage_format` of type `arraystorage`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * Type of ArrayConstant must be an array
 * Constant array of strings should have constant string length
 * `ArrayConstant::m_n_data` must match the byte size of the array
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

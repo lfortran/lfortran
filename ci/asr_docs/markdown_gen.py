@@ -2,26 +2,20 @@
 Markdown Generator for ASR reference documentation.
 
 Generates properly formatted markdown for nodes, enums, and structs.
+Following certik's format from issue #7006.
 """
 
 import re
 
 
-# Category name mappings for documentation
-CATEGORY_NAMES = {
-    'stmt': 'statement (stmt)',
-    'expr': 'expression (expr)',
-    'ttype': 'type (ttype)',
-    'symbol': 'symbol',
-    'case_stmt': 'case statement (case_stmt)',
-    'attribute': 'attribute',
-    'omp_clause': 'OpenMP clause (omp_clause)',
-}
-
-
 def generate_node_content(category, name, signature, restrictions, existing_sections=None):
     """
     Generate markdown content for a node, preserving existing documentation.
+
+    Format follows certik's example from issue #7006:
+    - ## ASR: the ASR signature (auto-generated)
+    - ## Documentation: human-written content (preserved)
+    - ## Verify: restrictions from asr_verify.cpp (auto-generated)
 
     Args:
         category: Node category (e.g., 'stmt', 'expr', 'ttype')
@@ -33,80 +27,35 @@ def generate_node_content(category, name, signature, restrictions, existing_sect
     Returns:
         str: Complete markdown content
     """
-    args_match = re.search(r"\((.*?)\)", signature)
-    args_list = []
-    if args_match:
-        for arg in args_match.group(1).split(","):
-            arg = arg.strip()
-            if not arg:
-                continue
-            parts = arg.split()
-            if len(parts) >= 2:
-                arg_type = " ".join(parts[:-1])
-                arg_name = parts[-1]
-                args_list.append(f"`{arg_name}` of type `{arg_type}`")
-
-    if args_list:
-        args_text = "Input argument" + ("s are " if len(args_list) > 1 else " is ") + ", ".join(args_list) + "."
-    else:
-        args_text = "None."
-
     if restrictions:
-        restrictions_text = "\n".join(f"* {r}" for r in restrictions)
+        verify_text = "\n".join(f"* {r}" for r in restrictions)
     else:
-        restrictions_text = "None."
+        verify_text = "None."
 
     # Get existing documentation or use placeholder
     doc_text = "_No documentation yet._"
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
-    # Get existing ASR example or use placeholder
-    asr_text = "<!-- Generate ASR using pickle. -->"
-    if existing_sections and "asr" in existing_sections:
-        asr_text = existing_sections["asr"]
+    md = f"""# {name}
 
-    # Get full category name
-    category_full = CATEGORY_NAMES.get(category, category)
+## ASR
 
-    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
-# {name}
-
-{name}, a **{category_full}** node.
-
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 {signature}
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-{args_text}
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 {doc_text}
 
-## ASR
+## Verify
 
-{asr_text}
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
-{restrictions_text}
-<!-- END AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
+{verify_text}
+<!-- END AUTO: verify -->
 """
     return md
 
@@ -119,8 +68,7 @@ def generate_enum_content(name, values, existing_sections=None):
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
-    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
-# {name}
+    md = f"""# {name}
 
 `{name}` is an **enum**.
 
@@ -154,8 +102,7 @@ def generate_struct_content(name, fields, existing_sections=None):
     if existing_sections and "documentation" in existing_sections:
         doc_text = existing_sections["documentation"]
 
-    md = f"""<!-- This is an automatically generated file. Do not edit it manually. -->
-# {name}
+    md = f"""# {name}
 
 `{name}` is a **struct**.
 

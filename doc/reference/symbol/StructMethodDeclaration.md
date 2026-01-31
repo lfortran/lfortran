@@ -1,39 +1,20 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # StructMethodDeclaration
 
-StructMethodDeclaration, a **symbol** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `parent_symtab` of type `symbol_table`, `name` of type `identifier`, `self_argument` of type `identifier?`, `proc_name` of type `identifier`, `proc` of type `symbol`, `abi` of type `abi`, `is_deferred` of type `bool`, `is_nopass` of type `bool`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * The `StructMethodDeclaration::m_name` cannot be `nullptr`
 * The `StructMethodDeclaration::m_proc` cannot be `nullptr`
 * The `StructMethodDeclaration::m_proc_name` cannot be `nullptr`
@@ -42,4 +23,4 @@ _No documentation yet._
 * StructMethodDeclaration's parent symbol table does not point to it
 * `StructMethodDeclaration::m_parent_symtab` must be present in the ASR ([...])
 * must be present in [...] procedures.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

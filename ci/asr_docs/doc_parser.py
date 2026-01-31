@@ -15,7 +15,6 @@ def parse_existing_doc(path):
     Extracts:
     - Auto-generated sections (marked with BEGIN/END AUTO comments)
     - Documentation section (human-written)
-    - ASR section (human-written examples)
 
     Args:
         path: Path to the markdown file
@@ -44,16 +43,5 @@ def parse_existing_doc(path):
         doc_content = doc_match.group(1).strip()
         if doc_content and doc_content != "_No documentation yet._":
             sections["documentation"] = doc_content
-
-    # Extract ASR section (between ## ASR and next ##)
-    asr_match = re.search(r'## ASR\n\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
-    if asr_match:
-        asr_content = asr_match.group(1).strip()
-        # Preserve if not a placeholder (either old or new format)
-        if asr_content and asr_content not in (
-            "_No ASR example yet._",
-            "<!-- Generate ASR using pickle. -->"
-        ):
-            sections["asr"] = asr_content
 
     return sections

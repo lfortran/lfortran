@@ -1,41 +1,22 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # StringPhysicalCast
 
-StringPhysicalCast, a **expression (expr)** node.
+## ASR
 
-## Declaration
-
-### Syntax
-
-<!-- BEGIN AUTO: syntax -->
+<!-- BEGIN AUTO: asr -->
 ```
 StringPhysicalCast(expr arg, string_physical_type old, string_physical_type new, ttype type, expr? value)
 ```
-<!-- END AUTO: syntax -->
-
-### Arguments
-
-<!-- BEGIN AUTO: arguments -->
-Input arguments are `arg` of type `expr`, `old` of type `string_physical_type`, `new` of type `string_physical_type`, `type` of type `ttype`, `value` of type `expr?`.
-<!-- END AUTO: arguments -->
-
-### Return values
-
-None.
+<!-- END AUTO: asr -->
 
 ## Documentation
 
 _No documentation yet._
 
-## ASR
+## Verify
 
-<!-- Generate ASR using pickle. -->
-
-## Restrictions
-
-<!-- BEGIN AUTO: restrictions -->
+<!-- BEGIN AUTO: verify -->
 * x.`m_type` cannot be `nullptr`
 * StringPhysicalCast should be of string type
 * StringPhysicalCast return type shouldn't have length (Length should be implicit).
 * StringPhysicalCast expression should have length kind of `ImplicitLength`.
-<!-- END AUTO: restrictions -->
+<!-- END AUTO: verify -->

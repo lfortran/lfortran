@@ -1,4 +1,3 @@
-<!-- This is an automatically generated file. Do not edit it manually. -->
 # cast_kind
 
 `cast_kind` is an **enum**.
