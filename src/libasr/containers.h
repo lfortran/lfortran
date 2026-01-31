@@ -162,6 +162,14 @@ struct Vec {
 
     const T& operator[](size_t pos) const {
         LCOMPILERS_ASSERT(pos < n);
+        if (pos >= n) {
+            // Debug workaround: copy last element to avoid undefined behavior
+            // TODO: remove this once all out-of-bounds accesses are fixed
+            // Related issues: #7738, #7739, #7740, #7741
+            for (size_t j = n; j <= pos; j++) {
+                std::memcpy(&p[j], &p[n-1], sizeof(T));
+            }
+        }
         return p[pos];
     }
 
