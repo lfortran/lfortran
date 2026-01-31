@@ -2393,6 +2393,60 @@ class ReplaceExprWithTemporaryVisitor:
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* test_copy_check = duplicator.duplicate_expr(x.m_test);
+        
+        Vec<ASR::stmt_t*>* const parent_body = current_body;
+        Vec<ASR::stmt_t*> check_stmts; check_stmts.reserve(al, 0);
+        current_body = &check_stmts;
+        
+        ASR::expr_t** current_expr_copy_original = current_expr;
+        current_expr = &test_copy_check;
+        call_replacer();
+        current_expr = current_expr_copy_original;
+        
+        if (check_stmts.empty()) {
+            current_body = parent_body;
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
+            return;
+        }
+        
+        current_body = parent_body;
+        for(size_t i=0; i<check_stmts.size(); i++) {
+            current_body->push_back(al, check_stmts[i]);
+        }
+
+        ASR::expr_t* original_test_expr = x.m_test;
+        const_cast<ASR::WhileLoop_t&>(x).m_test = test_copy_check;
+        
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
+        
+        Vec<ASR::stmt_t*> update_stmts; update_stmts.reserve(al, 0);
+        current_body = &update_stmts;
+        
+        ASR::expr_t* test_copy_inner = original_test_expr;
+        current_expr = &test_copy_inner;
+        call_replacer();
+        current_expr = current_expr_copy_original;
+        
+        update_stmts.push_back(al, ASRUtils::STMT(make_Assignment_t_util(al, x.base.base.loc, test_copy_check, test_copy_inner, nullptr, exprs_with_target)));
+        
+        Vec<ASR::stmt_t*> new_body_vec;
+        new_body_vec.reserve(al, x.n_body + update_stmts.size());
+        for(size_t i=0; i<x.n_body; i++) {
+            new_body_vec.push_back(al, x.m_body[i]);
+        }
+        for(size_t i=0; i<update_stmts.size(); i++) {
+            new_body_vec.push_back(al, update_stmts[i]);
+        }
+        
+        const_cast<ASR::WhileLoop_t&>(x).m_body = new_body_vec.p;
+        const_cast<ASR::WhileLoop_t&>(x).n_body = new_body_vec.size();
+
+        current_body = parent_body;
+    }
+
     void visit_Where(const ASR::Where_t &x) {
         bool inside_where_copy = inside_where;
         if( !inside_where ) {
