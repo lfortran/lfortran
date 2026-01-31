@@ -1935,7 +1935,16 @@ public:
                 // For regular allocatable variables, the descriptor is always properly initialized on declaration
                 // For struct/derived type members, the descriptor may be NULL and needs initialization
                 bool is_struct_member = ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr);
-                if (is_struct_member || compiler_options.po.strict_bounds_checking) {
+                bool is_dummy_arg = false;
+                if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                        is_dummy_arg = ASRUtils::is_arg_dummy(v->m_intent);
+                    }
+                }
+                if (is_struct_member || is_dummy_arg || compiler_options.po.strict_bounds_checking) {
                     llvm_utils->create_if_else(
                         builder->CreateICmpEQ(
                             builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
@@ -1945,7 +1954,7 @@ public:
                         [&]() {
                             llvm::Value* ptr_;
 
-                            if (is_struct_member) {
+                            if (is_struct_member || is_dummy_arg) {
                                 ptr_ = arr_descr->allocate_descriptor_on_heap(type, n_dims);
                                 if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
                                     llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
