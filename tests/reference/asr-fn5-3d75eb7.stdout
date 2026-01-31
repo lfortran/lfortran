@@ -236,6 +236,90 @@
                                     (SymbolTable
                                         4
                                         {
+                                            __lfortran_iomsg:
+                                                (Variable
+                                                    4
+                                                    __lfortran_iomsg
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __lfortran_iomsg1:
+                                                (Variable
+                                                    4
+                                                    __lfortran_iomsg1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __lfortran_iostat:
+                                                (Variable
+                                                    4
+                                                    __lfortran_iostat
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __lfortran_iostat1:
+                                                (Variable
+                                                    4
+                                                    __lfortran_iostat1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             header:
                                                 (Variable
                                                     4
@@ -433,9 +517,9 @@
                                     (Var 4 stop)]
                                     [(FileWrite
                                         0
-                                        ()
-                                        ()
-                                        ()
+                                        (IntegerConstant 6 (Integer 4) Decimal)
+                                        (Var 4 __lfortran_iomsg)
+                                        (Var 4 __lfortran_iostat)
                                         ()
                                         [(StringFormat
                                             (StringConstant
@@ -554,9 +638,9 @@
                                     )
                                     (FileWrite
                                         0
-                                        ()
-                                        ()
-                                        ()
+                                        (IntegerConstant 6 (Integer 4) Decimal)
+                                        (Var 4 __lfortran_iomsg1)
+                                        (Var 4 __lfortran_iostat1)
                                         ()
                                         [(StringFormat
                                             (StringConstant
