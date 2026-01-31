@@ -8838,13 +8838,6 @@ public:
         }
         load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
-        // Logical arrays use byte-backed storage (i8) in memory; convert scalar i1 values
-        // to i8 before storing into an array element.
-        if (x.m_target->type == ASR::exprType::ArrayItem &&
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_target)) &&
-            value->getType()->isIntegerTy(1)) {
-            value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
-        }
 
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
@@ -9762,16 +9755,8 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                // Logical arrays are stored as byte-backed (i8) in memory; load as i8 and
-                // convert to scalar i1 for expression semantics.
-                if (x->type == ASR::exprType::ArrayItem &&
-                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
-                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
-                } else {
-                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
+                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
         }
     }

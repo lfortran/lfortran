@@ -53,6 +53,7 @@ set(SRC
     pass/pass_utils.cpp
     pass/unused_functions.cpp
     pass/flip_sign.cpp
+    pass/logical_array_cast.cpp
     pass/div_to_mul.cpp
     pass/replace_symbolic.cpp
     pass/intrinsic_function.cpp
