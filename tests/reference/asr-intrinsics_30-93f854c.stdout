@@ -247,6 +247,7 @@
                                                 ColMajor
                                             )
                                             ColMajor
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 37 (Integer 4) Decimal)
@@ -432,6 +433,7 @@
                                             ColMajor
                                         )
                                         ColMajor
+                                        ()
                                     )
                                     (ArrayConstant
                                         12

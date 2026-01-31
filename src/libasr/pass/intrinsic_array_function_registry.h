@@ -1599,7 +1599,7 @@ namespace Shape {
                     type, ASR::arraystorageType::ColMajor));
             } else {
                 value = EXPR(ASR::make_ArrayConstructor_t(al, loc, m_shapes.p, m_shapes.n,
-                    type, nullptr, ASR::arraystorageType::ColMajor));
+                    type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
         }
         return value;
@@ -5018,7 +5018,7 @@ namespace Pack {
             } else {
                 mask = EXPR(ASR::make_ArrayConstructor_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
                     TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
-                    nullptr, ASR::arraystorageType::ColMajor));
+                    nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
             type_mask = expr_type(mask);
             mask_rank = extract_dimensions_from_ttype(type_mask, mask_dims);

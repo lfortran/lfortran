@@ -13081,16 +13081,10 @@ public:
             }
 
             case (ASR::ttypeType::Logical):{
-                std::string runtime_func_name;
-                llvm::Type *type_arg;
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-
-                if (a_kind == 4) {
-                    runtime_func_name = "_lfortran_read_logical";
-                    type_arg = llvm::Type::getInt1Ty(context);
-                } else {
-                    throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
-                }
+                // All logical kinds use the same runtime function - it reads T/F
+                // into a bool. The LLVM type is i1 regardless of Fortran kind.
+                std::string runtime_func_name = "_lfortran_read_logical";
+                llvm::Type *type_arg = llvm::Type::getInt1Ty(context);
 
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
@@ -14578,9 +14572,8 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
-        unit_val = tmp;
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         builder->CreateCall(fn, {unit_val});
     }
 
@@ -14596,7 +14589,8 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
-        builder->CreateCall(fn, {tmp});
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        builder->CreateCall(fn, {unit_val});
     }
 
     void visit_FileBackspace(const ASR::FileBackspace_t &x) {
@@ -14611,7 +14605,8 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
-        builder->CreateCall(fn, {tmp});
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        builder->CreateCall(fn, {unit_val});
     }
 
     void visit_FileClose(const ASR::FileClose_t &x) {
@@ -14851,7 +14846,12 @@ public:
                 args.push_back(sep_len);
             }
             if (!x.m_is_formatted) {
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                ASR::ttype_t* value_type = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+                ASR::ttype_t* value_type_base = ASRUtils::type_get_past_array(value_type);
+                int kind = ASRUtils::extract_kind_from_ttype_t(value_type_base);
+                if (ASR::is_a<ASR::Complex_t>(*value_type_base)) {
+                    kind *= 2;
+                }
                 llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                 if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
@@ -14869,6 +14869,20 @@ public:
                     ptr_loads = ptr_loads_copy;
                     llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
                     args.push_back(str_data);
+                    continue;
+                } else if (ASR::is_a<ASR::Logical_t>(*value_type_base)) {
+                    args.push_back(kind_val);
+                    this->visit_expr_wrapper(m_values[i], true);
+                    llvm::Value* logical_val = tmp;
+                    if (logical_val->getType()->isPointerTy()) {
+                        logical_val = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), logical_val);
+                    }
+                    llvm::Value* logical_i32 = builder->CreateZExt(
+                        logical_val, llvm::Type::getInt32Ty(context));
+                    llvm::Value* logical_ptr = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt32Ty(context));
+                    builder->CreateStore(logical_i32, logical_ptr);
+                    args.push_back(logical_ptr);
                     continue;
                 } else {
                     args.push_back(kind_val);
