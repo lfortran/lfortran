@@ -4318,6 +4318,7 @@ namespace Cmplx {
         m_args.push_back(al, args[0]);
         if (args[1])  m_args.push_back(al, args[1]);
         else m_args.push_back(al, b.f32(0.0));
+        m_args.push_back(al, args[2]);
         if ( args[2] != nullptr ) {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[2])) || !extract_value(ASRUtils::expr_value(args[2]), kind)) {
@@ -4325,14 +4326,6 @@ namespace Cmplx {
                 return nullptr;
             }
             set_kind_to_ttype_t(return_type, kind);
-            // Cast KIND argument to int32 if it has a larger integer kind (e.g., from ILP64)
-            ASR::expr_t* kind_arg = args[2];
-            if (extract_kind_from_ttype_t(expr_type(args[2])) != 4) {
-                kind_arg = b.i2i_t(args[2], int32);
-            }
-            m_args.push_back(al, kind_arg);
-        } else {
-            m_args.push_back(al, args[2]);
         }
         for( size_t i = 0; i < 1; i++ ) {
             ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
