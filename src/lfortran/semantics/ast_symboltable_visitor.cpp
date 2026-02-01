@@ -1954,43 +1954,47 @@ public:
                         "SIMD arrays cannot be allocatable: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
-                //  pointers
+                // pointers
                 if (ASR::is_a<ASR::Pointer_t>(*t)) {
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be pointers: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
-                //  array
+                // array
                 if (!ASR::is_a<ASR::Array_t>(*t)) {
                     diag.add(diag::Diagnostic(
                         "The SIMD variable `" + var.first + "` must be an array",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
-                //  1D
+                // 1D
                 if (a->n_dims != 1) {
                     diag.add(diag::Diagnostic(
                         "SIMD arrays must be 1 dimensional, but `" + var.first +
                         "` has " + std::to_string(a->n_dims) + " dimensions",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
-
-                //  compile time constant size
+                // compile time constant size
                 ASR::dimension_t &dim = a->m_dims[0];
                 if (!dim.m_length) {
                     diag.add(diag::Diagnostic(
                         "SIMD array `" + var.first + "` must have an explicit size",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
                 bool is_constant = ASR::is_a<ASR::IntegerConstant_t>(*dim.m_length);
                 if (!is_constant) {
@@ -2000,9 +2004,10 @@ public:
                         "(integer literal or parameter)",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
-                //  Real or Integer
+                // Real or Integer
                 ASR::ttype_t *elem_type = a->m_type;
                 if (!ASR::is_a<ASR::Real_t>(*elem_type) &&
                     !ASR::is_a<ASR::Integer_t>(*elem_type)) {
@@ -2011,7 +2016,8 @@ public:
                         var.first + "` has an incompatible type",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
                 // Mark as SIMD array
                 a->m_physical_type = ASR::array_physical_typeType::SIMDArray;
@@ -2021,7 +2027,7 @@ public:
                     "The SIMD variable `" + var.first + "` is not declared",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {var.second})}));
-                throw SemanticAbort();
+                if ( !compiler_options.continue_compilation ) throw SemanticAbort();
             }
 
         }
