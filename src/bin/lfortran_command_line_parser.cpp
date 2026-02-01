@@ -41,9 +41,8 @@ namespace LCompilers::CommandLineInterface {
         }
     }
 
-    static bool handle_help_category(int argc, const char *const *argv,
-                                     const std::vector<std::string> &args) {
-        const std::map<std::string, std::string> category_map = {
+    static const std::map<std::string, std::string> &get_category_map() {
+        static const std::map<std::string, std::string> category_map = {
             {"warnings", "Warning Options"},
             {"language", "Language Options"},
             {"preprocessing", "Preprocessing Options"},
@@ -55,29 +54,30 @@ namespace LCompilers::CommandLineInterface {
             {"misc", "Miscellaneous Options"},
             {"lsp", "LSP Options"}
         };
+        return category_map;
+    }
 
-        std::string help_arg;
+    static std::string find_help_category_arg(int argc, const char *const *argv,
+                                              const std::vector<std::string> &args) {
         if (argv != nullptr) {
             for (int i = 1; i < argc; ++i) {
                 std::string arg = argv[i];
                 if (arg.rfind("--help=", 0) == 0) {
-                    help_arg = arg.substr(7);
-                    break;
+                    return arg.substr(7);
                 }
             }
         } else {
             for (const auto &arg : args) {
                 if (arg.rfind("--help=", 0) == 0) {
-                    help_arg = arg.substr(7);
-                    break;
+                    return arg.substr(7);
                 }
             }
         }
+        return "";
+    }
 
-        if (help_arg.empty()) {
-            return false;
-        }
-
+    static void handle_help_category(const CLI::App &app, const std::string &help_arg) {
+        const auto &category_map = get_category_map();
         auto it = category_map.find(help_arg);
         if (it == category_map.end()) {
             std::cerr << "Unknown help category: " << help_arg << "\n";
@@ -91,159 +91,11 @@ namespace LCompilers::CommandLineInterface {
             std::cerr << "\n";
             std::exit(1);
         }
-
-        CLI::App temp_app{"LFortran: modern interactive LLVM-based Fortran compiler"};
-        LFortranCommandLineParser::setup_options(temp_app);
-        print_category_help(temp_app, it->second);
+        print_category_help(app, it->second);
         std::exit(0);
     }
 
-    void LFortranCommandLineParser::setup_options(CLI::App &app) {
-        static CompilerOptions dummy_compiler_options;
-        static LFortranCommandLineOpts dummy_opts;
-        static bool dummy_bool = false;
-
-        std::string group_warning_options = "Warning Options";
-        std::string group_language_options = "Language Options";
-        std::string group_preprocessing_options = "Preprocessing Options";
-        std::string group_output_debugging_options = "Output and Debugging Options";
-        std::string group_pass_transformation_options = "Pass and Transformation Options";
-        std::string group_backend_codegen_options = "Backend and Codegen Options";
-        std::string group_symbol_lookup_options = "Symbol and Lookup Options";
-        std::string group_mangling_options = "Mangling Options";
-        std::string group_miscellaneous_options = "Miscellaneous Options";
-        std::string group_lsp_options = "LSP Options";
-
-        app.add_option("files", dummy_opts.arg_files, "Source files");
-        app.add_flag("-S", dummy_opts.arg_S, "Emit assembly, do not assemble or link");
-        app.add_flag("-c", dummy_opts.arg_c, "Compile and assemble, do not link");
-        app.add_flag("--generate-object-code", dummy_bool, "DEPRECATED: legacy alias for --separate-compilation");
-        app.add_option("-o", dummy_compiler_options.arg_o, "Specify the file to place the compiler's output into");
-        app.add_flag("-v", dummy_opts.arg_v, "Be more verbose");
-        app.add_flag("-E", dummy_opts.arg_E, "Preprocess only; do not compile, assemble or link");
-        app.add_option("-l", dummy_opts.arg_l, "Link library option")->allow_extra_args(false);
-        app.add_option("-L", dummy_opts.arg_L, "Library path option")->allow_extra_args(false);
-        app.add_option("-I", dummy_compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
-        app.add_option("-J", dummy_compiler_options.po.mod_files_dir, "Where to save mod files");
-        app.add_flag("-g", dummy_compiler_options.emit_debug_info, "Compile with debugging information");
-        app.add_option("-D", dummy_compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
-        app.add_flag("--version", dummy_opts.arg_version, "Display compiler version information");
-        app.add_option("-W", dummy_opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", dummy_opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
-        app.add_option("-O", dummy_opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
-
-        app.add_flag("--no-warnings", dummy_bool, "Turn off all warnings")->group(group_warning_options);
-        app.add_flag("--no-style-suggestions", dummy_opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
-        app.add_flag("--style-suggestions", dummy_bool, "Enable style suggestions")->group(group_warning_options);
-        app.add_flag("--no-error-banner", dummy_bool, "Turn off error banner")->group(group_warning_options);
-        app.add_option("--error-format", dummy_compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
-
-        app.add_flag("--fixed-form", dummy_compiler_options.fixed_form, "Use fixed form Fortran source parsing")->group(group_language_options);
-        app.add_flag("--fixed-form-infer", dummy_opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
-        app.add_option("--std", dummy_opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
-        app.add_flag("--implicit-typing", dummy_compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
-        app.add_flag("--disable-implicit-typing", dummy_opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
-        app.add_flag("--implicit-interface", dummy_compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
-        app.add_flag("--implicit-argument-casting", dummy_compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
-        app.add_flag("--disable-implicit-argument-casting", dummy_bool, "Disable implicit argument casting")->group(group_language_options);
-        app.add_flag("--logical-casting", dummy_compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
-        app.add_flag("--use-loop-variable-after-loop", dummy_compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
-        app.add_flag("--legacy-array-sections", dummy_compiler_options.legacy_array_sections, "Enables passing array items as sections if required")->group(group_language_options);
-
-        app.add_flag("--cpp", dummy_opts.cpp, "Enable C preprocessing")->group(group_preprocessing_options);
-        app.add_flag("--cpp-infer", dummy_opts.cpp_infer, "Use heuristics to infer if a file needs preprocessing")->group(group_preprocessing_options);
-        app.add_flag("--no-cpp", dummy_opts.no_cpp, "Disable C preprocessing")->group(group_preprocessing_options);
-        app.add_flag("--no-prescan", dummy_opts.arg_no_prescan, "Turn off prescanning")->group(group_preprocessing_options);
-        app.add_flag("--show-prescan", dummy_opts.show_prescan, "Show the source code after prescanning and exit")->group(group_preprocessing_options);
-
-        app.add_flag("--show-tokens", dummy_opts.show_tokens, "Show tokens for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-ast", dummy_opts.show_ast, "Show AST for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-asr", dummy_opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--with-intrinsic-mods", dummy_compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
-        app.add_flag("--show-ast-f90", dummy_opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--no-color", dummy_opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
-        app.add_flag("--runtime-color", dummy_opts.arg_runtime_color, "Enable colored runtime errors")->group(group_output_debugging_options);
-        app.add_flag("--no-indent", dummy_opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
-        app.add_flag("--tree", dummy_compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
-        app.add_flag("--json", dummy_compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
-        app.add_flag("--clojure", dummy_compiler_options.po.clojure, "Print ASR in clojure format")->group(group_output_debugging_options);
-        app.add_flag("--no-loc", dummy_compiler_options.po.no_loc, "Skip location information in ASR/AST Json format")->group(group_output_debugging_options);
-        app.add_flag("--visualize", dummy_compiler_options.po.visualize, "Print ASR/AST Visualization")->group(group_output_debugging_options);
-        app.add_flag("--show-llvm", dummy_opts.show_llvm, "Show LLVM IR for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-mlir", dummy_opts.show_mlir, "Show MLIR for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-llvm-from-mlir", dummy_opts.show_llvm_from_mlir, "Show LLVM IR translated from MLIR for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-cpp", dummy_opts.show_cpp, "Show C++ translation source for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-c", dummy_opts.show_c, "Show C translation source for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-asm", dummy_opts.show_asm, "Show assembly for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-wat", dummy_opts.show_wat, "Show WAT (WebAssembly Text Format) and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-julia", dummy_opts.show_julia, "Show Julia translation source for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-fortran", dummy_opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
-        app.add_flag("--show-stacktrace", dummy_compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
-        app.add_flag("--time-report", dummy_compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
-        app.add_flag("--old-classes", dummy_bool, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
-
-        app.add_option("--pass", dummy_opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
-        app.add_option("--skip-pass", dummy_opts.skip_pass, "Skip an ASR pass in default pipeline")->group(group_pass_transformation_options);
-        app.add_flag("--dump-all-passes", dummy_compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
-        app.add_flag("--dump-all-passes-fortran", dummy_compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
-        app.add_flag("--cumulative", dummy_compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);
-
-        app.add_option("--backend", dummy_opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
-        app.add_flag("--openmp", dummy_compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
-        app.add_flag("--target-offload", dummy_compiler_options.target_offload_enabled, "Enable Target Offloading")->group(group_backend_codegen_options);
-        app.add_flag("--openmp-lib-dir", dummy_compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
-        app.add_flag("--rtlib", dummy_compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
-        app.add_flag("--separate-compilation", dummy_compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
-        app.add_flag("--static", dummy_opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
-        app.add_flag("--shared", dummy_opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
-        app.add_flag("--linker", dummy_opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
-        app.add_flag("--linker-path", dummy_opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
-        app.add_option("--target", dummy_compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
-        app.add_flag("--print-targets", dummy_opts.print_targets, "Print the registered targets")->group(group_backend_codegen_options);
-        app.add_flag("--wasm-html", dummy_compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
-        app.add_option("--emcc-embed", dummy_compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
-        app.add_flag("--mlir-gpu-offloading", dummy_compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
-
-        app.add_flag("--lookup-name", dummy_compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
-        app.add_flag("--rename-symbol", dummy_compiler_options.rename_symbol, "Returns list of locations where symbol specified by --line & --column appears in the ASR")->group(group_symbol_lookup_options);
-        app.add_option("--line", dummy_compiler_options.line, "Line number for --lookup-name")->capture_default_str()->group(group_symbol_lookup_options);
-        app.add_option("--column", dummy_compiler_options.column, "Column number for --lookup-name")->capture_default_str()->group(group_symbol_lookup_options);
-        app.add_flag("--symtab-only", dummy_compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)")->group(group_symbol_lookup_options);
-
-        app.add_flag("--module-mangling", dummy_compiler_options.po.module_name_mangling, "Mangles the module name")->group(group_mangling_options);
-        app.add_flag("--intrinsic-module-mangling", dummy_compiler_options.po.intrinsic_module_name_mangling, "Mangles only intrinsic module name")->group(group_mangling_options);
-        app.add_flag("--global-mangling", dummy_compiler_options.po.global_symbols_mangling, "Mangles all the global symbols")->group(group_mangling_options);
-        app.add_flag("--intrinsic-mangling", dummy_compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols")->group(group_mangling_options);
-        app.add_flag("--all-mangling", dummy_compiler_options.po.all_symbols_mangling, "Mangles all possible symbols")->group(group_mangling_options);
-        app.add_flag("--bindc-mangling", dummy_compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)")->group(group_mangling_options);
-        app.add_flag("--apply-fortran-mangling", dummy_compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax")->group(group_mangling_options);
-        app.add_flag("--mangle-underscore", dummy_compiler_options.po.mangle_underscore, "Mangles with underscore")->group(group_mangling_options);
-        app.add_flag("--mangle-underscore-external", dummy_compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
-
-        app.add_flag("--continue-compilation", dummy_compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
-        app.add_flag("--semantics-only", dummy_compiler_options.semantics_only, "do parsing and semantics, and report all the errors")->group(group_miscellaneous_options);
-        app.add_flag("--print-leading-space", dummy_compiler_options.print_leading_space, "Print leading white space if format is unspecified")->group(group_miscellaneous_options);
-        app.add_flag("--interactive-parse", dummy_compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
-        app.add_flag("--verbose", dummy_compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
-        app.add_flag("--fast", dummy_compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
-        app.add_flag("--realloc-lhs-arrays", dummy_compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
-        app.add_flag("--disable-realloc-lhs-arrays", dummy_bool, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
-        app.add_flag("--ignore-pragma", dummy_compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
-        app.add_flag("--stack-arrays", dummy_compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
-        app.add_flag("--descriptor-index-64", dummy_compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
-        app.add_flag("--array-bounds-checking", dummy_compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
-        app.add_flag("--no-array-bounds-checking", dummy_bool, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
-        app.add_flag("--strict-array-bounds-checking", dummy_compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
-
-        app.add_flag("--show-errors", dummy_opts.show_errors, "Show errors when LSP is running in the background")->group(group_lsp_options);
-        app.add_flag("--show-document-symbols", dummy_opts.show_document_symbols, "Show symbols in lfortran file")->group(group_lsp_options);
-    }
-
     auto LFortranCommandLineParser::parse() -> void {
-        if (handle_help_category(argc, argv, args)) {
-            return;
-        }
-
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
 
@@ -441,6 +293,11 @@ namespace LCompilers::CommandLineInterface {
 
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
+
+        std::string help_arg = find_help_category_arg(argc, argv, args);
+        if (!help_arg.empty()) {
+            handle_help_category(app, help_arg);
+        }
 
         if (argv != nullptr) {
             app.parse(argc, argv);
