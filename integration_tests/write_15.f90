@@ -1,4 +1,4 @@
-module test
+module write_15_test
 
    type :: MyType
    end type MyType
@@ -21,7 +21,7 @@ contains
       write(unit,'(A)') 'MyType instance'
    end subroutine output
 
-end module test
+end module write_15_test
 
 program write_15
    use test
