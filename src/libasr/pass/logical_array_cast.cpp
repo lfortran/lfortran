@@ -72,6 +72,34 @@ public:
 
         *current_expr = cast_expr;
     }
+
+    void replace_GetPointer(ASR::GetPointer_t* x) {
+        // Set flag BEFORE processing m_arg to prevent wrapping ArrayItem in Cast.
+        // This is critical: the base class replace_GetPointer calls replace_expr(m_arg)
+        // which would trigger replace_ArrayItem. Without setting the flag first, the
+        // ArrayItem would be wrapped in Cast(IntegerToLogical), loading the value as i1.
+        // LLVM then tries to bitcast i1 to ptr, which is invalid.
+        in_get_pointer = true;
+
+        // Process m_arg (may contain ArrayItem that needs type transformation but not Cast)
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &(x->m_arg);
+        replace_expr(x->m_arg);
+        current_expr = current_expr_copy;
+
+        // Process m_type
+        replace_ttype(x->m_type);
+
+        // Process m_value if needed
+        if (call_replacer_on_value && x->m_value) {
+            current_expr_copy = current_expr;
+            current_expr = &(x->m_value);
+            replace_expr(x->m_value);
+            current_expr = current_expr_copy;
+        }
+
+        in_get_pointer = false;
+    }
 };
 
 class LogicalArrayCastVisitor : public ASR::CallReplacerOnExpressionsVisitor<LogicalArrayCastVisitor> {
