@@ -256,13 +256,14 @@ LFORTRAN_API void _lfortran_inquire(
     char *access, int64_t access_len,
     char *name, int64_t name_len,
     char *blank, int64_t blank_len,
-    int32_t *recl,    
+    int32_t *recl,
     int32_t *number, bool *named,
     char *sequential, int64_t sequential_len,
     char *direct, int64_t direct_len,
     char *form, int64_t form_len,
     char *formatted, int64_t formatted_len,
-    char *unformatted, int64_t unformatted_len
+    char *unformatted, int64_t unformatted_len,
+    int32_t *iostat, int32_t *nextrec
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
