@@ -1407,6 +1407,7 @@ RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_414 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_415 LABELS gfortran llvm)
+RUN(NAME intrinsics_416 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1553,6 +1554,7 @@ RUN(NAME case_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME case_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME case_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME select_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2101,6 +2103,7 @@ RUN(NAME string_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_99 LABELS gfortran llvm)
 RUN(NAME string_100 LABELS gfortran llvm)
 RUN(NAME string_101 LABELS gfortran llvm)
+RUN(NAME string_102 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2204,6 +2207,7 @@ RUN(NAME file_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2387,6 +2391,7 @@ RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME boz_02 LABELS llvm llvm_wasm llvm_wasm_emcc) #remove gfortran label, as functionality is not supported by gfortran
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_02 LABELS gfortran llvm)
+RUN(NAME cmd_03 LABELS gfortran llvm EXTRA_ARGS --std=f23)
 
 RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME div_to_mul LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
