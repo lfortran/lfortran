@@ -1,13 +1,13 @@
-! Test allocatable character array with max len allocation
-! Related to issue #6877
+! Test allocatable character return from function
+! Related to issue #6725
 program string_100
   implicit none
-  character(:),allocatable::a,b,words(:)
-  a = 'first'
-  b = 'second'
-  allocate(character(max(len(a),len(b))) :: words(2))
-  words(1) = a
-  words(2) = b
-  if (len(words(1)) /= 6) error stop
-  if (len(words(2)) /= 6) error stop
+  character(:), allocatable :: result
+  result = get_string()
+  if (result /= 'hello') error stop
+contains
+  function get_string() result(s)
+    character(:), allocatable :: s
+    s = 'hello'
+  end function
 end program
