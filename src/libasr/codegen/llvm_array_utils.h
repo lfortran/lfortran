@@ -185,6 +185,15 @@ namespace LCompilers {
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) = 0;
 
                 /*
+                * Allocates a descriptor on the heap, zero-initializes it,
+                * sets up the dimension descriptor array pointer and rank.
+                * Returns a pointer to the descriptor.
+                */
+                virtual
+                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
+                    size_t n_dims) = 0;
+
+                /*
                 * Returns the llvm::Type* associated with the
                 * dimension descriptor used by the current class.
                 */
@@ -453,6 +462,10 @@ namespace LCompilers {
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm);
+
+                virtual
+                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
+                    size_t n_dims);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);

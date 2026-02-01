@@ -2302,80 +2302,119 @@ public:
             }
         }
 
-        if ( mold_cond && !source_cond) {
+        if ( mold_cond || source_cond ) {
             Vec<ASR::alloc_arg_t> new_alloc_args_vec;
             new_alloc_args_vec.reserve(al, alloc_args_vec.size());
-            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold));
             for (size_t i = 0; i < alloc_args_vec.size(); i++) {
                 if ( alloc_args_vec[i].n_dims == 0 ) {
-                    ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                    if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
-                        if (ASRUtils::is_array(mold_type)) {
-                            if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
-                                ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
+                    if (mold_cond ) {
+                        ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold));
+                        ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
+                            if (ASRUtils::is_array(mold_type)) {
+                                if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
+                                    ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
+                                    ASR::alloc_arg_t new_arg;
+                                    new_arg.loc = alloc_args_vec[i].loc;
+                                    new_arg.m_a = alloc_args_vec[i].m_a;
+                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_type = nullptr;
+                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_dims = mold_array_type->m_dims;
+                                    new_arg.n_dims = mold_array_type->n_dims;
+                                    new_alloc_args_vec.push_back(al, new_arg);
+                                } else {
+                                    int n_dims = ASRUtils::extract_n_dims_from_ttype(mold_type);
+                                    Vec<ASR::dimension_t> mold_dims_vec; mold_dims_vec.reserve(al, n_dims);
+                                    ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                                    for(int i=0; i<n_dims; i++) {
+                                        ASR::dimension_t dim;
+                                        dim.loc = x.base.base.loc;
+                                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                            al, x.base.base.loc, 1, integer_type));
+                                        dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                al, x.base.base.loc, mold, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
+                                        mold_dims_vec.push_back(al, dim);
+                                    }
+                                    ASR::alloc_arg_t new_arg;
+                                    new_arg.loc = alloc_args_vec[i].loc;
+                                    new_arg.m_a = alloc_args_vec[i].m_a;
+                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_type = nullptr;
+                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_dims = mold_dims_vec.p;
+                                    new_arg.n_dims = mold_dims_vec.size();
+                                    new_alloc_args_vec.push_back(al, new_arg);
+                                }
+                            } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ) {
                                 ASR::alloc_arg_t new_arg;
                                 new_arg.loc = alloc_args_vec[i].loc;
                                 new_arg.m_a = alloc_args_vec[i].m_a;
                                 new_arg.m_len_expr = nullptr;
-                                new_arg.m_type = nullptr;
+                                new_arg.m_type = mold_type;
                                 new_arg.m_sym_subclass = nullptr;
-                                new_arg.m_dims = mold_array_type->m_dims;
-                                new_arg.n_dims = mold_array_type->n_dims;
+                                new_arg.m_dims = nullptr;
+                                new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
                             } else {
-                                int n_dims = ASRUtils::extract_n_dims_from_ttype(mold_type);
-                                Vec<ASR::dimension_t> mold_dims_vec; mold_dims_vec.reserve(al, n_dims);
-                                ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                                for(int i=0; i<n_dims; i++) {
-                                    ASR::dimension_t dim;
-                                    dim.loc = x.base.base.loc;
-                                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                        al, x.base.base.loc, 1, integer_type));
-                                    dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, x.base.base.loc, mold, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
-                                    mold_dims_vec.push_back(al, dim);
-                                }
-                                ASR::alloc_arg_t new_arg;
-                                new_arg.loc = alloc_args_vec[i].loc;
-                                new_arg.m_a = alloc_args_vec[i].m_a;
-                                new_arg.m_len_expr = nullptr;
-                                new_arg.m_type = nullptr;
-                                new_arg.m_sym_subclass = nullptr;
-                                new_arg.m_dims = mold_dims_vec.p;
-                                new_arg.n_dims = mold_dims_vec.size();
-                                new_alloc_args_vec.push_back(al, new_arg);
+                                diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{mold->base.loc})
+                                    }));
+                                throw SemanticAbort();
                             }
-                        } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ) {
-                            ASR::alloc_arg_t new_arg;
-                            new_arg.loc = alloc_args_vec[i].loc;
-                            new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
-                            new_arg.m_type = mold_type;
-                            new_arg.m_sym_subclass = nullptr;
-                            new_arg.m_dims = nullptr;
-                            new_arg.n_dims = 0;
-                            new_alloc_args_vec.push_back(al, new_arg);
                         } else {
-                            diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
+                            diag.add(Diagnostic(
+                                "The type of the variable to be allocated does not match the type of the mold.",
                                 Level::Error, Stage::Semantic, {
-                                    Label("",{mold->base.loc})
+                                    Label("",{x.base.base.loc})
                                 }));
                             throw SemanticAbort();
                         }
+                    } else if ( source_cond && ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source))) ) {
+                        ASR::ttype_t* source_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source));
+                        ASR::alloc_arg_t new_arg;
+                        if (ASR::down_cast<ASR::Array_t>(source_type)->m_dims[0].m_length != nullptr) {
+                            ASR::Array_t* source_array_type = ASR::down_cast<ASR::Array_t>(source_type);
+                            new_arg.loc = alloc_args_vec[i].loc;
+                            new_arg.m_a = alloc_args_vec[i].m_a;
+                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_type = nullptr;
+                            new_arg.m_sym_subclass = nullptr;
+                            new_arg.m_dims = source_array_type->m_dims;
+                            new_arg.n_dims = source_array_type->n_dims;
+                        } else {
+                            int n_dims = ASRUtils::extract_n_dims_from_ttype(source_type);
+                            Vec<ASR::dimension_t> source_dims_vec; source_dims_vec.reserve(al, n_dims);
+                            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                            for(int i=0; i<n_dims; i++) {
+                                ASR::dimension_t dim;
+                                dim.loc = x.base.base.loc;
+                                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                    al, x.base.base.loc, 1, integer_type));
+                                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                    al, x.base.base.loc, source, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                        al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
+                                source_dims_vec.push_back(al, dim);
+                            }
+                            new_arg.loc = alloc_args_vec[i].loc;
+                            new_arg.m_a = alloc_args_vec[i].m_a;
+                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_type = nullptr;
+                            new_arg.m_sym_subclass = nullptr;
+                            new_arg.m_dims = source_dims_vec.p;
+                            new_arg.n_dims = source_dims_vec.size();
+                        }
+                        new_alloc_args_vec.push_back(al, new_arg);
                     } else {
-                        diag.add(Diagnostic(
-                            "The type of the variable to be allocated does not match the type of the mold.",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }));
-                        throw SemanticAbort();
+                        new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                     }
                 } else {
                     new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
-            source = mold;
+            if (!source_cond) source = mold;
         }
 
         if( !cond ) {
@@ -3310,14 +3349,22 @@ public:
                         && ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out) {
                         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(var->m_type_declaration));
-                        SymbolTable* sym_table_of_struct = struct_type->m_symtab;
-                        for(auto struct_member : sym_table_of_struct->get_scope()){
-                            if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
-                                ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
-                                del_syms.push_back(al, ASRUtils::EXPR(
-                                    ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
-                                    (ASR::asr_t*)subrout_call->m_args[i].m_value,
-                                    const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
+                        while (struct_type) {
+                            SymbolTable* sym_table_of_struct = struct_type->m_symtab;
+                            for(auto struct_member : sym_table_of_struct->get_scope()){
+                                if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
+                                    ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
+                                    del_syms.push_back(al, ASRUtils::EXPR(
+                                        ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
+                                        (ASR::asr_t*)subrout_call->m_args[i].m_value,
+                                        const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
+                                }
+                            }
+                            if (struct_type->m_parent) {
+                                struct_type = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(struct_type->m_parent));
+                            } else {
+                                struct_type = nullptr;
                             }
                         }
                     }
