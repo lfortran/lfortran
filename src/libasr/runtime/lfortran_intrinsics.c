@@ -4647,8 +4647,8 @@ _lfortran_open(int32_t unit_num,
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -4902,7 +4902,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char* direct, int64_t direct_len,
                                     char* form, int64_t form_len,
                                     char* formatted, int64_t formatted_len,
-                                    char* unformatted, int64_t unformatted_len) {
+                                    char* unformatted, int64_t unformatted_len,
+                                    int32_t *iostat, int32_t *nextrec) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -5042,6 +5043,13 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
             }
         }
+        if (nextrec != NULL && access_id == 2 && fp != NULL) {
+            long current_pos = ftell(fp);
+            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+        }
+        if (iostat != NULL) {
+            *iostat = 0;
+        }
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -5164,6 +5172,13 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             } else {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
             }
+        }
+        if (nextrec != NULL && access_id == 2 && fp != NULL) {
+            long current_pos = ftell(fp);
+            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+        }
+        if (iostat != NULL) {
+            *iostat = 0;
         }
     }
 }

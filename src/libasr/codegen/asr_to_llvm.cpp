@@ -14247,6 +14247,7 @@ public:
         llvm::Value *form{}, *form_len{};
         llvm::Value *formatted{} , *formatted_len{};
         llvm::Value *unformatted{}, *unformatted_len{};
+        llvm::Value *iostat{}, *nextrec{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -14518,6 +14519,28 @@ public:
             unformatted_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_iostat) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, true);
+            iostat = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            iostat = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+
+        if (x.m_nextrec) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_nextrec, true);
+            nextrec = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            nextrec = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -14542,7 +14565,9 @@ public:
                         character_type, llvm::Type::getInt64Ty(context), // direct, direct_len
                         character_type, llvm::Type::getInt64Ty(context), // form, form_len
                         character_type, llvm::Type::getInt64Ty(context), // formatted, formatted_len
-                        character_type, llvm::Type::getInt64Ty(context)  // unformatted, unformatted_len
+                        character_type, llvm::Type::getInt64Ty(context), // unformatted, unformatted_len
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                        llvm::Type::getInt32Ty(context)->getPointerTo()  // nextrec
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -14562,7 +14587,8 @@ public:
             direct, direct_len,
             form, form_len,
             formatted, formatted_len,
-            unformatted, unformatted_len});
+            unformatted, unformatted_len,
+            iostat, nextrec});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
