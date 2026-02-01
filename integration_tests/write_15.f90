@@ -24,7 +24,7 @@ contains
 end module write_15_test
 
 program write_15
-   use test
+   use write_15_test
    type(MyType) :: x
 
    write(*,*) x
