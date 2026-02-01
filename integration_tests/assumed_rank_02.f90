@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/4749
+! Assumed rank with pure function returning logical
 program assumed_rank_02
     implicit none
     real :: x(2,2,2)

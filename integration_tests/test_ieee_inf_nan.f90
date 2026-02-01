@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/7735
+! Inf and NaN detection with ieee_value
 program test_ieee_inf_nan
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env, only: dp => real64

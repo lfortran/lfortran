@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/5901
+! Allocatable character with internal write in pure function, merge intrinsic
 module integertostring_99
     implicit none
     integer :: n(2) = [42, -1]

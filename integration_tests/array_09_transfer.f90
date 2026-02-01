@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/7049
+! transfer string to character array
 program array_09_transfer
     implicit none
     character(1) :: result(3)

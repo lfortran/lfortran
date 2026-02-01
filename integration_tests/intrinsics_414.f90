@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/6124
+! Subnormal floating point values (epsilon*tiny, nearest, transfer)
 program intrinsics_414
     implicit none
     integer, parameter :: i4 = kind(1), i8 = selected_int_kind(15)

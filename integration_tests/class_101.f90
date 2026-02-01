@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/7952
+! move_alloc with unallocated polymorphic types
 program class_101
     implicit none
     type, abstract :: foo

@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/4768
+! Allocate array with scalar source from intent(in) argument
 program allocate_37
     implicit none
     call test(n=100)

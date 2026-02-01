@@ -1,3 +1,5 @@
+! Test for https://github.com/lfortran/lfortran/issues/8201
+! Non-default I/O kind with selected_char_kind and encoding
 program intrinsics_415
     use iso_fortran_env, only: output_unit
     implicit none
