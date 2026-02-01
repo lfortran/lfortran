@@ -32,15 +32,23 @@ public:
     Allocator& al;
     bool in_assignment_target;
     bool in_get_pointer;
+    bool in_pass_by_ref;
 
     LogicalArrayCastReplacer(Allocator& al_) : al(al_), in_assignment_target(false),
-                                               in_get_pointer(false) {
+                                               in_get_pointer(false), in_pass_by_ref(false) {
         call_replacer_on_value = false;
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         ASR::ttype_t* elem_type = x->m_type;
         if (!ASRUtils::is_logical(*elem_type)) {
+            return;
+        }
+
+        if (in_pass_by_ref) {
+            // For pass-by-reference (intent out/inout), don't transform at all.
+            // Keep the ArrayItem as Logical type since the callee expects Logical.
+            // The codegen handles the i8 storage transparently via get_el_type().
             return;
         }
 
@@ -204,6 +212,113 @@ public:
                 call_replacer();
             }
             visit_expr(*xx.m_value);
+        }
+    }
+
+    template <typename T>
+    void visit_Call(const T& x) {
+        T& xx = const_cast<T&>(x);
+
+        // Get the function symbol to access parameter intents
+        ASR::expr_t** orig_args = nullptr;
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
+        }
+
+        // Process each argument
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (xx.m_args[i].m_value == nullptr) {
+                continue;
+            }
+
+            // Check if the corresponding parameter has intent(out) or intent(inout)
+            bool is_pass_by_ref = false;
+            if (orig_args) {
+                ASR::Variable_t* param = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (param &&
+                    (param->m_intent == ASRUtils::intent_out ||
+                     param->m_intent == ASRUtils::intent_inout)) {
+                    is_pass_by_ref = true;
+                }
+            }
+
+            // Set the flag before processing if this is a pass-by-ref argument
+            replacer.in_pass_by_ref = is_pass_by_ref;
+            current_expr = &(xx.m_args[i].m_value);
+            call_replacer();
+            if (xx.m_args[i].m_value) {
+                visit_expr(*xx.m_args[i].m_value);
+            }
+            replacer.in_pass_by_ref = false;
+        }
+
+        // Process x.m_dt if present (for type-bound procedures)
+        if (xx.m_dt) {
+            current_expr = &(xx.m_dt);
+            call_replacer();
+            visit_expr(*xx.m_dt);
+        }
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        visit_Call(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+
+        // Get the function symbol to access parameter intents
+        ASR::expr_t** orig_args = nullptr;
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
+        }
+
+        // Process each argument
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (xx.m_args[i].m_value == nullptr) {
+                continue;
+            }
+
+            // Check if the corresponding parameter has intent(out) or intent(inout)
+            bool is_pass_by_ref = false;
+            if (orig_args) {
+                ASR::Variable_t* param = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (param &&
+                    (param->m_intent == ASRUtils::intent_out ||
+                     param->m_intent == ASRUtils::intent_inout)) {
+                    is_pass_by_ref = true;
+                }
+            }
+
+            // Set the flag before processing if this is a pass-by-ref argument
+            replacer.in_pass_by_ref = is_pass_by_ref;
+            current_expr = &(xx.m_args[i].m_value);
+            call_replacer();
+            if (xx.m_args[i].m_value) {
+                visit_expr(*xx.m_args[i].m_value);
+            }
+            replacer.in_pass_by_ref = false;
+        }
+
+        // Process return type
+        visit_ttype(*xx.m_type);
+
+        // Process value if present
+        if (xx.m_value) {
+            if (call_replacer_on_value) {
+                current_expr = &(xx.m_value);
+                call_replacer();
+            }
+            visit_expr(*xx.m_value);
+        }
+
+        // Process x.m_dt if present (for type-bound procedures)
+        if (xx.m_dt) {
+            current_expr = &(xx.m_dt);
+            call_replacer();
+            visit_expr(*xx.m_dt);
         }
     }
 };

@@ -77,6 +77,27 @@ program logical_array_01
     if (arr1d(1) .eqv. arr1d(3)) error stop "Test 9b failed"
     if (.not. (arr1d(1) .neqv. arr1d(3))) error stop "Test 9c failed"
 
+    ! Test 10: Passing array element to subroutine with intent(out)
+    arr1d(1) = .false.
+    call set_logical(arr1d(1), .true.)
+    if (.not. arr1d(1)) error stop "Test 10a failed"
+    call set_logical(arr1d(2), .false.)
+    if (arr1d(2)) error stop "Test 10b failed"
+
+    ! Test 11: Passing array element to subroutine with intent(inout)
+    arr1d(1) = .true.
+    call toggle_logical(arr1d(1))
+    if (arr1d(1)) error stop "Test 11a failed"
+    call toggle_logical(arr1d(1))
+    if (.not. arr1d(1)) error stop "Test 11b failed"
+
+    ! Test 12: Multiple intent(out) array element arguments
+    arr1d(1) = .false.
+    arr1d(2) = .false.
+    call set_two_logicals(arr1d(1), arr1d(2), .true., .false.)
+    if (.not. arr1d(1)) error stop "Test 12a failed"
+    if (arr1d(2)) error stop "Test 12b failed"
+
     print *, "All logical array tests passed!"
 
 contains
@@ -85,5 +106,23 @@ contains
         logical, intent(in) :: val
         negate_logical = .not. val
     end function negate_logical
+
+    subroutine set_logical(val, expected)
+        logical, intent(out) :: val
+        logical, intent(in) :: expected
+        val = expected
+    end subroutine set_logical
+
+    subroutine toggle_logical(val)
+        logical, intent(inout) :: val
+        val = .not. val
+    end subroutine toggle_logical
+
+    subroutine set_two_logicals(val1, val2, exp1, exp2)
+        logical, intent(out) :: val1, val2
+        logical, intent(in) :: exp1, exp2
+        val1 = exp1
+        val2 = exp2
+    end subroutine set_two_logicals
 
 end program logical_array_01
