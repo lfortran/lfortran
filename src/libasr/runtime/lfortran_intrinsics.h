@@ -388,7 +388,7 @@ typedef struct Span {
 
 typedef struct Label {
     bool primary;
-    const char *message;
+    char *message;
     Span *spans;
     uint32_t n_spans;
 } Label;

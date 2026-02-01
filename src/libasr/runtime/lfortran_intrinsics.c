@@ -2735,11 +2735,37 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
         for (uint32_t j = 0; j < label->n_spans; j++) {
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
+            free(label->message);
         }
     }
 
     fflush(stderr);
     free(error_msg);
+}
+
+LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    char *formatted = (char*)malloc((size_t)needed + 1);
+    if (!formatted) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    vsnprintf(formatted, (size_t)needed + 1, format, args);
+    va_end(args);
+    return formatted;
 }
 
 // TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before

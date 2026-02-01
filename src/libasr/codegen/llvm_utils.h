@@ -338,7 +338,7 @@ class ASRToLLVMVisitor;
             }
 
             template<typename... Args>
-            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<diag::Label> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<diag::RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -360,6 +360,15 @@ class ASRToLLVMVisitor;
                             span_type->getPointerTo(),
                             llvm::Type::getInt32Ty(context),
                         }));
+                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf");
+                        if (!lcompilers_snprintf_fn) {
+                            llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
+                                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                true);
+                            lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
+                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf", module);
+                        }
 
                         // Allocate and populate labels and spans
                         llvm::Type *label_arr_type = llvm::ArrayType::get(label_type, labels.size());
@@ -389,10 +398,15 @@ class ASRToLLVMVisitor;
                                         LLVMUtils::CreateGEP2(span_type, span_j, 4));
                             }
 
+                            std::vector<llvm::Value*> snprintf_args;
+                            snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
+                            snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
+                            llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
+
                             llvm::Value *label_i = LLVMUtils::CreateInBoundsGEP2(label_arr_type, labels_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx});
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, labels[i].primary)),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 0));
-                            builder->CreateStore(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message),
+                            builder->CreateStore(formatted_message,
                                     LLVMUtils::CreateGEP2(label_type, label_i, 1));
                             builder->CreateStore(LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 2));
