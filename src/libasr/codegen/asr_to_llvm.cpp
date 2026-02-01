@@ -7066,28 +7066,8 @@ public:
         builder->CreateStore(first_member_ptr,
             arr_descr->get_pointer_to_data(target_desc_type, new_desc));
 
-        // Set offset to 0
-        unsigned index_bit_width = arr_descr->get_index_type()->getIntegerBitWidth();
-        builder->CreateStore(
-            llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
-            arr_descr->get_offset(target_desc_type, new_desc, false));
-
         // Get rank from base array
         int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
-
-        // Set rank
-        builder->CreateStore(
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, n_dims)),
-            arr_descr->get_rank(target_desc_type, new_desc, true));
-
-        // Allocate dimension descriptors
-        llvm::Type* dim_des_type = arr_descr->get_dimension_descriptor_type(false);
-        llvm::Value* dim_des_array = llvm_utils->CreateAlloca(
-            dim_des_type,
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims),
-            "component_dim_des");
-        builder->CreateStore(dim_des_array,
-            arr_descr->get_pointer_to_dimension_descriptor_array(target_desc_type, new_desc, false));
 
         // Compute the stride multiplier: sizeof(struct) / sizeof(component)
         // This is the number of component-sized elements between consecutive struct elements
@@ -7096,34 +7076,49 @@ public:
         uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
         uint64_t stride_multiplier = struct_size / component_size;
 
-        // Copy dimension info from base array with adjusted stride
-        for (int i = 0; i < n_dims; i++) {
-            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
-            llvm::Value* target_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                dim_des_array, dim_idx);
-
-            if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
-                // Get base array dimension descriptor
-                llvm::Value* base_dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(
-                    base_array_llvm_type, base_array_desc);
-                llvm::Value* base_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                    base_dim_des_array, dim_idx);
-
-                // Copy lower bound
-                llvm::Value* base_lb = arr_descr->get_lower_bound(base_dim_des, true);
-                builder->CreateStore(base_lb, arr_descr->get_lower_bound(target_dim_des, false));
-
-                // Copy dimension size
-                llvm::Value* base_size = arr_descr->get_dimension_size(base_dim_des, true);
-                builder->CreateStore(base_size, arr_descr->get_dimension_size(target_dim_des, false));
-
-                // Set stride: base_stride * stride_multiplier
-                llvm::Value* base_stride = arr_descr->get_stride(base_dim_des, true);
+        if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
+            // Initialize descriptor using the base descriptor, then adjust strides
+            arr_descr->reset_array_details(target_desc_type, new_desc, base_array_llvm_type,
+                base_array_desc, n_dims);
+            llvm::Value* dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(
+                target_desc_type, new_desc);
+            for (int i = 0; i < n_dims; i++) {
+                llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                llvm::Value* target_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                    dim_des_array, dim_idx);
+                llvm::Value* base_stride = arr_descr->get_stride(target_dim_des, true);
                 llvm::Value* new_stride = builder->CreateMul(
                     base_stride,
                     llvm::ConstantInt::get(arr_descr->get_index_type(), stride_multiplier));
                 builder->CreateStore(new_stride, arr_descr->get_stride(target_dim_des, false));
-            } else {
+            }
+        } else {
+            // Set offset to 0
+            unsigned index_bit_width = arr_descr->get_index_type()->getIntegerBitWidth();
+            builder->CreateStore(
+                llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+                arr_descr->get_offset(target_desc_type, new_desc, false));
+
+            // Set rank
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, n_dims)),
+                arr_descr->get_rank(target_desc_type, new_desc, true));
+
+            // Allocate dimension descriptors
+            llvm::Type* dim_des_type = arr_descr->get_dimension_descriptor_type(false);
+            llvm::Value* dim_des_array = llvm_utils->CreateAlloca(
+                dim_des_type,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims),
+                "component_dim_des");
+            builder->CreateStore(dim_des_array,
+                arr_descr->get_pointer_to_dimension_descriptor_array(target_desc_type, new_desc, false));
+
+            // Copy dimension info from base array with adjusted stride
+            for (int i = 0; i < n_dims; i++) {
+                llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                llvm::Value* target_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                    dim_des_array, dim_idx);
+
                 // For fixed-size arrays, extract dims from the type
                 ASR::dimension_t* dims = nullptr;
                 [[maybe_unused]] int rank = ASRUtils::extract_dimensions_from_ttype(base_struct_array_type, dims);
