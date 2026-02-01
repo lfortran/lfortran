@@ -3279,6 +3279,10 @@ filename = "errors/continue_compilation_ff_2.f"
 fixed_form_cc_asr = true
 
 [[test]]
+filename = "errors/continue_compilation_simd.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/mre_segfault.f90"
 continue_compilation = true
 
@@ -4113,14 +4117,6 @@ c = true
 
 [[test]]
 filename = "../integration_tests/matmul_01.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/simd_01.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/simd_02.f90"
 asr = true
 
 [[test]]
