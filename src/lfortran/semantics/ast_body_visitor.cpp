@@ -1256,13 +1256,13 @@ public:
         bool iomsg_explicit = false;
         if (_type == AST::stmtType::Write && a_unit == nullptr) {
             ASR::ttype_t *int_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                ASR::make_Integer_t(al, loc, 4));
             a_unit = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 6, int_type)); //default output/input unit is 6
         }
         // Ensure iostat is always present for WRITE
         if (_type == AST::stmtType::Write && a_iostat == nullptr) {
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
             std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
 
@@ -1279,8 +1279,7 @@ public:
                     al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, loc, 0,
-                        ASRUtils::TYPE(ASR::make_Integer_t(
-                            al, loc, compiler_options.po.default_integer_kind)))),
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                     ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::DescriptorString));
 
