@@ -302,6 +302,10 @@ void FixedFormTokenizer::set_string(const std::string &str)
     // to end with \0, but we check this here just in case.
     LCOMPILERS_ASSERT(str[str.size()] == '\0');
     cur = (unsigned char *)(&str[0]);
+    // Skip UTF-8 BOM (EF BB BF) if present at start of file
+    if (str.size() >= 3 && cur[0] == 0xEF && cur[1] == 0xBB && cur[2] == 0xBF) {
+        cur += 3;
+    }
     string_start = cur;
     cur_line = cur;
     line_num = 1;
