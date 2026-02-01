@@ -13965,14 +13965,126 @@ public:
             return;
         }
 
-        llvm::Value *fmt_data;
-        llvm::Value *fmt_len;
+        size_t total_scalar_values = 0;
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::ttype_t* expr_type = ASRUtils::expr_type(values[i]);
+            if (ASRUtils::is_array(expr_type) && ASRUtils::is_fixed_size_array(expr_type)) {
+                total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type);
+            } else {
+                total_scalar_values++;
+            }
+        }
+
+        std::vector<llvm::Value*> args;
+        args.reserve(8 + 3 * total_scalar_values);
+        if (is_string) {
+            llvm::Value *src_data, *src_len;
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
+            args.push_back(src_data);
+            args.push_back(src_len);
+        } else {
+            args.push_back(unit_val);
+        }
+        args.push_back(iostat);
+        args.push_back(read_size);
+        args.push_back(advance);
+        args.push_back(advance_length);
+        llvm::Value* fmt_data;
+        llvm::Value* fmt_len;
         std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
+        args.push_back(fmt_data);
+        args.push_back(fmt_len);
+
+        args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, total_scalar_values)));
 
         for (size_t i = 0; i < n_values; i++) {
-            emit_single_formatted_read(values[i], unit_val, iostat, read_size, 
-                                       advance, advance_length, fmt_data, fmt_len, is_string, x);
+            ASR::expr_t* val_expr = values[i];
+            ASR::ttype_t* expr_type_full = ASRUtils::expr_type(val_expr);
+            ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            bool is_assignment_target_copy = is_assignment_target;
+            is_assignment_target = true;
+            this->visit_expr(*val_expr);
+            is_assignment_target = is_assignment_target_copy;
+            llvm::Value* var_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+                int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
+                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+                llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                    val_expr, ASRUtils::type_get_past_allocatable_pointer(expr_type_full), module.get());
+                llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    val_expr, val_type, module.get());
+
+                for (int64_t elem_idx = 0; elem_idx < array_size; elem_idx++) {
+                    llvm::Value* elem_ptr;
+                    if (arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
+                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                    } else {
+                        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
+                        data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
+                        elem_ptr = builder->CreateGEP(llvm_elem_type, data_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
+                    }
+                    add_formatted_read_arg(args, val_type, elem_ptr);
+                }
+            } else {
+                add_formatted_read_arg(args, val_type, var_ptr);
+            }
         }
+
+        std::string runtime_func_name;
+        llvm::Function *fn;
+
+        if (is_string) {
+            runtime_func_name = "_lfortran_string_formatted_read";
+            fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            character_type,                                  // src_data
+                            llvm::Type::getInt64Ty(context),                 // src_len
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                            character_type,                                  // advance
+                            llvm::Type::getInt64Ty(context),                 // advance_length
+                            character_type,                                  // fmt
+                            llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt32Ty(context)                  // no_of_args
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
+        } else {
+            // File read
+            runtime_func_name = "_lfortran_formatted_read";
+            fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context),                 // Unit
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                            character_type,                                  // advance
+                            llvm::Type::getInt64Ty(context),                 // advance_length
+                            character_type,                                  // fmt
+                            llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt32Ty(context)                  // no_of_args
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
+        }
+
+        builder->CreateCall(fn, args);
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
