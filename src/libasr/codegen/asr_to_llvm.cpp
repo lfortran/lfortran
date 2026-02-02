@@ -13820,6 +13820,10 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
+                        llvm::Type* expected_arg_type = fn->getFunctionType()->getParamType(0);
+                        if (var_to_read_into->getType() != expected_arg_type) {
+                            var_to_read_into = builder->CreateBitCast(var_to_read_into, expected_arg_type);
+                        }
                         builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
                 }
