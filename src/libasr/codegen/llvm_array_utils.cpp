@@ -241,6 +241,34 @@ namespace LCompilers {
             return dim_des->getPointerTo();
         }
 
+        llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(
+            llvm::Type* array_desc_type, size_t n_dims) {
+            llvm::DataLayout data_layout(llvm_utils->module->getDataLayout());
+            int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
+            llvm::Value* desc_mem = lfortran_malloc(context, *llvm_utils->module, *builder,
+                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)));
+            builder->CreateMemSet(desc_mem, llvm::ConstantInt::get(
+                context, llvm::APInt(8, 0)),
+                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)),
+                llvm::MaybeAlign());
+            llvm::Value* desc_ptr = builder->CreateBitCast(desc_mem, array_desc_type->getPointerTo());
+
+            int64_t dim_size = data_layout.getTypeAllocSize(dim_des);
+            llvm::Value* dim_mem = lfortran_malloc(context, *llvm_utils->module, *builder,
+                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims * dim_size)));
+            builder->CreateMemSet(dim_mem, llvm::ConstantInt::get(
+                context, llvm::APInt(8, 0)),
+                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims * dim_size)),
+                llvm::MaybeAlign());
+
+            llvm::Value* dim_ptr_ptr = get_pointer_to_dimension_descriptor_array(array_desc_type, desc_ptr, false);
+            builder->CreateStore(builder->CreateBitCast(dim_mem, get_dimension_descriptor_type(true)), dim_ptr_ptr);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)),
+                get_rank(array_desc_type, desc_ptr, true));
+
+            return desc_ptr;
+        }
+
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load) {
             llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep2(type, arr, 2);

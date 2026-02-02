@@ -112,6 +112,66 @@ contains
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end module
 
 
@@ -501,6 +561,9 @@ program continue_compilation_1
 
     ieee_cls = ieee_class(0.0)
     b = (ieee_cls == ieee_quiet_nan)
+
+    integer, intent(out) :: out_intent
+    integer, intent(in) :: in_intent
     
     contains
     subroutine sub(f)
