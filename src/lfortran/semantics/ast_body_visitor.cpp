@@ -1254,6 +1254,84 @@ public:
         //check positional fmt argument (second arg)
         if (a_fmt != nullptr) {
             ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
+            bool is_array = ASRUtils::is_array(fmt_type);
+            if (is_array && ASRUtils::is_character(*fmt_type)) {
+                // Create temporary string variable to hold format string
+                // by concatenating all elements of the array
+                std::string fmt_string_name = current_scope->get_unique_name("_fmt_string");
+                ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                    al, a_fmt->base.loc,
+                    ASRUtils::TYPE(ASR::make_String_t(
+                    al, a_fmt->base.loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+                ASR::symbol_t* fmt_string_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, a_fmt->base.loc,
+                    current_scope, s2c(al, fmt_string_name),
+                nullptr, 0, ASR::intentType::Local, nullptr,
+                nullptr, ASR::storage_typeType::Default, str_type,
+                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false, 
+                false, false, nullptr, false, false));
+                current_scope->add_symbol(fmt_string_name, fmt_string_sym);
+                ASR::expr_t* fmt_string_var = ASRUtils::EXPR(ASR::make_Var_t(
+                    al, a_fmt->base.loc, fmt_string_sym));
+                
+                ASRUtils::ASRBuilder b(al, a_fmt->base.loc);
+
+                ASR::ttype_t* empty_str_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, a_fmt->base.loc, 1, b.i32(0),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                ASR::expr_t* empty_str = b.StringConstant("", empty_str_type);
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false));
+                tmp_vec.push_back((ASR::asr_t*)assign_stmt);
+
+                std::string loop_var = current_scope->get_unique_name("i");
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_fmt->base.loc, 4));
+                ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, a_fmt->base.loc,
+                    current_scope, s2c(al, loop_var), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, int_type, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false, false, false, nullptr,
+                    false, false));
+                current_scope->add_symbol(loop_var, loop_var_sym);
+                ASR::expr_t* loop_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, a_fmt->base.loc, loop_var_sym));
+
+                ASR::expr_t* lb = b.ArrayLBound(a_fmt, 1);
+                ASR::expr_t* ub = b.ArrayUBound(a_fmt, 1);
+
+                ASR::do_loop_head_t head;
+                head.m_v = loop_var_expr;
+                head.m_start = lb;
+                head.m_end = ub;
+                head.m_increment = b.i32(1);
+                head.loc = a_fmt->base.loc;
+
+                Vec<ASR::array_index_t> args; args.reserve(al, 1);
+                ASR::array_index_t idx; 
+                idx.loc = a_fmt->base.loc;
+                idx.m_left = nullptr; idx.m_right = loop_var_expr; idx.m_step = nullptr;
+                args.push_back(al, idx);
+
+                ASR::expr_t* array_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                    al, a_fmt->base.loc, a_fmt, args.p, args.n, 
+                    ASRUtils::type_get_past_array(fmt_type),
+                    ASR::arraystorageType::ColMajor, nullptr));
+
+                ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
+                ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false));
+                
+                Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+                body.push_back(al, body_assign);
+
+                ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(
+                    al, a_fmt->base.loc, nullptr, head, body.p, body.n, nullptr, 0));
+                
+                tmp_vec.push_back((ASR::asr_t*)do_loop);
+
+                a_fmt = fmt_string_var;
+            }
             if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
                 diag.add(Diagnostic(
                     "Assigned format (using integer variable as format specifier) is not supported. "
