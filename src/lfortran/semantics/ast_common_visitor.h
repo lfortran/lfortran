@@ -8526,6 +8526,10 @@ public:
                     is_pure = ASRUtils::get_FunctionType(fn)->m_pure;
                 }
                 if (!is_pure) {
+                    if (idl_nesting_level > 0) {
+                        new_args.push_back(al, arg);
+                        continue;
+                    }
                     std::string tmp_name =
                         current_scope->get_unique_name("lfortran_tmp");
                     ASR::symbol_t* tmp_sym =
