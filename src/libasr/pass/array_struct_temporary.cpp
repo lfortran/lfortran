@@ -2393,6 +2393,74 @@ class ReplaceExprWithTemporaryVisitor:
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* test_copy_check = duplicator.duplicate_expr(x.m_test);
+        
+        Vec<ASR::stmt_t*>* const parent_body = current_body;
+        Vec<ASR::stmt_t*> check_stmts; check_stmts.reserve(al, 0);
+        current_body = &check_stmts;
+        
+        ASR::expr_t** current_expr_copy_original = current_expr;
+        current_expr = &test_copy_check;
+        call_replacer();
+        current_expr = current_expr_copy_original;
+        
+        if (check_stmts.empty()) {
+            current_body = parent_body;
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
+            return;
+        }
+        
+        // Create condition variable 'c' which is a scalar logical
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        char* c_name = s2c(al, current_scope->get_unique_name("_while_cond"));
+        ASR::symbol_t* c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
+                current_scope, c_name, 
+                nullptr, 0, ASR::intentType::Local, nullptr, nullptr, 
+                ASR::storage_typeType::Default, logical_type, nullptr, 
+                ASR::abiType::Source, ASR::accessType::Public, 
+                ASR::presenceType::Required, false, false, false, nullptr, false, false);
+        current_scope->add_symbol(std::string(c_name), c_sym);
+        ASR::expr_t* c_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASRUtils::symbol_get_past_external(c_sym)));
+
+        current_body = parent_body;
+        for(size_t i=0; i<check_stmts.size(); i++) {
+            current_body->push_back(al, check_stmts[i]);
+        }
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(al, x.base.base.loc, c_var, test_copy_check, nullptr, exprs_with_target)));
+        
+        ASR::expr_t* original_test_base = duplicator.duplicate_expr(x.m_test);
+        
+        const_cast<ASR::WhileLoop_t&>(x).m_test = c_var;
+        
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
+        
+        Vec<ASR::stmt_t*> update_stmts; update_stmts.reserve(al, 0);
+        current_body = &update_stmts;
+        
+        ASR::expr_t* test_copy_inner = original_test_base;
+        current_expr = &test_copy_inner;
+        call_replacer();
+        current_expr = current_expr_copy_original;
+        
+        update_stmts.push_back(al, ASRUtils::STMT(make_Assignment_t_util(al, x.base.base.loc, c_var, test_copy_inner, nullptr, exprs_with_target)));
+        
+        Vec<ASR::stmt_t*> new_body_vec;
+        new_body_vec.reserve(al, x.n_body + update_stmts.size());
+        for(size_t i=0; i<x.n_body; i++) {
+            new_body_vec.push_back(al, x.m_body[i]);
+        }
+        for(size_t i=0; i<update_stmts.size(); i++) {
+            new_body_vec.push_back(al, update_stmts[i]);
+        }
+        
+        const_cast<ASR::WhileLoop_t&>(x).m_body = new_body_vec.p;
+        const_cast<ASR::WhileLoop_t&>(x).n_body = new_body_vec.size();
+
+        current_body = parent_body;
+    }
+
     void visit_Where(const ASR::Where_t &x) {
         bool inside_where_copy = inside_where;
         if( !inside_where ) {
