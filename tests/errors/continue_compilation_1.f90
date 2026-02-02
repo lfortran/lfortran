@@ -24,12 +24,12 @@ module continue_compilation_1_mod
 
     procedure(missing_global_interface), pointer :: p => null()
 
-
-
-
-
-
-
+    interface assignment(=)
+        module procedure assign_func_bad
+        module procedure assign_wrong_nargs
+        module procedure assign_bad_lhs
+        module procedure assign_bad_rhs
+    end interface
 
 
 
@@ -109,25 +109,25 @@ contains
         print *, len_trim(generic)
     end subroutine intrinsic_polymorphic
 
+    integer function assign_func_bad(lhs, rhs)
+        integer, intent(out) :: lhs
+        integer, intent(in)  :: rhs
+        assign_func_bad = rhs
+    end function assign_func_bad
 
+    subroutine assign_wrong_nargs(lhs)
+        integer, intent(out) :: lhs
+    end subroutine assign_wrong_nargs
 
+    subroutine assign_bad_lhs(lhs, rhs)
+        integer, intent(in)  :: lhs
+        integer, intent(in)  :: rhs
+    end subroutine assign_bad_lhs
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    subroutine assign_bad_rhs(lhs, rhs)
+        integer, intent(out) :: lhs
+        integer, intent(out) :: rhs
+    end subroutine assign_bad_rhs
 
 
 
