@@ -5236,17 +5236,19 @@ namespace StringConcat {
             ASR::ttype_t* value_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/){
         char* result {};
         int64_t s0_length, s1_length;
-        { // Allocate result memory
-            ASR::String_t* s0 = get_string_type(args[0]);
-            ASR::String_t* s1 = get_string_type(args[1]);
+        ASR::expr_t* s0_value = expr_value(args[0]);
+        ASR::expr_t* s1_value = expr_value(args[1]);
+        { // Get lengths from evaluated values' types
+            ASR::String_t* s0 = get_string_type(s0_value);
+            ASR::String_t* s1 = get_string_type(s1_value);
             extract_value_(expr_value(s0->m_len), s0_length);
             extract_value_(expr_value(s1->m_len), s1_length);
-            result =al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
+            result = al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
         }
         { // Concat strings
             char* s0_char {}, *s1_char {};
-            extract_value_(expr_value(args[0]), s0_char);
-            extract_value_(expr_value(args[1]), s1_char);
+            extract_value_(s0_value, s0_char);
+            extract_value_(s1_value, s1_char);
             memcpy(result, s0_char, s0_length);
             memcpy(result + s0_length, s1_char, s1_length);
         }
@@ -5259,13 +5261,27 @@ namespace StringConcat {
         m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         m_args.push_back(al, args[1]);
-        
+
+        ASR::expr_t* value {};
         ASR::ttype_t* return_type {};
-        { // Create String return type
+        if(all_args_evaluated(m_args)){
+            // When args have compile-time values, evaluate and get length from value types
+            ASRBuilder b(al, loc);
+            ASR::expr_t* s0_value = expr_value(args[0]);
+            ASR::expr_t* s1_value = expr_value(args[1]);
+            ASR::String_t* s0_type = get_string_type(s0_value);
+            ASR::String_t* s1_type = get_string_type(s1_value);
+            int64_t s0_len, s1_len;
+            extract_value(expr_value(s0_type->m_len), s0_len);
+            extract_value(expr_value(s1_type->m_len), s1_len);
+            return_type = b.String(b.i64(s0_len + s1_len), ASR::ExpressionLength);
+            value = eval_StringConcat(al, loc, return_type, args, diag);
+        } else {
+            // Fall back to computing return type from argument types
             ASRBuilder b(al, loc);
             ASR::String_t* s1 = get_string_type(args[0]);
             ASR::String_t* s2 = get_string_type(args[1]);
-            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){ // Sum both lengths
+            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){
                 int64_t s1_len, s2_len;
                 extract_value(s1->m_len, s1_len);
                 extract_value(s2->m_len, s2_len);
@@ -5287,10 +5303,6 @@ namespace StringConcat {
                     ASRUtils::extract_type(return_type), m_dims, n_dims);
         }
 
-        ASR::expr_t* value {};
-        if(all_args_evaluated(m_args)){
-            value = eval_StringConcat(al, loc, return_type, args, diag);
-        }
         return ASR::make_IntrinsicElementalFunction_t(  al, loc,
                                                         static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
                                                         m_args.p, m_args.n,
