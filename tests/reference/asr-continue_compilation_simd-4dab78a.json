@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_simd-4dab78a",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_simd.f90",
+    "infile_hash": "bcbf2032f14e24bf22ad1f9c443f7511fbb94f8d8053425a5ac5512f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_simd-4dab78a.stderr",
+    "stderr_hash": "7dbe5dce0f92a089dd83bcff73234bedef218e3d10328e83bf78c9cb",
+    "returncode": 1
+}
