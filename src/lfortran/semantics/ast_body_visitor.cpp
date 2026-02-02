@@ -1264,7 +1264,7 @@ public:
         if (_type == AST::stmtType::Write && a_iostat == nullptr) {
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
-            std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
+            std::string iostat_name = current_scope->get_unique_name("lfortran_iostat");
 
             ASR::symbol_t* iostat_sym = declare_implicit_variable2(
                 loc, iostat_name, ASRUtils::intent_local, int_type);
@@ -1284,7 +1284,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString));
 
             std::string iomsg_name =
-                current_scope->get_unique_name("__lfortran_iomsg");
+                current_scope->get_unique_name("lfortran_iomsg");
 
             ASR::symbol_t *iomsg_sym = declare_implicit_variable2(
                 loc, iomsg_name, ASRUtils::intent_local, str_type);

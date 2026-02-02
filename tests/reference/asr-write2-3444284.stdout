@@ -7,31 +7,10 @@
                     (SymbolTable
                         2
                         {
-                            __lfortran_iomsg:
+                            i:
                                 (Variable
                                     2
-                                    __lfortran_iomsg
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            __lfortran_iostat:
-                                (Variable
-                                    2
-                                    __lfortran_iostat
+                                    i
                                     []
                                     Local
                                     ()
@@ -49,10 +28,31 @@
                                     .false.
                                     .false.
                                 ),
-                            i:
+                            lfortran_iomsg:
                                 (Variable
                                     2
-                                    i
+                                    lfortran_iomsg
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            lfortran_iostat:
+                                (Variable
+                                    2
+                                    lfortran_iostat
                                     []
                                     Local
                                     ()
@@ -76,8 +76,8 @@
                     [(FileWrite
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
-                        (Var 2 __lfortran_iomsg)
-                        (Var 2 __lfortran_iostat)
+                        (Var 2 lfortran_iomsg)
+                        (Var 2 lfortran_iostat)
                         ()
                         [(StringFormat
                             (StringConstant

@@ -42,10 +42,10 @@
                                                     year
                                                     Public
                                                 ),
-                                            __lfortran_iomsg:
+                                            lfortran_iomsg:
                                                 (Variable
                                                     11
-                                                    __lfortran_iomsg
+                                                    lfortran_iomsg
                                                     []
                                                     Local
                                                     ()
@@ -63,10 +63,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            __lfortran_iostat:
+                                            lfortran_iostat:
                                                 (Variable
                                                     11
-                                                    __lfortran_iostat
+                                                    lfortran_iostat
                                                     []
                                                     Local
                                                     ()
@@ -177,8 +177,8 @@
                                     (FileWrite
                                         0
                                         (Var 11 lhs)
-                                        (Var 11 __lfortran_iomsg)
-                                        (Var 11 __lfortran_iostat)
+                                        (Var 11 lfortran_iomsg)
+                                        (Var 11 lfortran_iostat)
                                         ()
                                         [(StringFormat
                                             (StringConstant
@@ -1037,10 +1037,10 @@
                                                     zone
                                                     Public
                                                 ),
-                                            __lfortran_iomsg:
+                                            lfortran_iomsg:
                                                 (Variable
                                                     14
-                                                    __lfortran_iomsg
+                                                    lfortran_iomsg
                                                     []
                                                     Local
                                                     ()
@@ -1058,10 +1058,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            __lfortran_iomsg1:
+                                            lfortran_iomsg1:
                                                 (Variable
                                                     14
-                                                    __lfortran_iomsg1
+                                                    lfortran_iomsg1
                                                     []
                                                     Local
                                                     ()
@@ -1079,10 +1079,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            __lfortran_iostat:
+                                            lfortran_iostat:
                                                 (Variable
                                                     14
-                                                    __lfortran_iostat
+                                                    lfortran_iostat
                                                     []
                                                     Local
                                                     ()
@@ -1100,10 +1100,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            __lfortran_iostat1:
+                                            lfortran_iostat1:
                                                 (Variable
                                                     14
-                                                    __lfortran_iostat1
+                                                    lfortran_iostat1
                                                     []
                                                     Local
                                                     ()
@@ -1242,8 +1242,8 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            (Var 14 __lfortran_iomsg)
-                                            (Var 14 __lfortran_iostat)
+                                            (Var 14 lfortran_iomsg)
+                                            (Var 14 lfortran_iostat)
                                             ()
                                             [(StringFormat
                                                 (StringConstant
@@ -1302,8 +1302,8 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            (Var 14 __lfortran_iomsg1)
-                                            (Var 14 __lfortran_iostat1)
+                                            (Var 14 lfortran_iomsg1)
+                                            (Var 14 lfortran_iostat1)
                                             ()
                                             [(StringFormat
                                                 (StringConstant

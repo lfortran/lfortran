@@ -7,10 +7,10 @@
                     (SymbolTable
                         2
                         {
-                            __lfortran_iomsg:
+                            lfortran_iomsg:
                                 (Variable
                                     2
-                                    __lfortran_iomsg
+                                    lfortran_iomsg
                                     []
                                     Local
                                     ()
@@ -28,10 +28,10 @@
                                     .false.
                                     .false.
                                 ),
-                            __lfortran_iomsg1:
+                            lfortran_iomsg1:
                                 (Variable
                                     2
-                                    __lfortran_iomsg1
+                                    lfortran_iomsg1
                                     []
                                     Local
                                     ()
@@ -49,10 +49,10 @@
                                     .false.
                                     .false.
                                 ),
-                            __lfortran_iostat:
+                            lfortran_iostat:
                                 (Variable
                                     2
-                                    __lfortran_iostat
+                                    lfortran_iostat
                                     []
                                     Local
                                     ()
@@ -70,10 +70,10 @@
                                     .false.
                                     .false.
                                 ),
-                            __lfortran_iostat1:
+                            lfortran_iostat1:
                                 (Variable
                                     2
-                                    __lfortran_iostat1
+                                    lfortran_iostat1
                                     []
                                     Local
                                     ()
@@ -160,8 +160,8 @@
                     (FileWrite
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
-                        (Var 2 __lfortran_iomsg)
-                        (Var 2 __lfortran_iostat)
+                        (Var 2 lfortran_iomsg)
+                        (Var 2 lfortran_iostat)
                         ()
                         [(StringConstant
                             " "
@@ -180,8 +180,8 @@
                     (FileWrite
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
-                        (Var 2 __lfortran_iomsg)
-                        (Var 2 __lfortran_iostat)
+                        (Var 2 lfortran_iomsg)
+                        (Var 2 lfortran_iostat)
                         ()
                         [(StringFormat
                             ()
@@ -232,8 +232,8 @@
                     (FileWrite
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
-                        (Var 2 __lfortran_iomsg1)
-                        (Var 2 __lfortran_iostat1)
+                        (Var 2 lfortran_iomsg1)
+                        (Var 2 lfortran_iostat1)
                         ()
                         [(StringConstant
                             " "
@@ -252,8 +252,8 @@
                     (FileWrite
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
-                        (Var 2 __lfortran_iomsg1)
-                        (Var 2 __lfortran_iostat1)
+                        (Var 2 lfortran_iomsg1)
+                        (Var 2 lfortran_iostat1)
                         ()
                         [(StringConstant
                             "ok"
