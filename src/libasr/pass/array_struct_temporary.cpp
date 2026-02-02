@@ -2414,16 +2414,14 @@ class ReplaceExprWithTemporaryVisitor:
         
         // Create condition variable 'c' which is a scalar logical
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
-        ASR::symbol_t* c_sym = current_scope->resolve_symbol("_while_cond");
-        if (!c_sym) {
-            c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
-                    current_scope, s2c(al, current_scope->get_unique_name("_while_cond")), 
-                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr, 
-                    ASR::storage_typeType::Default, logical_type, nullptr, 
-                    ASR::abiType::Source, ASR::accessType::Public, 
-                    ASR::presenceType::Required, false, false, false, nullptr, false, false);
-            current_scope->add_symbol("_while_cond", c_sym);
-        }
+        char* c_name = s2c(al, current_scope->get_unique_name("_while_cond"));
+        ASR::symbol_t* c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
+                current_scope, c_name, 
+                nullptr, 0, ASR::intentType::Local, nullptr, nullptr, 
+                ASR::storage_typeType::Default, logical_type, nullptr, 
+                ASR::abiType::Source, ASR::accessType::Public, 
+                ASR::presenceType::Required, false, false, false, nullptr, false, false);
+        current_scope->add_symbol(std::string(c_name), c_sym);
         ASR::expr_t* c_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASRUtils::symbol_get_past_external(c_sym)));
 
         current_body = parent_body;
