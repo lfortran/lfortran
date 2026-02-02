@@ -8572,22 +8572,29 @@ public:
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target = tmp;
             ptr_loads = ptr_loads_copy;
-
+            llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util( x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
             if (is_value_unlimited_polymorphic) {
                 llvm_utils->deepcopy(x.m_value, value, target,
                     asr_target_type, asr_value_type, module.get());
             } else {
-                struct_api->store_intrinsic_type_vptr(asr_value_type,
-                    ASRUtils::extract_kind_from_ttype_t(asr_value_type), target, module.get());
-                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
-                llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
-                target = llvm_utils->create_gep2(target_llvm_type, target, 1);
-                target = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target);
-                target = builder->CreateBitCast(target, value_llvm_type->getPointerTo());
-                llvm_utils->deepcopy(x.m_value, value, target,
-                    asr_target_type, asr_value_type, module.get());
+                llvm::Type* target_type_single_ptr = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
+                target = llvm_utils->CreateLoad2(target_type_single_ptr, target);
+                struct_api->store_intrinsic_type_vptr(asr_value_type, ASRUtils::extract_kind_from_ttype_t(asr_value_type), target, module.get());
+                llvm::Type* target_container_type = llvm::cast<llvm::PointerType>(target->getType())->getPointerElementType();
+                llvm::Value* data_ptr_location = llvm_utils->create_gep2(target_container_type, target, 1);
+                if (ASRUtils::is_character(*asr_value_type)) {
+                    llvm::Value* str_desc = builder->CreateAlloca(value_llvm_type);
+                    llvm_utils->lfortran_str_copy(str_desc, value,
+                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
+                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
+                        true); 
+                    llvm::Value* str_desc_as_i8 = builder->CreateBitCast(str_desc, llvm_utils->i8_ptr);
+                    builder->CreateStore(str_desc_as_i8, data_ptr_location);
+                } else {
+                    llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr_location);
+                    data_ptr = builder->CreateBitCast(data_ptr, value_llvm_type->getPointerTo());
+                    llvm_utils->deepcopy(x.m_value, value, data_ptr, asr_value_type, asr_value_type, module.get());
+                }
             }
             return;
         } else if (is_target_class && is_value_class) {
