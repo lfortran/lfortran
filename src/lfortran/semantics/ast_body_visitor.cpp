@@ -2390,12 +2390,23 @@ public:
                         ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
                         if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
                             if (ASRUtils::is_array(mold_type)) {
+                                // Compute m_len_expr for character arrays
+                                ASR::expr_t* len_expr = alloc_args_vec[i].m_len_expr;
+                                if (len_expr == nullptr && ASRUtils::is_character(*ASRUtils::type_get_past_array(mold_type))) {
+                                    len_expr = ASRUtils::EXPR(
+                                        ASR::make_StringLen_t(al, x.base.base.loc, mold,
+                                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                compiler_options.po.default_integer_kind)),
+                                            nullptr
+                                        )
+                                    );
+                                }
                                 if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                     ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
-                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = nullptr;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_array_type->m_dims;
@@ -2417,7 +2428,7 @@ public:
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
-                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = nullptr;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_dims_vec.p;
@@ -2452,11 +2463,22 @@ public:
                     } else if ( source_cond && ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source))) ) {
                         ASR::ttype_t* source_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source));
                         ASR::alloc_arg_t new_arg;
+                        // Compute m_len_expr for character arrays
+                        ASR::expr_t* len_expr = alloc_args_vec[i].m_len_expr;
+                        if (len_expr == nullptr && ASRUtils::is_character(*ASRUtils::type_get_past_array(source_type))) {
+                            len_expr = ASRUtils::EXPR(
+                                ASR::make_StringLen_t(al, x.base.base.loc, source,
+                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                        compiler_options.po.default_integer_kind)),
+                                    nullptr
+                                )
+                            );
+                        }
                         if (ASR::down_cast<ASR::Array_t>(source_type)->m_dims[0].m_length != nullptr) {
                             ASR::Array_t* source_array_type = ASR::down_cast<ASR::Array_t>(source_type);
                             new_arg.loc = alloc_args_vec[i].loc;
                             new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_len_expr = len_expr;
                             new_arg.m_type = nullptr;
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_array_type->m_dims;
@@ -2477,7 +2499,7 @@ public:
                             }
                             new_arg.loc = alloc_args_vec[i].loc;
                             new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_len_expr = len_expr;
                             new_arg.m_type = nullptr;
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_dims_vec.p;
