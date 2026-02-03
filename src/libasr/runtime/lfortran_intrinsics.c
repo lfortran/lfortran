@@ -5565,7 +5565,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
 }
 
 // Logical read API
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
+LFORTRAN_API void _lfortran_read_logical(int8_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
@@ -5714,7 +5714,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 }
 
-LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t unit_num, int32_t *iostat)
+LFORTRAN_API void _lfortran_read_array_logical(int8_t *p, int array_size, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
@@ -5747,7 +5747,7 @@ LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t 
                 exit(1);
             }
         }
-        if (fread(p, sizeof(bool), array_size, filep) != (size_t)array_size) {
+        if (fread(p, sizeof(int8_t), array_size, filep) != (size_t)array_size) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
             exit(1);
