@@ -1886,6 +1886,7 @@ RUN(NAME allocate_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME allocate_deferred_string_source LABELS gfortran llvm)
 RUN(NAME allocate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs-arrays)

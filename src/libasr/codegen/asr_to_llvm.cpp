@@ -670,6 +670,7 @@ public:
                                           ASR::ttype_t* asr_type, ASR::symbol_t* const variable_declaration,
                                           ASR::dimension_t* m_dims, int n_dims,
                                           ASR::expr_t* string_len_to_allocate,
+                                          llvm::Value* string_len_override,
                                           bool realloc=false) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         int ptr_loads_copy = ptr_loads;
@@ -682,8 +683,8 @@ public:
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
-        llvm::Value* string_len{};
-        if(string_len_to_allocate){
+        llvm::Value* string_len = string_len_override;
+        if(!string_len && string_len_to_allocate){
             visit_expr(*string_len_to_allocate);
             string_len = tmp;
             tmp = nullptr;
@@ -1980,11 +1981,35 @@ public:
                         tmp_expr, ASRUtils::extract_type(array_type), module.get());
                     llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                 }
+                llvm::Value* string_len_override = nullptr;
+                if (m_source && !curr_arg.m_len_expr && ASRUtils::is_array(array_type)
+                    && ASRUtils::is_character(*array_type)) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(array_type);
+                    if (str_type->m_len_kind == ASR::DeferredLength) {
+                        ASR::ttype_t* source_type = ASRUtils::expr_type(m_source);
+                        ASR::String_t* source_str_type = ASRUtils::get_string_type(source_type);
+                        if (source_str_type->m_len) {
+                            if (ASR::is_a<ASR::IntegerConstant_t>(*source_str_type->m_len)) {
+                                ASR::IntegerConstant_t* len =
+                                    ASR::down_cast<ASR::IntegerConstant_t>(source_str_type->m_len);
+                                string_len_override = llvm::ConstantInt::get(
+                                    context, llvm::APInt(64, len->m_n));
+                            } else {
+                                visit_expr(*source_str_type->m_len);
+                                string_len_override = tmp;
+                                tmp = nullptr;
+                            }
+                        } else {
+                            string_len_override = get_string_length(m_source);
+                        }
+                    }
+                }
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                         curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr,
+                                        string_len_override,
                                         realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                     && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
@@ -5013,6 +5038,14 @@ public:
         }
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
+            ASR::Variable_t* v = var_to_initalize.v;
+            if (v->m_storage == ASR::storage_typeType::Save &&
+                ASRUtils::is_array(v->m_type) &&
+                ASRUtils::is_character(*v->m_type) &&
+                ASRUtils::extract_physical_type(v->m_type) ==
+                    ASR::array_physical_typeType::PointerArray) {
+                continue;
+            }
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
@@ -5769,9 +5802,33 @@ public:
                 }
                 ptr_loads = ptr_loads_copy;
             }
-            llvm::Value *ptr = nullptr;
-            // Allocate the variable
-            if( !compiler_options.stack_arrays && array_size ) { // malloc for PointerArray
+        llvm::Value *ptr = nullptr;
+        if (v->m_storage == ASR::storage_typeType::Save &&
+            ASRUtils::is_array(v->m_type) &&
+            ASRUtils::is_character(*v->m_type) &&
+            ASRUtils::extract_physical_type(v->m_type) ==
+                ASR::array_physical_typeType::PointerArray &&
+            !LLVM::is_llvm_pointer(*v->m_type)) {
+            ASR::expr_t* value = nullptr;
+            if (v->m_value) {
+                value = v->m_value;
+            } else if (v->m_symbolic_value && ASRUtils::is_value_constant(v->m_symbolic_value)) {
+                value = v->m_symbolic_value;
+            }
+            if (value) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+            }
+            std::string global_name = std::string(x.m_name) + "." + v->m_name;
+            ptr = llvm_utils->handle_global_nonallocatable_stringArray(
+                al,
+                ASR::down_cast<ASR::Array_t>(v->m_type),
+                value ? ASR::down_cast<ASR::ArrayConstant_t>(value) : nullptr,
+                global_name);
+            llvm_symtab[h] = ptr;
+            return;
+        }
+        // Allocate the variable
+        if( !compiler_options.stack_arrays && array_size ) { // malloc for PointerArray
                 if(is_array_of_strings){
                     ptr = create_and_setup_string_for_array(v->m_type, array_size, compiler_options.stack_arrays, v->m_name);
                 } else {
