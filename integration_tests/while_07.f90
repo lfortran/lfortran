@@ -7,8 +7,9 @@ program while_07
    do while (all(finished))
       finished = .false.
       count = count + 1
+      if (count > 1) error stop
    end do
    print *, count
-   if (count > 1) error stop
+   if (count /= 1) error stop
 
 end program while_07
