@@ -3596,6 +3596,25 @@ LFORTRAN_API void _lfortran_strcpy(
         if (*lhs == NULL) *lhs = (char*)malloc(MAX((*lhs_len), 1) * sizeof(char));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
+        if (*lhs != NULL && rhs != NULL) {
+            char* lhs_start = *lhs;
+            char* lhs_end = lhs_start + (*lhs_len);
+            if (rhs >= lhs_start && rhs < lhs_end) {
+                if (rhs_len <= *lhs_len) {
+                    memmove(*lhs, rhs, rhs_len * sizeof(char));
+                    *lhs_len = rhs_len;
+                    return;
+                } else {
+                    char* tmp = (char*)malloc(MAX(rhs_len, 1) * sizeof(char));
+                    memcpy(tmp, rhs, rhs_len * sizeof(char));
+                    *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
+                    *lhs_len = rhs_len;
+                    memcpy(*lhs, tmp, rhs_len * sizeof(char));
+                    free(tmp);
+                    return;
+                }
+            }
+        }
         *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
         *lhs_len = rhs_len;
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}

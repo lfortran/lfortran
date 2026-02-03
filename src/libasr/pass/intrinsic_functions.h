@@ -5287,7 +5287,7 @@ namespace StringConcat {
                 extract_value(s2->m_len, s2_len);
                 return_type = b.String(b.i64(s1_len + s2_len), ASR::ExpressionLength);
             } else {
-                return_type = b.String(nullptr, ASR::DeferredLength);
+                return_type = b.allocatable(b.String(nullptr, ASR::DeferredLength));
             }
         }
 
@@ -5309,7 +5309,6 @@ namespace StringConcat {
                                                         0, return_type, value);
     }
 
-    
     // Compute string length expression without embedding nested StringConcats.
     // For StringConcat expressions, recursively compute len(arg1) + len(arg2).
     // For other expressions, use StringLen directly.
@@ -5369,8 +5368,10 @@ namespace StringConcat {
 
         ASR::expr_t* ret_var = declare(
             "concat_result",
-            b.String(b.Add(args[2], args[3]), ASR::ExpressionLength),
+            b.allocatable(b.String(nullptr, ASR::DeferredLength)),
             ReturnVar);
+
+        body.push_back(al, b.Allocate(ret_var, nullptr, 0, b.Add(args[2], args[3])));
 
         /* Body: copy s1 then s2 into result using explicit lengths */
         body.push_back(al, b.Assignment(
