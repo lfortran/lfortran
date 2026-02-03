@@ -2,6 +2,8 @@ program arrays_constructor_01
     implicit none
     character(5) :: str = "Hello"
     integer :: i = 1, ios, j
+    real, pointer :: dw_(:,:)
+       
     type :: MyClass
         integer :: value
     end type MyClass
@@ -25,4 +27,13 @@ program arrays_constructor_01
     
     print *, input
     if (any(input /= ['2', '2', '2', '2'])) error stop
+
+    allocate(dw_(2,3))
+    
+    dw_ = reshape([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2,3])
+
+    print *, [dw_]
+    if (all([dw_] /= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])) error stop "Test failed"
+    
+    deallocate(dw_)
 end program arrays_constructor_01
