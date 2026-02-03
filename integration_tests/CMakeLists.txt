@@ -954,6 +954,7 @@ RUN(NAME format_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
