@@ -83,10 +83,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            lfortran_iostat:
+                                            lfortran_tmp_iostat:
                                                 (Variable
                                                     4
-                                                    lfortran_iostat
+                                                    lfortran_tmp_iostat
                                                     []
                                                     Local
                                                     ()
@@ -218,7 +218,7 @@
                                             0
                                             (Var 4 num)
                                             (Var 4 lfortran_iomsg)
-                                            (Var 4 lfortran_iostat)
+                                            ()
                                             ()
                                             [(StringFormat
                                                 (StringConstant

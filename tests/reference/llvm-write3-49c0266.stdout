@@ -19,13 +19,16 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
   %4 = call i8* @_lfortran_malloc(i64 1)
   store i8* %4, i8** %3, align 8
-  %lfortran_iostat = alloca i32, align 4
+  %lfortran_tmp_iostat = alloca i32, align 4
   %nwrite = alloca i32, align 4
   store i32 6, i32* %nwrite, align 4
   store i32 6, i32* %nwrite, align 4
   %5 = load i32, i32* %nwrite, align 4
-  %6 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %5, i32* %lfortran_iostat, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %6, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
+  %6 = alloca i32*, align 8
+  store i32* null, i32** %6, align 8
+  %7 = load i32*, i32** %6, align 8
+  %8 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %5, i32* %7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %8, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -36,13 +39,13 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   br label %Finalize_Variable_lfortran_iomsg
 
 Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_main
-  %7 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  %9 = icmp eq i8* %8, null
-  br i1 %9, label %free_done, label %free_nonnull
+  %9 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
+  %10 = load i8*, i8** %9, align 8
+  %11 = icmp eq i8* %10, null
+  br i1 %11, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_lfortran_iomsg
-  call void @_lfortran_free(i8* %8)
+  call void @_lfortran_free(i8* %10)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_lfortran_iomsg

@@ -1198,6 +1198,7 @@ public:
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
+        bool needs_internal_iostat = false;
         bool formatted = (n_args == 2);
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
@@ -1259,17 +1260,6 @@ public:
                 ASR::make_Integer_t(al, loc, 4));
             a_unit = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 6, int_type)); //default output/input unit is 6
-        }
-        // Ensure iostat is always present for WRITE
-        if (_type == AST::stmtType::Write && a_iostat == nullptr) {
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-
-            std::string iostat_name = current_scope->get_unique_name("lfortran_iostat");
-
-            ASR::symbol_t* iostat_sym = declare_implicit_variable2(
-                loc, iostat_name, ASRUtils::intent_local, int_type);
-
-            a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
         }
         // Ensure iomsg is always present for WRITE
         if (_type == AST::stmtType::Write && a_iomsg == nullptr) {
@@ -1750,7 +1740,24 @@ public:
                 overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
                     al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
             }
-            overload_args.push_back(al, a_iostat);
+            ASR::expr_t *a_tmp_iostat = a_iostat;
+            if (_type == AST::stmtType::Write && a_tmp_iostat == nullptr) {
+                ASR::ttype_t* int_type =
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+                std::string iostat_name =
+                    current_scope->get_unique_name("lfortran_tmp_iostat");
+
+                ASR::symbol_t* iostat_sym =
+                    declare_implicit_variable2(
+                        loc, iostat_name,
+                        ASRUtils::intent_local,
+                        int_type);
+
+                a_tmp_iostat =
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
+            }
+            overload_args.push_back(al, a_tmp_iostat);
             overload_args.push_back(al, a_iomsg);
             if (ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
                     current_scope, asr, al, read_write_stmt.base.loc,
@@ -1762,6 +1769,28 @@ public:
                     })) {
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
+            if (overloaded_stmt != nullptr) {
+                needs_internal_iostat = true;
+            }
+        }
+        if (_type == AST::stmtType::Write &&
+            needs_internal_iostat &&
+            a_iostat == nullptr) {
+
+            ASR::ttype_t* int_type =
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+            std::string iostat_name =
+                current_scope->get_unique_name("__lfortran_iostat");
+
+            ASR::symbol_t* iostat_sym =
+                declare_implicit_variable2(
+                    loc, iostat_name,
+                    ASRUtils::intent_local,
+                    int_type);
+
+            a_iostat = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, iostat_sym));
         }
 
         bool inserted_iostat = false;

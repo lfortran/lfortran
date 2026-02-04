@@ -84,27 +84,6 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                ),
-                                                            lfortran_iostat:
-                                                                (Variable
-                                                                    4
-                                                                    lfortran_iostat
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
                                                                 )
                                                         })
                                                     inner
@@ -128,7 +107,7 @@
                                                         0
                                                         (IntegerConstant 6 (Integer 4) Decimal)
                                                         (Var 4 lfortran_iomsg)
-                                                        (Var 4 lfortran_iostat)
+                                                        ()
                                                         ()
                                                         []
                                                         ()

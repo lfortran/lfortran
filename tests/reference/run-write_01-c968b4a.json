@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-write_01-c968b4a.stderr",
+    "stderr_hash": "b65bc0d80ed3f38265702bfd48f891f579ea1c8ec54cef7c4f9f59ed",
+    "returncode": 1
 }

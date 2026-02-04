@@ -348,10 +348,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            lfortran_iostat:
+                                            lfortran_tmp_iostat:
                                                 (Variable
                                                     4
-                                                    lfortran_iostat
+                                                    lfortran_tmp_iostat
                                                     []
                                                     Local
                                                     ()
@@ -369,10 +369,10 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            lfortran_iostat1:
+                                            lfortran_tmp_iostat1:
                                                 (Variable
                                                     4
-                                                    lfortran_iostat1
+                                                    lfortran_tmp_iostat1
                                                     []
                                                     Local
                                                     ()
@@ -519,7 +519,7 @@
                                         0
                                         (IntegerConstant 6 (Integer 4) Decimal)
                                         (Var 4 lfortran_iomsg)
-                                        (Var 4 lfortran_iostat)
+                                        ()
                                         ()
                                         [(StringFormat
                                             (StringConstant
@@ -640,7 +640,7 @@
                                         0
                                         (IntegerConstant 6 (Integer 4) Decimal)
                                         (Var 4 lfortran_iomsg1)
-                                        (Var 4 lfortran_iostat1)
+                                        ()
                                         ()
                                         [(StringFormat
                                             (StringConstant

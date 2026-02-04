@@ -49,10 +49,10 @@
                                     .false.
                                     .false.
                                 ),
-                            lfortran_iostat:
+                            lfortran_tmp_iostat:
                                 (Variable
                                     2
-                                    lfortran_iostat
+                                    lfortran_tmp_iostat
                                     []
                                     Local
                                     ()
@@ -77,7 +77,7 @@
                         0
                         (IntegerConstant 6 (Integer 4) Decimal)
                         (Var 2 lfortran_iomsg)
-                        (Var 2 lfortran_iostat)
+                        ()
                         ()
                         [(StringFormat
                             (StringConstant
