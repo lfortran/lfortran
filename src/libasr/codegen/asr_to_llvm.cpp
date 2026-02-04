@@ -11532,18 +11532,11 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         return fn;
     }
     void visit_FileRead(const ASR::FileRead_t &x) {
-        if (x.m_overloaded) {
+        /*if (x.m_overloaded) {
             this->visit_stmt(*x.m_overloaded);
             return;
-        }
+        }*/
 
-        // --- 1. SETUP SHARED TYPES AND POINTERS ---
-        // --- 1. SETUP TYPES (LLVM 18 Opaque Pointers) ---
-        // --- 1. SETUP SHARED TYPES ---
-        // --- 1. SETUP SHARED TYPES ---
-        // --- 1. SETUP TYPES ---
-        // --- 1. SETUP TYPES ---
-        // --- 1. SETUP TYPES ---
         // --- 1. SETUP TYPES ---
         auto i32 = llvm::Type::getInt32Ty(context);
         auto i64 = llvm::Type::getInt64Ty(context);
@@ -11663,44 +11656,46 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
 
         llvm::outs() << "[DEBUG] Checking is_string: " << (is_string ? "YES" : "NO") << "\n";
         // --- 1. EXTRACT INTERNAL FILE (STRING) METADATA ---
+        // --- 1. SAFE INTERNAL FILE (STRING) METADATA EXTRACTION ---
         if (is_string && x.m_unit) {
             llvm::outs() << "[DEBUG] Entering Internal File (Unit) logic\n";
             
-            // visit_expr_wrapper returns the address of the descriptor (alloca)
-            this->visit_expr_wrapper(x.m_unit, true, true);
-            llvm::Value* val = tmp;
+            // Extract the base type safely
+            ASR::ttype_t* base_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_unit));
+            
+            // FIXED: Use ASRUtils::is_character instead of manual enum comparison
+            // This is the most robust way in LFortran to check this.
+            if (base_type && ASRUtils::is_character(*base_type)) {
+                ASR::String_t* stype = ASRUtils::get_string_type(base_type);
+                llvm::outs() << "[DEBUG] Valid Character type confirmed, extracting metadata\n";
 
-            ASR::String_t* stype = ASRUtils::get_string_type(unit_ttype_ptr);
-            if (stype) {
-                llvm::outs() << "[DEBUG] Extracting internal unit string metadata\n";
-                
+                // visit_expr_wrapper returns the address of the descriptor (alloca)
+                this->visit_expr_wrapper(x.m_unit, true, true);
+                llvm::Value* val = tmp;
+
                 if (val->getType()->isPointerTy()) {
-                    // Use the existing src_ptr and src_len_val declared at line 11621
-                    // Field 0: Data pointer (the actual char* from malloc/alloca)
+                    // Field 0: Data pointer
                     llvm::Value* data_gep = builder->CreateStructGEP(llvm_utils->string_descriptor, val, 0);
                     src_ptr = builder->CreateLoad(ptr_ty, data_gep);
                     
-                    // Field 1: Length (i64)
+                    // Field 1: Length
                     llvm::Value* len_gep = builder->CreateStructGEP(llvm_utils->string_descriptor, val, 1);
-                    src_len_val = builder->CreateLoad(builder->getInt64Ty(), len_gep);
-                } 
-                else {
+                    src_len_val = builder->CreateLoad(i64, len_gep);
+                } else {
                     src_ptr = llvm_utils->get_string_data(stype, val, false);
                     src_len_val = llvm_utils->get_string_length(stype, val);
                 }
                 
-                // Ensure src_ptr is a generic ptr for the Master Struct
                 src_ptr = builder->CreateBitCast(src_ptr, ptr_ty);
             } else {
-                llvm::outs() << "[DEBUG] ERROR: stype is NULL!\n";
+                llvm::outs() << "[DEBUG] ERROR: Unit not a Character! Falling back.\n";
                 src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
-                src_len_val = llvm::ConstantInt::get(builder->getInt64Ty(), 0);
-                is_string = false;
+                src_len_val = llvm::ConstantInt::get(i64, 0);
+                is_string = false; 
             }
         } else {
-            // Default for external files (Standard Unit numbers)
             src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
-            src_len_val = llvm::ConstantInt::get(builder->getInt64Ty(), 0);
+            src_len_val = llvm::ConstantInt::get(i64, 0);
             is_string = false;
         }
 
@@ -11758,28 +11753,63 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
 
         // 5. Value Processing Loop (Reads variables like 'x')
         llvm::outs() << "[DEBUG] Starting value processing loop\n";
-        // 5. Value Processing Loop (Reads variables like 'x')
+
+        llvm::FunctionType* read_int_ty = llvm::FunctionType::get(void_ty, {ptr_ty, ptr_ty}, false);
+        llvm::FunctionCallee read_int_fn = module->getOrInsertFunction("_lfortran_read_int", read_int_ty);
+        
+        if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(read_int_fn.getCallee())) {
+            F->setLinkage(llvm::Function::ExternalLinkage);
+            F->addFnAttr(llvm::Attribute::NoInline);
+            F->addFnAttr(llvm::Attribute::OptimizeNone);
+        }
+
         for (size_t i = 0; i < x.n_values; i++) {
-            // This call populates the global 'tmp' with the ADDRESS of the variable
             this->visit_expr_wrapper(x.m_values[i], true, true);
             llvm::Value* target_addr = tmp; 
 
-            // Ensure target_addr is a pointer type to satisfy the function signature
-            if (!target_addr->getType()->isPointerTy()) {
-                 // If for some reason it's not a pointer, we shouldn't proceed
-                 continue; 
+            // ---------- STAGE 1: LLVM PATTERN RECOVERY ----------
+            if (target_addr && !target_addr->getType()->isPointerTy()) {
+                if (auto *LI = llvm::dyn_cast<llvm::LoadInst>(target_addr)) {
+                    target_addr = LI->getPointerOperand();
+                    llvm::outs() << "[DEBUG] Recovered from LoadInst\n";
+                }
+                else if (auto *GEP = llvm::dyn_cast<llvm::GetElementPtrInst>(target_addr)) {
+                    target_addr = GEP->getPointerOperand();
+                    llvm::outs() << "[DEBUG] Recovered from GEP\n";
+                }
             }
+
+            // ---------- STAGE 2: ASR SYMBOL FALLBACK (Scalar only) ----------
+            if (!target_addr || !target_addr->getType()->isPointerTy()) {
+                ASR::expr_t* e = x.m_values[i];
+                ASR::symbol_t* sym = nullptr;
+
+                // Safely check if it's a simple variable
+                if (ASR::is_a<ASR::Var_t>(*e)) {
+                    sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(e)->m_v);
+                }
+
+                if (sym) {
+                    uintptr_t h = (uintptr_t)sym;
+                    if (llvm_symtab.find(h) != llvm_symtab.end()) {
+                        target_addr = llvm_symtab[h];
+                        llvm::outs() << "[DEBUG] Recovered from llvm_symtab for scalar\n";
+                    }
+                }
+            }
+
+            // ---------- FINAL VERIFICATION ----------
+            if (!target_addr || !target_addr->getType()->isPointerTy()) {
+                llvm::outs() << "[DEBUG] CRITICAL: Pointer recovery failed for value index " << i << "\n";
+                continue;
+            }
+
+            // Generate the call
+            llvm::CallInst* call = builder->CreateCall(read_int_fn, {master_struct, target_addr});
             
-            // Call the integer parser using the ADDRESS (target_addr)
-            llvm::FunctionCallee read_int_fn = module->getOrInsertFunction(
-                "_lfortran_read_int", 
-                llvm::Type::getVoidTy(context), 
-                ptr_ty, // Master struct pointer
-                ptr_ty  // Target variable pointer
-            );
-            
-            // CRITICAL: Pass target_addr directly. DO NOT load from it.
-            builder->CreateCall(read_int_fn, {master_struct, target_addr});
+            llvm::outs() << "[LLVM IR DEBUG] Successfully Generated: ";
+            call->print(llvm::outs());
+            llvm::outs() << "\n";
         }
 
         llvm::outs() << "[DEBUG] visit_FileRead completed successfully.\n";

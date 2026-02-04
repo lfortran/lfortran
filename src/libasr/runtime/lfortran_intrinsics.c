@@ -6222,3 +6222,33 @@ __lfortran_dynamic_cast(const void* static_ptr,
 
     return (void*) dst_ptr;
 }
+/* --- ABSOLUTE END OF FILE --- */
+
+LFORTRAN_API void _lfortran_read_int(void *m_void, int32_t *p)
+{
+    // We treat the struct as a raw byte array to bypass "Undefined Type" errors.
+    // Based on your previous RUNTIME DEBUG logs:
+    // Offset 0: unit (int32_t)
+    // Offset 56: src_data (char*)
+    unsigned char *m_bytes = (unsigned char *)m_void;
+    
+    int32_t unit = *(int32_t *)(m_bytes + 0);
+
+    if (unit == -1) {
+        // Internal File Logic
+        char *src_data = *(char **)(m_bytes + 56);
+        if (src_data != NULL) {
+            if (sscanf(src_data, "%d", p) != 1) {
+                *p = 0; 
+            }
+        }
+    } else {
+        // External File Logic
+        bool unit_file_bin;
+        // We pass 'unit' directly as an integer
+        FILE* filep = get_file_pointer_from_unit(unit, &unit_file_bin, NULL, NULL, NULL, NULL);
+        if (filep && !unit_file_bin) {
+            fscanf(filep, "%d", p);
+        }
+    }
+}
