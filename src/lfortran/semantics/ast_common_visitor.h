@@ -1459,17 +1459,15 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
             if (prev_desc == DescType::DATA) {
                 diag.add(Diagnostic(
                     "Format string missing comma between descriptors (F2023 constraint C1302)",
-                    Level::Error, Stage::Semantic, {
+                    Level::Warning, Stage::Semantic, {
                         Label("", {loc})
                     }));
-                throw SemanticAbort();
             } else if (prev_desc == DescType::CONTROL && current_desc == DescType::DATA) {
                 diag.add(Diagnostic(
                     "Format string missing comma between descriptors (F2023 constraint C1302)",
-                    Level::Error, Stage::Semantic, {
+                    Level::Warning, Stage::Semantic, {
                         Label("", {loc})
                     }));
-                throw SemanticAbort();
             }
         }
         
