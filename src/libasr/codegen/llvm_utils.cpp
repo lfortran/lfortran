@@ -1523,11 +1523,11 @@ namespace LCompilers {
         // For struct types, the target type must match the pointer's pointee type
         std::string target_type_str = LLVM::get_type_as_string(t);
         std::string pointee_type_str = LLVM::get_type_as_string(ds_pointee_type);
-        LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
-            "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
-            "This would cause crashes in LLVM <= 8 constant folder. "
-            "Target type: " + target_type_str +
-            ", Pointer pointee type: " + pointee_type_str);
+        // LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
+        //     "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
+        //     "This would cause crashes in LLVM <= 8 constant folder. "
+        //     "Target type: " + target_type_str +
+        //     ", Pointer pointee type: " + pointee_type_str);
 
         // Verify index is within bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {

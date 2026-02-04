@@ -976,7 +976,7 @@ namespace LCompilers {
                 auto const struct_sym = ASR::down_cast<ASR::Struct_t>( ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
                 llvm::Type* const class_type = llvm_utils->getClassType(struct_sym);
                 llvm::Value* const array_data =  builder->CreateLoad(class_type->getPointerTo(), get_pointer_to_data(array_exp, array_type, array, llvm_utils->module));
-                llvm::Value* const underlying_struct_ptr = llvm_utils->CreateGEP2(class_type, array_data, 1);
+                llvm::Value* const underlying_struct_ptr = llvm_utils->CreateGEP2(class_type->getPointerTo(), array_data, 1);
                 memory_holder = underlying_struct_ptr;
             } else {
                 memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);

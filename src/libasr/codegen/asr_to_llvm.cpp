@@ -9866,7 +9866,7 @@ public:
     }
 
     void visit_SelectType(const ASR::SelectType_t& x) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector) || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector) || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector) || ASR::is_a<ASR::ArrayItem_t>(*x.m_selector));
         // Process TypeStmtName first, then ClassStmt
         std::vector<ASR::type_stmt_t*> select_type_stmts;
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::TypeStmtName);
@@ -9882,6 +9882,10 @@ public:
         } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector)) {
             selector_struct = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_selector);
             selector_var_name = ASRUtils::symbol_name(selector_struct->m_m);
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_selector)) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_selector);
+            selector_var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
+            selector_var_name = ASRUtils::symbol_name(selector_var->m_v);
         }
         if (x.m_assoc_name) {
             current_selector_var_name = x.m_assoc_name;
@@ -9935,12 +9939,22 @@ public:
                             static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                         }
                         if (ASRUtils::is_array(selector_var_type)) {
-                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
+                            llvm::Type* el_type = llvm_utils->get_el_type(
+                                x.m_selector,
+                                ASRUtils::type_get_past_array(selector_var_type),
+                                module.get());
+                            // For GEP, we need the pointee type, not the pointer type
+                            llvm::Type* gep_type = static_ptr_type;
+                            if (ASRUtils::non_unlimited_polymorphic_class(
+                                ASRUtils::type_get_past_array(selector_var_type))) {
+                                // If static_ptr_type is a pointer, get the element type (pointee)
+                                if (static_ptr_type->isPointerTy()) {
+                                    gep_type = llvm::cast<llvm::PointerType>(static_ptr_type)->getPointerElementType();
+                                }
+                            }
+                            static_ptr = arr_descr->get_pointer_to_data(gep_type, static_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
-                                llvm_utils->get_el_type(
-                                    x.m_selector,
-                                    ASRUtils::type_get_past_array(selector_var_type),
-                                    module.get())->getPointerTo(),
+                                el_type->getPointerTo(),
                                 static_ptr);
                         }
 

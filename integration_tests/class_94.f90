@@ -18,13 +18,13 @@ contains
         integer :: i
 
         do i = 1, size(arr)
-            ! select type(arr)   !! TODO: fix this select type
-            ! type is (base_type)
+             select type(arr)
+             type is (base_type)
                 if (arr(i)%value /= i * 10) error stop "Base type value mismatch"
-            ! type is (extended_type)
-            !     if (arr(i)%value /= i * 10) error stop "Extended type value mismatch"
-                ! if (arr(i)%extra /= i * 100) error stop "Extended type extra mismatch"
-            ! end select
+             type is (extended_type)
+                 if (arr(i)%value /= i * 10) error stop "Extended type value mismatch"
+                 if (arr(i)%extra /= i * 100) error stop "Extended type extra mismatch"
+            end select
         end do
     end subroutine process_class_array
 

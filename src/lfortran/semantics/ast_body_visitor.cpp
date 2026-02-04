@@ -3066,7 +3066,6 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, !compiler_options.new_classes);
-                            selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             selector_m_type_declaration = sym;
                         } else {
                             diag.add(Diagnostic(
@@ -3081,7 +3080,13 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
+                        if (selector_variable_type) {
+                            ASR::ttype_t* view_type = make_typed_selector_view_type(
+                                class_stmt->base.base.loc, selector_variable_type, selector_type);
+                            assoc_variable->m_type = view_type;
+                        } else {
+                            assoc_variable->m_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                        }
                         assoc_variable->m_type_declaration = selector_m_type_declaration;
                     }
                     Vec<ASR::stmt_t*> class_stmt_body;
@@ -3117,7 +3122,6 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, true);
-                            selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             selector_m_type_declaration = sym;
                         } else {
                             diag.add(Diagnostic(
@@ -3132,7 +3136,13 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
+                        if (selector_variable_type) {
+                            ASR::ttype_t* view_type = make_typed_selector_view_type(
+                                type_stmt_name->base.base.loc, selector_variable_type, selector_type);
+                            assoc_variable->m_type = view_type;
+                        } else {
+                            assoc_variable->m_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                        }
                         assoc_variable->m_type_declaration = selector_m_type_declaration;
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
