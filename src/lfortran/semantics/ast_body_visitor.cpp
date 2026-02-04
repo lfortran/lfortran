@@ -3254,11 +3254,40 @@ public:
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
-                    SymbolTable* current_scope_copy = current_scope;
-                    current_scope = parent_scope;
                     AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
-                    transform_stmts(select_type_default, class_default->n_body, class_default->m_body);
-                    current_scope = current_scope_copy;
+                    if( assoc_variable ) {
+                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(selector_variable_type);
+                        if (!ASR::is_a<ASR::Pointer_t>(*target_type)) {
+                            target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
+                        }
+                        assoc_variable->m_type = target_type;
+                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                        assoc_variable->m_dependencies = selector_variable_dependencies;
+                        assoc_variable->n_dependencies = selector_variable_n_dependencies;
+                    }
+                    Vec<ASR::stmt_t*> class_default_body;
+                    class_default_body.reserve(al, class_default->n_body);
+                    if( assoc_sym && class_default->n_body > 0 ) {
+                        class_default_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
+                            class_default->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            class_default->base.base.loc, assoc_sym)), m_selector)) );
+                    }
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, class_default->base.base.loc,
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(class_default_body, class_default->n_body, class_default->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = class_default_body.p;
+                    block_t_->n_body = class_default_body.size();
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_default->base.base.loc, -1, block_sym)));
+                    for( auto& stmt: block_call_stmt ) {
+                        select_type_default.push_back(al, stmt);
+                    }
                     break;
                 }
                 default: {
