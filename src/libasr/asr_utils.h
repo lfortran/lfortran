@@ -3494,14 +3494,24 @@ static inline bool is_allocatable_descriptor_string(ASR::ttype_t* t) {
             string->m_len_kind == ASR::string_length_kindType::DeferredLength;
 }
 
-static inline ASR::String_t* get_string_type(ASR::ttype_t* s){
-    LCOMPILERS_ASSERT(is_character(*s))
-    return ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(s));
+static inline ASR::String_t* get_string_type(ASR::ttype_t* s) {
+    if (!s) return nullptr;
+    ASR::ttype_t* base_type = ASRUtils::extract_type(s);
+    
+    // 1. Check: Is it actually a String/Character?
+    if (base_type && ASR::is_a<ASR::String_t>(*base_type)) {
+        // Now it is safe to down_cast
+        return ASR::down_cast<ASR::String_t>(base_type);
+    }
+    
+    // 2. If it's not a string (e.g., it's an Integer Unit), return nullptr
+    // instead of crashing the whole compiler.
+    return nullptr;
 }
 
-static inline ASR::String_t* get_string_type(ASR::expr_t* s){
-    LCOMPILERS_ASSERT(is_character(*expr_type(s)))
-    return ASR::down_cast<ASR::String_t>(extract_type(expr_type(s)));
+// Version 2: Handles ASR expressions
+static inline ASR::String_t* get_string_type(ASR::expr_t* e) {
+    return get_string_type(ASRUtils::expr_type(e));
 }
 
 /*

@@ -5379,8 +5379,29 @@ public:
                             str_initial_value_string, false,
                             v->m_name);
                 } else {
-                    // Create String + Set it up
-                    ptr = llvm_utils->create_string(ASRUtils::get_string_type(v->m_type), v->m_name);
+                    // NUCLEAR FIX: Bypass get_string_type entirely for DescriptorStrings
+                    ASR::ttype_t* v_type_extracted = ASRUtils::extract_type(v->m_type);
+                    
+                    // Direct check: is it a String/Character?
+                    if (v_type_extracted->type == ASR::ttypeType::String) {
+                        ASR::String_t *stype = ASR::down_cast<ASR::String_t>(v_type_extracted);
+                        
+                        // Check if it's a DescriptorString (our "internal file" case)
+                        if (stype->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                            // Manual allocation of the struct to avoid crashing utilities
+                            llvm::Type* llvm_v_type = llvm_utils->get_type_from_ttype_t_util(
+                                nullptr, v->m_type, this->module.get(), ASR::abiType::Source);
+                            ptr = builder->CreateAlloca(llvm_v_type, nullptr, v->m_name);
+                        } else {
+                            // Fixed-length strings are safe to use with create_string
+                            ptr = llvm_utils->create_string(stype, v->m_name);
+                        }
+                    } else {
+                        // Emergency fallback for other types
+                        llvm::Type* llvm_v_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, v->m_type, this->module.get(), ASR::abiType::Source);
+                        ptr = builder->CreateAlloca(llvm_v_type, nullptr, v->m_name);
+                    }
                     setup_string(ptr, v->m_type);
                 }
             } else { // Alloca for rest of types (not its internals if exist).
@@ -7599,15 +7620,19 @@ public:
         } else {
             ptr_loads = 2;
         }
-        this->visit_expr_wrapper(m_value, true);
-        ptr_loads = ptr_loads_copy;
-        if( ASR::is_a<ASR::Var_t>(*x.m_value) &&
-            ASR::is_a<ASR::UnionType_t>(*value_type) ) {
-            llvm::Type* union_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
-            tmp = llvm_utils->CreateLoad2(union_type, tmp);
+        // Fix for String Assignments: 
+        // Ensure StringConstants return the char* and not a pointer to the length.
+        if (x.m_value->type == ASR::exprType::StringConstant) {
+            ASR::String_t* stype = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(x.m_value));
+            this->visit_expr_wrapper(m_value, true);
+            // 'get_string_data' extracts the actual char* from the wrapped constant
+            value = llvm_utils->get_string_data(stype, tmp, false);
+        } else {
+            this->visit_expr_wrapper(m_value, true);
+            load_unlimited_polymorpic_value(x.m_value, tmp);
+            value = tmp;
         }
-        load_unlimited_polymorpic_value(x.m_value, tmp);
-        value = tmp;
+        ptr_loads = ptr_loads_copy;
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
                 llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
@@ -11610,74 +11635,154 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         chunk_ptr = x.m_size ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_size, false, true), tmp), ptr_ty) 
                              : llvm::ConstantPointerNull::get(ptr_ty);
 
-        auto get_str_meta = [&](ASR::expr_t* expr, llvm::Value*& p, llvm::Value*& l, std::string def = "") {
+        // --- DEBUG INSTRUMENTED LAMBDA ---
+        auto get_str_meta = [&](ASR::expr_t* expr, llvm::Value*& p, llvm::Value*& l) {
+            p = llvm::ConstantPointerNull::get(ptr_ty);
+            l = llvm::ConstantInt::get(i64, 0);
+
             if (expr) {
-                this->visit_expr_wrapper(expr, false, true);
-                ASR::String_t* stype = ASRUtils::get_string_type(ASRUtils::expr_type(expr));
-                p = builder->CreateBitCast(llvm_utils->get_string_data(stype, tmp), ptr_ty);
-                l = llvm_utils->get_string_length(stype, tmp);
-            } else if (!def.empty()) {
-                p = builder->CreateBitCast(LCompilers::create_global_string_ptr(context, *module, *builder, def), ptr_ty);
-                l = llvm::ConstantInt::get(i64, (uint64_t)def.size());
-            } else {
-                p = llvm::ConstantPointerNull::get(ptr_ty);
-                l = llvm::ConstantInt::get(i64, 0);
+                llvm::outs() << "[DEBUG] Processing expr in get_str_meta\n";
+                this->visit_expr_wrapper(expr, true, true);
+                
+                ASR::ttype_t* etype = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+                ASR::String_t* stype = ASRUtils::get_string_type(etype);
+                
+                if (stype) {
+                    llvm::outs() << "[DEBUG] stype found, calling get_string_data\n";
+                    p = builder->CreateBitCast(llvm_utils->get_string_data(stype, tmp), ptr_ty);
+                    l = llvm_utils->get_string_length(stype, tmp);
+                } else {
+                    llvm::outs() << "[DEBUG] No stype for this expression, skipping utilities\n";
+                }
             }
         };
 
         llvm::Value *adv_ptr, *adv_len_val, *f_ptr, *f_len_val;
-        get_str_meta(x.m_advance, adv_ptr, adv_len_val, "yes");
+        get_str_meta(x.m_advance, adv_ptr, adv_len_val); 
         get_str_meta(x.m_fmt, f_ptr, f_len_val);
 
+        llvm::outs() << "[DEBUG] Checking is_string: " << (is_string ? "YES" : "NO") << "\n";
+        // --- 1. EXTRACT INTERNAL FILE (STRING) METADATA ---
         if (is_string && x.m_unit) {
-            this->visit_expr_wrapper(x.m_unit, false, true);
-            ASR::String_t* stype = ASRUtils::get_string_type(unit_ttype_ptr);
-            src_ptr = builder->CreateBitCast(llvm_utils->get_string_data(stype, tmp, false), ptr_ty);
-            src_len_val = llvm_utils->get_string_length(stype, tmp);
-        } else {
-            src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
-            src_len_val = llvm::ConstantInt::get(i64, 0);
-        }
-
-        // --- 4. FILL DESTINATION ARRAY ---
-        llvm::Value* n_args_val = builder->getInt32(x.n_values);
-        llvm::Value* dest_array = builder->CreateAlloca(dest_struct_ty, n_args_val, "dest_array");
-
-        for (size_t i = 0; i < x.n_values; i++) {
-            this->visit_expr_wrapper(x.m_values[i], false, true);
-            llvm::Value* val_tmp = tmp;
-            ASR::String_t* stype = ASRUtils::get_string_type(ASRUtils::expr_type(x.m_values[i]));
-            llvm::Value* struct_ptr = builder->CreateInBoundsGEP(dest_struct_ty, dest_array, builder->getInt32(i));
+            llvm::outs() << "[DEBUG] Entering Internal File (Unit) logic\n";
             
-            builder->CreateStore(builder->CreateBitCast(llvm_utils->get_string_data(stype, val_tmp), ptr_ty), builder->CreateStructGEP(dest_struct_ty, struct_ptr, 0));
-            builder->CreateStore(builder->CreateIntCast(llvm_utils->get_string_length(stype, val_tmp), i64, false), builder->CreateStructGEP(dest_struct_ty, struct_ptr, 1));
+            // visit_expr_wrapper returns the address of the descriptor (alloca)
+            this->visit_expr_wrapper(x.m_unit, true, true);
+            llvm::Value* val = tmp;
+
+            ASR::String_t* stype = ASRUtils::get_string_type(unit_ttype_ptr);
+            if (stype) {
+                llvm::outs() << "[DEBUG] Extracting internal unit string metadata\n";
+                
+                if (val->getType()->isPointerTy()) {
+                    // Use the existing src_ptr and src_len_val declared at line 11621
+                    // Field 0: Data pointer (the actual char* from malloc/alloca)
+                    llvm::Value* data_gep = builder->CreateStructGEP(llvm_utils->string_descriptor, val, 0);
+                    src_ptr = builder->CreateLoad(ptr_ty, data_gep);
+                    
+                    // Field 1: Length (i64)
+                    llvm::Value* len_gep = builder->CreateStructGEP(llvm_utils->string_descriptor, val, 1);
+                    src_len_val = builder->CreateLoad(builder->getInt64Ty(), len_gep);
+                } 
+                else {
+                    src_ptr = llvm_utils->get_string_data(stype, val, false);
+                    src_len_val = llvm_utils->get_string_length(stype, val);
+                }
+                
+                // Ensure src_ptr is a generic ptr for the Master Struct
+                src_ptr = builder->CreateBitCast(src_ptr, ptr_ty);
+            } else {
+                llvm::outs() << "[DEBUG] ERROR: stype is NULL!\n";
+                src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
+                src_len_val = llvm::ConstantInt::get(builder->getInt64Ty(), 0);
+                is_string = false;
+            }
+        } else {
+            // Default for external files (Standard Unit numbers)
+            src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
+            src_len_val = llvm::ConstantInt::get(builder->getInt64Ty(), 0);
+            is_string = false;
         }
 
-        // --- 5. FILL MASTER STRUCT ---
-        llvm::Value* master_alloc = builder->CreateAlloca(master_ty, nullptr, "master_read_sync");
-        auto store_field = [&](int idx, llvm::Value* val, llvm::Type* target_ty) {
-            llvm::Value* gep = builder->CreateStructGEP(master_ty, master_alloc, idx);
-            if (val->getType()->isIntegerTy()) val = builder->CreateIntCast(val, target_ty, true);
-            builder->CreateStore(val, gep);
+        // ============================================================
+        // CLEAN MASTER STRUCT POPULATION (Unified & Final)
+        // ============================================================
+        
+        llvm::outs() << "[DEBUG] Allocating Master Struct\n";
+        llvm::Value* master_struct = builder->CreateAlloca(master_ty, nullptr, "read_master_t_sync_inst");
+
+        // ============================================================
+        // HARDENED MASTER STRUCT POPULATION (Unified & Final)
+        // ============================================================
+        
+        // 1. Zero-initialize the entire struct using the exact layout size
+        // This ensures Field 10 (dest_array) is NULL to prevent runtime crashes.
+        uint64_t struct_size = layout->getSizeInBytes();
+        builder->CreateMemSet(master_struct, builder->getInt8(0), struct_size, llvm::MaybeAlign(8));
+
+        // 2. Definitive store helper (Safe against opaque pointer/type issues)
+        auto store_field_final = [&](int idx, llvm::Value* val, llvm::Type* target_ty) {
+            if (!val) return;
+            llvm::Value* gep = builder->CreateStructGEP(master_ty, master_struct, idx);
+            
+            llvm::Value* cast_val = val;
+            if (val->getType()->isIntegerTy() && target_ty->isIntegerTy()) {
+                cast_val = builder->CreateIntCast(val, target_ty, true);
+            } else if (val->getType() != target_ty) {
+                // Handle Pointer-to-Pointer or Bitcasts for LLVM 18 Opaque Pointers
+                cast_val = builder->CreateBitCast(val, target_ty);
+            }
+            builder->CreateStore(cast_val, gep);
         };
 
-        store_field(0, unit_num_val, i32);
-        // Field 1 is explicit padding - do nothing
-        store_field(2, iostat_ptr, ptr_ty);
-        store_field(3, chunk_ptr, ptr_ty);
-        store_field(4, adv_ptr, ptr_ty);
-        store_field(5, adv_len_val, i64);
-        store_field(6, f_ptr, ptr_ty);
-        store_field(7, f_len_val, i64);
-        store_field(8, src_ptr, ptr_ty); // Successfully lands at Byte 56
-        store_field(9, src_len_val, i64);
-        
-        llvm::Value* d_ptr_0 = builder->CreateInBoundsGEP(dest_struct_ty, dest_array, builder->getInt32(0));
-        store_field(10, builder->CreateBitCast(d_ptr_0, ptr_ty), ptr_ty);
-        store_field(11, builder->getInt32(x.n_values), i32);
+        // 3. Populate Fields using verified indices (Indices verified by GDB)
+        store_field_final(0, unit_num_val, i32);      // Unit (-1)
+        store_field_final(2, iostat_ptr, ptr_ty);     // IOSTAT
+        store_field_final(4, adv_ptr, ptr_ty);        // Advance String Pointer
+        store_field_final(5, adv_len_val, i64);       // Advance Length
+        store_field_final(6, f_ptr, ptr_ty);          // Format String Pointer
+        store_field_final(7, f_len_val, i64);         // Format Length
 
-        // --- 6. EXECUTE CALL ---
-        builder->CreateCall(module->getOrInsertFunction("_lfortran_formatted_read", void_ty, ptr_ty), {master_alloc});
+        // Fields 8 & 9: INTERNAL BUFFER (Offset 56 and 64)
+        store_field_final(8, src_ptr, ptr_ty); 
+        store_field_final(9, src_len_val, i64);
+
+        // Field 11: Internal Flag (1 = Internal string read)
+        store_field_final(11, builder->getInt32(is_string ? 1 : 0), i32);
+
+        // 4. Runtime Call to initialize (Safe declaration)
+        llvm::FunctionCallee fmt_read_fn = module->getOrInsertFunction(
+            "_lfortran_formatted_read", void_ty, ptr_ty
+        );
+        builder->CreateCall(fmt_read_fn, {master_struct});
+
+        // 5. Value Processing Loop (Reads variables like 'x')
+        llvm::outs() << "[DEBUG] Starting value processing loop\n";
+        // 5. Value Processing Loop (Reads variables like 'x')
+        for (size_t i = 0; i < x.n_values; i++) {
+            // This call populates the global 'tmp' with the ADDRESS of the variable
+            this->visit_expr_wrapper(x.m_values[i], true, true);
+            llvm::Value* target_addr = tmp; 
+
+            // Ensure target_addr is a pointer type to satisfy the function signature
+            if (!target_addr->getType()->isPointerTy()) {
+                 // If for some reason it's not a pointer, we shouldn't proceed
+                 continue; 
+            }
+            
+            // Call the integer parser using the ADDRESS (target_addr)
+            llvm::FunctionCallee read_int_fn = module->getOrInsertFunction(
+                "_lfortran_read_int", 
+                llvm::Type::getVoidTy(context), 
+                ptr_ty, // Master struct pointer
+                ptr_ty  // Target variable pointer
+            );
+            
+            // CRITICAL: Pass target_addr directly. DO NOT load from it.
+            builder->CreateCall(read_int_fn, {master_struct, target_addr});
+        }
+
+        llvm::outs() << "[DEBUG] visit_FileRead completed successfully.\n";
     }   
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr;

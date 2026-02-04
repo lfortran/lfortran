@@ -2337,7 +2337,9 @@ namespace LCompilers {
             Fortran can represent null char is a char not as a terminating flag.
         */
         int64_t str_len = -1;
-        ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, str_len);
+        ASR::ttype_t* str_type_base = ASRUtils::extract_type(str_const->m_type);
+        ASR::String_t* stype = ASR::down_cast<ASR::String_t>(str_type_base);
+        ASRUtils::extract_value(stype->m_len, str_len);
 
         std::string initial_string = std::string(str_const->m_s, str_len);
         return declare_global_string(
