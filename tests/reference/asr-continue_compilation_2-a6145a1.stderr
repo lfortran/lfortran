@@ -938,25 +938,25 @@ semantic error: Function 'compiler_options' not found (not user defined nor intr
 466 |     print *, compiler_options()
     |              ^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Format string missing comma between descriptors (F2023 constraint C1302)
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
    --> tests/errors/continue_compilation_2.f90:467:11
     |
 467 |     print "(AF9.6)", 'pi =', 4*atan(1.0)
     |           ^^^^^^^^^ 
 
-semantic error: Format string missing comma between descriptors (F2023 constraint C1302)
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
    --> tests/errors/continue_compilation_2.f90:468:14
     |
 468 |     write (*,"(ai0)", iostat=ierr) "hi", 3
     |              ^^^^^^^ 
 
-semantic error: Format string missing comma between descriptors (F2023 constraint C1302)
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
    --> tests/errors/continue_compilation_2.f90:470:14
     |
 470 |     write (*,badfmt_p) "hi", 3
     |              ^^^^^^^^ 
 
-semantic error: Format string missing comma between descriptors (F2023 constraint C1302)
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
    --> tests/errors/continue_compilation_2.f90:471:14
     |
 471 |     write (*,badfmt_s) "hi", 3
@@ -968,7 +968,13 @@ semantic error: Function 'add_parens' not found (not user defined nor intrinsic)
 472 |     write (*, add_parens (badfmt_s)) "hi", 3
     |               ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Format string missing comma between descriptors (F2023 constraint C1302)
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
+   --> tests/errors/continue_compilation_2.f90:474:11
+    |
+474 |     print "(aai6)", a,"hi",15
+    |           ^^^^^^^^ 
+
+warning: Format string missing comma between descriptors (F2023 constraint C1302)
    --> tests/errors/continue_compilation_2.f90:474:11
     |
 474 |     print "(aai6)", a,"hi",15
