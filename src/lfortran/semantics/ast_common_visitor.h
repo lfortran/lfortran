@@ -5159,18 +5159,20 @@ public:
                 // e.g. character :: x*3   !> set char length to 3
                 // OR character(len=4)     !> set char length to 4
                 // OR character :: x(2)*3  !> set char length to 3
+                // OR character(1) x*(d+1) !> set char length to d+1 expression
                 if (is_char_type && s.m_length) {
                     this->visit_expr(*s.m_length);
                     ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                         ASRUtils::type_get_past_array(type));
                     char_length = ASRUtils::EXPR(tmp);
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
-                    ASRUtils::ASRBuilder b(al, x.base.base.loc);
-                    if (c_length == nullptr) c_length = ASRUtils::expr_value(b.i32(0));
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*c_length))
-                    int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
-                    lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
+                    if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
+                        int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
+                        lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
+                    } else {
+                        lhs_type->m_len = char_length;
+                    }
                 }                
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
