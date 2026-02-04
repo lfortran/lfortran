@@ -1328,48 +1328,62 @@ namespace MoveAlloc {
 
         std::vector<ASR::stmt_t*> if_body;
 
-        int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
-        Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
-        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        for(int i=0; i<n_dims; i++) {
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, loc, 1, integer_type));
-            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-    al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
-            alloc_dims.push_back(al, dim);
+        bool is_allocatable_array_from = ASRUtils::is_array(arg_types[0]) &&
+            ASRUtils::is_allocatable(arg_types[0]) &&
+            ASRUtils::extract_physical_type(arg_types[0]) == ASR::array_physical_typeType::DescriptorArray;
+        bool is_allocatable_array_to = ASRUtils::is_array(arg_types[1]) &&
+            ASRUtils::is_allocatable(arg_types[1]) &&
+            ASRUtils::extract_physical_type(arg_types[1]) == ASR::array_physical_typeType::DescriptorArray;
+
+        if (is_allocatable_array_from && is_allocatable_array_to) {
+            ASR::stmt_t* move_assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, args[1], args[0], nullptr, false, true));
+            if_body.push_back(move_assign);
+        } else {
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for(int i=0; i<n_dims; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, integer_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+        al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
+                alloc_dims.push_back(al, dim);
+            }
+
+            ASR::expr_t* len_expr = nullptr;
+            if (ASRUtils::is_character(*arg_types[0])) {
+                len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], integer_type, nullptr));
+            }
+
+            ASR::symbol_t* from_struct = nullptr;
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
+                from_struct = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(new_args[0].m_value));
+            }
+
+            Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = loc;
+            alloc_arg.m_a = args[1];
+            alloc_arg.m_dims = alloc_dims.p;
+            alloc_arg.n_dims = alloc_dims.n;
+            alloc_arg.m_type = from_struct ? ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::symbol_type(from_struct)) : nullptr;
+            alloc_arg.m_len_expr = len_expr;
+            alloc_arg.m_sym_subclass = from_struct;
+            alloc_args.push_back(al, alloc_arg);
+            if_body.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
+                nullptr, nullptr, nullptr)));
+            if_body.push_back(b.Assignment(args[1], args[0]));
+            Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+            explicit_deallocate_args.push_back(al, args[0]);
+            ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+            if_body.push_back(explicit_deallocate);
         }
-        
-        ASR::expr_t* len_expr = nullptr;
-        if (ASRUtils::is_character(*arg_types[0])) {
-            len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], integer_type, nullptr));
-        }
-        
-        ASR::symbol_t* from_struct = nullptr;
-        if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
-            from_struct = ASRUtils::symbol_get_past_external(
-                ASRUtils::get_struct_sym_from_struct_expr( new_args[0].m_value));
-        }
-        
-        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
-        ASR::alloc_arg_t alloc_arg;
-        alloc_arg.loc = loc;
-        alloc_arg.m_a = args[1];
-        alloc_arg.m_dims = alloc_dims.p;
-        alloc_arg.n_dims = alloc_dims.n;
-        alloc_arg.m_type = from_struct ? ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::symbol_type(from_struct)) : nullptr;
-        alloc_arg.m_len_expr = len_expr;
-        alloc_arg.m_sym_subclass = from_struct;
-        alloc_args.push_back(al, alloc_arg);
-        if_body.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
-            nullptr, nullptr, nullptr)));
-        if_body.push_back(b.Assignment(args[1], args[0]));
-        Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
-                    explicit_deallocate_args.push_back(al, args[0]);
-        ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-        if_body.push_back(explicit_deallocate);
 
         ASR::stmt_t* if_stmt = b.If(is_from_allocated, if_body, {});
         body.push_back(al, if_stmt);
