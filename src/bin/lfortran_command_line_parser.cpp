@@ -1,9 +1,10 @@
 #include <libasr/exception.h>
 #include <libasr/string_utils.h>
 
+#include <algorithm>
+#include <cctype>
 #include <iomanip>
 #include <iostream>
-#include <map>
 
 #include <lfortran/utils.h>
 
@@ -30,31 +31,32 @@ namespace LCompilers::CommandLineInterface {
         // empty
     }
 
-    static void print_category_help(const CLI::App &app, const std::string &category) {
-        std::cout << category << ":\n";
-        for (const auto *opt : app.get_options([&category](const CLI::Option *o) {
-            return o->get_group() == category;
-        })) {
-            std::string names = opt->get_name(false, true);
-            std::string desc = opt->get_description();
-            std::cout << "  " << std::left << std::setw(30) << names << " " << desc << "\n";
-        }
+    static std::string to_lower(const std::string &s) {
+        std::string result = s;
+        std::transform(result.begin(), result.end(), result.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+        return result;
     }
 
-    static const std::map<std::string, std::string> &get_category_map() {
-        static const std::map<std::string, std::string> category_map = {
-            {"warnings", "Warning Options"},
-            {"language", "Language Options"},
-            {"preprocessing", "Preprocessing Options"},
-            {"output", "Output and Debugging Options"},
-            {"pass", "Pass and Transformation Options"},
-            {"backend", "Backend and Codegen Options"},
-            {"symbol", "Symbol and Lookup Options"},
-            {"mangling", "Mangling Options"},
-            {"misc", "Miscellaneous Options"},
-            {"lsp", "LSP Options"}
-        };
-        return category_map;
+    static std::string group_key(const std::string &group_name) {
+        std::string key;
+        for (char c : group_name) {
+            if (c == ' ') break;
+            key += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return key;
+    }
+
+    static std::vector<std::string> get_groups(const CLI::App &app) {
+        std::vector<std::string> groups;
+        for (const auto *opt : app.get_options()) {
+            std::string g = opt->get_group();
+            if (g.empty() || g == "Options") continue;
+            if (std::find(groups.begin(), groups.end(), g) == groups.end()) {
+                groups.push_back(g);
+            }
+        }
+        return groups;
     }
 
     static std::string find_help_category_arg(int argc, const char *const *argv,
@@ -77,22 +79,32 @@ namespace LCompilers::CommandLineInterface {
     }
 
     static void handle_help_category(const CLI::App &app, const std::string &help_arg) {
-        const auto &category_map = get_category_map();
-        auto it = category_map.find(help_arg);
-        if (it == category_map.end()) {
-            std::cerr << "Unknown help category: " << help_arg << "\n";
-            std::cerr << "Available categories: ";
-            bool first = true;
-            for (const auto &kv : category_map) {
-                if (!first) std::cerr << ", ";
-                std::cerr << kv.first;
-                first = false;
+        std::string query = to_lower(help_arg);
+        std::vector<std::string> groups = get_groups(app);
+        for (const auto &group_name : groups) {
+            std::string key = group_key(group_name);
+            if (key == query || key.rfind(query, 0) == 0) {
+                std::cout << group_name << ":\n";
+                for (const auto *opt : app.get_options([&group_name](const CLI::Option *o) {
+                    return o->get_group() == group_name;
+                })) {
+                    std::cout << "  " << std::left << std::setw(30)
+                              << opt->get_name(false, true) << " "
+                              << opt->get_description() << "\n";
+                }
+                std::exit(0);
             }
-            std::cerr << "\n";
-            std::exit(1);
         }
-        print_category_help(app, it->second);
-        std::exit(0);
+        std::cerr << "Unknown help category: " << help_arg << "\n";
+        std::cerr << "Available categories: ";
+        bool first = true;
+        for (const auto &group_name : groups) {
+            if (!first) std::cerr << ", ";
+            std::cerr << group_key(group_name);
+            first = false;
+        }
+        std::cerr << "\n";
+        std::exit(1);
     }
 
     auto LFortranCommandLineParser::parse() -> void {
