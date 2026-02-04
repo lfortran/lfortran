@@ -26,6 +26,18 @@ end module write_15_test
 program write_15
    use write_15_test
    type(MyType) :: x
+   integer :: u
+   character(len=100) :: line
 
-   write(*,*) x
+   open(newunit=u, file="write_15.txt", status="replace")
+   write(u,*) x
+   close(u)
+
+   open(newunit=u, file="write_15.txt", status="old")
+   read(u,'(A)') line
+   close(u)
+
+   if (trim(adjustl(line)) /= "MyType instance") then
+      error stop "Unexpected output from write(formatted)"
+   end if
 end program write_15
