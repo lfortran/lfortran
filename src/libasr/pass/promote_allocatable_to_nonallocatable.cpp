@@ -306,7 +306,8 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         void visit_Associate(const ASR::Associate_t& x) {
             if( ASRUtils::is_fixed_size_array(
-                    ASRUtils::expr_type(x.m_value)) ) {
+                    ASRUtils::expr_type(x.m_value)) &&
+                !ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
                 xx.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, x.m_value->base.loc, xx.m_value,
