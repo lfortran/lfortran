@@ -2020,6 +2020,14 @@ filename = "../integration_tests/format_53.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_57.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_58.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_09.f90"
 run = true
 
