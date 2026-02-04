@@ -3227,6 +3227,7 @@ RUN(NAME str_to_char LABELS gfortran llvm)
 
 # test for polymorphic select type
 RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
+RUN(NAME polymorphic_select_type_02 LABELS gfortran llvm)
 RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 
 #test for forward declaration of derived type
