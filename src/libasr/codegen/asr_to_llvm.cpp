@@ -15798,7 +15798,8 @@ public:
                         }
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
-                            if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
+                            if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
+                                     && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
                                 if ( orig_arg_intent != ASRUtils::intent_out &&
                                         arg->m_intent == intent_local ) {
                                     // Local variable of type
