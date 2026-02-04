@@ -435,6 +435,18 @@
                                         )]
                                         []
                                     )]
+                                ),
+                            ~select_type_block_2:
+                                (Block
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    ~select_type_block_2
+                                    [(ErrorStop
+                                        ()
+                                    )]
                                 )
                         })
                     intrinsics_334
@@ -889,8 +901,9 @@
                                 2 ~select_type_block_1
                             )]
                         )]
-                        [(ErrorStop
-                            ()
+                        [(BlockCall
+                            -1
+                            2 ~select_type_block_2
                         )]
                     )]
                 )

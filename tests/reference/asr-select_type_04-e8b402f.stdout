@@ -5,16 +5,16 @@
             class_default_select_type:
                 (Module
                     (SymbolTable
-                        11
+                        12
                         {
                             enum_stat:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             fatal:
                                                 (Variable
-                                                    12
+                                                    13
                                                     fatal
                                                     []
                                                     Local
@@ -39,7 +39,7 @@
                                                 ),
                                             success:
                                                 (Variable
-                                                    12
+                                                    13
                                                     success
                                                     []
                                                     Local
@@ -81,12 +81,12 @@
                                 ),
                             toml_stat:
                                 (Variable
-                                    11
+                                    12
                                     toml_stat
                                     []
                                     Local
                                     (StructConstant
-                                        11 enum_stat
+                                        12 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -98,7 +98,7 @@
                                         )
                                     )
                                     (StructConstant
-                                        11 enum_stat
+                                        12 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -117,7 +117,7 @@
                                         .true.
                                         .false.
                                     )
-                                    11 enum_stat
+                                    12 enum_stat
                                     Source
                                     Public
                                     Required
@@ -145,7 +145,7 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat
-                                    11 enum_stat
+                                    12 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -224,16 +224,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_enum_stat_fatal:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_enum_stat_fatal
-                                                    12 fatal
-                                                    1_enum_stat
-                                                    []
-                                                    fatal
-                                                    Public
-                                                ),
                                             ptr:
                                                 (Variable
                                                     8
@@ -349,7 +339,7 @@
                                                                 (ExternalSymbol
                                                                     9
                                                                     1_enum_stat_success
-                                                                    12 success
+                                                                    13 success
                                                                     1_enum_stat
                                                                     []
                                                                     success
@@ -377,6 +367,47 @@
                                                                 9 1_enum_stat_success
                                                                 (Integer 4)
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                    )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            1_enum_stat_fatal:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_enum_stat_fatal
+                                                                    13 fatal
+                                                                    1_enum_stat
+                                                                    []
+                                                                    fatal
+                                                                    Public
+                                                                )
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(If
+                                                        ()
+                                                        (IntrinsicElementalFunction
+                                                            Present
+                                                            [(Var 8 stat)]
+                                                            0
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 8 stat)
+                                                            (StructInstanceMember
+                                                                (Var 4 toml_stat)
+                                                                10 1_enum_stat_fatal
+                                                                (Integer 4)
+                                                                (IntegerConstant -1 (Integer 4) Decimal)
                                                             )
                                                             ()
                                                             .false.
@@ -442,28 +473,9 @@
                                                     8 ~select_type_block_
                                                 )]
                                             )]
-                                            [(If
-                                                ()
-                                                (IntrinsicElementalFunction
-                                                    Present
-                                                    [(Var 8 stat)]
-                                                    0
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                [(Assignment
-                                                    (Var 8 stat)
-                                                    (StructInstanceMember
-                                                        (Var 4 toml_stat)
-                                                        8 1_enum_stat_fatal
-                                                        (Integer 4)
-                                                        (IntegerConstant -1 (Integer 4) Decimal)
-                                                    )
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )]
-                                                []
+                                            [(BlockCall
+                                                -1
+                                                8 ~select_type_block_1
                                             )]
                                         )]
                                         [(SubroutineCall
@@ -484,7 +496,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_stat
-                                    11 toml_stat
+                                    12 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -655,7 +667,7 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_stat
-                                    11 enum_stat
+                                    12 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -685,7 +697,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_stat
-                                    11 toml_stat
+                                    12 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -722,7 +734,7 @@
             select_type4:
                 (Program
                     (SymbolTable
-                        13
+                        14
                         {
                             
                         })
