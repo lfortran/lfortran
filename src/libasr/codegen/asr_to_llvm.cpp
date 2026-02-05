@@ -9943,15 +9943,13 @@ public:
                                 x.m_selector,
                                 ASRUtils::type_get_past_array(selector_var_type),
                                 module.get());
-                            // For GEP, we need the pointee type, not the pointer type
+                            // For GEP, we need the array descriptor struct type, not a pointer to it
                             llvm::Type* gep_type = static_ptr_type;
-                            if (ASRUtils::non_unlimited_polymorphic_class(
-                                ASRUtils::type_get_past_array(selector_var_type))) {
-                                // If static_ptr_type is a pointer, get the element type (pointee)
-                                if (static_ptr_type->isPointerTy()) {
-                                    gep_type = llvm::cast<llvm::PointerType>(static_ptr_type)->getElementType();
-                                }
+#if LLVM_VERSION_MAJOR < 15
+                            if (auto ptr_type = llvm::dyn_cast<llvm::PointerType>(gep_type)) {
+                                gep_type = ptr_type->getPointerElementType();
                             }
+#endif
                             static_ptr = arr_descr->get_pointer_to_data(gep_type, static_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
                                 el_type->getPointerTo(),
