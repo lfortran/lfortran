@@ -957,6 +957,7 @@ RUN(NAME format_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -2201,6 +2202,7 @@ RUN(NAME file_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2221,6 +2223,7 @@ RUN(NAME inquire_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_08 LABELS gfortran llvm)
+RUN(NAME inquire_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
@@ -2574,6 +2577,7 @@ RUN(NAME read_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_
 RUN(NAME read_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME read_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
