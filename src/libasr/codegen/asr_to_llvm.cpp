@@ -11559,9 +11559,6 @@ public:
         llvm::StructType* master_ty = llvm::StructType::create(context, "read_master_t_sync");
         master_ty->setBody(master_fields, false); // Use natural alignment with manual holes
 
-        // Destination descriptor struct: {ptr, i64}
-        llvm::StructType* dest_struct_ty = llvm::StructType::get(context, {ptr_ty, i64}, false);
-
         // --- 3. METADATA & POINTER CALCULATION ---
         ASR::ttype_t* unit_ttype_ptr = nullptr;
         bool is_string = false;
@@ -11701,7 +11698,7 @@ public:
             this->visit_expr_wrapper(x.m_values[i], true, true);
             llvm::Value* target_addr = tmp; 
 
-            // ---------- STAGE 1: LLVM PATTERN RECOVERY ----------
+            //  LLVM PATTERN RECOVERY
             if (target_addr && !target_addr->getType()->isPointerTy()) {
                 if (auto *LI = llvm::dyn_cast<llvm::LoadInst>(target_addr)) {
                     target_addr = LI->getPointerOperand();
@@ -11711,12 +11708,11 @@ public:
                 }
             }
 
-            // ---------- STAGE 2: ASR SYMBOL FALLBACK (Scalar only) ----------
+            // ASR SYMBOL FALLBACK (Scalar only)
             if (!target_addr || !target_addr->getType()->isPointerTy()) {
                 ASR::expr_t* e = x.m_values[i];
                 ASR::symbol_t* sym = nullptr;
 
-                // Safely check if it's a simple variable
                 if (ASR::is_a<ASR::Var_t>(*e)) {
                     sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(e)->m_v);
                 }
@@ -11729,13 +11725,10 @@ public:
                 }
             }
 
-            // ---------- FINAL VERIFICATION ----------
             if (!target_addr || !target_addr->getType()->isPointerTy()) {
                 continue;
             }
-
-            // Generate the call
-            llvm::CallInst* call = builder->CreateCall(read_int_fn, {master_struct, target_addr});
+            builder->CreateCall(read_int_fn, {master_struct, target_addr});
         }
     }   
     void visit_FileOpen(const ASR::FileOpen_t &x) {
