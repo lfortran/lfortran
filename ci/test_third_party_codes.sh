@@ -268,6 +268,11 @@ time_section "🧪 Testing FPM" '
   git checkout d0f89957541bdcc354da8e11422f5efcf9fedd0e
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+
+  git clean -dfx
+  rm -rf build
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop --separate-compilation"
+
   print_success "Done with FPM"
   cd ..
 '
