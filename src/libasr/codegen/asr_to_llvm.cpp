@@ -5446,9 +5446,6 @@ public:
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
             }
-            // std::cout<< "Allocated variable " << v->m_name << " of type ";
-            // type->print(llvm::outs()); llvm::outs() << "\n";
-            // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(
@@ -11568,45 +11565,6 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         // Destination descriptor struct: {ptr, i64}
         llvm::StructType* dest_struct_ty = llvm::StructType::get(context, {ptr_ty, i64}, false);
 
-        // =========================================================================
-        //
-        //          ABI FORENSICS: LLVM MASTER STRUCT LAYOUT ANALYSIS
-        //
-        // =========================================================================
-
-
-        llvm::outs() << "\n\n\n";
-        llvm::outs() << "        **********************************************************\n";
-        llvm::outs() << "        * *\n";
-        llvm::outs() << "        * DEBUG: LLVM MASTER STRUCT GENERATED          *\n";
-        llvm::outs() << "        * *\n";
-        llvm::outs() << "        **********************************************************\n";
-        
-        llvm::outs() << "        STRUCT IR: ";
-        master_ty->print(llvm::outs());
-        llvm::outs() << "\n";
-        
-        llvm::outs() << "        PACKED:    " << (master_ty->isPacked() ? "TRUE" : "FALSE") << "\n";
-        llvm::outs() << "        ----------------------------------------------------------\n";
-
-
-        // --- BYTE-LEVEL OFFSET ANALYSIS ---
-        const llvm::DataLayout &DL = module->getDataLayout();
-        const llvm::StructLayout *layout = DL.getStructLayout(master_ty);
-
-        for (unsigned i = 0; i < master_ty->getNumElements(); ++i) {
-
-                llvm::outs() << "        [FIELD " << i << "]  Offset: " 
-                             << layout->getElementOffset(i) << " bytes\n";
-
-        }
-
-        llvm::outs() << "        **********************************************************\n";
-        llvm::outs() << "\n\n\n";
-
-
-        // =========================================================================
-
         // --- 3. METADATA & POINTER CALCULATION ---
         ASR::ttype_t* unit_ttype_ptr = nullptr;
         bool is_string = false;
@@ -11634,18 +11592,16 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             l = llvm::ConstantInt::get(i64, 0);
 
             if (expr) {
-                llvm::outs() << "[DEBUG] Processing expr in get_str_meta\n";
                 this->visit_expr_wrapper(expr, true, true);
                 
                 ASR::ttype_t* etype = ASRUtils::extract_type(ASRUtils::expr_type(expr));
                 ASR::String_t* stype = ASRUtils::get_string_type(etype);
                 
                 if (stype) {
-                    llvm::outs() << "[DEBUG] stype found, calling get_string_data\n";
                     p = builder->CreateBitCast(llvm_utils->get_string_data(stype, tmp), ptr_ty);
                     l = llvm_utils->get_string_length(stype, tmp);
                 } else {
-                    llvm::outs() << "[DEBUG] No stype for this expression, skipping utilities\n";
+                    
                 }
             }
         };
@@ -11654,20 +11610,16 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         get_str_meta(x.m_advance, adv_ptr, adv_len_val); 
         get_str_meta(x.m_fmt, f_ptr, f_len_val);
 
-        llvm::outs() << "[DEBUG] Checking is_string: " << (is_string ? "YES" : "NO") << "\n";
         // --- 1. EXTRACT INTERNAL FILE (STRING) METADATA ---
         // --- 1. SAFE INTERNAL FILE (STRING) METADATA EXTRACTION ---
         if (is_string && x.m_unit) {
-            llvm::outs() << "[DEBUG] Entering Internal File (Unit) logic\n";
             
             // Extract the base type safely
             ASR::ttype_t* base_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_unit));
             
-            // FIXED: Use ASRUtils::is_character instead of manual enum comparison
             // This is the most robust way in LFortran to check this.
             if (base_type && ASRUtils::is_character(*base_type)) {
                 ASR::String_t* stype = ASRUtils::get_string_type(base_type);
-                llvm::outs() << "[DEBUG] Valid Character type confirmed, extracting metadata\n";
 
                 // visit_expr_wrapper returns the address of the descriptor (alloca)
                 this->visit_expr_wrapper(x.m_unit, true, true);
@@ -11688,7 +11640,6 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                 
                 src_ptr = builder->CreateBitCast(src_ptr, ptr_ty);
             } else {
-                llvm::outs() << "[DEBUG] ERROR: Unit not a Character! Falling back.\n";
                 src_ptr = llvm::ConstantPointerNull::get(ptr_ty);
                 src_len_val = llvm::ConstantInt::get(i64, 0);
                 is_string = false; 
@@ -11699,23 +11650,12 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             is_string = false;
         }
 
-        // ============================================================
-        // CLEAN MASTER STRUCT POPULATION (Unified & Final)
-        // ============================================================
-        
-        llvm::outs() << "[DEBUG] Allocating Master Struct\n";
         llvm::Value* master_struct = builder->CreateAlloca(master_ty, nullptr, "read_master_t_sync_inst");
-
-        // ============================================================
-        // HARDENED MASTER STRUCT POPULATION (Unified & Final)
-        // ============================================================
         
         // 1. Zero-initialize the entire struct using the exact layout size
-        // This ensures Field 10 (dest_array) is NULL to prevent runtime crashes.
-        uint64_t struct_size = layout->getSizeInBytes();
+        uint64_t struct_size = module->getDataLayout().getTypeAllocSize(master_ty);
         builder->CreateMemSet(master_struct, builder->getInt8(0), struct_size, llvm::MaybeAlign(8));
 
-        // 2. Definitive store helper (Safe against opaque pointer/type issues)
         auto store_field_final = [&](int idx, llvm::Value* val, llvm::Type* target_ty) {
             if (!val) return;
             llvm::Value* gep = builder->CreateStructGEP(master_ty, master_struct, idx);
@@ -11751,9 +11691,6 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         );
         builder->CreateCall(fmt_read_fn, {master_struct});
 
-        // 5. Value Processing Loop (Reads variables like 'x')
-        llvm::outs() << "[DEBUG] Starting value processing loop\n";
-
         llvm::FunctionType* read_int_ty = llvm::FunctionType::get(void_ty, {ptr_ty, ptr_ty}, false);
         llvm::FunctionCallee read_int_fn = module->getOrInsertFunction("_lfortran_read_int", read_int_ty);
         
@@ -11771,11 +11708,9 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             if (target_addr && !target_addr->getType()->isPointerTy()) {
                 if (auto *LI = llvm::dyn_cast<llvm::LoadInst>(target_addr)) {
                     target_addr = LI->getPointerOperand();
-                    llvm::outs() << "[DEBUG] Recovered from LoadInst\n";
                 }
                 else if (auto *GEP = llvm::dyn_cast<llvm::GetElementPtrInst>(target_addr)) {
                     target_addr = GEP->getPointerOperand();
-                    llvm::outs() << "[DEBUG] Recovered from GEP\n";
                 }
             }
 
@@ -11793,26 +11728,18 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                     uintptr_t h = (uintptr_t)sym;
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
                         target_addr = llvm_symtab[h];
-                        llvm::outs() << "[DEBUG] Recovered from llvm_symtab for scalar\n";
                     }
                 }
             }
 
             // ---------- FINAL VERIFICATION ----------
             if (!target_addr || !target_addr->getType()->isPointerTy()) {
-                llvm::outs() << "[DEBUG] CRITICAL: Pointer recovery failed for value index " << i << "\n";
                 continue;
             }
 
             // Generate the call
             llvm::CallInst* call = builder->CreateCall(read_int_fn, {master_struct, target_addr});
-            
-            llvm::outs() << "[LLVM IR DEBUG] Successfully Generated: ";
-            call->print(llvm::outs());
-            llvm::outs() << "\n";
         }
-
-        llvm::outs() << "[DEBUG] visit_FileRead completed successfully.\n";
     }   
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr;
