@@ -1,6 +1,9 @@
 #include <libasr/exception.h>
 #include <libasr/string_utils.h>
 
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
 #include <iostream>
 
 #include <lfortran/utils.h>
@@ -26,6 +29,82 @@ namespace LCompilers::CommandLineInterface {
         , argv(argv)
     {
         // empty
+    }
+
+    static std::string to_lower(const std::string &s) {
+        std::string result = s;
+        std::transform(result.begin(), result.end(), result.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+        return result;
+    }
+
+    static std::string group_key(const std::string &group_name) {
+        std::string key;
+        for (char c : group_name) {
+            if (c == ' ') break;
+            key += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return key;
+    }
+
+    static std::vector<std::string> get_groups(const CLI::App &app) {
+        std::vector<std::string> groups;
+        for (const auto *opt : app.get_options()) {
+            std::string g = opt->get_group();
+            if (g.empty() || g == "Options") continue;
+            if (std::find(groups.begin(), groups.end(), g) == groups.end()) {
+                groups.push_back(g);
+            }
+        }
+        return groups;
+    }
+
+    static std::string find_help_category_arg(int argc, const char *const *argv,
+                                              const std::vector<std::string> &args) {
+        if (argv != nullptr) {
+            for (int i = 1; i < argc; ++i) {
+                std::string arg = argv[i];
+                if (arg.rfind("--help=", 0) == 0) {
+                    return arg.substr(7);
+                }
+            }
+        } else {
+            for (const auto &arg : args) {
+                if (arg.rfind("--help=", 0) == 0) {
+                    return arg.substr(7);
+                }
+            }
+        }
+        return "";
+    }
+
+    static void handle_help_category(const CLI::App &app, const std::string &help_arg) {
+        std::string query = to_lower(help_arg);
+        std::vector<std::string> groups = get_groups(app);
+        for (const auto &group_name : groups) {
+            std::string key = group_key(group_name);
+            if (key == query || key.rfind(query, 0) == 0) {
+                std::cout << group_name << ":\n";
+                for (const auto *opt : app.get_options([&group_name](const CLI::Option *o) {
+                    return o->get_group() == group_name;
+                })) {
+                    std::cout << "  " << std::left << std::setw(30)
+                              << opt->get_name(false, true) << " "
+                              << opt->get_description() << "\n";
+                }
+                std::exit(0);
+            }
+        }
+        std::cerr << "Unknown help category: " << help_arg << "\n";
+        std::cerr << "Available categories: ";
+        bool first = true;
+        for (const auto &group_name : groups) {
+            if (!first) std::cerr << ", ";
+            std::cerr << group_key(group_name);
+            first = false;
+        }
+        std::cerr << "\n";
+        std::exit(1);
     }
 
     auto LFortranCommandLineParser::parse() -> void {
@@ -226,6 +305,11 @@ namespace LCompilers::CommandLineInterface {
 
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
+
+        std::string help_arg = find_help_category_arg(argc, argv, args);
+        if (!help_arg.empty()) {
+            handle_help_category(app, help_arg);
+        }
 
         if (argv != nullptr) {
             app.parse(argc, argv);

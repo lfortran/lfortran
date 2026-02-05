@@ -352,7 +352,12 @@ public:
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
-        add_assignment_procedures();
+        try {
+            add_assignment_procedures();
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw;
+        }
+
         tmp = tmp0;
         // Add module dependencies
         R *m = ASR::down_cast2<R>(tmp);
@@ -1948,26 +1953,86 @@ public:
             ASR::symbol_t *s = current_scope->get_symbol(var.first);
             if (s) {
                 ASR::ttype_t *t = ASRUtils::symbol_type(s);
-                if (ASR::is_a<ASR::Array_t>(*t)) {
-                    ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
-                    a->m_physical_type = ASR::array_physical_typeType::SIMDArray;
-                    // TODO: check all the SIMD requirements here:
-                    // * 1D array
-                    // * the right, compile time, size, compatible type
-                    // * Not allocatable, or pointer
-                } else {
+                // allocatable
+                if (ASR::is_a<ASR::Allocatable_t>(*t)) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD arrays cannot be allocatable: `" + var.first + "`",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                // pointers
+                if (ASR::is_a<ASR::Pointer_t>(*t)) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD arrays cannot be pointers: `" + var.first + "`",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                // array
+                if (!ASR::is_a<ASR::Array_t>(*t)) {
                     diag.add(diag::Diagnostic(
                         "The SIMD variable `" + var.first + "` must be an array",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {t->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
                 }
+                ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+                // 1D
+                if (a->n_dims != 1) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD arrays must be 1 dimensional, but `" + var.first +
+                        "` has " + std::to_string(a->n_dims) + " dimensions",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                // compile time constant size
+                ASR::dimension_t &dim = a->m_dims[0];
+                if (!dim.m_length) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD array `" + var.first + "` must have an explicit size",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                bool is_constant = ASR::is_a<ASR::IntegerConstant_t>(*dim.m_length);
+                if (!is_constant) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD array `" + var.first +
+                        "` must have a compile-time constant size "
+                        "(integer literal or parameter)",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                // Real or Integer
+                ASR::ttype_t *elem_type = a->m_type;
+                if (!ASR::is_a<ASR::Real_t>(*elem_type) &&
+                    !ASR::is_a<ASR::Integer_t>(*elem_type)) {
+                    diag.add(diag::Diagnostic(
+                        "SIMD arrays must have Real or Integer element type, but `" +
+                        var.first + "` has an incompatible type",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                    continue;
+                }
+                // Mark as SIMD array
+                a->m_physical_type = ASR::array_physical_typeType::SIMDArray;
+
             } else {
                 diag.add(diag::Diagnostic(
-                    "The SIMD variable `" + var.first + "` not declared",
+                    "The SIMD variable `" + var.first + "` is not declared",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {var.second})}));
-                throw SemanticAbort();
+                if ( !compiler_options.continue_compilation ) throw SemanticAbort();
             }
 
         }
@@ -2558,9 +2623,91 @@ public:
         if( assgn_proc_names.empty() ) {
             return ;
         }
-        std::pair<const std::string, std::vector<std::string>>
-            proc = {"~assign", assgn_proc_names};
-        add_custom_operator(proc, assgn[current_scope]);
+        bool any_error = false;
+        for (const std::string &name : assgn_proc_names) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+            if (!sym) {
+                diag.add(Diagnostic(
+                    "Assignment procedure `" + name + "` not found",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+            sym = ASRUtils::symbol_get_past_external(sym);
+            // Must be a subroutine
+            if (!ASR::is_a<ASR::Function_t>(*sym)) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must be a subroutine",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+
+            if (f->m_return_var != nullptr) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must not return a value",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+            if (f->n_args != 2) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must have exactly two arguments",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+            ASR::Var_t *lhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[0]);
+            ASR::Var_t *rhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[1]);
+
+            ASR::Variable_t *lhs =
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(lhs_var->m_v));
+            ASR::Variable_t *rhs =
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(rhs_var->m_v));
+            // Intent of LHS must be Out/InOut and RHS must be In
+            if (!(lhs->m_intent == ASR::intentType::Out ||
+                lhs->m_intent == ASR::intentType::InOut)) {
+                diag.add(Diagnostic(
+                    "First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+            if (rhs->m_intent != ASR::intentType::In) {
+                diag.add(Diagnostic(
+                    "Second argument of defined assignment must have INTENT(IN)",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {sym->base.loc})}
+                ));
+                any_error = true;
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
+        }
+        if(!any_error) {
+            std::pair<const std::string, std::vector<std::string>>
+                proc = {"~assign", assgn_proc_names};
+
+            add_custom_operator(proc, assgn[current_scope]);
+        }
     }
 
     void add_generic_procedures() {

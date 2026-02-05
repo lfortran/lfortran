@@ -1334,8 +1334,7 @@ public:
         if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x.m_type);
             for (size_t i = 0; i < array_t->n_dims; i++) {
-                require(array_t->m_dims[i].m_start == nullptr &&
-                        array_t->m_dims[i].m_length == nullptr,
+                require(array_t->m_dims[i].m_length == nullptr,
                         "Array type in pointer must have deferred shape");
             }
         }

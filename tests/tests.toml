@@ -2020,6 +2020,14 @@ filename = "../integration_tests/format_53.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_57.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_58.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_09.f90"
 run = true
 
@@ -3277,6 +3285,10 @@ fixed_form_cc_asr = true
 [[test]]
 filename = "errors/continue_compilation_ff_2.f"
 fixed_form_cc_asr = true
+
+[[test]]
+filename = "errors/continue_compilation_simd.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/mre_segfault.f90"

@@ -52,6 +52,46 @@ semantic error: Dummy argument 'a' not defined
 93 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Defined assignment procedure must not return a value
+   --> tests/errors/continue_compilation_1.f90:112:5 - 116:32
+    |
+112 |        integer function assign_func_bad(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+116 |        end function assign_func_bad
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Defined assignment procedure must have exactly two arguments
+   --> tests/errors/continue_compilation_1.f90:118:5 - 120:37
+    |
+118 |        subroutine assign_wrong_nargs(lhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+120 |        end subroutine assign_wrong_nargs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)
+   --> tests/errors/continue_compilation_1.f90:122:5 - 125:33
+    |
+122 |        subroutine assign_bad_lhs(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+125 |        end subroutine assign_bad_lhs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Second argument of defined assignment must have INTENT(IN)
+   --> tests/errors/continue_compilation_1.f90:127:5 - 130:33
+    |
+127 |        subroutine assign_bad_rhs(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+130 |        end subroutine assign_bad_rhs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Interface 'f_missing' is referenced but not defined
   --> tests/errors/continue_compilation_1.f90:22:9
    |
