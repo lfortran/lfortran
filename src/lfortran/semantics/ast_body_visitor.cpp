@@ -4345,8 +4345,17 @@ public:
                                         if (start_const && end_const) {
                                             // Both are constants: size = (end - start) / step + 1
                                             dim_b_int = (end_val - start_val) / step_val + 1;
-                                        } else if (ASRUtils::expr_equal(start, end)) {
-                                            // Same expression (e.g., x(i:i), x(i+1:i+1)): size is 1
+                                        } else if ((ASR::is_a<ASR::Var_t>(*start) ||
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*start) ||
+                                                    ASR::is_a<ASR::IntegerBinOp_t>(*start) ||
+                                                    ASR::is_a<ASR::Cast_t>(*start)) &&
+                                                   (ASR::is_a<ASR::Var_t>(*end) ||
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*end) ||
+                                                    ASR::is_a<ASR::IntegerBinOp_t>(*end) ||
+                                                    ASR::is_a<ASR::Cast_t>(*end)) &&
+                                                   ASRUtils::expr_equal(start, end)) {
+                                            // Same scalar index expression (e.g., x(i:i), x(i+1:i+1)):
+                                            // the resulting section has extent 1.
                                             dim_b_int = 1;
                                         }
                                     }
