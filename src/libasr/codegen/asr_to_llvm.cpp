@@ -9949,7 +9949,7 @@ public:
                                 ASRUtils::type_get_past_array(selector_var_type))) {
                                 // If static_ptr_type is a pointer, get the element type (pointee)
                                 if (static_ptr_type->isPointerTy()) {
-                                    gep_type = llvm::cast<llvm::PointerType>(static_ptr_type)->getPointerElementType();
+                                    gep_type = llvm::cast<llvm::PointerType>(static_ptr_type)->getElementType();
                                 }
                             }
                             static_ptr = arr_descr->get_pointer_to_data(gep_type, static_ptr);
