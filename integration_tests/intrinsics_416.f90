@@ -1,23 +1,24 @@
-! Test selected_real_kind chain with constant nkr parameter (issue #4726)
-! This is the constant parameter case that triggered the ICE
+! Test for https://github.com/lfortran/lfortran/issues/6124
+! Subnormal floating point values (epsilon*tiny, nearest, transfer)
 program intrinsics_416
     implicit none
-    integer, parameter :: kr1 = selected_real_kind(1), maxkr = 3
-    integer, parameter :: skr2 = selected_real_kind(precision(1.0_kr1) + 1)
-    integer, parameter :: kr2 = merge(skr2, kr1, skr2 > 0)
-    integer, parameter :: skr3 = selected_real_kind(precision(1.0_kr2) + 1)
-    integer, parameter :: kr3 = merge(skr3, kr2, skr3 > 0)
-    integer, parameter :: allkr(maxkr + 1) = [kr1, kr2, kr3, kr3]
-    integer, parameter :: nkr = minloc(abs(allkr(1:maxkr) - allkr(2:maxkr + 1)), 1)
+    integer, parameter :: i4 = kind(1), i8 = selected_int_kind(15)
+    real :: r32_subnorm, r32_nearest, r32_transfer
+    real(8) :: r64_subnorm, r64_nearest, r64_transfer
 
-    call realkinds(nkr)
+    r32_subnorm = epsilon(1.0) * tiny(1.0)
+    r32_nearest = nearest(0.0, 1.0)
+    r32_transfer = transfer(1_i4, 1.0)
 
-contains
-    subroutine realkinds(nkr)
-        integer, intent(in) :: nkr
-        integer :: goodkr(nkr)
+    r64_subnorm = epsilon(1d0) * tiny(1d0)
+    r64_nearest = nearest(0d0, 1d0)
+    r64_transfer = transfer(1_i8, 1d0)
 
-        goodkr = allkr(1:nkr)
-        if (nkr < 2) error stop
-    end subroutine realkinds
-end program intrinsics_416
+    print "(ES15.7)", r32_subnorm, r32_nearest, r32_transfer
+    print "(ES24.16)", r64_subnorm, r64_nearest, r64_transfer
+
+    if (r32_subnorm /= r32_nearest) error stop
+    if (r32_subnorm /= r32_transfer) error stop
+    if (r64_subnorm /= r64_nearest) error stop
+    if (r64_subnorm /= r64_transfer) error stop
+end program

@@ -1,20 +1,10 @@
-! Test external real function passed as argument
-! Related to issue #6783
-module external_15_mod
-  implicit none
-  integer, parameter:: dp=kind(1d0)
-contains
-  subroutine root2sqdp(sqrt)
-    real(dp),external::sqrt
-    real(dp) :: result
-    result = sqrt(2.0_dp)**2
-    if (abs(result - 2.0_dp) > 1.0d-14) error stop
-  end subroutine root2sqdp
-end module external_15_mod
+! Test external character function shadowing intrinsic sin
+! Related to issue #6702
+implicit none
+character(8), external:: sin
+if (sin() /= 'Peccavi!') error stop
+end program
 
-program external_15
-  use external_15_mod
-  implicit none
-  intrinsic dsqrt
-  call root2sqdp(dsqrt)
-end program external_15
+character(8) function sin()
+  sin = 'Peccavi!'
+end function sin

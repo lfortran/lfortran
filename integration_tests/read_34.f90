@@ -1,19 +1,16 @@
-! Test for https://github.com/lfortran/lfortran/issues/8933
-! Internal files with explicit unit= keyword
-program read_34
-    implicit none
-    character(32) :: string
-    integer :: ival
+program read_fmt_tabs
+  implicit none
+  character(*), parameter :: infmt = '(I6, T1, I6, TL6, I6, TL9, I6, t1, tr2, i3)'
+  integer :: i, ia(5)
+  integer :: iounit
+  open (newunit=iounit, file='fort.data', form='formatted')
+  write (iounit,'(a)') '12345'
 
-    ! Test internal READ with unit= keyword
-    string = '1234'
-    read(unit=string, fmt='(I4)') ival
-    if (ival /= 1234) error stop "Internal read with unit= failed"
-
-    ! Test internal WRITE with unit= keyword
-    ival = -42
-    write(unit=string, fmt='(I6)') ival
-    if (adjustl(string) /= '-42') error stop "Internal write with unit= failed"
-
-    print *, "PASSED: internal files with unit= keyword"
-end program read_34
+  rewind (iounit)
+  ia = -42
+  read (iounit, infmt) (ia(i), i=1, 5)
+  if (.not. all(ia(1:4) == 12345)) error stop
+  if (ia(5) /= 345) error stop
+  close (iounit)
+  print *, "all tests passed"
+end program read_fmt_tabs

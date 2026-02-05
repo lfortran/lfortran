@@ -1,11 +1,15 @@
-! Test format string variable with trailing spaces (issue #4056)
-! The bug was that trailing spaces in format string caused parsing error
 program format_54
-    implicit none
-    character(12) :: fmt = "(2(1X,A))"
-    character(80) :: output
+   implicit none
 
-    ! fmt is "(2(1X,A))   " with 3 trailing spaces - this was the bug
-    write(output, fmt) 'Hello', 'world!'
-    if (trim(adjustl(output)) /= 'Hello world!') error stop
+   character(4) :: fmt(4)
+   character(len=32) :: actual
+   character(len=*), parameter :: expected = 'hello world!'
+
+   fmt = [ '("he', 'llo ', 'worl', 'd!")' ]
+
+   actual = ''
+   write(actual, fmt)
+
+   if (trim(actual) /= expected) error stop
+
 end program format_54

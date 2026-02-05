@@ -1254,6 +1254,84 @@ public:
         //check positional fmt argument (second arg)
         if (a_fmt != nullptr) {
             ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
+            bool is_array = ASRUtils::is_array(fmt_type);
+            if (is_array && ASRUtils::is_character(*fmt_type)) {
+                // Create temporary string variable to hold format string
+                // by concatenating all elements of the array
+                std::string fmt_string_name = current_scope->get_unique_name("_fmt_string");
+                ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                    al, a_fmt->base.loc,
+                    ASRUtils::TYPE(ASR::make_String_t(
+                    al, a_fmt->base.loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+                ASR::symbol_t* fmt_string_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, a_fmt->base.loc,
+                    current_scope, s2c(al, fmt_string_name),
+                nullptr, 0, ASR::intentType::Local, nullptr,
+                nullptr, ASR::storage_typeType::Default, str_type,
+                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false, 
+                false, false, nullptr, false, false));
+                current_scope->add_symbol(fmt_string_name, fmt_string_sym);
+                ASR::expr_t* fmt_string_var = ASRUtils::EXPR(ASR::make_Var_t(
+                    al, a_fmt->base.loc, fmt_string_sym));
+                
+                ASRUtils::ASRBuilder b(al, a_fmt->base.loc);
+
+                ASR::ttype_t* empty_str_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, a_fmt->base.loc, 1, b.i32(0),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                ASR::expr_t* empty_str = b.StringConstant("", empty_str_type);
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false));
+                tmp_vec.push_back((ASR::asr_t*)assign_stmt);
+
+                std::string loop_var = current_scope->get_unique_name("i");
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_fmt->base.loc, 4));
+                ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, a_fmt->base.loc,
+                    current_scope, s2c(al, loop_var), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, int_type, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false, false, false, nullptr,
+                    false, false));
+                current_scope->add_symbol(loop_var, loop_var_sym);
+                ASR::expr_t* loop_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, a_fmt->base.loc, loop_var_sym));
+
+                ASR::expr_t* lb = b.ArrayLBound(a_fmt, 1);
+                ASR::expr_t* ub = b.ArrayUBound(a_fmt, 1);
+
+                ASR::do_loop_head_t head;
+                head.m_v = loop_var_expr;
+                head.m_start = lb;
+                head.m_end = ub;
+                head.m_increment = b.i32(1);
+                head.loc = a_fmt->base.loc;
+
+                Vec<ASR::array_index_t> args; args.reserve(al, 1);
+                ASR::array_index_t idx; 
+                idx.loc = a_fmt->base.loc;
+                idx.m_left = nullptr; idx.m_right = loop_var_expr; idx.m_step = nullptr;
+                args.push_back(al, idx);
+
+                ASR::expr_t* array_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                    al, a_fmt->base.loc, a_fmt, args.p, args.n, 
+                    ASRUtils::type_get_past_array(fmt_type),
+                    ASR::arraystorageType::ColMajor, nullptr));
+
+                ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
+                ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false));
+                
+                Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+                body.push_back(al, body_assign);
+
+                ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(
+                    al, a_fmt->base.loc, nullptr, head, body.p, body.n, nullptr, 0));
+                
+                tmp_vec.push_back((ASR::asr_t*)do_loop);
+
+                a_fmt = fmt_string_var;
+            }
             if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
                 diag.add(Diagnostic(
                     "Assigned format (using integer variable as format specifier) is not supported. "
@@ -2312,12 +2390,23 @@ public:
                         ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
                         if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
                             if (ASRUtils::is_array(mold_type)) {
+                                // Compute m_len_expr for character arrays
+                                ASR::expr_t* len_expr = alloc_args_vec[i].m_len_expr;
+                                if (len_expr == nullptr && ASRUtils::is_character(*ASRUtils::type_get_past_array(mold_type))) {
+                                    len_expr = ASRUtils::EXPR(
+                                        ASR::make_StringLen_t(al, x.base.base.loc, mold,
+                                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                compiler_options.po.default_integer_kind)),
+                                            nullptr
+                                        )
+                                    );
+                                }
                                 if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                     ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
-                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = nullptr;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_array_type->m_dims;
@@ -2339,7 +2428,7 @@ public:
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
-                                    new_arg.m_len_expr = nullptr;
+                                    new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = nullptr;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_dims_vec.p;
@@ -2374,11 +2463,22 @@ public:
                     } else if ( source_cond && ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source))) ) {
                         ASR::ttype_t* source_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(source));
                         ASR::alloc_arg_t new_arg;
+                        // Compute m_len_expr for character arrays
+                        ASR::expr_t* len_expr = alloc_args_vec[i].m_len_expr;
+                        if (len_expr == nullptr && ASRUtils::is_character(*ASRUtils::type_get_past_array(source_type))) {
+                            len_expr = ASRUtils::EXPR(
+                                ASR::make_StringLen_t(al, x.base.base.loc, source,
+                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                        compiler_options.po.default_integer_kind)),
+                                    nullptr
+                                )
+                            );
+                        }
                         if (ASR::down_cast<ASR::Array_t>(source_type)->m_dims[0].m_length != nullptr) {
                             ASR::Array_t* source_array_type = ASR::down_cast<ASR::Array_t>(source_type);
                             new_arg.loc = alloc_args_vec[i].loc;
                             new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_len_expr = len_expr;
                             new_arg.m_type = nullptr;
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_array_type->m_dims;
@@ -2399,7 +2499,7 @@ public:
                             }
                             new_arg.loc = alloc_args_vec[i].loc;
                             new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_len_expr = len_expr;
                             new_arg.m_type = nullptr;
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_dims_vec.p;
@@ -3154,11 +3254,40 @@ public:
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
-                    SymbolTable* current_scope_copy = current_scope;
-                    current_scope = parent_scope;
                     AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
-                    transform_stmts(select_type_default, class_default->n_body, class_default->m_body);
-                    current_scope = current_scope_copy;
+                    if( assoc_variable ) {
+                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(selector_variable_type);
+                        if (!ASR::is_a<ASR::Pointer_t>(*target_type)) {
+                            target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
+                        }
+                        assoc_variable->m_type = target_type;
+                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                        assoc_variable->m_dependencies = selector_variable_dependencies;
+                        assoc_variable->n_dependencies = selector_variable_n_dependencies;
+                    }
+                    Vec<ASR::stmt_t*> class_default_body;
+                    class_default_body.reserve(al, class_default->n_body);
+                    if( assoc_sym && class_default->n_body > 0 ) {
+                        class_default_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
+                            class_default->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            class_default->base.base.loc, assoc_sym)), m_selector)) );
+                    }
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, class_default->base.base.loc,
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(class_default_body, class_default->n_body, class_default->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = class_default_body.p;
+                    block_t_->n_body = class_default_body.size();
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_default->base.base.loc, -1, block_sym)));
+                    for( auto& stmt: block_call_stmt ) {
+                        select_type_default.push_back(al, stmt);
+                    }
                     break;
                 }
                 default: {

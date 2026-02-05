@@ -1,20 +1,21 @@
-! Test inquire iolength with different type kinds (issue #4640)
 program inquire_08
-    use iso_fortran_env, only: int8, int16, int32, int64, real32, real64
     implicit none
-    integer :: len1, len2, len3, len4, len5, len6
+    integer :: ioerr, nxtrec, recl, unit_no
 
-    inquire(iolength=len1) 42_int8
-    inquire(iolength=len2) 42_int16
-    inquire(iolength=len3) 42_int32
-    inquire(iolength=len4) 42_int64
-    inquire(iolength=len5) 4.2_real32
-    inquire(iolength=len6) 4.2_real64
+    inquire (iolength=recl) 42, 42.0, 'xyzzy'
+    if (recl /= 13) error stop "iolength wrong"
 
-    if (len1 /= 1) error stop
-    if (len2 /= 2) error stop
-    if (len3 /= 4) error stop
-    if (len4 /= 8) error stop
-    if (len5 /= 4) error stop
-    if (len6 /= 8) error stop
-end program inquire_08
+    ioerr = -42
+    open (newunit=unit_no, file='test_inquire.dat', status='replace', &
+          access='direct', recl=recl, form='unformatted', iostat=ioerr)
+    if (ioerr /= 0) error stop "open failed"
+
+    ioerr = -42
+    nxtrec = -43
+    inquire (unit_no, iostat=ioerr, nextrec=nxtrec)
+    if (ioerr /= 0) error stop "iostat should be 0"
+    if (nxtrec /= 1) error stop "nextrec should be 1"
+
+    close (unit_no, status='delete')
+    print *, "All tests passed"
+end program

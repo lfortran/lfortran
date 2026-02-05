@@ -2735,11 +2735,37 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
         for (uint32_t j = 0; j < label->n_spans; j++) {
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
+            free(label->message);
         }
     }
 
     fflush(stderr);
     free(error_msg);
+}
+
+LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    char *formatted = (char*)malloc((size_t)needed + 1);
+    if (!formatted) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    vsnprintf(formatted, (size_t)needed + 1, format, args);
+    va_end(args);
+    return formatted;
 }
 
 // TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before
@@ -3596,6 +3622,25 @@ LFORTRAN_API void _lfortran_strcpy(
         if (*lhs == NULL) *lhs = (char*)malloc(MAX((*lhs_len), 1) * sizeof(char));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
+        if (*lhs != NULL && rhs != NULL) {
+            char* lhs_start = *lhs;
+            char* lhs_end = lhs_start + (*lhs_len);
+            if (rhs >= lhs_start && rhs < lhs_end) {
+                if (rhs_len <= *lhs_len) {
+                    memmove(*lhs, rhs, rhs_len * sizeof(char));
+                    *lhs_len = rhs_len;
+                    return;
+                } else {
+                    char* tmp = (char*)malloc(MAX(rhs_len, 1) * sizeof(char));
+                    memcpy(tmp, rhs, rhs_len * sizeof(char));
+                    *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
+                    *lhs_len = rhs_len;
+                    memcpy(*lhs, tmp, rhs_len * sizeof(char));
+                    free(tmp);
+                    return;
+                }
+            }
+        }
         *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
         *lhs_len = rhs_len;
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
@@ -4647,8 +4692,8 @@ _lfortran_open(int32_t unit_num,
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -4902,7 +4947,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char* direct, int64_t direct_len,
                                     char* form, int64_t form_len,
                                     char* formatted, int64_t formatted_len,
-                                    char* unformatted, int64_t unformatted_len) {
+                                    char* unformatted, int64_t unformatted_len,
+                                    int32_t *iostat, int32_t *nextrec) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -5042,6 +5088,13 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
             }
         }
+        if (nextrec != NULL && access_id == 2 && fp != NULL) {
+            long current_pos = ftell(fp);
+            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+        }
+        if (iostat != NULL) {
+            *iostat = 0;
+        }
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -5164,6 +5217,13 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             } else {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
             }
+        }
+        if (nextrec != NULL && access_id == 2 && fp != NULL) {
+            long current_pos = ftell(fp);
+            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+        }
+        if (iostat != NULL) {
+            *iostat = 0;
         }
     }
 }
@@ -6683,6 +6743,7 @@ typedef struct {
             size_t pos;
         } str;
     };
+    long record_start_pos;
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -7094,6 +7155,11 @@ static void handle_read_T(InputSource *inputSource, int position)
             target_pos = (int)inputSource->str.len;
         }
         inputSource->str.pos = target_pos;
+    } else if (inputSource->inputMethod == INPUT_FILE) {
+        if (inputSource->file) {
+            long target_pos = inputSource->record_start_pos + (position - 1);
+            fseek(inputSource->file, target_pos, SEEK_SET);
+        }
     }
 }
 
@@ -7124,7 +7190,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, ...) {
     
-    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}};
+    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0};
     
     va_list args;
     va_start(args, no_of_args);
@@ -7182,6 +7248,9 @@ static void common_formatted_read(InputSource *inputSource,
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, va_list *args, bool blank_zero)
 {
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
     const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);

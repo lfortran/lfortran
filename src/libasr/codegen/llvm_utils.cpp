@@ -1015,7 +1015,9 @@ namespace LCompilers {
                     (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) ) {
                     type = type->getPointerTo();
                 }
-                if( (arg->m_intent == ASRUtils::intent_out || (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
+                if( (arg->m_intent == ASRUtils::intent_out ||
+                     arg->m_intent == ASRUtils::intent_inout ||
+                     (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
                 }
@@ -9021,9 +9023,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // Create the function in the module
         std::string func_name = "_copy_" + ASRUtils::intrinsic_type_to_str_with_kind(
             type, ASRUtils::extract_kind_from_ttype_t(type));
+        if (llvm::Function *existing = module->getFunction(func_name)) {
+            return existing;
+        }
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            llvm::Function::ExternalLinkage,
+            llvm::Function::LinkOnceODRLinkage,
             func_name,
             module
         );

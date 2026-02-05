@@ -1,16 +1,23 @@
-! Test for https://github.com/lfortran/lfortran/issues/8201
-! Non-default I/O kind with selected_char_kind and encoding
+! Test selected_real_kind chain and allocatable scalar (issue #4726)
 program intrinsics_415
-    use iso_fortran_env, only: output_unit
     implicit none
-    integer, parameter :: ucs4 = selected_char_kind('ISO_10646')
-    integer, parameter :: utf8 = selected_char_kind('UTF-8')
+    integer, parameter :: kr1 = selected_real_kind(1), maxkr = 3
+    integer, parameter :: skr2 = selected_real_kind(precision(1.0_kr1) + 1)
+    integer, parameter :: kr2 = merge(skr2, kr1, skr2 > 0)
+    integer, parameter :: skr3 = selected_real_kind(precision(1.0_kr2) + 1)
+    integer, parameter :: kr3 = merge(skr3, kr2, skr3 > 0)
+    integer, parameter :: allkr(maxkr + 1) = [kr1, kr2, kr3, kr3]
+    integer :: nkr
 
-    if (ucs4 < 0) error stop "ISO_10646 should be supported"
+    nkr = minloc(abs(allkr(1:maxkr) - allkr(2:maxkr + 1)), 1)
+    call realkinds(nkr)
 
-    ! The actual issue was that open with encoding='UTF-8' failed with:
-    ! "semantic error: Invalid argument `encoding` supplied"
-    open(output_unit, encoding='UTF-8')
+contains
+    subroutine realkinds(nkr)
+        integer, intent(in) :: nkr
+        integer :: goodkr(nkr)
 
-    print *, "PASSED: open with encoding and selected_char_kind"
+        goodkr = allkr(1:nkr)
+        if (nkr < 2) error stop
+    end subroutine realkinds
 end program intrinsics_415

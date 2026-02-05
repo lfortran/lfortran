@@ -1,15 +1,15 @@
-! Test reading from character variable into integer array
-! Related to issue #6811
 program read_33
-  implicit none
-  character(23):: cinput='42 666 -42 -666 10 9 0 '
-  integer      :: input(7)
-  read(cinput,*)  input
-  if (input(1) /= 42) error stop
-  if (input(2) /= 666) error stop
-  if (input(3) /= -42) error stop
-  if (input(4) /= -666) error stop
-  if (input(5) /= 10) error stop
-  if (input(6) /= 9) error stop
-  if (input(7) /= 0) error stop
-end program
+    implicit none
+    integer :: ivi, jvi
+    integer :: i1i(5)
+
+    open(10, file='read_33.txt', status='replace')
+    write(10, '(6I5)') 3, 10, 20, 30, 0, 0
+    close(10)
+
+    open(10, file='read_33.txt', status='old')
+    read(10, '(100I5)') ivi, (i1i(jvi), jvi=1,ivi)
+    close(10, status='delete')
+
+    if (ivi /= 3 .or. any(i1i(1:3) /= [10, 20, 30])) error stop    
+end program read_33

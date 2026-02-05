@@ -1,23 +1,25 @@
-! Test for https://github.com/lfortran/lfortran/issues/5901
-! Allocatable character with internal write in pure function, merge intrinsic
-module integertostring_99
-    implicit none
-    integer :: n(2) = [42, -1]
-contains
-    pure function i0(n)
-        character(:), allocatable :: i0
-        integer, intent(in) :: n
-        character(range(n)+2) :: result
-        write(result, "(I0)") n
-        i0 = trim(adjustl(result))
-    end function i0
-end module integertostring_99
-
+! Test for https://github.com/lfortran/lfortran/issues/4888
+! Test for https://github.com/lfortran/lfortran/issues/4889
+! Character array concatenation in write statement
 program string_99
-    use integertostring_99, only: i0, n
     implicit none
-    character(:), allocatable :: string
-    string = 'The answer is '//merge(i0(n(1)), i0(n(2)), n(1) > 0)//'.'
-    print *, '"'//string//'"'
-    if (string /= 'The answer is 42.') error stop
-end program
+    character(3) :: c1(6) = 'ab'
+    character :: c2(6)*3 = 'ab'
+    character(100) :: line
+    integer :: i
+
+    do i = 1, 6
+        if (c1(i) /= 'ab ') error stop
+        if (len(c1(i)) /= 3) error stop
+        if (c2(i) /= 'ab ') error stop
+        if (len(c2(i)) /= 3) error stop
+    end do
+
+    write(line, "(6A)") c1//' '
+    if (trim(line) /= 'ab  ab  ab  ab  ab  ab') error stop
+
+    write(line, "(*(A))") 'c = "', c2, '"'
+    if (trim(line) /= 'c = "ab ab ab ab ab ab "') error stop
+
+    print *, "PASS"
+end program string_99

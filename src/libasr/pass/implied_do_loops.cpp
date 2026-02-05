@@ -458,7 +458,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         } else {
             if( is_allocatable ) {
                 result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
-                    ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_allocatable_pointer(
                         ASRUtils::duplicate_type_with_empty_dims(al, x->m_type))));
                 // Always defer string length for runtime-sized strings
                 if (element_type && ASRUtils::is_character(*element_type)) {
@@ -467,7 +467,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 }
             } else {
                 result_type_ = ASRUtils::duplicate_type(al,
-                    ASRUtils::type_get_past_allocatable(x->m_type), &dims);
+                    ASRUtils::type_get_past_allocatable_pointer(x->m_type), &dims);
                 // Keep fixed-size type as is; allocation will handle string length.
             }
         }

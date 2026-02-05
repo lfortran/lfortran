@@ -17,13 +17,29 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         IsAllocatedCalled(std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
             scope2var(scope2var_) {}
 
+        // Push symbol to all scopes from current_scope up to and including the
+        // scope where the symbol is defined. This handles cases where operations
+        // like reallocate happen inside nested scopes (e.g., associate blocks)
+        // but the variable is defined in an outer scope.
+        void push_to_scopes_until_symbol_scope(ASR::symbol_t* sym) {
+            SymbolTable* sym_scope = ASRUtils::symbol_parent_symtab(sym);
+            SymbolTable* scope = current_scope;
+            while (scope != nullptr) {
+                scope2var[scope].push_back(sym);
+                if (scope->get_counter() == sym_scope->get_counter()) {
+                    break;
+                }
+                scope = scope->parent;
+            }
+        }
+
         void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
             if( x.m_impure_intrinsic_id == static_cast<int64_t>(
                 ASRUtils::IntrinsicImpureFunctions::Allocated) ) {
                 LCOMPILERS_ASSERT(x.n_args == 1);
                 if( ASR::is_a<ASR::Var_t>(*x.m_args[0]) ) {
-                    scope2var[current_scope].push_back(
-                        ASR::down_cast<ASR::Var_t>(x.m_args[0])->m_v);
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[0])->m_v;
+                    push_to_scopes_until_symbol_scope(sym);
                 }
             }
         }
@@ -34,8 +50,8 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                 if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
                     ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
-                        scope2var[current_scope].push_back(
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
+                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
+                        push_to_scopes_until_symbol_scope(sym);
                     }
                 }
             }
@@ -47,8 +63,8 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                 if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
                     ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
-                        scope2var[current_scope].push_back(
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
+                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
+                        push_to_scopes_until_symbol_scope(sym);
                     }
                 }
             }
@@ -59,8 +75,8 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                 if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_a) ) {
-                        scope2var[current_scope].push_back(
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_a)->m_v);
+                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_a)->m_v;
+                        push_to_scopes_until_symbol_scope(sym);
                     }
                 }
             }
@@ -90,8 +106,8 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                         alloc_arg.m_dims, alloc_arg.n_dims, true) ||
                     is_array_size_called_on_pointer(alloc_arg.m_dims, alloc_arg.n_dims) ) {
                     if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
-                        scope2var[current_scope].push_back(
-                                ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
+                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                        push_to_scopes_until_symbol_scope(sym);
                     }
                 }
             }
@@ -101,12 +117,12 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_Assignment(x);
             if (x.m_move_allocation) {
                 if( ASR::is_a<ASR::Var_t>(*x.m_target) ) {
-                    scope2var[current_scope].push_back(
-                        ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                    push_to_scopes_until_symbol_scope(sym);
                 }
                 if( ASR::is_a<ASR::Var_t>(*x.m_value) ) {
-                    scope2var[current_scope].push_back(
-                        ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_value)->m_v;
+                    push_to_scopes_until_symbol_scope(sym);
                 }
             }
         }
@@ -306,7 +322,8 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         void visit_Associate(const ASR::Associate_t& x) {
             if( ASRUtils::is_fixed_size_array(
-                    ASRUtils::expr_type(x.m_value)) ) {
+                    ASRUtils::expr_type(x.m_value)) &&
+                !ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
                 xx.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, x.m_value->base.loc, xx.m_value,

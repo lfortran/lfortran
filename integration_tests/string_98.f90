@@ -1,25 +1,15 @@
-! Test for https://github.com/lfortran/lfortran/issues/4888
-! Test for https://github.com/lfortran/lfortran/issues/4889
-! Character array concatenation in write statement
-program string_98
+program trim_param_concat
     implicit none
-    character(3) :: c1(6) = 'ab'
-    character :: c2(6)*3 = 'ab'
-    character(100) :: line
-    integer :: i
+    character(len=*), parameter :: s = 'hello'
+    character(len=*), parameter :: t = 'world'
+    character(len=6) :: r1
+    character(len=10) :: r2
 
-    do i = 1, 6
-        if (c1(i) /= 'ab ') error stop
-        if (len(c1(i)) /= 3) error stop
-        if (c2(i) /= 'ab ') error stop
-        if (len(c2(i)) /= 3) error stop
-    end do
+    r1 = trim(s)//'x'
+    if (r1 /= 'hellox') error stop
 
-    write(line, "(6A)") c1//' '
-    if (trim(line) /= 'ab  ab  ab  ab  ab  ab') error stop
+    r2 = trim(s)//trim(t)
+    if (r2 /= 'helloworld') error stop
 
-    write(line, "(*(A))") 'c = "', c2, '"'
-    if (trim(line) /= 'c = "ab ab ab ab ab ab "') error stop
-
-    print *, "PASS"
-end program string_98
+    print *, "PASSED"
+end program

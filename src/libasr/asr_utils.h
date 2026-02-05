@@ -5759,8 +5759,9 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         if( !ASR::is_a<ASR::Variable_t>(*arg_Var->m_v) ) {
             continue;
         }
-        if( ASRUtils::is_class_type(typei) ||
-            ASR::is_a<ASR::FunctionType_t>(*typei) ) {
+        ASR::ttype_t* typei_noarray = ASRUtils::type_get_past_array(typei);
+        if( ASRUtils::is_class_type(typei_noarray) ||
+            ASR::is_a<ASR::FunctionType_t>(*typei_noarray) ) {
             continue ;
         }
         int n_dims = ASRUtils::extract_dimensions_from_ttype(typei, dims);
@@ -5786,7 +5787,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
             !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
-            !ASRUtils::is_class_type(argi->m_type) &&
+            !ASRUtils::is_class_type(ASRUtils::type_get_past_array(argi->m_type)) &&
             !ASR::is_a<ASR::String_t>(*argi->m_type) &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);

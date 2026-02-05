@@ -1,12 +1,21 @@
-! Test array section assignment with different integer kind (issue #4501)
 program arrays_102
     implicit none
-    integer, parameter :: k = selected_int_kind(0)
-    integer :: iarray(3, 4)
 
-    iarray = 0
-    iarray(1, 1:2) = [bit_size(1_k), huge(1_k)]
+    type :: string_t
+        character(len=:), allocatable :: s
+    end type string_t
 
-    if (iarray(1, 1) /= 8) error stop
-    if (iarray(1, 2) /= 127) error stop
+    type(string_t), allocatable :: build_dirs(:)
+    type(string_t) :: temp
+
+    temp%s = "build"
+    allocate(build_dirs(0))
+    associate(xx => temp)
+        build_dirs = [build_dirs, temp]
+    end associate
+
+    if (size(build_dirs) /= 1) error stop "Wrong size"
+    if (build_dirs(1)%s /= "build") error stop "Wrong value"
+
+    print *, "OK:", build_dirs(1)%s
 end program arrays_102
