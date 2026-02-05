@@ -2978,17 +2978,32 @@ public:
             select_variable_m_type_declaration = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
+        } else if( ASR::is_a<ASR::ArrayItem_t>(*m_selector) ) {
+            // Handle array element selectors
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(m_selector);
+            if (ASR::is_a<ASR::Var_t>(*array_item->m_v)) {
+                ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(array_item->m_v)->m_v;
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
+                selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
+                selector_variable_type = selector_variable->m_type;
+                select_variable_m_type_declaration = selector_variable->m_type_declaration;
+                selector_variable_dependencies = selector_variable->m_dependencies;
+                selector_variable_n_dependencies = selector_variable->n_dependencies;
+            }
         }
 
         auto make_typed_selector_view_type = [&](const Location& loc,
                 ASR::ttype_t* selector_type, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
+            if (!selector_type || !guard_type) {
+                return guard_type;  // Fallback to guard_type if selector_type is invalid
+            }
             bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_type);
             bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*selector_type);
             ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(selector_type));
 
             ASR::ttype_t* result = guard_type;
-            if (ASR::is_a<ASR::Array_t>(*base_type)) {
+            if (base_type && ASR::is_a<ASR::Array_t>(*base_type)) {
                 if (!is_allocatable) is_ptr = true;
 
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base_type);
@@ -3080,11 +3095,22 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        if (selector_variable_type) {
+                        // For type guards: check if selector is an array before using view type
+                        bool is_selector_array = false;
+                        if (selector_variable_type != nullptr) {
+                            ASR::ttype_t* unwrapped = ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(selector_variable_type));
+                            if (unwrapped != nullptr) {
+                                is_selector_array = ASR::is_a<ASR::Array_t>(*unwrapped);
+                            }
+                        }
+                        if (is_selector_array) {
+                            // Array selector: preserve array structure
                             ASR::ttype_t* view_type = make_typed_selector_view_type(
                                 class_stmt->base.base.loc, selector_variable_type, selector_type);
                             assoc_variable->m_type = view_type;
                         } else {
+                            // Scalar or non-variable: use pointer to the guard type
                             assoc_variable->m_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                         }
                         assoc_variable->m_type_declaration = selector_m_type_declaration;
@@ -3136,11 +3162,22 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        if (selector_variable_type) {
+                        // For type guards: check if selector is an array before using view type
+                        bool is_selector_array = false;
+                        if (selector_variable_type != nullptr) {
+                            ASR::ttype_t* unwrapped = ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(selector_variable_type));
+                            if (unwrapped != nullptr) {
+                                is_selector_array = ASR::is_a<ASR::Array_t>(*unwrapped);
+                            }
+                        }
+                        if (is_selector_array) {
+                            // Array selector: preserve array structure
                             ASR::ttype_t* view_type = make_typed_selector_view_type(
                                 type_stmt_name->base.base.loc, selector_variable_type, selector_type);
                             assoc_variable->m_type = view_type;
                         } else {
+                            // Scalar or non-variable: use pointer to the guard type
                             assoc_variable->m_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                         }
                         assoc_variable->m_type_declaration = selector_m_type_declaration;
