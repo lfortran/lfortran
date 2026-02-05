@@ -108,6 +108,23 @@
                                                         )
                                                         (Return)]
                                                     )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(SubroutineCall
+                                                        4 default_class
+                                                        ()
+                                                        []
+                                                        ()
+                                                        .false.
+                                                    )
+                                                    (Return)]
                                                 )
                                         })
                                     check_proc
@@ -146,14 +163,10 @@
                                                     7 ~select_type_block_
                                                 )]
                                             )]
-                                            [(SubroutineCall
-                                                4 default_class
-                                                ()
-                                                []
-                                                ()
-                                                .false.
-                                            )
-                                            (Return)]
+                                            [(BlockCall
+                                                -1
+                                                7 ~select_type_block_1
+                                            )]
                                         )]
                                         []
                                     )]
@@ -211,7 +224,7 @@
                             default_class:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             
                                         })
@@ -254,7 +267,7 @@
                             not_ok:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             
                                         })
@@ -352,7 +365,7 @@
                             check_here:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             
                                         })
@@ -407,7 +420,7 @@
             main:
                 (Program
                     (SymbolTable
-                        12
+                        13
                         {
                             
                         })
