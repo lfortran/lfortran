@@ -9,5 +9,9 @@ end subroutine
 
 program common_28
     implicit none
+    integer :: t
+    common /block/ t
+    t = 5
+    call common_28_sub()
     print *, "PASS"
 end program common_28
