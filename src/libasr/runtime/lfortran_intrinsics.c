@@ -6717,6 +6717,7 @@ typedef struct {
             size_t pos;
         } str;
     };
+    long record_start_pos;
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -7128,6 +7129,11 @@ static void handle_read_T(InputSource *inputSource, int position)
             target_pos = (int)inputSource->str.len;
         }
         inputSource->str.pos = target_pos;
+    } else if (inputSource->inputMethod == INPUT_FILE) {
+        if (inputSource->file) {
+            long target_pos = inputSource->record_start_pos + (position - 1);
+            fseek(inputSource->file, target_pos, SEEK_SET);
+        }
     }
 }
 
@@ -7158,7 +7164,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, ...) {
     
-    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}};
+    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0};
     
     va_list args;
     va_start(args, no_of_args);
@@ -7216,6 +7222,9 @@ static void common_formatted_read(InputSource *inputSource,
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, va_list *args, bool blank_zero)
 {
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
     const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
