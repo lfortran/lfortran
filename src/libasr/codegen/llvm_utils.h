@@ -337,8 +337,25 @@ class ASRToLLVMVisitor;
                 start_new_block(mergeBB);
             }
 
+            /*
+            * A Label for runtime error messages
+            */
+            struct RuntimeLabel {
+                bool primary; // primary or secondary label
+                std::string message; // format string message
+                std::vector<diag::Span> spans; // one or more spans
+                std::vector<llvm::Value*> args; // arguments for format string
+
+                RuntimeLabel(const std::string &message, const std::vector<Location> &locations, const std::vector<llvm::Value*> &args = {},
+                        bool primary=true) : primary{primary}, message{message}, args{args} {
+                    for (auto &loc : locations) {
+                        spans.emplace_back(loc);
+                    }
+                }
+            };
+
             template<typename... Args>
-            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<diag::RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 

@@ -16794,9 +16794,9 @@ public:
                             }
                             llvm_utils->generate_runtime_error2(cond,
                                     "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
-                                    {diag::RuntimeLabel("", {arg_expr->base.loc}),
-                                        function->m_start_name ? diag::RuntimeLabel("Here", {*function->m_start_name}, {}, false): diag::RuntimeLabel("", {}),
-                                        diag::RuntimeLabel("Expected range %d:%d, got %d", {m_dims[j].loc}, {lbound, ubound, descriptor_length}, false)},
+                                    {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc}),
+                                        function->m_start_name ? LLVMUtils::RuntimeLabel("Here", {*function->m_start_name}, {}, false): LLVMUtils::RuntimeLabel("", {}),
+                                        LLVMUtils::RuntimeLabel("Expected range %d:%d, got %d", {m_dims[j].loc}, {lbound, ubound, descriptor_length}, false)},
                                     infile,
                                     location_manager,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),

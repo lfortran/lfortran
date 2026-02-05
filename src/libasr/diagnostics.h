@@ -1,7 +1,6 @@
 #ifndef LFORTRAN_DIAGNOSTICS_H
 #define LFORTRAN_DIAGNOSTICS_H
 
-#include <llvm/IR/Value.h>
 #include <tuple>
 #include <libasr/location.h>
 #include <libasr/stacktrace.h>
@@ -51,23 +50,6 @@ struct Label {
 
     Label(const std::string &message, const std::vector<Location> &locations,
             bool primary=true) : primary{primary}, message{message} {
-        for (auto &loc : locations) {
-            spans.emplace_back(loc);
-        }
-    }
-};
-
-/*
- * A Label for runtime error messages
- */
-struct RuntimeLabel {
-    bool primary; // primary or secondary label
-    std::string message; // format string message
-    std::vector<diag::Span> spans; // one or more spans
-    std::vector<llvm::Value*> args; // arguments for format string
-
-    RuntimeLabel(const std::string &message, const std::vector<Location> &locations, const std::vector<llvm::Value*> &args = {},
-            bool primary=true) : primary{primary}, message{message}, args{args} {
         for (auto &loc : locations) {
             spans.emplace_back(loc);
         }
