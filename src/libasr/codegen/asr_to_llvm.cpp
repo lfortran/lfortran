@@ -11576,10 +11576,7 @@ public:
 
         iostat_ptr = x.m_iostat ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_iostat, false, true), tmp), ptr_ty) 
                                 : llvm::ConstantPointerNull::get(ptr_ty);
-        llvm::Value *chunk_ptr = x.m_size ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_size, false, true), tmp), ptr_ty)
-                             : llvm::ConstantPointerNull::get(ptr_ty);
 
-        // --- DEBUG INSTRUMENTED LAMBDA ---
         auto get_str_meta = [&](ASR::expr_t* expr, llvm::Value*& p, llvm::Value*& l) {
             p = llvm::ConstantPointerNull::get(ptr_ty);
             l = llvm::ConstantInt::get(i64, 0);
