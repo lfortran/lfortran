@@ -8389,11 +8389,8 @@ public:
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
-std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads << std::endl;
         // Check if *x is nullptr.
-std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads << std::endl;
         if( x == nullptr ) {
-std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads << std::endl;
             throw CodeGenError("Internal error: x is nullptr");
         }
 

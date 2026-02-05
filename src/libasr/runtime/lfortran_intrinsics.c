@@ -5078,25 +5078,6 @@ LFORTRAN_API void _lfortran_formatted_read(void* master_void) {
     lfortran_dest_t* dest_array = (lfortran_dest_t*)m->dests;
     int32_t no_of_args          = m->n_args;
 
-    // --- 2. CORE DEBUGGING PRINTS ---
-    printf("\n[RUNTIME DEBUG] Master Void Address: %p\n", master_void);
-    printf("[RUNTIME DEBUG] Offset of src_data:  %ld\n", (char*)&m->src_data - (char*)m);
-    printf("[RUNTIME DEBUG] Value of unit:       %d\n",  unit_num);
-    printf("[RUNTIME DEBUG] Value of src_data:   %p\n",  (void*)str_data);
-    printf("[RUNTIME DEBUG] Value of src_len:    %ld\n", str_len);
-    printf("[RUNTIME DEBUG] Number of args:      %d\n",  no_of_args);
-    
-    // --- FIX 2: PROTECT RAW BYTE LOOP (CAP AT 256) ---
-    if (str_data && str_len > 0) {
-        printf("[RUNTIME DEBUG] RAW SRC BYTES: ");
-        for (int i = 0; i < str_len && i < 256; i++) {
-            printf("%02x ", (unsigned char)str_data[i]);
-        }
-        printf("\n");
-        printf("[RUNTIME DEBUG] RAW SRC TEXT:  '%.*s'\n", (int)(str_len > 256 ? 256 : str_len), str_data);
-    }
-    fflush(stdout);
-
     if (m->iostat) *(int32_t*)(m->iostat) = 0;
 
     // --- 3. VALIDATION ---
@@ -5142,15 +5123,6 @@ LFORTRAN_API void _lfortran_formatted_read(void* master_void) {
             // Padded Copy (Fortran ABI Style)
             memset(dest_array[i].data, ' ', dest_cap);
             memcpy(dest_array[i].data, buffer, to_copy);
-            
-            // --- FIX 5: PRINT DEST SAFELY ---
-            printf("[RUNTIME DEBUG] FINAL DEST[%d] CONTENT: ", i);
-            for (size_t k = 0; k < dest_cap; k++) {
-                char c = dest_array[i].data[k];
-                // Print printable chars or space for junk
-                putchar((c >= 32 && c <= 126) ? c : ' ');
-            }
-            printf("\n");
         }
     }
     
