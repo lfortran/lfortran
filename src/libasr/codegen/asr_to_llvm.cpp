@@ -6450,8 +6450,7 @@ public:
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
-        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
-            ASRUtils::expr_type(array_section->m_v), module.get());
+            ASRUtils::expr_type(array_section->m_v), module.get();
         llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
         ptr_loads = 0;
@@ -11567,7 +11566,7 @@ public:
             is_string = ASRUtils::is_character(*unit_ttype_ptr);
         }
 
-        llvm::Value *unit_num_val, *iostat_ptr, *chunk_ptr, *src_ptr, *src_len_val;
+        llvm::Value *unit_num_val, *iostat_ptr, *src_ptr, *src_len_val;
         if (is_string || x.m_unit == nullptr) {
             unit_num_val = llvm::ConstantInt::get(i32, -1, true);
         } else {
@@ -11577,7 +11576,7 @@ public:
 
         iostat_ptr = x.m_iostat ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_iostat, false, true), tmp), ptr_ty) 
                                 : llvm::ConstantPointerNull::get(ptr_ty);
-        chunk_ptr = x.m_size ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_size, false, true), tmp), ptr_ty) 
+        llvm::Value *chunk_ptr = x.m_size ? builder->CreateBitCast((this->visit_expr_wrapper(x.m_size, false, true), tmp), ptr_ty)
                              : llvm::ConstantPointerNull::get(ptr_ty);
 
         // --- DEBUG INSTRUMENTED LAMBDA ---
