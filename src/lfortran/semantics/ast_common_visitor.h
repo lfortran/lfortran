@@ -4238,10 +4238,11 @@ public:
                             ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
 
                             if (AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
+                                ASR::expr_t* unwrapped_eq1 = ASRUtils::unwrap_logical_byte_cast(asr_eq1);
                                 ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(unwrapped_eq1)));
                                 ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type1)));
-                                ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
+                                ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, unwrapped_eq1, pointer_type_, nullptr);
                                 ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                 ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 
@@ -4257,7 +4258,8 @@ public:
                                 dim_.loc = asr_eq1->base.loc;
                                 dim.push_back(al, dim_);
 
-                                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+                                ASR::expr_t* unwrapped_eq2 = ASRUtils::unwrap_logical_byte_cast(asr_eq2);
+                                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(unwrapped_eq2);
                                 ASR::expr_t* array = array_item->m_v;
                                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array);
                                 ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
@@ -4265,7 +4267,7 @@ public:
                                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var__->m_type);
                                 ASR::ttype_t* type = nullptr;
                                 ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(unwrapped_eq2)));
 
                                 Vec<ASR::dimension_t> dim2; dim2.reserve(al, arr->n_dims);
                                 for (size_t i = 0; i < arr->n_dims; i++) {
@@ -4279,6 +4281,12 @@ public:
                                 } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
                                     int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
                                     type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
+                                } else if (ASR::is_a<ASR::Logical_t>(*arg_type2)) {
+                                    int kind = ASR::down_cast<ASR::Logical_t>(arg_type2)->m_kind;
+                                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq2->base.loc, kind));
+                                } else if (ASR::is_a<ASR::Complex_t>(*arg_type2)) {
+                                    int kind = ASR::down_cast<ASR::Complex_t>(arg_type2)->m_kind;
+                                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, asr_eq2->base.loc, kind));
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -4286,6 +4294,7 @@ public:
                                         "ignored for now"
                                     );
                                 }
+                                if (type == nullptr) { continue; }
                                 type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
                                 ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
                                 var__->m_type = ptr;
@@ -4300,16 +4309,17 @@ public:
 
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
-                                ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
+                                ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), array_item->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
                                 ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
                                 data_structure[current_scope->counter].push_back(stmt);
                             } else {
                                 if (AST::is_a<AST::FuncCallOrArray_t>(*eq1)) {
+                                    ASR::expr_t* unwrapped_eq1_inner = ASRUtils::unwrap_logical_byte_cast(asr_eq1);
                                     ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(unwrapped_eq1_inner)));
                                     ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type1)));
-                                    ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
+                                    ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, unwrapped_eq1_inner, pointer_type_, nullptr);
                                     ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                     ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 
@@ -4414,7 +4424,8 @@ public:
                                         
                                         if (type1 != nullptr) {
                                             // Get array2 info
-                                            ASR::ArrayItem_t* array_item2 = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+                                            ASR::expr_t* unwrapped_eq2_inner = ASRUtils::unwrap_logical_byte_cast(asr_eq2);
+                                            ASR::ArrayItem_t* array_item2 = ASR::down_cast<ASR::ArrayItem_t>(unwrapped_eq2_inner);
                                             ASR::Var_t* var2 = ASR::down_cast<ASR::Var_t>(array_item2->m_v);
                                             ASR::Variable_t *var2__ = ASR::down_cast<ASR::Variable_t>(var2->m_v);
                                             ASR::Array_t* array2 = ASR::down_cast<ASR::Array_t>(var2__->m_type);

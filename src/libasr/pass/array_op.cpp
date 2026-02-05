@@ -220,6 +220,18 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         ASR::IntegerUnaryMinus_t& xx = const_cast<ASR::IntegerUnaryMinus_t&>(x);
         xx.m_type = ASRUtils::extract_type(x.m_type);
     }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t& x){
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalNot(x);
+        ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_arg)) ) {
+            xx.m_type = ASRUtils::extract_type(x.m_type);
+            xx.m_value = nullptr;
+        }
+    }
 };
 
 class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
@@ -849,6 +861,31 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    void fix_logical_byte_assignments(ASR::stmt_t* stmt) {
+        if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+            ASR::Assignment_t& asgn = *ASR::down_cast<ASR::Assignment_t>(stmt);
+            ASR::expr_t* unwrapped = ASRUtils::unwrap_logical_byte_cast(asgn.m_target);
+            if (unwrapped != asgn.m_target) {
+                asgn.m_target = unwrapped;
+                asgn.m_value = ASRUtils::wrap_logical_value_for_array_store(
+                    al, asgn.base.base.loc, asgn.m_value, asgn.m_target);
+            }
+        } else if (ASR::is_a<ASR::If_t>(*stmt)) {
+            ASR::If_t& if_stmt = *ASR::down_cast<ASR::If_t>(stmt);
+            for (size_t i = 0; i < if_stmt.n_body; i++) {
+                fix_logical_byte_assignments(if_stmt.m_body[i]);
+            }
+            for (size_t i = 0; i < if_stmt.n_orelse; i++) {
+                fix_logical_byte_assignments(if_stmt.m_orelse[i]);
+            }
+        } else if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+            ASR::DoLoop_t& loop = *ASR::down_cast<ASR::DoLoop_t>(stmt);
+            for (size_t i = 0; i < loop.n_body; i++) {
+                fix_logical_byte_assignments(loop.m_body[i]);
+            }
+        }
+    }
+
     template <typename T>
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
                        Vec<ASR::expr_t**>& fix_types_args,
@@ -930,6 +967,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
+        fix_logical_byte_assignments(const_cast<ASR::stmt_t*>(&(x.base)));
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc);

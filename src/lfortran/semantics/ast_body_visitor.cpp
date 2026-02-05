@@ -2306,6 +2306,7 @@ public:
                 }
             }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
+            tmp_stmt = ASRUtils::unwrap_logical_byte_cast(tmp_stmt);
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
@@ -4436,9 +4437,9 @@ public:
                     }
                 }
             }
-            // For assigning Array Variable    
-            else if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
-                ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(target);
+            // For assigning Array Variable
+            else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::unwrap_logical_byte_cast(target))) {
+                ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::unwrap_logical_byte_cast(target));
                 if (ASR::is_a<ASR::Real_t>(*array_item->m_type)){
                     current_variable_type_ = array_item->m_type;
                 }
@@ -4510,7 +4511,9 @@ public:
         }
         if (ASR::is_a<ASR::Cast_t>(*target)) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
-            if (cast->m_kind == ASR::cast_kindType::ComplexToReal) {
+            if (cast->m_kind == ASR::cast_kindType::LogicalByteToLogical) {
+                target = cast->m_arg;
+            } else if (cast->m_kind == ASR::cast_kindType::ComplexToReal) {
                 /*
                     Case: x%re = y
                     we do: x = cmplx(y, x%im)

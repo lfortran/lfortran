@@ -2367,9 +2367,9 @@ public:
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
 
-        // If the cast is from Integer to Logical, do nothing
-        if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
-            // Implicit conversion between integer -> logical
+        if (x.m_kind == ASR::cast_kindType::IntegerToLogical ||
+            x.m_kind == ASR::cast_kindType::LogicalByteToLogical ||
+            x.m_kind == ASR::cast_kindType::LogicalToLogicalByte) {
             return;
         }
 

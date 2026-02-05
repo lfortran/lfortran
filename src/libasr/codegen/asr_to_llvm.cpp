@@ -8109,6 +8109,13 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        if (ASR::is_a<ASR::Cast_t>(*xx.m_target)) {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(xx.m_target);
+            if (cast->m_kind == ASR::cast_kindType::LogicalByteToLogical) {
+                xx.m_target = cast->m_arg;
+            }
+        }
 
         // Special-case: transfer(character, int8_array, size) lowered as BitCast.
         // When scalarized into element-wise assignments, extract the corresponding
@@ -8833,14 +8840,6 @@ public:
         }
         load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
-        // Logical arrays use byte-backed storage (i8) in memory; convert scalar i1 values
-        // to i8 before storing into an array element.
-        if (x.m_target->type == ASR::exprType::ArrayItem &&
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_target)) &&
-            value->getType()->isIntegerTy(1)) {
-            value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
-        }
-
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
                 llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
@@ -9757,16 +9756,8 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                // Logical arrays are stored as byte-backed (i8) in memory; load as i8 and
-                // convert to scalar i1 for expression semantics.
-                if (x->type == ASR::exprType::ArrayItem &&
-                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
-                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
-                } else {
-                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
+                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
         }
     }
@@ -12141,6 +12132,21 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        if (x.m_kind == ASR::cast_kindType::LogicalByteToLogical) {
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_arg);
+            ptr_loads = ptr_loads_copy;
+            if (ptr_loads_copy == 0) {
+                return;
+            }
+            if (tmp->getType()->isPointerTy()) {
+                tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
+                tmp = builder->CreateICmpNE(tmp,
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
+            }
+            return;
+        }
         // Visit with appropriate load
         if (ASRUtils::is_string_only(expr_type(x.m_arg))) {
             this->visit_expr_load_wrapper(x.m_arg, 0);
@@ -12618,6 +12624,13 @@ public:
             case ASR::StringToArray :
                 cast_string_to_array(&x);
             break;
+            case (ASR::cast_kindType::LogicalToLogicalByte) : {
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
+                break;
+            }
+            case (ASR::cast_kindType::LogicalByteToLogical) : {
+                break;
+            }
             default : throw CodeGenError("Cast kind not implemented");
         }
     }
@@ -16033,7 +16046,8 @@ public:
                 this->visit_expr_wrapper(x.m_args[i].m_value);
 
                 if( x_abi == ASR::abiType::BindC ) {
-                    if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                    ASR::expr_t* unwrapped_barg = ASRUtils::unwrap_logical_byte_cast(x.m_args[i].m_value);
+                    if( (ASR::is_a<ASR::ArrayItem_t>(*unwrapped_barg) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
                         (ASR::is_a<ASR::CPtr_t>(*arg_type) &&
@@ -16086,8 +16100,9 @@ public:
                         For example, refer integration_tests/intent_03.f90
                     */
                     // TODO: this is possible in other cases as well, support those.
-                    if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
-                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
+                    ASR::expr_t* unwrapped_arg = ASRUtils::unwrap_logical_byte_cast(x.m_args[i].m_value);
+                    if ( ASR::is_a<ASR::ArrayItem_t>(*unwrapped_arg) ) {
+                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(unwrapped_arg);
                         arr_item->m_value = nullptr;
                         this->visit_expr_wrapper((ASR::expr_t*)arr_item);
                         value = tmp;
@@ -16178,30 +16193,18 @@ public:
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
-                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::unwrap_logical_byte_cast(x.m_args[i].m_value))) {
                         use_value = true;
                     }
                     if (use_value) {
-                        // Logical arrays use i8 storage, but scalar logical arguments
-                        // are passed as i1*. If an array element is passed as an
-                        // actual argument, bitcast its pointer to the expected type.
-                        if (ASRUtils::is_logical(*arg_type_) && value->getType()->isPointerTy()) {
-                            llvm::Type* expected_ptr_type = llvm::Type::getInt1Ty(context)->getPointerTo();
-                            if (value->getType() != expected_ptr_type) {
-                                tmp = builder->CreateBitCast(value, expected_ptr_type);
-                            } else {
-                                tmp = value;
-                            }
-                        } else {
-                            tmp = value;
-                        }
+                        tmp = value;
                     }
                     if (!use_value && orig_arg != nullptr) {
                         // Create alloca to get a pointer, but do it
                         // at the beginning of the function to avoid
                         // using alloca inside a loop, which would
                         // run out of stack
-                        if ((ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)
+                        if ((ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::unwrap_logical_byte_cast(x.m_args[i].m_value))
                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
                                     && ((!ASRUtils::is_allocatable(orig_arg->m_type)
                                         && ASRUtils::is_allocatable(arg_type))

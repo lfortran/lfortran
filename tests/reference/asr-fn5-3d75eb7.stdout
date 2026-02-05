@@ -668,13 +668,18 @@
                                                     ColMajor
                                                     ()
                                                 )
-                                                (ArrayItem
-                                                    (Var 4 present_in)
-                                                    [(()
-                                                    (Var 4 i)
-                                                    ())]
+                                                (Cast
+                                                    (ArrayItem
+                                                        (Var 4 present_in)
+                                                        [(()
+                                                        (Var 4 i)
+                                                        ())]
+                                                        (Logical 4)
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    LogicalByteToLogical
                                                     (Logical 4)
-                                                    ColMajor
                                                     ()
                                                 )
                                                 (StringSection

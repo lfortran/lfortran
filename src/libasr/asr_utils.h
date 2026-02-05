@@ -6838,11 +6838,19 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                     }
                                     break;
                                 }
+                                case ASR::exprType::Cast: {
+                                    ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(passed_arg_expr);
+                                    if (cast->m_kind == ASR::cast_kindType::LogicalByteToLogical &&
+                                        ASR::is_a<ASR::ArrayItem_t>(*cast->m_arg)) {
+                                        is_valid_variable = true;
+                                    }
+                                    break;
+                                }
                                 default:
                                     is_valid_variable = false;
                                     break;
                             }
-                            
+
                             if (!is_valid_variable) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
@@ -7408,6 +7416,38 @@ static inline ASR::asr_t* make_IntrinsicArrayFunction_t_util(
         a_args, n_args, a_overload_id, a_type, a_value);
 }
 
+static inline ASR::expr_t* unwrap_logical_byte_cast(ASR::expr_t* expr) {
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
+        if (cast->m_kind == ASR::cast_kindType::LogicalByteToLogical) {
+            return cast->m_arg;
+        }
+    }
+    return expr;
+}
+
+static inline ASR::expr_t* wrap_logical_for_array_store(
+        Allocator &al, const Location &loc, ASR::expr_t* value, ASR::ttype_t* target_type) {
+    ASR::ttype_t* elem_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(target_type));
+    if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(value_type))) {
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+                ASR::cast_kindType::LogicalToLogicalByte, value_type, nullptr));
+        }
+    }
+    return value;
+}
+
+static inline ASR::expr_t* wrap_logical_value_for_array_store(
+        Allocator &al, const Location &loc, ASR::expr_t* value, ASR::expr_t* target) {
+    if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+        return wrap_logical_for_array_store(al, loc, value, ASRUtils::expr_type(target));
+    }
+    return value;
+}
+
 static inline ASR::asr_t* make_Associate_t_util(
     Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value) {
@@ -7437,6 +7477,7 @@ static inline ASR::asr_t* make_Associate_t_util(
                         value_type, dim_vec_ptr, target_ptype, true), nullptr));
         }
     }
+    a_value = unwrap_logical_byte_cast(a_value);
     return ASR::make_Associate_t(al, a_loc, a_target, a_value);
 }
 
@@ -7547,10 +7588,18 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
         }
     }
 
+    bool is_scalar_element = !ASRUtils::is_array_indexed_with_array_indices(a_args, n_args);
+
     ASRUtils::ExprStmtDuplicator type_duplicator(al);
     a_type = type_duplicator.duplicate_ttype(a_type);
-    return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
+    ASR::asr_t* array_item = ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
         n_args, a_type, a_storage_format, a_value);
+
+    if (is_scalar_element && ASRUtils::is_logical(*a_type)) {
+        return ASR::make_Cast_t(al, a_loc, ASRUtils::EXPR(array_item),
+            ASR::cast_kindType::LogicalByteToLogical, a_type, nullptr);
+    }
+    return array_item;
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {

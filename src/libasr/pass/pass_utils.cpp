@@ -596,6 +596,8 @@ namespace LCompilers {
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
             }
             a_realloc_lhs = a_realloc_lhs && is_allocatable;
+            a_target = ASRUtils::unwrap_logical_byte_cast(a_target);
+            a_value = ASRUtils::wrap_logical_value_for_array_store(al, a_loc, a_value, a_target);
             return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
                 a_overloaded, a_realloc_lhs, false);
         }

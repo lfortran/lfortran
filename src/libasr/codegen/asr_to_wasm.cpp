@@ -3266,6 +3266,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
+            case (ASR::cast_kindType::LogicalByteToLogical):
+            case (ASR::cast_kindType::LogicalToLogicalByte): {
+                break;
+            }
             default:
                 throw CodeGenError("Cast kind not implemented");
         }

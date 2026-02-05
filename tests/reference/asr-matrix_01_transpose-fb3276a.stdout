@@ -1334,29 +1334,39 @@
                             [(If
                                 ()
                                 (LogicalBinOp
-                                    (ArrayItem
-                                        (Var 2 l)
-                                        [(()
-                                        (Var 2 i)
-                                        ())
-                                        (()
-                                        (Var 2 j)
-                                        ())]
+                                    (Cast
+                                        (ArrayItem
+                                            (Var 2 l)
+                                            [(()
+                                            (Var 2 i)
+                                            ())
+                                            (()
+                                            (Var 2 j)
+                                            ())]
+                                            (Logical 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        LogicalByteToLogical
                                         (Logical 4)
-                                        ColMajor
                                         ()
                                     )
                                     NEqv
-                                    (ArrayItem
-                                        (Var 2 m)
-                                        [(()
-                                        (Var 2 j)
-                                        ())
-                                        (()
-                                        (Var 2 i)
-                                        ())]
+                                    (Cast
+                                        (ArrayItem
+                                            (Var 2 m)
+                                            [(()
+                                            (Var 2 j)
+                                            ())
+                                            (()
+                                            (Var 2 i)
+                                            ())]
+                                            (Logical 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        LogicalByteToLogical
                                         (Logical 4)
-                                        ColMajor
                                         ()
                                     )
                                     (Logical 4)

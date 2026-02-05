@@ -1575,6 +1575,12 @@ public:
                 last_expr_precedence = julia_prec::Base;
                 break;
             }
+            case (ASR::cast_kindType::LogicalByteToLogical):
+            case (ASR::cast_kindType::LogicalToLogicalByte): {
+                src = "Bool" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
+                break;
+            }
             default:
                 throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
                                    x.base.base.loc);
