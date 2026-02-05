@@ -8107,6 +8107,28 @@ public:
         this->visit_expr(*x.m_overloaded);
     }
 
+    // Logical arrays use i8 storage; scalar logicals use i1.
+    // These two helpers handle the boundary conversions in one place.
+    llvm::Value* logical_store_val(llvm::Value* v) {
+        if (v->getType()->isIntegerTy(1))
+            return builder->CreateZExt(v, llvm::Type::getInt8Ty(context));
+        return v;
+    }
+
+    llvm::Value* logical_load_val(llvm::Value* ptr, ASR::expr_t* x,
+                                  bool is_volatile = false) {
+        if (x->type == ASR::exprType::ArrayItem &&
+            ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
+            llvm::Value* v = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context), ptr, is_volatile);
+            return builder->CreateICmpNE(v,
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
+        }
+        llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+            x, ASRUtils::expr_type(x), module.get());
+        return llvm_utils->CreateLoad2(t, ptr, is_volatile);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
@@ -8833,13 +8855,8 @@ public:
         }
         load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
-        // Logical arrays use byte-backed storage (i8) in memory; convert scalar i1 values
-        // to i8 before storing into an array element.
-        if (x.m_target->type == ASR::exprType::ArrayItem &&
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_target)) &&
-            value->getType()->isIntegerTy(1)) {
-            value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
-        }
+        if (x.m_target->type == ASR::exprType::ArrayItem)
+            value = logical_store_val(value);
 
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
@@ -9757,16 +9774,7 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                // Logical arrays are stored as byte-backed (i8) in memory; load as i8 and
-                // convert to scalar i1 for expression semantics.
-                if (x->type == ASR::exprType::ArrayItem &&
-                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
-                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
-                } else {
-                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                tmp = logical_load_val(tmp, x, is_volatile);
             }
         }
     }
@@ -16182,18 +16190,12 @@ public:
                         use_value = true;
                     }
                     if (use_value) {
-                        // Logical arrays use i8 storage, but scalar logical arguments
-                        // are passed as i1*. If an array element is passed as an
-                        // actual argument, bitcast its pointer to the expected type.
-                        if (ASRUtils::is_logical(*arg_type_) && value->getType()->isPointerTy()) {
-                            llvm::Type* expected_ptr_type = llvm::Type::getInt1Ty(context)->getPointerTo();
-                            if (value->getType() != expected_ptr_type) {
-                                tmp = builder->CreateBitCast(value, expected_ptr_type);
-                            } else {
-                                tmp = value;
-                            }
-                        } else {
-                            tmp = value;
+                        tmp = value;
+                        // Logical array elements are i8*; subroutine args expect i1*.
+                        if (ASRUtils::is_logical(*arg_type_) && tmp->getType()->isPointerTy()) {
+                            llvm::Type* expected = llvm::Type::getInt1Ty(context)->getPointerTo();
+                            if (tmp->getType() != expected)
+                                tmp = builder->CreateBitCast(tmp, expected);
                         }
                     }
                     if (!use_value && orig_arg != nullptr) {
