@@ -9930,27 +9930,31 @@ public:
                     }
                     if (compiler_options.new_classes) {
                         llvm::Value* static_ptr = llvm_selector;
-                        llvm::Type* static_ptr_type = llvm_selector_type_;
                         ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
                         // If selector is a pointer type, load it first
                         if (LLVM::is_llvm_pointer(*selector_var_type)) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                             selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
-                            static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                         }
                         if (ASRUtils::is_array(selector_var_type)) {
                             llvm::Type* el_type = llvm_utils->get_el_type(
                                 x.m_selector,
                                 ASRUtils::type_get_past_array(selector_var_type),
                                 module.get());
-                            // For GEP, we need the array descriptor struct type, not a pointer to it
-                            llvm::Type* gep_type = static_ptr_type;
+                            llvm::Type* array_desc_type = arr_descr->get_array_type(
+                                x.m_selector, selector_var_type, el_type, false);
+                            llvm::Value* array_desc_ptr = static_ptr;
 #if LLVM_VERSION_MAJOR < 15
-                            if (auto ptr_type = llvm::dyn_cast<llvm::PointerType>(gep_type)) {
-                                gep_type = ptr_type->getPointerElementType();
+                            if (array_desc_ptr->getType()->isPointerTy() &&
+                                array_desc_ptr->getType()->getPointerElementType() != array_desc_type) {
+                                array_desc_ptr = builder->CreateBitCast(
+                                    array_desc_ptr, array_desc_type->getPointerTo());
                             }
+#else
+                            array_desc_ptr = builder->CreateBitCast(
+                                array_desc_ptr, array_desc_type->getPointerTo());
 #endif
-                            static_ptr = arr_descr->get_pointer_to_data(gep_type, static_ptr);
+                            static_ptr = arr_descr->get_pointer_to_data(array_desc_type, array_desc_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
                                 el_type->getPointerTo(),
                                 static_ptr);
