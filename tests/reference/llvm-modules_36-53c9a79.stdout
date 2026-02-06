@@ -20,11 +20,11 @@ source_filename = "LFortran"
 @8 = private unnamed_addr constant [5 x i8] c"mask\00", align 1
 @9 = private unnamed_addr constant [179 x i8] c"At 24:10 of file tests/../integration_tests/modules_36.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @_Name_fpm_build_settings = private unnamed_addr constant [19 x i8] c"fpm_build_settings\00", align 1
-@_Type_Info_fpm_build_settings = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0) }, align 8
-@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings to i8*)] }, align 8
+@_Type_Info_fpm_build_settings = linkonce_odr unnamed_addr constant { i8*, i64 } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0), i64 1 }, align 8
+@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i64 }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings to i8*)] }, align 8
 @_Name_fpm_run_settings = private unnamed_addr constant [17 x i8] c"fpm_run_settings\00", align 1
-@_Type_Info_fpm_run_settings = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_fpm_build_settings to i8*) }, align 8
-@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*)] }, align 8
+@_Type_Info_fpm_run_settings = linkonce_odr unnamed_addr constant { i8*, i64, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i64 50, i8* bitcast ({ i8*, i64 }* @_Type_Info_fpm_build_settings to i8*) }, align 8
+@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*)] }, align 8
 
 define i1 @_lcompilers_Any_4_1_0_logical____0(i8* %mask, i32* %__1mask) {
 .entry:

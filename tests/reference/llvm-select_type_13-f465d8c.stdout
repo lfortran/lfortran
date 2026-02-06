@@ -10,14 +10,14 @@ source_filename = "LFortran"
 %rectangle = type { %shape, float, float }
 
 @_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
-@_Type_Info_shape = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_shape, i32 0, i32 0) }, align 8
-@_VTable_shape = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_shape to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* null] }, align 8
+@_Type_Info_shape = linkonce_odr unnamed_addr constant { i8*, i64 } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_shape, i32 0, i32 0), i64 0 }, align 8
+@_VTable_shape = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i64 }* @_Type_Info_shape to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* null] }, align 8
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
-@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (float (%circle_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
+@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i64, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i64 4, i8* bitcast ({ i8*, i64 }* @_Type_Info_shape to i8*) }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (float (%circle_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
 @_Name_rectangle = private unnamed_addr constant [10 x i8] c"rectangle\00", align 1
-@_Type_Info_rectangle = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_rectangle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (float (%rectangle_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
+@_Type_Info_rectangle = linkonce_odr unnamed_addr constant { i8*, i64, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i64 8, i8* bitcast ({ i8*, i64 }* @_Type_Info_shape to i8*) }, align 8
+@_VTable_rectangle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (float (%rectangle_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [20 x i8] c"Matched as rectangle"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([20 x i8], [20 x i8]* @string_const_data, i32 0, i32 0), i64 20 }>
@@ -157,14 +157,14 @@ then1:                                            ; preds = %.entry
   %17 = alloca i32 (...)**, align 8
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %17, align 8
   %18 = bitcast i32 (...)*** %17 to i8*
-  %19 = call i8* @__lfortran_dynamic_cast(i8* %18, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %19 = call i8* @__lfortran_dynamic_cast(i8* %18, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_rectangle to i8*), i1 false)
   %20 = icmp ne i8* %19, null
   store i1 %20, i1* %13, align 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
   %21 = bitcast %shape_class* %14 to i8*
-  %22 = call i8* @__lfortran_dynamic_cast(i8* %21, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %22 = call i8* @__lfortran_dynamic_cast(i8* %21, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_rectangle to i8*), i1 false)
   %23 = icmp ne i8* %22, null
   store i1 %23, i1* %13, align 1
   br label %ifcont
@@ -198,14 +198,14 @@ then4:                                            ; preds = %else2
   %30 = alloca i32 (...)**, align 8
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %30, align 8
   %31 = bitcast i32 (...)*** %30 to i8*
-  %32 = call i8* @__lfortran_dynamic_cast(i8* %31, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %32 = call i8* @__lfortran_dynamic_cast(i8* %31, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_circle to i8*), i1 false)
   %33 = icmp ne i8* %32, null
   store i1 %33, i1* %26, align 1
   br label %ifcont6
 
 else5:                                            ; preds = %else2
   %34 = bitcast %shape_class* %27 to i8*
-  %35 = call i8* @__lfortran_dynamic_cast(i8* %34, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %35 = call i8* @__lfortran_dynamic_cast(i8* %34, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_circle to i8*), i1 false)
   %36 = icmp ne i8* %35, null
   store i1 %36, i1* %26, align 1
   br label %ifcont6
@@ -354,14 +354,14 @@ then19:                                           ; preds = %ifcont17
   %92 = alloca i32 (...)**, align 8
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %92, align 8
   %93 = bitcast i32 (...)*** %92 to i8*
-  %94 = call i8* @__lfortran_dynamic_cast(i8* %93, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %94 = call i8* @__lfortran_dynamic_cast(i8* %93, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_circle to i8*), i1 false)
   %95 = icmp ne i8* %94, null
   store i1 %95, i1* %88, align 1
   br label %ifcont21
 
 else20:                                           ; preds = %ifcont17
   %96 = bitcast %shape_class* %89 to i8*
-  %97 = call i8* @__lfortran_dynamic_cast(i8* %96, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %97 = call i8* @__lfortran_dynamic_cast(i8* %96, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_circle to i8*), i1 false)
   %98 = icmp ne i8* %97, null
   store i1 %98, i1* %88, align 1
   br label %ifcont21
@@ -395,14 +395,14 @@ then24:                                           ; preds = %else22
   %105 = alloca i32 (...)**, align 8
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %105, align 8
   %106 = bitcast i32 (...)*** %105 to i8*
-  %107 = call i8* @__lfortran_dynamic_cast(i8* %106, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %107 = call i8* @__lfortran_dynamic_cast(i8* %106, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_rectangle to i8*), i1 false)
   %108 = icmp ne i8* %107, null
   store i1 %108, i1* %101, align 1
   br label %ifcont26
 
 else25:                                           ; preds = %else22
   %109 = bitcast %shape_class* %102 to i8*
-  %110 = call i8* @__lfortran_dynamic_cast(i8* %109, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %110 = call i8* @__lfortran_dynamic_cast(i8* %109, i8* bitcast ({ i8*, i64, i8* }* @_Type_Info_rectangle to i8*), i1 false)
   %111 = icmp ne i8* %110, null
   store i1 %111, i1* %101, align 1
   br label %ifcont26
