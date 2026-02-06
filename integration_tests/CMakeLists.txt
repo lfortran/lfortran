@@ -1412,7 +1412,6 @@ RUN(NAME intrinsics_410 LABELS gfortran llvm
     GFORTRAN_ARGS -fdefault-integer-8) # maxloc/minloc/shape with -fdefault-integer-8
 RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
 RUN(NAME intrinsics_412 LABELS gfortran llvm) # max_loc FAST
-RUN(NAME intrinsics_413 LABELS gfortran llvm)
 RUN(NAME intrinsics_414 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_416 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2347,10 +2346,10 @@ RUN(NAME class_97 LABELS gfortran llvm)
 RUN(NAME class_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_99 LABELS gfortran llvm)
 RUN(NAME class_100 LABELS gfortran llvm)
-RUN(NAME class_101 LABELS gfortran llvm)
 RUN(NAME class_102 LABELS gfortran llvm)
 RUN(NAME class_103 LABELS gfortran llvm)
 RUN(NAME class_104 LABELS gfortran llvm)
+RUN(NAME class_105 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
