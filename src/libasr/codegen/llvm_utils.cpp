@@ -2974,6 +2974,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
         }
     }
+    llvm::Value* LLVMUtils::get_class_type_size_from_vptr(llvm::Value* vptr) {
+        llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+        llvm::StructType* type_info_prefix = llvm::StructType::get(context, {i8_ptr, i64_type}, false);
+
+        llvm::Value* vptr_i8 = builder->CreateBitCast(vptr, i8_ptr->getPointerTo());
+        llvm::Value* typeinfo_ptr_ptr = create_ptr_gep2(
+            i8_ptr, vptr_i8, llvm::ConstantInt::get(i64_type, -1, true));
+        llvm::Value* typeinfo_ptr = CreateLoad2(i8_ptr, typeinfo_ptr_ptr);
+        llvm::Value* typeinfo_cast = builder->CreateBitCast(
+            typeinfo_ptr, type_info_prefix->getPointerTo());
+        llvm::Value* size_ptr = create_gep2(type_info_prefix, typeinfo_cast, 1);
+        return CreateLoad2(i64_type, size_ptr);
+    }
     llvm::Value* LLVMUtils::get_class_element_from_array(ASR::Struct_t* const class_symbol,[[maybe_unused]] ASR::StructType_t* const struct_type, 
                                 llvm::Value* const array_data_ptr, llvm::Value* const idx){
         LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && idx)
@@ -2986,7 +3000,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         
         llvm::Value* const consecutive_struct_ptr = CreateLoad2(getStructType(class_symbol, module, true), 
                                                                 CreateGEP2(getClassType(class_symbol), array_data_ptr, 1));
-        llvm::Value* const struct_element = CreateInBoundsGEP2(getStructType(class_symbol, module), consecutive_struct_ptr, {idx});
+
+        llvm::Type* declared_struct_type = getStructType(class_symbol, module);
+        llvm::Type* i8_type = llvm::Type::getInt8Ty(context);
+        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+
+        llvm::Value* vptr_ptr = CreateGEP2(getClassType(class_symbol), array_data_ptr, 0);
+        llvm::Value* vptr = CreateLoad2(vptr_type, vptr_ptr);
+        llvm::Value* elem_size = get_class_type_size_from_vptr(vptr);
+
+        llvm::Value* idx_i64 = builder->CreateSExtOrTrunc(idx, i64_type);
+        llvm::Value* byte_offset = builder->CreateMul(idx_i64, elem_size);
+
+        llvm::Value* struct_ptr_i8 = builder->CreateBitCast(consecutive_struct_ptr, i8_type->getPointerTo());
+        llvm::Value* element_ptr_i8 = CreateInBoundsGEP2(i8_type, struct_ptr_i8, {byte_offset});
+
+        llvm::Value* struct_element = builder->CreateBitCast(element_ptr_i8, declared_struct_type->getPointerTo());
+        
         return struct_api->create_class_view(class_symbol, struct_element);
     }
 
@@ -8725,19 +8755,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         const std::string type_info_name = "_Type_Info_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
 
-        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr, llvm_utils->i8_ptr };
+        std::vector<llvm::Type*> type_info_member_types = {
+            llvm_utils->i8_ptr,
+            llvm::Type::getInt64Ty(context)
+        };
         std::vector<llvm::Constant*> type_info_member_values;
         type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
 
-        // Intrinsic type ttype number + kind
+        // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), (int) ttype->type + kind),
             llvm_utils->i8_ptr));
 
-        // Intrinsic type kind
-        type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
-            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), kind),
-            llvm_utils->i8_ptr));
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, ttype, module);
+        uint64_t type_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_type);
+        type_info_member_values.push_back(
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size));
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
         
@@ -8851,9 +8884,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
         const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
 
-        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr };
+        std::vector<llvm::Type*> type_info_member_types = {
+            llvm_utils->i8_ptr,
+            llvm::Type::getInt64Ty(context)
+        };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(1); // A type-info object has minimum 1 member.
+        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -8864,6 +8900,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             LCompilers::create_global_string_ptr(context, *module, *builder, std::string(struct_t->m_name),
                                            "_Name_" + std::string(struct_t->m_name)),
             llvm_utils->i8_ptr));
+        llvm::Type* struct_type = llvm_utils->getStructType(struct_t, module, false);
+        uint64_t struct_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(struct_type);
+        type_info_member_values.push_back(
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), struct_size));
         if (struct_t->m_parent) {
             // Pointer to parent struct's type-info
             type_info_member_types.push_back(llvm_utils->i8_ptr);
