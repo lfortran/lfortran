@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-common_linkage_separate_compilation_01-4003f83",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/common_linkage_separate_compilation_01.f90",
+    "infile_hash": "81ac5886133bfb559572f95eadef2507efdf8b0ef2dd367d72256990",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-common_linkage_separate_compilation_01-4003f83.stdout",
+    "stdout_hash": "cc17b8f2bd27a4bce7558d914b3e8ea1281e83f7299604162ee25545",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
