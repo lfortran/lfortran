@@ -4226,8 +4226,22 @@ public:
             [](llvm::Constant* elem) { return elem->isNullValue(); });
     }
 
-    void set_global_variable_linkage_as_common(llvm::Value* ptr, ASR::abiType x_abi) {
-        if ( compiler_options.separate_compilation ) {
+    bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
+        if (!compiler_options.separate_compilation
+                || x.m_abi == ASR::abiType::ExternalUndefined) {
+            return false;
+        }
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(
+            const_cast<ASR::symbol_t*>(&x.base));
+        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+            return startswith(ASRUtils::symbol_name(owner), "file_common_block_");
+        }
+        return false;
+    }
+
+    void set_global_variable_linkage_as_common(llvm::Value* ptr,
+            const ASR::Variable_t &x) {
+        if (needs_common_linkage_for_global(x)) {
             /*
                 In case of global variables without initialization, clang
                 generates a common symbol. For the following C code:
@@ -4266,9 +4280,7 @@ public:
             llvm::GlobalVariable *gv = llvm::cast<llvm::GlobalVariable>(
                 ptr
             );
-            if ( x_abi != ASR::abiType::ExternalUndefined ) {
-                gv->setLinkage(llvm::GlobalValue::CommonLinkage);
-            }
+            gv->setLinkage(llvm::GlobalValue::CommonLinkage);
         }
     }
 
@@ -4298,11 +4310,7 @@ public:
             // for external global variable with bindc, use the C name
             llvm_var_name = x.m_bindc_name;
         } else {
-            if ( !( ASRUtils::is_struct(*x.m_type) || ASRUtils::is_class_type(x.m_type) ) ) {
-                llvm_var_name = mangle_prefix + x.m_name;
-            } else {
-                llvm_var_name = x.m_name;
-            }
+            llvm_var_name = mangle_prefix + x.m_name;
         }
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
@@ -4323,7 +4331,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(init_value_bits, 0)));
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4347,7 +4355,7 @@ public:
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((double)0)));
                     }
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4383,7 +4391,7 @@ public:
                         module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
                     } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
-                        set_global_variable_linkage_as_common(ptr, x.m_abi);
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
                 }
             }
@@ -4399,7 +4407,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(1, 0)));
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4436,7 +4444,7 @@ public:
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(void_ptr))
                             );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4491,7 +4499,7 @@ public:
                                     llvm::ConstantPointerNull::get(
                                         static_cast<llvm::PointerType*>(void_ptr))
                                     );
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     }
                     llvm_symtab[h] = ptr;
@@ -4507,13 +4515,13 @@ public:
                             // For common blocks (structs with zeroinitializer), use CommonLinkage
                             // to allow multiple definitions across compilation units to be merged.
                             if (init_value->isNullValue()) {
-                                set_global_variable_linkage_as_common(ptr, x.m_abi);
+                                set_global_variable_linkage_as_common(ptr, x);
                             }
                         } else {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     llvm::Constant::getNullValue(type)
                                 );
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     }
                     llvm_symtab[h] = ptr;
@@ -4531,12 +4539,12 @@ public:
                         // For common blocks (structs with zeroinitializer), use CommonLinkage
                         // to allow multiple definitions across compilation units to be merged.
                         if (init_value->isNullValue()) {
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     } else {
                         module->getNamedGlobal(llvm_var_name)
                             ->setInitializer(llvm::Constant::getNullValue(type));
-                        set_global_variable_linkage_as_common(ptr, x.m_abi);
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
                 }
                 llvm_symtab[h] = ptr;
@@ -4586,7 +4594,7 @@ public:
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(x_ptr))
                             );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4683,7 +4691,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::Constant::getNullValue(type)
                         );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
