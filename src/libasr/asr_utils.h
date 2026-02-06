@@ -4812,6 +4812,9 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
         return struct_sym;
     }
     std::string struct_name = ASRUtils::symbol_name(struct_sym);
+    if (struct_name == "~unlimited_polymorphic_type") {
+        return struct_sym;
+    }
 
     // Get the module that owns this struct
     ASR::symbol_t* struct_module = ASRUtils::get_asr_owner(struct_sym);

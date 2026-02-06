@@ -3261,7 +3261,11 @@ public:
                             target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
                         }
                         assoc_variable->m_type = target_type;
-                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                        ASR::symbol_t* type_decl = select_variable_m_type_declaration;
+                        if (type_decl) {
+                            type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+                        }
+                        assoc_variable->m_type_declaration = type_decl;
                         assoc_variable->m_dependencies = selector_variable_dependencies;
                         assoc_variable->n_dependencies = selector_variable_n_dependencies;
                     }
