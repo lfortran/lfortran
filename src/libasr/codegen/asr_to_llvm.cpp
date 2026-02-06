@@ -7247,7 +7247,14 @@ public:
         llvm::Value* value_data = nullptr;
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
         if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-            value_data = arr_descr->get_pointer_to_data(x.m_value, value_type, value_desc, module.get());
+            ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(value_type));
+            llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                value_type_past_alloc, module.get());
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
+                value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+            }
+            value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
         } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                    value_physical_type == ASR::array_physical_typeType::PointerArray) {
