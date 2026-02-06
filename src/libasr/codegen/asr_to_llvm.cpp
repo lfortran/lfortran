@@ -9610,13 +9610,10 @@ public:
             m_old == ASR::array_physical_typeType::PointerArray) {
             if (ASRUtils::is_character(*ASRUtils::extract_type(ASRUtils::expr_type(m_arg)))) {
                 // For character arrays in bind(c) context
-                if (ASRUtils::is_fixed_size_array(m_type)) {
-                    // Fixed size character array - ensure correct type
-                    ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
-                    llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
-                    tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
-                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
-                }
+                ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
+                llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
+                tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
+                tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
             }
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
