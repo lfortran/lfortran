@@ -694,6 +694,7 @@ class ASRToLLVMVisitor;
              * @param array_data_ptr Plain pointer to array.
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
+            llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
             
 
             void set_module(llvm::Module* module_);
