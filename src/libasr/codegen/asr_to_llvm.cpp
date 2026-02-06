@@ -4226,8 +4226,22 @@ public:
             [](llvm::Constant* elem) { return elem->isNullValue(); });
     }
 
-    void set_global_variable_linkage_as_common(llvm::Value* ptr, ASR::abiType x_abi) {
-        if ( compiler_options.separate_compilation ) {
+    bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
+        if (!compiler_options.separate_compilation
+                || x.m_abi == ASR::abiType::ExternalUndefined) {
+            return false;
+        }
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(
+            const_cast<ASR::symbol_t*>(&x.base));
+        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+            return startswith(ASRUtils::symbol_name(owner), "file_common_block_");
+        }
+        return false;
+    }
+
+    void set_global_variable_linkage_as_common(llvm::Value* ptr,
+            const ASR::Variable_t &x) {
+        if (needs_common_linkage_for_global(x)) {
             /*
                 In case of global variables without initialization, clang
                 generates a common symbol. For the following C code:
@@ -4266,9 +4280,7 @@ public:
             llvm::GlobalVariable *gv = llvm::cast<llvm::GlobalVariable>(
                 ptr
             );
-            if ( x_abi != ASR::abiType::ExternalUndefined ) {
-                gv->setLinkage(llvm::GlobalValue::CommonLinkage);
-            }
+            gv->setLinkage(llvm::GlobalValue::CommonLinkage);
         }
     }
 
@@ -4298,11 +4310,7 @@ public:
             // for external global variable with bindc, use the C name
             llvm_var_name = x.m_bindc_name;
         } else {
-            if ( !( ASRUtils::is_struct(*x.m_type) || ASRUtils::is_class_type(x.m_type) ) ) {
-                llvm_var_name = mangle_prefix + x.m_name;
-            } else {
-                llvm_var_name = x.m_name;
-            }
+            llvm_var_name = mangle_prefix + x.m_name;
         }
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
@@ -4323,7 +4331,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(init_value_bits, 0)));
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4347,7 +4355,7 @@ public:
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((double)0)));
                     }
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4383,7 +4391,7 @@ public:
                         module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
                     } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
-                        set_global_variable_linkage_as_common(ptr, x.m_abi);
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
                 }
             }
@@ -4399,7 +4407,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(1, 0)));
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4436,7 +4444,7 @@ public:
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(void_ptr))
                             );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4491,7 +4499,7 @@ public:
                                     llvm::ConstantPointerNull::get(
                                         static_cast<llvm::PointerType*>(void_ptr))
                                     );
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     }
                     llvm_symtab[h] = ptr;
@@ -4507,13 +4515,13 @@ public:
                             // For common blocks (structs with zeroinitializer), use CommonLinkage
                             // to allow multiple definitions across compilation units to be merged.
                             if (init_value->isNullValue()) {
-                                set_global_variable_linkage_as_common(ptr, x.m_abi);
+                                set_global_variable_linkage_as_common(ptr, x);
                             }
                         } else {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     llvm::Constant::getNullValue(type)
                                 );
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     }
                     llvm_symtab[h] = ptr;
@@ -4531,12 +4539,12 @@ public:
                         // For common blocks (structs with zeroinitializer), use CommonLinkage
                         // to allow multiple definitions across compilation units to be merged.
                         if (init_value->isNullValue()) {
-                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            set_global_variable_linkage_as_common(ptr, x);
                         }
                     } else {
                         module->getNamedGlobal(llvm_var_name)
                             ->setInitializer(llvm::Constant::getNullValue(type));
-                        set_global_variable_linkage_as_common(ptr, x.m_abi);
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
                 }
                 llvm_symtab[h] = ptr;
@@ -4586,7 +4594,7 @@ public:
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(x_ptr))
                             );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -4683,7 +4691,7 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::Constant::getNullValue(type)
                         );
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    set_global_variable_linkage_as_common(ptr, x);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -7235,7 +7243,14 @@ public:
         llvm::Value* value_data = nullptr;
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
         if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-            value_data = arr_descr->get_pointer_to_data(x.m_value, value_type, value_desc, module.get());
+            ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(value_type));
+            llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                value_type_past_alloc, module.get());
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
+                value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+            }
+            value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
         } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                    value_physical_type == ASR::array_physical_typeType::PointerArray) {
@@ -8107,6 +8122,28 @@ public:
         this->visit_expr(*x.m_overloaded);
     }
 
+    // Logical arrays use i8 storage; scalar logicals use i1.
+    // These two helpers handle the boundary conversions in one place.
+    llvm::Value* logical_store_val(llvm::Value* v) {
+        if (v->getType()->isIntegerTy(1))
+            return builder->CreateZExt(v, llvm::Type::getInt8Ty(context));
+        return v;
+    }
+
+    llvm::Value* logical_load_val(llvm::Value* ptr, ASR::expr_t* x,
+                                  bool is_volatile = false) {
+        if (x->type == ASR::exprType::ArrayItem &&
+            ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
+            llvm::Value* v = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context), ptr, is_volatile);
+            return builder->CreateICmpNE(v,
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
+        }
+        llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+            x, ASRUtils::expr_type(x), module.get());
+        return llvm_utils->CreateLoad2(t, ptr, is_volatile);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
@@ -8833,13 +8870,8 @@ public:
         }
         load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
-        // Logical arrays use byte-backed storage (i8) in memory; convert scalar i1 values
-        // to i8 before storing into an array element.
-        if (x.m_target->type == ASR::exprType::ArrayItem &&
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_target)) &&
-            value->getType()->isIntegerTy(1)) {
-            value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
-        }
+        if (x.m_target->type == ASR::exprType::ArrayItem)
+            value = logical_store_val(value);
 
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
@@ -9757,16 +9789,7 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                // Logical arrays are stored as byte-backed (i8) in memory; load as i8 and
-                // convert to scalar i1 for expression semantics.
-                if (x->type == ASR::exprType::ArrayItem &&
-                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
-                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
-                } else {
-                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                tmp = logical_load_val(tmp, x, is_volatile);
             }
         }
     }
@@ -16182,18 +16205,12 @@ public:
                         use_value = true;
                     }
                     if (use_value) {
-                        // Logical arrays use i8 storage, but scalar logical arguments
-                        // are passed as i1*. If an array element is passed as an
-                        // actual argument, bitcast its pointer to the expected type.
-                        if (ASRUtils::is_logical(*arg_type_) && value->getType()->isPointerTy()) {
-                            llvm::Type* expected_ptr_type = llvm::Type::getInt1Ty(context)->getPointerTo();
-                            if (value->getType() != expected_ptr_type) {
-                                tmp = builder->CreateBitCast(value, expected_ptr_type);
-                            } else {
-                                tmp = value;
-                            }
-                        } else {
-                            tmp = value;
+                        tmp = value;
+                        // Logical array elements are i8*; subroutine args expect i1*.
+                        if (ASRUtils::is_logical(*arg_type_) && tmp->getType()->isPointerTy()) {
+                            llvm::Type* expected = llvm::Type::getInt1Ty(context)->getPointerTo();
+                            if (tmp->getType() != expected)
+                                tmp = builder->CreateBitCast(tmp, expected);
                         }
                     }
                     if (!use_value && orig_arg != nullptr) {

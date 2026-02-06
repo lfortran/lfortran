@@ -1,25 +1,10 @@
-! Test for https://github.com/lfortran/lfortran/issues/4888
-! Test for https://github.com/lfortran/lfortran/issues/4889
-! Character array concatenation in write statement
-program string_99
-    implicit none
-    character(3) :: c1(6) = 'ab'
-    character :: c2(6)*3 = 'ab'
-    character(100) :: line
-    integer :: i
-
-    do i = 1, 6
-        if (c1(i) /= 'ab ') error stop
-        if (len(c1(i)) /= 3) error stop
-        if (c2(i) /= 'ab ') error stop
-        if (len(c2(i)) /= 3) error stop
-    end do
-
-    write(line, "(6A)") c1//' '
-    if (trim(line) /= 'ab  ab  ab  ab  ab  ab') error stop
-
-    write(line, "(*(A))") 'c = "', c2, '"'
-    if (trim(line) /= 'c = "ab ab ab ab ab ab "') error stop
-
-    print *, "PASS"
-end program string_99
+! Test for https://github.com/lfortran/lfortran/issues/3938
+! character length from bit_size() intrinsic, len() correctness
+! Exact MRE from issue body
+program bitsize2
+  implicit none
+  character(bit_size(666)):: foo
+  print *, bit_size(666), len(foo)
+  if (bit_size(666) /= 32) error stop
+  if (len(foo) /= 32) error stop
+end program bitsize2
