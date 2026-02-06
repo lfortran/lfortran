@@ -916,15 +916,9 @@ namespace LCompilers {
                                 llvm::Type* data_field_type = class_type->getStructElementType(1);
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
                                 
-                                llvm::Type* i8_type = llvm::Type::getInt8Ty(context);
-                                llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
                                 llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
                                 llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
-                                llvm::Value* elem_size = llvm_utils->get_class_type_size_from_vptr(vptr);
-                                llvm::Value* idx_i64 = builder->CreateSExtOrTrunc(idx, i64_type);
-                                llvm::Value* byte_offset = builder->CreateMul(idx_i64, elem_size);
-                                llvm::Value* data_ptr_i8 = builder->CreateBitCast(data_ptr, i8_type->getPointerTo());
-                                llvm::Value* element_ptr_i8 = llvm_utils->create_ptr_gep2(i8_type, data_ptr_i8, byte_offset);
+                                llvm::Value* element_ptr_i8 = llvm_utils->get_dynamic_element_ptr(data_ptr, idx, vptr);
                                 tmp = builder->CreateBitCast(element_ptr_i8, polymorphic_type->getPointerTo());
                             }
                         }
