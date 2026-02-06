@@ -3397,9 +3397,20 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_unit != nullptr) {
-            diag.codegen_error_label("unit in write() is not implemented yet",
-                                     {x.m_unit->base.loc}, "not implemented");
-            throw CodeGenAbort();
+            if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_unit)) {
+                    int64_t unit = ASR::down_cast<ASR::IntegerConstant_t>(x.m_unit)->m_n;
+                    if (unit != 6) { //6 is default unit
+                        diag.codegen_error_label(
+                            "Only unit=6 (stdout) is supported in WASM write()",
+                            {x.m_unit->base.loc}, "not implemented");
+                        throw CodeGenAbort();
+                    }
+                } else {
+                    diag.codegen_error_label(
+                        "Non-constant unit in write() is not supported in WASM",
+                        {x.m_unit->base.loc}, "not implemented");
+                    throw CodeGenAbort();
+                }
         }
         if( x.n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){ // loop on stringformat args only.
             this->visit_expr(*x.m_values[0]);
