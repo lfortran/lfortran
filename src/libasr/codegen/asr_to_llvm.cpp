@@ -1478,7 +1478,7 @@ public:
 
     llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
         std::string struct_name = (std::string)st->m_name;
-        if (struct_name == "~unlimited_polymorphic_type") {
+        if (ASRUtils::is_unlimited_polymorphic_type(st)) {
             if (!compiler_options.new_classes) {
                 if (is_pointer) {
                     return llvm::Type::getVoidTy(context)->getPointerTo();
@@ -7699,10 +7699,8 @@ public:
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
-                std::string value_struct_t_name = "";
                 ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))));
-                value_struct_t_name = value_struct_t->m_name;
                 LCOMPILERS_ASSERT(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))
                                   == ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)));
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -7715,7 +7713,7 @@ public:
                 llvm::Value* value_class = llvm_utils->CreateLoad2(ptr_type, llvm_utils->create_gep2(value_llvm_type, llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep2(value_llvm_type, llvm_target, 0));
 
-                if ( value_struct_t_name == "~unlimited_polymorphic_type" ) {
+                if ( ASRUtils::is_unlimited_polymorphic_type(value_struct_t) ) {
                     // we need to cast `value_class` to `void*`
                     llvm::Type* void_ptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     value_class = builder->CreateBitCast(value_class, void_ptr_type);

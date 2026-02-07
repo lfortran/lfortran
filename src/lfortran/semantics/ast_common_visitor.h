@@ -6494,9 +6494,7 @@ public:
                         nullptr,
                         0,
                         true,
-                        ASRUtils::symbol_name(v) == std::string("~unlimited_polymorphic_type")
-                        ? true
-                        : false));
+                        derived_type_name == "~unlimited_polymorphic_type"));
                     } else { 
                         diag.add(Diagnostic(
                             "Derived type `" + derived_type_name + "` is not defined",

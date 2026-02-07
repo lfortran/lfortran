@@ -365,10 +365,11 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
+        bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(der_type);
         std::string der_type_name = std::string(der_type->m_name);
         if (!compiler_options.new_classes) {
             der_type_name += "_polymorphic";
-        } else if (der_type_name != "~unlimited_polymorphic_type") {
+        } else if (!is_upoly) {
             der_type_name += "_class";
         }
         llvm::StructType* der_type_llvm = nullptr;
@@ -377,7 +378,7 @@ namespace LCompilers {
         } else {
             if ( compiler_options.new_classes ) {
                 llvm::Type* inner_type = nullptr;
-                if (der_type_name == "~unlimited_polymorphic_type") {
+                if (is_upoly) {
                     // %_unlimited_polymorphic_type = <(i32,..)**, i8*>
                     inner_type = i8_ptr;
                 } else {
@@ -9137,9 +9138,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // Get Copy function (for non-unlimited polymorphic types)
             llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
             llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-            bool is_unlimited_polymorphic = (std::string)struct_sym->m_name == "~unlimited_polymorphic_type";
+            bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(struct_sym);
             llvm::Value* fn = nullptr;
-            if (!is_unlimited_polymorphic) {
+            if (!is_upoly) {
                 llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
                 fn = llvm_utils->CreateLoad2(
                     llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
@@ -9171,7 +9172,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
             // For unlimited polymorphic, handle specially
-            if (is_unlimited_polymorphic) {
+            if (is_upoly) {
                 // Get copy function from each element's vptr
                 llvm::Value* vptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->vptr_type->getPointerTo());
                 vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
@@ -9284,8 +9285,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 }
             }
             
-            bool is_unlimited_polymorphic = (std::string)struct_sym->m_name == "~unlimited_polymorphic_type";
-            if (is_unlimited_polymorphic || (is_src_class && is_dest_class)) {
+            bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(struct_sym);
+            if (is_upoly || (is_src_class && is_dest_class)) {
                 // For unlimited polymorphic structs or class-to-class copy,
                 // we need to copy from vtable copy function to handle derived types
                 llvm::Value* vptr = builder->CreateBitCast(src, llvm_utils->vptr_type->getPointerTo());
@@ -9298,7 +9299,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::Type* poly_llvm_type = llvm_utils->getClassType(struct_sym, false);
                 llvm::Value* src_ptr;
                 llvm::Value* dest_ptr;
-                if (is_unlimited_polymorphic) {
+                if (is_upoly) {
                     src_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                         llvm_utils->create_gep2(poly_llvm_type, src, 1));
                     dest_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
