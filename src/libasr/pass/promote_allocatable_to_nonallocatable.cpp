@@ -151,9 +151,23 @@ class PromoteAllocatableToNonAllocatable:
             x_args.reserve(al, x.n_args);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
+                bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(
+                    *ASRUtils::expr_type(alloc_arg.m_a)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(alloc_arg.m_a));
+                bool is_deferred_len_character_array = false;
+                if (is_allocatable_array) {
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::expr_type(alloc_arg.m_a)));
+                    if (ASRUtils::is_character(*element_type)) {
+                        ASR::String_t* str = ASR::down_cast<ASR::String_t>(element_type);
+                        is_deferred_len_character_array =
+                            str->m_len_kind == ASR::string_length_kindType::DeferredLength;
+                    }
+                }
                 if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) &&
-                    ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(alloc_arg.m_a)) &&
-                    ASRUtils::is_array(ASRUtils::expr_type(alloc_arg.m_a)) &&
+                    is_allocatable_array &&
+                    !is_deferred_len_character_array &&
                     ASR::is_a<ASR::Variable_t>(
                         *ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) &&
                     !ASR::is_a<ASR::Module_t>(

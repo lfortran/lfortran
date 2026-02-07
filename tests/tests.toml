@@ -4966,6 +4966,16 @@ llvm = true
 options = "-c --separate-compilation"
 
 [[test]]
+filename = "common_linkage_separate_compilation_01.f90"
+llvm = true
+options = "--separate-compilation"
+
+[[test]]
+filename = "module_struct_global_separate_compilation_01.f90"
+llvm = true
+options = "--separate-compilation"
+
+[[test]]
 filename = "../integration_tests/operator_overloading_12.f90"
 asr = true
 

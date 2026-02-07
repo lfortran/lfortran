@@ -1,0 +1,19 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%t = type { i32 }
+
+@__module_module_struct_global_separate_compilation_01_targets = global %t zeroinitializer
+
+define void @__module_module_struct_global_separate_compilation_01_set_targets(i32* %v) {
+.entry:
+  %0 = load i32, i32* %v, align 4
+  store i32 %0, i32* getelementptr inbounds (%t, %t* @__module_module_struct_global_separate_compilation_01_targets, i32 0, i32 0), align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_set_targets
+
+FINALIZE_SYMTABLE_set_targets:                    ; preds = %return
+  ret void
+}

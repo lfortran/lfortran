@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-module_struct_global_separate_compilation_01-043bc7f",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/module_struct_global_separate_compilation_01.f90",
+    "infile_hash": "08f54b36d504349558d92a29ac0ea311917967e95e6d32b9019a9574",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-module_struct_global_separate_compilation_01-043bc7f.stdout",
+    "stdout_hash": "fcbd403421436a3fa4b7dc768708592cff659691b525b47eceb46fa8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

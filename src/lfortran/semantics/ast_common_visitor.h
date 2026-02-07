@@ -3681,7 +3681,7 @@ public:
             rhs_type = ASR::down_cast<ASR::String_t>(
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
         }
-        int64_t lhs_len, rhs_len;
+        int64_t lhs_len = 0, rhs_len = 0;
         bool is_lhs_length_constant = ASRUtils::extract_value(lhs_type->m_len, lhs_len);
         bool is_rhs_length_constant = ASRUtils::extract_value(rhs_type->m_len, rhs_len);
         if( is_lhs_length_constant && is_rhs_length_constant ){
