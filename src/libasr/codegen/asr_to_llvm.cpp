@@ -9796,13 +9796,16 @@ public:
 
         // 3. General Load Handling
         // This is only reached if the specialized blocks above didn't return.
-        // This handles standard scalars (i32, f32, etc.) and fixes the GDB error.
         if (load_ref) {
             ASR::ttype_t* t = ASRUtils::expr_type(x);
             if (t) {
+                // String descriptors must remain as pointers for GEP operations.
+                if (ASRUtils::is_character(*t)) {
+                    return; 
+                }
+
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, t, module.get());
                 if (x_llvm_type && !x_llvm_type->isVoidTy()) {
-                    // Check if tmp is actually a pointer. LLVM Load requires a pointer.
                     if (tmp->getType()->isPointerTy()) {
                         tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
                     }
