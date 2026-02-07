@@ -3173,6 +3173,14 @@ public:
                                                        type_stmt_type->m_vartype, false, false, m_dims,
                                                        nullptr,
                                                        type_declaration, ASR::abiType::Source);
+                        // Convert AssumedLength to DeferredLength for select type associate statements
+                        if (ASRUtils::is_character(*selector_type)) {
+                            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::extract_type(selector_type));
+                            if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                                str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
+                            }
+                        }
                         selector_ttype = selector_variable ? selector_variable->m_type : nullptr;
                         if (selector_ttype) {
                             ASR::ttype_t* view_type = make_typed_selector_view_type(

@@ -7508,8 +7508,64 @@ public:
                     llvm_target = arr_descr->get_pointer_to_data(x.m_target, target_type, llvm_target, module.get());
                 }
                 builder->CreateStore(llvm_value, llvm_target);
-            } else if(ASRUtils::is_string_only(value_type)){ // Maybe we can handle this case in a string api function
+            } else if ((ASRUtils::is_string_only(value_type)) && (ASRUtils::is_unlimited_polymorphic_type(target_type))){
+                // String to unlimited polymorphic association
+                ASR::ttype_t* target_base_type = ASRUtils::type_get_past_pointer(target_type);
+                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, target_base_type, module.get());
+                llvm::Value* target_ptr = llvm_target;
+                if (LLVM::is_llvm_pointer(*target_type)) {
+                    // Allocate unlimited polymorphic wrapper if it's NULL
+                    llvm::Value* null_cond = builder->CreateICmpEQ(
+                        llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
+                        llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                    llvm_utils->create_if_else(
+                        null_cond,
+                        [&]() {
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, target_base_type,
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, wrapper_size);
+                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                wrapper_size, llvm::MaybeAlign());
+                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                            builder->CreateStore(wrapper_ptr, llvm_target);
+                        }, []() {});
+                    target_ptr = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
+                }
+                struct_api->store_intrinsic_type_vptr(value_type,
+                    ASRUtils::extract_kind_from_ttype_t(value_type), target_ptr, module.get());
+                llvm::Value* value_ptr = llvm_value;
+                if (!llvm_value->getType()->isPointerTy()) {
+                    // String descriptor is a value, need to allocate and get its address
+                    llvm::Value* temp_alloca = llvm_utils->CreateAlloca(*builder, llvm_value->getType());
+                    builder->CreateStore(llvm_value, temp_alloca);
+                    value_ptr = temp_alloca;
+                }
+                llvm::Value* void_data_ptr = builder->CreateBitCast(value_ptr, llvm_utils->i8_ptr); //i8*
+                builder->CreateStore(void_data_ptr, llvm_utils->create_gep2(target_llvm_type, target_ptr, 1));
+            
+            } else if(ASRUtils::is_string_only(value_type) || // Maybe we can handle this case in a string api function
+                      (ASRUtils::is_unlimited_polymorphic_type(value_type) && ASRUtils::is_string_only(target_type))) {
+                // Handle for unlimited_polymorphic to string pointers as well
                 LCOMPILERS_ASSERT(ASRUtils::is_string_only(target_type));
+                // If extracting from unlimited polymorphic, get the string descriptor pointer first
+                if (ASRUtils::is_unlimited_polymorphic_type(value_type)) {    
+                    ASR::ttype_t* value_base_type = ASRUtils::type_get_past_pointer(value_type);
+                    llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_value, value_base_type, module.get());
+                    llvm::Value* value_ptr = llvm_value;
+                    if (LLVM::is_llvm_pointer(*value_type)) { 
+                        value_ptr = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), llvm_value);
+                    } 
+                    // Extract data pointer and cast to string_descriptor*  
+                    llvm::Value* data_field_ptr = llvm_utils->create_gep2(value_llvm_type, value_ptr, 1);
+                    llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field_ptr);
+                    llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, target_type, module.get());
+                    llvm_value = builder->CreateBitCast(data_ptr, string_desc_type->getPointerTo());
+                }
+
                 llvm::Value* target_ptr = llvm_utils->get_string_data(
                     ASRUtils::get_string_type(target_type), llvm_target, true); //i8**
                 llvm::Value* value_ptr = llvm_utils->get_string_data(
@@ -7521,7 +7577,7 @@ public:
                         llvm::Value* target_length = llvm_utils->get_string_length(
                             ASRUtils::get_string_type(target_type), llvm_target, true); // i64*
                         llvm::Value* value_length = llvm_utils->get_string_length(
-                            ASRUtils::get_string_type(value_type), llvm_value); // i64
+                            ASRUtils::get_string_type(target_type), llvm_value); // i64
                         builder->CreateStore(value_length, target_length);
                         break;
                     }
