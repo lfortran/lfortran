@@ -9935,13 +9935,14 @@ public:
     }
     
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
-        // Check if *x is nullptr.
         if( x == nullptr ) {
             throw CodeGenError("Internal error: x is nullptr");
         }
 
         this->visit_expr(*x);
 
+        // 1. Specialized Logic for New Classes / Struct Members
+        // If this block handles the load, we MUST return to avoid double-loading.
         if (compiler_options.new_classes && load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
@@ -9950,37 +9951,8 @@ public:
             return;
         }
 
-        // INTERNAL READ SUPPORT:
-        // Only load when requested. For internal file READ we call with load_ref=false.
-        if (load_ref) {
-            // ===== INTERNAL FILE FIX =====
-            // Use camelCase is_descriptorString to match ASRUtils definition
-            bool is_internal_unit =
-                ASRUtils::is_character(*ASRUtils::expr_type(x)) &&
-                ASRUtils::is_descriptorString(ASRUtils::expr_type(x));
-
-            if (!is_internal_unit) {
-                llvm::Type* x_llvm_type =
-                    llvm_utils->get_type_from_ttype_t_util(
-                        x,
-                        ASRUtils::expr_type(x),
-                        module.get());
-
-                tmp = llvm_utils->CreateLoad2(
-                    x_llvm_type,
-                    tmp,
-                    is_volatile);
-            }
-        }
-
-        if (compiler_options.new_classes && load_ref && 
-                LLVM::is_llvm_pointer(*ASRUtils::expr_type(x)) &&
-                ASRUtils::is_unlimited_polymorphic_type(x)) {
-            llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-            tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-            return;
-        }
-
+        // 2. Specialized Logic for Arrays and Struct Instance Members
+        // If this block handles the load, we MUST return.
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
