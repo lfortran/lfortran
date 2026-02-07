@@ -918,7 +918,7 @@ namespace LCompilers {
                                 
                                 llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
                                 llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
-                                llvm::Value* element_ptr_i8 = llvm_utils->get_dynamic_element_ptr(data_ptr, idx, vptr);
+                                llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
                                 tmp = builder->CreateBitCast(element_ptr_i8, polymorphic_type->getPointerTo());
                             }
                         }

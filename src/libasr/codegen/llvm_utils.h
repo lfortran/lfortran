@@ -695,7 +695,7 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
-            llvm::Value* get_dynamic_element_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
+            llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
             
 
             void set_module(llvm::Module* module_);
