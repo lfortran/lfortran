@@ -16049,6 +16049,13 @@ public:
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
+                if (orig_arg &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(arg_type)) &&
+                    (!ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value) || compiler_options.new_classes) &&
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
+                    tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                        al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
+                }
 
                 if( x_abi == ASR::abiType::BindC ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
@@ -16345,6 +16352,30 @@ public:
                     // tmp is a string_descriptor* - extract the char* data pointer (field 0)
                     llvm::Value* data_ptr = llvm_utils->CreateGEP2(llvm_utils->string_descriptor, tmp, 0);
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr);
+                }
+            }
+
+            // Old classes: if argument lowering produced a class wrapper pointer
+            // but the callee expects a concrete struct pointer, unwrap `%class`
+            // to its data field (`field #1`) before the call.
+            if (orig_arg && !compiler_options.new_classes) {
+                llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                    orig_arg->m_type, module.get());
+                if (expected_type->isPointerTy() && tmp->getType()->isPointerTy() &&
+                    tmp->getType() != expected_type) {
+                    llvm::Type* tmp_pointee_type =
+                        llvm::cast<llvm::PointerType>(tmp->getType())->getPointerElementType();
+                    if (tmp_pointee_type && tmp_pointee_type->isStructTy()) {
+                        llvm::StructType* class_struct_type =
+                            llvm::cast<llvm::StructType>(tmp_pointee_type);
+                        if (class_struct_type->getNumElements() == 2 &&
+                            class_struct_type->getElementType(1) == expected_type) {
+                            llvm::Value* data_ptr = llvm_utils->create_gep2(
+                                class_struct_type, tmp, 1);
+                            tmp = llvm_utils->CreateLoad2(expected_type, data_ptr);
+                        }
+                    }
                 }
             }
 
@@ -17270,6 +17301,7 @@ public:
                     ASRUtils::symbol_get_past_external(x.m_name));
             }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            coerce_call_args_to_function_type(fntype, args);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -17448,6 +17480,7 @@ public:
                 }
             }
             args = convert_call_args(x, is_method);
+            coerce_call_args_to_function_type(fntype, args);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -17461,6 +17494,7 @@ public:
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
+            coerce_call_args_to_function_type(fntype, args);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
@@ -17504,6 +17538,7 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
+            coerce_call_args_to_function_type(fn->getFunctionType(), args);
             builder->CreateCall(fn, args);
         }
     }
@@ -17591,6 +17626,37 @@ public:
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
                                 ASR::ttype_t* asr_return_type) {
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+    }
+
+    void coerce_call_args_to_function_type(llvm::FunctionType* fntype,
+                                           std::vector<llvm::Value*>& args) {
+        size_t n = std::min((size_t)fntype->getNumParams(), args.size());
+        for (size_t i = 0; i < n; i++) {
+            llvm::Type* expected_type = fntype->getParamType(i);
+            llvm::Value* arg = args[i];
+            if (arg->getType() == expected_type) continue;
+
+            if (arg->getType()->isPointerTy() && expected_type->isPointerTy()) {
+                if (!compiler_options.new_classes) {
+                    llvm::Type* arg_pointee_type =
+                        llvm::cast<llvm::PointerType>(arg->getType())->getPointerElementType();
+                    if (arg_pointee_type && arg_pointee_type->isStructTy()) {
+                        llvm::StructType* class_struct_type =
+                            llvm::cast<llvm::StructType>(arg_pointee_type);
+                        if (class_struct_type->getNumElements() == 2 &&
+                            class_struct_type->getElementType(1) == expected_type) {
+                            llvm::Value* data_ptr = llvm_utils->create_gep2(
+                                class_struct_type, arg, 1);
+                            arg = llvm_utils->CreateLoad2(expected_type, data_ptr);
+                        }
+                    }
+                }
+                if (arg->getType() != expected_type) {
+                    arg = builder->CreateBitCast(arg, expected_type);
+                }
+                args[i] = arg;
+            }
+        }
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name, llvm::Value *llvm_polymorphic) {
