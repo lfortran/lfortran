@@ -233,7 +233,7 @@ if (WITH_LIRIC)
     set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_OPTIONS
         $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>)
     set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
-        "${LIRIC_LIB}")
+        "${LIRIC_LIB}" stdc++)
     set(HAVE_LFORTRAN_LLVM yes)
     set(WITH_LLVM yes)
 elseif (WITH_LLVM)
