@@ -752,7 +752,8 @@ intrinsic_funcs_args = {
     "Merge": [
         {
             "args": [("any", "any", "bool")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "equal_char_len_args": [0, 1]
         }
     ],
     "Mergebits": [
@@ -1060,6 +1061,17 @@ def add_create_func_arg_type_src(func_name):
                 src += 5 * indent + 'return nullptr;\n'
                 src += 4 * indent + '}\n'
                 src += 3 * indent + '}\n'
+        equal_char_len_args = arg_info.get("equal_char_len_args", None)
+        if equal_char_len_args:
+            arg0, arg1 = equal_char_len_args[0], equal_char_len_args[1]
+            src += 3 * indent + f'if (is_character(*arg_type{arg0}) && is_character(*arg_type{arg1})) {{\n'
+            src += 4 * indent + f'int64_t len0 = ASRUtils::get_fixed_string_len(arg_type{arg0});\n'
+            src += 4 * indent + f'int64_t len1 = ASRUtils::get_fixed_string_len(arg_type{arg1});\n'
+            src += 4 * indent + f'if (len0 != -1 && len1 != -1 && len0 != len1) {{\n'
+            src += 5 * indent + f'append_error(diag, "Unequal character lengths (" + std::to_string(len0) + "/" + std::to_string(len1) + ") in {func_name.upper()} intrinsic", loc);\n'
+            src += 5 * indent + 'return nullptr;\n'
+            src += 4 * indent + '}\n'
+            src += 3 * indent + '}\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
