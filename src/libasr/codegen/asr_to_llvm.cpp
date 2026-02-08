@@ -17606,15 +17606,18 @@ public:
 
             if (arg->getType()->isPointerTy() && expected_type->isPointerTy()) {
                 if (!compiler_options.new_classes) {
-                    llvm::Type* arg_pointee_type =
+                    llvm::Type* arg_pointee_type = nullptr;
+#if LLVM_VERSION_MAJOR < 16
+                    arg_pointee_type =
                         llvm::cast<llvm::PointerType>(arg->getType())->getPointerElementType();
+#endif
+                    if (auto* alloca_arg = llvm::dyn_cast<llvm::AllocaInst>(arg)) {
+                        arg_pointee_type = alloca_arg->getAllocatedType();
+                    }
                     if (arg_pointee_type && arg_pointee_type->isStructTy()) {
                         llvm::StructType* class_struct_type =
                             llvm::cast<llvm::StructType>(arg_pointee_type);
                         if (class_struct_type->getNumElements() == 2 &&
-                            class_struct_type->getElementType(0)->isPointerTy() &&
-                            llvm::cast<llvm::PointerType>(class_struct_type->getElementType(0))
-                                ->getPointerElementType()->isPointerTy() &&
                             class_struct_type->getElementType(1)->isPointerTy()) {
                             llvm::Value* data_ptr = llvm_utils->create_gep2(
                                 class_struct_type, arg, 1);
