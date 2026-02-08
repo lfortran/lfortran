@@ -1281,6 +1281,230 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
 }; // class CommonVisitorMethods
 
+inline void validate_format_string(const std::string& fmt_str, const Location& loc,
+                                   diag::Diagnostics& diag) {
+    enum class DescType { NONE, DATA, SLASH, COLON, CONTROL };
+    
+    if (fmt_str.empty()) return;
+    size_t start = fmt_str.find('(');
+    size_t end = fmt_str.rfind(')');
+    if (start == std::string::npos || end == std::string::npos || start >= end) {
+        return;
+    }
+    
+    std::string content = fmt_str.substr(start + 1, end - start - 1);
+    DescType prev_desc = DescType::NONE;
+    
+    for (size_t i = 0; i < content.length(); ) {
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        char c = content[i];
+        if (c == ',') {
+            prev_desc = DescType::NONE;
+            i++;
+            continue;
+        }
+        if (c == ':') {
+            prev_desc = DescType::COLON;
+            i++;
+            continue;
+        }
+        if (c == ')') {
+            break;
+        }
+        if (c == '/') {
+            while (i < content.length() && content[i] == '/') {
+                i++;
+            }
+            while (i < content.length() && std::isspace(content[i])) {
+                i++;
+            }
+            prev_desc = DescType::SLASH;
+            continue;
+        }
+        
+        if (c == '(') {
+            int depth = 1;
+            i++;
+            while (i < content.length() && depth > 0) {
+                if (content[i] == '(') depth++;
+                else if (content[i] == ')') depth--;
+                i++;
+            }
+            prev_desc = DescType::NONE;
+            continue;
+        }
+        
+        if (c == '\'' || c == '"') {
+            char quote = c;
+            i++;
+            while (i < content.length()) {
+                if (content[i] == quote) {
+                    if (i + 1 < content.length() && content[i + 1] == quote) {
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            prev_desc = DescType::DATA;
+            continue;
+        }
+        
+        bool had_repeat_count = false;
+        while (i < content.length() && std::isdigit(content[i])) {
+            had_repeat_count = true;
+            i++;
+        }
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        c = content[i];
+        
+        DescType current_desc = DescType::NONE;
+        
+        char c_upper = std::toupper(c);
+        
+        if (c_upper == 'A' || c_upper == 'I' || c_upper == 'O' ||
+            c_upper == 'F' || c_upper == 'E' || c_upper == 'D' || c_upper == 'G' || c_upper == 'L') {
+            current_desc = DescType::DATA;
+            
+            if (c_upper == 'E') {
+                size_t j = i + 1;
+                while (j < content.length() && std::isspace(content[j])) j++;
+                if (j < content.length()) {
+                    char next = std::toupper(content[j]);
+                    if (next == 'N' || next == 'S' || next == 'X') {
+                        i = j;
+                    }
+                }
+            } else if (c_upper == 'D') {
+                size_t j = i + 1;
+                while (j < content.length() && std::isspace(content[j])) j++;
+                if (j < content.length() && std::toupper(content[j]) == 'T') {
+                    i = j;
+                }
+            }
+        } else if (c_upper == 'B') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'N' || next == 'Z') {
+                    // BN or BZ - control descriptor
+                    current_desc = DescType::CONTROL;
+                    i = j;
+                } else {
+                    current_desc = DescType::DATA;
+                }
+            } else {
+                current_desc = DescType::DATA;
+            }
+        } else if (c_upper == 'Z') {
+            current_desc = DescType::DATA;
+        } else if (c_upper == 'X') {
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'T') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'R' || next == 'L') {
+                    i = j;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'P') {
+            i++;
+            size_t j = i;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'F' || next == 'E' || next == 'D' || next == 'G') {
+                    prev_desc = DescType::NONE;
+                    i = j;
+                    continue;
+                }
+            }
+            i--;
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'S') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'S' || next == 'P') {
+                    i = j;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c == '+' || c == '-') {
+            i++;
+            continue;
+        } else {
+            i++;
+            continue;
+        }
+        
+        if (current_desc != DescType::NONE && !had_repeat_count) {
+            if (prev_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+            } else if (prev_desc == DescType::CONTROL && current_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+            }
+        }
+        
+        prev_desc = current_desc;
+        i++;
+        
+        while (i < content.length() && 
+               (std::isdigit(content[i]) || content[i] == '.' || std::isspace(content[i]))) {
+            i++;
+            if (i > 0 && std::isspace(content[i-1])) {
+                size_t peek = i;
+                while (peek < content.length() && std::isspace(content[peek])) peek++;
+                if (peek >= content.length() || 
+                    (!std::isdigit(content[peek]) && content[peek] != '.')) {
+                    break;
+                }
+            }
+        }
+        
+        if (i < content.length() && std::toupper(content[i]) == 'E' && 
+            (current_desc == DescType::DATA)) {
+            i++;
+            while (i < content.length() && 
+                   (std::isdigit(content[i]) || std::isspace(content[i]))) {
+                i++;
+                if (i > 0 && std::isspace(content[i-1])) {
+                    size_t peek = i;
+                    while (peek < content.length() && std::isspace(content[peek])) peek++;
+                    if (peek >= content.length() || !std::isdigit(content[peek])) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
@@ -2403,6 +2627,8 @@ public:
 
     void visit_Format(const AST::Format_t &x) {
         format_statements[x.m_label] = x.m_fmt;
+        std::string fmt_str = "(" + std::string(x.m_fmt) + ")";
+        validate_format_string(fmt_str, x.base.base.loc, diag);
         tmp = nullptr;
     }
 
@@ -5560,6 +5786,7 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+                    
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:

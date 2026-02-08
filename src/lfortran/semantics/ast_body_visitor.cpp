@@ -222,7 +222,7 @@ public:
 
     template <typename T>
     void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
-        T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
+        T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));  
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
             al, old_stmt->base.base.loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, old_stmt->base.base.loc, format_statements[label].size(),
@@ -1341,6 +1341,31 @@ public:
                     }));
                 throw SemanticAbort();
             }
+            if (ASR::is_a<ASR::StringConstant_t>(*a_fmt)) {
+                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(a_fmt);
+                std::string fmt_str = std::string(fmt_const->m_s);
+                validate_format_string(fmt_str, a_fmt->base.loc, diag);
+            }
+            else if (ASR::is_a<ASR::Var_t>(*a_fmt)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(a_fmt);
+                ASR::symbol_t* sym = var->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var_sym->m_storage == ASR::storage_typeType::Parameter && 
+                        var_sym->m_value != nullptr &&
+                        ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
+                        ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
+                        std::string fmt_str = std::string(fmt_const->m_s);
+                        validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                    }
+                    else if (var_sym->m_symbolic_value != nullptr &&
+                             ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
+                        ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
+                        std::string fmt_str = std::string(fmt_const->m_s);
+                        validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                    }
+                }
+            }
         }
         std::vector<ASR::asr_t*> newline_for_advance;
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
@@ -1513,6 +1538,31 @@ public:
                                 Label("", {loc})
                             }));
                         throw SemanticAbort();
+                    }
+                    if (ASR::is_a<ASR::StringConstant_t>(*a_fmt)) {
+                        ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(a_fmt);
+                        std::string fmt_str = std::string(fmt_const->m_s);
+                        validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                    }
+                    else if (ASR::is_a<ASR::Var_t>(*a_fmt)) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(a_fmt);
+                        ASR::symbol_t* sym = var->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                            ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                            if (var_sym->m_storage == ASR::storage_typeType::Parameter && 
+                                var_sym->m_value != nullptr &&
+                                ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
+                                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
+                                std::string fmt_str = std::string(fmt_const->m_s);
+                                validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                            }
+                            else if (var_sym->m_symbolic_value != nullptr &&
+                                     ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
+                                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
+                                std::string fmt_str = std::string(fmt_const->m_s);
+                                validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                            }
+                        }
                     }
                 }
             } else if( m_arg_str == std::string("advance") ) {
@@ -6217,6 +6267,12 @@ public:
                         Label("", {x.base.base.loc})
                     }));
                 throw SemanticAbort();
+            }
+            
+            if (ASR::is_a<ASR::StringConstant_t>(*fmt)) {
+                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(fmt);
+                std::string fmt_str = std::string(fmt_const->m_s);
+                validate_format_string(fmt_str, fmt->base.loc, diag);
             }
         } else {
             if (compiler_options.print_leading_space) {

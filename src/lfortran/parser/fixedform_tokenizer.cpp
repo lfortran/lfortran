@@ -903,10 +903,14 @@ struct FixedFormRecursiveDescent {
         for(const auto &io_str: io_names) {
             if (next_is(cur, io_str)) {
                 if (io_str == "format") {
+                    unsigned char *format_start = cur;
                     cur += io_str.size();
                     unsigned char *start;
+                    Location fmt_content_loc;
+                    lex_format(cur, fmt_content_loc, start, diag, false, this->string_start);
                     Location loc;
-                    lex_format(cur, loc, start, diag, false, this->string_start);
+                    loc.first = format_start - string_start;
+                    loc.last = cur - string_start - 1;
                     locations.push_back(loc);
                     YYSTYPE yylval;
                     yylval.string.p = (char*) start;
