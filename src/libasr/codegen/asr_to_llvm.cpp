@@ -12664,7 +12664,7 @@ public:
                     builder->CreateStore(class_value, class_tmp);
                     class_value = class_tmp;
                 }
-                #if LLVM_VERSION_MAJOR >= 17
+                #if LLVM_VERSION_MAJOR >= 15
                 // Opaque pointers collapse pointer-depth information, so
                 // type-based while loops can become non-terminating.
                 if ((ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg)) ||
@@ -12690,7 +12690,7 @@ public:
                 llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(
                     const_cast<ASR::expr_t*>(&x.base), target_type, module.get());
                 llvm::Type* target_ptr_type = target_base_type->getPointerTo();
-                #if LLVM_VERSION_MAJOR < 17
+                #if LLVM_VERSION_MAJOR < 15
                 while (tmp->getType() == target_ptr_type->getPointerTo()) {
                     tmp = llvm_utils->CreateLoad2(target_ptr_type, tmp);
                 }
