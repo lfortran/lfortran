@@ -652,6 +652,59 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
         }
 
+        ASR::expr_t* maybe_cast_class_arg_to_struct(ASR::symbol_t* subrout_sym,
+            size_t arg_idx, ASR::expr_t* arg_expr) {
+            if( arg_expr == nullptr || !ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
+                return arg_expr;
+            }
+            ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
+            if( arg_idx >= subrout->n_args || !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx]) ) {
+                return arg_expr;
+            }
+
+            ASR::expr_t* formal_arg = subrout->m_args[arg_idx];
+            ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
+            if (ASRUtils::is_allocatable(formal_arg_full_type) ||
+                ASRUtils::is_pointer(formal_arg_full_type)) {
+                return arg_expr;
+            }
+            if (!ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                return arg_expr;
+            }
+            ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(arg_expr));
+            ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(formal_arg));
+
+            if( !actual_type || !formal_type ||
+                !ASR::is_a<ASR::StructType_t>(*actual_type) ||
+                !ASR::is_a<ASR::StructType_t>(*formal_type) ) {
+                return arg_expr;
+            }
+
+            if( !ASRUtils::is_class_type(actual_type) || ASRUtils::is_class_type(formal_type) ) {
+                return arg_expr;
+            }
+
+            ASR::symbol_t* actual_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+            ASR::symbol_t* formal_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(formal_arg));
+            if( !actual_struct_sym || !formal_struct_sym ||
+                !ASR::is_a<ASR::Struct_t>(*actual_struct_sym) ||
+                !ASR::is_a<ASR::Struct_t>(*formal_struct_sym) ) {
+                return arg_expr;
+            }
+
+            if( actual_struct_sym != formal_struct_sym ) {
+                return arg_expr;
+            }
+
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, arg_expr->base.loc, arg_expr,
+                ASR::cast_kindType::ClassToStruct,
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(formal_arg)), nullptr));
+        }
+
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
             size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
@@ -671,6 +724,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                             orig_args[i].m_value = new_var;
                         }
                     }
+                    orig_args[i].m_value = maybe_cast_class_arg_to_struct(
+                        subrout_sym, i, orig_args[i].m_value);
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
@@ -851,10 +906,22 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::symbol_t* new_func_sym_ = new_func_sym;
             if( is_external ) {
                 ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                // TODO: Use SymbolTable::get_unique_name to avoid potential
-                // clashes with user defined functions
-                char* new_func_sym_name = ASRUtils::symbol_name(new_func_sym);
-                if( current_scope->resolve_symbol(new_func_sym_name) == nullptr ) {
+                std::string new_func_sym_name = std::string(ASRUtils::symbol_name(new_func_sym));
+                ASR::symbol_t* existing_sym = current_scope->resolve_symbol(new_func_sym_name);
+                if( existing_sym != nullptr ) {
+                    ASR::symbol_t* existing_target = ASRUtils::symbol_get_past_external(existing_sym);
+                    if( existing_target == new_func_sym ) {
+                        new_func_sym_ = existing_sym;
+                    } else {
+                        // Name is occupied by an unrelated symbol (possibly in a
+                        // parent scope). Create a unique alias for this external
+                        // symbol in the current scope.
+                        new_func_sym_name = current_scope->get_unique_name(new_func_sym_name, false);
+                        existing_sym = nullptr;
+                    }
+                }
+                if( existing_sym == nullptr ) {
+                    char* new_func_sym_name_c = s2c(al, new_func_sym_name);
                     if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(func_ext_sym->m_external)) &&
                          ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(func_ext_sym->m_external))->m_type_declaration ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(func_ext_sym->m_external));
@@ -866,20 +933,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         }
                         new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                             ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
-                                new_func_sym_name, new_func_sym, s2c(al, module_name),
-                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name,
+                                new_func_sym_name_c, new_func_sym, s2c(al, module_name),
+                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name_c,
                                 func_ext_sym->m_access));
                     } else {
                         new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                             ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
-                                new_func_sym_name, new_func_sym, func_ext_sym->m_module_name,
-                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name,
+                                new_func_sym_name_c, new_func_sym, func_ext_sym->m_module_name,
+                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name_c,
                                 func_ext_sym->m_access));
                     }
 
                     func_ext_sym->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
-                } else {
-                    new_func_sym_ = current_scope->resolve_symbol(new_func_sym_name);
                 }
             }
             if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){

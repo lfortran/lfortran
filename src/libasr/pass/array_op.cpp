@@ -1021,6 +1021,49 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 al, loc, alloc_args.p, alloc_args.size())));
     }
 
+    ASR::Variable_t* get_base_variable(ASR::expr_t* expr) {
+        ASR::expr_t* cur = expr;
+        while (cur) {
+            if (ASR::is_a<ASR::Var_t>(*cur)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(cur)->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    return ASR::down_cast<ASR::Variable_t>(sym);
+                }
+                return nullptr;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*cur)) {
+                cur = ASR::down_cast<ASR::StructInstanceMember_t>(cur)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*cur)) {
+                cur = ASR::down_cast<ASR::ArrayItem_t>(cur)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*cur)) {
+                cur = ASR::down_cast<ASR::ArraySection_t>(cur)->m_v;
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*cur)) {
+                cur = ASR::down_cast<ASR::ArrayPhysicalCast_t>(cur)->m_arg;
+            } else if (ASR::is_a<ASR::Cast_t>(*cur)) {
+                cur = ASR::down_cast<ASR::Cast_t>(cur)->m_arg;
+            } else {
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+    bool should_auto_realloc_component_assignment(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            return false;
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if (!ASRUtils::is_array(target_type) || !ASRUtils::is_allocatable(target_type)) {
+            return false;
+        }
+        ASR::Variable_t* base_var = get_base_variable(target);
+        if (!base_var) {
+            return false;
+        }
+        return base_var->m_intent == ASR::intentType::Out ||
+            base_var->m_intent == ASR::intentType::ReturnVar;
+    }
+
     void visit_Allocate(const ASR::Allocate_t& x) {
         ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
         if (xx.m_source) {
@@ -1161,7 +1204,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
-            insert_realloc_for_target(xx.m_target, xx.m_value, vars, xx.m_realloc_lhs);
+            bool per_assign_realloc = xx.m_realloc_lhs ||
+                should_auto_realloc_component_assignment(xx.m_target);
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
         }
 
         if (bounds_checking && 
