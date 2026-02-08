@@ -707,6 +707,8 @@ endinterface
     | endinterface0 KW_OPERATOR "(" operator_type ")"
     | endinterface0 KW_OPERATOR "(" "/)"
     | endinterface0 KW_OPERATOR "(" TK_DEF_OP ")"
+    | endinterface0 KW_WRITE "(" id ")"
+    | endinterface0 KW_READ  "(" id ")"
     ;
 
 endinterface0
