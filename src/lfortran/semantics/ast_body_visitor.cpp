@@ -4151,6 +4151,10 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
+        if (compiler_options.implicit_typing && implicit_mapping.size() != 0) {
+            implicit_dictionary = implicit_mapping[get_hash(parent_scope->asr_owner)];
+        }
+
         //create a new function, and add it to the symbol table
         std::string var_name = to_lower(AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func);
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
