@@ -16049,14 +16049,6 @@ public:
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
-                if (orig_arg &&
-                    ASRUtils::is_class_type(ASRUtils::extract_type(arg_type)) &&
-                    (!ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value) || compiler_options.new_classes) &&
-                    !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
-                    tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
-                        al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
-                }
-
                 if( x_abi == ASR::abiType::BindC ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
@@ -16352,30 +16344,6 @@ public:
                     // tmp is a string_descriptor* - extract the char* data pointer (field 0)
                     llvm::Value* data_ptr = llvm_utils->CreateGEP2(llvm_utils->string_descriptor, tmp, 0);
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr);
-                }
-            }
-
-            // Old classes: if argument lowering produced a class wrapper pointer
-            // but the callee expects a concrete struct pointer, unwrap `%class`
-            // to its data field (`field #1`) before the call.
-            if (orig_arg && !compiler_options.new_classes) {
-                llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
-                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                    orig_arg->m_type, module.get());
-                if (expected_type->isPointerTy() && tmp->getType()->isPointerTy() &&
-                    tmp->getType() != expected_type) {
-                    llvm::Type* tmp_pointee_type =
-                        llvm::cast<llvm::PointerType>(tmp->getType())->getPointerElementType();
-                    if (tmp_pointee_type && tmp_pointee_type->isStructTy()) {
-                        llvm::StructType* class_struct_type =
-                            llvm::cast<llvm::StructType>(tmp_pointee_type);
-                        if (class_struct_type->getNumElements() == 2 &&
-                            class_struct_type->getElementType(1) == expected_type) {
-                            llvm::Value* data_ptr = llvm_utils->create_gep2(
-                                class_struct_type, tmp, 1);
-                            tmp = llvm_utils->CreateLoad2(expected_type, data_ptr);
-                        }
-                    }
                 }
             }
 
@@ -17644,10 +17612,17 @@ public:
                         llvm::StructType* class_struct_type =
                             llvm::cast<llvm::StructType>(arg_pointee_type);
                         if (class_struct_type->getNumElements() == 2 &&
-                            class_struct_type->getElementType(1) == expected_type) {
+                            class_struct_type->getElementType(0)->isPointerTy() &&
+                            llvm::cast<llvm::PointerType>(class_struct_type->getElementType(0))
+                                ->getPointerElementType()->isPointerTy() &&
+                            class_struct_type->getElementType(1)->isPointerTy()) {
                             llvm::Value* data_ptr = llvm_utils->create_gep2(
                                 class_struct_type, arg, 1);
-                            arg = llvm_utils->CreateLoad2(expected_type, data_ptr);
+                            llvm::Type* data_ptr_type = class_struct_type->getElementType(1);
+                            arg = llvm_utils->CreateLoad2(data_ptr_type, data_ptr);
+                            if (arg->getType() != expected_type) {
+                                arg = builder->CreateBitCast(arg, expected_type);
+                            }
                         }
                     }
                 }
