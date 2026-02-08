@@ -652,6 +652,51 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
         }
 
+        ASR::expr_t* maybe_cast_class_arg_to_struct(ASR::symbol_t* subrout_sym,
+            size_t arg_idx, ASR::expr_t* arg_expr) {
+            if( arg_expr == nullptr || !ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
+                return arg_expr;
+            }
+            ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
+            if( arg_idx >= subrout->n_args || !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx]) ) {
+                return arg_expr;
+            }
+
+            ASR::expr_t* formal_arg = subrout->m_args[arg_idx];
+            ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(arg_expr));
+            ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(formal_arg));
+
+            if( !actual_type || !formal_type ||
+                !ASR::is_a<ASR::StructType_t>(*actual_type) ||
+                !ASR::is_a<ASR::StructType_t>(*formal_type) ) {
+                return arg_expr;
+            }
+
+            if( !ASRUtils::is_class_type(actual_type) || ASRUtils::is_class_type(formal_type) ) {
+                return arg_expr;
+            }
+
+            ASR::symbol_t* actual_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+            ASR::symbol_t* formal_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(formal_arg));
+            if( !actual_struct_sym || !formal_struct_sym ||
+                !ASR::is_a<ASR::Struct_t>(*actual_struct_sym) ||
+                !ASR::is_a<ASR::Struct_t>(*formal_struct_sym) ) {
+                return arg_expr;
+            }
+
+            if( actual_struct_sym != formal_struct_sym ) {
+                return arg_expr;
+            }
+
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, arg_expr->base.loc, arg_expr,
+                ASR::cast_kindType::ClassToStruct,
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(formal_arg)), nullptr));
+        }
+
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
             size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
@@ -671,6 +716,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                             orig_args[i].m_value = new_var;
                         }
                     }
+                    orig_args[i].m_value = maybe_cast_class_arg_to_struct(
+                        subrout_sym, i, orig_args[i].m_value);
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
