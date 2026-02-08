@@ -117,8 +117,8 @@ namespace LCompilers {
                 "dimension_descriptor");
         }
 
-        static inline llvm::Value* load_if_pointer(llvm::Value* val, llvm::Type* target_type,
-                                                     llvm::IRBuilder<>* builder, LLVMUtils* llvm_utils) {
+        static inline llvm::Value* load_if_pointer(llvm::Value* val, llvm::Type* /*target_type*/,
+                                                     llvm::IRBuilder<>* /*builder*/, LLVMUtils* llvm_utils) {
             if (val->getType()->isPointerTy()) {
                 llvm::Type* pointee_type = val->getType()->getPointerElementType();
                 return llvm_utils->CreateLoad2(pointee_type, val);
