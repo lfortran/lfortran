@@ -11820,7 +11820,7 @@ public:
         llvm::Value* x_v;
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
-        if (x->m_value_attr) {
+        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
             // Already a value, such as value argument to bind(c)
             tmp = x_v;
             return;
@@ -11935,7 +11935,7 @@ public:
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
-                if (x->m_value_attr) {
+                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
                     // Already a value, such as value argument to bind(c)
                     break;
                 }

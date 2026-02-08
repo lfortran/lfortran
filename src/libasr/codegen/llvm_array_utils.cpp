@@ -117,6 +117,14 @@ namespace LCompilers {
                 "dimension_descriptor");
         }
 
+        static inline llvm::Value* load_if_pointer(llvm::Value* val, llvm::Type* target_type,
+                                                     llvm::IRBuilder<>* /*builder*/, LLVMUtils* llvm_utils) {
+            if (val->getType()->isPointerTy()) {
+                return llvm_utils->CreateLoad2(target_type, val);
+            }
+            return val;
+        }
+
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
             std::string asr_type_code = ASRUtils::get_type_code(
                 ASRUtils::type_get_past_allocatable(asr_type), false, false);
@@ -331,8 +339,8 @@ namespace LCompilers {
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
-                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, index_type);
-                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, index_type);
+                llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -407,8 +415,8 @@ namespace LCompilers {
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
-                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, index_type);
-                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, index_type);
+                llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -498,7 +506,7 @@ namespace LCompilers {
                 if( lbs[r] == nullptr ) {
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 } else {
-                    builder->CreateStore(builder->CreateSExtOrTrunc(lbs[r], index_type), l_val);
+                    builder->CreateStore(builder->CreateSExtOrTrunc(load_if_pointer(lbs[r], index_type, builder, llvm_utils), index_type), l_val);
                 }
                 if( lengths[r] == nullptr ) {
                     llvm::Value* dim_size = this->get_dimension_size(
@@ -506,7 +514,7 @@ namespace LCompilers {
                         llvm::ConstantInt::get(context, llvm::APInt(32, r))));
                     builder->CreateStore(dim_size, dim_size_ptr);
                 } else {
-                    builder->CreateStore(builder->CreateSExtOrTrunc(lengths[r], index_type), dim_size_ptr);
+                    builder->CreateStore(builder->CreateSExtOrTrunc(load_if_pointer(lengths[r], index_type, builder, llvm_utils), index_type), dim_size_ptr);
                 }
             }
         }
@@ -596,9 +604,9 @@ namespace LCompilers {
             int j = 0;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
-                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(ubs[i], index_type);
-                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(lbs[i], index_type);
-                    llvm::Value* dsi = builder->CreateSExtOrTrunc(ds[i], index_type);
+                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
+                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
+                    llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dim_length = builder->CreateAdd(
                         builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))
@@ -611,7 +619,7 @@ namespace LCompilers {
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
                     builder->CreateStore(builder->CreateMul(value_stride, builder->CreateSExtOrTrunc(
-                        ds[i], index_type)), target_stride);
+                        load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type)), target_stride);
                     // Diverges from LPython, 0 should be stored there.
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)),
                                          get_lower_bound(target_dim_des, false));
@@ -681,9 +689,9 @@ namespace LCompilers {
             llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
-                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(ubs[i], index_type);
-                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(lbs[i], index_type);
-                    llvm::Value* dsi = builder->CreateSExtOrTrunc(ds[i], index_type);
+                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
+                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
+                    llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dim_length = builder->CreateAdd(
                         builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))
@@ -693,7 +701,7 @@ namespace LCompilers {
                     dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateSExtOrTrunc(
-                        ds[i], index_type)), get_stride(target_dim_des, false));
+                        load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type)), get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)),
                                          get_lower_bound(target_dim_des, false));
                     builder->CreateStore(dim_length,
@@ -702,7 +710,7 @@ namespace LCompilers {
                 }
                 // Convert dimension info to index_type to match descriptor stride format
                 stride = builder->CreateMul(stride,
-                    builder->CreateSExtOrTrunc(llvm_diminfo[r], index_type));
+                    builder->CreateSExtOrTrunc(load_if_pointer(llvm_diminfo[r], index_type, builder, llvm_utils), index_type));
                 r += 2;
             }
             LCOMPILERS_ASSERT(j == target_rank);
@@ -813,6 +821,9 @@ namespace LCompilers {
                 llvm::Value* req_idx = m_args[r];
                 llvm::Value* curr_llvm_idx = req_idx;
                 llvm::Value* lval = llvm_diminfo[r1];
+                if (lval->getType()->isPointerTy()) {
+                    lval = llvm_utils->CreateLoad2(index_type, lval);
+                }
                 // Cast req_idx to index_type
                 req_idx = builder->CreateSExtOrTrunc(req_idx, index_type);
                 lval = builder->CreateSExtOrTrunc(lval, index_type);
@@ -822,6 +833,9 @@ namespace LCompilers {
                     r1 += 1;
                 } else {
                     llvm::Value* dim_size = llvm_diminfo[r1 + 1];
+                    if (dim_size->getType()->isPointerTy()) {
+                        dim_size = llvm_utils->CreateLoad2(index_type, dim_size);
+                    }
                     dim_size = builder->CreateSExtOrTrunc(dim_size, index_type);
                     r1 += 2;
                     if( check_for_bounds ) {
