@@ -668,6 +668,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASRUtils::is_pointer(formal_arg_full_type)) {
                 return arg_expr;
             }
+            if (!ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                return arg_expr;
+            }
             ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(arg_expr));
             ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(
