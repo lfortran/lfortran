@@ -1,0 +1,5 @@
+semantic error: Unequal character lengths (11/7) in MERGE intrinsic
+ --> tests/errors/merge_01.f90:5:12
+  |
+5 |   print *, merge("fail caught", "no fail", ios /= 0)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

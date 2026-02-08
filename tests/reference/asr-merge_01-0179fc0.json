@@ -1,0 +1,13 @@
+{
+    "basename": "asr-merge_01-0179fc0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/merge_01.f90",
+    "infile_hash": "bd87aa37f5ea3e1d6f70fff49d04ae0e3f14a2291dcb98d37f471359",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-merge_01-0179fc0.stderr",
+    "stderr_hash": "ae144c9d4692806b74fe09c60cb251d49f5950f666db52bb4a0d4419",
+    "returncode": 2
+}

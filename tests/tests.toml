@@ -4565,6 +4565,10 @@ filename = "errors/merge_bits_comp.f90"
 asr = true
 
 [[test]]
+filename = "errors/merge_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/merge_bits_run.f90"
 asr = true
 
