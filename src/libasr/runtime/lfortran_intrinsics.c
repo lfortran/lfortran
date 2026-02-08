@@ -2282,11 +2282,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[0]) == 'g') {
                     int width = 0;
                     int precision = 0;
+                    bool has_dot = false;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
                     }
                     const char *dot = strchr(value + 1, '.'); // Look for '.' after 'g'
                     if (dot != NULL) {
+                        has_dot = true;
                         precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
@@ -2296,6 +2298,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(double_val)) {
                             snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                        } else if (width == 0 && !has_dot) {
+                            if (s_info.current_element_type == FLOAT_32_TYPE) {
+                                format_float_fortran(formatted, (float)double_val);
+                            } else {
+                                format_double_fortran(formatted, double_val);
+                            }
                         } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
