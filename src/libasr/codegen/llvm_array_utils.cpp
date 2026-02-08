@@ -915,8 +915,11 @@ namespace LCompilers {
                                 llvm::Value* data_field_ptr = llvm_utils->create_gep2(class_type, full_array, 1);
                                 llvm::Type* data_field_type = class_type->getStructElementType(1);
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
-                                data_ptr = builder->CreateBitCast(data_ptr, polymorphic_type->getPointerTo());
-                                tmp = llvm_utils->create_ptr_gep2(polymorphic_type, data_ptr, idx);
+                                
+                                llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
+                                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
+                                llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
+                                tmp = builder->CreateBitCast(element_ptr_i8, polymorphic_type->getPointerTo());
                             }
                         }
                     } else {

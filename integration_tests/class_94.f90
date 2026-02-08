@@ -74,15 +74,15 @@ program class_94
     call process_class_array(base_arr)
     print *, "Test 1 passed"
 
-    ! TODO: Test 2: Pass extended_type array to class array parameter
-    ! print *, "Test 2: extended_type array -> class array"
-    ! allocate(ext_arr(3))
-    ! do i = 1, 3
-    !     ext_arr(i)%value = i * 10
-    !     ext_arr(i)%extra = i * 100
-    ! end do
-    ! call process_class_array(ext_arr)
-    ! print *, "Test 2 passed"
+    !Test 2: Pass extended_type array to class array parameter
+     print *, "Test 2: extended_type array -> class array"
+     allocate(ext_arr(3))
+     do i = 1, 3
+         ext_arr(i)%value = i * 10
+         ext_arr(i)%extra = i * 100
+     end do
+     call process_class_array(ext_arr)
+     print *, "Test 2 passed"
 
     ! ! Test 3: Modify base_type array via class array parameter
     print *, "Test 3: Modify base_type array"
@@ -93,13 +93,13 @@ program class_94
     print *, "Test 3 passed"
 
     ! TODO: Test 4: Modify extended_type array via class array parameter
-    ! print *, "Test 4: Modify extended_type array"
-    ! call modify_class_array(ext_arr)
-    ! do i = 1, 3
-    !     if (ext_arr(i)%value /= i * 10 + 1) error stop "Extended modification failed"
+     print *, "Test 4: Modify extended_type array"
+     call modify_class_array(ext_arr)
+     do i = 1, 3
+         if (ext_arr(i)%value /= i * 10 + 1) error stop "Extended modification failed"
     !     if (ext_arr(i)%extra /= i * 100 + 1) error stop "Extended extra modification failed"
-    ! end do
-    ! print *, "Test 4 passed"
+     end do
+     print *, "Test 4 passed"
 
     ! Test 5: Use function with class array parameter
     print *, "Test 5: Function with class array"

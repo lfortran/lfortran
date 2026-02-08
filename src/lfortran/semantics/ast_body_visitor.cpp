@@ -2337,12 +2337,12 @@ public:
                     AST::FuncCallOrArray_t* func_call_t =
                         AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
                     if( to_lower(std::string(func_call_t->m_func)) == "character" ) {
-                        LCOMPILERS_ASSERT(func_call_t->n_args == 1 ||
-                                          func_call_t->n_keywords <= 2);
-                        if( func_call_t->m_args[0].m_end ) {
+                        if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
+                            && func_call_t->m_args[0].m_end) {
                             visit_expr(*func_call_t->m_args[0].m_end);
                             new_arg.m_len_expr = ASRUtils::EXPR(tmp);
                         } else {
+                            LCOMPILERS_ASSERT(func_call_t->n_keywords <= 2);
                             for( size_t i = 0; i < func_call_t->n_keywords; i++ ) {
                                 if( to_lower(std::string(func_call_t->m_keywords[i].m_arg)) == "len" ) {
                                     visit_expr(*func_call_t->m_keywords[i].m_value);
@@ -3247,6 +3247,14 @@ public:
                                                        type_stmt_type->m_vartype, false, false, m_dims,
                                                        nullptr,
                                                        type_declaration, ASR::abiType::Source);
+                        // Convert AssumedLength to DeferredLength for select type associate statements
+                        if (ASRUtils::is_character(*selector_type)) {
+                            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::extract_type(selector_type));
+                            if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                                str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
+                            }
+                        }
                         selector_ttype = selector_variable ? selector_variable->m_type : nullptr;
                         if (selector_ttype) {
                             ASR::ttype_t* view_type = make_typed_selector_view_type(
@@ -3335,7 +3343,11 @@ public:
                             target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
                         }
                         assoc_variable->m_type = target_type;
-                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                        ASR::symbol_t* type_decl = select_variable_m_type_declaration;
+                        if (type_decl) {
+                            type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+                        }
+                        assoc_variable->m_type_declaration = type_decl;
                         assoc_variable->m_dependencies = selector_variable_dependencies;
                         assoc_variable->n_dependencies = selector_variable_n_dependencies;
                     }
@@ -4419,8 +4431,17 @@ public:
                                         if (start_const && end_const) {
                                             // Both are constants: size = (end - start) / step + 1
                                             dim_b_int = (end_val - start_val) / step_val + 1;
-                                        } else if (ASRUtils::expr_equal(start, end)) {
-                                            // Same expression (e.g., x(i:i), x(i+1:i+1)): size is 1
+                                        } else if ((ASR::is_a<ASR::Var_t>(*start) ||
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*start) ||
+                                                    ASR::is_a<ASR::IntegerBinOp_t>(*start) ||
+                                                    ASR::is_a<ASR::Cast_t>(*start)) &&
+                                                   (ASR::is_a<ASR::Var_t>(*end) ||
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*end) ||
+                                                    ASR::is_a<ASR::IntegerBinOp_t>(*end) ||
+                                                    ASR::is_a<ASR::Cast_t>(*end)) &&
+                                                   ASRUtils::expr_equal(start, end)) {
+                                            // Same scalar index expression (e.g., x(i:i), x(i+1:i+1)):
+                                            // the resulting section has extent 1.
                                             dim_b_int = 1;
                                         }
                                     }

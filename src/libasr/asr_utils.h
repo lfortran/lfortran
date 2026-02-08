@@ -3926,9 +3926,13 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
 }
 
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
+    auto is_upoly = [](ASR::Struct_t* s) {
+        return s->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                s->m_struct_signature)->m_is_unlimited_polymorphic;
+    };
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (std::string(a->m_name) == "~unlimited_polymorphic_type" &&
-        std::string(b->m_name) == "~unlimited_polymorphic_type");
+        (is_upoly(a) && is_upoly(b));
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
@@ -4539,8 +4543,12 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
     if (ASR::is_a<ASR::Struct_t>(*target) && ASR::is_a<ASR::Struct_t>(*value)) {
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(value);
-        is_class_same = (target == value) || (std::string(tar_struct->m_name) == "~unlimited_polymorphic_type" && std::string(tar_struct->m_name) == "~unlimited_polymorphic_type");
-        is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+        bool tar_is_upoly = tar_struct->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                tar_struct->m_struct_signature)->m_is_unlimited_polymorphic;
+        is_class_same = (target == value)
+            || tar_is_upoly
+            || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
 }
@@ -4812,6 +4820,31 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
         return struct_sym;
     }
     std::string struct_name = ASRUtils::symbol_name(struct_sym);
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+    if (struct_t->m_struct_signature != nullptr &&
+        ASR::down_cast<ASR::StructType_t>(
+            struct_t->m_struct_signature)->m_is_unlimited_polymorphic) {
+        // Unlimited polymorphic is a per-scope synthetic type that cannot
+        // be imported as an ExternalSymbol.  Find a local instance in the
+        // scope chain or create one so the modfile serializer never writes
+        // a dangling symtab reference from the foreign module.
+        ASR::symbol_t* local = scope->resolve_symbol(struct_name);
+        if (local != nullptr) {
+            return local;
+        }
+        SymbolTable* upt_symtab = al.make_new<SymbolTable>(scope);
+        ASR::asr_t* dtype = ASR::make_Struct_t(al, struct_sym->base.loc,
+            upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
+            nullptr, 0, nullptr, 0, ASR::abiType::Source,
+            ASR::accessType::Public, false, true, nullptr, 0,
+            nullptr, nullptr);
+        ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
+        ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, new_sym, false);
+        ASR::down_cast<ASR::Struct_t>(new_sym)->m_struct_signature = sig;
+        scope->add_symbol(struct_name, new_sym);
+        return new_sym;
+    }
 
     // Get the module that owns this struct
     ASR::symbol_t* struct_module = ASRUtils::get_asr_owner(struct_sym);
@@ -5919,34 +5952,29 @@ static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
     return ASR::down_cast<ASR::Enum_t>(enum_type_cand);
 }
 
-static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
-{
-    ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-    if ( !ASR::is_a<ASR::StructType_t>(*type) ) {
-        return false;
-    }
-    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
-    
-    if (!ASRUtils::is_class_type(type)) {
-        return false;
-    }
-
-    return (st->n_data_member_types == 0 && st->n_member_function_types == 0
-            && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                   ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))))
-                   == std::string("~unlimited_polymorphic_type"));
+static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st) {
+    if (st->m_struct_signature == nullptr) return false;
+    return ASR::down_cast<ASR::StructType_t>(
+        st->m_struct_signature)->m_is_unlimited_polymorphic;
 }
 
 static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
 {
-    return (ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym))
-            == std::string("~unlimited_polymorphic_type"));
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) return false;
+    return is_unlimited_polymorphic_type(
+        ASR::down_cast<ASR::Struct_t>(sym));
 }
 
 inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t){
     if(!ASR::is_a<ASR::StructType_t>(*extract_type(t))) return false;
 
     return ASR::down_cast<ASR::StructType_t>(extract_type(t))->m_is_unlimited_polymorphic;
+}
+
+static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
+{
+    return is_unlimited_polymorphic_type(ASRUtils::expr_type(expr));
 }
 /// Check if type is a class + not unlimited-polymorphic one
 inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){

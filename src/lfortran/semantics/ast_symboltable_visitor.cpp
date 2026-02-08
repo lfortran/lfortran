@@ -2123,7 +2123,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~unlimited_polymorphic_type") {
+            if (!ASRUtils::is_unlimited_polymorphic_type(item.second)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
                 ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
@@ -2226,7 +2226,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~unlimited_polymorphic_type") {
+            if (!ASRUtils::is_unlimited_polymorphic_type(item.second)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
