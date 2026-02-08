@@ -1755,10 +1755,11 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
              * @brief Allocates memory for array of classes.
              *        Don't allocate consecutive class structures, instead allocate 1 class structure
              *        and insert consecutive allocated structs into the class structure along with single vtable.
+             * @param allocated_subclass If provided, use this type for sizing the underlying data array and setting vptr
              */
             void allocate_array_of_classes(ASR::Struct_t* class_symbol, 
                 [[maybe_unused]] ASR::StructType_t* struct_type, llvm::Value* array_data_ptr,
-                llvm::Value* size, bool realloc = false);
+                llvm::Value* size, ASR::symbol_t* allocated_subclass = nullptr, bool realloc = false);
     };
 
     class LLVMTuple {
