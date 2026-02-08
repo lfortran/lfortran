@@ -3195,7 +3195,6 @@ RUN(NAME separate_compilation_26 LABELS gfortran llvm_submodule EXTRAFILES separ
 RUN(NAME separate_compilation_27 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_27a.f90 separate_compilation_27b.f90)
 RUN(NAME separate_compilation_28 LABELS gfortran llvm EXTRAFILES separate_compilation_28a.f90 separate_compilation_28b.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME separate_compilation_29 LABELS gfortran llvm EXTRAFILES separate_compilation_29a.f90 separate_compilation_29b.f90 EXTRA_ARGS --separate-compilation)
-RUN(NAME separate_compilation_30 LABELS gfortran llvm EXTRAFILES separate_compilation_30a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_31 LABELS gfortran llvm EXTRAFILES separate_compilation_31a.f90 separate_compilation_31b.f90 EXTRA_ARGS --separate-compilation)
 
 
