@@ -7242,31 +7242,17 @@ LFORTRAN_API void _lfortran_formatted_read(
     va_end(args);
 }
 
-static void common_formatted_read(InputSource *inputSource,
+static void process_fmt_items_read(InputSource *inputSource,
     int32_t* iostat, int32_t* chunk,
-    fchar* advance, int64_t advance_length,
+    bool advance_no,
     fchar* fmt, int64_t fmt_len,
-    int32_t no_of_args, va_list *args, bool blank_zero)
+    int32_t no_of_args, va_list *args,
+    int *arg_idx, int *blank_mode, int *scale_factor,
+    bool *consumed_newline)
 {
-    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
-    }
-    if (chunk) *chunk = 0;
-    if (iostat) *iostat = 0;
-    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
-
     int64_t fmt_pos = 0;
-    if (fmt_len > 0 && fmt[0] == '(') fmt_pos = 1;
 
-    bool consumed_newline = false;
-    int arg_idx = 0;
-    int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
-    if (blank_zero) {
-        blank_mode = 1;
-    }
-    
-    int scale_factor = 0;
-    while (fmt_pos < fmt_len && arg_idx < no_of_args) {
+    while (fmt_pos < fmt_len && *arg_idx < no_of_args) {
         while (fmt_pos < fmt_len && (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
             fmt_pos++;
         }
@@ -7278,9 +7264,36 @@ static void common_formatted_read(InputSource *inputSource,
             fmt_pos++;
         }
         if (repeat_count == 0) repeat_count = 1;
+
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
+            // Parenthesized group: N(...)
+            int64_t group_start = fmt_pos + 1; // position after '('
+            // Find matching ')'
+            int paren_depth = 1;
+            int64_t pos = fmt_pos + 1;
+            while (pos < fmt_len && paren_depth > 0) {
+                if (fmt[pos] == '(') paren_depth++;
+                else if (fmt[pos] == ')') paren_depth--;
+                pos++;
+            }
+            int64_t group_end = pos - 1; // position of matching ')'
+            int64_t group_len = group_end - group_start;
+            fmt_pos = pos; // advance past ')'
+
+            for (int rep = 0; rep < repeat_count; rep++) {
+                process_fmt_items_read(inputSource, iostat, chunk,
+                    advance_no, fmt + group_start, group_len,
+                    no_of_args, args, arg_idx, blank_mode,
+                    scale_factor, consumed_newline);
+                if (iostat && *iostat != 0) return;
+                if (*arg_idx >= no_of_args) return;
+            }
+            continue;
+        }
+
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
-            scale_factor = repeat_count;
+            *scale_factor = repeat_count;
             repeat_count = 1;
         }
         
@@ -7307,10 +7320,10 @@ static void common_formatted_read(InputSource *inputSource,
                 if (fmt_pos < fmt_len) {
                     char next = toupper(fmt[fmt_pos]);
                     if (next == 'N') {
-                        blank_mode = 0;  // BN: blank null
+                        *blank_mode = 0;  // BN: blank null
                         fmt_pos++;
                     } else if (next == 'Z') {
-                        blank_mode = 1;  // BZ: blank zero
+                        *blank_mode = 1;  // BZ: blank zero
                         fmt_pos++;
                     }
                 }
@@ -7318,7 +7331,7 @@ static void common_formatted_read(InputSource *inputSource,
             case 'T':
                 if (is_tab_descriptor) {
                     if (tab_type == 'R') {
-                        handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                        handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                     } else if (tab_type == 'L') {
                         handle_read_TL(inputSource, width);
                     }
@@ -7328,19 +7341,19 @@ static void common_formatted_read(InputSource *inputSource,
                 break;
             case 'A':
                 if (!handle_read_A(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                        iostat, chunk, consumed_newline, arg_idx)) {
                     return;
                 }
                 break;
             case 'L':
                 if (!handle_read_L(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                        iostat, chunk, consumed_newline, arg_idx)) {
                     return;
                 }
                 break;
             case 'I':
                 if (!handle_read_I(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx, blank_mode)) {
+                        iostat, chunk, consumed_newline, arg_idx, *blank_mode)) {
                     return;
                 }
                 break;
@@ -7350,24 +7363,68 @@ static void common_formatted_read(InputSource *inputSource,
             case 'G':
                 if (!handle_read_real(inputSource, args, width, advance_no,
                         fmt, fmt_len, &fmt_pos, iostat, chunk,
-                        &consumed_newline, &arg_idx, blank_mode, scale_factor)) {
+                        consumed_newline, arg_idx, *blank_mode, *scale_factor)) {
                     return;
                 }
                 break;
             case 'X':
-                handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                 break;
             case '/':
-                handle_read_slash(inputSource, iostat, &consumed_newline);
+                handle_read_slash(inputSource, iostat, consumed_newline);
                 break;
             default:
                 break;
             }
 
             if (iostat && *iostat != 0) break;
-            if (arg_idx >= no_of_args) break;
+            if (*arg_idx >= no_of_args) break;
         }
     }
+}
+
+static void common_formatted_read(InputSource *inputSource,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args, va_list *args, bool blank_zero)
+{
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
+    if (chunk) *chunk = 0;
+    if (iostat) *iostat = 0;
+    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
+
+    int64_t start_pos = 0;
+    if (fmt_len > 0 && fmt[0] == '(') start_pos = 1;
+
+    // Strip outer parentheses: find matching ')' for the opening '('
+    int64_t inner_len = fmt_len - start_pos;
+    if (start_pos == 1) {
+        // Find the matching ')' to exclude it from inner_len
+        int paren_depth = 1;
+        int64_t pos = start_pos;
+        while (pos < fmt_len && paren_depth > 0) {
+            if (fmt[pos] == '(') paren_depth++;
+            else if (fmt[pos] == ')') paren_depth--;
+            if (paren_depth > 0) pos++;
+        }
+        inner_len = pos - start_pos;
+    }
+
+    bool consumed_newline = false;
+    int arg_idx = 0;
+    int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
+    if (blank_zero) {
+        blank_mode = 1;
+    }
+    
+    int scale_factor = 0;
+
+    process_fmt_items_read(inputSource, iostat, chunk, advance_no,
+        fmt + start_pos, inner_len, no_of_args, args,
+        &arg_idx, &blank_mode, &scale_factor, &consumed_newline);
 
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
