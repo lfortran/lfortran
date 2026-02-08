@@ -911,6 +911,11 @@ public:
             }
             ASR::expr_t* actual_arg = call_args.p[i].m_value;
             ASR::expr_t* formal_arg = func->m_args[i + arg_offset];
+            ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
+            if (ASRUtils::is_allocatable(formal_arg_full_type) ||
+                ASRUtils::is_pointer(formal_arg_full_type)) {
+                continue;
+            }
             ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(actual_arg));
             ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(

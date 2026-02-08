@@ -663,6 +663,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
 
             ASR::expr_t* formal_arg = subrout->m_args[arg_idx];
+            ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
+            if (ASRUtils::is_allocatable(formal_arg_full_type) ||
+                ASRUtils::is_pointer(formal_arg_full_type)) {
+                return arg_expr;
+            }
             ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(arg_expr));
             ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(

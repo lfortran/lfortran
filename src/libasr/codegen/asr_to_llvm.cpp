@@ -12641,8 +12641,28 @@ public:
                     builder->CreateStore(class_value, class_tmp);
                     class_value = class_tmp;
                 }
-                tmp = convert_class_to_type(x.m_arg, const_cast<ASR::expr_t*>(&x.base),
-                    x.m_type, class_value);
+                ASR::ttype_t* class_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_arg));
+                LCOMPILERS_ASSERT(class_type && ASR::is_a<ASR::StructType_t>(*class_type));
+                llvm::Type* class_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_arg, class_type, module.get());
+                LCOMPILERS_ASSERT(class_llvm_type->isStructTy());
+                llvm::StructType* class_struct_type = llvm::cast<llvm::StructType>(class_llvm_type);
+                LCOMPILERS_ASSERT(class_struct_type->getNumElements() == 2 &&
+                    class_struct_type->getElementType(1)->isPointerTy());
+
+                llvm::Value* data_ptr = llvm_utils->create_gep2(class_struct_type, class_value, 1);
+                llvm::Type* data_ptr_type = class_struct_type->getElementType(1);
+                tmp = llvm_utils->CreateLoad2(data_ptr_type, data_ptr);
+
+                ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::type_get_past_array(x.m_type));
+                llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(
+                    const_cast<ASR::expr_t*>(&x.base), target_type, module.get());
+                llvm::Type* target_ptr_type = target_base_type->getPointerTo();
+                if (tmp->getType() != target_ptr_type) {
+                    tmp = builder->CreateBitCast(tmp, target_ptr_type);
+                }
                 break;
             }
             case ASR::StringToArray :
