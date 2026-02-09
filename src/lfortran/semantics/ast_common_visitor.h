@@ -3233,7 +3233,7 @@ public:
                         object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
-        } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*object) || ASR::is_a<ASR::StringSection_t>(*object)) {
             // This is the following case:
             // x(2) / 2 /
             // We create an assignment node and insert into the current body.
@@ -3250,7 +3250,7 @@ public:
             current_body->push_back(al, assign_stmt);
         } else {
             diag.add(Diagnostic(
-                "The variable (object) type is not supported (only variables and array items are supported so far)",
+                "The variable (object) type is not supported (only variables, character substrings and array items are supported so far)",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
                 }));
