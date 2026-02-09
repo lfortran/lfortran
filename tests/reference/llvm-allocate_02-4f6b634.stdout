@@ -12,6 +12,9 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %__do_end = alloca i32, align 4
+  %__do_start = alloca i32, align 4
+  %__do_step = alloca i32, align 4
   %arr = alloca %array*, align 8
   store %array* null, %array** %arr, align 8
   %arr_desc = alloca %array, align 8
@@ -69,62 +72,71 @@ ifcont:                                           ; preds = %merge_allocated
   %26 = call i8* @_lfortran_malloc(i64 4)
   %27 = bitcast i8* %26 to i32*
   store i32* %27, i32** %25, align 8
-  store i32 0, i32* %i, align 4
+  store i32 1, i32* %__do_start, align 4
+  store i32 1000000, i32* %__do_end, align 4
+  store i32 1, i32* %__do_step, align 4
+  %28 = load i32, i32* %__do_start, align 4
+  %29 = load i32, i32* %__do_step, align 4
+  %30 = sub i32 %28, %29
+  store i32 %30, i32* %i, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %ifcont10, %ifcont
-  %28 = load i32, i32* %i, align 4
-  %29 = add i32 %28, 1
-  %30 = icmp sle i32 %29, 1000000
-  br i1 %30, label %loop.body, label %loop.end
+  %31 = load i32, i32* %i, align 4
+  %32 = load i32, i32* %__do_step, align 4
+  %33 = add i32 %31, %32
+  %34 = load i32, i32* %__do_end, align 4
+  %35 = icmp sle i32 %33, %34
+  br i1 %35, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %31 = load i32, i32* %i, align 4
-  %32 = add i32 %31, 1
-  store i32 %32, i32* %i, align 4
-  %33 = load %array*, %array** %arr, align 8
-  %34 = ptrtoint %array* %33 to i64
-  %35 = icmp eq i64 %34, 0
-  br i1 %35, label %merge_allocated2, label %check_data1
+  %36 = load i32, i32* %i, align 4
+  %37 = load i32, i32* %__do_step, align 4
+  %38 = add i32 %36, %37
+  store i32 %38, i32* %i, align 4
+  %39 = load %array*, %array** %arr, align 8
+  %40 = ptrtoint %array* %39 to i64
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %merge_allocated2, label %check_data1
 
 check_data1:                                      ; preds = %loop.body
-  %36 = getelementptr %array, %array* %33, i32 0, i32 0
-  %37 = load i32*, i32** %36, align 8
-  %38 = ptrtoint i32* %37 to i64
-  %39 = icmp ne i64 %38, 0
+  %42 = getelementptr %array, %array* %39, i32 0, i32 0
+  %43 = load i32*, i32** %42, align 8
+  %44 = ptrtoint i32* %43 to i64
+  %45 = icmp ne i64 %44, 0
   br label %merge_allocated2
 
 merge_allocated2:                                 ; preds = %check_data1, %loop.body
-  %is_allocated3 = phi i1 [ false, %loop.body ], [ %39, %check_data1 ]
+  %is_allocated3 = phi i1 [ false, %loop.body ], [ %45, %check_data1 ]
   br i1 %is_allocated3, label %then4, label %else
 
 then4:                                            ; preds = %merge_allocated2
-  %40 = getelementptr %array, %array* %33, i32 0, i32 0
-  %41 = load i32*, i32** %40, align 8
-  %42 = bitcast i32* %41 to i8*
-  call void @_lfortran_free(i8* %42)
-  %43 = getelementptr %array, %array* %33, i32 0, i32 0
-  store i32* null, i32** %43, align 8
+  %46 = getelementptr %array, %array* %39, i32 0, i32 0
+  %47 = load i32*, i32** %46, align 8
+  %48 = bitcast i32* %47 to i8*
+  call void @_lfortran_free(i8* %48)
+  %49 = getelementptr %array, %array* %39, i32 0, i32 0
+  store i32* null, i32** %49, align 8
   br label %ifcont5
 
 else:                                             ; preds = %merge_allocated2
   br label %ifcont5
 
 ifcont5:                                          ; preds = %else, %then4
-  %44 = load %array*, %array** %arr, align 8
-  %45 = ptrtoint %array* %44 to i64
-  %46 = icmp eq i64 %45, 0
-  br i1 %46, label %merge_allocated7, label %check_data6
+  %50 = load %array*, %array** %arr, align 8
+  %51 = ptrtoint %array* %50 to i64
+  %52 = icmp eq i64 %51, 0
+  br i1 %52, label %merge_allocated7, label %check_data6
 
 check_data6:                                      ; preds = %ifcont5
-  %47 = getelementptr %array, %array* %44, i32 0, i32 0
-  %48 = load i32*, i32** %47, align 8
-  %49 = ptrtoint i32* %48 to i64
-  %50 = icmp ne i64 %49, 0
+  %53 = getelementptr %array, %array* %50, i32 0, i32 0
+  %54 = load i32*, i32** %53, align 8
+  %55 = ptrtoint i32* %54 to i64
+  %56 = icmp ne i64 %55, 0
   br label %merge_allocated7
 
 merge_allocated7:                                 ; preds = %check_data6, %ifcont5
-  %is_allocated8 = phi i1 [ false, %ifcont5 ], [ %50, %check_data6 ]
+  %is_allocated8 = phi i1 [ false, %ifcont5 ], [ %56, %check_data6 ]
   br i1 %is_allocated8, label %then9, label %ifcont10
 
 then9:                                            ; preds = %merge_allocated7
@@ -133,25 +145,29 @@ then9:                                            ; preds = %merge_allocated7
   unreachable
 
 ifcont10:                                         ; preds = %merge_allocated7
-  %51 = load %array*, %array** %arr, align 8
-  %52 = getelementptr %array, %array* %51, i32 0, i32 1
-  store i32 0, i32* %52, align 4
-  %53 = getelementptr %array, %array* %51, i32 0, i32 2
-  %54 = load %dimension_descriptor*, %dimension_descriptor** %53, align 8
-  %55 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %54, i32 0
-  %56 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 0
-  %57 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 1
-  %58 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 2
-  store i32 1, i32* %56, align 4
-  store i32 1, i32* %57, align 4
-  store i32 1, i32* %58, align 4
-  %59 = getelementptr %array, %array* %51, i32 0, i32 0
-  %60 = call i8* @_lfortran_malloc(i64 4)
-  %61 = bitcast i8* %60 to i32*
-  store i32* %61, i32** %59, align 8
+  %57 = load %array*, %array** %arr, align 8
+  %58 = getelementptr %array, %array* %57, i32 0, i32 1
+  store i32 0, i32* %58, align 4
+  %59 = getelementptr %array, %array* %57, i32 0, i32 2
+  %60 = load %dimension_descriptor*, %dimension_descriptor** %59, align 8
+  %61 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %60, i32 0
+  %62 = getelementptr %dimension_descriptor, %dimension_descriptor* %61, i32 0, i32 0
+  %63 = getelementptr %dimension_descriptor, %dimension_descriptor* %61, i32 0, i32 1
+  %64 = getelementptr %dimension_descriptor, %dimension_descriptor* %61, i32 0, i32 2
+  store i32 1, i32* %62, align 4
+  store i32 1, i32* %63, align 4
+  store i32 1, i32* %64, align 4
+  %65 = getelementptr %array, %array* %57, i32 0, i32 0
+  %66 = call i8* @_lfortran_malloc(i64 4)
+  %67 = bitcast i8* %66 to i32*
+  store i32* %67, i32** %65, align 8
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %68 = load i32, i32* %i, align 4
+  %69 = load i32, i32* %__do_step, align 4
+  %70 = add i32 %68, %69
+  store i32 %70, i32* %i, align 4
   call void @_lpython_free_argv()
   br label %return
 
@@ -162,19 +178,19 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
-  %62 = load %array*, %array** %arr, align 8
-  %63 = icmp ne %array* %62, null
-  br i1 %63, label %is_allocated.then, label %is_allocated.else
+  %71 = load %array*, %array** %arr, align 8
+  %72 = icmp ne %array* %71, null
+  br i1 %72, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %Finalize_Variable_arr
-  %64 = getelementptr %array, %array* %62, i32 0, i32 0
-  %65 = load i32*, i32** %64, align 8
-  %66 = icmp eq i32* %65, null
-  br i1 %66, label %free_done, label %free_nonnull
+  %73 = getelementptr %array, %array* %71, i32 0, i32 0
+  %74 = load i32*, i32** %73, align 8
+  %75 = icmp eq i32* %74, null
+  br i1 %75, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.then
-  %67 = bitcast i32* %65 to i8*
-  call void @_lfortran_free(i8* %67)
+  %76 = bitcast i32* %74 to i8*
+  call void @_lfortran_free(i8* %76)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %is_allocated.then

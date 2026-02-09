@@ -7,6 +7,321 @@
                     (SymbolTable
                         2
                         {
+                            __do_end:
+                                (Variable
+                                    2
+                                    __do_end
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_end1:
+                                (Variable
+                                    2
+                                    __do_end1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_end2:
+                                (Variable
+                                    2
+                                    __do_end2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_end3:
+                                (Variable
+                                    2
+                                    __do_end3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_end4:
+                                (Variable
+                                    2
+                                    __do_end4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_start:
+                                (Variable
+                                    2
+                                    __do_start
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_start1:
+                                (Variable
+                                    2
+                                    __do_start1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_start2:
+                                (Variable
+                                    2
+                                    __do_start2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_start3:
+                                (Variable
+                                    2
+                                    __do_start3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_start4:
+                                (Variable
+                                    2
+                                    __do_start4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_step:
+                                (Variable
+                                    2
+                                    __do_step
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_step1:
+                                (Variable
+                                    2
+                                    __do_step1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_step2:
+                                (Variable
+                                    2
+                                    __do_step2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_step3:
+                                (Variable
+                                    2
+                                    __do_step3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_step4:
+                                (Variable
+                                    2
+                                    __do_step4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             i:
                                 (Variable
                                     2
@@ -88,11 +403,32 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_start)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_end)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_step)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 __do_start)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_step)
                             (Integer 4)
                             ()
                         )
@@ -105,7 +441,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -116,12 +452,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step)
                                         (Integer 4)
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Var 2 __do_end)
                                     (Logical 4)
                                     ()
                                 )
@@ -131,7 +467,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -142,12 +478,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step)
                                         (Integer 4)
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Var 2 __do_end)
                                     (Logical 4)
                                     ()
                                 )
@@ -162,7 +498,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_step)
                                 (Integer 4)
                                 ()
                             )
@@ -184,6 +520,19 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_step)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -229,11 +578,32 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_start1)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_end1)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_step1)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Var 2 __do_start1)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_step1)
                             (Integer 4)
                             ()
                         )
@@ -246,7 +616,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step1)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -257,12 +627,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step1)
                                         (Integer 4)
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 __do_end1)
                                     (Logical 4)
                                     ()
                                 )
@@ -272,7 +642,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step1)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -283,12 +653,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step1)
                                         (Integer 4)
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 __do_end1)
                                     (Logical 4)
                                     ()
                                 )
@@ -303,7 +673,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_step1)
                                 (Integer 4)
                                 ()
                             )
@@ -325,6 +695,19 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_step1)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -359,11 +742,32 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_start2)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_end2)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_step2)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 __do_start2)
                             Sub
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 __do_step2)
                             (Integer 4)
                             ()
                         )
@@ -377,12 +781,12 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 __do_step2)
                                 (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Var 2 __do_end2)
                             (Logical 4)
                             ()
                         )
@@ -391,7 +795,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 __do_step2)
                                 (Integer 4)
                                 ()
                             )
@@ -428,6 +832,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_step2)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -450,11 +867,32 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_start3)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_end3)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_step3)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 __do_start3)
                             Sub
-                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Var 2 __do_step3)
                             (Integer 4)
                             ()
                         )
@@ -468,12 +906,12 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Var 2 __do_step3)
                                 (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Var 2 __do_end3)
                             (Logical 4)
                             ()
                         )
@@ -482,7 +920,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Var 2 __do_step3)
                                 (Integer 4)
                                 ()
                             )
@@ -518,6 +956,19 @@
                             []
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_step3)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -617,11 +1068,32 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_start4)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_end4)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_step4)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 __do_start4)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_step4)
                             (Integer 4)
                             ()
                         )
@@ -634,7 +1106,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step4)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -645,12 +1117,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step4)
                                         (Integer 4)
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Var 2 __do_end4)
                                     (Logical 4)
                                     ()
                                 )
@@ -660,7 +1132,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_step4)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -671,12 +1143,12 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_step4)
                                         (Integer 4)
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Var 2 __do_end4)
                                     (Logical 4)
                                     ()
                                 )
@@ -691,7 +1163,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_step4)
                                 (Integer 4)
                                 ()
                             )
@@ -704,6 +1176,19 @@
                             100
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_step4)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )]
                 )
         })

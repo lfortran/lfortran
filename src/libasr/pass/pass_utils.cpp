@@ -1134,7 +1134,7 @@ namespace LCompilers {
             ASR::stmt_t* fallback_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, do_loop_head.loc,
                                             nullptr, do_loop_head, loop_body.p, loop_body.size(), nullptr, 0));
             Vec<ASR::stmt_t*> fallback_while_loop = replace_doloop(al, *ASR::down_cast<ASR::DoLoop_t>(fallback_loop),
-                                                                  (int) ASR::cmpopType::Lt);
+                                                                  vector_copy_symtab, (int) ASR::cmpopType::Lt);
             for( size_t i = 0; i < fallback_while_loop.size(); i++ ) {
                 body.push_back(al, fallback_while_loop[i]);
             }
@@ -1332,21 +1332,36 @@ namespace LCompilers {
         }
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
+                                         SymbolTable* current_scope,
                                          int comp, bool use_loop_variable_after_loop) {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
             ASR::expr_t *c=loop.m_head.m_increment;
+            
+            // Freeze DO loop bounds (Fortran semantics)
+            ASR::stmt_t *assign_a = nullptr;
+            ASR::stmt_t *assign_b = nullptr;
+            ASR::stmt_t *assign_c = nullptr;
+            
+            ASR::expr_t *a_tmp = nullptr;
+            ASR::expr_t *b_tmp = nullptr;
+            ASR::expr_t *c_tmp = nullptr;
             ASR::expr_t *cond = nullptr;
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
+            
+            // Create copies for casting to avoid mutating original loop expressions
+            ASR::expr_t *a_frozen = a;
+            ASR::expr_t *b_frozen = b;
+            ASR::expr_t *c_frozen = c;
             if( loop.m_head.m_v ) {
                 ASR::expr_t* loop_head = loop.m_head.m_v;
-                cast_util(loop_head, a, al, true);
-                cast_util(loop_head, b, al, true);
-                if( c ) {
-                    cast_util(loop_head, c, al, true);
+                cast_util(loop_head, a_frozen, al, true);
+                cast_util(loop_head, b_frozen, al, true);
+                if( c_frozen ) {
+                    cast_util(loop_head, c_frozen, al, true);
                 }
             }
             if( !a && !b && !c ) {
@@ -1359,24 +1374,43 @@ namespace LCompilers {
             } else {
                 LCOMPILERS_ASSERT(a);
                 LCOMPILERS_ASSERT(b);
-                if (!c) {
+                if (!c_frozen) {
                     int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop.m_head.m_v));
                     ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-                    c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
+                    c_frozen = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
                 }
-                LCOMPILERS_ASSERT(c);
+                LCOMPILERS_ASSERT(c_frozen);
+                
+                // Create temporary variables for DO loop bounds (Fortran semantics)
+                std::string name_a = current_scope->get_unique_name("__do_start");
+                a_tmp = PassUtils::create_auxiliary_variable_for_expr(
+                    a_frozen, name_a, al, current_scope, assign_a);
+                
+                std::string name_b = current_scope->get_unique_name("__do_end");
+                b_tmp = PassUtils::create_auxiliary_variable_for_expr(
+                    b_frozen, name_b, al, current_scope, assign_b);
+                
+                std::string name_c = current_scope->get_unique_name("__do_step");
+                c_tmp = PassUtils::create_auxiliary_variable_for_expr(
+                    c_frozen, name_c, al, current_scope, assign_c);
+                
                 ASR::cmpopType cmp_op;
+
+                // If c_tmp is runtime-variable, ignore caller's comp and derive from c_tmp
+                if (comp != -1 && !ASR::is_a<ASR::IntegerConstant_t>(*c_frozen) && ASR::is_a<ASR::IntegerUnaryMinus_t>(*c_frozen)) {
+                    comp = -1;
+                }
 
                 if( comp == -1 ) {
                     int increment;
                     bool not_constant_inc = false;
-                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
+                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c_frozen))) {
                         throw LCompilersException("Do loop increment type should be an integer");
                     }
-                    if (c->type == ASR::exprType::IntegerConstant) {
-                        increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
-                    } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
-                        ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
+                    if (c_frozen->type == ASR::exprType::IntegerConstant) {
+                        increment = ASR::down_cast<ASR::IntegerConstant_t>(c_frozen)->m_n;
+                    } else if (c_frozen->type == ASR::exprType::IntegerUnaryMinus) {
+                        ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c_frozen);
                         if (ASR::is_a<ASR::IntegerConstant_t>(*u->m_arg)) {
                             increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
                         } else {
@@ -1400,22 +1434,22 @@ namespace LCompilers {
                         ASR::expr_t *const_zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                     loc, 0, int_type));
 
-                        // test1: c > 0
+                        // test1: c_tmp > 0
                         ASR::expr_t *test1 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
-                            c, ASR::cmpopType::Gt, const_zero, log_type, nullptr));
-                        // test2: c <= 0
+                            c_tmp, ASR::cmpopType::Gt, const_zero, log_type, nullptr));
+                        // test2: c_tmp <= 0
                         ASR::expr_t *test2 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
-                            c, ASR::cmpopType::LtE, const_zero, log_type, nullptr));
+                            c_tmp, ASR::cmpopType::LtE, const_zero, log_type, nullptr));
 
-                        // test11: target + c <= b
+                        // test11: target + c_tmp <= b_tmp
                         ASR::expr_t *test11 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::LtE, b, log_type, nullptr));
+                            ASR::binopType::Add, c_tmp, int_type, nullptr)), ASR::cmpopType::LtE, b_tmp, log_type, nullptr));
 
-                        // test22: target + c >= b
+                        // test22: target + c_tmp >= b_tmp
                         ASR::expr_t *test22 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::GtE, b, log_type, nullptr));
+                            ASR::binopType::Add, c_tmp, int_type, nullptr)), ASR::cmpopType::GtE, b_tmp, log_type, nullptr));
 
                         // cond1: test1 && test11
                         ASR::expr_t *cond1 = ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
@@ -1428,8 +1462,6 @@ namespace LCompilers {
                         // cond: cond1 || cond2
                         cond = ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
                             cond1, ASR::logicalbinopType::Or, cond2, log_type, nullptr));
-                        // TODO: is cmp_op uninitialized here?
-                        cmp_op = ASR::cmpopType::LtE; // silence a warning
                     } else if (increment > 0) {
                         cmp_op = ASR::cmpopType::LtE;
                     } else {
@@ -1444,24 +1476,19 @@ namespace LCompilers {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
                 loop_init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
-                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                            ASR::binopType::Sub, c, type, nullptr)), nullptr, false, false));
-                if (use_loop_variable_after_loop) {
-                    stmt_add_c_after_loop = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
-                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                ASR::binopType::Add, c, type, nullptr)), nullptr, false, false));
-                }
-
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a_tmp,
+                            ASR::binopType::Sub, c_tmp, type, nullptr)), nullptr, false, false));
+                
                 inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                ASR::binopType::Add, c, type, nullptr)), nullptr, false, false));
+                                ASR::binopType::Add, c_tmp, type, nullptr)), nullptr, false, false));
                 if (cond == nullptr) {
                     ASR::ttype_t *log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
                     ASR::expr_t* left = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                            ASR::binopType::Add, c, type, nullptr));
+                                            ASR::binopType::Add, c_tmp, type, nullptr));
 
                     cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                        left, cmp_op, b, log_type, nullptr));
+                        left, cmp_op, b_tmp, log_type, nullptr));
                 }
             }
             Vec<ASR::stmt_t*> body;
@@ -1471,7 +1498,7 @@ namespace LCompilers {
             }
 
             if (use_loop_variable_after_loop) {
-                insert_stmts_in_loop_body(al, loop, body, c);
+                insert_stmts_in_loop_body(al, loop, body, c_tmp);
             } else {
                 for (size_t i = 0; i < loop.n_body; i++) {
                     body.push_back(al, loop.m_body[i]);
@@ -1480,14 +1507,38 @@ namespace LCompilers {
 
             ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size(), loop.m_orelse, loop.n_orelse));
+            
             Vec<ASR::stmt_t*> result;
-            result.reserve(al, 2);
+            result.reserve(al, 6);
+            
+            // Insert temp assignments before the while loop
+            if (assign_a) result.push_back(al, assign_a);
+            if (assign_b) result.push_back(al, assign_b);
+            if (assign_c) result.push_back(al, assign_c);
+            
             if( loop_init_stmt ) {
                 result.push_back(al, loop_init_stmt);
             }
             result.push_back(al, while_loop_stmt);
-            if (stmt_add_c_after_loop && use_loop_variable_after_loop) {
-                result.push_back(al, stmt_add_c_after_loop);
+            
+            // Add final increment after loop termination (Fortran standard requires this)
+            if (loop.m_head.m_v && c_tmp) {
+                ASR::expr_t *target = loop.m_head.m_v;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(target));
+                ASR::ttype_t *type =
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
+
+                // Standard Fortran behavior: final value is end + step
+                ASR::stmt_t *final_inc =
+                    ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, target,
+                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, target, ASR::binopType::Add,
+                            c_tmp, type, nullptr)),
+                        nullptr, false, false));
+
+                result.push_back(al, final_inc);
             }
 
             return result;

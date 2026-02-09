@@ -109,6 +109,7 @@ namespace LCompilers {
             SymbolTable*& global_scope, Location& loc);
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
+                                         SymbolTable* current_scope,
                                          int comp=-1, bool use_loop_variable_after_loop=false);
 
         ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc,

@@ -5,9 +5,9 @@
     "infile_hash": "6dea35d299ef0d2baadd87d2ed6132d3e57e15e85a4bef2d609d1d22",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "pass_loop_unroll-loop_unroll_large-8723774.stdout",
-    "stdout_hash": "2d6317320abc094db2c4f16353ec591fe3a5536a411330005ffd5d9d",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "pass_loop_unroll-loop_unroll_large-8723774.stderr",
+    "stderr_hash": "90be551d29ef5d94b68d23f187778aab71a84bf7242151775c907bd4",
+    "returncode": 1
 }
