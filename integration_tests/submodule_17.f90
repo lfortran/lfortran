@@ -1,4 +1,4 @@
-module string_mod
+module submodule_17_string_mod
   implicit none
 
   type :: string_t
@@ -37,8 +37,8 @@ contains
 
 end module
 
-module diag_mod
-  use string_mod, only: string_t
+module submodule_17_diag_mod
+  use submodule_17_string_mod, only: string_t
   implicit none
 
   type :: test_diagnosis_t
@@ -70,8 +70,8 @@ module diag_mod
 
 end module
 
-submodule(diag_mod) diag_sub
-  use string_mod, only: string_t
+submodule(submodule_17_diag_mod) submodule_17_diag_sub
+  use submodule_17_string_mod, only: string_t
   implicit none
 contains
   module procedure append_string_if_test_failed
@@ -94,8 +94,8 @@ contains
 end submodule
 
 program submodule_17
-  use diag_mod
-  use string_mod, only: string_t
+  use submodule_17_diag_mod
+  use submodule_17_string_mod, only: string_t
   implicit none
   type(test_diagnosis_t) :: d
   type(string_t) :: s
