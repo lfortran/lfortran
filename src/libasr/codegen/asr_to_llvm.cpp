@@ -12688,7 +12688,74 @@ public:
                 }
                 tmp = builder->CreatePtrToInt(ptr, llvm::Type::getInt64Ty(context));
                 break;
-            } 
+            }
+            case (ASR::cast_kindType::ClassToStruct): {
+                ASR::ttype_t* class_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_arg));
+                LCOMPILERS_ASSERT(class_type && ASR::is_a<ASR::StructType_t>(*class_type));
+                llvm::Type* class_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_arg, class_type, module.get());
+                LCOMPILERS_ASSERT(class_llvm_type->isStructTy());
+                llvm::StructType* class_struct_type = llvm::cast<llvm::StructType>(class_llvm_type);
+                LCOMPILERS_ASSERT(class_struct_type->getNumElements() == 2 &&
+                    class_struct_type->getElementType(1)->isPointerTy());
+
+                if (!compiler_options.new_classes &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg))) {
+                    check_and_allocate_scalar(x.m_arg, const_cast<ASR::expr_t*>(&x.base), x.m_type);
+                }
+
+                llvm::Type* class_ptr_type = class_struct_type->getPointerTo();
+                llvm::Value* class_value = tmp;
+                if (!compiler_options.new_classes && ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+                    ASR::Variable_t* var = EXPR2VAR(x.m_arg);
+                    uint32_t h = get_hash((ASR::asr_t*)var);
+                    if (llvm_symtab.find(h) != llvm_symtab.end()) {
+                        class_value = llvm_symtab[h];
+                    }
+                }
+                if (!class_value->getType()->isPointerTy()) {
+                    llvm::AllocaInst* class_tmp = llvm_utils->CreateAlloca(
+                        *builder, class_value->getType(), nullptr, "class_to_struct_cast");
+                    builder->CreateStore(class_value, class_tmp);
+                    class_value = class_tmp;
+                }
+                #if LLVM_VERSION_MAJOR >= 15
+                // Opaque pointers collapse pointer-depth information, so
+                // type-based while loops can become non-terminating.
+                if ((ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg)) ||
+                     ASRUtils::is_pointer(ASRUtils::expr_type(x.m_arg))) &&
+                    class_value->getType()->isPointerTy()) {
+                    class_value = llvm_utils->CreateLoad2(class_ptr_type, class_value);
+                }
+                #else
+                while (class_value->getType() == class_ptr_type->getPointerTo()) {
+                    class_value = llvm_utils->CreateLoad2(class_ptr_type, class_value);
+                }
+                #endif
+                if (class_value->getType() != class_ptr_type) {
+                    class_value = builder->CreateBitCast(class_value, class_ptr_type);
+                }
+
+                llvm::Value* data_ptr = llvm_utils->create_gep2(class_struct_type, class_value, 1);
+                llvm::Type* data_ptr_type = class_struct_type->getElementType(1);
+                tmp = llvm_utils->CreateLoad2(data_ptr_type, data_ptr);
+
+                ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::type_get_past_array(x.m_type));
+                llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(
+                    const_cast<ASR::expr_t*>(&x.base), target_type, module.get());
+                llvm::Type* target_ptr_type = target_base_type->getPointerTo();
+                #if LLVM_VERSION_MAJOR < 15
+                while (tmp->getType() == target_ptr_type->getPointerTo()) {
+                    tmp = llvm_utils->CreateLoad2(target_ptr_type, tmp);
+                }
+                #endif
+                if (tmp->getType() != target_ptr_type) {
+                    tmp = builder->CreateBitCast(tmp, target_ptr_type);
+                }
+                break;
+            }
             case ASR::StringToArray :
                 cast_string_to_array(&x);
             break;
@@ -16105,7 +16172,6 @@ public:
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
-
                 if( x_abi == ASR::abiType::BindC ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
