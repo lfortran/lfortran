@@ -5418,9 +5418,22 @@ public:
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
                         llvm::Type* ptr_i_type = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::type_get_past_allocatable_pointer(v_m_type), module.get());
-                        ptr_i = llvm_utils->create_ptr_gep2(el_type,
-                            llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr_i_type, ptr)),
-                            llvm_utils->CreateLoad2(t, llvmi));
+                        if (ASRUtils::is_class_type(ASRUtils::extract_type(v_m_type))) {
+                            // For class arrays: data pointer points to a single class wrapper
+                            // which contains [vptr, struct_array_ptr]
+                            ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
+                            ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(
+                                ASRUtils::extract_type(v_m_type));
+                            llvm::Value* class_wrapper = llvm_utils->CreateLoad2(el_type->getPointerTo(),
+                                arr_descr->get_pointer_to_data(ptr_i_type, ptr));
+                            ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
+                                class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                        } else {
+                            ptr_i = llvm_utils->create_ptr_gep2(el_type,
+                                llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr_i_type, ptr)),
+                                llvm_utils->CreateLoad2(t, llvmi));
+                        }
                         break;
                     }
                     case ASR::array_physical_typeType::PointerArray: {
@@ -17807,7 +17820,10 @@ public:
             // Get VTable pointer
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 1;
                 this->visit_expr_wrapper(array_item->m_v, true);
+                ptr_loads = ptr_loads_copy;
                 llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
                 if (ASRUtils::extract_physical_type(
