@@ -248,40 +248,49 @@ public:
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
 
-    // Context for a select type block - maps selector variable name to its type info
+    // Context for a select type block - maps selector variable symbol to its type info
     struct SelectTypeContext {
         llvm::Type* block_type = nullptr;
         ASR::ttype_t* block_type_asr = nullptr;
         std::string der_type;
         ASR::symbol_t* selector_type_decl = nullptr;
     };
-    // Map from selector variable name to its select type context
-    std::map<std::string, SelectTypeContext> select_type_context_map;
+    // Map from selector variable symbol to its select type context
+    std::map<ASR::symbol_t*, SelectTypeContext> select_type_context_map;
 
     // Helper methods to access select type context for a specific variable
-    SelectTypeContext* get_select_type_context(const std::string& var_name) {
-        auto it = select_type_context_map.find(var_name);
+    SelectTypeContext* get_select_type_context(ASR::symbol_t* sym) {
+        if (sym == nullptr) return nullptr;
+        auto it = select_type_context_map.find(sym);
         return (it != select_type_context_map.end()) ? &it->second : nullptr;
     }
 
-    llvm::Type* get_select_type_block_type(const std::string& var_name) {
-        auto ctx = get_select_type_context(var_name);
+    // Helper to extract symbol from expression (returns nullptr if not Var_t)
+    ASR::symbol_t* get_symbol_from_expr(ASR::expr_t* expr) {
+        if (expr && ASR::is_a<ASR::Var_t>(*expr)) {
+            return ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        }
+        return nullptr;
+    }
+
+    llvm::Type* get_select_type_block_type(ASR::expr_t* expr) {
+        auto ctx = get_select_type_context(get_symbol_from_expr(expr));
         return ctx ? ctx->block_type : nullptr;
     }
 
-    ASR::ttype_t* get_select_type_block_type_asr(const std::string& var_name) {
-        auto ctx = get_select_type_context(var_name);
+    ASR::ttype_t* get_select_type_block_type_asr(ASR::expr_t* expr) {
+        auto ctx = get_select_type_context(get_symbol_from_expr(expr));
         return ctx ? ctx->block_type_asr : nullptr;
     }
 
-    const std::string& get_select_type_block_der_type(const std::string& var_name) {
+    const std::string& get_select_type_block_der_type(ASR::expr_t* expr) {
         static const std::string empty_string;
-        auto ctx = get_select_type_context(var_name);
+        auto ctx = get_select_type_context(get_symbol_from_expr(expr));
         return ctx ? ctx->der_type : empty_string;
     }
 
-    ASR::symbol_t* get_selector_type_decl(const std::string& var_name) {
-        auto ctx = get_select_type_context(var_name);
+    ASR::symbol_t* get_selector_type_decl(ASR::expr_t* expr) {
+        auto ctx = get_select_type_context(get_symbol_from_expr(expr));
         return ctx ? ctx->selector_type_decl : nullptr;
     }
 
@@ -412,8 +421,7 @@ public:
         ASRUtils::is_unlimited_polymorphic_type(expr) &&                                                            \
         !ASRUtils::is_array(ASRUtils::expr_type(expr))) {                                                           \
         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);             \
-        std::string _var_name = ASRUtils::symbol_name(sym);                                                         \
-        ASR::ttype_t* _ctx_type_asr = get_select_type_block_type_asr(_var_name);                                    \
+        ASR::ttype_t* _ctx_type_asr = get_select_type_block_type_asr(expr);                                         \
         if (ASR::is_a<ASR::Variable_t>(*sym) && _ctx_type_asr != nullptr) {                                         \
             llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                                    \
                 ASRUtils::extract_type(_ctx_type_asr), module.get());                                               \
@@ -3623,15 +3631,14 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            // Look up select type context by variable name
-            std::string _var_name = ASR::is_a<ASR::Var_t>(*x.m_v) ? ASRUtils::EXPR2VAR(x.m_v)->m_name : "";
-            llvm::Type* ctx_block_type = get_select_type_block_type(_var_name);
+            // Look up select type context by expression
+            llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
             bool is_polymorphic = (ctx_block_type != nullptr) &&
                     ASR::is_a<ASR::Var_t>(*x.m_v) &&
                     ASRUtils::is_unlimited_polymorphic_type(x.m_v);
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
             if (is_polymorphic && selector_type_decl == nullptr) {
-                selector_type_decl = get_selector_type_decl(_var_name);
+                selector_type_decl = get_selector_type_decl(x.m_v);
             }
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
@@ -3972,17 +3979,16 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
-        // Look up select type context by variable name
-        std::string _var_name = ASR::is_a<ASR::Var_t>(*x.m_v) ? ASRUtils::EXPR2VAR(x.m_v)->m_name : "";
-        llvm::Type* ctx_block_type = get_select_type_block_type(_var_name);
-        const std::string& ctx_der_type = get_select_type_block_der_type(_var_name);
+        // Look up select type context by expression
+        llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
+        const std::string& ctx_der_type = get_select_type_block_der_type(x.m_v);
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
-            if( compiler_options.new_classes && ctx_block_type &&
-                    ASR::is_a<ASR::Var_t>(*x.m_v) ) {
+            if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_v, ASRUtils::extract_type(x_m_v_type), module.get());
                 if (LLVM::is_llvm_pointer(*x_m_v_type)) {
                     if (compiler_options.po.bounds_checking) {
+                        std::string _var_name = ASRUtils::EXPR2VAR(x.m_v)->m_name;
                         llvm::Value* cond = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(tmp,
                                 llvm::Type::getInt64Ty(context)),
@@ -7943,8 +7949,8 @@ public:
                             }
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
                                 // Check if this is polymorphic array pointer association in select type
-                                if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) && ASR::is_a<ASR::Var_t>(*x.m_value) && 
-                                        get_select_type_block_type_asr(ASRUtils::EXPR2VAR(x.m_value)->m_name) != nullptr) {
+                                if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) &&
+                                        get_select_type_block_type_asr(x.m_value) != nullptr) {
 
                                     // SPECIAL HANDLING FOR POLYMORPHIC ARRAY POINTER ASSOCIATION
                                     // This handles: xx => generic (where generic is class(*) array)
@@ -10014,18 +10020,21 @@ public:
         ASR::Var_t* selector_var = nullptr;
         ASR::StructInstanceMember_t* selector_struct = nullptr;
         std::string selector_var_name;
+        ASR::symbol_t* selector_sym = nullptr;
         if (ASR::is_a<ASR::Var_t>(*x.m_selector)) {
             selector_var = ASR::down_cast<ASR::Var_t>(x.m_selector);
             selector_var_name = ASRUtils::symbol_name(selector_var->m_v);
+            selector_sym = ASRUtils::symbol_get_past_external(selector_var->m_v);
         } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector)) {
             selector_struct = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_selector);
             selector_var_name = ASRUtils::symbol_name(selector_struct->m_m);
+            selector_sym = ASRUtils::symbol_get_past_external(selector_struct->m_m);
         }
-        // Determine the key for the context map (use assoc_name if provided, else selector_var_name)
-        std::string context_key = x.m_assoc_name ? x.m_assoc_name : selector_var_name;
+        // Determine the name for looking up association symbol in type blocks
+        std::string assoc_name = x.m_assoc_name ? x.m_assoc_name : selector_var_name;
         
         // Create context entry for this selector (will be updated in each type case)
-        SelectTypeContext& ctx = select_type_context_map[context_key];
+        SelectTypeContext& ctx = select_type_context_map[selector_sym];
         ctx.selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_selector);
         
         uint64_t ptr_loads_copy = ptr_loads;
@@ -10320,8 +10329,21 @@ public:
                 llvm_symtab[h] = llvm_selector_new;
             }
             {
+                ASR::symbol_t* assoc_sym = nullptr;
                 if( n_type_block == 1 && ASR::is_a<ASR::BlockCall_t>(*type_block[0]) ) {
-                    visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(type_block[0]));
+                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(type_block[0]);
+                    ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                    // Look up association symbol in block's symtab and add to map
+                    ASR::symbol_t* block_assoc_sym = block->m_symtab->resolve_symbol(assoc_name);
+                    if (block_assoc_sym && block_assoc_sym != selector_sym) {
+                        assoc_sym = ASRUtils::symbol_get_past_external(block_assoc_sym);
+                        select_type_context_map[assoc_sym] = ctx;
+                    }
+                    visit_BlockCall(*block_call);
+                    // Remove association symbol from map after visiting block
+                    if (assoc_sym) {
+                        select_type_context_map.erase(assoc_sym);
+                    }
                 }
             }
             builder->CreateBr(mergeBB);
@@ -10343,7 +10365,7 @@ public:
         }
         start_new_block(mergeBB);
         // Remove this selector's context from the map
-        select_type_context_map.erase(context_key);
+        select_type_context_map.erase(selector_sym);
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -10937,8 +10959,8 @@ public:
             return;
         }
         // Handle polymorphic string inside select type block
-        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg) && ASR::is_a<ASR::Var_t>(*x.m_arg) &&
-                get_select_type_block_type_asr(ASRUtils::EXPR2VAR(x.m_arg)->m_name) != nullptr) {
+        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg) &&
+                get_select_type_block_type_asr(x.m_arg) != nullptr) {
             this->visit_expr_wrapper(x.m_arg, true);
             llvm::Value *str_val = tmp;
             load_unlimited_polymorpic_value(x.m_arg, str_val);
@@ -12062,7 +12084,7 @@ public:
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* curr_type = nullptr;
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
-            curr_type = get_select_type_block_type_asr(ASRUtils::EXPR2VAR(x.m_arg)->m_name);
+            curr_type = get_select_type_block_type_asr(x.m_arg);
         } else {
             curr_type = extract_ttype_t_from_expr(x.m_arg);
         }
@@ -12855,7 +12877,7 @@ public:
                               ASRUtils::extract_type(expr_type(cast->m_arg))
                             , ASRUtils::extract_type(cast->m_type)))
                     tmp = string_llvm;
-                } else if (get_select_type_block_type_asr(ASRUtils::EXPR2VAR(cast->m_arg)->m_name) && compiler_options.new_classes) {
+                } else if (get_select_type_block_type_asr(cast->m_arg) && compiler_options.new_classes) {
                     llvm::Type* polymorphic_array_desc_type = llvm_utils->get_type_from_ttype_t_util(
                         cast->m_arg, ASRUtils::expr_type(cast->m_arg), module.get());
                     llvm::Value* polymorphic_data_ptr = arr_descr->get_pointer_to_data(
@@ -15484,9 +15506,8 @@ public:
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
         if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
-            std::string var_name = ASRUtils::EXPR2VAR(expr)->m_name;
-            ASR::ttype_t* ctx_type_asr = get_select_type_block_type_asr(var_name);
-            const std::string& ctx_der_type = get_select_type_block_der_type(var_name);
+            ASR::ttype_t* ctx_type_asr = get_select_type_block_type_asr(expr);
+            const std::string& ctx_der_type = get_select_type_block_der_type(expr);
             if (ctx_type_asr) {
                 type = ctx_type_asr;
             } else if (!ctx_der_type.empty()) {
@@ -15530,8 +15551,7 @@ public:
         } else if (ASR::is_a<ASR::StructType_t>(*type)) {
             res += "(";            
             if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
-                std::string var_name = ASRUtils::EXPR2VAR(expr)->m_name;
-                res += serialize_structType_symbols(current_scope->resolve_symbol(get_select_type_block_der_type(var_name)));
+                res += serialize_structType_symbols(current_scope->resolve_symbol(get_select_type_block_der_type(expr)));
             } else {
                 res += serialize_structType_symbols(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
             }
@@ -17817,9 +17837,8 @@ public:
 
             // Convert function args
             std::vector<llvm::Value*> args;
-            std::string _dt_var_name = ASR::is_a<ASR::Var_t>(*x.m_dt) ? ASRUtils::EXPR2VAR(x.m_dt)->m_name : "";
-            llvm::Type* ctx_block_type = get_select_type_block_type(_dt_var_name);
-            const std::string& ctx_der_type = get_select_type_block_der_type(_dt_var_name);
+            llvm::Type* ctx_block_type = get_select_type_block_type(x.m_dt);
+            const std::string& ctx_der_type = get_select_type_block_der_type(x.m_dt);
             if (ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt)) {
                 /*Case: 
                 class(base_t), allocatable :: ptr
@@ -18036,9 +18055,8 @@ public:
 
             // Convert function args
             std::vector<llvm::Value*> args;
-            std::string _dt_var_name = ASR::is_a<ASR::Var_t>(*x.m_dt) ? ASRUtils::EXPR2VAR(x.m_dt)->m_name : "";
-            llvm::Type* ctx_block_type = get_select_type_block_type(_dt_var_name);
-            const std::string& ctx_der_type = get_select_type_block_der_type(_dt_var_name);
+            llvm::Type* ctx_block_type = get_select_type_block_type(x.m_dt);
+            const std::string& ctx_der_type = get_select_type_block_der_type(x.m_dt);
             if (ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt)) {
                 /*Case:
                 class(base_t), allocatable :: ptr
