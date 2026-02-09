@@ -951,6 +951,14 @@ public:
             }
         }
         is_Function = false;
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+            visit_program_unit(*x.m_contains[i]);
+            implicit_dictionary = implicit_dictionary_copy;
+            default_storage_save = current_storage_save;
+        }
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
