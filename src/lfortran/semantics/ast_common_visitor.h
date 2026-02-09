@@ -5514,6 +5514,7 @@ public:
                             // and later declared as a procedure variable ex: `procedure(yy), pointer :: xx`
                             symbol_variable->m_type_declaration = type_declaration;
                         }
+                        variable_added_to_symtab = symbol_variable;
                     }
                 }
 
