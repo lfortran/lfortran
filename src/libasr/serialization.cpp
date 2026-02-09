@@ -86,14 +86,55 @@ class ASRDeserializationVisitor :
         public ASR::DeserializationBaseVisitor<ASRDeserializationVisitor>
 {
 public:
+    SymbolTable *external_symtab = nullptr;
+
     ASRDeserializationVisitor(Allocator &al, const std::string &s,
-        bool load_symtab_id, uint32_t offset) :
+        bool load_symtab_id, uint32_t offset, SymbolTable *external_symtab=nullptr) :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
             BinaryReader(s),
 #else
             TextReader(s),
 #endif
-            DeserializationBaseVisitor(al, load_symtab_id, offset) {}
+            DeserializationBaseVisitor(al, load_symtab_id, offset),
+            external_symtab{external_symtab} {}
+
+    static SymbolTable* find_symtab_by_counter(SymbolTable &scope, uint64_t symtab_id) {
+        if (scope.counter == symtab_id) {
+            return &scope;
+        }
+        for (const auto &item : scope.get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            SymbolTable *nested_scope = nullptr;
+            if (ASR::is_a<ASR::Program_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Module_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Function_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Struct_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Enum_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Enum_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Union_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Union_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Requirement_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Requirement_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Template_t>(sym)->m_symtab;
+            }
+            if (nested_scope != nullptr) {
+                SymbolTable *found_scope = find_symtab_by_counter(*nested_scope, symtab_id);
+                if (found_scope != nullptr) {
+                    return found_scope;
+                }
+            }
+        }
+        return nullptr;
+    }
 
     bool read_bool() {
         uint8_t b = read_int8();
@@ -130,8 +171,14 @@ public:
         // it in write_symbol() above
         uint64_t symbol_type = read_int8();
         std::string symbol_name  = read_string();
-        LCOMPILERS_ASSERT(id_symtab_map.find(symtab_id) != id_symtab_map.end());
-        SymbolTable *symtab = id_symtab_map[symtab_id];
+        SymbolTable *symtab = nullptr;
+        auto it = id_symtab_map.find(symtab_id);
+        if (it != id_symtab_map.end()) {
+            symtab = it->second;
+        } else if (external_symtab != nullptr) {
+            symtab = find_symtab_by_counter(*external_symtab, symtab_id);
+        }
+        LCOMPILERS_ASSERT(symtab != nullptr);
         if (symtab->get_symbol(symbol_name) == nullptr) {
             // Symbol is not in the symbol table yet. We construct an empty
             // symbol of the correct type and put it in the symbol table.
@@ -457,8 +504,25 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable & /*external_symtab*/, uint32_t offset) {
-    return deserialize_asr(al, s, load_symtab_id, offset);
+        bool load_symtab_id, SymbolTable &external_symtab, uint32_t offset) {
+    ASRDeserializationVisitor v(al, s, load_symtab_id, offset, &external_symtab);
+    ASR::asr_t *node = v.deserialize_node();
+    ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(node);
+
+    // Connect the `parent` member of symbol tables
+    // Also set the `asr_owner` member correctly for all symbol tables
+    ASR::FixParentSymtabVisitor p;
+    p.visit_TranslationUnit(*tu);
+
+#if defined(WITH_LFORTRAN_ASSERT)
+    diag::Diagnostics diagnostics;
+    if (!asr_verify(*tu, false, diagnostics)) {
+        std::cerr << diagnostics.render2();
+        throw LCompilersException("Verify failed");
+    };
+#endif
+
+    return node;
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
