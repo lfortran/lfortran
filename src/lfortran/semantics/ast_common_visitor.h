@@ -13852,12 +13852,26 @@ public:
                 }
                 func_sym = v;
             }
+            // Check if symbol is accessible from current scope
+            // Allow if it's an ExternalSymbol, or if it's accessible through parent scopes
             if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter() &&
                 !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                std::string func_name = ASRUtils::symbol_name(v);
-                diag.add(Diagnostic("'" + func_name +
-                    "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                // Check if symbol is accessible through parent scope hierarchy
+                bool is_accessible = false;
+                SymbolTable* scope = current_scope;
+                while (scope != nullptr) {
+                    if (scope->get_counter() == ASRUtils::symbol_parent_symtab(v)->get_counter()) {
+                        is_accessible = true;
+                        break;
+                    }
+                    scope = scope->parent;
+                }
+                if (!is_accessible) {
+                    std::string func_name = ASRUtils::symbol_name(v);
+                    diag.add(Diagnostic("'" + func_name +
+                        "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
