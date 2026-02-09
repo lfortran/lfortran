@@ -1,0 +1,13 @@
+{
+    "basename": "run-file_01-ddd5a8e",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/file_01.f90",
+    "infile_hash": "64fc9896fe5bb684a68ac8ecbf6fee5708a1e12b66c8244c6beefdf0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-file_01-ddd5a8e.stdout",
+    "stdout_hash": "6c112c7e2df9f7ebe7ff408a2199b6d0d269f76f4c09e2bde834a6b6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 1
+}
