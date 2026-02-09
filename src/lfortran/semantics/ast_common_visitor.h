@@ -2022,6 +2022,11 @@ public:
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0) {
                     implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                    if (implicit_dictionary.size() == 0 && current_scope->parent
+                            && current_scope->parent->asr_owner) {
+                        implicit_dictionary = implicit_mapping[get_hash(
+                            current_scope->parent->asr_owner)];
+                    }
                     if (implicit_dictionary.size() == 0 && is_implicit_interface) {
                         implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                     }
