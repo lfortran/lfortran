@@ -5474,8 +5474,10 @@ public:
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
                     if (ASRUtils::is_allocatable(dummy_type)) {
-                        ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_allocatable(dummy_type);
-                        ASR::ttype_t* actual_type_unwrapped = ASRUtils::type_get_past_allocatable(actual_type);
+                        ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable(dummy_type));
+                        ASR::ttype_t* actual_type_unwrapped = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable(actual_type));
                         if (ASR::is_a<ASR::String_t>(*dummy_type_unwrapped) && 
                             ASR::is_a<ASR::String_t>(*actual_type_unwrapped)) {
                             ASR::String_t* dummy_str = ASR::down_cast<ASR::String_t>(dummy_type_unwrapped);
@@ -5505,6 +5507,20 @@ public:
                                         "dummy argument '" + dummy_name + "' declared here");
                                     throw SemanticAbort();
                                 }
+                            }
+                            
+                            // Check deferred length consistency: dummy and actual must both
+                            // have deferred length or both have non-deferred length
+                            bool dummy_is_deferred = dummy_str->m_len_kind == ASR::string_length_kindType::DeferredLength;
+                            bool actual_is_deferred = actual_str->m_len_kind == ASR::string_length_kindType::DeferredLength;
+                            
+                            if (dummy_is_deferred != actual_is_deferred) {
+                                // std::string dummy_name = dummy_var->m_name;
+                                std::string error_msg = "cannot pass unallocatable string to allocatable argument";
+                                diag.semantic_error_label(
+                                    error_msg, {args[i].m_value->base.loc},
+                                    "make this expression allocatable");
+                                throw SemanticAbort();
                             }
                         }
                     }
