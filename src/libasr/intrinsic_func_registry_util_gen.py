@@ -1051,6 +1051,13 @@ def add_create_func_arg_type_src(func_name):
                 constraint = list(arg_spec.values())[0]
                 src += 3 * indent + f'if (ASR::is_a<ASR::String_t>(*arg_type{arg_pos})) {{\n'
                 src += 4 * indent + f'int64_t len = ASRUtils::get_fixed_string_len(arg_type{arg_pos});\n'
+                # If type-based length is unknown, try to get length from compile-time value
+                src += 4 * indent + f'if (len == -1) {{\n'
+                src += 5 * indent + f'ASR::expr_t* value = ASRUtils::expr_value(args[{arg_pos}]);\n'
+                src += 5 * indent + f'if (value && ASR::is_a<ASR::StringConstant_t>(*value)) {{\n'
+                src += 6 * indent + f'len = std::string(ASR::down_cast<ASR::StringConstant_t>(value)->m_s).size();\n'
+                src += 5 * indent + f'}}\n'
+                src += 4 * indent + f'}}\n'
                 if constraint["min"] == constraint["max"]:
                     src += 4 * indent + f'if (len != -1 && len != {constraint["min"]}) {{\n'
                     src += 5 * indent + f'append_error(diag, "Argument {arg_name} to {func_name} must have length {constraint["min"]}", loc);\n'
@@ -1060,6 +1067,7 @@ def add_create_func_arg_type_src(func_name):
                 src += 5 * indent + 'return nullptr;\n'
                 src += 4 * indent + '}\n'
                 src += 3 * indent + '}\n'
+
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
