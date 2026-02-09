@@ -7281,15 +7281,20 @@ static void handle_read_T(InputSource *inputSource, int position)
 
 static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
-    int c = 0;
-    do {
-        c = read_character(inputSource);
-    } while (c != '\n' && c != EOF);
-    if (c == EOF) {
-        if (iostat) *iostat = -1;
-        return;
+    if (!*consumed_newline) {
+        int c = 0;
+        do {
+            c = read_character(inputSource);
+        } while (c != '\n' && c != EOF);
+        if (c == EOF) {
+            if (iostat) *iostat = -1;
+            return;
+        }
     }
-    *consumed_newline = true;
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
+    *consumed_newline = false;
 }
 
 
@@ -7425,9 +7430,11 @@ static void process_fmt_items_read(InputSource *inputSource,
         }
         
         int width = 0;
-        while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
-            width = width * 10 + (fmt[fmt_pos] - '0');
-            fmt_pos++;
+        if (spec != '/' && spec != ':') {
+            while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+                width = width * 10 + (fmt[fmt_pos] - '0');
+                fmt_pos++;
+            }
         }
         for (int rep = 0; rep < repeat_count; rep++)  {
             switch (spec) {
