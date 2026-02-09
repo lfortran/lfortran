@@ -402,7 +402,8 @@ namespace LCompilers {
         void SimpleCMODescriptor::fill_malloc_array_details(
             llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-            ASR::symbol_t* const variable_declaration, llvm::Module* module, bool realloc) {
+            ASR::symbol_t* const variable_declaration, llvm::Module* module, 
+            ASR::symbol_t* allocated_subclass, bool realloc) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
@@ -437,7 +438,9 @@ namespace LCompilers {
                     ASR::down_cast<ASR::Struct_t>(variable_declaration)
                     , ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type))
                     , ptr2firstptr
-                    , prod);
+                    , prod
+                    , allocated_subclass
+                    , realloc);
             } else {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 llvm::Type* ptr_type = llvm_data_type->getPointerTo();
@@ -980,6 +983,7 @@ namespace LCompilers {
                 } 
             }();
 
+            llvm::BasicBlock *wrapperNullBB = nullptr;  // Only used for polymorphic types
             if(ASRUtils::is_character(*array_type)){
                 llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(
                     array_exp,
@@ -993,6 +997,18 @@ namespace LCompilers {
                 auto const struct_sym = ASR::down_cast<ASR::Struct_t>( ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
                 llvm::Type* const class_type = llvm_utils->getClassType(struct_sym);
                 llvm::Value* const array_data =  builder->CreateLoad(class_type->getPointerTo(), get_pointer_to_data(array_exp, array_type, array, llvm_utils->module));
+                // Check if wrapper pointer is null before dereferencing
+                llvm::Value* wrapper_ptr_int = builder->CreatePtrToInt(array_data, llvm::Type::getInt64Ty(context));
+                llvm::Value* is_wrapper_null = builder->CreateICmpEQ(wrapper_ptr_int,
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                llvm::BasicBlock *checkWrapperDataBB = llvm::BasicBlock::Create(context, "check_wrapper_data", fn);
+                wrapperNullBB = llvm::BasicBlock::Create(context, "wrapper_null", fn);
+                builder->CreateCondBr(is_wrapper_null, wrapperNullBB, checkWrapperDataBB);
+                // Wrapper is null - go to merge with false
+                builder->SetInsertPoint(wrapperNullBB);
+                builder->CreateBr(mergeBB);
+                // Wrapper is not null - check data pointer
+                builder->SetInsertPoint(checkWrapperDataBB);
                 llvm::Value* const underlying_struct_ptr = llvm_utils->CreateGEP2(class_type, array_data, 1);
                 memory_holder = underlying_struct_ptr;
             } else {
@@ -1003,12 +1019,17 @@ namespace LCompilers {
                     llvm::Type::getInt64Ty(context)),
                 builder->CreatePtrToInt(llvm::ConstantPointerNull::get(memory_holder_type),
                     llvm::Type::getInt64Ty(context)));
+            llvm::BasicBlock *finalDataCheckBB = builder->GetInsertBlock();
             builder->CreateBr(mergeBB);
             // Merge block with PHI node
             builder->SetInsertPoint(mergeBB);
-            llvm::PHINode *result = builder->CreatePHI(llvm::Type::getInt1Ty(context), 2, "is_allocated");
-            result->addIncoming(llvm::ConstantInt::getFalse(context), entryBB); // from entry (NULL case)
-            result->addIncoming(is_data_allocated, checkDataBB); // from check_data block
+            int numIncoming = wrapperNullBB ? 3 : 2;
+            llvm::PHINode *result = builder->CreatePHI(llvm::Type::getInt1Ty(context), numIncoming, "is_allocated");
+            result->addIncoming(llvm::ConstantInt::getFalse(context), entryBB); // from entry (NULL descriptor case)
+            if (wrapperNullBB) {
+                result->addIncoming(llvm::ConstantInt::getFalse(context), wrapperNullBB); // from wrapper_null (NULL wrapper case)
+            }
+            result->addIncoming(is_data_allocated, finalDataCheckBB); // from final data check block
             return result;
         }
 

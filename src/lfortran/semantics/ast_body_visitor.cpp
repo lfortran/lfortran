@@ -3190,7 +3190,14 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, !compiler_options.new_classes);
-                            selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                            // Apply array wrapper if selector is an array
+                            if (selector_variable_type && ASRUtils::is_array(selector_variable_type)) {
+                                // Use the guard type (selector_type) as element type, preserving array structure from selector
+                                selector_type = make_typed_selector_view_type(
+                                    class_stmt->base.base.loc, ASRUtils::type_get_past_allocatable(selector_variable_type), selector_type);
+                            } else {
+                                selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                            }
                             selector_m_type_declaration = sym;
                         } else {
                             diag.add(Diagnostic(
@@ -3241,7 +3248,14 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, true);
-                            selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                            // Apply array wrapper if selector is an array
+                            if (selector_variable_type && ASRUtils::is_array(selector_variable_type)) {
+                                // Use the guard type (selector_type) as element type, preserving array structure from selector
+                                selector_type = make_typed_selector_view_type(
+                                    type_stmt_name->base.base.loc, ASRUtils::type_get_past_allocatable(selector_variable_type), selector_type);
+                            } else {
+                                selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
+                            }
                             selector_m_type_declaration = sym;
                         } else {
                             diag.add(Diagnostic(
