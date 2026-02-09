@@ -9638,6 +9638,13 @@ public:
             ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value != nullptr) {
             newshape = ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value;
         }
+        
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
+            ASR::expr_t* newshape_value = ASRUtils::expr_value(newshape);
+            if (newshape_value != nullptr && ASR::is_a<ASR::ArrayConstant_t>(*newshape_value)) {
+                newshape = newshape_value;
+            }
+        }
 
         // if 'newshape' is an ArrayConstant, then assign all of it's
         // elements as dimensions
@@ -9723,12 +9730,11 @@ public:
                     a_type = ASRUtils::type_get_past_pointer(a_type);
                     ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
                     Vec<ASR::expr_t*> elements_;
-                    elements_.reserve(al, array_size);
+                    elements_.reserve(al, new_shape_size);
                     ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
                     ASR::ArrayConstant_t* const_shape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
-                    int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
                     std::map<int, int> index_map;
-                    for (int i=0; i<array_size; i++){
+                    for (int i=0; i<new_shape_size; i++){
                         int temp = i;
                         std::vector<int> d(n, 0);
                         for (int j=0; j<n; j++){
@@ -9750,7 +9756,7 @@ public:
                         }
                         index_map[R] = i;
                     }
-                    for (int i=0; i<array_size; i++){
+                    for (int i=0; i<new_shape_size; i++){
                         elements_.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, index_map[i]));
                     }
 
@@ -9792,9 +9798,33 @@ public:
         // Compile time value is same as the "source" ArrayConstant with multi-dimensional type instead of 1-D
         ASR::expr_t* value = nullptr;
         if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::get_past_array_physical_cast(newshape))) {
-            ASRUtils::ExprStmtDuplicator dup(al);
-            value = dup.duplicate_expr(array);
-            ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
+            int64_t source_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+            int64_t target_size = ASRUtils::get_fixed_size_of_array(reshape_ttype);
+            if (target_size != -1 && source_size > target_size) {
+                ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
+                Vec<ASR::expr_t*> truncated;
+                truncated.reserve(al, target_size);
+                for (int64_t i = 0; i < target_size; i++) {
+                    truncated.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                }
+                void *data = ASRUtils::set_ArrayConstant_data(truncated.p, target_size, elem_type);
+                int64_t n_data = target_size * ASRUtils::extract_kind_from_ttype_t(elem_type);
+                if (ASRUtils::is_character(*elem_type)) {
+                    int64_t len;
+                    if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(elem_type)->m_len, len)) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    n_data = target_size * len;
+                }
+                value = ASRUtils::EXPR(
+                    ASR::make_ArrayConstant_t(al, array->base.loc, n_data, data,
+                        reshape_ttype, ASR::arraystorageType::ColMajor));
+            } else {
+                ASRUtils::ExprStmtDuplicator dup(al);
+                value = dup.duplicate_expr(array);
+                ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
+            }
         }
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, value);
     }
