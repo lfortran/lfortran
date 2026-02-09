@@ -4,18 +4,18 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 %"~unlimited_polymorphic_type" = type <{ i32 (...)**, i8* }>
 
-@_Type_Info_integer_8 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 8 to i8*), i8* inttoptr (i8 8 to i8*) }, align 8
+@_Type_Info_integer_8 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 8 to i8*), i8* inttoptr (i64 8 to i8*) }, align 8
 @_VTable_integer_8 = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_integer_8 to i8*), i8* bitcast (void (i8*, i8*)* @_copy_integer_8 to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [10 x i8] c"integer(8)"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@_Type_Info_integer_4 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 4 to i8*), i8* inttoptr (i8 4 to i8*) }, align 8
+@_Type_Info_integer_4 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 4 to i8*), i8* inttoptr (i64 4 to i8*) }, align 8
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.1 = private constant [10 x i8] c"integer(4)"
 @string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.1, i32 0, i32 0), i64 10 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@_Type_Info_real_4 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 6 to i8*), i8* inttoptr (i8 4 to i8*) }, align 8
+@_Type_Info_real_4 = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* inttoptr (i32 6 to i8*), i8* inttoptr (i64 4 to i8*) }, align 8
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.3 = private constant [4 x i8] c"real"
 @string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.3, i32 0, i32 0), i64 4 }>
@@ -119,11 +119,20 @@ then3:                                            ; preds = %else2
   br label %ifcont
 
 else4:                                            ; preds = %else2
+  br label %"~select_type_block_3.start"
+
+"~select_type_block_3.start":                     ; preds = %else4
   %32 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %32, i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_3.end"
+
+"~select_type_block_3.end":                       ; preds = %"~select_type_block_3.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_3"
+
+"FINALIZE_SYMTABLE_~select_type_block_3":         ; preds = %"~select_type_block_3.end"
   br label %ifcont
 
-ifcont:                                           ; preds = %else4, %"FINALIZE_SYMTABLE_~select_type_block_2", %"FINALIZE_SYMTABLE_~select_type_block_1", %"FINALIZE_SYMTABLE_~select_type_block_"
+ifcont:                                           ; preds = %"FINALIZE_SYMTABLE_~select_type_block_3", %"FINALIZE_SYMTABLE_~select_type_block_2", %"FINALIZE_SYMTABLE_~select_type_block_1", %"FINALIZE_SYMTABLE_~select_type_block_"
   call void @_lpython_free_argv()
   br label %return
 

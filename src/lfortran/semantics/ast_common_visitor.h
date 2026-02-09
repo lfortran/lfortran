@@ -1281,6 +1281,230 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
 }; // class CommonVisitorMethods
 
+inline void validate_format_string(const std::string& fmt_str, const Location& loc,
+                                   diag::Diagnostics& diag) {
+    enum class DescType { NONE, DATA, SLASH, COLON, CONTROL };
+    
+    if (fmt_str.empty()) return;
+    size_t start = fmt_str.find('(');
+    size_t end = fmt_str.rfind(')');
+    if (start == std::string::npos || end == std::string::npos || start >= end) {
+        return;
+    }
+    
+    std::string content = fmt_str.substr(start + 1, end - start - 1);
+    DescType prev_desc = DescType::NONE;
+    
+    for (size_t i = 0; i < content.length(); ) {
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        char c = content[i];
+        if (c == ',') {
+            prev_desc = DescType::NONE;
+            i++;
+            continue;
+        }
+        if (c == ':') {
+            prev_desc = DescType::COLON;
+            i++;
+            continue;
+        }
+        if (c == ')') {
+            break;
+        }
+        if (c == '/') {
+            while (i < content.length() && content[i] == '/') {
+                i++;
+            }
+            while (i < content.length() && std::isspace(content[i])) {
+                i++;
+            }
+            prev_desc = DescType::SLASH;
+            continue;
+        }
+        
+        if (c == '(') {
+            int depth = 1;
+            i++;
+            while (i < content.length() && depth > 0) {
+                if (content[i] == '(') depth++;
+                else if (content[i] == ')') depth--;
+                i++;
+            }
+            prev_desc = DescType::NONE;
+            continue;
+        }
+        
+        if (c == '\'' || c == '"') {
+            char quote = c;
+            i++;
+            while (i < content.length()) {
+                if (content[i] == quote) {
+                    if (i + 1 < content.length() && content[i + 1] == quote) {
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            prev_desc = DescType::DATA;
+            continue;
+        }
+        
+        bool had_repeat_count = false;
+        while (i < content.length() && std::isdigit(content[i])) {
+            had_repeat_count = true;
+            i++;
+        }
+        while (i < content.length() && std::isspace(content[i])) {
+            i++;
+        }
+        if (i >= content.length()) break;
+        
+        c = content[i];
+        
+        DescType current_desc = DescType::NONE;
+        
+        char c_upper = std::toupper(c);
+        
+        if (c_upper == 'A' || c_upper == 'I' || c_upper == 'O' ||
+            c_upper == 'F' || c_upper == 'E' || c_upper == 'D' || c_upper == 'G' || c_upper == 'L') {
+            current_desc = DescType::DATA;
+            
+            if (c_upper == 'E') {
+                size_t j = i + 1;
+                while (j < content.length() && std::isspace(content[j])) j++;
+                if (j < content.length()) {
+                    char next = std::toupper(content[j]);
+                    if (next == 'N' || next == 'S' || next == 'X') {
+                        i = j;
+                    }
+                }
+            } else if (c_upper == 'D') {
+                size_t j = i + 1;
+                while (j < content.length() && std::isspace(content[j])) j++;
+                if (j < content.length() && std::toupper(content[j]) == 'T') {
+                    i = j;
+                }
+            }
+        } else if (c_upper == 'B') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'N' || next == 'Z') {
+                    // BN or BZ - control descriptor
+                    current_desc = DescType::CONTROL;
+                    i = j;
+                } else {
+                    current_desc = DescType::DATA;
+                }
+            } else {
+                current_desc = DescType::DATA;
+            }
+        } else if (c_upper == 'Z') {
+            current_desc = DescType::DATA;
+        } else if (c_upper == 'X') {
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'T') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'R' || next == 'L') {
+                    i = j;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'P') {
+            i++;
+            size_t j = i;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'F' || next == 'E' || next == 'D' || next == 'G') {
+                    prev_desc = DescType::NONE;
+                    i = j;
+                    continue;
+                }
+            }
+            i--;
+            current_desc = DescType::CONTROL;
+        } else if (c_upper == 'S') {
+            size_t j = i + 1;
+            while (j < content.length() && std::isspace(content[j])) j++;
+            if (j < content.length()) {
+                char next = std::toupper(content[j]);
+                if (next == 'S' || next == 'P') {
+                    i = j;
+                }
+            }
+            current_desc = DescType::CONTROL;
+        } else if (c == '+' || c == '-') {
+            i++;
+            continue;
+        } else {
+            i++;
+            continue;
+        }
+        
+        if (current_desc != DescType::NONE && !had_repeat_count) {
+            if (prev_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+            } else if (prev_desc == DescType::CONTROL && current_desc == DescType::DATA) {
+                diag.add(Diagnostic(
+                    "Format string missing comma between descriptors (F2023 constraint C1302)",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+            }
+        }
+        
+        prev_desc = current_desc;
+        i++;
+        
+        while (i < content.length() && 
+               (std::isdigit(content[i]) || content[i] == '.' || std::isspace(content[i]))) {
+            i++;
+            if (i > 0 && std::isspace(content[i-1])) {
+                size_t peek = i;
+                while (peek < content.length() && std::isspace(content[peek])) peek++;
+                if (peek >= content.length() || 
+                    (!std::isdigit(content[peek]) && content[peek] != '.')) {
+                    break;
+                }
+            }
+        }
+        
+        if (i < content.length() && std::toupper(content[i]) == 'E' && 
+            (current_desc == DescType::DATA)) {
+            i++;
+            while (i < content.length() && 
+                   (std::isdigit(content[i]) || std::isspace(content[i]))) {
+                i++;
+                if (i > 0 && std::isspace(content[i-1])) {
+                    size_t peek = i;
+                    while (peek < content.length() && std::isspace(content[peek])) peek++;
+                    if (peek >= content.length() || !std::isdigit(content[peek])) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
@@ -1798,6 +2022,11 @@ public:
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0) {
                     implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                    if (implicit_dictionary.size() == 0 && current_scope->parent
+                            && current_scope->parent->asr_owner) {
+                        implicit_dictionary = implicit_mapping[get_hash(
+                            current_scope->parent->asr_owner)];
+                    }
                     if (implicit_dictionary.size() == 0 && is_implicit_interface) {
                         implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                     }
@@ -2403,6 +2632,8 @@ public:
 
     void visit_Format(const AST::Format_t &x) {
         format_statements[x.m_label] = x.m_fmt;
+        std::string fmt_str = "(" + std::string(x.m_fmt) + ")";
+        validate_format_string(fmt_str, x.base.base.loc, diag);
         tmp = nullptr;
     }
 
@@ -3002,7 +3233,7 @@ public:
                         object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
-        } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*object) || ASR::is_a<ASR::StringSection_t>(*object)) {
             // This is the following case:
             // x(2) / 2 /
             // We create an assignment node and insert into the current body.
@@ -3019,7 +3250,7 @@ public:
             current_body->push_back(al, assign_stmt);
         } else {
             diag.add(Diagnostic(
-                "The variable (object) type is not supported (only variables and array items are supported so far)",
+                "The variable (object) type is not supported (only variables, character substrings and array items are supported so far)",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
                 }));
@@ -3681,7 +3912,7 @@ public:
             rhs_type = ASR::down_cast<ASR::String_t>(
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
         }
-        int64_t lhs_len, rhs_len;
+        int64_t lhs_len = 0, rhs_len = 0;
         bool is_lhs_length_constant = ASRUtils::extract_value(lhs_type->m_len, lhs_len);
         bool is_rhs_length_constant = ASRUtils::extract_value(rhs_type->m_len, rhs_len);
         if( is_lhs_length_constant && is_rhs_length_constant ){
@@ -5159,18 +5390,20 @@ public:
                 // e.g. character :: x*3   !> set char length to 3
                 // OR character(len=4)     !> set char length to 4
                 // OR character :: x(2)*3  !> set char length to 3
+                // OR character(1) x*(d+1) !> set char length to d+1 expression
                 if (is_char_type && s.m_length) {
                     this->visit_expr(*s.m_length);
                     ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                         ASRUtils::type_get_past_array(type));
                     char_length = ASRUtils::EXPR(tmp);
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
-                    ASRUtils::ASRBuilder b(al, x.base.base.loc);
-                    if (c_length == nullptr) c_length = ASRUtils::expr_value(b.i32(0));
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*c_length))
-                    int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
-                    lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
+                    if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
+                        int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
+                        lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
+                    } else {
+                        lhs_type->m_len = char_length;
+                    }
                 }                
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
@@ -5558,6 +5791,7 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+                    
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
@@ -6492,9 +6726,7 @@ public:
                         nullptr,
                         0,
                         true,
-                        ASRUtils::symbol_name(v) == std::string("~unlimited_polymorphic_type")
-                        ? true
-                        : false));
+                        derived_type_name == "~unlimited_polymorphic_type"));
                     } else { 
                         diag.add(Diagnostic(
                             "Derived type `" + derived_type_name + "` is not defined",
@@ -10411,22 +10643,34 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
                 ASR::ttype_t* src_elem = ASRUtils::type_get_past_array(src_type);
                 int64_t src_bytes = ASRUtils::extract_kind_from_ttype_t(src_elem);
+                ASR::expr_t* src_len_expr = nullptr;
                 // If compile time size known, assign mold for better memory usage
-                // Else, mold-size is set to default(64) for runtime-sized sources
+                // Else, mold-size is set to default(64) for runtime-sized sources or dynamically calculated
                 if( ASRUtils::is_array(src_type) ) {
                     int64_t n_elem = ASRUtils::get_fixed_size_of_array(src_type);
                     src_bytes = (n_elem > 0 && src_bytes > 0) ? n_elem * src_bytes : -1;
                 } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
                     // For scalar strings: use string length as mold size
                     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
-                    if( str_type->m_len && ASRUtils::expr_value(str_type->m_len) ) {
-                        src_bytes = ASR::down_cast<ASR::IntegerConstant_t>(
-                            ASRUtils::expr_value(str_type->m_len))->m_n;
+                    if( str_type->m_len ) {
+                        if( ASRUtils::expr_value(str_type->m_len) ) {
+                            src_bytes = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(str_type->m_len))->m_n;
+                        } else {
+                            // Runtime-sized string
+                            src_len_expr = str_type->m_len;
+                            src_bytes = -1;
+                        }
                     } else {
-                        src_bytes = -1; // Runtime-sized string
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        src_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                            al, x.base.base.loc, source, int_type, nullptr));
+                        src_bytes = -1;
                     }
                 }
                 int64_t result_size = 64; // Fallback for runtime-sized sources
+                ASR::expr_t* result_size_expr = nullptr;
                 if( src_bytes > 0 ) {
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
@@ -10445,6 +10689,37 @@ public:
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
+                } else if( src_len_expr ) {
+                    // For runtime-sized strings with known length expression, use it
+                    ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
+                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(mold_elem_type);
+                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
+                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
+                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
+                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
+                            mold_bytes = mold_bytes * str_len;
+                        } else {
+                            mold_bytes = -1;
+                        }
+                    }
+                    if( mold_bytes > 0 ) {
+                        // Calculate: ceiling(src_len_expr / mold_bytes)
+                        // = (src_len_expr + mold_bytes - 1) / mold_bytes
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t* mold_bytes_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, x.base.base.loc, mold_bytes, int_type));
+                        ASR::expr_t* mold_bytes_minus_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, x.base.base.loc, mold_bytes - 1, int_type));
+                        ASR::expr_t* numerator = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, x.base.base.loc, src_len_expr, ASR::binopType::Add,
+                            mold_bytes_minus_one, int_type, nullptr));
+                        result_size_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, x.base.base.loc, numerator, ASR::binopType::Div,
+                            mold_bytes_expr, int_type, nullptr));
+                    }
                 }
                 ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -10452,8 +10727,12 @@ public:
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, x.base.base.loc, 1, int_type));
-                size_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, x.base.base.loc, result_size, int_type));
+                if( result_size_expr ) {
+                    size_dim.m_length = result_size_expr;
+                } else {
+                    size_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, result_size, int_type));
+                }
                 new_dims.push_back(al, size_dim);
             }
         }

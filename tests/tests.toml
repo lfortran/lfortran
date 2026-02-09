@@ -2020,6 +2020,14 @@ filename = "../integration_tests/format_53.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_57.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_58.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_09.f90"
 run = true
 
@@ -2990,6 +2998,10 @@ ast = true
 [[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
+
+[[test]]
+filename = "../integration_tests/format_08.f90"
+run = true
 
 [[test]]
 filename = "comments1.f90"
@@ -4956,6 +4968,16 @@ llvm = true
 filename = "codegen_function_polymorphic.f90"
 llvm = true
 options = "-c --separate-compilation"
+
+[[test]]
+filename = "common_linkage_separate_compilation_01.f90"
+llvm = true
+options = "--separate-compilation"
+
+[[test]]
+filename = "module_struct_global_separate_compilation_01.f90"
+llvm = true
+options = "--separate-compilation"
 
 [[test]]
 filename = "../integration_tests/operator_overloading_12.f90"

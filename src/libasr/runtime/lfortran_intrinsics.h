@@ -389,7 +389,7 @@ typedef struct Span {
 
 typedef struct Label {
     bool primary;
-    const char *message;
+    char *message;
     Span *spans;
     uint32_t n_spans;
 } Label;
@@ -416,6 +416,7 @@ void lfortran_error(const char *message);
 
 typedef struct type_info {
     char* name;  // Pointer to a null-terminated string representing the type name
+    uint8_t* size;   // Size of the dynamic type
 } type_info;
 
 typedef struct __si_class_type_info {

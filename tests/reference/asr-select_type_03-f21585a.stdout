@@ -224,16 +224,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_enum_stat_fatal:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_enum_stat_fatal
-                                                    5 fatal
-                                                    1_enum_stat
-                                                    []
-                                                    fatal
-                                                    Public
-                                                ),
                                             ptr:
                                                 (Variable
                                                     8
@@ -384,6 +374,47 @@
                                                         )]
                                                         []
                                                     )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            1_enum_stat_fatal:
+                                                                (ExternalSymbol
+                                                                    11
+                                                                    1_enum_stat_fatal
+                                                                    5 fatal
+                                                                    1_enum_stat
+                                                                    []
+                                                                    fatal
+                                                                    Public
+                                                                )
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(If
+                                                        ()
+                                                        (IntrinsicElementalFunction
+                                                            Present
+                                                            [(Var 8 stat)]
+                                                            0
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 8 stat)
+                                                            (StructInstanceMember
+                                                                (Var 2 toml_stat)
+                                                                11 1_enum_stat_fatal
+                                                                (Integer 4)
+                                                                (IntegerConstant -1 (Integer 4) Decimal)
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                    )]
                                                 )
                                         })
                                     get_table
@@ -442,28 +473,9 @@
                                                     8 ~select_type_block_
                                                 )]
                                             )]
-                                            [(If
-                                                ()
-                                                (IntrinsicElementalFunction
-                                                    Present
-                                                    [(Var 8 stat)]
-                                                    0
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                [(Assignment
-                                                    (Var 8 stat)
-                                                    (StructInstanceMember
-                                                        (Var 2 toml_stat)
-                                                        8 1_enum_stat_fatal
-                                                        (Integer 4)
-                                                        (IntegerConstant -1 (Integer 4) Decimal)
-                                                    )
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )]
-                                                []
+                                            [(BlockCall
+                                                -1
+                                                8 ~select_type_block_1
                                             )]
                                         )]
                                         [(SubroutineCall
