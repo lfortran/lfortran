@@ -5213,6 +5213,21 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
     rewind(filep);
 }
 
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
+{
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if( filep == NULL ) {
+        printf("Specified UNIT %d in ENDFILE is not created or connected.\n", unit_num);
+        exit(1);
+    }
+    fflush(filep);
+    long pos = ftell(filep);
+    if (pos >= 0) {
+        ftruncate(fileno(filep), pos);
+    }
+}
+
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
