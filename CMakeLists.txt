@@ -218,6 +218,7 @@ if (WITH_UNWIND)
 endif()
 
 if (WITH_LIRIC)
+    add_compile_definitions(WITH_LIRIC)
     if (NOT LIRIC_DIR)
         message(FATAL_ERROR "WITH_LIRIC requires LIRIC_DIR to be set")
     endif()
