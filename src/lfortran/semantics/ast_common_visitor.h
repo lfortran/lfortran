@@ -6258,7 +6258,9 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     } else {
-                        variable_added_to_symtab->m_type = type;
+                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type)) {
+                            variable_added_to_symtab->m_type = type;
+                        }
                     }
                     SetChar variable_dependencies_vec;
                     variable_dependencies_vec.reserve(al, 1);
