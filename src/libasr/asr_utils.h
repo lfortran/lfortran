@@ -7046,7 +7046,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
                             al, arg->base.loc, arg,
                             ASR::cast_kindType::IntegerToInteger,
-                            orig_arg_type, nullptr));
+                            orig_arg_type, nullptr, nullptr));
                         continue;
                     }
                 }
@@ -7669,7 +7669,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
@@ -7679,7 +7679,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else {
             diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},

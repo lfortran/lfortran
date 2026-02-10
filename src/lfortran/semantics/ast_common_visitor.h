@@ -4230,7 +4230,7 @@ public:
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
                                                                 rc->m_r, rc->m_type)),
-                                                            ASR::cast_kindType::RealToComplex, v->m_type, complex_value));
+                                                            ASR::cast_kindType::RealToComplex, v->m_type, complex_value, nullptr));
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
                                                     }
@@ -4243,7 +4243,7 @@ public:
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
-                                                            ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value));
+                                                            ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value, nullptr));
                                                     } else if (ASRUtils::is_real(*v->m_type)) {
                                                         ASR::expr_t* real_value = ASRUtils::EXPR(
                                                             ASR::make_RealConstant_t(al, x.base.base.loc,
@@ -4251,7 +4251,7 @@ public:
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
-                                                            ASR::cast_kindType::IntegerToReal, v->m_type, real_value));
+                                                            ASR::cast_kindType::IntegerToReal, v->m_type, real_value, nullptr));
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
                                                     }
@@ -4271,11 +4271,11 @@ public:
                                                     if (ASRUtils::is_real(*v->m_type)) {
                                                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                            ASR::cast_kindType::ComplexToReal, v->m_type, value));
+                                                            ASR::cast_kindType::ComplexToReal, v->m_type, value, nullptr));
                                                     } else if (ASRUtils::is_integer(*v->m_type)) {
                                                         value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, (int64_t)re_val, v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                            ASR::cast_kindType::ComplexToInteger, v->m_type, value));
+                                                            ASR::cast_kindType::ComplexToInteger, v->m_type, value, nullptr));
                                                     } else if (ASRUtils::is_complex(*v->m_type)) {
                                                         int init_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(init_val));
                                                         int var_kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
@@ -4291,7 +4291,7 @@ public:
                                                             }
                                                             value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc, re_val, im_val, v->m_type));
                                                             init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                                ASR::cast_kindType::ComplexToComplex, v->m_type, value));
+                                                                ASR::cast_kindType::ComplexToComplex, v->m_type, value, nullptr));
                                                         }
                                                     }
                                                 }
@@ -7695,7 +7695,7 @@ public:
                     } else {
                         args.p[i].m_left = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
                             args.p[i].m_left, ASR::cast_kindType::IntegerToInteger, 
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr, nullptr));
                     }
                 }
                 if (right_kind != -1 && right_kind != max_kind) {
@@ -7706,7 +7706,7 @@ public:
                     } else {
                         args.p[i].m_right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
                             args.p[i].m_right, ASR::cast_kindType::IntegerToInteger, 
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr, nullptr));
                     }
                 }
                 if (step_kind != -1 && step_kind != max_kind) {
@@ -7717,7 +7717,7 @@ public:
                     } else {
                         args.p[i].m_step = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
                             args.p[i].m_step, ASR::cast_kindType::IntegerToInteger, 
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr, nullptr));
                     }
                 }
             }
@@ -10892,7 +10892,8 @@ public:
             argument,
             (ASR::cast_kindType)cast_kind, 
             str_type,
-            value);
+            value,
+            nullptr);
     }
 
     ASR::asr_t* create_StrOrd(const AST::FuncCallOrArray_t& x){
@@ -11869,7 +11870,7 @@ public:
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
-                to_type, value));
+                to_type, value, nullptr));
         } else {
             diag.add(Diagnostic("Argument of intrinsic must be an integer",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -11926,7 +11927,7 @@ public:
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
-                to_type, value));
+                to_type, value, nullptr));
         } else if (ASRUtils::is_logical(*type)) {
             if (ASRUtils::expr_value(arg) != nullptr) {
                 double dval = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -11936,19 +11937,19 @@ public:
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::LogicalToReal,
-                to_type, value));
+                to_type, value, nullptr));
         } else if (ASRUtils::is_real(*type)) {
             // float() always returns 64-bit floating point numbers.
             if (ASRUtils::extract_kind_from_ttype_t(type) != 8) {
                 return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                     al, loc, arg, ASR::cast_kindType::RealToReal,
-                    to_type, value));
+                    to_type, value, nullptr));
             }
             return (ASR::asr_t *)arg;
         } else if (ASRUtils::is_complex(*type)) {
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                     al, loc, arg, ASR::cast_kindType::ComplexToReal,
-                    to_type, value));
+                    to_type, value, nullptr));
         } else {
             std::string stype = ASRUtils::type_to_str_fortran_expr(type, arg);
             diag.add(Diagnostic("Conversion of '" + stype + "' to float is not Implemented",
@@ -12561,7 +12562,7 @@ public:
 
         if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr));
+                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
             }
         }
 

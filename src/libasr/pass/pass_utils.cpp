@@ -140,7 +140,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -212,7 +212,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -249,7 +249,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -279,7 +279,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -936,11 +936,11 @@ namespace LCompilers {
                 ASR::expr_t* dim_start = m_dims[dim - 1].m_start;
                 if (dim_length && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_length)) != integer_kind) {
                     dim_length = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_length,
-                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr, nullptr));
                 }
                 if (dim_start && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_start)) != integer_kind) {
                     dim_start = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_start,
-                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr, nullptr));
                 }
                 if( bound == "ubound" ) {
                     return ASRUtils::EXPR(
@@ -1025,7 +1025,7 @@ namespace LCompilers {
                 }
             }
             if( cast_kind > 0 ) {
-                return ASRUtils::EXPR(ASR::make_Cast_t(al, x->base.loc, x, (ASR::cast_kindType)cast_kind, int64type, nullptr));
+                return ASRUtils::EXPR(ASR::make_Cast_t(al, x->base.loc, x, (ASR::cast_kindType)cast_kind, int64type, nullptr, nullptr));
             } else {
                 throw LCompilersException("Array indices can only be of type real or integer.");
             }
@@ -1560,7 +1560,7 @@ namespace LCompilers {
                     al, current_scope);
                 if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                 }
                 ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
@@ -1610,7 +1610,7 @@ namespace LCompilers {
                     al, current_scope);
                 if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                 }
                 ASR::stmt_t* assign = b.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
@@ -1661,7 +1661,7 @@ namespace LCompilers {
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
                         if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
@@ -1708,7 +1708,7 @@ namespace LCompilers {
                             al, current_scope);
                         if( perform_cast ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
@@ -1778,7 +1778,7 @@ namespace LCompilers {
                             al, current_scope);
                         if( perform_cast ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);

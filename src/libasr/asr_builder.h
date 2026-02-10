@@ -406,16 +406,16 @@ class ASRBuilder {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
             value = i_t(val, t);
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value, nullptr));
     }
 
     inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         // TODO: handle value
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr, nullptr));
     }
 
     inline ASR::expr_t* c2c_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToComplex, t, nullptr));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToComplex, t, nullptr, nullptr));
     }
 
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -424,7 +424,7 @@ class ASRBuilder {
             int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
             value = f_t(val, t);
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, value));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, value, nullptr));
     }
 
     inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -434,7 +434,7 @@ class ASRBuilder {
             int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
             value = i_t(val, t);
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, value));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, value, nullptr));
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -448,7 +448,7 @@ class ASRBuilder {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
             value = f_t(val, t);
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, value));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, value, nullptr));
     }
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -457,7 +457,7 @@ class ASRBuilder {
             double re = ASR::down_cast<ASR::ComplexConstant_t>(value)->m_re;
             value = f_t(re, t);
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, value));
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, value, nullptr));
     }
 
     inline ASR::expr_t* t2t(ASR::expr_t* x, ASR::ttype_t* t1, ASR::ttype_t* t2) {

@@ -4800,7 +4800,7 @@ public:
             ASR::expr_t* y = value;
             const Location& loc = x.base.base.loc;
             ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
-                ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
+                ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
