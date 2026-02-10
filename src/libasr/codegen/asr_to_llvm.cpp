@@ -6857,7 +6857,6 @@ public:
                     llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type);
                     builder->CreateStore(llvm_cptr, llvm_fptr);
                 } else {
-                    // existing behavior
                     llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type->getPointerTo());
                     builder->CreateStore(llvm_cptr, llvm_fptr);
                 }

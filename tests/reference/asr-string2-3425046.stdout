@@ -70,11 +70,11 @@
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        20
                                         {
                                             c_tempfile:
                                                 (Variable
-                                                    19
+                                                    20
                                                     c_tempfile
                                                     []
                                                     Local
@@ -102,7 +102,7 @@
                                                 ),
                                             f_string@f_string~genericprocedure:
                                                 (ExternalSymbol
-                                                    19
+                                                    20
                                                     f_string@f_string~genericprocedure
                                                     4 f_string~genericprocedure
                                                     fpm_strings
@@ -112,7 +112,7 @@
                                                 ),
                                             tempfile:
                                                 (Variable
-                                                    19
+                                                    20
                                                     tempfile
                                                     []
                                                     ReturnVar
@@ -154,11 +154,11 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 19 tempfile)
+                                        (Var 20 tempfile)
                                         (FunctionCall
-                                            19 f_string@f_string~genericprocedure
+                                            20 f_string@f_string~genericprocedure
                                             2 f_string
-                                            [((Var 19 c_tempfile))]
+                                            [((Var 20 c_tempfile))]
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -169,7 +169,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 19 tempfile)
+                                    (Var 20 tempfile)
                                     Public
                                     .false.
                                     .false.
@@ -178,11 +178,11 @@
                             list_files:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        19
                                         {
                                             dir_entry_c:
                                                 (Variable
-                                                    18
+                                                    19
                                                     dir_entry_c
                                                     []
                                                     Local
@@ -203,7 +203,7 @@
                                                 ),
                                             dir_handle:
                                                 (Variable
-                                                    18
+                                                    19
                                                     dir_handle
                                                     []
                                                     Local
@@ -224,7 +224,7 @@
                                                 ),
                                             f_string@f_string_cptr:
                                                 (ExternalSymbol
-                                                    18
+                                                    19
                                                     f_string@f_string_cptr
                                                     4 f_string_cptr
                                                     fpm_strings
@@ -234,7 +234,7 @@
                                                 ),
                                             string_fortran:
                                                 (Variable
-                                                    18
+                                                    19
                                                     string_fortran
                                                     []
                                                     Local
@@ -283,7 +283,7 @@
                                             ()
                                             (LogicalNot
                                                 (PointerAssociated
-                                                    (Var 18 dir_entry_c)
+                                                    (Var 19 dir_entry_c)
                                                     ()
                                                     (Logical 4)
                                                     ()
@@ -295,11 +295,11 @@
                                                 ()
                                             )]
                                             [(Assignment
-                                                (Var 18 string_fortran)
+                                                (Var 19 string_fortran)
                                                 (FunctionCall
-                                                    18 f_string@f_string_cptr
+                                                    19 f_string@f_string_cptr
                                                     2 f_string
-                                                    [((Var 18 dir_entry_c))]
+                                                    [((Var 19 dir_entry_c))]
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
