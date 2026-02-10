@@ -6150,36 +6150,42 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
     }
 
     if (unit_file_bin) {
-        int32_t data_length = 0;
-
-        if (access_id == 0 && ftell(filep) == 0) {
-            if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+        if (access_id == 2 || access_id == 1) {
+            int32_t data_length = (int32_t)p_len;
+            if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                printf("Error reading data length from file.\n");
+                printf("Error reading data from file.\n");
                 exit(1);
             }
-        }
-
-        long current_pos = ftell(filep);
-        fseek(filep, 0L, SEEK_END);
-        long end_pos = ftell(filep);
-        fseek(filep, current_pos, SEEK_SET);
-
-        if (access_id == 0) {
-            data_length = (int32_t)(end_pos - current_pos - 4);
+            pad_with_spaces(*p, data_length, p_len);
         } else {
-            data_length = (int32_t)(end_pos - current_pos);
+            int32_t data_length = 0;
+
+            if (ftell(filep) == 0) {
+                if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    printf("Error reading data length from file.\n");
+                    exit(1);
+                }
+            }
+
+            long current_pos = ftell(filep);
+            fseek(filep, 0L, SEEK_END);
+            long end_pos = ftell(filep);
+            fseek(filep, current_pos, SEEK_SET);
+
+            data_length = (int32_t)(end_pos - current_pos - 4);
+
+            if (data_length > p_len) data_length = (int32_t)p_len;
+
+            if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                printf("Error reading data from file.\n");
+                exit(1);
+            }
+
+            pad_with_spaces(*p, data_length, p_len);
         }
-
-        if (data_length > p_len) data_length = (int32_t)p_len;
-
-        if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-            printf("Error reading data from file.\n");
-            exit(1);
-        }
-
-        pad_with_spaces(*p, data_length, p_len);
 
     } else {
         char *tmp_buffer = (char *)malloc((p_len + 1) * sizeof(char));
@@ -7835,7 +7841,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
-    if (filep != stdout && filep != stderr) {
+    // Do not truncate direct access files, as records may be written out of order
+    if (filep != stdout && filep != stderr && access_id != 2) {
         (void)!ftruncate(fileno(filep), ftell(filep));
     }
 }
