@@ -439,20 +439,26 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
-semantic error: Argument of 'size' must be an array
-   --> tests/errors/continue_compilation_3.f90:208:23
+semantic error: Element in string array constructor is integer(4)
+   --> tests/errors/continue_compilation_3.f90:205:16
     |
-208 |         print *, size(bpe)
+205 |     print *,  [( '*',i , i = 1, 10 )] 
+    |                ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_3.f90:211:23
+    |
+211 |         print *, size(bpe)
     |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:209:15
+   --> tests/errors/continue_compilation_3.f90:212:15
     |
-209 |         bpe = d
+212 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:209:9
+   --> tests/errors/continue_compilation_3.f90:212:9
     |
-209 |         bpe = d
+212 |         bpe = d
     |         ^^^ 
