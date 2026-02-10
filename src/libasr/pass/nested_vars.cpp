@@ -199,10 +199,13 @@ public:
                 }
             }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(s)->m_deftype !=
+                        ASR::deftypeType::Implementation) {
+                    continue;
+                }
                 ASR::symbol_t* par_func_sym_copy = par_func_sym;
                 par_func_sym = cur_func_sym;
-                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
-                    item.second);
                 if (!is_func_visited) {
                     is_func_visited = true;
                     for (size_t i = 0; i < x.n_body; i++) {
@@ -247,7 +250,10 @@ public:
         visit_procedure(x);
         bool has_internal_procedures = false;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            if (ASR::is_a<ASR::Function_t>(*item.second) &&
+                    ASRUtils::get_FunctionType(
+                        ASR::down_cast<ASR::Function_t>(item.second))->m_deftype ==
+                    ASR::deftypeType::Implementation) {
                 has_internal_procedures = true;
                 break;
             }
@@ -743,6 +749,10 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 }
                 if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
                     var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                }
+                if(is_pointer && !ASRUtils::is_allocatable_or_pointer(var_type)) {
+                    // Preserve pointer semantics for captured pointer variables.
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
                 ASR::symbol_t* type_decl = nullptr;
                 if (m_derived_type_or_class_type) {
