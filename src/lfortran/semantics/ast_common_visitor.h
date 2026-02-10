@@ -5514,6 +5514,7 @@ public:
                             // and later declared as a procedure variable ex: `procedure(yy), pointer :: xx`
                             symbol_variable->m_type_declaration = type_declaration;
                         }
+                        variable_added_to_symtab = symbol_variable;
                     }
                 }
 
@@ -6257,7 +6258,9 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     } else {
-                        variable_added_to_symtab->m_type = type;
+                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type)) {
+                            variable_added_to_symtab->m_type = type;
+                        }
                     }
                     SetChar variable_dependencies_vec;
                     variable_dependencies_vec.reserve(al, 1);
