@@ -161,6 +161,7 @@ public:
     size_t nesting_depth = 0;
     SymbolTable* current_scope;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> nesting_map;
+    std::set<ASR::symbol_t*> active_functions;
 
     NestedVarVisitor(Allocator& al_): al(al_) {
         current_scope = nullptr;
@@ -232,13 +233,19 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        ASR::symbol_t* x_sym = (ASR::symbol_t*)(&x);
+        if (active_functions.find(x_sym) != active_functions.end()) {
+            return;
+        }
+        active_functions.insert(x_sym);
         ASR::symbol_t *cur_func_sym_copy = cur_func_sym;
-        cur_func_sym = (ASR::symbol_t*)(&x);
+        cur_func_sym = x_sym;
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         visit_procedure(x);
         current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
+        active_functions.erase(x_sym);
     }
 
     void visit_Module(const ASR::Module_t &x) {
