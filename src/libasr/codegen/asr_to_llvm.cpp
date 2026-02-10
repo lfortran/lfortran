@@ -18381,8 +18381,20 @@ public:
             llvm::Value *effective_ctx = nullptr;
             llvm::Value *ctx_nonzero = nullptr;
             std::vector<std::pair<llvm::Value*, llvm::Value*>> stack_base_pairs;
+            std::vector<bool> stack_pair_sync_back;
+            bool reload_fn_from_storage = true;
             if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
                 ASR::Variable_t *proc_var = ASR::down_cast<ASR::Variable_t>(proc_sym);
+                if (proc_var->m_type_declaration &&
+                        ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                            proc_var->m_type_declaration))) {
+                    ASR::Function_t *decl_fn = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(proc_var->m_type_declaration));
+                    if (ASRUtils::get_FunctionType(decl_fn)->m_deftype ==
+                            ASR::deftypeType::Interface) {
+                        reload_fn_from_storage = false;
+                    }
+                }
                 std::string proc_name = std::string(proc_var->m_name);
                 ASR::symbol_t *ctx_sym = proc_var->m_parent_symtab->resolve_symbol(proc_name + "__ctx");
                 ASR::symbol_t *sp_sym = proc_var->m_parent_symtab->resolve_symbol("__lfortran_nested_ctx_stack_ptr");
@@ -18397,8 +18409,11 @@ public:
                         llvm::Type *i32_type = llvm::Type::getInt32Ty(context);
                         saved_stack_ptr = llvm_utils->CreateLoad2(i32_type, stack_ptr_storage);
                         llvm::Value *ctx_val = llvm_utils->CreateLoad2(i32_type, llvm_symtab[h_ctx]);
-                        ctx_nonzero = builder->CreateICmpNE(
+                        llvm::Value *ctx_is_nonzero = builder->CreateICmpNE(
                             ctx_val, llvm::ConstantInt::get(i32_type, 0));
+                        llvm::Value *ctx_is_different = builder->CreateICmpNE(
+                            ctx_val, saved_stack_ptr);
+                        ctx_nonzero = builder->CreateAnd(ctx_is_nonzero, ctx_is_different);
                         effective_ctx = builder->CreateSelect(
                             ctx_nonzero, ctx_val, saved_stack_ptr);
                         builder->CreateStore(effective_ctx, stack_ptr_storage);
@@ -18424,6 +18439,15 @@ public:
                                     !ASR::is_a<ASR::Variable_t>(*base_past)) {
                                 continue;
                             }
+                            ASR::Variable_t *base_var = ASR::down_cast<ASR::Variable_t>(base_past);
+                            bool is_procedure_var = base_var->m_type_declaration &&
+                                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                    base_var->m_type_declaration));
+                            ASR::ttype_t *base_type = base_var->m_type;
+                            bool is_plain_scalar = !is_procedure_var &&
+                                !ASRUtils::is_array(base_type) &&
+                                !ASRUtils::is_pointer(base_type) &&
+                                !ASRUtils::is_allocatable(base_type);
                             uint32_t h_stack = get_hash((ASR::asr_t*)stack_past);
                             uint32_t h_base = get_hash((ASR::asr_t*)base_past);
                             if (llvm_symtab.find(h_stack) == llvm_symtab.end() ||
@@ -18431,6 +18455,7 @@ public:
                                 continue;
                             }
                             stack_base_pairs.push_back({llvm_symtab[h_base], llvm_symtab[h_stack]});
+                            stack_pair_sync_back.push_back(!is_plain_scalar);
                         }
                         for (auto &pair : stack_base_pairs) {
                             llvm::Value *base_ptr = pair.first;
@@ -18452,9 +18477,9 @@ public:
                 }
             }
             args = convert_call_args(x, is_method);
-            // `fn` can become stale after nested-context materialization above:
-            // reload the effective procedure pointer from storage just before call.
-            fn = llvm_utils->CreateLoad2(fn_type, llvm_symtab[h]);
+            if (reload_fn_from_storage) {
+                fn = llvm_utils->CreateLoad2(fn_type, llvm_symtab[h]);
+            }
             llvm::Value *fn_is_null = builder->CreateICmpEQ(
                 builder->CreatePtrToInt(fn, llvm::Type::getInt64Ty(context)),
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
@@ -18468,7 +18493,11 @@ public:
             tmp = builder->CreateCall(fntype, fn, args);
             if (saved_stack_ptr && stack_ptr_storage && effective_ctx && ctx_nonzero) {
                 llvm::Type *i32_type = llvm::Type::getInt32Ty(context);
-                for (auto &pair : stack_base_pairs) {
+                for (size_t i = 0; i < stack_base_pairs.size(); i++) {
+                    if (!stack_pair_sync_back[i]) {
+                        continue;
+                    }
+                    auto &pair = stack_base_pairs[i];
                     llvm::Value *base_ptr = pair.first;
                     llvm::Value *stack_ptr = pair.second;
                     llvm::Type *arr_type = stack_ptr->getType()->getPointerElementType();
