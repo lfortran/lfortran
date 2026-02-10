@@ -5503,8 +5503,7 @@ namespace Ichar {
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        // Note: We don't use strlen() here because it fails for '\0' (null char)
-        // The length validation is done in create_Ichar
+        LCOMPILERS_ASSERT(str[0] == '\0' || std::strlen(str) == 1);
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -5624,8 +5623,7 @@ namespace Iachar {
     static ASR::expr_t *eval_Iachar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        // Note: We don't use strlen() here because it fails for '\0' (null char)
-        // The length validation is done in create_Iachar
+        LCOMPILERS_ASSERT(str[0] == '\0' || std::strlen(str) == 1);
         unsigned char first_char = (unsigned char)str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
