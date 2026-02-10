@@ -8795,7 +8795,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
+        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
 
         // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
@@ -8926,7 +8926,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
+        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -9268,7 +9268,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 if (is_src_class) {
                     llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                         struct_sym->m_struct_signature, &struct_sym->base, module);
-                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
                 }
                 if (is_dest_class) {
@@ -9286,7 +9286,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
                             llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                     }
-                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                 }
 

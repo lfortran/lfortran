@@ -490,6 +490,119 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Do nothing
     }
 
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        /* 
+        Handle FileWrite with character-array arguments, where x and a are arrays:
+            write(x,"format") (a)
+        Expand as following in ASR:
+            do i=1,n:
+                write(x(i),"format") (a(i))
+            end do
+        Also handles arraysections on LHS and RHS, eg:
+            write(x(i:j),"format") (a(k:m))
+        And do-loops in write statements, eg:
+            write(x,"format") (a(i),i=k,m)
+        TODO: Generalize for N-Dimensional arrays, currently handles only 1-D access
+        */
+        if (!x.m_unit || !ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit)) ||
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_unit))) return;
+        if (x.n_values == 0 || !ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) return;
+        
+        ASR::StringFormat_t* fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        if (fmt->n_args == 0) return;
+        ASR::expr_t* val_arg = fmt->m_args[0];
+        bool is_do_loop = ASR::is_a<ASR::ImpliedDoLoop_t>(*val_arg);
+        if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg))) return;
+
+        const Location& loc = x.base.base.loc;
+        int ikind = get_index_kind();
+        ASR::ttype_t* int_type = get_index_type(loc);
+
+        // Extract unit base and bounds
+        ASR::expr_t* unit = x.m_unit;
+        ASR::expr_t* lb_lhs = PassUtils::get_bound(x.m_unit, 1, "lbound", al, ikind);
+        ASR::expr_t* ub_lhs = PassUtils::get_bound(x.m_unit, 1, "ubound", al, ikind);
+        // For array-sections, use bounds passed as args
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
+            ASR::ArraySection_t* sec = ASR::down_cast<ASR::ArraySection_t>(x.m_unit);
+            unit = sec->m_v;
+            if (sec->m_args[0].m_left){
+                lb_lhs = sec->m_args[0].m_left;
+            }
+            if (sec->m_args[0].m_right) {
+                ub_lhs = sec->m_args[0].m_right;
+            }
+        }
+        
+        ASR::expr_t* lb_rhs = nullptr;
+        if (is_do_loop){
+            lb_rhs = ASR::down_cast<ASR::ImpliedDoLoop_t>(val_arg)->m_start;
+        } else {
+            lb_rhs = PassUtils::get_bound(val_arg, 1, "lbound", al, ikind);
+        }
+        // Loop variable: offset = 0 .. ub_lhs - lb_lhs
+        Vec<ASR::expr_t*> idx_vars;
+        idx_vars.reserve(al, 1);
+        PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope, "_fw", ikind);
+        ASR::expr_t* offset = idx_vars[0];
+        ASR::expr_t* zero = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 0, ikind, loc);
+        ASR::expr_t* loop_end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+            al, loc, ub_lhs, ASR::binopType::Sub, lb_lhs, int_type, nullptr));
+
+        // unit(lb_lhs + offset)
+        ASR::expr_t* unit_i = PassUtils::create_array_ref(unit,
+            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, lb_lhs, ASR::binopType::Add, offset, int_type, nullptr)),
+            al, current_scope);
+
+        // Replace inline do-loop logic (since they are handled outside)
+        ASR::expr_t* rhs_idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+            al, loc, lb_rhs, ASR::binopType::Add, offset, int_type, nullptr));
+        ASR::expr_t* val_i = nullptr;  
+        if (!is_do_loop) {
+            val_i = PassUtils::create_array_ref(val_arg, rhs_idx, al, current_scope);
+        } else { 
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(val_arg);
+            ASRUtils::ExprStmtDuplicator dup(al);
+            ASR::expr_t* body_copy = dup.duplicate_expr(idl->m_values[0]);
+            struct ReplaceIDLVar : public ASR::BaseExprReplacer<ReplaceIDLVar> {
+                ASR::symbol_t* idl_sym;
+                ASR::expr_t* replacement;
+                ReplaceIDLVar(ASR::symbol_t* s, ASR::expr_t* r) : idl_sym(s), replacement(r) {}
+                void replace_Var(ASR::Var_t* v) {
+                    if (v->m_v == idl_sym) *current_expr = replacement;
+                }
+            };
+            ReplaceIDLVar replacer(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v, rhs_idx);
+            replacer.current_expr = &body_copy;
+            replacer.replace_expr(body_copy);
+            val_i = body_copy;
+        }
+
+        // Rewrite StringFormat with scalar val_i, then inner FileWrite
+        Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
+        fmt_args.push_back(al, val_i);
+        ASR::expr_t* fmt_i = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
+            al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind, fmt->m_type, fmt->m_value));
+        Vec<ASR::expr_t*> inner_vals; inner_vals.reserve(al, 1);
+        inner_vals.push_back(al, fmt_i);
+        ASR::stmt_t* inner_write = ASRUtils::STMT(ASR::make_FileWrite_t(
+            al, loc, x.m_label, unit_i,
+            x.m_iomsg, x.m_iostat, x.m_id,
+            inner_vals.p, 1,
+            x.m_separator, x.m_end, x.m_overloaded,
+            x.m_is_formatted, x.m_nml, x.m_rec));
+
+        // Wrap Scalar FileWrites in DoLoop
+        Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
+        loop_body.push_back(al, inner_write);
+        ASR::do_loop_head_t head;
+        head.m_v = offset; head.m_start = zero; head.m_end = loop_end;
+        head.m_increment = nullptr; head.loc = loc;
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+            al, loc, nullptr, head, loop_body.p, 1, nullptr, 0)));
+        remove_original_stmt = true;
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         bool remove_original_stmt_copy = remove_original_stmt;
         Vec<ASR::stmt_t*> body;
