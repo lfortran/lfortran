@@ -6783,42 +6783,77 @@ public:
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
-                    diag.add(Diagnostic(
-                        "Derived type '" + derived_type_name
-                        + "' not declared",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{loc})
-                        }));
-                    throw SemanticAbort();
+                    if (this->is_derived_type && (is_pointer || is_allocatable)) {
+                        v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, current_scope, s2c(al, derived_type_name),
+                                nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
+                                ASR::accessType::Private));
+                        type_declaration = v;
+                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, false));
+                        type = ASRUtils::make_Array_t_util(
+                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                        if (is_pointer) {
+                            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                                ASRUtils::type_get_past_allocatable(type)));
+                        }
+                        if (is_allocatable) {
+                            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                                ASRUtils::type_get_past_allocatable(type)));
+                        }
+                    } else {
+                        diag.add(Diagnostic(
+                            "Derived type '" + derived_type_name
+                            + "' not declared",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                } else {
+                    SymbolTable *parent_scope = current_scope;
+                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                    ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
+                                                    s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
+                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                    nullptr, 0, nullptr, nullptr);
+                    ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                    ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                    ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
+                    struct_->m_struct_signature = struct_type;
+                    struct_symbol = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)struct_);
+                    v = ASR::down_cast<ASR::symbol_t>(dtype);
+                    parent_scope->add_symbol(derived_type_name, v);
+                    current_scope = parent_scope;
+                    // this is class variable declaration
+                    // set the variable's type declaration to the derived type
+                    type_declaration = v;
+                    type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+                    if (is_assumed_rank) {
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    } else {
+                        type = ASRUtils::make_Array_t_util(
+                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                    }
+                    if (is_pointer) {
+                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                            ASRUtils::type_get_past_allocatable(type)));
+                    }
                 }
-                SymbolTable *parent_scope = current_scope;
-                current_scope = al.make_new<SymbolTable>(parent_scope);
-                ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
-                                                s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                nullptr, 0, nullptr, nullptr);
-                ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
-                ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
-                struct_->m_struct_signature = struct_type;
-                struct_symbol = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)struct_);
-                v = ASR::down_cast<ASR::symbol_t>(dtype);
-                parent_scope->add_symbol(derived_type_name, v);
-                current_scope = parent_scope;
-            }
-            // this is class variable declaration
-            // set the variable's type declaration to the derived type
-            type_declaration = v;
-            type = ASRUtils::make_StructType_t_util(al, loc, v, false);
-            if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
             } else {
-                type = ASRUtils::make_Array_t_util(
-                    al, loc, type, dims.p, dims.size(), abi, is_argument);
-            }
-            if (is_pointer) {
-                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                    ASRUtils::type_get_past_allocatable(type)));
+                // this is class variable declaration
+                // set the variable's type declaration to the derived type
+                type_declaration = v;
+                type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+                if (is_assumed_rank) {
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                } else {
+                    type = ASRUtils::make_Array_t_util(
+                        al, loc, type, dims.p, dims.size(), abi, is_argument);
+                }
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
             std::string func_name = to_lower(sym_type->m_name);
