@@ -71,6 +71,8 @@ static ASR::symbol_t *make_external_symbol(Allocator &al, SymbolTable *scope,
     return ext_sym;
 }
 
+static constexpr int64_t NESTED_CONTEXT_STACK_SIZE = 1048576;
+
 /*
 
 This pass captures the global variables that are used by the
@@ -243,6 +245,35 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         visit_procedure(x);
+        bool has_internal_procedures = false;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                has_internal_procedures = true;
+                break;
+            }
+        }
+        if (has_internal_procedures) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
+                    continue;
+                }
+                ASR::symbol_t *arg_sym = ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+                ASR::symbol_t *arg_sym_past = ASRUtils::symbol_get_past_external(arg_sym);
+                if (ASR::is_a<ASR::Function_t>(*arg_sym_past)) {
+                    ASR::Function_t *arg_fn = ASR::down_cast<ASR::Function_t>(arg_sym_past);
+                    if (ASRUtils::get_FunctionType(arg_fn)->m_deftype == ASR::deftypeType::Interface) {
+                        nesting_map[x_sym].insert(arg_sym);
+                    }
+                } else if (ASR::is_a<ASR::Variable_t>(*arg_sym_past)) {
+                    ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym_past);
+                    if (arg_var->m_type_declaration &&
+                        ASR::is_a<ASR::Function_t>(
+                            *ASRUtils::symbol_get_past_external(arg_var->m_type_declaration))) {
+                        nesting_map[x_sym].insert(arg_sym);
+                    }
+                }
+            }
+        }
         current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
         active_functions.erase(x_sym);
@@ -273,12 +304,7 @@ public:
             if (!ASR::is_a<ASR::Variable_t>(*sym)) {
                 if (current_scope && par_func_sym &&
                     ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
-                    if (ASR::is_a<ASR::Function_t>(*sym)) {
-                        throw LCompilersException(
-                            "Nested procedure context with dummy procedure arguments is not "
-                            "supported yet. Captured procedure symbol '" +
-                            std::string(ASRUtils::symbol_name(sym)) + "'.");
-                    }
+                    nesting_map[par_func_sym].insert(x.m_v);
                 }
                 return;
             } else {
@@ -423,6 +449,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
     std::map<ASR::symbol_t*, ASR::symbol_t*> func_to_nested_module;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> ext_var_to_stack_var;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> func_to_stack_ptr;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> nested_proc_ctx_var;
     std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>, ASR::symbol_t*> nested_namelists;
 
     ReplaceNestedVisitor(Allocator& al_,
@@ -436,6 +465,26 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             return ASRUtils::get_class_proc_nopass_val(sym);
         }
         return false;
+    }
+
+    ASR::symbol_t *resolve_captured_symbol_key(ASR::symbol_t *sym) {
+        auto it = nested_var_to_ext_var.find(sym);
+        if (it != nested_var_to_ext_var.end()) {
+            return sym;
+        }
+        ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+        for (auto &kv: nested_var_to_ext_var) {
+            if (ASRUtils::symbol_get_past_external(kv.first) == sym_past) {
+                return kv.first;
+            }
+        }
+        std::string sym_name = ASRUtils::symbol_name(sym);
+        for (auto &kv: nested_var_to_ext_var) {
+            if (ASRUtils::symbol_name(kv.first) == sym_name) {
+                return kv.first;
+            }
+        }
+        return nullptr;
     }
 
     void call_replacer() {
@@ -477,12 +526,78 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             std::string module_name = "__lcompilers_created__nested_context__" + std::string(
                                     ASRUtils::symbol_name(it.first)) + "_";
             bool is_any_variable_externally_defined = false;
-            std::map<ASR::symbol_t*, std::string> sym_to_name;
             module_name = current_scope->get_unique_name(module_name, false);
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            std::string stack_ptr_name = current_scope->get_unique_name(
+                "__lfortran_nested_ctx_stack_ptr", false);
+            ASR::expr_t *zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, 0, int_type));
+            ASR::expr_t *stack_ptr_expr = PassUtils::create_auxiliary_variable(
+                x.base.base.loc, stack_ptr_name, al, current_scope, int_type,
+                ASR::intentType::Unspecified, nullptr, zero);
+            ASR::symbol_t *stack_ptr_sym = ASR::down_cast<ASR::Var_t>(stack_ptr_expr)->m_v;
+            func_to_stack_ptr[it.first] = stack_ptr_sym;
             for (auto &it2: it.second) {
                 std::string new_ext_var = std::string(ASRUtils::symbol_name(it2));
                 new_ext_var = current_scope->get_unique_name(new_ext_var, false);
                 ASR::symbol_t* past_it2 = ASRUtils::symbol_get_past_external(it2);
+                auto create_stack_var = [&](ASR::symbol_t *captured_var) {
+                    if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(captured_var))) {
+                        return;
+                    }
+                    ASR::ttype_t *ext_type = ASRUtils::symbol_type(captured_var);
+                    if (ASRUtils::is_array(ext_type)) {
+                        return;
+                    }
+                    ASR::dimension_t dim;
+                    dim.loc = captured_var->base.loc;
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, int_type));
+                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, dim.loc, NESTED_CONTEXT_STACK_SIZE, int_type));
+                    ASR::dimension_t *dims = al.allocate<ASR::dimension_t>(1);
+                    dims[0] = dim;
+                    ASR::ttype_t *stack_type = ASRUtils::make_Array_t_util(
+                        al, captured_var->base.loc, ASRUtils::duplicate_type(al, ext_type), dims, 1);
+                    ASR::symbol_t *stack_type_decl = nullptr;
+                    if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(captured_var))) {
+                        stack_type_decl = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(captured_var))->m_type_declaration;
+                    }
+                    std::string stack_name = current_scope->get_unique_name(
+                        std::string(ASRUtils::symbol_name(captured_var)) + "__stack", false);
+                    ASR::expr_t *stack_expr = PassUtils::create_auxiliary_variable(
+                        captured_var->base.loc, stack_name, al, current_scope, stack_type,
+                        ASR::intentType::Unspecified, stack_type_decl, nullptr);
+                    ASR::symbol_t *stack_sym = ASR::down_cast<ASR::Var_t>(stack_expr)->m_v;
+                    ext_var_to_stack_var[captured_var] = stack_sym;
+                };
+                auto create_ctx_var = [&](ASR::symbol_t *captured_sym, ASR::symbol_t *captured_var) {
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, captured_var->base.loc, 4));
+                    std::string ctx_name = current_scope->get_unique_name(
+                        std::string(ASRUtils::symbol_name(captured_var)) + "__ctx", false);
+                    ASR::expr_t *ctx_init = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, captured_var->base.loc, 0, int_type));
+                    ASR::expr_t *ctx_expr = PassUtils::create_auxiliary_variable(
+                        captured_var->base.loc, ctx_name, al, current_scope, int_type,
+                        ASR::intentType::Unspecified, nullptr, ctx_init);
+                    ASR::symbol_t *ctx_sym = ASR::down_cast<ASR::Var_t>(ctx_expr)->m_v;
+                    nested_proc_ctx_var[captured_sym] = ctx_sym;
+                };
+                if (ASR::is_a<ASR::Function_t>(*past_it2)) {
+                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(past_it2);
+                    ASR::ttype_t* fn_type = ASRUtils::duplicate_type(al, fn->m_function_signature);
+                    ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
+                        it2->base.loc, new_ext_var, al, current_scope, fn_type,
+                        ASR::intentType::Unspecified, (ASR::symbol_t*)fn, nullptr);
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
+                    nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
+                    if (ASRUtils::get_FunctionType(fn)->m_deftype != ASR::deftypeType::Implementation) {
+                        create_stack_var(sym);
+                    }
+                    create_ctx_var(it2, sym);
+                    continue;
+                }
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(past_it2);
                 if (!is_any_variable_externally_defined && is_externally_defined(var)) {
                     is_any_variable_externally_defined = true;
@@ -501,6 +616,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASR::symbol_t* dup_sym = (ASR::symbol_t*) dup_var;
                     current_scope->add_symbol(new_ext_var, dup_sym);
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
+                    create_stack_var(dup_sym);
+                    create_ctx_var(it2, dup_sym);
                     continue;
                 }
                 ASR::symbol_t* m_derived_type_or_class_type = nullptr;
@@ -594,6 +711,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASR::intentType::Unspecified, type_decl, nullptr);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
+                create_stack_var(sym);
             }
             ASR::asr_t *tmp = ASR::make_Module_t(al, x.base.base.loc,
                                             /* a_symtab */ current_scope,
@@ -796,10 +914,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if (nesting_depth > 1 &&
-            nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
-            std::string m_name = nested_var_to_ext_var[x.m_name].first;
-            ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
+        ASR::symbol_t *name_past = ASRUtils::symbol_get_past_external(x.m_name);
+        ASR::symbol_t *captured_key = resolve_captured_symbol_key(x.m_name);
+        if (captured_key == nullptr && ASR::is_a<ASR::Function_t>(*name_past)) {
+            ASR::symbol_t *same_name_sym = current_scope->resolve_symbol(
+                ASRUtils::symbol_name(x.m_name));
+            if (same_name_sym != nullptr &&
+                    ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(same_name_sym))) {
+                captured_key = resolve_captured_symbol_key(same_name_sym);
+            }
+        }
+        if (captured_key != nullptr) {
+            std::string m_name = nested_var_to_ext_var[captured_key].first;
+            ASR::symbol_t *t = nested_var_to_ext_var[captured_key].second;
             std::string sym_name = ASRUtils::symbol_name(t);
             ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
             if (existing != nullptr &&
@@ -845,10 +972,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
-        if (nesting_depth > 1 &&
-            nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
-            std::string m_name = nested_var_to_ext_var[x.m_name].first;
-            ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
+        ASR::symbol_t *name_past = ASRUtils::symbol_get_past_external(x.m_name);
+        ASR::symbol_t *captured_key = resolve_captured_symbol_key(x.m_name);
+        if (captured_key == nullptr && ASR::is_a<ASR::Function_t>(*name_past)) {
+            ASR::symbol_t *same_name_sym = current_scope->resolve_symbol(
+                ASRUtils::symbol_name(x.m_name));
+            if (same_name_sym != nullptr &&
+                    ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(same_name_sym))) {
+                captured_key = resolve_captured_symbol_key(same_name_sym);
+            }
+        }
+        if (captured_key != nullptr) {
+            std::string m_name = nested_var_to_ext_var[captured_key].first;
+            ASR::symbol_t *t = nested_var_to_ext_var[captured_key].second;
             std::string sym_name = ASRUtils::symbol_name(t);
             ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
             if (existing != nullptr &&
@@ -960,10 +1096,15 @@ private :
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &ext_var_to_stack_var;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &func_to_stack_ptr;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &nested_proc_ctx_var;
     std::map<ASR::symbol_t*, ASR::symbol_t*> module_var_to_external;
 
     ASR::symbol_t *cur_func_sym = nullptr;
     bool calls_present = false;
+    bool calls_present_direct = false;
+    bool calls_present_proc_arg = false;
     bool calls_in_loop_condition = false;
 
     void mark_nested_procedure_arg(ASR::expr_t *arg_expr) {
@@ -973,18 +1114,359 @@ public:
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
             arg_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg;
         }
-        if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+            if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
             if (is_nested_call_symbol(current_scope, var->m_v)) {
                 calls_present = true;
+                calls_present_proc_arg = true;
             }
         }
     }
 
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
-    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
-    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm) { }
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &stack_vars,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &stack_ptrs,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &proc_ctx_vars) :
+    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm),
+    ext_var_to_stack_var(stack_vars), func_to_stack_ptr(stack_ptrs),
+    nested_proc_ctx_var(proc_ctx_vars) { }
+
+    ASR::symbol_t *get_or_import_external_symbol(ASR::symbol_t *sym, const Location &loc) {
+        ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+        auto it_ext = module_var_to_external.find(sym_past);
+        if (it_ext != module_var_to_external.end() &&
+                ASRUtils::symbol_parent_symtab(it_ext->second) == current_scope) {
+            return it_ext->second;
+        }
+        for (auto &it_scope : current_scope->get_scope()) {
+            ASR::symbol_t *cand = it_scope.second;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*cand) &&
+                    ASRUtils::symbol_get_past_external(cand) == sym_past) {
+                module_var_to_external[sym_past] = cand;
+                module_var_to_external[sym] = cand;
+                return cand;
+            }
+        }
+        std::string original_name = ASRUtils::symbol_name(sym_past);
+        ASR::symbol_t *existing = current_scope->get_symbol(original_name);
+        ASR::symbol_t *ext_sym = nullptr;
+        if (existing != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
+                ASRUtils::symbol_get_past_external(existing) == sym_past) {
+            ext_sym = existing;
+        } else {
+            std::string unique_name = original_name;
+            if (existing != nullptr) {
+                unique_name = current_scope->get_unique_name(original_name, false);
+            }
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                al, loc, current_scope, s2c(al, unique_name), sym_past,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(sym_past)),
+                nullptr, 0, s2c(al, original_name), ASR::accessType::Public);
+            ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
+            current_scope->add_symbol(unique_name, ext_sym);
+        }
+        module_var_to_external[sym_past] = ext_sym;
+        module_var_to_external[sym] = ext_sym;
+        return ext_sym;
+    }
+
+    ASR::expr_t *make_int32_constant(int64_t n, const Location &loc) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n, int_type));
+    }
+
+    ASR::expr_t *make_stack_item_expr(ASR::symbol_t *stack_ext_sym, ASR::expr_t *idx_expr,
+            const Location &loc) {
+        ASR::expr_t *stack_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stack_ext_sym));
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, 1);
+        ASR::array_index_t ai;
+        ai.loc = loc;
+        ai.m_left = nullptr;
+        ai.m_right = idx_expr;
+        ai.m_step = nullptr;
+        args.push_back(al, ai);
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::expr_type(stack_var));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(
+            al, loc, stack_var, args.p, args.size(), elem_type,
+            ASR::arraystorageType::RowMajor, nullptr));
+    }
+
+    ASR::symbol_t *find_stack_var_symbol(ASR::symbol_t *captured_ext_sym) {
+        auto it = ext_var_to_stack_var.find(captured_ext_sym);
+        if (it != ext_var_to_stack_var.end()) {
+            return it->second;
+        }
+        std::string captured_name = ASRUtils::symbol_name(captured_ext_sym);
+        for (auto &kv : ext_var_to_stack_var) {
+            if (ASRUtils::symbol_name(kv.first) == captured_name) {
+                return kv.second;
+            }
+        }
+        return nullptr;
+    }
+
+    ASR::symbol_t *resolve_capture_key(ASR::symbol_t *sym, ASR::symbol_t *capture_owner) {
+        auto it = nesting_map.find(capture_owner);
+        if (it == nesting_map.end()) return nullptr;
+        ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+        std::string sym_name = ASRUtils::symbol_name(sym);
+        for (auto &cand : it->second) {
+            if (cand == sym) return cand;
+            if (ASRUtils::symbol_get_past_external(cand) == sym_past) return cand;
+            if (ASRUtils::symbol_name(cand) == sym_name) return cand;
+        }
+        return nullptr;
+    }
+
+    template <typename TBody>
+    void remap_direct_host_call_proc_context(ASR::stmt_t *stmt, ASR::symbol_t *capture_owner,
+            ASR::symbol_t *stack_ptr_ext, TBody &body, bool strict_direct_host_call=false) {
+        SymbolTable *capture_owner_symtab = nullptr;
+        if (capture_owner != nullptr &&
+                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(capture_owner))) {
+            capture_owner_symtab = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(capture_owner))->m_symtab;
+        }
+        auto needs_current_stack_ctx = [&](ASR::symbol_t *sym_past) {
+            if (sym_past == nullptr) {
+                return false;
+            }
+            if (ASR::is_a<ASR::Function_t>(*sym_past)) {
+                ASR::Function_t *afn = ASR::down_cast<ASR::Function_t>(sym_past);
+                return ASRUtils::get_FunctionType(afn)->m_deftype == ASR::deftypeType::Implementation &&
+                    stack_ptr_ext != nullptr && capture_owner_symtab != nullptr &&
+                    afn->m_symtab->parent == capture_owner_symtab;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*sym_past)) {
+                ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(sym_past);
+                if (avar->m_type_declaration &&
+                        ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                            avar->m_type_declaration))) {
+                    ASR::Function_t *afn = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(avar->m_type_declaration));
+                    return ASRUtils::get_FunctionType(afn)->m_deftype == ASR::deftypeType::Implementation &&
+                        stack_ptr_ext != nullptr && capture_owner_symtab != nullptr &&
+                        afn->m_symtab->parent == capture_owner_symtab;
+                }
+            }
+            return false;
+        };
+        struct ProcRemapEntry {
+            size_t arg_index = 0;
+            ASR::symbol_t *formal_ptr_ext = nullptr;
+            ASR::symbol_t *formal_ctx_ext = nullptr;
+            ASR::expr_t *actual_ptr_expr = nullptr;
+            ASR::expr_t *actual_ctx_expr = nullptr;
+            ASR::ttype_t *ptr_type = nullptr;
+            ASR::symbol_t *ptr_type_decl = nullptr;
+        };
+        ASR::symbol_t *callee = nullptr;
+        ASR::call_arg_t *args = nullptr;
+        size_t n_args = 0;
+        if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value)) return;
+            ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value);
+            callee = fc->m_name;
+            args = fc->m_args;
+            n_args = fc->n_args;
+        } else if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+            ASR::SubroutineCall_t *sc = ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+            callee = sc->m_name;
+            args = sc->m_args;
+            n_args = sc->n_args;
+        } else {
+            return;
+        }
+        ASR::symbol_t *callee_past = ASRUtils::symbol_get_past_external(callee);
+        if (!ASR::is_a<ASR::Function_t>(*callee_past)) return;
+        if (callee_past != ASRUtils::symbol_get_past_external(capture_owner)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee_past);
+        size_t n = std::min(n_args, fn->n_args);
+        size_t proc_formal_count = 0;
+        size_t proc_formal_remapped_count = 0;
+        std::vector<ProcRemapEntry> remaps;
+        remaps.reserve(n);
+        for (size_t j = 0; j < n; j++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[j])) continue;
+            ASR::symbol_t *formal = ASR::down_cast<ASR::Var_t>(fn->m_args[j])->m_v;
+            ASR::symbol_t *formal_key = resolve_capture_key(formal, capture_owner);
+            if (formal_key == nullptr) continue;
+            auto it_formal = nested_var_to_ext_var.find(formal_key);
+            if (it_formal == nested_var_to_ext_var.end()) {
+                if (strict_direct_host_call) {
+                    throw LCompilersException(
+                        "Direct recursive nested call remap failed: no external capture mapping for procedure formal '" +
+                        std::string(ASRUtils::symbol_name(formal)) + "' in host '" +
+                        std::string(ASRUtils::symbol_name(capture_owner)) + "'.");
+                }
+                continue;
+            }
+            ASR::symbol_t *formal_ext = get_or_import_external_symbol(
+                it_formal->second.second, stmt->base.loc);
+            ASR::symbol_t *formal_past = ASRUtils::symbol_get_past_external(formal_ext);
+            if (!ASR::is_a<ASR::Variable_t>(*formal_past)) {
+                if (strict_direct_host_call) {
+                    throw LCompilersException(
+                        "Direct recursive nested call remap failed: non-variable external capture for procedure formal '" +
+                        std::string(ASRUtils::symbol_name(formal)) + "'.");
+                }
+                continue;
+            }
+            ASR::Variable_t *formal_var = ASR::down_cast<ASR::Variable_t>(formal_past);
+            bool formal_is_proc = formal_var->m_type_declaration &&
+                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(formal_var->m_type_declaration));
+            if (!formal_is_proc) continue;
+            proc_formal_count++;
+            if (find_stack_var_symbol(it_formal->second.second) == nullptr) {
+                if (strict_direct_host_call) {
+                    throw LCompilersException(
+                        "Direct recursive nested call remap failed: missing stack slot for procedure capture '" +
+                        std::string(ASRUtils::symbol_name(formal)) + "' in host '" +
+                        std::string(ASRUtils::symbol_name(capture_owner)) + "'.");
+                }
+                continue;
+            }
+            if (args[j].m_value == nullptr || !ASR::is_a<ASR::Var_t>(*args[j].m_value)) {
+                if (strict_direct_host_call) {
+                    throw LCompilersException(
+                        "Direct recursive nested call remap failed: procedure formal '" +
+                        std::string(ASRUtils::symbol_name(formal)) + "' is not passed as a variable expression.");
+                }
+                continue;
+            }
+
+            ASR::symbol_t *actual_sym = ASR::down_cast<ASR::Var_t>(args[j].m_value)->m_v;
+            ASR::symbol_t *actual_sym_past = ASRUtils::symbol_get_past_external(actual_sym);
+            ASR::symbol_t *actual_key = resolve_capture_key(actual_sym, capture_owner);
+            ASR::expr_t *actual_ptr_expr = nullptr;
+            ASR::expr_t *actual_ctx_expr = nullptr;
+            if (actual_key != nullptr && nested_var_to_ext_var.find(actual_key) != nested_var_to_ext_var.end()) {
+                ASR::symbol_t *actual_ext = get_or_import_external_symbol(
+                    nested_var_to_ext_var[actual_key].second, stmt->base.loc);
+                actual_ptr_expr = ASRUtils::EXPR(ASR::make_Var_t(al, stmt->base.loc, actual_ext));
+                auto it_act_ctx = nested_proc_ctx_var.find(actual_key);
+                if (it_act_ctx != nested_proc_ctx_var.end()) {
+                    ASR::symbol_t *actual_ctx_ext = get_or_import_external_symbol(
+                        it_act_ctx->second, stmt->base.loc);
+                    actual_ctx_expr = ASRUtils::EXPR(ASR::make_Var_t(al, stmt->base.loc, actual_ctx_ext));
+                }
+                if (needs_current_stack_ctx(actual_sym_past)) {
+                    actual_ctx_expr = ASRUtils::EXPR(ASR::make_Var_t(al, stmt->base.loc, stack_ptr_ext));
+                }
+            } else {
+                actual_ptr_expr = ASRUtils::EXPR(ASR::make_Var_t(al, stmt->base.loc, actual_sym));
+                if (needs_current_stack_ctx(actual_sym_past)) {
+                    actual_ctx_expr = ASRUtils::EXPR(ASR::make_Var_t(al, stmt->base.loc, stack_ptr_ext));
+                }
+            }
+            if (actual_ptr_expr == nullptr) {
+                if (strict_direct_host_call) {
+                    throw LCompilersException(
+                        "Direct recursive nested call remap failed: could not resolve actual procedure for formal '" +
+                        std::string(ASRUtils::symbol_name(formal)) + "'.");
+                }
+                continue;
+            }
+            ProcRemapEntry entry;
+            entry.arg_index = j;
+            entry.formal_ptr_ext = formal_ext;
+            entry.actual_ptr_expr = actual_ptr_expr;
+            entry.ptr_type = formal_var->m_type;
+            entry.ptr_type_decl = formal_var->m_type_declaration;
+            auto it_formal_ctx = nested_proc_ctx_var.find(formal_key);
+            if (it_formal_ctx != nested_proc_ctx_var.end()) {
+                entry.formal_ctx_ext = get_or_import_external_symbol(
+                    it_formal_ctx->second, stmt->base.loc);
+                if (actual_ctx_expr == nullptr) {
+                    actual_ctx_expr = make_int32_constant(0, stmt->base.loc);
+                }
+                entry.actual_ctx_expr = actual_ctx_expr;
+            }
+            remaps.push_back(entry);
+            proc_formal_remapped_count++;
+        }
+        if (strict_direct_host_call && proc_formal_count > 0 &&
+                proc_formal_remapped_count != proc_formal_count) {
+            throw LCompilersException(
+                "Direct recursive nested call remap failed: only " +
+                std::to_string(proc_formal_remapped_count) + " of " +
+                std::to_string(proc_formal_count) +
+                " procedure captures were remapped in host '" +
+                std::string(ASRUtils::symbol_name(capture_owner)) + "'.");
+        }
+        struct ProcRemapPreparedEntry {
+            size_t arg_index = 0;
+            ASR::symbol_t *formal_ptr_ext = nullptr;
+            ASR::symbol_t *formal_ctx_ext = nullptr;
+            ASR::expr_t *ptr_tmp_expr = nullptr;
+            ASR::expr_t *ctx_tmp_expr = nullptr;
+        };
+        std::vector<ProcRemapPreparedEntry> prepared_remaps;
+        prepared_remaps.reserve(remaps.size());
+        for (auto &entry : remaps) {
+            std::string ptr_tmp_name = current_scope->get_unique_name(
+                "__lfortran_nested_ctx_arg_" + std::string(ASRUtils::symbol_name(entry.formal_ptr_ext)),
+                false);
+            ASR::expr_t *ptr_tmp_expr = PassUtils::create_auxiliary_variable(
+                stmt->base.loc, ptr_tmp_name, al, current_scope,
+                entry.ptr_type, ASR::intentType::Local, entry.ptr_type_decl, nullptr);
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, stmt->base.loc, ptr_tmp_expr, entry.actual_ptr_expr, nullptr, false, false)));
+            ProcRemapPreparedEntry prepared_entry;
+            prepared_entry.arg_index = entry.arg_index;
+            prepared_entry.formal_ptr_ext = entry.formal_ptr_ext;
+            prepared_entry.formal_ctx_ext = entry.formal_ctx_ext;
+            prepared_entry.ptr_tmp_expr = ptr_tmp_expr;
+            if (entry.formal_ctx_ext != nullptr) {
+                std::string ctx_tmp_name = current_scope->get_unique_name(
+                    "__lfortran_nested_ctx_arg_ctx_" + std::string(ASRUtils::symbol_name(entry.formal_ptr_ext)),
+                    false);
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, stmt->base.loc, 4));
+                ASR::expr_t *ctx_tmp_expr = PassUtils::create_auxiliary_variable(
+                    stmt->base.loc, ctx_tmp_name, al, current_scope,
+                    int_type, ASR::intentType::Local, nullptr, nullptr);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, stmt->base.loc, ctx_tmp_expr, entry.actual_ctx_expr, nullptr, false, false)));
+                prepared_entry.ctx_tmp_expr = ctx_tmp_expr;
+            }
+            prepared_remaps.push_back(prepared_entry);
+        }
+        for (auto &prepared_entry : prepared_remaps) {
+            ASR::expr_t *formal_ptr_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, stmt->base.loc, prepared_entry.formal_ptr_ext));
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, stmt->base.loc, formal_ptr_expr, prepared_entry.ptr_tmp_expr, nullptr, false, false)));
+            if (prepared_entry.formal_ctx_ext != nullptr) {
+                ASR::expr_t *formal_ctx_expr = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, stmt->base.loc, prepared_entry.formal_ctx_ext));
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, stmt->base.loc, formal_ctx_expr, prepared_entry.ctx_tmp_expr, nullptr, false, false)));
+            }
+        }
+    }
+
+    bool is_direct_call_to_capture_owner(ASR::stmt_t *stmt, ASR::symbol_t *capture_owner) {
+        if (capture_owner == nullptr) {
+            return false;
+        }
+        ASR::symbol_t *callee = nullptr;
+        if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value)) return false;
+            callee = ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value)->m_name;
+        } else if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+            callee = ASR::down_cast<ASR::SubroutineCall_t>(stmt)->m_name;
+        } else {
+            return false;
+        }
+        ASR::symbol_t *callee_past = ASRUtils::symbol_get_past_external(callee);
+        return callee_past == ASRUtils::symbol_get_past_external(capture_owner);
+    }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
@@ -993,48 +1475,210 @@ public:
         std::vector<ASR::stmt_t*> loop_end_syncs;
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
+            calls_present_direct = false;
+            calls_present_proc_arg = false;
             calls_in_loop_condition = false;
             bool is_do_loop_sync = false;
+            std::vector<ASR::stmt_t*> context_restore_stmts;
             if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i]) || 
                 (ASR::is_a<ASR::DoLoop_t>(*m_body[i]))) {
                 is_do_loop_sync = true;
             }
             assigns_at_end.clear();
             loop_end_syncs.clear();
+            ASR::symbol_t *capture_owner = cur_func_sym;
             visit_stmt(*m_body[i]);
-            if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
-                if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
-                    for (auto &sym: nesting_map[cur_func_sym]) {
+            if (cur_func_sym != nullptr && (calls_present || calls_present_proc_arg || calls_in_loop_condition)) {
+                if (nesting_map.find(capture_owner) == nesting_map.end() &&
+                        current_scope && current_scope->parent &&
+                        current_scope->parent->asr_owner &&
+                        ASR::is_a<ASR::symbol_t>(*current_scope->parent->asr_owner)) {
+                    ASR::symbol_t *parent_owner =
+                        ASR::down_cast<ASR::symbol_t>(current_scope->parent->asr_owner);
+                    if (nesting_map.find(parent_owner) != nesting_map.end()) {
+                        capture_owner = parent_owner;
+                    } else {
+                        std::string parent_name = ASRUtils::symbol_name(parent_owner);
+                        for (auto &it_nm : nesting_map) {
+                            if (ASRUtils::symbol_name(it_nm.first) == parent_name) {
+                                capture_owner = it_nm.first;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (nesting_map.find(capture_owner) != nesting_map.end()) {
+                    bool direct_host_recursive_call = false;
+                    if (is_direct_call_to_capture_owner(m_body[i], capture_owner) &&
+                            capture_owner != nullptr &&
+                            ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(capture_owner))) {
+                        ASR::Function_t *capture_fn = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(capture_owner));
+                        direct_host_recursive_call = current_scope && current_scope->parent &&
+                            current_scope->parent == capture_fn->m_symtab;
+                    }
+                    ASR::symbol_t *stack_ptr_ext = nullptr;
+                    auto it_sp = func_to_stack_ptr.find(capture_owner);
+                    if (it_sp != func_to_stack_ptr.end()) {
+                        stack_ptr_ext = get_or_import_external_symbol(it_sp->second, m_body[i]->base.loc);
+                    }
+                    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> stack_backup_pairs;
+                    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> proc_local_backup_pairs;
+                    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> proc_local_ctx_backup_pairs;
+                    if (stack_ptr_ext != nullptr) {
+                        for (auto &sym: nesting_map[capture_owner]) {
+                            ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+                            bool is_proc_capture = ASR::is_a<ASR::Function_t>(*sym_past) ||
+                                (ASR::is_a<ASR::Variable_t>(*sym_past) &&
+                                 ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration &&
+                                 ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                     ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration)));
+                            bool need_scalar_sync = direct_host_recursive_call ||
+                                calls_present_direct || calls_present_proc_arg || calls_in_loop_condition;
+                            if (!need_scalar_sync && !is_proc_capture) {
+                                continue;
+                            }
+                            ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
+                            ASR::symbol_t *stack_var_sym = find_stack_var_symbol(t);
+                            ASR::symbol_t *ext_sym = get_or_import_external_symbol(t, t->base.loc);
+                            if (stack_var_sym == nullptr) {
+                                ASR::symbol_t *ext_sym_past = ASRUtils::symbol_get_past_external(ext_sym);
+                                if (ASR::is_a<ASR::Variable_t>(*ext_sym_past) &&
+                                    ASR::is_a<ASR::FunctionType_t>(
+                                        *ASR::down_cast<ASR::Variable_t>(ext_sym_past)->m_type)) {
+                                    ASR::Variable_t *ext_var =
+                                        ASR::down_cast<ASR::Variable_t>(ext_sym_past);
+                                    ASR::symbol_t *proc_decl = ext_var->m_type_declaration;
+                                    std::string backup_name = current_scope->get_unique_name(
+                                        "__lfortran_nested_ctx_saved_" + std::string(
+                                            ASRUtils::symbol_name(ext_sym)), false);
+                                    ASR::expr_t *backup_expr = PassUtils::create_auxiliary_variable(
+                                        t->base.loc, backup_name, al, current_scope,
+                                        ext_var->m_type,
+                                        ASR::intentType::Local, proc_decl, nullptr);
+                                    ASR::symbol_t *backup_sym =
+                                        ASR::down_cast<ASR::Var_t>(backup_expr)->m_v;
+                                    proc_local_backup_pairs.push_back({ext_sym, backup_sym});
+
+                                    auto it_ctx = nested_proc_ctx_var.find(sym);
+                                    if (it_ctx != nested_proc_ctx_var.end()) {
+                                        ASR::symbol_t *ext_ctx_sym = get_or_import_external_symbol(
+                                            it_ctx->second, it_ctx->second->base.loc);
+                                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                            al, t->base.loc, 4));
+                                        std::string ctx_backup_name = current_scope->get_unique_name(
+                                            "__lfortran_nested_ctx_saved_ctx_" + std::string(
+                                                ASRUtils::symbol_name(ext_sym)), false);
+                                        ASR::expr_t *ctx_backup_expr = PassUtils::create_auxiliary_variable(
+                                            t->base.loc, ctx_backup_name, al, current_scope, int_type,
+                                            ASR::intentType::Local, nullptr, nullptr);
+                                        ASR::symbol_t *ctx_backup_sym =
+                                            ASR::down_cast<ASR::Var_t>(ctx_backup_expr)->m_v;
+                                        proc_local_ctx_backup_pairs.push_back({ext_ctx_sym, ctx_backup_sym});
+                                    }
+                                }
+                                continue;
+                            }
+                            ASR::symbol_t *stack_ext_sym = get_or_import_external_symbol(
+                                stack_var_sym, stack_var_sym->base.loc);
+                            stack_backup_pairs.push_back({ext_sym, stack_ext_sym});
+                        }
+                    }
+                    if (stack_ptr_ext != nullptr && !stack_backup_pairs.empty()) {
+                        ASR::expr_t *stack_ptr_var = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, stack_ptr_ext));
+                        ASR::expr_t *stack_cap = make_int32_constant(
+                            NESTED_CONTEXT_STACK_SIZE, m_body[i]->base.loc);
+                        ASR::expr_t *in_bounds = PassUtils::create_compare_helper(
+                            al, m_body[i]->base.loc, stack_ptr_var,
+                            stack_cap, ASR::cmpopType::Lt);
+                        body.push_back(al, ASRUtils::STMT(
+                            ASR::make_Assert_t(al, m_body[i]->base.loc, in_bounds, nullptr)));
+                        ASR::expr_t *one = make_int32_constant(1, m_body[i]->base.loc);
+                        ASR::expr_t *push_idx = PassUtils::create_binop_helper(
+                            al, m_body[i]->base.loc, stack_ptr_var, one, ASR::binopType::Add);
+                        for (auto &pair : stack_backup_pairs) {
+                            ASR::expr_t *stack_item = make_stack_item_expr(
+                                pair.second, push_idx, m_body[i]->base.loc);
+                            ASR::expr_t *ext_val = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                al, m_body[i]->base.loc, stack_item, ext_val, nullptr, false, false)));
+                        }
+                        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, m_body[i]->base.loc, stack_ptr_var, push_idx, nullptr, false, false)));
+
+                        ASR::expr_t *stack_ptr_var2 = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, stack_ptr_ext));
+                        for (auto &pair : stack_backup_pairs) {
+                            ASR::expr_t *stack_item = make_stack_item_expr(
+                                pair.second, stack_ptr_var2, m_body[i]->base.loc);
+                            ASR::expr_t *ext_target = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                            context_restore_stmts.push_back(ASRUtils::STMT(
+                                ASRUtils::make_Assignment_t_util(
+                                    al, m_body[i]->base.loc, ext_target, stack_item,
+                                    nullptr, false, false)));
+                        }
+                        ASR::expr_t *stack_ptr_var3 = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, stack_ptr_ext));
+                        ASR::expr_t *pop_idx = PassUtils::create_binop_helper(
+                            al, m_body[i]->base.loc, stack_ptr_var3, one, ASR::binopType::Sub);
+                        context_restore_stmts.push_back(ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, m_body[i]->base.loc, stack_ptr_var3, pop_idx, nullptr, false, false)));
+                    }
+                    for (auto &pair : proc_local_backup_pairs) {
+                        ASR::expr_t *backup_target = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.second));
+                        ASR::expr_t *ext_val = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, m_body[i]->base.loc, backup_target, ext_val, nullptr, false, false)));
+                        ASR::expr_t *ext_target = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                        ASR::expr_t *backup_val = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.second));
+                        context_restore_stmts.push_back(ASRUtils::STMT(
+                            ASRUtils::make_Assignment_t_util(al, m_body[i]->base.loc,
+                                ext_target, backup_val, nullptr, false, false)));
+                    }
+                    for (auto &pair : proc_local_ctx_backup_pairs) {
+                        ASR::expr_t *backup_target = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.second));
+                        ASR::expr_t *ext_val = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, m_body[i]->base.loc, backup_target, ext_val, nullptr, false, false)));
+                        ASR::expr_t *ext_target = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                        ASR::expr_t *backup_val = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, pair.second));
+                        context_restore_stmts.push_back(ASRUtils::STMT(
+                            ASRUtils::make_Assignment_t_util(al, m_body[i]->base.loc,
+                                ext_target, backup_val, nullptr, false, false)));
+                    }
+                    remap_direct_host_call_proc_context(
+                        m_body[i], capture_owner, stack_ptr_ext, body, direct_host_recursive_call);
+                    for (auto &sym: nesting_map[capture_owner]) {
+                        ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+                        bool is_proc_capture = ASR::is_a<ASR::Function_t>(*sym_past) ||
+                            (ASR::is_a<ASR::Variable_t>(*sym_past) &&
+                             ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration &&
+                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                 ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration)));
+                        bool need_scalar_sync = direct_host_recursive_call ||
+                            calls_present_direct || calls_present_proc_arg || calls_in_loop_condition;
+                        if (!need_scalar_sync && !is_proc_capture) {
+                            continue;
+                        }
+                        if (direct_host_recursive_call && !is_proc_capture &&
+                                !calls_present_direct && !calls_present_proc_arg &&
+                                !calls_in_loop_condition) {
+                            continue;
+                        }
                         std::string m_name = nested_var_to_ext_var[sym].first;
                         ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
-                        ASR::symbol_t *ext_sym = nullptr;
-                        auto it_ext = module_var_to_external.find(t);
-                        if (it_ext != module_var_to_external.end()) {
-                            ext_sym = it_ext->second;
-                        } else {
-                            std::string original_name = ASRUtils::symbol_name(t);
-                            ASR::symbol_t *existing = current_scope->get_symbol(original_name);
-                            if (existing != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
-                                    ASRUtils::symbol_get_past_external(existing) == t) {
-                                ext_sym = existing;
-                            } else {
-                                std::string unique_name = original_name;
-                                if (existing != nullptr) {
-                                    unique_name = current_scope->get_unique_name(original_name, false);
-                                }
-                                ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                                    al, t->base.loc,
-                                    /* a_symtab */ current_scope,
-                                    /* a_name */ s2c(al, unique_name),
-                                    t,
-                                    s2c(al, m_name), nullptr, 0, s2c(al, original_name),
-                                    ASR::accessType::Public
-                                );
-                                ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
-                                current_scope->add_symbol(unique_name, ext_sym);
-                            }
-                            module_var_to_external[t] = ext_sym;
-                        }
+                        ASR::symbol_t *ext_sym = get_or_import_external_symbol(t, t->base.loc);
                         if (ASR::is_a<ASR::Variable_t>(
                                        *ASRUtils::symbol_get_past_external(ext_sym))
                                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
@@ -1092,20 +1736,52 @@ public:
                             sym_ = ASR::down_cast<ASR::symbol_t>(fn);
                             current_scope->add_symbol(sym_name, sym_);
                         }
+                        ASR::symbol_t *sym_capture_past = ASRUtils::symbol_get_past_external(sym);
+                        bool is_proc_capture_sym = ASR::is_a<ASR::Function_t>(*sym_capture_past) ||
+                            (ASR::is_a<ASR::Variable_t>(*sym_capture_past) &&
+                             ASR::down_cast<ASR::Variable_t>(sym_capture_past)->m_type_declaration &&
+                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                 ASR::down_cast<ASR::Variable_t>(sym_capture_past)->m_type_declaration)));
+                        if (direct_host_recursive_call && is_proc_capture_sym) {
+                            continue;
+                        }
+                        if (capture_owner != cur_func_sym && is_proc_capture_sym) {
+                            // In nested child procedures, route procedure captures through
+                            // the parent's context globals, not interface symbols.
+                            sym_ = ext_sym;
+                        }
                         LCOMPILERS_ASSERT(ext_sym != nullptr);
                         LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
-                        bool is_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ||
-                            ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)));
-                        bool is_ext_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ||
-                            ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)));
+                        ASR::symbol_t *sym_past_for_types = ASRUtils::symbol_get_past_external(sym);
+                        ASR::symbol_t *ext_sym_past = ASRUtils::symbol_get_past_external(ext_sym);
+                        bool is_sym_variable = ASR::is_a<ASR::Variable_t>(*sym_past_for_types);
+                        bool is_ext_sym_variable = ASR::is_a<ASR::Variable_t>(*ext_sym_past);
+                        bool is_sym_allocatable_or_pointer = is_sym_variable &&
+                            (ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ||
+                             ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)));
+                        bool is_ext_sym_allocatable_or_pointer = is_ext_sym_variable &&
+                            (ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ||
+                             ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)));
                         bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*sym_) &&
                             ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration &&
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
-                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
-                            if( ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) && ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
+                        bool is_procedure_symbol = ASR::is_a<ASR::Function_t>(
+                            *ASRUtils::symbol_get_past_external(sym_));
+                        ASR::symbol_t *ext_ctx_sym = nullptr;
+                        auto it_ctx = nested_proc_ctx_var.find(sym);
+                        if (it_ctx != nested_proc_ctx_var.end()) {
+                            ext_ctx_sym = get_or_import_external_symbol(
+                                it_ctx->second, it_ctx->second->base.loc);
+                        }
+                        bool is_sym_array = is_sym_variable && ASRUtils::is_array(ASRUtils::symbol_type(sym));
+                        bool is_ext_sym_pointer = is_ext_sym_variable && ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym));
+                        if( is_sym_array || is_ext_sym_pointer ) {
+                            if( is_sym_variable && is_ext_sym_variable &&
+                                ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) &&
+                                ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
                                 // For allocatable arrays, use Assignment instead of Associate
                                 // to properly handle reallocation in nested functions
                                 ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
@@ -1123,7 +1799,7 @@ public:
                                                             target, val));
                                 body.push_back(al, associate);
                                 // TODO : Remove the following if block (See integration test `arrays_87.f90`)
-                                if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                                if(is_sym_array &&
                                     is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
                                     && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
                                     associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
@@ -1131,8 +1807,42 @@ public:
                                     assigns_at_end.push_back(associate);
                                 }
                             }
-                        } else if (is_procedure_variable) {
+                        } else if (is_procedure_variable || is_procedure_symbol) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
+                            if (ext_ctx_sym != nullptr) {
+                                ASR::expr_t *ctx_target = ASRUtils::EXPR(
+                                    ASR::make_Var_t(al, t->base.loc, ext_ctx_sym));
+                                ASR::expr_t *ctx_value = nullptr;
+                                if (is_procedure_symbol && stack_ptr_ext != nullptr) {
+                                    ASR::symbol_t *proc_sym_past = ASRUtils::symbol_get_past_external(sym_);
+                                    ASR::Function_t *proc_fn = ASR::down_cast<ASR::Function_t>(proc_sym_past);
+                                    if (ASRUtils::get_FunctionType(proc_fn)->m_deftype ==
+                                            ASR::deftypeType::Implementation &&
+                                        proc_fn->m_symtab->parent == current_scope) {
+                                        ctx_value = ASRUtils::EXPR(
+                                            ASR::make_Var_t(al, t->base.loc, stack_ptr_ext));
+                                    } else {
+                                        ctx_value = ASRUtils::EXPR(
+                                            ASR::make_Var_t(al, t->base.loc, ext_ctx_sym));
+                                    }
+                                } else {
+                                    SymbolTable *src_parent = ASRUtils::symbol_parent_symtab(sym_);
+                                    if (!is_sym_in_scope_chain(current_scope, src_parent)) {
+                                        auto it_src_ctx = nested_proc_ctx_var.find(sym);
+                                        if (it_src_ctx != nested_proc_ctx_var.end()) {
+                                            ASR::symbol_t *src_ctx_ext = get_or_import_external_symbol(
+                                                it_src_ctx->second, it_src_ctx->second->base.loc);
+                                            ctx_value = ASRUtils::EXPR(
+                                                ASR::make_Var_t(al, t->base.loc, src_ctx_ext));
+                                        }
+                                    }
+                                }
+                                if (ctx_value == nullptr) {
+                                    ctx_value = make_int32_constant(0, t->base.loc);
+                                }
+                                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                    al, t->base.loc, ctx_target, ctx_value, nullptr, false, false)));
+                            }
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                         target, val, nullptr, false, false));
@@ -1170,6 +1880,18 @@ public:
                             }
                         }
                     }
+                    if (stack_ptr_ext != nullptr && !stack_backup_pairs.empty()) {
+                        ASR::expr_t *stack_ptr_now = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, m_body[i]->base.loc, stack_ptr_ext));
+                        for (auto &pair : stack_backup_pairs) {
+                            ASR::expr_t *stack_item = make_stack_item_expr(
+                                pair.second, stack_ptr_now, m_body[i]->base.loc);
+                            ASR::expr_t *ext_val = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, m_body[i]->base.loc, pair.first));
+                            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                al, m_body[i]->base.loc, stack_item, ext_val, nullptr, false, false)));
+                        }
+                    }
                 }
             }
 
@@ -1198,17 +1920,20 @@ public:
                 }
                 // LOOP END: Handle Assignments from main to temporaries 
                 // (for next iteration's condition)
-                if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
-                    for (auto &sym: nesting_map[cur_func_sym]) {
-                        std::string m_name = nested_var_to_ext_var[sym].first;
-                        ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
-                        ASR::symbol_t *ext_sym = nullptr;
-                        auto it_ext = module_var_to_external.find(t);
-                        if (it_ext != module_var_to_external.end()) {
-                            ext_sym = it_ext->second;
-                        } else {
-                            ext_sym = current_scope->get_symbol(ASRUtils::symbol_name(t));
+                if (nesting_map.find(capture_owner) != nesting_map.end()) {
+                    for (auto &sym: nesting_map[capture_owner]) {
+                        ASR::symbol_t *sym_past = ASRUtils::symbol_get_past_external(sym);
+                        bool is_proc_capture = ASR::is_a<ASR::Function_t>(*sym_past) ||
+                            (ASR::is_a<ASR::Variable_t>(*sym_past) &&
+                             ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration &&
+                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                 ASR::down_cast<ASR::Variable_t>(sym_past)->m_type_declaration)));
+                        bool need_scalar_sync = calls_present_direct || calls_present_proc_arg || calls_in_loop_condition;
+                        if (!need_scalar_sync && !is_proc_capture) {
+                            continue;
                         }
+                        ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
+                        ASR::symbol_t *ext_sym = get_or_import_external_symbol(t, t->base.loc);
 
                         ASR::symbol_t* sym_ = sym;
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
@@ -1225,8 +1950,18 @@ public:
                             sym_ = ASR::down_cast<ASR::symbol_t>(fn);
                             current_scope->add_symbol(sym_name, sym_);
                         }
+                        ASR::symbol_t *sym_capture_past = ASRUtils::symbol_get_past_external(sym);
+                        bool is_proc_capture_sym = ASR::is_a<ASR::Function_t>(*sym_capture_past) ||
+                            (ASR::is_a<ASR::Variable_t>(*sym_capture_past) &&
+                             ASR::down_cast<ASR::Variable_t>(sym_capture_past)->m_type_declaration &&
+                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                                 ASR::down_cast<ASR::Variable_t>(sym_capture_past)->m_type_declaration)));
+                        if (capture_owner != cur_func_sym && is_proc_capture_sym) {
+                            sym_ = ext_sym;
+                        }
 
                         if (ext_sym && sym_ &&
+                            ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(sym)) &&
                             !ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
                             ASRUtils::EXPR2VAR(ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_)))->m_storage
                                 != ASR::storage_typeType::Parameter &&
@@ -1294,6 +2029,9 @@ public:
                 if (is_do_loop_sync) {
                     calls_in_loop_condition = false;  // Reset flag
                 }
+            }
+            for (auto &stm: context_restore_stmts) {
+                body.push_back(al, stm);
             }
             calls_in_loop_condition = false;  // Reset flag
             calls_present = false;
@@ -1388,7 +2126,12 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
+        bool is_nested_call = is_nested_call_symbol(current_scope, x.m_name);
+        calls_present = true;
+        if (is_nested_call && ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(x.m_name))) {
+            calls_present_direct = true;
+        }
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
@@ -1401,7 +2144,12 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
+        bool is_nested_call = is_nested_call_symbol(current_scope, x.m_name);
+        calls_present = true;
+        if (is_nested_call && ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(x.m_name))) {
+            calls_present_direct = true;
+        }
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
@@ -1421,10 +2169,14 @@ public:
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         // Step 1: Detect calls in loop condition
         calls_present = false;
+        calls_present_direct = false;
+        calls_present_proc_arg = false;
         visit_expr(*x.m_test);
         bool has_calls_in_condition = calls_present;
         // Step 2: Visit body to detect calls there
         calls_present = false;
+        calls_present_direct = false;
+        calls_present_proc_arg = false;
         // Now calls_present = true if body has calls
         PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
         // Step 3: Set the condition flag (transform_stmts may 
@@ -1435,10 +2187,14 @@ public:
     void visit_If(const ASR::If_t &x) {
         // Step 1: Detect calls in condition
         calls_present = false;
+        calls_present_direct = false;
+        calls_present_proc_arg = false;
         visit_expr(*x.m_test);
         bool has_calls_in_condition = calls_present;
         // Step 2: Visit body to detect calls there
         calls_present = false;
+        calls_present_direct = false;
+        calls_present_proc_arg = false;
         // Now calls_present = true if body has calls
         PassUtils::PassVisitor<AssignNestedVars>::visit_If(x);
         // Step 3: Set the condition flag (transform_stmts may 
@@ -1453,7 +2209,8 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     v.visit_TranslationUnit(unit);
     ReplaceNestedVisitor w(al, v.nesting_map);
     w.visit_TranslationUnit(unit);
-    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map);
+    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
+        w.ext_var_to_stack_var, w.func_to_stack_ptr, w.nested_proc_ctx_var);
     z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);

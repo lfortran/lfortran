@@ -527,6 +527,21 @@ namespace LCompilers {
                 el_type = get_StringType(m_type_);
                 break;
             }
+            case ASR::ttypeType::FunctionType: {
+                ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(m_type);
+                llvm::Type* return_type = llvm::Type::getVoidTy(context);
+                if (ft->m_return_var_type != nullptr) {
+                    return_type = get_type_from_ttype_t_util(nullptr, ft->m_return_var_type, module);
+                }
+                std::vector<llvm::Type*> arg_types;
+                for (size_t i = 0; i < ft->n_arg_types; i++) {
+                    llvm::Type* arg_t = get_type_from_ttype_t_util(nullptr, ft->m_arg_types[i], module);
+                    arg_types.push_back(arg_t->getPointerTo());
+                }
+                llvm::FunctionType* fn_type = llvm::FunctionType::get(return_type, arg_types, false);
+                el_type = fn_type->getPointerTo();
+                break;
+            }
             default:
                 LCOMPILERS_ASSERT(false);
                 break;
