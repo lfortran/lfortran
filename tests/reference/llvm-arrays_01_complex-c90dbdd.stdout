@@ -173,10 +173,6 @@ ifcont:                                           ; preds = %loop.body
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %26 = load i32, i32* %i, align 4
-  %27 = load i32, i32* %__do_step, align 4
-  %28 = add i32 %26, %27
-  store i32 %28, i32* %i, align 4
   br i1 false, label %then1, label %ifcont2
 
 then1:                                            ; preds = %loop.end
@@ -185,14 +181,14 @@ then1:                                            ; preds = %loop.end
   unreachable
 
 ifcont2:                                          ; preds = %loop.end
-  %29 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
-  %30 = load %complex_4, %complex_4* %29, align 1
-  %31 = extractvalue %complex_4 %30, 0
-  %32 = extractvalue %complex_4 %30, 1
-  %33 = fcmp one float %31, 1.100000e+01
-  %34 = fcmp one float %32, 0.000000e+00
-  %35 = or i1 %33, %34
-  br i1 %35, label %then3, label %else
+  %26 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
+  %27 = load %complex_4, %complex_4* %26, align 1
+  %28 = extractvalue %complex_4 %27, 0
+  %29 = extractvalue %complex_4 %27, 1
+  %30 = fcmp one float %28, 1.100000e+01
+  %31 = fcmp one float %29, 0.000000e+00
+  %32 = or i1 %30, %31
+  br i1 %32, label %then3, label %else
 
 then3:                                            ; preds = %ifcont2
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
@@ -211,14 +207,14 @@ then5:                                            ; preds = %ifcont4
   unreachable
 
 ifcont6:                                          ; preds = %ifcont4
-  %36 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 1
-  %37 = load %complex_4, %complex_4* %36, align 1
-  %38 = extractvalue %complex_4 %37, 0
-  %39 = extractvalue %complex_4 %37, 1
-  %40 = fcmp one float %38, 1.200000e+01
-  %41 = fcmp one float %39, 0.000000e+00
-  %42 = or i1 %40, %41
-  br i1 %42, label %then7, label %else8
+  %33 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 1
+  %34 = load %complex_4, %complex_4* %33, align 1
+  %35 = extractvalue %complex_4 %34, 0
+  %36 = extractvalue %complex_4 %34, 1
+  %37 = fcmp one float %35, 1.200000e+01
+  %38 = fcmp one float %36, 0.000000e+00
+  %39 = or i1 %37, %38
+  br i1 %39, label %then7, label %else8
 
 then7:                                            ; preds = %ifcont6
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
@@ -237,14 +233,14 @@ then10:                                           ; preds = %ifcont9
   unreachable
 
 ifcont11:                                         ; preds = %ifcont9
-  %43 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 2
-  %44 = load %complex_4, %complex_4* %43, align 1
-  %45 = extractvalue %complex_4 %44, 0
-  %46 = extractvalue %complex_4 %44, 1
-  %47 = fcmp one float %45, 1.300000e+01
-  %48 = fcmp one float %46, 0.000000e+00
-  %49 = or i1 %47, %48
-  br i1 %49, label %then12, label %else13
+  %40 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 2
+  %41 = load %complex_4, %complex_4* %40, align 1
+  %42 = extractvalue %complex_4 %41, 0
+  %43 = extractvalue %complex_4 %41, 1
+  %44 = fcmp one float %42, 1.300000e+01
+  %45 = fcmp one float %43, 0.000000e+00
+  %46 = or i1 %44, %45
+  br i1 %46, label %then12, label %else13
 
 then12:                                           ; preds = %ifcont11
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
@@ -258,54 +254,50 @@ ifcont14:                                         ; preds = %else13, %then12
   store i32 11, i32* %__do_start1, align 4
   store i32 14, i32* %__do_end1, align 4
   store i32 1, i32* %__do_step1, align 4
-  %50 = load i32, i32* %__do_start1, align 4
-  %51 = load i32, i32* %__do_step1, align 4
-  %52 = sub i32 %50, %51
-  store i32 %52, i32* %i, align 4
+  %47 = load i32, i32* %__do_start1, align 4
+  %48 = load i32, i32* %__do_step1, align 4
+  %49 = sub i32 %47, %48
+  store i32 %49, i32* %i, align 4
   br label %loop.head15
 
 loop.head15:                                      ; preds = %ifcont18, %ifcont14
-  %53 = load i32, i32* %i, align 4
-  %54 = load i32, i32* %__do_step1, align 4
-  %55 = add i32 %53, %54
-  %56 = load i32, i32* %__do_end1, align 4
-  %57 = icmp sle i32 %55, %56
-  br i1 %57, label %loop.body16, label %loop.end19
+  %50 = load i32, i32* %i, align 4
+  %51 = load i32, i32* %__do_step1, align 4
+  %52 = add i32 %50, %51
+  %53 = load i32, i32* %__do_end1, align 4
+  %54 = icmp sle i32 %52, %53
+  br i1 %54, label %loop.body16, label %loop.end19
 
 loop.body16:                                      ; preds = %loop.head15
+  %55 = load i32, i32* %i, align 4
+  %56 = load i32, i32* %__do_step1, align 4
+  %57 = add i32 %55, %56
+  store i32 %57, i32* %i, align 4
   %58 = load i32, i32* %i, align 4
-  %59 = load i32, i32* %__do_step1, align 4
-  %60 = add i32 %58, %59
-  store i32 %60, i32* %i, align 4
-  %61 = load i32, i32* %i, align 4
-  %62 = sub i32 %61, 10
-  %63 = sub i32 %62, 1
-  %64 = mul i32 1, %63
-  %65 = add i32 0, %64
-  %66 = icmp slt i32 %62, 1
-  %67 = icmp sgt i32 %62, 4
-  %68 = or i1 %66, %67
-  br i1 %68, label %then17, label %ifcont18
+  %59 = sub i32 %58, 10
+  %60 = sub i32 %59, 1
+  %61 = mul i32 1, %60
+  %62 = add i32 0, %61
+  %63 = icmp slt i32 %59, 1
+  %64 = icmp sgt i32 %59, 4
+  %65 = or i1 %63, %64
+  br i1 %65, label %then17, label %ifcont18
 
 then17:                                           ; preds = %loop.body16
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 %62, i32 1, i32 1, i32 4)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 %59, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
 ifcont18:                                         ; preds = %loop.body16
-  %69 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 %65
-  %70 = load i32, i32* %i, align 4
-  %71 = sitofp i32 %70 to float
-  %72 = insertvalue %complex_4 undef, float %71, 0
-  %73 = insertvalue %complex_4 %72, float 0.000000e+00, 1
-  store %complex_4 %73, %complex_4* %69, align 1
+  %66 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 %62
+  %67 = load i32, i32* %i, align 4
+  %68 = sitofp i32 %67 to float
+  %69 = insertvalue %complex_4 undef, float %68, 0
+  %70 = insertvalue %complex_4 %69, float 0.000000e+00, 1
+  store %complex_4 %70, %complex_4* %66, align 1
   br label %loop.head15
 
 loop.end19:                                       ; preds = %loop.head15
-  %74 = load i32, i32* %i, align 4
-  %75 = load i32, i32* %__do_step1, align 4
-  %76 = add i32 %74, %75
-  store i32 %76, i32* %i, align 4
   br i1 false, label %then20, label %ifcont21
 
 then20:                                           ; preds = %loop.end19
@@ -314,14 +306,14 @@ then20:                                           ; preds = %loop.end19
   unreachable
 
 ifcont21:                                         ; preds = %loop.end19
-  %77 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
-  %78 = load %complex_4, %complex_4* %77, align 1
-  %79 = extractvalue %complex_4 %78, 0
-  %80 = extractvalue %complex_4 %78, 1
-  %81 = fcmp one float %79, 1.100000e+01
-  %82 = fcmp one float %80, 0.000000e+00
-  %83 = or i1 %81, %82
-  br i1 %83, label %then22, label %else23
+  %71 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
+  %72 = load %complex_4, %complex_4* %71, align 1
+  %73 = extractvalue %complex_4 %72, 0
+  %74 = extractvalue %complex_4 %72, 1
+  %75 = fcmp one float %73, 1.100000e+01
+  %76 = fcmp one float %74, 0.000000e+00
+  %77 = or i1 %75, %76
+  br i1 %77, label %then22, label %else23
 
 then22:                                           ; preds = %ifcont21
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
@@ -340,14 +332,14 @@ then25:                                           ; preds = %ifcont24
   unreachable
 
 ifcont26:                                         ; preds = %ifcont24
-  %84 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
-  %85 = load %complex_4, %complex_4* %84, align 1
-  %86 = extractvalue %complex_4 %85, 0
-  %87 = extractvalue %complex_4 %85, 1
-  %88 = fcmp one float %86, 1.200000e+01
-  %89 = fcmp one float %87, 0.000000e+00
-  %90 = or i1 %88, %89
-  br i1 %90, label %then27, label %else28
+  %78 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
+  %79 = load %complex_4, %complex_4* %78, align 1
+  %80 = extractvalue %complex_4 %79, 0
+  %81 = extractvalue %complex_4 %79, 1
+  %82 = fcmp one float %80, 1.200000e+01
+  %83 = fcmp one float %81, 0.000000e+00
+  %84 = or i1 %82, %83
+  br i1 %84, label %then27, label %else28
 
 then27:                                           ; preds = %ifcont26
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
@@ -366,14 +358,14 @@ then30:                                           ; preds = %ifcont29
   unreachable
 
 ifcont31:                                         ; preds = %ifcont29
-  %91 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
-  %92 = load %complex_4, %complex_4* %91, align 1
-  %93 = extractvalue %complex_4 %92, 0
-  %94 = extractvalue %complex_4 %92, 1
-  %95 = fcmp one float %93, 1.300000e+01
-  %96 = fcmp one float %94, 0.000000e+00
-  %97 = or i1 %95, %96
-  br i1 %97, label %then32, label %else33
+  %85 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
+  %86 = load %complex_4, %complex_4* %85, align 1
+  %87 = extractvalue %complex_4 %86, 0
+  %88 = extractvalue %complex_4 %86, 1
+  %89 = fcmp one float %87, 1.300000e+01
+  %90 = fcmp one float %88, 0.000000e+00
+  %91 = or i1 %89, %90
+  br i1 %91, label %then32, label %else33
 
 then32:                                           ; preds = %ifcont31
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
@@ -392,14 +384,14 @@ then35:                                           ; preds = %ifcont34
   unreachable
 
 ifcont36:                                         ; preds = %ifcont34
-  %98 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
-  %99 = load %complex_4, %complex_4* %98, align 1
-  %100 = extractvalue %complex_4 %99, 0
-  %101 = extractvalue %complex_4 %99, 1
-  %102 = fcmp one float %100, 1.400000e+01
-  %103 = fcmp one float %101, 0.000000e+00
-  %104 = or i1 %102, %103
-  br i1 %104, label %then37, label %else38
+  %92 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %93 = load %complex_4, %complex_4* %92, align 1
+  %94 = extractvalue %complex_4 %93, 0
+  %95 = extractvalue %complex_4 %93, 1
+  %96 = fcmp one float %94, 1.400000e+01
+  %97 = fcmp one float %95, 0.000000e+00
+  %98 = or i1 %96, %97
+  br i1 %98, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0))
@@ -413,72 +405,68 @@ ifcont39:                                         ; preds = %else38, %then37
   store i32 1, i32* %__do_start2, align 4
   store i32 3, i32* %__do_end2, align 4
   store i32 1, i32* %__do_step2, align 4
-  %105 = load i32, i32* %__do_start2, align 4
-  %106 = load i32, i32* %__do_step2, align 4
-  %107 = sub i32 %105, %106
-  store i32 %107, i32* %i, align 4
+  %99 = load i32, i32* %__do_start2, align 4
+  %100 = load i32, i32* %__do_step2, align 4
+  %101 = sub i32 %99, %100
+  store i32 %101, i32* %i, align 4
   br label %loop.head40
 
 loop.head40:                                      ; preds = %ifcont45, %ifcont39
-  %108 = load i32, i32* %i, align 4
-  %109 = load i32, i32* %__do_step2, align 4
-  %110 = add i32 %108, %109
-  %111 = load i32, i32* %__do_end2, align 4
-  %112 = icmp sle i32 %110, %111
-  br i1 %112, label %loop.body41, label %loop.end46
+  %102 = load i32, i32* %i, align 4
+  %103 = load i32, i32* %__do_step2, align 4
+  %104 = add i32 %102, %103
+  %105 = load i32, i32* %__do_end2, align 4
+  %106 = icmp sle i32 %104, %105
+  br i1 %106, label %loop.body41, label %loop.end46
 
 loop.body41:                                      ; preds = %loop.head40
-  %113 = load i32, i32* %i, align 4
-  %114 = load i32, i32* %__do_step2, align 4
-  %115 = add i32 %113, %114
-  store i32 %115, i32* %i, align 4
-  %116 = load i32, i32* %i, align 4
-  %117 = sub i32 %116, 1
-  %118 = mul i32 1, %117
-  %119 = add i32 0, %118
-  %120 = icmp slt i32 %116, 1
-  %121 = icmp sgt i32 %116, 4
-  %122 = or i1 %120, %121
-  br i1 %122, label %then42, label %ifcont43
+  %107 = load i32, i32* %i, align 4
+  %108 = load i32, i32* %__do_step2, align 4
+  %109 = add i32 %107, %108
+  store i32 %109, i32* %i, align 4
+  %110 = load i32, i32* %i, align 4
+  %111 = sub i32 %110, 1
+  %112 = mul i32 1, %111
+  %113 = add i32 0, %112
+  %114 = icmp slt i32 %110, 1
+  %115 = icmp sgt i32 %110, 4
+  %116 = or i1 %114, %115
+  br i1 %116, label %then42, label %ifcont43
 
 then42:                                           ; preds = %loop.body41
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %116, i32 1, i32 1, i32 4)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %110, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
 ifcont43:                                         ; preds = %loop.body41
-  %123 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 %119
-  %124 = load i32, i32* %i, align 4
-  %125 = sub i32 %124, 1
-  %126 = mul i32 1, %125
-  %127 = add i32 0, %126
-  %128 = icmp slt i32 %124, 1
-  %129 = icmp sgt i32 %124, 3
-  %130 = or i1 %128, %129
-  br i1 %130, label %then44, label %ifcont45
+  %117 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 %113
+  %118 = load i32, i32* %i, align 4
+  %119 = sub i32 %118, 1
+  %120 = mul i32 1, %119
+  %121 = add i32 0, %120
+  %122 = icmp slt i32 %118, 1
+  %123 = icmp sgt i32 %118, 3
+  %124 = or i1 %122, %123
+  br i1 %124, label %then44, label %ifcont45
 
 then44:                                           ; preds = %ifcont43
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 %124, i32 1, i32 1, i32 3)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 %118, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
 ifcont45:                                         ; preds = %ifcont43
-  %131 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 %127
-  %132 = load %complex_4, %complex_4* %131, align 1
-  %133 = extractvalue %complex_4 %132, 0
-  %134 = extractvalue %complex_4 %132, 1
-  %135 = fsub float %133, 1.000000e+01
-  %136 = fsub float %134, 0.000000e+00
-  %137 = insertvalue %complex_4 undef, float %135, 0
-  %138 = insertvalue %complex_4 %137, float %136, 1
-  store %complex_4 %138, %complex_4* %123, align 1
+  %125 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 %121
+  %126 = load %complex_4, %complex_4* %125, align 1
+  %127 = extractvalue %complex_4 %126, 0
+  %128 = extractvalue %complex_4 %126, 1
+  %129 = fsub float %127, 1.000000e+01
+  %130 = fsub float %128, 0.000000e+00
+  %131 = insertvalue %complex_4 undef, float %129, 0
+  %132 = insertvalue %complex_4 %131, float %130, 1
+  store %complex_4 %132, %complex_4* %117, align 1
   br label %loop.head40
 
 loop.end46:                                       ; preds = %loop.head40
-  %139 = load i32, i32* %i, align 4
-  %140 = load i32, i32* %__do_step2, align 4
-  %141 = add i32 %139, %140
-  store i32 %141, i32* %i, align 4
   br i1 false, label %then47, label %ifcont48
 
 then47:                                           ; preds = %loop.end46
@@ -487,14 +475,14 @@ then47:                                           ; preds = %loop.end46
   unreachable
 
 ifcont48:                                         ; preds = %loop.end46
-  %142 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
-  %143 = load %complex_4, %complex_4* %142, align 1
-  %144 = extractvalue %complex_4 %143, 0
-  %145 = extractvalue %complex_4 %143, 1
-  %146 = fcmp one float %144, 1.000000e+00
-  %147 = fcmp one float %145, 0.000000e+00
-  %148 = or i1 %146, %147
-  br i1 %148, label %then49, label %else50
+  %133 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
+  %134 = load %complex_4, %complex_4* %133, align 1
+  %135 = extractvalue %complex_4 %134, 0
+  %136 = extractvalue %complex_4 %134, 1
+  %137 = fcmp one float %135, 1.000000e+00
+  %138 = fcmp one float %136, 0.000000e+00
+  %139 = or i1 %137, %138
+  br i1 %139, label %then49, label %else50
 
 then49:                                           ; preds = %ifcont48
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
@@ -513,14 +501,14 @@ then52:                                           ; preds = %ifcont51
   unreachable
 
 ifcont53:                                         ; preds = %ifcont51
-  %149 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
-  %150 = load %complex_4, %complex_4* %149, align 1
-  %151 = extractvalue %complex_4 %150, 0
-  %152 = extractvalue %complex_4 %150, 1
-  %153 = fcmp one float %151, 2.000000e+00
-  %154 = fcmp one float %152, 0.000000e+00
-  %155 = or i1 %153, %154
-  br i1 %155, label %then54, label %else55
+  %140 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
+  %141 = load %complex_4, %complex_4* %140, align 1
+  %142 = extractvalue %complex_4 %141, 0
+  %143 = extractvalue %complex_4 %141, 1
+  %144 = fcmp one float %142, 2.000000e+00
+  %145 = fcmp one float %143, 0.000000e+00
+  %146 = or i1 %144, %145
+  br i1 %146, label %then54, label %else55
 
 then54:                                           ; preds = %ifcont53
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0))
@@ -539,14 +527,14 @@ then57:                                           ; preds = %ifcont56
   unreachable
 
 ifcont58:                                         ; preds = %ifcont56
-  %156 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
-  %157 = load %complex_4, %complex_4* %156, align 1
-  %158 = extractvalue %complex_4 %157, 0
-  %159 = extractvalue %complex_4 %157, 1
-  %160 = fcmp one float %158, 3.000000e+00
-  %161 = fcmp one float %159, 0.000000e+00
-  %162 = or i1 %160, %161
-  br i1 %162, label %then59, label %else60
+  %147 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
+  %148 = load %complex_4, %complex_4* %147, align 1
+  %149 = extractvalue %complex_4 %148, 0
+  %150 = extractvalue %complex_4 %148, 1
+  %151 = fcmp one float %149, 3.000000e+00
+  %152 = fcmp one float %150, 0.000000e+00
+  %153 = or i1 %151, %152
+  br i1 %153, label %then59, label %else60
 
 then59:                                           ; preds = %ifcont58
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
@@ -565,7 +553,7 @@ then62:                                           ; preds = %ifcont61
   unreachable
 
 ifcont63:                                         ; preds = %ifcont61
-  %163 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %154 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
   br i1 false, label %then64, label %ifcont65
 
 then64:                                           ; preds = %ifcont63
@@ -574,8 +562,8 @@ then64:                                           ; preds = %ifcont63
   unreachable
 
 ifcont65:                                         ; preds = %ifcont63
-  %164 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
-  %165 = load %complex_4, %complex_4* %164, align 1
+  %155 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
+  %156 = load %complex_4, %complex_4* %155, align 1
   br i1 false, label %then66, label %ifcont67
 
 then66:                                           ; preds = %ifcont65
@@ -584,16 +572,16 @@ then66:                                           ; preds = %ifcont65
   unreachable
 
 ifcont67:                                         ; preds = %ifcont65
-  %166 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
-  %167 = load %complex_4, %complex_4* %166, align 1
-  %168 = extractvalue %complex_4 %165, 0
-  %169 = extractvalue %complex_4 %165, 1
-  %170 = extractvalue %complex_4 %167, 0
-  %171 = extractvalue %complex_4 %167, 1
-  %172 = fadd float %168, %170
-  %173 = fadd float %169, %171
-  %174 = insertvalue %complex_4 undef, float %172, 0
-  %175 = insertvalue %complex_4 %174, float %173, 1
+  %157 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
+  %158 = load %complex_4, %complex_4* %157, align 1
+  %159 = extractvalue %complex_4 %156, 0
+  %160 = extractvalue %complex_4 %156, 1
+  %161 = extractvalue %complex_4 %158, 0
+  %162 = extractvalue %complex_4 %158, 1
+  %163 = fadd float %159, %161
+  %164 = fadd float %160, %162
+  %165 = insertvalue %complex_4 undef, float %163, 0
+  %166 = insertvalue %complex_4 %165, float %164, 1
   br i1 false, label %then68, label %ifcont69
 
 then68:                                           ; preds = %ifcont67
@@ -602,16 +590,16 @@ then68:                                           ; preds = %ifcont67
   unreachable
 
 ifcont69:                                         ; preds = %ifcont67
-  %176 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
-  %177 = load %complex_4, %complex_4* %176, align 1
-  %178 = extractvalue %complex_4 %175, 0
-  %179 = extractvalue %complex_4 %175, 1
-  %180 = extractvalue %complex_4 %177, 0
-  %181 = extractvalue %complex_4 %177, 1
-  %182 = fadd float %178, %180
-  %183 = fadd float %179, %181
-  %184 = insertvalue %complex_4 undef, float %182, 0
-  %185 = insertvalue %complex_4 %184, float %183, 1
+  %167 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
+  %168 = load %complex_4, %complex_4* %167, align 1
+  %169 = extractvalue %complex_4 %166, 0
+  %170 = extractvalue %complex_4 %166, 1
+  %171 = extractvalue %complex_4 %168, 0
+  %172 = extractvalue %complex_4 %168, 1
+  %173 = fadd float %169, %171
+  %174 = fadd float %170, %172
+  %175 = insertvalue %complex_4 undef, float %173, 0
+  %176 = insertvalue %complex_4 %175, float %174, 1
   br i1 false, label %then70, label %ifcont71
 
 then70:                                           ; preds = %ifcont69
@@ -620,17 +608,17 @@ then70:                                           ; preds = %ifcont69
   unreachable
 
 ifcont71:                                         ; preds = %ifcont69
-  %186 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
-  %187 = load %complex_4, %complex_4* %186, align 1
-  %188 = extractvalue %complex_4 %185, 0
-  %189 = extractvalue %complex_4 %185, 1
-  %190 = extractvalue %complex_4 %187, 0
-  %191 = extractvalue %complex_4 %187, 1
-  %192 = fadd float %188, %190
-  %193 = fadd float %189, %191
-  %194 = insertvalue %complex_4 undef, float %192, 0
-  %195 = insertvalue %complex_4 %194, float %193, 1
-  store %complex_4 %195, %complex_4* %163, align 1
+  %177 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
+  %178 = load %complex_4, %complex_4* %177, align 1
+  %179 = extractvalue %complex_4 %176, 0
+  %180 = extractvalue %complex_4 %176, 1
+  %181 = extractvalue %complex_4 %178, 0
+  %182 = extractvalue %complex_4 %178, 1
+  %183 = fadd float %179, %181
+  %184 = fadd float %180, %182
+  %185 = insertvalue %complex_4 undef, float %183, 0
+  %186 = insertvalue %complex_4 %185, float %184, 1
+  store %complex_4 %186, %complex_4* %154, align 1
   br i1 false, label %then72, label %ifcont73
 
 then72:                                           ; preds = %ifcont71
@@ -639,14 +627,14 @@ then72:                                           ; preds = %ifcont71
   unreachable
 
 ifcont73:                                         ; preds = %ifcont71
-  %196 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
-  %197 = load %complex_4, %complex_4* %196, align 1
-  %198 = extractvalue %complex_4 %197, 0
-  %199 = extractvalue %complex_4 %197, 1
-  %200 = fcmp one float %198, 1.700000e+01
-  %201 = fcmp one float %199, 0.000000e+00
-  %202 = or i1 %200, %201
-  br i1 %202, label %then74, label %else75
+  %187 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %188 = load %complex_4, %complex_4* %187, align 1
+  %189 = extractvalue %complex_4 %188, 0
+  %190 = extractvalue %complex_4 %188, 1
+  %191 = fcmp one float %189, 1.700000e+01
+  %192 = fcmp one float %190, 0.000000e+00
+  %193 = or i1 %191, %192
+  br i1 %193, label %then74, label %else75
 
 then74:                                           ; preds = %ifcont73
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @61, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @60, i32 0, i32 0))
@@ -665,7 +653,7 @@ then77:                                           ; preds = %ifcont76
   unreachable
 
 ifcont78:                                         ; preds = %ifcont76
-  %203 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %194 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
   br i1 false, label %then79, label %ifcont80
 
 then79:                                           ; preds = %ifcont78
@@ -674,9 +662,9 @@ then79:                                           ; preds = %ifcont78
   unreachable
 
 ifcont80:                                         ; preds = %ifcont78
-  %204 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
-  %205 = load %complex_4, %complex_4* %204, align 1
-  store %complex_4 %205, %complex_4* %203, align 1
+  %195 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
+  %196 = load %complex_4, %complex_4* %195, align 1
+  store %complex_4 %196, %complex_4* %194, align 1
   br i1 false, label %then81, label %ifcont82
 
 then81:                                           ; preds = %ifcont80
@@ -685,14 +673,14 @@ then81:                                           ; preds = %ifcont80
   unreachable
 
 ifcont82:                                         ; preds = %ifcont80
-  %206 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
-  %207 = load %complex_4, %complex_4* %206, align 1
-  %208 = extractvalue %complex_4 %207, 0
-  %209 = extractvalue %complex_4 %207, 1
-  %210 = fcmp one float %208, 1.100000e+01
-  %211 = fcmp one float %209, 0.000000e+00
-  %212 = or i1 %210, %211
-  br i1 %212, label %then83, label %else84
+  %197 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %198 = load %complex_4, %complex_4* %197, align 1
+  %199 = extractvalue %complex_4 %198, 0
+  %200 = extractvalue %complex_4 %198, 1
+  %201 = fcmp one float %199, 1.100000e+01
+  %202 = fcmp one float %200, 0.000000e+00
+  %203 = or i1 %201, %202
+  br i1 %203, label %then83, label %else84
 
 then83:                                           ; preds = %ifcont82
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
@@ -706,100 +694,92 @@ ifcont85:                                         ; preds = %else84, %then83
   store i32 1, i32* %__do_start3, align 4
   store i32 2, i32* %__do_end3, align 4
   store i32 1, i32* %__do_step3, align 4
-  %213 = load i32, i32* %__do_start3, align 4
-  %214 = load i32, i32* %__do_step3, align 4
-  %215 = sub i32 %213, %214
-  store i32 %215, i32* %i, align 4
+  %204 = load i32, i32* %__do_start3, align 4
+  %205 = load i32, i32* %__do_step3, align 4
+  %206 = sub i32 %204, %205
+  store i32 %206, i32* %i, align 4
   br label %loop.head86
 
 loop.head86:                                      ; preds = %loop.end94, %ifcont85
-  %216 = load i32, i32* %i, align 4
-  %217 = load i32, i32* %__do_step3, align 4
-  %218 = add i32 %216, %217
-  %219 = load i32, i32* %__do_end3, align 4
-  %220 = icmp sle i32 %218, %219
-  br i1 %220, label %loop.body87, label %loop.end95
+  %207 = load i32, i32* %i, align 4
+  %208 = load i32, i32* %__do_step3, align 4
+  %209 = add i32 %207, %208
+  %210 = load i32, i32* %__do_end3, align 4
+  %211 = icmp sle i32 %209, %210
+  br i1 %211, label %loop.body87, label %loop.end95
 
 loop.body87:                                      ; preds = %loop.head86
-  %221 = load i32, i32* %i, align 4
-  %222 = load i32, i32* %__do_step3, align 4
-  %223 = add i32 %221, %222
-  store i32 %223, i32* %i, align 4
+  %212 = load i32, i32* %i, align 4
+  %213 = load i32, i32* %__do_step3, align 4
+  %214 = add i32 %212, %213
+  store i32 %214, i32* %i, align 4
   store i32 1, i32* %__do_start4, align 4
   store i32 2, i32* %__do_end4, align 4
   store i32 1, i32* %__do_step4, align 4
-  %224 = load i32, i32* %__do_start4, align 4
-  %225 = load i32, i32* %__do_step4, align 4
-  %226 = sub i32 %224, %225
-  store i32 %226, i32* %j, align 4
+  %215 = load i32, i32* %__do_start4, align 4
+  %216 = load i32, i32* %__do_step4, align 4
+  %217 = sub i32 %215, %216
+  store i32 %217, i32* %j, align 4
   br label %loop.head88
 
 loop.head88:                                      ; preds = %ifcont93, %loop.body87
-  %227 = load i32, i32* %j, align 4
-  %228 = load i32, i32* %__do_step4, align 4
-  %229 = add i32 %227, %228
-  %230 = load i32, i32* %__do_end4, align 4
-  %231 = icmp sle i32 %229, %230
-  br i1 %231, label %loop.body89, label %loop.end94
+  %218 = load i32, i32* %j, align 4
+  %219 = load i32, i32* %__do_step4, align 4
+  %220 = add i32 %218, %219
+  %221 = load i32, i32* %__do_end4, align 4
+  %222 = icmp sle i32 %220, %221
+  br i1 %222, label %loop.body89, label %loop.end94
 
 loop.body89:                                      ; preds = %loop.head88
-  %232 = load i32, i32* %j, align 4
-  %233 = load i32, i32* %__do_step4, align 4
-  %234 = add i32 %232, %233
-  store i32 %234, i32* %j, align 4
-  %235 = load i32, i32* %i, align 4
-  %236 = load i32, i32* %j, align 4
-  %237 = sub i32 %235, 1
-  %238 = mul i32 1, %237
-  %239 = add i32 0, %238
-  %240 = icmp slt i32 %235, 1
-  %241 = icmp sgt i32 %235, 2
-  %242 = or i1 %240, %241
-  br i1 %242, label %then90, label %ifcont91
+  %223 = load i32, i32* %j, align 4
+  %224 = load i32, i32* %__do_step4, align 4
+  %225 = add i32 %223, %224
+  store i32 %225, i32* %j, align 4
+  %226 = load i32, i32* %i, align 4
+  %227 = load i32, i32* %j, align 4
+  %228 = sub i32 %226, 1
+  %229 = mul i32 1, %228
+  %230 = add i32 0, %229
+  %231 = icmp slt i32 %226, 1
+  %232 = icmp sgt i32 %226, 2
+  %233 = or i1 %231, %232
+  br i1 %233, label %then90, label %ifcont91
 
 then90:                                           ; preds = %loop.body89
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 %235, i32 1, i32 1, i32 2)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 %226, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
 ifcont91:                                         ; preds = %loop.body89
-  %243 = sub i32 %236, 1
-  %244 = mul i32 2, %243
-  %245 = add i32 %239, %244
-  %246 = icmp slt i32 %236, 1
-  %247 = icmp sgt i32 %236, 2
-  %248 = or i1 %246, %247
-  br i1 %248, label %then92, label %ifcont93
+  %234 = sub i32 %227, 1
+  %235 = mul i32 2, %234
+  %236 = add i32 %230, %235
+  %237 = icmp slt i32 %227, 1
+  %238 = icmp sgt i32 %227, 2
+  %239 = or i1 %237, %238
+  br i1 %239, label %then92, label %ifcont93
 
 then92:                                           ; preds = %ifcont91
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 %236, i32 2, i32 1, i32 2)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 %227, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
 ifcont93:                                         ; preds = %ifcont91
-  %249 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 %245
-  %250 = load i32, i32* %i, align 4
-  %251 = load i32, i32* %j, align 4
-  %252 = add i32 %250, %251
-  %253 = add i32 %252, 10
-  %254 = sitofp i32 %253 to float
-  %255 = insertvalue %complex_4 undef, float %254, 0
-  %256 = insertvalue %complex_4 %255, float 0.000000e+00, 1
-  store %complex_4 %256, %complex_4* %249, align 1
+  %240 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 %236
+  %241 = load i32, i32* %i, align 4
+  %242 = load i32, i32* %j, align 4
+  %243 = add i32 %241, %242
+  %244 = add i32 %243, 10
+  %245 = sitofp i32 %244 to float
+  %246 = insertvalue %complex_4 undef, float %245, 0
+  %247 = insertvalue %complex_4 %246, float 0.000000e+00, 1
+  store %complex_4 %247, %complex_4* %240, align 1
   br label %loop.head88
 
 loop.end94:                                       ; preds = %loop.head88
-  %257 = load i32, i32* %j, align 4
-  %258 = load i32, i32* %__do_step4, align 4
-  %259 = add i32 %257, %258
-  store i32 %259, i32* %j, align 4
   br label %loop.head86
 
 loop.end95:                                       ; preds = %loop.head86
-  %260 = load i32, i32* %i, align 4
-  %261 = load i32, i32* %__do_step3, align 4
-  %262 = add i32 %260, %261
-  store i32 %262, i32* %i, align 4
   br i1 false, label %then96, label %ifcont97
 
 then96:                                           ; preds = %loop.end95
@@ -816,14 +796,14 @@ then98:                                           ; preds = %ifcont97
   unreachable
 
 ifcont99:                                         ; preds = %ifcont97
-  %263 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 0
-  %264 = load %complex_4, %complex_4* %263, align 1
-  %265 = extractvalue %complex_4 %264, 0
-  %266 = extractvalue %complex_4 %264, 1
-  %267 = fcmp one float %265, 1.200000e+01
-  %268 = fcmp one float %266, 0.000000e+00
-  %269 = or i1 %267, %268
-  br i1 %269, label %then100, label %else101
+  %248 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 0
+  %249 = load %complex_4, %complex_4* %248, align 1
+  %250 = extractvalue %complex_4 %249, 0
+  %251 = extractvalue %complex_4 %249, 1
+  %252 = fcmp one float %250, 1.200000e+01
+  %253 = fcmp one float %251, 0.000000e+00
+  %254 = or i1 %252, %253
+  br i1 %254, label %then100, label %else101
 
 then100:                                          ; preds = %ifcont99
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
@@ -850,14 +830,14 @@ then105:                                          ; preds = %ifcont104
   unreachable
 
 ifcont106:                                        ; preds = %ifcont104
-  %270 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 2
-  %271 = load %complex_4, %complex_4* %270, align 1
-  %272 = extractvalue %complex_4 %271, 0
-  %273 = extractvalue %complex_4 %271, 1
-  %274 = fcmp one float %272, 1.300000e+01
-  %275 = fcmp one float %273, 0.000000e+00
-  %276 = or i1 %274, %275
-  br i1 %276, label %then107, label %else108
+  %255 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 2
+  %256 = load %complex_4, %complex_4* %255, align 1
+  %257 = extractvalue %complex_4 %256, 0
+  %258 = extractvalue %complex_4 %256, 1
+  %259 = fcmp one float %257, 1.300000e+01
+  %260 = fcmp one float %258, 0.000000e+00
+  %261 = or i1 %259, %260
+  br i1 %261, label %then107, label %else108
 
 then107:                                          ; preds = %ifcont106
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @85, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @84, i32 0, i32 0))
@@ -884,14 +864,14 @@ then112:                                          ; preds = %ifcont111
   unreachable
 
 ifcont113:                                        ; preds = %ifcont111
-  %277 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 1
-  %278 = load %complex_4, %complex_4* %277, align 1
-  %279 = extractvalue %complex_4 %278, 0
-  %280 = extractvalue %complex_4 %278, 1
-  %281 = fcmp one float %279, 1.300000e+01
-  %282 = fcmp one float %280, 0.000000e+00
-  %283 = or i1 %281, %282
-  br i1 %283, label %then114, label %else115
+  %262 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 1
+  %263 = load %complex_4, %complex_4* %262, align 1
+  %264 = extractvalue %complex_4 %263, 0
+  %265 = extractvalue %complex_4 %263, 1
+  %266 = fcmp one float %264, 1.300000e+01
+  %267 = fcmp one float %265, 0.000000e+00
+  %268 = or i1 %266, %267
+  br i1 %268, label %then114, label %else115
 
 then114:                                          ; preds = %ifcont113
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
@@ -918,14 +898,14 @@ then119:                                          ; preds = %ifcont118
   unreachable
 
 ifcont120:                                        ; preds = %ifcont118
-  %284 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 3
-  %285 = load %complex_4, %complex_4* %284, align 1
-  %286 = extractvalue %complex_4 %285, 0
-  %287 = extractvalue %complex_4 %285, 1
-  %288 = fcmp one float %286, 1.400000e+01
-  %289 = fcmp one float %287, 0.000000e+00
-  %290 = or i1 %288, %289
-  br i1 %290, label %then121, label %else122
+  %269 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 3
+  %270 = load %complex_4, %complex_4* %269, align 1
+  %271 = extractvalue %complex_4 %270, 0
+  %272 = extractvalue %complex_4 %270, 1
+  %273 = fcmp one float %271, 1.400000e+01
+  %274 = fcmp one float %272, 0.000000e+00
+  %275 = or i1 %273, %274
+  br i1 %275, label %then121, label %else122
 
 then121:                                          ; preds = %ifcont120
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))

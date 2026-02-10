@@ -521,19 +521,6 @@
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (Var 2 __do_step)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
                     (If
                         ()
                         (IntegerCompare
@@ -696,19 +683,6 @@
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (Var 2 __do_step1)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
                     (If
                         ()
                         (IntegerCompare
@@ -832,19 +806,6 @@
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (Var 2 __do_step2)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
                     (If
                         ()
                         (IntegerCompare
@@ -956,19 +917,6 @@
                             []
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (Var 2 __do_step3)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
                     )
                     (If
                         ()
@@ -1176,19 +1124,6 @@
                             100
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (Var 2 __do_step4)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
                     )]
                 )
         })

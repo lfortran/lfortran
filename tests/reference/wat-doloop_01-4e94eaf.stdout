@@ -47,10 +47,6 @@
             else
             end
         end
-        local.get 33
-        local.get 22
-        i32.add
-        local.set 33
         local.get 34
         i32.const 55
         i32.ne
@@ -106,10 +102,6 @@
             else
             end
         end
-        local.get 33
-        local.get 23
-        i32.add
-        local.set 33
         local.get 34
         i32.const 55
         i32.ne
@@ -165,10 +157,6 @@
             else
             end
         end
-        local.get 33
-        local.get 25
-        i32.add
-        local.set 33
         local.get 34
         i32.const 25
         i32.ne
@@ -224,10 +212,6 @@
             else
             end
         end
-        local.get 33
-        local.get 26
-        i32.add
-        local.set 33
         local.get 34
         i32.const 25
         i32.ne
@@ -283,10 +267,6 @@
             else
             end
         end
-        local.get 33
-        local.get 27
-        i32.add
-        local.set 33
         local.get 34
         i32.const 25
         i32.ne
@@ -342,10 +322,6 @@
             else
             end
         end
-        local.get 33
-        local.get 28
-        i32.add
-        local.set 33
         local.get 34
         i32.const 22
         i32.ne
@@ -401,10 +377,6 @@
             else
             end
         end
-        local.get 33
-        local.get 29
-        i32.add
-        local.set 33
         local.get 34
         i32.const 22
         i32.ne
@@ -460,10 +432,6 @@
             else
             end
         end
-        local.get 33
-        local.get 30
-        i32.add
-        local.set 33
         local.get 34
         i32.const 1
         i32.ne
@@ -519,10 +487,6 @@
             else
             end
         end
-        local.get 33
-        local.get 31
-        i32.add
-        local.set 33
         local.get 34
         i32.const 1
         i32.ne
@@ -578,10 +542,6 @@
             else
             end
         end
-        local.get 33
-        local.get 32
-        i32.add
-        local.set 33
         local.get 34
         i32.const 0
         i32.ne
@@ -637,10 +597,6 @@
             else
             end
         end
-        local.get 33
-        local.get 24
-        i32.add
-        local.set 33
         local.get 34
         i32.const 0
         i32.ne

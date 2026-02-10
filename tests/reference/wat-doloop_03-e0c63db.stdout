@@ -60,10 +60,6 @@
             else
             end
         end
-        local.get 9
-        local.get 6
-        i32.add
-        local.set 9
         local.get 10
         i32.const 3
         i32.ne
@@ -126,10 +122,6 @@
             else
             end
         end
-        local.get 9
-        local.get 7
-        i32.add
-        local.set 9
         local.get 10
         i32.const 1
         i32.ne
@@ -192,10 +184,6 @@
             else
             end
         end
-        local.get 9
-        local.get 8
-        i32.add
-        local.set 9
         local.get 10
         i32.const 53
         i32.ne

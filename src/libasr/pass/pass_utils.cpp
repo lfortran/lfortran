@@ -1509,7 +1509,7 @@ namespace LCompilers {
                 result.push_back(al, loop_init_stmt);
             }
             result.push_back(al, while_loop_stmt);
-            if (loop.m_head.m_v && c_tmp) {
+            if (use_loop_variable_after_loop && loop.m_head.m_v && c_tmp) {
                 ASR::expr_t *target = loop.m_head.m_v;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));

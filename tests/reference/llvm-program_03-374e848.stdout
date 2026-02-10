@@ -71,10 +71,6 @@ free_done:                                        ; preds = %free_nonnull, %loop
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %28 = load i32, i32* %z, align 4
-  %29 = load i32, i32* %__do_step, align 4
-  %30 = add i32 %28, %29
-  store i32 %30, i32* %z, align 4
   call void @_lpython_free_argv()
   br label %return
 
