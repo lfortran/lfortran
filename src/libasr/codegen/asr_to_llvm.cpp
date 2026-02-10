@@ -315,6 +315,71 @@ public:
         }
     }
 
+    std::string get_nested_procedure_context_name(const ASR::Variable_t& proc_var) {
+        if (proc_var.m_parent_symtab == nullptr || proc_var.m_parent_symtab->asr_owner == nullptr) {
+            return "";
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(proc_var.m_parent_symtab->asr_owner);
+        if (!ASR::is_a<ASR::Function_t>(*owner)) {
+            return "";
+        }
+        ASR::Function_t* parent_proc = ASR::down_cast<ASR::Function_t>(owner);
+        return "__lcompilers_created__nested_context__" + std::string(parent_proc->m_name) +
+               "_" + std::string(proc_var.m_name);
+    }
+
+    llvm::GlobalVariable* get_or_create_nested_procedure_context_global(const ASR::Variable_t& proc_var) {
+        std::string global_name = get_nested_procedure_context_name(proc_var);
+        if (global_name.empty()) {
+            return nullptr;
+        }
+        llvm::GlobalVariable* nested_global = module->getNamedGlobal(global_name);
+        if (nested_global != nullptr) {
+            return nested_global;
+        }
+        ASR::expr_t* proc_expr = ASRUtils::EXPR(
+            ASR::make_Var_t(al, proc_var.base.base.loc, (ASR::symbol_t*) &proc_var));
+        llvm::Type* proc_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+            proc_expr, proc_var.m_type, module.get());
+        return new llvm::GlobalVariable(*module, proc_ptr_type, false,
+            llvm::GlobalValue::InternalLinkage,
+            llvm::Constant::getNullValue(proc_ptr_type), global_name);
+    }
+
+    void cache_nested_procedure_context_for_internal_call(const ASR::symbol_t* callee_sym) {
+        if (parent_function == nullptr) {
+            return;
+        }
+        if (callee_sym == nullptr) {
+            return;
+        }
+        std::string callee_name = ASRUtils::symbol_name(callee_sym);
+        if (current_scope->get_symbol(callee_name) != callee_sym) {
+            return;
+        }
+        for (size_t i = 0; i < parent_function->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*parent_function->m_args[i])) {
+                continue;
+            }
+            ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(parent_function->m_args[i]);
+            ASR::symbol_t* arg_sym = symbol_get_past_external(arg_var->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym) || !is_function_variable(arg_sym)) {
+                continue;
+            }
+            ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+            uint32_t h = get_hash((ASR::asr_t*) proc_var);
+            if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end()) {
+                continue;
+            }
+            llvm::GlobalVariable* nested_global =
+                get_or_create_nested_procedure_context_global(*proc_var);
+            if (nested_global == nullptr) {
+                continue;
+            }
+            builder->CreateStore(llvm_symtab_fn_arg[h], nested_global);
+        }
+    }
+
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics, LocationManager &lm) :
     diag{diagnostics},
@@ -18247,6 +18312,9 @@ public:
         if( s == nullptr ) {
             s = ASR::down_cast<ASR::Function_t>(symbol_get_past_external(x.m_name));
         }
+        if (ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Implementation) {
+            cache_nested_procedure_context_for_internal_call(proc_sym);
+        }
         bool is_method = false;
         llvm::Value* pass_arg = nullptr;
         if (x.m_dt && (!is_nopass)) {
@@ -18369,6 +18437,23 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+        } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym))) {
+            ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(proc_sym));
+            if (proc_var->m_parent_symtab != current_scope) {
+                llvm::GlobalVariable* nested_global =
+                    get_or_create_nested_procedure_context_global(*proc_var);
+                if (nested_global != nullptr) {
+                    llvm::Value* fn = llvm_utils->CreateLoad2(
+                        nested_global->getValueType(), nested_global);
+                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
+                    args = convert_call_args(x, is_method);
+                    tmp = builder->CreateCall(fntype, fn, args);
+                    return;
+                }
+            }
+            throw CodeGenError("Function code not generated for '"
+                + std::string(s->m_name) + "'");
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
