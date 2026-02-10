@@ -549,11 +549,37 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 std::string new_ext_var = std::string(ASRUtils::symbol_name(it2));
                 new_ext_var = current_scope->get_unique_name(new_ext_var, false);
                 ASR::symbol_t* past_it2 = ASRUtils::symbol_get_past_external(it2);
+                auto has_unsupported_proc_stack_type = [&](ASR::ttype_t *tt) {
+                    ASR::ttype_t *base = ASRUtils::type_get_past_allocatable_pointer(tt);
+                    if (!ASR::is_a<ASR::FunctionType_t>(*base)) {
+                        return false;
+                    }
+                    auto is_unsupported = [&](ASR::ttype_t *arg_type) {
+                        ASR::ttype_t *arg_base = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+                        return ASR::is_a<ASR::StructType_t>(*arg_base) ||
+                               ASR::is_a<ASR::UnionType_t>(*arg_base) ||
+                               ASRUtils::is_class_type(arg_base);
+                    };
+                    ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(base);
+                    if (ft->m_return_var_type != nullptr &&
+                            is_unsupported(ft->m_return_var_type)) {
+                        return true;
+                    }
+                    for (size_t i = 0; i < ft->n_arg_types; i++) {
+                        if (is_unsupported(ft->m_arg_types[i])) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
                 auto create_stack_var = [&](ASR::symbol_t *captured_var) {
                     if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(captured_var))) {
                         return;
                     }
                     ASR::ttype_t *ext_type = ASRUtils::symbol_type(captured_var);
+                    if (has_unsupported_proc_stack_type(ext_type)) {
+                        return;
+                    }
                     ASR::ttype_t *ext_base_type =
                         ASRUtils::type_get_past_allocatable_pointer(ext_type);
                     if (ASRUtils::is_array(ext_type) ||
