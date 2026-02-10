@@ -1785,6 +1785,19 @@ public:
                 capture_owner = resolve_capture_owner_for_scope(capture_owner);
                 if (nesting_map.find(capture_owner) != nesting_map.end()) {
                     bool direct_host_recursive_call = false;
+                    bool is_nested_proc_call = false;
+                    ASR::symbol_t *call_target = nullptr;
+                    if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
+                        ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
+                        if (ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value)) {
+                            call_target = ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value)->m_name;
+                        }
+                    } else if (ASR::is_a<ASR::SubroutineCall_t>(*m_body[i])) {
+                        call_target = ASR::down_cast<ASR::SubroutineCall_t>(m_body[i])->m_name;
+                    }
+                    if (call_target != nullptr) {
+                        is_nested_proc_call = is_nested_call_symbol(current_scope, call_target);
+                    }
                     if (is_direct_call_to_capture_owner(m_body[i], capture_owner) &&
                             capture_owner != nullptr &&
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(capture_owner))) {
@@ -2145,7 +2158,8 @@ public:
                                                         target, val));
                             body.push_back(al, associate);
                             // For allocatable arrays, also add post-call sync since reallocation changes the descriptor
-                            if (is_sym_allocatable_or_pointer &&
+                            // But only for nested procedure calls, not external calls
+                            if (is_nested_proc_call && is_sym_allocatable_or_pointer &&
                                 ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                 ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In) {
                                 ASR::stmt_t *sync_back = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
