@@ -63,7 +63,7 @@ public:
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
         xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x_end->base.loc, new_end, int32_type));
 
-        Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x);
+        Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x, current_scope);
         ASR::stmt_t* whileloop_stmt = init_and_whileloop[1];
         ASR::WhileLoop_t* whileloop = ASR::down_cast<ASR::WhileLoop_t>(whileloop_stmt);
         ASR::stmt_t* init_stmt = init_and_whileloop[0];
