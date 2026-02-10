@@ -16522,7 +16522,33 @@ public:
                     target_type = llvm::Type::getInt32Ty(context);
                 }
                 if (ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type)) {
-                    tmp = value;
+                    // For struct type arguments, check if we need to pass by pointer
+                    // If the value is not already a pointer (e.g., StructConstant from
+                    // compile-time value replacement) and the callee expects a pointer,
+                    // we need to allocate temporary storage and pass its address
+                    bool pass_by_value = false;
+                    ASR::Variable_t *struct_orig_arg = nullptr;
+                    if (func_subrout->type == ASR::symbolType::Function) {
+                        ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
+                        size_t arg_idx = i + is_method;
+                        if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
+                            struct_orig_arg = EXPR2VAR(func->m_args[arg_idx]);
+                            if (struct_orig_arg && struct_orig_arg->m_abi == ASR::abiType::BindC
+                                && struct_orig_arg->m_value_attr) {
+                                pass_by_value = true;
+                            }
+                        }
+                    }
+                    if (!pass_by_value && !value->getType()->isPointerTy()) {
+                        // Value is not a pointer but callee expects pointer - allocate temp storage
+                        llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_args[i].m_value, arg_type, module.get());
+                        llvm::AllocaInst *target = get_call_arg_alloca(struct_llvm_type);
+                        builder->CreateStore(value, target);
+                        tmp = target;
+                    } else {
+                        tmp = value;
+                    }
                 } else if(ASR::is_a<ASR::String_t>(*arg_type)){
                     tmp = value;
                 }else {
