@@ -9268,7 +9268,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 if (is_src_class) {
                     llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                         struct_sym->m_struct_signature, &struct_sym->base, module);
-                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
                 }
                 if (is_dest_class) {
@@ -9286,7 +9286,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
                             llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                     }
-                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                 }
 
