@@ -554,7 +554,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         return;
                     }
                     ASR::ttype_t *ext_type = ASRUtils::symbol_type(captured_var);
-                    if (ASRUtils::is_array(ext_type)) {
+                    ASR::ttype_t *ext_base_type =
+                        ASRUtils::type_get_past_allocatable_pointer(ext_type);
+                    if (ASRUtils::is_array(ext_type) ||
+                            ASRUtils::is_allocatable(ext_type) ||
+                            ASRUtils::is_pointer(ext_type) ||
+                            ASRUtils::is_class_type(ext_base_type) ||
+                            ASRUtils::is_character(*ext_base_type)) {
                         return;
                     }
                     ASR::dimension_t dim;
@@ -674,9 +680,10 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
-                        } else {
-                            auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
-                            var_type = pointer_var_type_;
+                        } else if (ASRUtils::is_class_type(var->m_type)) {
+                            // Preserve class indirection for captured class objects.
+                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                                al, var_type->base.loc, var_type_));
                         }
                     }
                 }
@@ -1598,6 +1605,26 @@ public:
                !ASRUtils::is_allocatable(type);
     }
 
+    ASR::symbol_t *prefer_scope_capture_symbol(ASR::symbol_t *sym,
+            ASR::symbol_t *capture_owner) {
+        if (sym == nullptr || current_scope == nullptr) {
+            return sym;
+        }
+        std::string sym_name = ASRUtils::symbol_name(sym);
+        ASR::symbol_t *scope_sym = current_scope->get_symbol(sym_name);
+        if (scope_sym == nullptr) {
+            return sym;
+        }
+        ASR::symbol_t *scope_key = resolve_capture_key(scope_sym, capture_owner);
+        ASR::symbol_t *sym_key = resolve_capture_key(sym, capture_owner);
+        if (scope_key != nullptr && sym_key != nullptr &&
+                ASRUtils::symbol_get_past_external(scope_key) ==
+                    ASRUtils::symbol_get_past_external(sym_key)) {
+            return scope_sym;
+        }
+        return sym;
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
@@ -1984,6 +2011,9 @@ public:
                             }
                         }
                         ASR::symbol_t* sym_ = sym;
+                        if (capture_owner != cur_func_sym) {
+                            sym_ = prefer_scope_capture_symbol(sym, capture_owner);
+                        }
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
                         if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
@@ -2220,6 +2250,9 @@ public:
                         ASR::symbol_t *ext_sym = get_or_import_external_symbol(t, t->base.loc);
 
                         ASR::symbol_t* sym_ = sym;
+                        if (capture_owner != cur_func_sym) {
+                            sym_ = prefer_scope_capture_symbol(sym, capture_owner);
+                        }
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
                         if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
@@ -2273,6 +2306,19 @@ public:
                 // calls in condition) and post-sync at arm end (state produced by
                 // nested calls in the arm body).
                 ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
+                std::vector<ASR::stmt_t*> sync_back_to_context;
+                sync_back_to_context.reserve(assigns_at_end.size());
+                for (auto &stm: assigns_at_end) {
+                    if (ASR::is_a<ASR::Assignment_t>(*stm)) {
+                        ASR::Assignment_t *assign = ASR::down_cast<ASR::Assignment_t>(stm);
+                        sync_back_to_context.push_back(
+                            ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                al, assign->base.base.loc, assign->m_value,
+                                assign->m_target, nullptr, false, false)));
+                    } else {
+                        sync_back_to_context.push_back(stm);
+                    }
+                }
                 Vec<ASR::stmt_t*> new_body;
                 new_body.reserve(al, if_stmt->n_body + assigns_at_end.size() * 2);
                 for (auto &stm: assigns_at_end) {
@@ -2282,7 +2328,7 @@ public:
                 for (size_t j = 0; j < if_stmt->n_body; j++) {
                     new_body.push_back(al, if_stmt->m_body[j]);
                 }
-                for (auto &stm: assigns_at_end) {
+                for (auto &stm: sync_back_to_context) {
                     new_body.push_back(al, stm);
                 }
                 if_stmt->m_body = new_body.p;
@@ -2298,7 +2344,7 @@ public:
                 for (size_t j = 0; j < if_stmt->n_orelse; j++) {
                     else_new_body.push_back(al, if_stmt->m_orelse[j]);
                 }
-                for (auto &stm: assigns_at_end) {
+                for (auto &stm: sync_back_to_context) {
                     else_new_body.push_back(al, stm);
                 }
                 if_stmt->m_orelse = else_new_body.p;
