@@ -5,6 +5,8 @@ source_filename = "LFortran"
 %mytype = type { float }
 %string_descriptor = type <{ i8*, i64 }>
 
+@__module___lcompilers_created__nested_context__get_i____lfortran_nested_ctx_next_id = global i32 0
+@__module___lcompilers_created__nested_context__get_i____lfortran_nested_ctx_stack_ptr = global i32 0
 @__module___lcompilers_created__nested_context__get_i__self = global %mytype_class* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1

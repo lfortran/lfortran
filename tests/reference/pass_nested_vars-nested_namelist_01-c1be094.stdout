@@ -7,6 +7,48 @@
                     (SymbolTable
                         6
                         {
+                            __lfortran_nested_ctx_next_id:
+                                (Variable
+                                    6
+                                    __lfortran_nested_ctx_next_id
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __lfortran_nested_ctx_stack_ptr:
+                                (Variable
+                                    6
+                                    __lfortran_nested_ctx_stack_ptr
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             i:
                                 (Variable
                                     6
@@ -17,6 +59,32 @@
                                     ()
                                     Default
                                     (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            i__stack:
+                                (Variable
+                                    6
+                                    i__stack
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1048576 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     ()
                                     Source
                                     Public
@@ -45,6 +113,32 @@
                                     ()
                                     Default
                                     (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x__stack:
+                                (Variable
+                                    6
+                                    x__stack
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1048576 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     ()
                                     Source
                                     Public
@@ -100,6 +194,47 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __lfortran_nested_ctx_next_id:
+                                                (ExternalSymbol
+                                                    3
+                                                    __lfortran_nested_ctx_next_id
+                                                    6 __lfortran_nested_ctx_next_id
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    __lfortran_nested_ctx_next_id
+                                                    Public
+                                                ),
+                                            __lfortran_nested_ctx_stack_ptr:
+                                                (ExternalSymbol
+                                                    3
+                                                    __lfortran_nested_ctx_stack_ptr
+                                                    6 __lfortran_nested_ctx_stack_ptr
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    __lfortran_nested_ctx_stack_ptr
+                                                    Public
+                                                ),
+                                            __lfortran_nested_saved_ctx:
+                                                (Variable
+                                                    3
+                                                    __lfortran_nested_saved_ctx
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             i:
                                                 (Variable
                                                     3
@@ -129,6 +264,16 @@
                                                     __lcompilers_created__nested_context__outer_
                                                     []
                                                     i
+                                                    Public
+                                                ),
+                                            i__stack:
+                                                (ExternalSymbol
+                                                    3
+                                                    i__stack
+                                                    6 i__stack
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    i__stack
                                                     Public
                                                 ),
                                             inner:
@@ -242,6 +387,16 @@
                                                     []
                                                     x
                                                     Public
+                                                ),
+                                            x__stack:
+                                                (ExternalSymbol
+                                                    3
+                                                    x__stack
+                                                    6 x__stack
+                                                    __lcompilers_created__nested_context__outer_
+                                                    []
+                                                    x__stack
+                                                    Public
                                                 )
                                         })
                                     outer
@@ -268,11 +423,148 @@
                                         .false.
                                         .false.
                                     )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 3 i__stack)
+                                                [(()
+                                                (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                                ())]
+                                                (Integer 4)
+                                                RowMajor
+                                                ()
+                                            )
+                                            (Var 3 i1)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
                                     (Assignment
                                         (Var 3 x)
                                         (RealConstant
                                             3.000000
                                             (Real 4)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 3 x__stack)
+                                                [(()
+                                                (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                            )
+                                            (Var 3 x1)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 3 __lfortran_nested_saved_ctx)
+                                        (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assert
+                                        (IntegerCompare
+                                            (Var 3 __lfortran_nested_ctx_next_id)
+                                            Lt
+                                            (IntegerConstant 1048576 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Assignment
+                                        (Var 3 __lfortran_nested_ctx_next_id)
+                                        (IntegerBinOp
+                                            (Var 3 __lfortran_nested_ctx_next_id)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 3 i__stack)
+                                            [(()
+                                            (IntegerBinOp
+                                                (Var 3 __lfortran_nested_ctx_next_id)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ())]
+                                            (Integer 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        (Var 3 i1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 3 x__stack)
+                                            [(()
+                                            (IntegerBinOp
+                                                (Var 3 __lfortran_nested_ctx_next_id)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ())]
+                                            (Real 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        (Var 3 x1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                        (IntegerBinOp
+                                            (Var 3 __lfortran_nested_ctx_next_id)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
                                         )
                                         ()
                                         .false.
@@ -288,6 +580,36 @@
                                     (Assignment
                                         (Var 3 x1)
                                         (Var 3 x)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 3 i__stack)
+                                            [(()
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            ())]
+                                            (Integer 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        (Var 3 i1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 3 x__stack)
+                                            [(()
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            ())]
+                                            (Real 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        (Var 3 x1)
                                         ()
                                         .false.
                                         .false.
@@ -309,6 +631,43 @@
                                     (Assignment
                                         (Var 3 x)
                                         (Var 3 x1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 i1)
+                                        (ArrayItem
+                                            (Var 3 i__stack)
+                                            [(()
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            ())]
+                                            (Integer 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 x1)
+                                        (ArrayItem
+                                            (Var 3 x__stack)
+                                            [(()
+                                            (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                            ())]
+                                            (Real 4)
+                                            RowMajor
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 __lfortran_nested_ctx_stack_ptr)
+                                        (Var 3 __lfortran_nested_saved_ctx)
                                         ()
                                         .false.
                                         .false.
