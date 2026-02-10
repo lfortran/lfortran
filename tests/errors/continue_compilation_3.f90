@@ -203,10 +203,8 @@ program continue_compilation_3
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     print *,  [( '*',i , i = 1, 10 )] 
-  
 
     contains 
-    
     subroutine bpe()
         print *, size(bpe)
         bpe = d
