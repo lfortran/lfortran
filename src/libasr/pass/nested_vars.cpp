@@ -926,6 +926,40 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
     }
 
+    void visit_Associate(const ASR::Associate_t &x) {
+        // Keep direct procedure-symbol associations intact:
+        //   procedure(p), pointer :: f
+        //   f => p
+        //
+        // Replacing `p` with nested context globals here changes the pointer depth
+        // in LLVM IR (storing a global-address instead of a function pointer value).
+        ASR::expr_t **current_expr_copy = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+        call_replacer();
+        current_expr = current_expr_copy;
+        if (x.m_target) {
+            visit_expr(*x.m_target);
+        }
+
+        bool keep_value_as_function_symbol = false;
+        if (x.m_target && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(x.m_target)) &&
+                x.m_value && ASR::is_a<ASR::Var_t>(*x.m_value)) {
+            ASR::symbol_t *value_sym = ASR::down_cast<ASR::Var_t>(x.m_value)->m_v;
+            ASR::symbol_t *value_sym_past = ASRUtils::symbol_get_past_external(value_sym);
+            keep_value_as_function_symbol = ASR::is_a<ASR::Function_t>(*value_sym_past);
+        }
+
+        if (!keep_value_as_function_symbol) {
+            current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            call_replacer();
+            current_expr = current_expr_copy;
+        }
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        }
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
