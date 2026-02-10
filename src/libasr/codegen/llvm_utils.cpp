@@ -8642,7 +8642,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     void LLVMStruct::allocate_array_of_classes(ASR::Struct_t* const class_symbol, 
         [[maybe_unused]] ASR::StructType_t* const struct_type, 
-        llvm::Value* const array_data_ptr, llvm::Value* const size, const bool realloc){
+        llvm::Value* const array_data_ptr, llvm::Value* const size, 
+        ASR::symbol_t* allocated_subclass, const bool realloc){
         LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && size)
         LCOMPILERS_ASSERT_MSG(!struct_type->m_is_unlimited_polymorphic, 
                                 "Can't operate on polymorphic types")
@@ -8650,23 +8651,54 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->validate_llvm_SSA(llvm_utils->getClassType(class_symbol, true)->getPointerTo(), array_data_ptr);
         
         llvm::Type* const llvm_class_type = llvm_utils->getClassType(class_symbol);
-        llvm::Type* const llvm_underlying_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
         
-        /// Allocate consecutive-struct-structures and insert into class structure -- HEAP
-        /// (Store struct*, struct**) 
+        // Use allocated_subclass for data sizing if provided, otherwise fall back to class_symbol
+        ASR::Struct_t* data_type_struct = class_symbol;
+        if (allocated_subclass) {
+            data_type_struct = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(allocated_subclass));
+        }
+        llvm::Type* const llvm_underlying_struct_type = llvm_utils->getStructType(data_type_struct, llvm_utils->module);
+        
+        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr
+        const int64_t class_wrapper_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_class_type);
+        llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder,
+            llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
+        builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            class_wrapper_size, llvm::MaybeAlign());
+        llvm::Value* class_wrapper = builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
+        builder->CreateStore(class_wrapper, array_data_ptr);
+        
+        // Step 2: Allocate the underlying data array using proper subclass size
         const int64_t underlying_struct_alloc_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_underlying_struct_type);
         llvm::Value* const total_bytes_to_alloc = builder->CreateMul(
                                                 llvm_utils->convert_kind(size, llvm::Type::getInt64Ty(context)), 
-                                                llvm::ConstantInt::get(context, llvm::APInt(64, underlying_struct_alloc_size))); 
-        llvm::Value* const plain_mem_allocated /* i8* */= realloc ? 
-                                                      LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, builder->CreateLoad(llvm_class_type->getPointerTo(), array_data_ptr), total_bytes_to_alloc)
-                                                    : LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
-        llvm::Value* const allocated_mem = builder->CreateBitCast(plain_mem_allocated,llvm_underlying_struct_type->getPointerTo());
-        llvm::Value* const underlying_struct_ptr_in_array_data_ptr = llvm_utils->CreateGEP2(
-                                                                llvm_class_type,
-                                                                builder->CreateLoad(llvm_class_type->getPointerTo(), array_data_ptr),
-                                                                1);
-        builder->CreateStore(allocated_mem, underlying_struct_ptr_in_array_data_ptr);
+                                                llvm::ConstantInt::get(context, llvm::APInt(64, underlying_struct_alloc_size)));
+        llvm::Value* data_mem = nullptr;
+        if (realloc) {
+            llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+            llvm::Type* base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
+            llvm::Value* existing_data = builder->CreateLoad(base_struct_type->getPointerTo(), existing_data_ptr);
+            data_mem = LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, existing_data, total_bytes_to_alloc);
+        } else {
+            data_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
+        }
+        builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            total_bytes_to_alloc, llvm::MaybeAlign());
+        
+        // Step 3: Store the data pointer in the wrapper's data field (index 1)
+        // Bitcast to base struct type since wrapper expects that type
+        llvm::Type* const base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
+        llvm::Value* data_field_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+        llvm::Value* bitcasted_data = builder->CreateBitCast(data_mem, base_struct_type->getPointerTo());
+        builder->CreateStore(bitcasted_data, data_field_ptr);
+        
+        // Step 4: Store vptr for the allocated subclass type (or fall back to class_symbol)
+        if (allocated_subclass) {
+            store_class_vptr(ASRUtils::symbol_get_past_external(allocated_subclass), class_wrapper, llvm_utils->module);
+        } else {
+            store_class_vptr(&class_symbol->base, class_wrapper, llvm_utils->module);
+        }
     }
 
     void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)
@@ -8763,7 +8795,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
+        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
 
         // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
@@ -8894,7 +8926,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
+        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -9236,7 +9268,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 if (is_src_class) {
                     llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                         struct_sym->m_struct_signature, &struct_sym->base, module);
-                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
                 }
                 if (is_dest_class) {
@@ -9254,7 +9286,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
                             llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                     }
-                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                 }
 

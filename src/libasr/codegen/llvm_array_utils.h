@@ -153,7 +153,8 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false) = 0;
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, 
+                    ASR::symbol_t* allocated_subclass=nullptr, bool realloc=false) = 0;
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type,llvm::Value* arr, int n_dims) = 0;
@@ -432,7 +433,8 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false);
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, 
+                    ASR::symbol_t* allocated_subclass=nullptr, bool realloc=false);
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims);

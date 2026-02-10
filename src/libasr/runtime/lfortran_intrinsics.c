@@ -891,6 +891,12 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
     for (int i = 0; i < len; i++) {
         char c = format[i];
         if (c == '"' || c == '\'') {
+            if (in_quotes && current_quote == c && (i + 1) < len && format[i + 1] == c) {
+                cleaned_format[j++] = c;
+                cleaned_format[j++] = c;
+                i++;
+                continue;
+            }
             if (i == 0 || format[i - 1] != '\\') {
                 // toggle in_quotes and set current_quote on entering or exiting quotes
                 if (!in_quotes) {
@@ -898,6 +904,7 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
                     current_quote = c;
                 } else if (current_quote == c) {
                     in_quotes = false;
+                    current_quote = '\0';
                 }
             }
         }
@@ -910,6 +917,22 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
     cleaned_format[j] = '\0';
     *cleaned_format_len = j;
     return cleaned_format;
+}
+
+static char* unescape_quoted_literal(const char* value, int64_t value_len, char quote_char, int64_t* out_len) {
+    char* result = (char*)malloc(value_len + 1);
+    int64_t j = 0;
+    for (int64_t i = 0; i < value_len; i++) {
+        if (value[i] == quote_char && (i + 1) < value_len && value[i + 1] == quote_char) {
+            result[j++] = quote_char;
+            i++;
+        } else {
+            result[j++] = value[i];
+        }
+    }
+    result[j] = '\0';
+    *out_len = j;
+    return result;
 }
 
 int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
@@ -932,6 +955,16 @@ int find_matching_parentheses(const fchar* format, const int64_t format_len, int
 }
 
 /**
+ * Check if a character is a data or control descriptor that requires comma separation
+ */
+static bool is_descriptor_requiring_comma(char c) {
+    c = tolower(c);
+    return (c == 'a' || c == 'i' || c == 'f' || c == 'e' || c == 'd' || 
+            c == 'g' || c == 'l' || c == 'b' || c == 'z' ||
+            c == 't' || c == 's' || c == 'r');
+}
+
+/**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
  *
@@ -947,6 +980,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
+    bool last_was_descriptor = false;
+    bool comma_seen = false;
 
     while (index < format_len) {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
@@ -957,18 +992,30 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
             format_values_2 = ptr;
         }
         switch (tolower(cformat[index])) {
+            case ' ' :
+                break;
             case ',' :
+                comma_seen = true;
                 break;
             case '/' :
             case ':' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
+                last_was_descriptor = false;
+                comma_seen = false;
                 break;
             case '*' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 break;
             case '"' :
                 start = index++;
-                while (cformat[index] != '"') {
+                while (index < format_len) {
+                    if (cformat[index] == '"') {
+                        if ((index + 1) < format_len && cformat[index + 1] == '"') {
+                            index += 2;
+                            continue;
+                        }
+                        break;
+                    }
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index+1);
@@ -976,20 +1023,37 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case '\'' :
                 start = index++;
-                while (cformat[index] != '\'') {
+                while (index < format_len) {
+                    if (cformat[index] == '\'') {
+                        if ((index + 1) < format_len && cformat[index + 1] == '\'') {
+                            index += 2;
+                            continue;
+                        }
+                        break;
+                    }
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index+1);
                 break;
             case 'a' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 while (isdigit(cformat[index])) {
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 'e' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 bool edot = false;
                 if (tolower(cformat[index]) == 'n') index++;
@@ -1009,14 +1073,83 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
+                break;
+            case 'b' :
+                start = index++;
+                if (tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                } else {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    bool dot = false;
+                    while (isdigit(cformat[index])) index++;
+                    if (cformat[index] == '.') {
+                        dot = true;
+                        index++;
+                    }
+                    while (isdigit(cformat[index])) index++;
+                    if (dot && tolower(cformat[index]) == 'e') {
+                        index++;
+                        while (isdigit(cformat[index])) index++;
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                }
+                break;
+            case 'd' :
+                start = index++;
+                if (tolower(cformat[index]) == 't') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                } else {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    bool dot = false;
+                    if(tolower(cformat[index]) == 's') index++;
+                    while (isdigit(cformat[index])) index++;
+                    if (cformat[index] == '.') {
+                        dot = true;
+                        index++;
+                    }
+                    while (isdigit(cformat[index])) index++;
+                    if (dot && tolower(cformat[index]) == 'e') {
+                        index++;
+                        while (isdigit(cformat[index])) index++;
+                    }
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                }
                 break;
             case 'i' :
-            case 'd' :
             case 'f' :
             case 'l' :
-            case 'b' :
             case 'g' :
             case 'z' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 bool dot = false;
                 if(tolower(cformat[index]) == 's') index++;
@@ -1032,8 +1165,14 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 's': 
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if( cformat[index] == ','          || // 'S'  (default sign)
                     tolower(cformat[index]) == 'p' || // 'SP' (sign plus)
@@ -1045,6 +1184,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     fprintf(stderr, "Error: Invalid format specifier. After 's' specifier\n");
                     exit(1);
                 }
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case '(' :
                 start = index;
@@ -1054,6 +1195,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if (tolower(cformat[index]) == 'l' || tolower(cformat[index]) == 'r') {
                      index++;  // move past 'L' or 'R'
@@ -1071,13 +1216,21 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
                 break;
             case 'r':  // Rounding mode: RU, RD, RN, RZ
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
                 start = index++;
                 if (tolower(cformat[index]) == 'u' || tolower(cformat[index]) == 'd' ||
                     tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z' ||
                     tolower(cformat[index]) == 'c' || tolower(cformat[index]) == 'p') {
                     format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                    last_was_descriptor = true;
+                    comma_seen = false;
                 } else {
                     fprintf(stderr, "Error: Invalid rounding mode after 'R'\n");
                     exit(1);
@@ -2003,11 +2156,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String literal in format
-                value = substring(value, 1, strlen(value) - 1);
-                int64_t val_len = strlen(value);
-                result = append_to_string_NTI(result, result_len, value, val_len);
+                char quote_char = value[0];
+                char* inner_value = substring(value, 1, strlen(value) - 1);
+                int64_t val_len = 0;
+                char* unescaped_value = unescape_quoted_literal(inner_value, strlen(inner_value), quote_char, &val_len);
+                result = append_to_string_NTI(result, result_len, unescaped_value, val_len);
                 result_len += val_len;
-                free(value);
+                free(inner_value);
+                free(unescaped_value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string_NTI(result, result_len, " ", 1);
                 result_len += 1;
@@ -2282,11 +2438,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[0]) == 'g') {
                     int width = 0;
                     int precision = 0;
+                    bool has_dot = false;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
                     }
                     const char *dot = strchr(value + 1, '.'); // Look for '.' after 'g'
                     if (dot != NULL) {
+                        has_dot = true;
                         precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
@@ -2296,6 +2454,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(double_val)) {
                             snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                        } else if (width == 0 && !has_dot) {
+                            if (s_info.current_element_type == FLOAT_32_TYPE) {
+                                format_float_fortran(formatted, (float)double_val);
+                            } else {
+                                format_double_fortran(formatted, double_val);
+                            }
                         } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
@@ -7165,15 +7329,20 @@ static void handle_read_T(InputSource *inputSource, int position)
 
 static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
-    int c = 0;
-    do {
-        c = read_character(inputSource);
-    } while (c != '\n' && c != EOF);
-    if (c == EOF) {
-        if (iostat) *iostat = -1;
-        return;
+    if (!*consumed_newline) {
+        int c = 0;
+        do {
+            c = read_character(inputSource);
+        } while (c != '\n' && c != EOF);
+        if (c == EOF) {
+            if (iostat) *iostat = -1;
+            return;
+        }
     }
-    *consumed_newline = true;
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
+    *consumed_newline = false;
 }
 
 
@@ -7242,31 +7411,17 @@ LFORTRAN_API void _lfortran_formatted_read(
     va_end(args);
 }
 
-static void common_formatted_read(InputSource *inputSource,
+static void process_fmt_items_read(InputSource *inputSource,
     int32_t* iostat, int32_t* chunk,
-    fchar* advance, int64_t advance_length,
+    bool advance_no,
     fchar* fmt, int64_t fmt_len,
-    int32_t no_of_args, va_list *args, bool blank_zero)
+    int32_t no_of_args, va_list *args,
+    int *arg_idx, int *blank_mode, int *scale_factor,
+    bool *consumed_newline)
 {
-    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
-    }
-    if (chunk) *chunk = 0;
-    if (iostat) *iostat = 0;
-    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
-
     int64_t fmt_pos = 0;
-    if (fmt_len > 0 && fmt[0] == '(') fmt_pos = 1;
 
-    bool consumed_newline = false;
-    int arg_idx = 0;
-    int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
-    if (blank_zero) {
-        blank_mode = 1;
-    }
-    
-    int scale_factor = 0;
-    while (fmt_pos < fmt_len && arg_idx < no_of_args) {
+    while (fmt_pos < fmt_len && *arg_idx < no_of_args) {
         while (fmt_pos < fmt_len && (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
             fmt_pos++;
         }
@@ -7278,9 +7433,36 @@ static void common_formatted_read(InputSource *inputSource,
             fmt_pos++;
         }
         if (repeat_count == 0) repeat_count = 1;
+
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
+            // Parenthesized group: N(...)
+            int64_t group_start = fmt_pos + 1; // position after '('
+            // Find matching ')'
+            int paren_depth = 1;
+            int64_t pos = fmt_pos + 1;
+            while (pos < fmt_len && paren_depth > 0) {
+                if (fmt[pos] == '(') paren_depth++;
+                else if (fmt[pos] == ')') paren_depth--;
+                pos++;
+            }
+            int64_t group_end = pos - 1; // position of matching ')'
+            int64_t group_len = group_end - group_start;
+            fmt_pos = pos; // advance past ')'
+
+            for (int rep = 0; rep < repeat_count; rep++) {
+                process_fmt_items_read(inputSource, iostat, chunk,
+                    advance_no, fmt + group_start, group_len,
+                    no_of_args, args, arg_idx, blank_mode,
+                    scale_factor, consumed_newline);
+                if (iostat && *iostat != 0) return;
+                if (*arg_idx >= no_of_args) return;
+            }
+            continue;
+        }
+
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
-            scale_factor = repeat_count;
+            *scale_factor = repeat_count;
             repeat_count = 1;
         }
         
@@ -7296,9 +7478,11 @@ static void common_formatted_read(InputSource *inputSource,
         }
         
         int width = 0;
-        while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
-            width = width * 10 + (fmt[fmt_pos] - '0');
-            fmt_pos++;
+        if (spec != '/' && spec != ':') {
+            while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+                width = width * 10 + (fmt[fmt_pos] - '0');
+                fmt_pos++;
+            }
         }
         for (int rep = 0; rep < repeat_count; rep++)  {
             switch (spec) {
@@ -7307,10 +7491,10 @@ static void common_formatted_read(InputSource *inputSource,
                 if (fmt_pos < fmt_len) {
                     char next = toupper(fmt[fmt_pos]);
                     if (next == 'N') {
-                        blank_mode = 0;  // BN: blank null
+                        *blank_mode = 0;  // BN: blank null
                         fmt_pos++;
                     } else if (next == 'Z') {
-                        blank_mode = 1;  // BZ: blank zero
+                        *blank_mode = 1;  // BZ: blank zero
                         fmt_pos++;
                     }
                 }
@@ -7318,7 +7502,7 @@ static void common_formatted_read(InputSource *inputSource,
             case 'T':
                 if (is_tab_descriptor) {
                     if (tab_type == 'R') {
-                        handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                        handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                     } else if (tab_type == 'L') {
                         handle_read_TL(inputSource, width);
                     }
@@ -7328,19 +7512,19 @@ static void common_formatted_read(InputSource *inputSource,
                 break;
             case 'A':
                 if (!handle_read_A(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                        iostat, chunk, consumed_newline, arg_idx)) {
                     return;
                 }
                 break;
             case 'L':
                 if (!handle_read_L(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                        iostat, chunk, consumed_newline, arg_idx)) {
                     return;
                 }
                 break;
             case 'I':
                 if (!handle_read_I(inputSource, args, width, advance_no,
-                        iostat, chunk, &consumed_newline, &arg_idx, blank_mode)) {
+                        iostat, chunk, consumed_newline, arg_idx, *blank_mode)) {
                     return;
                 }
                 break;
@@ -7350,24 +7534,68 @@ static void common_formatted_read(InputSource *inputSource,
             case 'G':
                 if (!handle_read_real(inputSource, args, width, advance_no,
                         fmt, fmt_len, &fmt_pos, iostat, chunk,
-                        &consumed_newline, &arg_idx, blank_mode, scale_factor)) {
+                        consumed_newline, arg_idx, *blank_mode, *scale_factor)) {
                     return;
                 }
                 break;
             case 'X':
-                handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                 break;
             case '/':
-                handle_read_slash(inputSource, iostat, &consumed_newline);
+                handle_read_slash(inputSource, iostat, consumed_newline);
                 break;
             default:
                 break;
             }
 
             if (iostat && *iostat != 0) break;
-            if (arg_idx >= no_of_args) break;
+            if (*arg_idx >= no_of_args) break;
         }
     }
+}
+
+static void common_formatted_read(InputSource *inputSource,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args, va_list *args, bool blank_zero)
+{
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        inputSource->record_start_pos = ftell(inputSource->file);
+    }
+    if (chunk) *chunk = 0;
+    if (iostat) *iostat = 0;
+    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
+
+    int64_t start_pos = 0;
+    if (fmt_len > 0 && fmt[0] == '(') start_pos = 1;
+
+    // Strip outer parentheses: find matching ')' for the opening '('
+    int64_t inner_len = fmt_len - start_pos;
+    if (start_pos == 1) {
+        // Find the matching ')' to exclude it from inner_len
+        int paren_depth = 1;
+        int64_t pos = start_pos;
+        while (pos < fmt_len && paren_depth > 0) {
+            if (fmt[pos] == '(') paren_depth++;
+            else if (fmt[pos] == ')') paren_depth--;
+            if (paren_depth > 0) pos++;
+        }
+        inner_len = pos - start_pos;
+    }
+
+    bool consumed_newline = false;
+    int arg_idx = 0;
+    int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
+    if (blank_zero) {
+        blank_mode = 1;
+    }
+    
+    int scale_factor = 0;
+
+    process_fmt_items_read(inputSource, iostat, chunk, advance_no,
+        fmt + start_pos, inner_len, no_of_args, args,
+        &arg_idx, &blank_mode, &scale_factor, &consumed_newline);
 
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
