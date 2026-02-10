@@ -1240,21 +1240,33 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 return builder_->CreateICmpSLT(loaded_iter_incr, array_size);
             };
 
+            bool is_class_type = ASRUtils::non_unlimited_polymorphic_class(&struct_t->base);
+            
             auto const body_fn = [&]() -> void {
                 auto const loaded_iter = builder_->CreateLoad(iter_llvm_type, iter);
-                auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
-                auto const struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
+                llvm::Value* struct_element = nullptr;
+                
+                if (is_class_type) {
+                    // For class arrays: ONE wrapper with data_ptr pointing to array of underlying structs
+                    struct_element = llvm_utils_->get_class_element_from_array(struct_sym, struct_t, data_ptr, loaded_iter);
+                } else {
+                    auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
+                    struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
+                }
                 finalize_struct(struct_element, &struct_t->base, struct_sym);
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
 
             // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
-            if(ASRUtils::non_unlimited_polymorphic_class(&struct_t->base)){
-                auto const struct_type_llvm = llvm_utils_->getClassType(struct_sym);
+            if(is_class_type){
+                auto const class_type_llvm = llvm_utils_->getClassType(struct_sym);
+                auto const struct_type_llvm = llvm_utils_->getStructType(struct_sym, llvm_utils_->module);
                 auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
-                                                             llvm_utils_->CreateGEP2(struct_type_llvm, data_ptr, 1));
+                                                             llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1));
                 llvm_utils_->lfortran_free(allocated_cosecutive_structs);
+                // deallocate class wrapper 
+                llvm_utils_->lfortran_free(data_ptr);
             }
         }
             
