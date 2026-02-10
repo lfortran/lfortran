@@ -35,8 +35,8 @@ contains
     end subroutine assumed_rank
 
     subroutine ss(x)
-        character(:), allocatable :: x
-        x(1) = "AB"
+    character(:), allocatable :: x
+    x = "AB"          ! allocates x with length 2
     end subroutine ss
 
 
