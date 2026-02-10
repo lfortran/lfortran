@@ -2229,6 +2229,7 @@ RUN(NAME file_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_50 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
