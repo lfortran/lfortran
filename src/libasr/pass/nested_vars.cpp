@@ -271,7 +271,16 @@ public:
         if (nesting_depth > 1) {
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
             if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                visit_symbol(*sym);
+                if (current_scope && par_func_sym &&
+                    ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
+                    if (ASR::is_a<ASR::Function_t>(*sym)) {
+                        throw LCompilersException(
+                            "Nested procedure context with dummy procedure arguments is not "
+                            "supported yet. Captured procedure symbol '" +
+                            std::string(ASRUtils::symbol_name(sym)) + "'.");
+                    }
+                }
+                return;
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 if(is_module_variable(v)) return;
@@ -420,6 +429,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
         replacer(al_), nesting_map(n_map) {}
 
+    bool get_class_proc_nopass_val_safe(ASR::symbol_t* sym) {
+        ASR::symbol_t* past_sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::Variable_t>(*past_sym) ||
+            ASR::is_a<ASR::StructMethodDeclaration_t>(*past_sym)) {
+            return ASRUtils::get_class_proc_nopass_val(sym);
+        }
+        return false;
+    }
+
     void call_replacer() {
         // Skip replacing original variables with context variables
         // in the parent function except for function/subroutine calls
@@ -463,12 +481,12 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             module_name = current_scope->get_unique_name(module_name, false);
             for (auto &it2: it.second) {
                 std::string new_ext_var = std::string(ASRUtils::symbol_name(it2));
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-                            ASRUtils::symbol_get_past_external(it2));
+                new_ext_var = current_scope->get_unique_name(new_ext_var, false);
+                ASR::symbol_t* past_it2 = ASRUtils::symbol_get_past_external(it2);
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(past_it2);
                 if (!is_any_variable_externally_defined && is_externally_defined(var)) {
                     is_any_variable_externally_defined = true;
                 }
-                new_ext_var = current_scope->get_unique_name(new_ext_var, false);
                 bool is_allocatable = ASRUtils::is_allocatable(var->m_type);
                 bool is_pointer = ASRUtils::is_pointer(var->m_type);
                 LCOMPILERS_ASSERT(!(is_allocatable && is_pointer));
@@ -778,7 +796,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
+        if (nesting_depth > 1 &&
+            nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
             std::string sym_name = ASRUtils::symbol_name(t);
@@ -819,14 +838,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             visit_expr(*x.m_dt);
         }
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
+            nullptr, false, get_class_proc_nopass_val_safe(xx.m_name));
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
-        if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
+        if (nesting_depth > 1 &&
+            nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
             std::string sym_name = ASRUtils::symbol_name(t);
@@ -860,7 +880,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
 
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
+            nullptr, false, get_class_proc_nopass_val_safe(xx.m_name));
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
