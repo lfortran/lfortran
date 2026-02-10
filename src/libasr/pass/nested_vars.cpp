@@ -240,6 +240,18 @@ public:
         current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
     }
+
+    void visit_Module(const ASR::Module_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                visit_Function(*s);
+            }
+        }
+        current_scope = current_scope_copy;
+    }
     /// Is a variable declared in a module scope
     bool is_module_variable(ASR::Variable_t* const v){
         ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
@@ -277,6 +289,20 @@ public:
             nesting_map[par_func_sym].insert(fn_sym);
         }
         ASR::BaseWalkVisitor<NestedVarVisitor>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (current_scope && par_func_sym && ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+            ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(x.m_name);
+            if (fn_var->m_type_declaration &&
+                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(fn_var->m_type_declaration)) &&
+                ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_scope->get_counter() &&
+                current_scope->parent && current_scope->parent->parent != nullptr &&
+                (current_scope->parent)->get_counter() == ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
+                nesting_map[par_func_sym].insert(x.m_name);
+            }
+        }
+        ASR::BaseWalkVisitor<NestedVarVisitor>::visit_FunctionCall(x);
     }
 
     void capture_namelist_vars(ASR::symbol_t *nml_sym) {
@@ -583,6 +609,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         nesting_depth--;
     }
 
+    void visit_Module(const ASR::Module_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+        current_scope = current_scope_copy;
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
         if ( ASRUtils::is_array(xx.m_type) ) {
@@ -735,6 +770,26 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         bool is_in_call_copy = is_in_call;
         is_in_call = is_nested_call_symbol(current_scope, x.m_name);
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+        if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
+            std::string m_name = nested_var_to_ext_var[x.m_name].first;
+            ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
+            std::string sym_name = ASRUtils::symbol_name(t);
+            ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
+            if (existing != nullptr &&
+                    ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
+                    ASRUtils::symbol_get_past_external(existing) == t) {
+                xx.m_name = existing;
+            } else {
+                std::string unique_name = sym_name;
+                if (existing != nullptr) {
+                    unique_name = current_scope->get_unique_name(sym_name, false);
+                }
+                ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, unique_name,
+                    m_name, sym_name, ASR::accessType::Public);
+                xx.m_name = ext_sym;
+            }
+        }
         for (size_t i=0; i<x.n_args; i++) {
             visit_call_arg(x.m_args[i]);
         }
@@ -756,7 +811,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
-        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
             nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
     }
@@ -1284,6 +1338,26 @@ public:
         }
         current_scope = current_scope_copy;
         cur_func_sym = sym_copy;
+    }
+
+    void visit_Module(const ASR::Module_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                visit_Function(*s);
+            }
+            if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
+                visit_Block(*s);
+            }
+            if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                visit_AssociateBlock(*s);
+            }
+        }
+        current_scope = current_scope_copy;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {

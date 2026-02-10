@@ -364,6 +364,7 @@ RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 
 
 RUN(NAME internal_subr_host_vars_01 LABELS gfortran llvm)
 RUN(NAME nested_callback_arrays LABELS gfortran llvm)
+RUN(NAME nested_callback_interface_01 LABELS gfortran llvm)
 
 RUN(NAME abort_01 LABELS gfortran llvm)
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm llvm2 fortran)
