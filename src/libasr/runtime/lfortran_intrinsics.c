@@ -891,6 +891,12 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
     for (int i = 0; i < len; i++) {
         char c = format[i];
         if (c == '"' || c == '\'') {
+            if (in_quotes && current_quote == c && (i + 1) < len && format[i + 1] == c) {
+                cleaned_format[j++] = c;
+                cleaned_format[j++] = c;
+                i++;
+                continue;
+            }
             if (i == 0 || format[i - 1] != '\\') {
                 // toggle in_quotes and set current_quote on entering or exiting quotes
                 if (!in_quotes) {
@@ -898,6 +904,7 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
                     current_quote = c;
                 } else if (current_quote == c) {
                     in_quotes = false;
+                    current_quote = '\0';
                 }
             }
         }
@@ -910,6 +917,22 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
     cleaned_format[j] = '\0';
     *cleaned_format_len = j;
     return cleaned_format;
+}
+
+static char* unescape_quoted_literal(const char* value, int64_t value_len, char quote_char, int64_t* out_len) {
+    char* result = (char*)malloc(value_len + 1);
+    int64_t j = 0;
+    for (int64_t i = 0; i < value_len; i++) {
+        if (value[i] == quote_char && (i + 1) < value_len && value[i + 1] == quote_char) {
+            result[j++] = quote_char;
+            i++;
+        } else {
+            result[j++] = value[i];
+        }
+    }
+    result[j] = '\0';
+    *out_len = j;
+    return result;
 }
 
 int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
@@ -985,7 +1008,14 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case '"' :
                 start = index++;
-                while (cformat[index] != '"') {
+                while (index < format_len) {
+                    if (cformat[index] == '"') {
+                        if ((index + 1) < format_len && cformat[index + 1] == '"') {
+                            index += 2;
+                            continue;
+                        }
+                        break;
+                    }
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index+1);
@@ -993,7 +1023,14 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case '\'' :
                 start = index++;
-                while (cformat[index] != '\'') {
+                while (index < format_len) {
+                    if (cformat[index] == '\'') {
+                        if ((index + 1) < format_len && cformat[index + 1] == '\'') {
+                            index += 2;
+                            continue;
+                        }
+                        break;
+                    }
                     index++;
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index+1);
@@ -2119,11 +2156,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String literal in format
-                value = substring(value, 1, strlen(value) - 1);
-                int64_t val_len = strlen(value);
-                result = append_to_string_NTI(result, result_len, value, val_len);
+                char quote_char = value[0];
+                char* inner_value = substring(value, 1, strlen(value) - 1);
+                int64_t val_len = 0;
+                char* unescaped_value = unescape_quoted_literal(inner_value, strlen(inner_value), quote_char, &val_len);
+                result = append_to_string_NTI(result, result_len, unescaped_value, val_len);
                 result_len += val_len;
-                free(value);
+                free(inner_value);
+                free(unescaped_value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string_NTI(result, result_len, " ", 1);
                 result_len += 1;

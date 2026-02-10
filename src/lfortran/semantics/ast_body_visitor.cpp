@@ -3995,6 +3995,9 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
+        for (size_t i=0; i<x.n_contains; i++) {
+            visit_program_unit(*x.m_contains[i]);
+        }
 
         starting_m_body = nullptr;
         starting_n_body = 0;
