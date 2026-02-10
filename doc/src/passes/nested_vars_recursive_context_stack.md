@@ -65,6 +65,68 @@ closure frame stack model in ASR-level transformation:
 Backend logic remains minimal and implements only required runtime behavior for
 procedure-variable calls that consume ASR-generated context metadata.
 
+## Trampoline vs Current Model
+
+This implementation does **not** use a trampoline/stub closure ABI.
+
+- The procedure variable still stores a raw function pointer (for example,
+  `x4` stores pointer to `one`, `minus_one`, `B`, etc.).
+- The closure environment binding is stored separately in an integer context id
+  variable `<proc>__ctx` (for example, `x4__ctx`).
+- Captured values and captured procedure contexts are stored in module-level
+  stack arrays (`<captured>__stack`, `<captured>__ctx__stack`) indexed by the
+  context id.
+
+So the effective callable object is represented as:
+
+- pointer: `<proc>`
+- environment id: `<proc>__ctx`
+
+not as a synthesized trampoline function pointer.
+
+### How Indirect Calls Get the Right Environment
+
+At ASR level, the pass guarantees that procedure capture assignment updates both
+the pointer and its context id:
+
+- pointer sync: `<proc> = <source_proc>`
+- context sync: `<proc>__ctx = <source_ctx or current stack ptr>`
+
+At LLVM lowering of indirect procedure calls:
+
+1. Load `saved_stack_ptr` from `__lfortran_nested_ctx_stack_ptr`.
+2. Load `ctx_val` from `<proc>__ctx`.
+3. Compute `effective_ctx = (ctx_val != 0 && ctx_val != saved_stack_ptr) ? ctx_val : saved_stack_ptr`.
+4. Temporarily set `__lfortran_nested_ctx_stack_ptr = effective_ctx`.
+5. Materialize base captured globals from `__stack[effective_ctx]`.
+6. Perform the indirect call through the raw pointer.
+7. Sync selected values back to the active stack slot.
+8. Restore `__lfortran_nested_ctx_stack_ptr = saved_stack_ptr` and restore caller view.
+
+This is why the pointer itself does not need to encode environment identity.
+
+### Procedure Pointer/Context Coherency Invariant
+
+For each captured procedure value `p`, correctness requires `p` and `p__ctx` to
+be treated as one logical pair.
+
+The pass keeps this pair coherent in all transformed paths that can rebind
+captures:
+
+- capture sync generation assigns pointer and context together
+  (`AssignNestedVars`, procedure branch),
+- direct recursive host-call remap propagates both actual pointer and actual
+  context to formals (`remap_direct_host_call_proc_context()`),
+- frame push/pop saves/restores both `<proc>__stack` and `<proc>__ctx__stack`.
+
+So if `x4` is changed through a transformed path, `x4__ctx` is updated in the
+same lowering step.
+
+If there were an unhandled path that mutates `x4` without corresponding
+`x4__ctx` update, that would be a bug (the backend would still call `x4` with
+its stale context id). The current implementation relies on pass transformation
+coverage of legal rebinding paths.
+
 
 ## ASR-Level Design Details
 
@@ -171,6 +233,46 @@ captured state.
   - external symbol reuse/import
   - stack slot expression generation
   - capture-owner and capture-key resolution
+
+### 5. `nested_24` (Man-or-Boy) concrete binding example
+
+Source test: `integration_tests/nested_24.f90`.
+
+Key source operations:
+
+- `A(k, x1, x2, x3, x4, x5)` has nested `B`.
+- `B` executes `A(m, B, x1, x2, x3, x4)`.
+- Base case in `A` executes `x4() + x5()`.
+
+Lowered model for host `A` creates:
+
+- procedure globals: `x1..x5`, `b`
+- context globals: `x1__ctx..x5__ctx`, `b__ctx`
+- stack arrays for both pointer values and ctx values
+- global `__lfortran_nested_ctx_stack_ptr` and `__lfortran_nested_ctx_next_id`
+
+Critical part for recursion step (`B -> A(m, B, x1, x2, x3, x4)`):
+
+1. Current frame is pushed to stack.
+2. Pointer actuals are passed normally to `A` (`B`, `x1`, `x2`, `x3`, `x4`).
+3. Direct-host-call remap updates context chain before call:
+   - `x1__ctx <- b__ctx`
+   - `x2__ctx <- old x1__ctx`
+   - `x3__ctx <- old x2__ctx`
+   - `x4__ctx <- old x3__ctx`
+   - `x5__ctx <- old x4__ctx`
+4. Call executes.
+5. Caller frame/context is restored.
+
+Then at base case `x4()` / `x5()`:
+
+- LLVM call path reads `x4__ctx` / `x5__ctx`,
+- switches stack pointer to that context,
+- loads that frame's captured values,
+- calls raw pointer (`call i32 %fnptr()`),
+- restores caller context.
+
+That is the full closure binding path without trampolines.
 
 
 ## Backend Requirements
