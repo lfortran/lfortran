@@ -48,13 +48,21 @@ public:
         if( !ASRUtils::is_value_constant(x_start, _start) ||
             !ASRUtils::is_value_constant(x_end, _end) ||
             !ASRUtils::is_value_constant(x_inc, _inc) ) {
-            return ;
+            Vec<ASR::stmt_t*> result = PassUtils::replace_doloop(al, x, current_scope);
+            for (size_t i = 0; i < result.size(); i++) {
+                pass_result.push_back(al, result[i]);
+            }
+            return;
         }
         int64_t loop_size = (_end - _start)/_inc + 1;
         int64_t unroll_factor_ = std::min(unroll_factor, loop_size);
         bool create_unrolled_loop = unroll_factor_ < loop_size;
         // Avoid unnecessary loop unrolling
         if( !create_unrolled_loop ) {
+            Vec<ASR::stmt_t*> result = PassUtils::replace_doloop(al, x, current_scope);
+            for (size_t i = 0; i < result.size(); i++) {
+                pass_result.push_back(al, result[i]);
+            }
             return ;
         }
         int64_t groups = loop_size / unroll_factor_;
@@ -64,9 +72,18 @@ public:
         xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x_end->base.loc, new_end, int32_type));
 
         Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x, current_scope);
-        ASR::stmt_t* whileloop_stmt = init_and_whileloop[1];
-        ASR::WhileLoop_t* whileloop = ASR::down_cast<ASR::WhileLoop_t>(whileloop_stmt);
-        ASR::stmt_t* init_stmt = init_and_whileloop[0];
+        ASR::WhileLoop_t* whileloop = nullptr;
+        size_t whileloop_idx = 0;
+        for (size_t i = 0; i < init_and_whileloop.size(); i++) {
+            if (ASR::is_a<ASR::WhileLoop_t>(*init_and_whileloop[i])) {
+                whileloop = ASR::down_cast<ASR::WhileLoop_t>(init_and_whileloop[i]);
+                whileloop_idx = i;
+                break;
+            }
+        }
+        if (!whileloop) {
+            return; // No WhileLoop found, then don't unroll
+        }
 
         Vec<ASR::stmt_t*> unrolled_loop;
         unrolled_loop.reserve(al, whileloop->n_body * unroll_factor_);
@@ -84,8 +101,9 @@ public:
                 unrolled_loop.push_back(al, m_body_copy);
             }
         }
-
-        pass_result.push_back(al, init_stmt);
+        for (size_t i = 0; i < whileloop_idx; i++) {
+            pass_result.push_back(al, init_and_whileloop[i]);
+        }
         ASR::stmt_t* unrolled_whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, x.base.base.loc,
             whileloop->m_name, whileloop->m_test, unrolled_loop.p, unrolled_loop.size(), x.m_orelse, x.n_orelse));
         pass_result.push_back(al, unrolled_whileloop);
@@ -94,6 +112,9 @@ public:
                 ASR::stmt_t* m_body_copy = node_duplicator.duplicate_stmt(whileloop->m_body[i]);
                 pass_result.push_back(al, m_body_copy);
             }
+        }
+        for (size_t i = whileloop_idx + 1; i < init_and_whileloop.size(); i++) {
+            pass_result.push_back(al, init_and_whileloop[i]);
         }
     }
 

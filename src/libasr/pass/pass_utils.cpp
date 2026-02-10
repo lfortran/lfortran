@@ -1337,22 +1337,16 @@ namespace LCompilers {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
-            ASR::expr_t *c=loop.m_head.m_increment;
-            
-            // Freeze DO loop bounds (Fortran semantics)
+            ASR::expr_t *c=loop.m_head.m_increment; 
             ASR::stmt_t *assign_a = nullptr;
             ASR::stmt_t *assign_b = nullptr;
             ASR::stmt_t *assign_c = nullptr;
-            
             ASR::expr_t *a_tmp = nullptr;
             ASR::expr_t *b_tmp = nullptr;
             ASR::expr_t *c_tmp = nullptr;
             ASR::expr_t *cond = nullptr;
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
-            ASR::stmt_t *stmt_add_c_after_loop = nullptr;
-            
-            // Create copies for casting to avoid mutating original loop expressions
             ASR::expr_t *a_frozen = a;
             ASR::expr_t *b_frozen = b;
             ASR::expr_t *c_frozen = c;
@@ -1380,8 +1374,7 @@ namespace LCompilers {
                     c_frozen = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
                 }
                 LCOMPILERS_ASSERT(c_frozen);
-                
-                // Create temporary variables for DO loop bounds (Fortran semantics)
+                // Here we create temporary variables for do loop bounds
                 std::string name_a = current_scope->get_unique_name("__do_start");
                 a_tmp = PassUtils::create_auxiliary_variable_for_expr(
                     a_frozen, name_a, al, current_scope, assign_a);
@@ -1395,12 +1388,9 @@ namespace LCompilers {
                     c_frozen, name_c, al, current_scope, assign_c);
                 
                 ASR::cmpopType cmp_op;
-
-                // If c_tmp is runtime-variable, ignore caller's comp and derive from c_tmp
                 if (comp != -1 && !ASR::is_a<ASR::IntegerConstant_t>(*c_frozen) && ASR::is_a<ASR::IntegerUnaryMinus_t>(*c_frozen)) {
                     comp = -1;
                 }
-
                 if( comp == -1 ) {
                     int increment;
                     bool not_constant_inc = false;
@@ -1478,7 +1468,6 @@ namespace LCompilers {
                 loop_init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a_tmp,
                             ASR::binopType::Sub, c_tmp, type, nullptr)), nullptr, false, false));
-                
                 inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                                 ASR::binopType::Add, c_tmp, type, nullptr)), nullptr, false, false));
@@ -1520,24 +1509,15 @@ namespace LCompilers {
                 result.push_back(al, loop_init_stmt);
             }
             result.push_back(al, while_loop_stmt);
-            
-            // Add final increment after loop termination (Fortran standard requires this)
             if (loop.m_head.m_v && c_tmp) {
                 ASR::expr_t *target = loop.m_head.m_v;
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::expr_type(target));
-                ASR::ttype_t *type =
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-
-                // Standard Fortran behavior: final value is end + step
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
                 ASR::stmt_t *final_inc =
                     ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                        al, loc, target,
-                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, loc, target, ASR::binopType::Add,
-                            c_tmp, type, nullptr)),
+                        al, loc, target, ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, target, ASR::binopType::Add, c_tmp, type, nullptr)),
                         nullptr, false, false));
-
                 result.push_back(al, final_inc);
             }
 
