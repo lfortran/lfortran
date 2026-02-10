@@ -5817,8 +5817,8 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
     }
 
     if (unit_file_bin) {
-        int32_t temp = 0;
         if (access_id == 0) {
+            int32_t temp = 0;
             int32_t record_start = 0, record_end = 0;
             if (fread(&record_start, sizeof(int32_t), 1, filep) != 1 ||
                 fread(&temp, sizeof(int32_t), 1, filep) != 1 ||
@@ -5832,14 +5832,16 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
                 fprintf(stderr, "Error: Invalid record marker while reading logical.\n");
                 exit(1);
             }
+            *p = (temp != 0);
         } else {
+            int32_t temp = 0;
             if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read logical from binary file.\n");
                 exit(1);
             }
+            *p = (temp != 0);
         }
-        *p = (temp != 0);
     } else {
         char token[100] = {0};
         if (fscanf(filep, "%99s", token) != 1) {
@@ -5956,10 +5958,15 @@ LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t 
                 exit(1);
             }
         }
-        if (fread(p, sizeof(bool), array_size, filep) != (size_t)array_size) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
-            exit(1);
+        // Each logical element is stored as int32_t (4 bytes) in binary files
+        for (int i = 0; i < array_size; i++) {
+            int32_t temp = 0;
+            if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+                exit(1);
+            }
+            p[i] = (temp != 0);
         }
     } else {
         for (int i = 0; i < array_size; i++) {
