@@ -1,6 +1,6 @@
 program test
-    use class_105b_mod
-    use class_105a_mod, only : MyType
+    use class_106b_mod
+    use class_106a_mod, only : MyType
     implicit none
 
     type(Client) :: c

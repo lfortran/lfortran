@@ -1,5 +1,5 @@
-module class_105b_mod
-    use class_105a_mod, only : AbsType, MyType, ConcreteType
+module class_106b_mod
+    use class_106a_mod, only : AbsType, MyType, ConcreteType
     implicit none
     private
 
@@ -39,4 +39,4 @@ contains
 
     end subroutine method
 
-end module class_105b_mod
+end module class_106b_mod

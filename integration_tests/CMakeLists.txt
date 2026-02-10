@@ -2348,7 +2348,8 @@ RUN(NAME class_101 LABELS gfortran llvm)
 RUN(NAME class_102 LABELS gfortran llvm)
 RUN(NAME class_103 LABELS gfortran llvm)
 RUN(NAME class_104 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES class_105a.f90 class_105b.f90 EXTRA_ARGS --separate-compilation)
+
+RUN(NAME class_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES class_106a.f90 class_106b.f90)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 

@@ -1,4 +1,4 @@
-module class_105a_mod
+module class_106a_mod
     implicit none
     private
 
@@ -60,4 +60,4 @@ contains
         ! no-op
     end subroutine concrete_dummy
 
-end module class_105a_mod
+end module class_106a_mod
