@@ -2144,14 +2144,6 @@ public:
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val));
                             body.push_back(al, associate);
-                            // TODO : Remove the following if block (See integration test `arrays_87.f90`)
-                            if(is_sym_array &&
-                                is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
-                                && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
-                                associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                    val, target));
-                                assigns_at_end.push_back(associate);
-                            }
                         } else if (is_procedure_variable || is_procedure_symbol) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
                             if (ext_ctx_sym != nullptr) {
