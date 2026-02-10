@@ -2568,6 +2568,19 @@ class ReplaceExprWithTemporaryVisitor:
     void visit_Associate(const ASR::Associate_t& /*x*/) {
     }
 
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        // Skip temporary creation inside FileWrite Nodes
+        // for char array units as array_op pass handles element-wise looping.
+        ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        ASR::expr_t* saved = xx.m_unit;
+        if (saved && ASRUtils::is_character(*ASRUtils::expr_type(saved))
+                && ASRUtils::is_array(ASRUtils::expr_type(saved))) {
+            xx.m_unit = nullptr;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_FileWrite(x);
+        xx.m_unit = saved;
+    }
+
 };
 
 bool check_if_ASR_owner_is_module(ASR::asr_t* &asr_owner) {
