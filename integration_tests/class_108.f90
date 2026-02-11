@@ -1,4 +1,4 @@
-program class_107
+program class_108
     implicit none
 
     type ring_t
@@ -22,4 +22,4 @@ contains
         test = .false.
     end function test
 
-end program class_107
+end program
