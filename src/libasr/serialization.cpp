@@ -224,6 +224,25 @@ public:
             symtab = it->second;
         } else if (external_symtab != nullptr) {
             symtab = find_symtab_by_counter(*external_symtab, symtab_id);
+            if (symtab != nullptr) {
+                // Verify the found symtab is correct: when loading
+                // submodules compiled separately, symtab counters from
+                // different compilations can collide, matching a wrong
+                // scope. If the symbol is not already present and this
+                // scope does not look like the right one, fall back to
+                // name-based lookup instead of inserting a placeholder
+                // into the wrong scope.
+                if (symtab->get_symbol(symbol_name) == nullptr) {
+                    ASR::symbolType sym_type = static_cast<ASR::symbolType>(symbol_type);
+                    SymbolTable *name_based = find_symtab_by_symbol_name(
+                        *external_symtab, symbol_name, sym_type);
+                    if (name_based != nullptr && name_based != symtab) {
+                        // The counter matched a wrong scope; use the
+                        // name-based result instead.
+                        symtab = name_based;
+                    }
+                }
+            }
         }
         if (symtab == nullptr && external_symtab != nullptr) {
             // The symtab counter was not found. This can happen when
