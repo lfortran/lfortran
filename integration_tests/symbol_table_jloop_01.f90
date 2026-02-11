@@ -1,13 +1,13 @@
-module m
+module symbol_table_jloop_01_m
     integer, parameter :: jloop = 1
 
     type t
         integer :: kntf(jloop:jloop)
     end type t
-end module m
+end module
 
 program p
-    use m
+    use symbol_table_jloop_01_m
     implicit none
     type(t) :: x
 
