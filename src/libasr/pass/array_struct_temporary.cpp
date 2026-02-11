@@ -1983,12 +1983,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::ttype_t* simd_type;
     ASR::expr_t* parent_expr;
     ASR::expr_t* lhs_var;
-    bool associate_only_array_section;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
-        parent_expr(nullptr), lhs_var(nullptr), associate_only_array_section(false) {}
+        parent_expr(nullptr), lhs_var(nullptr) {}
 
     bool is_current_expr_linked_to_target(ExprsWithTargetType& exprs_with_target, ASR::expr_t** &current_expr) {
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
@@ -2192,11 +2191,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 
         const Location& loc = x->base.base.loc;
-        if( associate_only_array_section ) {
-            generate_associate_for_array_section(current_expr, al, loc, current_scope, current_body);
-            return ;
-        }
-
         if( is_simd_expression ) {
             if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
                 return ;
@@ -2219,22 +2213,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 
         replace_current_expr(x, "_array_section_");
-    }
-
-    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
-        bool associate_only_array_section_copy = associate_only_array_section;
-        ASR::symbol_t* member_sym = ASRUtils::symbol_get_past_external(x->m_m);
-        ASR::ttype_t* member_type = ASRUtils::symbol_type(member_sym);
-        if( ASR::is_a<ASR::ArraySection_t>(*x->m_v) &&
-            ASRUtils::is_array(x->m_type) &&
-            !ASRUtils::is_array(member_type) ) {
-            // For scalar data members promoted to arrays by struct array sections,
-            // keep only an associated section pointer. Avoid creating/copying a
-            // temporary struct array descriptor for this case.
-            associate_only_array_section = true;
-        }
-        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_StructInstanceMember(x);
-        associate_only_array_section = associate_only_array_section_copy;
     }
 
     void replace_ArrayTranspose(ASR::ArrayTranspose_t* x) {
