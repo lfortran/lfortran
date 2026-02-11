@@ -3982,6 +3982,7 @@ public:
         // Look up select type context by expression
         llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
         const std::string& ctx_der_type = get_select_type_block_der_type(x.m_v);
+        ASR::ttype_t* ctx_block_type_asr = get_select_type_block_type_asr(x.m_v);
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -4048,7 +4049,8 @@ public:
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
                 // }
             }
-            if( ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) ) {
+            if( ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(ctx_block_type_asr)) ) {
                 tmp = builder->CreateBitCast(tmp, ctx_block_type->getPointerTo());
                 current_der_type_name = ctx_der_type;
             } else {
@@ -10213,7 +10215,8 @@ public:
                         ctx.block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(class_sym), module.get(), false);
                         ctx.der_type = ASR::down_cast<ASR::Struct_t>(class_sym)->m_name;
-                        ctx.block_type_asr = nullptr;
+                        ctx.block_type_asr = ASRUtils::make_StructType_t_util(
+                            al, class_sym->base.loc, class_sym, false);;
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -12836,48 +12839,26 @@ public:
                 break;
             }
             case (ASR::cast_kindType::ClassToStruct): {
-                ASR::ttype_t* class_type = ASRUtils::type_get_past_allocatable_pointer(
-                    ASRUtils::expr_type(x.m_arg));
-                LCOMPILERS_ASSERT(class_type && ASR::is_a<ASR::StructType_t>(*class_type));
-                llvm::Type* class_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_arg, class_type, module.get());
-                LCOMPILERS_ASSERT(class_llvm_type->isStructTy());
-                llvm::StructType* class_struct_type = llvm::cast<llvm::StructType>(class_llvm_type);
-                LCOMPILERS_ASSERT(class_struct_type->getNumElements() == 2 &&
-                    class_struct_type->getElementType(1)->isPointerTy());
-
-                if (!compiler_options.new_classes &&
-                    ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg))) {
-                    check_and_allocate_scalar(x.m_arg, const_cast<ASR::expr_t*>(&x.base), x.m_type);
+                ASR::symbol_t* struct_sym = nullptr;
+                if (x.m_dest) {
+                    struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(x.m_dest)->m_v);
                 }
-
-                llvm::Value* class_value = tmp;
-                if (!compiler_options.new_classes && ASR::is_a<ASR::Var_t>(*x.m_arg)) {
-                    ASR::Variable_t* var = EXPR2VAR(x.m_arg);
-                    uint32_t h = get_hash((ASR::asr_t*)var);
-                    if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                        class_value = llvm_symtab[h];
-                    }
+                this->visit_expr_load_wrapper(x.m_arg, 0);
+                ASR::expr_t* dest_arg = x.m_dest ? x.m_dest : const_cast<ASR::expr_t*>(&x.base);
+                tmp = convert_class_to_type(x.m_arg, dest_arg, x.m_type, tmp);
+                if (struct_sym) {
+                    current_der_type_name = ASRUtils::symbol_name(struct_sym);
                 }
-                if (!class_value->getType()->isPointerTy()) {
-                    llvm::AllocaInst* class_tmp = llvm_utils->CreateAlloca(
-                        *builder, class_value->getType(), nullptr, "class_to_struct_cast");
-                    builder->CreateStore(class_value, class_tmp);
-                    class_value = class_tmp;
-                }
-                class_value = llvm_utils->get_array_descriptor_ptr(
-                    class_value, class_struct_type, /*is_character_array=*/false);
+                break;
+            }
+            case (ASR::cast_kindType::ClassToClass): {
+                // this->visit_expr_load_wrapper(x.m_arg, 0);
+                // if (x.m_dest) {
+                //     ASR::symbol_t* struct_sym = nullptr;
+                //     struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(x.m_dest)->m_v);
+                //     current_der_type_name = ASRUtils::symbol_name(struct_sym);
+                // }
 
-                llvm::Value* data_ptr = llvm_utils->create_gep2(class_struct_type, class_value, 1);
-                llvm::Type* data_ptr_type = class_struct_type->getElementType(1);
-                tmp = llvm_utils->CreateLoad2(data_ptr_type, data_ptr);
-
-                ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(
-                    ASRUtils::type_get_past_array(x.m_type));
-                llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(
-                    const_cast<ASR::expr_t*>(&x.base), target_type, module.get());
-                tmp = llvm_utils->get_array_descriptor_ptr(
-                    tmp, target_base_type, /*is_character_array=*/false);
                 break;
             }
             case ASR::StringToArray :
@@ -16725,7 +16706,11 @@ public:
                     arg, src_arr_asr_type, module.get());
                 llvm::Type *src_elem_type = llvm_utils->get_type_from_ttype_t_util(
                     arg, ASRUtils::extract_type(arg_type), module.get());
-                
+
+                if (LLVM::is_llvm_pointer(*arg_type)) {
+                    class_value = llvm_utils->CreateLoad2(src_arr_type->getPointerTo(), class_value);
+                }
+
                 // Create new array descriptor
                 llvm::Value* new_descriptor = llvm_utils->CreateAlloca(*builder, dest_llvm_type, nullptr, "array_descriptor");
                 
@@ -16779,6 +16764,14 @@ public:
                 llvm::Value* new_rank_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 4);
                 builder->CreateStore(src_rank, new_rank_ptr);
                 
+                // If dest_type is Pointer(Array(...)), we need an extra level of indirection
+                // so that when the caller loads from the returned value, they get the descriptor pointer
+                if (LLVM::is_llvm_pointer(*dest_type)) {
+                    llvm::Value* desc_ptr_ptr = llvm_utils->CreateAlloca(*builder, dest_llvm_type->getPointerTo(), nullptr, "array_descriptor_ptr");
+                    builder->CreateStore(new_descriptor, desc_ptr_ptr);
+                    return desc_ptr_ptr;
+                }
+                
                 return new_descriptor;
             }
             
@@ -16800,7 +16793,7 @@ public:
                     al, arg_type->base.loc, ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(arg)), true);
                 llvm::Type* llvm_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, struct_type, module.get())->getPointerTo();
+                    arg, struct_type, module.get());
                 class_value = llvm_utils->create_gep2(arg_llvm_type, class_value, 1);
                 if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg))) {
                     class_value = llvm_utils->CreateLoad2(
@@ -17661,8 +17654,13 @@ public:
         bool is_method = false;
         if (x.m_dt && (!is_nopass)) {
             is_method = true;
-            if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
-                ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
+            ASR::expr_t* dt_expr = x.m_dt;
+            if (ASR::is_a<ASR::Cast_t>(*dt_expr)) {
+                ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(dt_expr);
+                dt_expr = cast->m_arg;
+            }
+            if (ASR::is_a<ASR::Var_t>(*dt_expr)) {
+                ASR::Variable_t *caller = EXPR2VAR(dt_expr);
                 std::uint32_t h = get_hash((ASR::asr_t*)caller);
                 // declared variable in the current scope
                 llvm::Value* dt = llvm_symtab[h];
@@ -17671,13 +17669,13 @@ public:
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(caller->m_type));
-                dt = convert_to_polymorphic_arg(x.m_dt, dt, s->m_args[0], s_m_args0_type, dt_type);
+                dt = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], s_m_args0_type, dt_type);
                 args.push_back(dt);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*dt_expr)) {
                 // Declared struct variable
-                this->visit_expr(*x.m_dt);
+                this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
-                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
+                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(dt_expr));
 
                 // Function's class type
                 ASR::ttype_t *s_m_args0_type;
@@ -17697,19 +17695,19 @@ public:
                 }
 
                 // Convert to polymorphic argument
-                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(x.m_dt, dt, s_m_args0, s_m_args0_type, caller_type);
+                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt_expr, dt, s_m_args0, s_m_args0_type, caller_type);
 
                 if (self_argument == nullptr) {
                     args.push_back(dt_polymorphic);
                 } else {
                     pass_arg = dt_polymorphic;
                 }
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)){
-                this->visit_expr(*x.m_dt);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*dt_expr)){
+                this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
-                dt_polymorphic = convert_to_polymorphic_arg(x.m_dt, dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
-                                                ASRUtils::expr_type(x.m_dt));
+                dt_polymorphic = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
+                                                ASRUtils::expr_type(dt_expr));
                 args.push_back(dt_polymorphic);
             } else {
                 throw CodeGenError("SubroutineCall: StructType symbol type not supported");
@@ -18445,8 +18443,12 @@ public:
         llvm::Value* pass_arg = nullptr;
         if (x.m_dt && (!is_nopass)) {
             is_method = true;
-            if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
-                ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
+            ASR::expr_t* dt_expr = x.m_dt;
+            if (ASR::is_a<ASR::Cast_t>(*dt_expr)) {
+                dt_expr = ASR::down_cast<ASR::Cast_t>(dt_expr)->m_arg;
+            }
+            if (ASR::is_a<ASR::Var_t>(*dt_expr)) {
+                ASR::Variable_t *caller = EXPR2VAR(dt_expr);
                 std::uint32_t h = get_hash((ASR::asr_t*)caller);
                 // declared variable in the current scope
                 llvm::Value* dt = llvm_symtab[h];
@@ -18455,13 +18457,13 @@ public:
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable_pointer(caller->m_type);
-                dt = convert_to_polymorphic_arg(x.m_dt, dt, s->m_args[0], s_m_args0_type, dt_type);
+                dt = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], s_m_args0_type, dt_type);
                 args.push_back(dt);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*dt_expr)) {
                 // Declared struct variable
-                this->visit_expr(*x.m_dt);
+                this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
-                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
+                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(dt_expr));
 
                 // Function's class type
                 ASR::ttype_t *s_m_args0_type;
@@ -18481,19 +18483,19 @@ public:
                 }
 
                 // Convert to polymorphic argument
-                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(x.m_dt, dt, s_m_args0, s_m_args0_type, caller_type);
+                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt_expr, dt, s_m_args0, s_m_args0_type, caller_type);
 
                 if (self_argument.length() == 0) {
                     args.push_back(dt_polymorphic);
                 } else {
                     pass_arg = dt_polymorphic;
                 }
-            } else if(ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
-                this->visit_expr(*x.m_dt);
+            } else if(ASR::is_a<ASR::ArrayItem_t>(*dt_expr)) {
+                this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
-                dt_polymorphic = convert_to_polymorphic_arg(x.m_dt, dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
-                                                ASRUtils::expr_type(x.m_dt));
+                dt_polymorphic = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
+                                                ASRUtils::expr_type(dt_expr));
                 args.push_back(dt_polymorphic);
             } else {
                 throw CodeGenError("FunctionCall: StructType symbol type not supported");

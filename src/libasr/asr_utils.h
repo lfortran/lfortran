@@ -6859,6 +6859,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                 case ASR::exprType::StructInstanceMember:
                                 case ASR::exprType::IntrinsicArrayFunction:
                                 case ASR::exprType::ListItem:
+                                case ASR::exprType::Cast:
                                     // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
                                     is_valid_variable = true;
                                     break;

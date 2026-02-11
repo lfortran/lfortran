@@ -1910,6 +1910,19 @@ public:
             var_name(var_name), check(check) {}
     };
     std::vector<postponed_genericProcedure_call> postponed_genericProcedure_calls_vec;
+
+    /*
+     * A struct to store the information for select type cast
+     * Used when a polymorphic variable is used directly inside a type guard block
+     * without an explicit associate name (e.g., select type(val) instead of select type(x => val))
+     */
+    struct SelectTypeCastInfo {
+        bool is_class_is;           // true for "class is", false for "type is"
+        ASR::ttype_t* target_type;  // The target type after casting
+        ASR::symbol_t* struct_sym;  // The struct symbol for the guard type
+    };
+    // Maps symbols that need casting inside select type blocks to their cast info
+    std::map<ASR::symbol_t*, SelectTypeCastInfo> select_type_casts_map;
     // global save variable
     bool is_global_save_enabled = false;
 
@@ -2224,7 +2237,20 @@ public:
         // The symbol `v` must be a Variable
         ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
-            return ASR::make_Var_t(al, loc, v);
+            ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+            // Check if this variable needs casting due to select type block
+            auto it = select_type_casts_map.find(v);
+            if (it != select_type_casts_map.end()) {
+                ASR::symbol_t* select_type_override_sym = it->second.struct_sym;
+                ASR::ttype_t* select_type_override_type = it->second.target_type;
+                bool select_type_is_class_is = it->second.is_class_is;
+                ASR::cast_kindType cast_kind = select_type_is_class_is ?
+                    ASR::cast_kindType::ClassToClass : ASR::cast_kindType::ClassToStruct;
+                v_var = ASR::make_Cast_t(al, loc, ASRUtils::EXPR(v_var), cast_kind,
+                    select_type_override_type, nullptr,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, select_type_override_sym)));
+            }
+            return v_var;
         } else {
             std::string sym_type = ASRUtils::symbol_type_name(*vpast);
             diag.diagnostics.push_back(diag::Diagnostic(
@@ -9186,11 +9212,26 @@ public:
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t* v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(v_variable->m_type));
+
+        // Check if this variable needs casting due to select type block
+        ASR::symbol_t* select_type_override_sym = nullptr;
+        ASR::ttype_t* select_type_override_type = nullptr;
+        bool select_type_is_class_is = false;
+        auto it = select_type_casts_map.find(v);
+        if (it != select_type_casts_map.end()) {
+            select_type_override_sym = it->second.struct_sym;
+            select_type_override_type = it->second.target_type;
+            select_type_is_class_is = it->second.is_class_is;
+            // Use the override type for member lookup
+            v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(select_type_override_type));
+        }
+
         if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::StructType_t>(*v_type)) {
-                derived_type = v_variable->m_type_declaration;
+                // Use override sym if available, otherwise use the variable's type_declaration
+                derived_type = select_type_override_sym ? select_type_override_sym : v_variable->m_type_declaration;
             }
             ASR::Struct_t *der_type;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {
@@ -9227,6 +9268,14 @@ public:
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
+                // Wrap with Cast if this variable needs select type casting
+                if (select_type_override_sym != nullptr) {
+                    ASR::cast_kindType cast_kind = select_type_is_class_is ?
+                        ASR::cast_kindType::ClassToClass : ASR::cast_kindType::ClassToStruct;
+                    v_var = ASR::make_Cast_t(al, loc, ASRUtils::EXPR(v_var), cast_kind,
+                        select_type_override_type, nullptr,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc, select_type_override_sym)));
+                }
                 ASR::asr_t* expr_ = (ASR::asr_t*) ASRUtils::getStructInstanceMember_t(
                     al, loc, v_var, v, member, current_scope);
                 make_ArrayItem_from_struct_m_args(

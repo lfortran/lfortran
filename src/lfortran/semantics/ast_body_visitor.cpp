@@ -3292,10 +3292,16 @@ public:
                     }
                     Vec<ASR::stmt_t*> class_stmt_body;
                     class_stmt_body.reserve(al, class_stmt->n_body);
+                    ASR::expr_t* dest_expr = assoc_sym ?
+                        ASRUtils::EXPR(ASR::make_Var_t(al, class_stmt->base.base.loc, assoc_sym)) :
+                        m_selector;
+                    // ASR::expr_t* casted_selector = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                    //     class_stmt->base.base.loc, m_selector, ASR::cast_kindType::ClassToClass,
+                    //     assoc_variable->m_type, nullptr, dest_expr));
+                    ASR::expr_t* casted_selector = m_selector;
                     if( assoc_sym ) {
                         class_stmt_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
-                            class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
-                            class_stmt->base.base.loc, assoc_sym)), m_selector)) );
+                            class_stmt->base.base.loc, dest_expr, casted_selector)) );
                     }
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -3303,6 +3309,20 @@ public:
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
                     transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+        
+                    // Set up select_type_casts_map for direct selector variable access without assoc_name
+                    // ASR::symbol_t* selector_sym_for_map = nullptr;
+                    // if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector)) {
+                    //     selector_sym_for_map = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+                    //     ASR::ttype_t* cast_type = assoc_name ? assoc_variable->m_type : 
+                    //         ASRUtils::type_get_past_pointer(assoc_variable->m_type);
+                    //     select_type_casts_map[selector_sym_for_map] = {true, cast_type, sym};
+                    // }
+                    // transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    // // Clear the map entry
+                    // if (selector_sym_for_map) {
+                    //     select_type_casts_map.erase(selector_sym_for_map);
+                    // }
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = class_stmt_body.p;
                     block_t_->n_body = class_stmt_body.size();
@@ -3350,17 +3370,38 @@ public:
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
                     type_stmt_name_body.reserve(al, type_stmt_name->n_body);
+                    ASR::expr_t* dest_expr_tsn = assoc_sym ?
+                        ASRUtils::EXPR(ASR::make_Var_t(al, type_stmt_name->base.base.loc, assoc_sym)) :
+                        m_selector;
+                    ASR::expr_t* casted_selector_tsn = m_selector;
+                    if (!ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                        casted_selector_tsn = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                            type_stmt_name->base.base.loc, m_selector, ASR::cast_kindType::ClassToStruct,
+                            assoc_variable->m_type, nullptr, dest_expr_tsn));
+                    }
                     if( assoc_sym ) {
                         type_stmt_name_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
-                            type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
-                            type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
+                            type_stmt_name->base.base.loc, dest_expr_tsn, casted_selector_tsn)) );
                     }
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, type_stmt_name->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
+                    // Set up select_type_casts_map for direct selector variable access without assoc_name
+                    ASR::symbol_t* selector_sym_for_map_tsn = nullptr;
+                    if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector) && 
+                            !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                        selector_sym_for_map_tsn = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+                        ASR::ttype_t* cast_type = assoc_name ? assoc_variable->m_type : 
+                            ASRUtils::type_get_past_pointer(assoc_variable->m_type);
+                        select_type_casts_map[selector_sym_for_map_tsn] = {false, cast_type, sym};
+                    }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
+                    // Clear the map entry
+                    if (selector_sym_for_map_tsn) {
+                        select_type_casts_map.erase(selector_sym_for_map_tsn);
+                    }
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = type_stmt_name_body.p;
                     block_t_->n_body = type_stmt_name_body.size();
