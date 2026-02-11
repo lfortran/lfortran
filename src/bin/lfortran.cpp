@@ -1326,6 +1326,220 @@ int compile_llvm_to_object_file(const std::string& infile,
     return 0;
 }
 
+static std::unique_ptr<LCompilers::LLVMModule> parse_module_from_ir_text(
+        LCompilers::LLVMEvaluator &jit, const std::string &ir_text) {
+    char tmp_name[] = "/tmp/lfortran_jit_ir_XXXXXX";
+    int fd = mkstemp(tmp_name);
+    std::unique_ptr<LCompilers::LLVMModule> mod;
+    size_t off = 0;
+
+    if (fd < 0) {
+        throw LCompilers::LCompilersException("failed to create temporary file for JIT IR parsing");
+    }
+    while (off < ir_text.size()) {
+        ssize_t nw = write(fd, ir_text.data() + off, ir_text.size() - off);
+        if (nw < 0) {
+            close(fd);
+            unlink(tmp_name);
+            throw LCompilers::LCompilersException("failed to write temporary JIT IR file");
+        }
+        off += (size_t)nw;
+    }
+    close(fd);
+    mod = jit.parse_module2("", tmp_name);
+    unlink(tmp_name);
+    return mod;
+}
+
+int execute_src_files_with_jit(const std::vector<std::string> &infiles,
+        bool time_report,
+        CompilerOptions &compiler_options,
+        LCompilers::PassManager &lpm) {
+    int time_file_read = 0;
+    int time_src_to_asr = 0;
+    int time_save_mod = 0;
+    int time_opt = 0;
+    int time_llvm_to_jit = 0;
+    int time_jit_run = 0;
+    bool has_jit_main = false;
+    size_t i;
+
+    if (compiler_options.generate_code_for_global_procedures) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+    }
+
+    LCompilers::LLVMEvaluator jit(compiler_options.target);
+
+    for (i = 0; i < infiles.size(); i++) {
+        const std::string &infile = infiles[i];
+
+        if (endswith(infile, ".f90") || endswith(infile, ".f") ||
+            endswith(infile, ".F90") || endswith(infile, ".F")) {
+            std::string input;
+            LCompilers::FortranEvaluator fe(compiler_options);
+            LCompilers::ASR::TranslationUnit_t *asr;
+            LCompilers::LocationManager lm;
+            LCompilers::diag::Diagnostics diagnostics;
+            std::unique_ptr<LCompilers::LLVMModule> m;
+            bool compile_unit = false;
+            auto t1 = std::chrono::high_resolution_clock::now();
+            auto t2 = t1;
+
+            input = read_file_ok(infile);
+            t2 = std::chrono::high_resolution_clock::now();
+            time_file_read += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+            {
+                LCompilers::LocationManager::FileLocations fl;
+                fl.in_filename = infile;
+                lm.files.push_back(fl);
+                lm.file_ends.push_back(input.size());
+            }
+
+            t1 = std::chrono::high_resolution_clock::now();
+            LCompilers::Result<LCompilers::ASR::TranslationUnit_t *>
+                asr_res = fe.get_asr2(input, lm, diagnostics);
+            t2 = std::chrono::high_resolution_clock::now();
+            time_src_to_asr += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+            std::cerr << diagnostics.render(lm, compiler_options);
+            if (!asr_res.ok) {
+                LCOMPILERS_ASSERT(diagnostics.has_error())
+                return 1;
+            }
+            asr = asr_res.result;
+
+            t1 = std::chrono::high_resolution_clock::now();
+            {
+                int err = save_mod_files(*asr, compiler_options, lm);
+                if (err) return err;
+            }
+            t2 = std::chrono::high_resolution_clock::now();
+            time_save_mod += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+            compile_unit = compiler_options.separate_compilation ||
+                compiler_options.generate_code_for_global_procedures ||
+                LCompilers::ASRUtils::main_program_present(*asr) ||
+                LCompilers::ASRUtils::global_function_present(*asr);
+            if (!compile_unit) continue;
+
+            diagnostics.diagnostics.clear();
+            if (compiler_options.emit_debug_info) {
+#ifndef HAVE_RUNTIME_STACKTRACE
+                diagnostics.add(LCompilers::diag::Diagnostic(
+                    "The `runtime stacktrace` is not enabled. To get the stack traces "
+                    "or debugging information, please re-build LFortran with "
+                    "`-DWITH_RUNTIME_STACKTRACE=yes`",
+                    LCompilers::diag::Level::Error,
+                    LCompilers::diag::Stage::Semantic, {})
+                );
+                std::cerr << diagnostics.render(lm, compiler_options);
+                return 1;
+#endif
+            }
+
+            {
+                int time_opt_local = 0;
+                bool module_has_main = false;
+                LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+                    llvm_res = fe.get_llvm3(*asr, lpm, diagnostics, lm, infile, &time_opt_local);
+                std::cerr << diagnostics.render(lm, compiler_options);
+                if (!llvm_res.ok) {
+                    LCOMPILERS_ASSERT(diagnostics.has_error())
+                    return 5;
+                }
+                m = std::move(llvm_res.result);
+                module_has_main = (m->get_function("main") != nullptr);
+#ifdef WITH_LIRIC
+                /* Liric compat textual IR dump is not fully round-trippable yet.
+                 * Keep module in-memory and add it directly to JIT. */
+#else
+                {
+                    std::string llvm_ir = m->str();
+                    m = parse_module_from_ir_text(jit, llvm_ir);
+                }
+#endif
+                if (module_has_main) has_jit_main = true;
+                time_opt += time_opt_local;
+            }
+
+            t1 = std::chrono::high_resolution_clock::now();
+            jit.add_module(std::move(m));
+            t2 = std::chrono::high_resolution_clock::now();
+            time_llvm_to_jit += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        } else if (endswith(infile, ".ll")) {
+            std::string input;
+            std::unique_ptr<LCompilers::LLVMModule> m;
+            auto t1 = std::chrono::high_resolution_clock::now();
+            auto t2 = t1;
+
+            input = read_file_ok(infile);
+            t2 = std::chrono::high_resolution_clock::now();
+            time_file_read += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+            t1 = std::chrono::high_resolution_clock::now();
+            m = jit.parse_module2(input, infile);
+            if (m->get_function("main") != nullptr) has_jit_main = true;
+            jit.add_module(std::move(m));
+            t2 = std::chrono::high_resolution_clock::now();
+            time_llvm_to_jit += std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        } else {
+            std::cerr << "error: unsupported input for --jit: '" << infile
+                      << "' (expected .f90/.f/.F90/.F or .ll)" << std::endl;
+            return 1;
+        }
+    }
+
+    if (has_jit_main) {
+        typedef int (*main_fn_t)(int, char **);
+        const char *argv0 = "lfortran";
+        char *argv_exec[2];
+        intptr_t main_addr;
+        main_fn_t main_fn;
+        const std::string wrapper_ir =
+            "declare i32 @main(i32, i8**)\n"
+            "define i32 @__lfortran_jit_entry(i32 %argc, i8** %argv) {\n"
+            "entry:\n"
+            "  %ret = call i32 @main(i32 %argc, i8** %argv)\n"
+            "  ret i32 %ret\n"
+            "}\n";
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto t2 = t1;
+        std::unique_ptr<LCompilers::LLVMModule> wrapper_mod = parse_module_from_ir_text(jit, wrapper_ir);
+        jit.add_module(std::move(wrapper_mod));
+
+        argv_exec[0] = const_cast<char *>(argv0);
+        argv_exec[1] = nullptr;
+        main_addr = jit.get_symbol_address("__lfortran_jit_entry");
+        main_fn = reinterpret_cast<main_fn_t>(main_addr);
+        (void)main_fn(1, argv_exec);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_jit_run = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    } else {
+        std::cerr << "error: no executable entry point found for --jit (missing main program)" << std::endl;
+        return 1;
+    }
+
+    if (time_report) {
+        std::string message;
+        message = "File reading: " + std::to_string(time_file_read / 1000) + "." + std::to_string(time_file_read % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM -> JIT: " + std::to_string(time_llvm_to_jit / 1000) + "." + std::to_string(time_llvm_to_jit % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "JIT run:     " + std::to_string(time_jit_run / 1000) + "." + std::to_string(time_jit_run % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+    }
+
+    return 0;
+}
+
 int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, bool time_report, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
@@ -2643,6 +2857,47 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_fortran) {
         return emit_fortran(opts.arg_file, compiler_options);
+    }
+    if (opts.arg_jit) {
+        if (backend != Backend::llvm) {
+            std::cerr << "The --jit option currently requires --backend=llvm." << std::endl;
+            return 1;
+        }
+        if (opts.arg_S || opts.arg_c) {
+            std::cerr << "The --jit option cannot be combined with -S or -c." << std::endl;
+            return 1;
+        }
+        if (opts.static_link || opts.shared_link) {
+            std::cerr << "The --jit option cannot be combined with --static or --shared." << std::endl;
+            return 1;
+        }
+        if (!compiler_options.arg_o.empty()) {
+            std::cerr << "The --jit option does not produce an output file; remove -o." << std::endl;
+            return 1;
+        }
+#ifdef HAVE_LFORTRAN_LLVM
+#ifdef WITH_LIRIC
+        std::cerr << "The --jit option is currently unsupported in WITH_LIRIC builds. "
+                  << "Use the liric bench tools for JIT comparisons." << std::endl;
+        return 1;
+#else
+        {
+            int result = execute_src_files_with_jit(opts.arg_files, compiler_options.time_report,
+                compiler_options, lfortran_pass_manager);
+            if (compiler_options.time_report) {
+                auto end_time = std::chrono::high_resolution_clock::now();
+                int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+                std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+                compiler_options.po.vector_of_time_report.push_back(message);
+                print_time_report(compiler_options.po.vector_of_time_report);
+            }
+            return result;
+        }
+#endif
+#else
+        std::cerr << "The --jit option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
     }
     if (opts.arg_S) {
         if (backend == Backend::llvm) {

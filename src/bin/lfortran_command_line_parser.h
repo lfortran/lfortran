@@ -50,6 +50,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_wat = false;
         bool show_julia = false;
         bool show_fortran = false;
+        bool arg_jit = false;
         bool static_link = false;
         bool shared_link = false;
         std::string skip_pass;
