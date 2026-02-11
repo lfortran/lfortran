@@ -16834,7 +16834,7 @@ public:
                 } else {
                     llvm::Type* unlimited_polymorphic_type = llvm_utils->get_type_from_ttype_t_util(
                             s_m_args0, s_m_args0_type, module.get());
-                    llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateAlloca(*builder, unlimited_polymorphic_type);
+                    llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateAlloca(unlimited_polymorphic_type);
                     llvm::Value* data_ptr = llvm_utils->create_gep2(unlimited_polymorphic_type, unlimited_polymorphic_struct, 1);
 
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
@@ -16881,10 +16881,10 @@ public:
                         ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
 
                     // Allocate the target class array descriptor
-                    llvm::Value* class_array = llvm_utils->CreateAlloca(*builder, target_array_type);
+                    llvm::Value* class_array = llvm_utils->CreateAlloca(target_array_type);
                     
                     // Allocate buffer for class wrapper array (vptr + struct_ptr per element)
-                    llvm::Value* class_array_data = llvm_utils->CreateAlloca(*builder,
+                    llvm::Value* class_array_data = llvm_utils->CreateAlloca(
                         target_array_data_type);
                     builder->CreateStore(class_array_data,
                         arr_descr->get_pointer_to_data(target_array_type, class_array));
@@ -16953,12 +16953,12 @@ public:
                     // For POINTER parameters, we need two levels:
                     // 1. Allocate the actual class structure
                     // 2. Allocate a pointer to it
-                    class_value = llvm_utils->CreateAlloca(*builder, target_struct_type);
-                    class_wrapper = llvm_utils->CreateAlloca(*builder, target_struct_type->getPointerTo());
+                    class_value = llvm_utils->CreateAlloca(target_struct_type);
+                    class_wrapper = llvm_utils->CreateAlloca(target_struct_type->getPointerTo());
                     builder->CreateStore(class_value, class_wrapper);
                 } else {
                     // For non-POINTER parameters, allocate class structure directly
-                    class_wrapper = llvm_utils->CreateAlloca(*builder,
+                    class_wrapper = llvm_utils->CreateAlloca(
                         llvm_utils->get_type_from_ttype_t_util(s_m_args0,
                         ASRUtils::type_get_past_array(ASRUtils::expr_type(s_m_args0)), module.get()));
                     class_value = class_wrapper;
@@ -17005,7 +17005,7 @@ public:
                     ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, arg_expr->base.loc,
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), true);
                     llvm::Type* wrapped_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, wrapped_struct_type, module.get());
-                    llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
+                    llvm::Value* abstract_ = llvm_utils->CreateAlloca(_type);
                     llvm::Value* polymorphic_addr = llvm_utils->create_gep2(_type, abstract_, 1);
                     builder->CreateStore(
                         builder->CreateBitCast(
@@ -17030,12 +17030,12 @@ public:
             }
             if( ASRUtils::is_array(s_m_args0_type) ) {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
-                llvm::Value* abstract_array = llvm_utils->CreateAlloca(*builder, array_type);
+                llvm::Value* abstract_array = llvm_utils->CreateAlloca(array_type);
                 llvm::Type* array_data_type = llvm_utils->get_el_type(s_m_args0,
                     ASRUtils::type_get_past_array(s_m_args0_type), module.get());
                 llvm::Type* dt_array_data_type = llvm_utils->get_el_type(arg_expr,
                     ASRUtils::type_get_past_array(arg_type), module.get());
-                llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
+                llvm::Value* array_data = llvm_utils->CreateAlloca(array_data_type);
                 builder->CreateStore(array_data,
                     arr_descr->get_pointer_to_data(array_type, abstract_array));
                 arr_descr->fill_array_details(arg_expr, s_m_args0, dt, abstract_array, arg_type, s_m_args0_type, module.get(), true);
@@ -17055,7 +17055,7 @@ public:
                 return abstract_array;
             } else {
                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
-                llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
+                llvm::Value* abstract_ = llvm_utils->CreateAlloca(_type);
                 llvm::Value* polymorphic_addr = llvm_utils->create_gep2(_type, abstract_, 1);
                 builder->CreateStore(
                     builder->CreateBitCast(dt, llvm::Type::getVoidTy(context)->getPointerTo()),
@@ -17095,7 +17095,7 @@ public:
                     return builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true));
                 } else {
-                    llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                    llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(
                         llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
                                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))),
                                 LLVM::is_llvm_pointer(*s_m_args0_type)));
@@ -17133,7 +17133,7 @@ public:
                     }
                 }
 
-                llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(
                 llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), LLVM::is_llvm_pointer(*s_m_args0_type)));
                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
