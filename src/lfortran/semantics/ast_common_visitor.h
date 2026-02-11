@@ -2569,6 +2569,12 @@ public:
                     this->visit_expr(*m_dim[i].m_start);
                     dim.m_start = ASRUtils::EXPR(tmp);
                     dimension_attribute_error_check(dim.m_start);
+                    if (is_derived_type) {
+                        ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
+                        if (start_value != nullptr) {
+                            dim.m_start = start_value;
+                        }
+                    }
                 }
             } else {
                 dim.m_start = nullptr;
@@ -2584,6 +2590,12 @@ public:
                     this->visit_expr(*m_dim[i].m_end);
                     end = ASRUtils::EXPR(tmp);
                     dimension_attribute_error_check(end);
+                    if (is_derived_type) {
+                        ASR::expr_t* end_value = ASRUtils::expr_value(end);
+                        if (end_value != nullptr) {
+                            end = end_value;
+                        }
+                    }
                     if (ASR::is_a<ASR::Var_t>(*end)) {
                         ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                         ASR::symbol_t* end_sym = end_var->m_v;
@@ -2599,6 +2611,12 @@ public:
                     }
                     dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                         end);
+                    if (is_derived_type) {
+                        ASR::expr_t* length_value = ASRUtils::expr_value(dim.m_length);
+                        if (length_value != nullptr) {
+                            dim.m_length = length_value;
+                        }
+                    }
                 }
             } else {
                 dim.m_length = nullptr;
