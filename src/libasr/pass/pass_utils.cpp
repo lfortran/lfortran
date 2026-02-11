@@ -774,28 +774,45 @@ namespace LCompilers {
         }
 
         ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
-                    ASR::expr_t* array_var, ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx) {
+                    ASR::expr_t* array_var, ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, int shifting_dim) {
             ASRUtils::ASRBuilder b(al, loc);
             if ( do_loop_variables.size() == 0 ) {
                 return b.Assignment(b.ArrayItem_01(res, {res_var}), b.ArrayItem_01(array, {array_var}));
             }
+            if (shifting_dim == 0) shifting_dim = 1;
+            int rank = (int)do_loop_variables.size() + 1;
+            int actual_dim = -1;
+            int count = 0;
+            for(int i=1; i<=rank; i++) {
+                if(i == shifting_dim) continue;
+                if(count == curr_idx) {
+                    actual_dim = i;
+                    break;
+                }
+                count++;
+            }
+
             if (curr_idx == (int)do_loop_variables.size() - 1) {
-                std::vector<ASR::expr_t*> array_vars;
-                array_vars.push_back(array_var);
-                for (size_t i = 0; i < do_loop_variables.size(); i++) {
-                    array_vars.push_back(do_loop_variables[i]);
+                std::vector<ASR::expr_t*> array_vars(rank);
+                std::vector<ASR::expr_t*> res_vars(rank);
+                
+                array_vars[shifting_dim - 1] = array_var;
+                res_vars[shifting_dim - 1] = res_var;
+                
+                int k = 0;
+                for(int i=0; i<rank; i++) {
+                     if (i == shifting_dim - 1) continue;
+                     array_vars[i] = do_loop_variables[k];
+                     res_vars[i] = do_loop_variables[k];
+                     k++;
                 }
-                std::vector<ASR::expr_t*> res_vars;
-                res_vars.push_back(res_var);
-                for (size_t i = 0; i < do_loop_variables.size(); i++) {
-                    res_vars.push_back(do_loop_variables[i]);
-                }
-                return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), b.GetUBound(array, curr_idx + 2), {
+
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
                     b.Assignment(b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars)),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 2), b.GetUBound(array, curr_idx + 2), {
-                create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1)
+            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
+                create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1, shifting_dim)
             }, nullptr);
         }
 

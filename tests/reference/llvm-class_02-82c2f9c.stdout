@@ -86,18 +86,18 @@ FINALIZE_SYMTABLE_circle_print:                   ; preds = %return
 
 define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
+  %0 = alloca %circle_class, align 8
   %c = alloca %circle, align 8
-  %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
   %1 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.000000e+00, float* %1, align 4
   %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %2, align 4
-  %3 = alloca %circle_class, align 8
-  %4 = getelementptr %circle_class, %circle_class* %3, i32 0, i32 0
+  store float 1.000000e+00, float* %2, align 4
+  %3 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.500000e+00, float* %3, align 4
+  %4 = getelementptr %circle_class, %circle_class* %0, i32 0, i32 0
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
-  %5 = getelementptr %circle_class, %circle_class* %3, i32 0, i32 1
+  %5 = getelementptr %circle_class, %circle_class* %0, i32 0, i32 1
   store %circle* %c, %circle** %5, align 8
-  call void @__module_class_circle2_circle_print(%circle_class* %3)
+  call void @__module_class_circle2_circle_print(%circle_class* %0)
   br label %return
 
 return:                                           ; preds = %.entry
