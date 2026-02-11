@@ -670,29 +670,24 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 return nullptr;
             }
         } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
+            // If args[2] is also present, the user passed positional args
+            // in wrong order: sum(array, mask, dim) instead of sum(array, dim, mask).
+            // The Fortran standard requires dim to be INTEGER when passed positionally.
+            if (args[2]) {
+                append_error(diag, "`dim` argument of `" + intrinsic_func_name +
+                    "` intrinsic must be INTEGER",
+                    args[1]->base.loc);
+                return nullptr;
+            }
+
+            // Only one optional arg and it's logical => treat as mask
+            // This handles: sum(array, mask=logical_expr) where keyword resolution
+            // placed mask in args[1] because dim was not provided.
             mask = args[1];
             if (!ASRUtils::is_value_constant(mask)) {
                 if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[1]->base.loc})) {
                     return nullptr;
                 }
-            }
-            if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
-                dim = args[2];
-                if ( ASRUtils::is_value_constant(dim) ) {
-                    int dim_val = extract_dim_value_int(dim);
-                    int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
-                    if (dim_val <= 0 || dim_val > n_dims) {
-                        diag.add(diag::Diagnostic("`dim` argument of the `" + intrinsic_func_name + "` intrinsic is out of bounds",
-                        diag::Level::Error,
-                        diag::Stage::Semantic,
-                        {diag::Label("Must have 0 < dim <= " + std::to_string(n_dims) + " for array of rank " + std::to_string(n_dims), { args[2]->base.loc })}));
-                        return nullptr;
-                    }
-                }
-            } else if (args[2]) {
-                append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
-                    args[2]->base.loc);
-                return nullptr;
             }
         } else {
             append_error(diag, "Invalid argument type for `dim` or `mask`",
