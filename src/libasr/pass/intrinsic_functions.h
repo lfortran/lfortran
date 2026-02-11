@@ -4051,13 +4051,19 @@ namespace Modulo {
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
+                return nullptr;
             }
-            return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(std::real(a)/b), t1, loc);
+            int64_t r = a % b;
+            if (r != 0 && ((r < 0 && b > 0) || (r > 0 && b < 0))) {
+                r += b;
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, r, t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
+                return nullptr;
             }
             return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
         }
@@ -4077,9 +4083,24 @@ namespace Modulo {
         end function
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.r2r_t(args[1], arg_types[0]) , b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[1])))));
+            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(
+                b.r2r_t(args[1], arg_types[0]),
+                b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[0])))));
         } else {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.i2i_t(args[1], arg_types[0]), Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
+            ASR::expr_t* p = b.i2i_t(args[1], arg_types[0]);
+            body.push_back(al, b.Assignment(result, Mod::MOD(b, args[0], p, scope)));
+            body.push_back(al, b.If(
+                b.And(
+                    b.NotEq(result, b.i_t(0, arg_types[0])),
+                    b.Or(
+                        b.And(b.Lt(result, b.i_t(0, arg_types[0])), b.Gt(p, b.i_t(0, arg_types[0]))),
+                        b.And(b.Gt(result, b.i_t(0, arg_types[0])), b.Lt(p, b.i_t(0, arg_types[0])))
+                    )
+                ),
+                {
+                    b.Assignment(result, b.Add(result, p))
+                }, {}
+            ));
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
