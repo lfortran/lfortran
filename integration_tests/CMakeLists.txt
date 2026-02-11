@@ -988,6 +988,7 @@ RUN(NAME submodule_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_16 LABELS gfortran llvm)
 RUN(NAME submodule_17 LABELS gfortran llvm)
 RUN(NAME submodule_18a LABELS gfortran llvm EXTRAFILES submodule_18b.f90 submodule_18c.f90)
+RUN(NAME submodule_19a LABELS gfortran llvm EXTRAFILES submodule_19b.f90 submodule_19c.f90)
 
 
 
