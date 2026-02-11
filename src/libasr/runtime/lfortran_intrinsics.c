@@ -432,6 +432,12 @@ void handle_float(char* format, double val, int scale, char** result, bool use_s
                         1 /*dot `.`*/   +
                         decimal_digits  +
                         sign_plus_exist ;
+
+    bool drop_leading_zero = false;
+    if (integer_part == 0 && width > 0 && total_length > width) {
+        drop_leading_zero = true;
+        total_length -= 1;
+    }
     
     if (width == 0) {
         width = total_length;
@@ -449,8 +455,8 @@ void handle_float(char* format, double val, int scale, char** result, bool use_s
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && decimal_part!= 0 && format[1] == '0') {
-        strcat(formatted_value, "");
+    if (integer_part == 0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
+        // Omit the leading zero
     } else {
         strcat(formatted_value, int_str);
     }
