@@ -968,8 +968,8 @@ RUN(NAME format_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
 RUN(NAME format_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
