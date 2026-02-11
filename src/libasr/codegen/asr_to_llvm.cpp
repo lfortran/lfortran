@@ -15408,8 +15408,9 @@ public:
                         }
                     }
                     llvm::Value* src_ptr = tmp;
-                    if (src_ptr->getType() != llvm::Type::getInt8PtrTy(context)) {
-                        src_ptr = builder->CreateBitCast(src_ptr, llvm::Type::getInt8PtrTy(context));
+                    llvm::Type* i8_ptr_ty = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+                    if (src_ptr->getType() != i8_ptr_ty) {
+                        src_ptr = builder->CreateBitCast(src_ptr, i8_ptr_ty);
                     }
 
                     llvm::Value* tmp_i32_arr = llvm_utils->CreateAlloca(
