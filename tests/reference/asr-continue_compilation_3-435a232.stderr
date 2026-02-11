@@ -440,19 +440,19 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
     |                          ^^^^ 
 
 semantic error: Argument of 'size' must be an array
-   --> tests/errors/continue_compilation_3.f90:208:23
+   --> tests/errors/continue_compilation_3.f90:209:23
     |
-208 |         print *, size(bpe)
+209 |         print *, size(bpe)
     |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:209:15
+   --> tests/errors/continue_compilation_3.f90:210:15
     |
-209 |         bpe = d
+210 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:209:9
+   --> tests/errors/continue_compilation_3.f90:210:9
     |
-209 |         bpe = d
+210 |         bpe = d
     |         ^^^ 
