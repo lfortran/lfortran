@@ -1760,7 +1760,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
              *       to act as non-owner viewer variable.
              * Note : Corresponding VTable inserted.
              */
-            llvm::Value* create_class_view(ASR::Struct_t* class_symbol, llvm::Value* viewed_struct);
+            llvm::Value* create_class_view(ASR::Struct_t* class_symbol, llvm::Value* viewed_struct,
+                                           llvm::Value* vptr = nullptr);
             
             /**
              * Class Structure => `{VTable*, struct_t*}`

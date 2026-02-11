@@ -155,6 +155,7 @@ class PromoteAllocatableToNonAllocatable:
                     *ASRUtils::expr_type(alloc_arg.m_a)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(alloc_arg.m_a));
                 bool is_deferred_len_character_array = false;
+                bool is_class_array = false;
                 if (is_allocatable_array) {
                     ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(
@@ -164,10 +165,12 @@ class PromoteAllocatableToNonAllocatable:
                         is_deferred_len_character_array =
                             str->m_len_kind == ASR::string_length_kindType::DeferredLength;
                     }
+                    is_class_array = ASRUtils::is_class_type(element_type);
                 }
                 if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) &&
                     is_allocatable_array &&
                     !is_deferred_len_character_array &&
+                    !is_class_array &&
                     ASR::is_a<ASR::Variable_t>(
                         *ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) &&
                     !ASR::is_a<ASR::Module_t>(
