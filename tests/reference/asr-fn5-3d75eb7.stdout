@@ -806,59 +806,80 @@
                                                     ()
                                                 )
                                                 ()
-                                                (String 1 (IntrinsicElementalFunction
-                                                    Max
-                                                    [(IntrinsicElementalFunction
+                                                (Tuple
+                                                    [(String 1 (IntrinsicElementalFunction
                                                         Max
-                                                        [(StringLen
-                                                            (ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (ArrayBound
+                                                        [(IntrinsicElementalFunction
+                                                            Max
+                                                            [(StringLen
+                                                                (ArrayItem
                                                                     (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
+                                                                    [(()
+                                                                    (ArrayBound
+                                                                        (Var 4 keywords)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        LBound
+                                                                        ()
+                                                                    )
+                                                                    ())]
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                    ColMajor
                                                                     ()
                                                                 )
-                                                                ())]
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                                ColMajor
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (IntegerConstant 8 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (StringLen
+                                                            (IntrinsicElementalFunction
+                                                                StringTrim
+                                                                [(ArrayItem
+                                                                    (Var 4 keywords)
+                                                                    [(()
+                                                                    (Var 4 i)
+                                                                    ())]
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                    ColMajor
+                                                                    ()
+                                                                )]
+                                                                0
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
                                                                 ()
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        )
-                                                        (IntegerConstant 8 (Integer 4) Decimal)]
+                                                        )]
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    )
-                                                    (StringLen
-                                                        (IntrinsicElementalFunction
-                                                            StringTrim
-                                                            [(ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (Var 4 i)
-                                                                ())]
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                                ColMajor
+                                                    ) ExpressionLength DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                    (Logical 4)
+                                                    (String 1 (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (StringLen
+                                                                (Var 4 values)
+                                                                (Integer 4)
                                                                 ()
-                                                            )]
-                                                            0
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
+                                                            Sub
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
                                                             ()
                                                         )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
-                                                    )]
-                                                    0
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
+                                                    ) ExpressionLength DescriptorString)]
+                                                )
                                                 ()
                                             )]
                                             FormatFortran
