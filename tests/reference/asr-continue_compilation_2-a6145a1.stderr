@@ -500,11 +500,11 @@ semantic error: `mask` argument to `Sum` must be a scalar or array of logical ty
 294 |     print *, sum([1, 2, 3], 1, 1.1)
     |                                ^^^ 
 
-semantic error: `dim` argument to `Sum` must be a scalar and of integer type
-   --> tests/errors/continue_compilation_2.f90:296:37
+semantic error: `dim` argument of `Sum` intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_2.f90:296:29
     |
 296 |     print *, sum([1, 2, 3], .true., 1.1)
-    |                                     ^^^ 
+    |                             ^^^^^^ 
 
 semantic error: Too many arguments to call `dint`
    --> tests/errors/continue_compilation_2.f90:298:13

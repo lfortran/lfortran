@@ -439,20 +439,26 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
-semantic error: Argument of 'size' must be an array
-   --> tests/errors/continue_compilation_3.f90:208:23
+semantic error: `dim` argument of `Sum` intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_3.f90:205:26
     |
-208 |         print *, size(bpe)
+205 |     print *, sum([1, 2], [.true., .false.], 1)
+    |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_3.f90:209:23
+    |
+209 |         print *, size(bpe)
     |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:209:15
+   --> tests/errors/continue_compilation_3.f90:210:15
     |
-209 |         bpe = d
+210 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:209:9
+   --> tests/errors/continue_compilation_3.f90:210:9
     |
-209 |         bpe = d
+210 |         bpe = d
     |         ^^^ 
