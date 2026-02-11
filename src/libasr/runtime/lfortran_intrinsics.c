@@ -7593,9 +7593,30 @@ static void common_formatted_read(InputSource *inputSource,
     
     int scale_factor = 0;
 
-    process_fmt_items_read(inputSource, iostat, chunk, advance_no,
-        fmt + start_pos, inner_len, no_of_args, args,
-        &arg_idx, &blank_mode, &scale_factor, &consumed_newline);
+    while (arg_idx < no_of_args && (!iostat || *iostat == 0)) {
+        int args_before = arg_idx;
+        process_fmt_items_read(inputSource, iostat, chunk, advance_no,
+            fmt + start_pos, inner_len, no_of_args, args,
+            &arg_idx, &blank_mode, &scale_factor, &consumed_newline);
+        if (arg_idx > args_before && arg_idx < no_of_args && (!iostat || *iostat == 0)) {
+            if (!consumed_newline) {
+                int c = 0;
+                do {
+                    c = read_character(inputSource);
+                } while (c != '\n' && c != EOF);
+                if (c == EOF) {
+                    if (iostat) *iostat = -1;
+                    break;
+                }
+            }
+            if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+                inputSource->record_start_pos = ftell(inputSource->file);
+            }
+            consumed_newline = false;
+        } else {
+            break;
+        }
+    }
 
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
