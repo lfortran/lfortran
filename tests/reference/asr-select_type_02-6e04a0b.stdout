@@ -490,7 +490,20 @@
                                     ~select_type_block_1
                                     [(Associate
                                         (Var 8 an)
-                                        (Var 4 p_or_cp)
+                                        (Cast
+                                            (Var 4 p_or_cp)
+                                            ClassToStruct
+                                            (Pointer
+                                                (StructType
+                                                    [(Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            ()
+                                            (Var 8 an)
+                                        )
                                     )
                                     (Print
                                         (StringFormat

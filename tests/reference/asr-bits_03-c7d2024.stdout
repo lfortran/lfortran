@@ -178,6 +178,7 @@
                                 IntegerToInteger
                                 (Integer 8)
                                 (IntegerConstant 10 (Integer 8) Decimal)
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -257,6 +258,7 @@
                                 IntegerToInteger
                                 (Integer 8)
                                 (IntegerConstant 10 (Integer 8) Decimal)
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -380,6 +382,7 @@
                                 IntegerToInteger
                                 (Integer 8)
                                 (IntegerConstant -20 (Integer 8) Decimal)
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -467,6 +470,7 @@
                                 IntegerToInteger
                                 (Integer 8)
                                 (IntegerConstant -20 (Integer 8) Decimal)
+                                ()
                             )
                             (Logical 4)
                             ()

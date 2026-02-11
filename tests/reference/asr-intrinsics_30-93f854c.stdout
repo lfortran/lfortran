@@ -348,6 +348,7 @@
                                             )
                                             ColMajor
                                         )
+                                        ()
                                     )
                                     (ArrayConstant
                                         24
