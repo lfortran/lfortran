@@ -1044,7 +1044,7 @@ RUN(NAME intrinsics_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # 
 RUN(NAME intrinsics_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # command_argument_count
 RUN(NAME intrinsics_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # hypot
 RUN(NAME intrinsics_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dim
-RUN(NAME intrinsics_44 LABELS gfortran) # cshift
+RUN(NAME intrinsics_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cshift
 RUN(NAME intrinsics_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # iso_fortran_env
 RUN(NAME intrinsics_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ichar & iachar
 RUN(NAME intrinsics_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # all
