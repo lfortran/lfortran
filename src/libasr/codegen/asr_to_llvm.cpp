@@ -14213,6 +14213,11 @@ public:
                     elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
                                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                    elem_ptr = llvm_utils->get_string_element_in_array(
+                        str_type, var_ptr,
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
                 } else {
                     llvm::Value *data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
                     data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
@@ -14507,6 +14512,11 @@ public:
                         elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                              llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                    } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                        ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                        elem_ptr = llvm_utils->get_string_element_in_array(
+                            str_type, var_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
                     } else {
                         llvm::Value* data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
                         data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
