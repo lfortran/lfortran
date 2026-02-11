@@ -165,6 +165,53 @@ public:
         break;                                             \
     }
 
+    // Search all symbol tables in a scope for one that contains a symbol
+    // with the given name and type. This is used as a fallback when the
+    // symtab counter cannot be matched (e.g., when loading submodules
+    // compiled separately from their parent modules).
+    static SymbolTable* find_symtab_by_symbol_name(SymbolTable &scope,
+            const std::string &sym_name, ASR::symbolType sym_type) {
+        // Check if this scope contains the symbol with matching name and type
+        ASR::symbol_t *s = scope.get_symbol(sym_name);
+        if (s != nullptr && s->type == sym_type) {
+            return &scope;
+        }
+        // Recurse into nested scopes
+        for (const auto &item : scope.get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            SymbolTable *nested_scope = nullptr;
+            if (ASR::is_a<ASR::Program_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Module_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Function_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Struct_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Enum_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Enum_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Union_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Union_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Requirement_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Requirement_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                nested_scope = ASR::down_cast<ASR::Template_t>(sym)->m_symtab;
+            }
+            if (nested_scope != nullptr) {
+                SymbolTable *found = find_symtab_by_symbol_name(
+                    *nested_scope, sym_name, sym_type);
+                if (found != nullptr) {
+                    return found;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     ASR::symbol_t *read_symbol() {
         uint64_t symtab_id = read_int64();
         // TODO: read the symbol's location information here, after saving
@@ -177,6 +224,15 @@ public:
             symtab = it->second;
         } else if (external_symtab != nullptr) {
             symtab = find_symtab_by_counter(*external_symtab, symtab_id);
+        }
+        if (symtab == nullptr && external_symtab != nullptr) {
+            // The symtab counter was not found. This can happen when
+            // deserializing a submodule that references symbols from
+            // its parent module with different symtab counters (due to
+            // separate compilation). Fall back to searching by symbol
+            // name and type.
+            ASR::symbolType sym_type = static_cast<ASR::symbolType>(symbol_type);
+            symtab = find_symtab_by_symbol_name(*external_symtab, symbol_name, sym_type);
         }
         LCOMPILERS_ASSERT(symtab != nullptr);
         if (symtab->get_symbol(symbol_name) == nullptr) {
