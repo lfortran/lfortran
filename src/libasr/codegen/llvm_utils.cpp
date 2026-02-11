@@ -9213,31 +9213,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
             }
 
-            if (is_descriptor_array) {
-                llvm::Value* src_data_not_null = builder->CreateICmpNE(
-                    src_data, llvm::Constant::getNullValue(src_data->getType()));
-                llvm::Value* dest_data_is_null = builder->CreateICmpEQ(
-                    dest_data, llvm::Constant::getNullValue(dest_data->getType()));
-                llvm::Value* allocate_dest_data = builder->CreateAnd(
-                    src_data_not_null, dest_data_is_null);
-                llvm_utils->create_if_else(allocate_dest_data, [&]() {
-                    uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
-                    llvm::Value* total_memory = builder->CreateMul(num_elements,
-                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
-                    llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                        context, *module, *builder, total_memory);
-                    llvm::Value* allocated_data = builder->CreateBitCast(
-                        malloc_ptr, llvm_data_type->getPointerTo());
-                    builder->CreateStore(allocated_data,
-                        llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
-                    llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
-                    builder->CreateStore(llvm::ConstantInt::get(context,
-                            llvm::APInt(index_bit_width, 0)), offset_val);
-                }, []() {});
-                dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
-                    llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
-            }
-
             // Get Copy function (for non-unlimited polymorphic types)
             llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
             llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
