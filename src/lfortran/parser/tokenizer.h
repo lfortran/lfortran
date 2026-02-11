@@ -23,6 +23,8 @@ public:
     bool enddo_newline_process = false;
     int enddo_state = 0;
     int enddo_insert_count = 0;
+    unsigned char *enddo_saved_name_start = nullptr;
+    unsigned char *enddo_saved_name_end = nullptr;
 
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
