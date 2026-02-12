@@ -5414,7 +5414,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
     fflush(filep);
     long pos = ftell(filep);
     if (pos >= 0) {
-        ftruncate(fileno(filep), pos);
+        (void)!ftruncate(fileno(filep), pos);
     }
 }
 
