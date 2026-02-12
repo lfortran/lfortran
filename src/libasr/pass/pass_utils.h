@@ -419,17 +419,14 @@ namespace LCompilers {
                 Allocator& al;
                 bool fill_function_dependencies;
                 bool fill_module_dependencies;
-                bool fill_variable_dependencies;
                 bool _return_var_or_intent_out = false;
                 SymbolTable* current_scope;
-                std::string current_name;
 
             public:
 
                 UpdateDependenciesVisitor(Allocator &al_)
                 : al(al_), fill_function_dependencies(false),
-                fill_module_dependencies(false),
-                fill_variable_dependencies(false)
+                fill_module_dependencies(false)
                 {
                     function_dependencies.n = 0;
                     module_dependencies.n = 0;
@@ -484,13 +481,11 @@ namespace LCompilers {
                 }
 
                 void visit_Variable(const ASR::Variable_t& x) {
-                    std::string current_name_copy = current_name;
-                    current_name = x.m_name;
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
-                    bool fill_variable_dependencies_copy = fill_variable_dependencies;
-                    fill_variable_dependencies = true;
+                    ASRUtils::collect_variable_dependencies(al, variable_dependencies,
+                        x.m_type, x.m_symbolic_value, x.m_value, x.m_name);
                     _return_var_or_intent_out = (x.m_intent == ASR::intentType::Out ||
                                                 x.m_intent == ASR::intentType::ReturnVar ||
                                                 x.m_intent == ASR::intentType::InOut);
@@ -498,20 +493,9 @@ namespace LCompilers {
                     _return_var_or_intent_out = false;
                     xx.n_dependencies = variable_dependencies.size();
                     xx.m_dependencies = variable_dependencies.p;
-                    fill_variable_dependencies = fill_variable_dependencies_copy;
-                    current_name = current_name_copy;
-                }
-
-                void visit_Var(const ASR::Var_t& x) {
-                    if( fill_variable_dependencies && ASRUtils::symbol_name(x.m_v) != current_name ) {
-                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
-                    }
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-                    if(fill_variable_dependencies){
-                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
-                    }
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -544,23 +528,7 @@ namespace LCompilers {
                             module_dependencies.push_back(al, x_m_name->m_module_name);
                         }
                     }
-                    for (size_t i = 0; i < x.n_args; i++) {
-                        if (x.m_args[i].m_value) {
-                            visit_expr(*x.m_args[i].m_value);
-                        }
-                    }
-                    if (x.m_value) {
-                        visit_expr(*x.m_value);
-                    }
-                    if (x.m_dt) {
-                        bool fill_variable_dependencies_copy = fill_variable_dependencies;
-                        if (fill_variable_dependencies) {
-                            fill_variable_dependencies = false;
-                        }
-                        visit_expr(*x.m_dt);
-                        fill_variable_dependencies = fill_variable_dependencies_copy;
-                    }
-                    visit_ttype(*x.m_type);
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
                 }
 
                 void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {

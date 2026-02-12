@@ -2855,30 +2855,6 @@ public:
             // Add called function as dependency to Variable node.
             SetChar var_dep;var_dep.reserve(al,0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
-            if (func_call->m_dt != nullptr) {
-                // VerifyVisitor does not count dependencies coming from m_dt;
-                // strip those to keep symbol dependencies consistent.
-                SetChar dt_dep;
-                dt_dep.reserve(al, 0);
-                ASRUtils::collect_variable_dependencies(al, dt_dep, nullptr, nullptr, func_call->m_dt);
-                if (dt_dep.n > 0) {
-                    SetChar filtered_dep;
-                    filtered_dep.reserve(al, var_dep.n);
-                    for (size_t i = 0; i < var_dep.n; i++) {
-                        bool is_dt_dependency = false;
-                        for (size_t j = 0; j < dt_dep.n; j++) {
-                            if (std::string(var_dep.p[i]) == std::string(dt_dep.p[j])) {
-                                is_dt_dependency = true;
-                                break;
-                            }
-                        }
-                        if (!is_dt_dependency) {
-                            filtered_dep.push_back(al, var_dep.p[i]);
-                        }
-                    }
-                    var_dep = filtered_dep;
-                }
-            }
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
