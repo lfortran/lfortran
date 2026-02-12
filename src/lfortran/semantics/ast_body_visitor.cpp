@@ -3270,7 +3270,7 @@ public:
                                 // Use the guard type (selector_type) as element type, preserving array structure from selector
                                 selector_type = make_typed_selector_view_type(
                                     class_stmt->base.base.loc, ASRUtils::type_get_past_allocatable(selector_variable_type), selector_type);
-                            } else {
+                            } else if (!selector_variable_type || ASRUtils::is_pointer(selector_variable_type) || assoc_sym) {
                                 selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             }
                             selector_m_type_declaration = sym;
@@ -3295,10 +3295,12 @@ public:
                     ASR::expr_t* dest_expr = assoc_sym ?
                         ASRUtils::EXPR(ASR::make_Var_t(al, class_stmt->base.base.loc, assoc_sym)) :
                         m_selector;
-                    // ASR::expr_t* casted_selector = ASRUtils::EXPR(ASR::make_Cast_t(al,
-                    //     class_stmt->base.base.loc, m_selector, ASR::cast_kindType::ClassToClass,
-                    //     assoc_variable->m_type, nullptr, dest_expr));
                     ASR::expr_t* casted_selector = m_selector;
+                    if (!ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                        casted_selector = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                            class_stmt->base.base.loc, m_selector, ASR::cast_kindType::ClassToClass,
+                            assoc_variable->m_type, nullptr, dest_expr));
+                    }
                     if( assoc_sym ) {
                         class_stmt_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             class_stmt->base.base.loc, dest_expr, casted_selector)) );
@@ -3308,21 +3310,19 @@ public:
                                                     al, class_stmt->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
-                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
-        
                     // Set up select_type_casts_map for direct selector variable access without assoc_name
-                    // ASR::symbol_t* selector_sym_for_map = nullptr;
-                    // if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector)) {
-                    //     selector_sym_for_map = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
-                    //     ASR::ttype_t* cast_type = assoc_name ? assoc_variable->m_type : 
-                    //         ASRUtils::type_get_past_pointer(assoc_variable->m_type);
-                    //     select_type_casts_map[selector_sym_for_map] = {true, cast_type, sym};
-                    // }
-                    // transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
-                    // // Clear the map entry
-                    // if (selector_sym_for_map) {
-                    //     select_type_casts_map.erase(selector_sym_for_map);
-                    // }
+                    ASR::symbol_t* selector_sym_for_map = nullptr;
+                    if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector) &&
+                            !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                        selector_sym_for_map = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+                        ASR::ttype_t* cast_type = assoc_variable->m_type;
+                        select_type_casts_map[selector_sym_for_map] = {true, cast_type, sym};
+                    }
+                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    // Clear the map entry
+                    if (selector_sym_for_map) {
+                        select_type_casts_map.erase(selector_sym_for_map);
+                    }
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = class_stmt_body.p;
                     block_t_->n_body = class_stmt_body.size();
@@ -4857,6 +4857,9 @@ public:
             target->type == ASR::exprType::ComplexRe ||
             target->type == ASR::exprType::ComplexIm
         );
+
+        is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
+            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))));
 
         // Allow function calls on LHS if they return a POINTER
         if (!is_valid_lhs && target->type == ASR::exprType::FunctionCall) {

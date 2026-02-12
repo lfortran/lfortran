@@ -3969,6 +3969,50 @@ public:
         }
         current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
+
+        // Early null check for Cast_t with allocatable class type argument
+        // This must happen BEFORE visit_expr(*x.m_v) because the cast operation
+        // will try to dereference the pointer, causing a crash if it's null
+        if (compiler_options.po.bounds_checking && ASR::is_a<ASR::Cast_t>(*x.m_v)) {
+            ASR::Cast_t* cast_expr = ASR::down_cast<ASR::Cast_t>(x.m_v);
+            ASR::ttype_t* cast_arg_type = ASRUtils::expr_type(cast_expr->m_arg);
+            if (ASRUtils::is_allocatable(cast_arg_type) &&
+                ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(cast_arg_type))) {
+                // Visit the underlying class variable to get its pointer
+                int64_t ptr_loads_save = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*cast_expr->m_arg);
+                ptr_loads = ptr_loads_save;
+                llvm::Value* class_ptr = tmp;
+
+                // Get the variable name for the error message
+                ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(cast_expr->m_arg);
+                std::string var_name = var ? var->m_name : "unknown";
+
+                // Get the LLVM type for the allocatable class
+                llvm::Type* class_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    cast_expr->m_arg, cast_arg_type, module.get());
+
+                // Load the pointer to get the actual class instance pointer
+                llvm::Value* class_instance_ptr = llvm_utils->CreateLoad2(
+                    class_llvm_type->getPointerTo(), class_ptr);
+
+                // Check if the class instance pointer is null
+                llvm::Value* cond = builder->CreateICmpEQ(
+                    builder->CreatePtrToInt(class_instance_ptr,
+                        llvm::Type::getInt64Ty(context)),
+                    builder->CreatePtrToInt(llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(class_instance_ptr->getType())),
+                        llvm::Type::getInt64Ty(context)));
+                llvm_utils->generate_runtime_error(cond,
+                        "Tried to access member of unallocated variable '%s'",
+                        infile,
+                        cast_expr->m_arg->base.loc,
+                        location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
+            }
+        }
+
         int64_t ptr_loads_copy = ptr_loads;
         if( ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             (ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type)) &&
@@ -3982,7 +4026,6 @@ public:
         // Look up select type context by expression
         llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
         const std::string& ctx_der_type = get_select_type_block_der_type(x.m_v);
-        ASR::ttype_t* ctx_block_type_asr = get_select_type_block_type_asr(x.m_v);
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -4044,17 +4087,8 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
-                // if ( !compiler_options.new_classes ) {
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
-                // }
-            }
-            if( ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
-                    ASRUtils::is_class_type(ASRUtils::extract_type(ctx_block_type_asr)) ) {
-                tmp = builder->CreateBitCast(tmp, ctx_block_type->getPointerTo());
-                current_der_type_name = ctx_der_type;
-            } else {
-                // TODO: Select type by comparing with vtab
             }
         } else if (compiler_options.po.bounds_checking &&
                 ASRUtils::is_allocatable(x_m_v_type) && ASRUtils::is_struct(*x_m_v_type)) {
@@ -9955,7 +9989,7 @@ public:
 
         if (compiler_options.new_classes && load_ref && 
                 LLVM::is_llvm_pointer(*ASRUtils::expr_type(x)) &&
-                ASRUtils::is_unlimited_polymorphic_type(x)) {
+                (ASRUtils::is_unlimited_polymorphic_type(x) || ASR::is_a<ASR::Cast_t>(*x))) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
             tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             return;
@@ -12842,7 +12876,8 @@ public:
             case (ASR::cast_kindType::ClassToStruct): {
                 ASR::symbol_t* struct_sym = nullptr;
                 if (x.m_dest) {
-                    struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(x.m_dest)->m_v);
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest));
                 }
                 this->visit_expr_load_wrapper(x.m_arg, 0);
                 ASR::expr_t* dest_arg = x.m_dest ? x.m_dest : const_cast<ASR::expr_t*>(&x.base);
@@ -12853,13 +12888,16 @@ public:
                 break;
             }
             case (ASR::cast_kindType::ClassToClass): {
-                // this->visit_expr_load_wrapper(x.m_arg, 0);
-                // if (x.m_dest) {
-                //     ASR::symbol_t* struct_sym = nullptr;
-                //     struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(x.m_dest)->m_v);
-                //     current_der_type_name = ASRUtils::symbol_name(struct_sym);
-                // }
-
+                ASR::symbol_t* struct_sym = nullptr;
+                if (x.m_dest) {
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest));
+                }
+                this->visit_expr_load_wrapper(x.m_arg, 0);
+                tmp = convert_class_to_class(x.m_arg, tmp, x.m_type, struct_sym);
+                if (struct_sym) {
+                    current_der_type_name = ASRUtils::symbol_name(struct_sym);
+                }
                 break;
             }
             case ASR::StringToArray :
@@ -16832,6 +16870,41 @@ public:
         return value;
     }
 
+    // Convert from one polymorphic class type to another (class is() in select type)
+    llvm::Value* convert_class_to_class(ASR::expr_t* arg_expr, llvm::Value* dt,
+            ASR::ttype_t* dest_type, ASR::symbol_t* dest_sym) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
+        
+        if (!ASRUtils::is_class_type(ASRUtils::extract_type(dest_type)) || 
+            !ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))) {
+            return dt;
+        }
+        
+        // TODO: Handle arrays properly here
+        if (ASRUtils::is_array(arg_type) && 
+            ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
+            // TODO: Handle this properly 
+            llvm::Type* dest_array_type = llvm_utils->get_type_from_ttype_t_util(
+                nullptr, dest_type, module.get());
+            return builder->CreateBitCast(dt, dest_array_type);
+        }
+    
+        llvm::Type* call_arg_struct_type = llvm_utils->get_type_from_ttype_t_util(
+            arg_expr, ASRUtils::extract_type(arg_type), module.get());
+        
+        if (LLVM::is_llvm_pointer(*arg_type) &&
+                !LLVM::is_llvm_pointer(*dest_type)) {
+            dt = llvm_utils->CreateLoad2(call_arg_struct_type->getPointerTo(), dt);
+        }
+        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
+            dest_type, dest_sym, module.get());
+        if (!ASRUtils::is_array(dest_type)) {
+            return builder->CreateBitCast(dt, type->getPointerTo());
+        } else {
+            return builder->CreateBitCast(dt, type);
+        }
+    }
+
     void generate_flip_sign(ASR::call_arg_t* m_args) {
         this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value* signal = tmp;
@@ -17965,19 +18038,6 @@ public:
 
             // Convert function args
             std::vector<llvm::Value*> args;
-            llvm::Type* ctx_block_type = get_select_type_block_type(x.m_dt);
-            const std::string& ctx_der_type = get_select_type_block_der_type(x.m_dt);
-            if (ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt)) {
-                /*Case: 
-                class(base_t), allocatable :: ptr
-                select type(ptr)
-                    type is(child1_t)
-                        call ptr%describe_child1()    !!! We need `child_t` struct
-                end select
-                */
-                struct_sym = ASRUtils::symbol_get_past_external(
-                    current_scope->resolve_symbol(ctx_der_type));
-            }
             struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
@@ -18186,19 +18246,6 @@ public:
 
             // Convert function args
             std::vector<llvm::Value*> args;
-            llvm::Type* ctx_block_type = get_select_type_block_type(x.m_dt);
-            const std::string& ctx_der_type = get_select_type_block_der_type(x.m_dt);
-            if (ctx_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt)) {
-                /*Case:
-                class(base_t), allocatable :: ptr
-                select type(ptr)
-                    type is(child1_t)
-                        print *, ptr%describe_child1()   !!! We need `child_t` struct
-                end select
-                */
-                struct_sym = ASRUtils::symbol_get_past_external(
-                    current_scope->resolve_symbol(ctx_der_type));
-            }
             struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);

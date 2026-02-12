@@ -391,8 +391,12 @@ static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
 }
 
 static inline ASR::Variable_t* expr_to_variable_or_null(ASR::expr_t* expr) {
-    if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) {
+    if (!expr || !(ASR::is_a<ASR::Var_t>(*expr) || ASR::is_a<ASR::Cast_t>(*expr))) {
         return nullptr;
+    }
+
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return expr_to_variable_or_null(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
     }
 
     ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
