@@ -4253,6 +4253,24 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    // Fall back to type-only comparison (e.g. when expr is PointerNullConstant)
+                    if( a2->n_arg_types != b2->n_arg_types ||
+                        (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
+                        (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < a2->n_arg_types; i++) {
+                        if (!types_equal(a2->m_arg_types[i], b2->m_arg_types[i], nullptr, nullptr, true)) {
+                            return false;
+                        }
+                    }
+                    if (!types_equal(a2->m_return_var_type, b2->m_return_var_type, nullptr, nullptr, true)) {
+                        return false;
+                    }
+                    return true;
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4396,6 +4414,23 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    if( a2->n_arg_types != b2->n_arg_types ||
+                        (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
+                        (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < a2->n_arg_types; i++) {
+                        if (!types_equal_with_substitution(a2->m_arg_types[i], b2->m_arg_types[i], subs, nullptr, nullptr, true)) {
+                            return false;
+                        }
+                    }
+                    if (!types_equal_with_substitution(a2->m_return_var_type, b2->m_return_var_type, subs, nullptr, nullptr, true)) {
+                        return false;
+                    }
+                    return true;
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4495,6 +4530,10 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
 
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
+
+        if (left_func == nullptr || right_func == nullptr) {
+            return types_equal(x, y, nullptr, nullptr, true);
+        }
 
         if (left_ft->n_arg_types != right_ft->n_arg_types) {
             return false;
