@@ -1024,33 +1024,23 @@ public:
             for (int64_t idx = start_val;
                  (inc_val > 0) ? (idx <= end_val) : (idx >= end_val);
                  idx += inc_val) {
+                ASR::ttype_t* int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, idl->m_var->base.loc, 4));
+                ASR::expr_t* idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, idl->m_var->base.loc, idx, int_type));
                 for (size_t j = 0; j < idl->n_values; j++) {
                     ASR::expr_t* value = idl->m_values[j];
                     if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
-                        expand_implied_do_for_read(
-                            ASR::down_cast<ASR::ImpliedDoLoop_t>(value), out);
+                        ASR::ImpliedDoLoop_t* inner_idl =
+                            ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                        ASR::ImpliedDoLoop_t* substituted_idl =
+                            substitute_loop_var_in_idl(inner_idl, loop_var, idx_const);
+                        expand_implied_do_for_read(substituted_idl, out);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
                         // Replace loop variable with constant index
                         ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
-                        Vec<ASR::array_index_t> new_args;
-                        new_args.reserve(al, arr_item->n_args);
-                        for (size_t k = 0; k < arr_item->n_args; k++) {
-                            ASR::array_index_t arg = arr_item->m_args[k];
-                            if (arg.m_right && ASR::is_a<ASR::Var_t>(*arg.m_right)) {
-                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg.m_right);
-                                if (var->m_v == loop_var->m_v) {
-                                    ASR::ttype_t* int_type = ASRUtils::TYPE(
-                                        ASR::make_Integer_t(al, arg.m_right->base.loc, 4));
-                                    arg.m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                        al, arg.m_right->base.loc, idx, int_type));
-                                }
-                            }
-                            new_args.push_back(al, arg);
-                        }
-                        ASR::expr_t* new_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(
-                            al, arr_item->base.base.loc, arr_item->m_v,
-                            new_args.p, new_args.size(), arr_item->m_type,
-                            arr_item->m_storage_format, arr_item->m_value));
+                        ASR::expr_t* new_item = substitute_loop_var_in_array_item(
+                            arr_item, loop_var, idx_const);
                         out.push_back(al, new_item);
                     } else {
                         out.push_back(al, value);
@@ -1058,9 +1048,56 @@ public:
                 }
             }
         } else {
-            // Variable bounds: pass through unchanged (codegen will handle or fail)
             out.push_back(al, ASRUtils::EXPR((ASR::asr_t*)idl));
         }
+    }
+
+    ASR::expr_t* substitute_loop_var_in_array_item(
+            ASR::ArrayItem_t* arr_item, ASR::Var_t* loop_var,
+            ASR::expr_t* idx_const) {
+        Vec<ASR::array_index_t> new_args;
+        new_args.reserve(al, arr_item->n_args);
+        for (size_t k = 0; k < arr_item->n_args; k++) {
+            ASR::array_index_t arg = arr_item->m_args[k];
+            if (arg.m_right && ASR::is_a<ASR::Var_t>(*arg.m_right)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg.m_right);
+                if (var->m_v == loop_var->m_v) {
+                    arg.m_right = idx_const;
+                }
+            }
+            new_args.push_back(al, arg);
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayItem_t(
+            al, arr_item->base.base.loc, arr_item->m_v,
+            new_args.p, new_args.size(), arr_item->m_type,
+            arr_item->m_storage_format, arr_item->m_value));
+    }
+
+    ASR::ImpliedDoLoop_t* substitute_loop_var_in_idl(
+            ASR::ImpliedDoLoop_t* idl, ASR::Var_t* loop_var,
+            ASR::expr_t* idx_const) {
+        Vec<ASR::expr_t*> new_values;
+        new_values.reserve(al, idl->n_values);
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* value = idl->m_values[i];
+            if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
+                new_values.push_back(al, substitute_loop_var_in_array_item(
+                    arr_item, loop_var, idx_const));
+            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                ASR::ImpliedDoLoop_t* inner_idl =
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                ASR::ImpliedDoLoop_t* substituted =
+                    substitute_loop_var_in_idl(inner_idl, loop_var, idx_const);
+                new_values.push_back(al, ASRUtils::EXPR((ASR::asr_t*)substituted));
+            } else {
+                new_values.push_back(al, value);
+            }
+        }
+        return ASR::down_cast2<ASR::ImpliedDoLoop_t>(ASR::make_ImpliedDoLoop_t(
+            al, idl->base.base.loc, new_values.p, new_values.size(),
+            idl->m_var, idl->m_start, idl->m_end, idl->m_increment,
+            idl->m_type, idl->m_value));
     }
 
     void emit_read_end_err_label_jumps(int64_t end_label, int64_t err_label,
