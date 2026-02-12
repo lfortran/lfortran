@@ -2211,7 +2211,6 @@ public:
     }
 
     void visit_Associate(const AST::Associate_t& x) {
-        tmp = nullptr;
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
@@ -2220,7 +2219,6 @@ public:
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-        bool is_valid_associate = false;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);
@@ -2252,23 +2250,9 @@ public:
 
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
-                is_valid_associate = true;
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
-            is_valid_associate = true;
-        }
-
-        if (!is_valid_associate) {
-            std::string ltype = ASRUtils::type_to_str_fortran_expr(target_type, target);
-            std::string rtype = ASRUtils::type_to_str_fortran_expr(value_type, value);
-            diag.add(Diagnostic(
-                "Type mismatch in pointer association, the types must be compatible",
-                Level::Error, Stage::Semantic, {
-                    Label("target has type '" + ltype + "'", {target->base.loc}),
-                    Label("value has type '" + rtype + "'", {value->base.loc})
-                }));
-            throw SemanticAbort();
         }
     }
 
