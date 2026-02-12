@@ -14058,6 +14058,81 @@ public:
 
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
+        } else if (is_string) {
+            std::vector<llvm::Value*> args;
+            llvm::Value *src_data, *src_len;
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
+            args.push_back(src_data);
+            args.push_back(src_len);
+            args.push_back(iostat);
+
+            // Count total scalar values (expanding fixed-size arrays)
+            size_t total_scalar_values = 0;
+            for (size_t i = 0; i < x.n_values; i++) {
+                ASR::ttype_t* expr_type_full = ASRUtils::expr_type(x.m_values[i]);
+                if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+                    total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type_full);
+                } else {
+                    total_scalar_values++;
+                }
+            }
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, total_scalar_values)));
+
+            for (size_t i = 0; i < x.n_values; i++) {
+                ASR::ttype_t* expr_type_full = ASRUtils::expr_type(x.m_values[i]);
+                ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*x.m_values[i]);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* var_ptr = tmp; tmp = nullptr;
+                ptr_loads = ptr_loads_copy;
+
+                if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+                    int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
+                    ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+                    llvm::Type *llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(expr_type_full), module.get());
+                    llvm::Type *llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_values[i], val_type, module.get());
+                    for (int64_t elem_idx = 0; elem_idx < array_size; elem_idx++) {
+                        llvm::Value *elem_ptr;
+                        if (arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                            elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
+                                {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                        } else {
+                            llvm::Value *data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
+                            data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
+                            elem_ptr = builder->CreateGEP(llvm_elem_type, data_ptr,
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
+                        }
+                        add_formatted_read_arg(args, val_type, elem_ptr);
+                    }
+                } else {
+                    add_formatted_read_arg(args, val_type, var_ptr);
+                }
+            }
+            std::string runtime_func_name = "_lfortran_string_list_directed_read";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                std::vector<llvm::Type*> param_types = {
+                    character_type,
+                    llvm::Type::getInt64Ty(context),
+                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                    llvm::Type::getInt32Ty(context)
+                };
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), param_types, true);
+                fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage,
+                    runtime_func_name, module.get());
+            }
+            builder->CreateCall(fn, args);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
@@ -14349,7 +14424,7 @@ public:
                             builder->CreateStore(widened, iostat);  
                         }
                     }
-                    return;
+                    continue;
                 } else {
                     fn = get_read_function(type);
                 }
@@ -14435,16 +14510,18 @@ public:
             // When x.m_iostat is provided and values were read (n_values > 0),
             // only call empty_read if no error occurred during value reads.
             // When n_values == 0, no reads happened yet so call unconditionally.
-            if (x.m_iostat && x.n_values > 0) {
-                llvm::Value* iostat_val = builder->CreateLoad(
-                    llvm::Type::getInt32Ty(context), iostat_for_empty_read);
-                llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
-                    iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
-                llvm_utils->create_if_else(iostat_is_zero, [&]() {
+            if(!is_string) {
+                if (x.m_iostat && x.n_values > 0) {
+                    llvm::Value* iostat_val = builder->CreateLoad(
+                        llvm::Type::getInt32Ty(context), iostat_for_empty_read);
+                    llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
+                        iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+                    llvm_utils->create_if_else(iostat_is_zero, [&]() {
+                        builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                    }, [](){});
+                } else {
                     builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
-                }, [](){});
-            } else {
-                builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                }
             }
         }
     }
