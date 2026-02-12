@@ -7,7 +7,7 @@ Cast to different type and/or kind.
 ### Syntax
 
 ```fortran
-Cast(expr arg, cast_kind kind, ttype type, expr? value)
+Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
 ```
 
 ### Arguments
@@ -18,6 +18,7 @@ Cast(expr arg, cast_kind kind, ttype type, expr? value)
 |`kind` | cast to kind |
 |`type` | table entry type |
 |`value`| expression value |
+|`dest`| use to get struct symbol of destination struct type |
 
 ### Return values
 
