@@ -970,6 +970,7 @@ RUN(NAME format_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -1895,6 +1896,7 @@ RUN(NAME derived_types_99 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_101 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_102 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_103 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_104 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2231,6 +2233,8 @@ RUN(NAME file_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2972,6 +2976,7 @@ RUN(NAME equivalence_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME equivalence_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME equivalence_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
