@@ -1126,7 +1126,8 @@ public:
                                     assigns_at_end.push_back(assignment);
                                 }
                             }
-                            // For do-loop cycle statements, put a sync for scalar variables
+                            // For do-loop function calls inside loop condition & cycle conditions
+                            // put a sync for scalar variables.
                             // Note: Arrays are synced during loop entries, no need to sync again
                             // If not inside do-loop, bypass this step
                             if (is_do_loop_sync && calls_in_loop_condition && 
@@ -1147,7 +1148,7 @@ public:
             }
 
             // Inject syncs before cycle/exit if this is a loop statement
-            if (!loop_end_syncs.empty()) {
+            if (calls_in_loop_condition && !loop_end_syncs.empty()) {
                 if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
                     ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
                     inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
@@ -1171,55 +1172,14 @@ public:
                 }
                 // LOOP END: Handle Assignments from main to temporaries 
                 // (for next iteration's condition)
-                if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
-                    for (auto &sym: nesting_map[cur_func_sym]) {
-                        std::string m_name = nested_var_to_ext_var[sym].first;
-                        ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
-                        ASR::symbol_t *ext_sym = nullptr;
-                        auto it_ext = module_var_to_external.find(t);
-                        if (it_ext != module_var_to_external.end()) {
-                            ext_sym = it_ext->second;
-                        } else {
-                            ext_sym = current_scope->get_symbol(ASRUtils::symbol_name(t));
-                        }
-
-                        ASR::symbol_t* sym_ = sym;
-                        SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
-                        if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
-                            std::string sym_name = ASRUtils::symbol_name(sym_);
-                            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
-                            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                                al, t->base.loc,
-                                /* a_symtab */ current_scope,
-                                /* a_name */ s2c(al, current_scope->get_unique_name(sym_name, false)),
-                                s, ASRUtils::symbol_name(ASRUtils::get_asr_owner(s)),
-                                nullptr, 0, ASRUtils::symbol_name(s), ASR::accessType::Public
-                            );
-                            sym_ = ASR::down_cast<ASR::symbol_t>(fn);
-                            current_scope->add_symbol(sym_name, sym_);
-                        }
-
-                        if (ext_sym && sym_ &&
-                            !ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
-                            ASRUtils::EXPR2VAR(ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_)))->m_storage
-                                != ASR::storage_typeType::Parameter &&
-                            ASRUtils::EXPR2VAR(ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_)))->m_intent
-                                != ASR::intentType::In) {
-                            ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
-                            ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
-                            ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                                al, t->base.loc, target, val, nullptr, false, false));
-                            new_body.push_back(al, assignment);
-                        }
-                    }
+                for (auto &stm: loop_end_syncs) {
+                    new_body.push_back(al, stm);
                 }
                 loop->m_body = new_body.p;
                 loop->n_body = new_body.size();
                 new_body.n = 0;  // Clear size
                 new_body.p = nullptr;  // Clear pointer after ownership transfer
                 body.push_back(al, m_body[i]);
-                calls_in_loop_condition = false;  // Reset flag
-
             } else if (calls_in_loop_condition && ASR::is_a<ASR::If_t>(*m_body[i])) {
                 // Handling for IF condition having function calls
                 // Handle assignments from function temporaries to main
@@ -1254,18 +1214,11 @@ public:
                 else_new_body.n = 0;
                 else_new_body.p = nullptr;
                 body.push_back(al, m_body[i]);
-                calls_in_loop_condition = false;  // Reset flag
             } else {
-                // Original behavior: append loop, then syncs after loop
+                // Append loop, then syncs after loop
                 body.push_back(al, m_body[i]);
-                for (auto &stm: loop_end_syncs) {
-                    body.push_back(al, stm);
-                }
                 for (auto &stm: assigns_at_end) {
                     body.push_back(al, stm);
-                }
-                if (is_do_loop_sync) {
-                    calls_in_loop_condition = false;  // Reset flag
                 }
             }
             calls_in_loop_condition = false;  // Reset flag
