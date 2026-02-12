@@ -10048,6 +10048,38 @@ public:
                 tmp = logical_load_val(tmp, x, is_volatile);
             }
         }
+        // 3. General Load Handling
+        if (load_ref) {
+            ASR::ttype_t* t = ASRUtils::expr_type(x);
+            if (!t) return;
+
+            // --- DESCRIPTOR GUARD ---
+            if (ASRUtils::is_array(t) || ASRUtils::is_character(*t)) {
+                return; 
+            }
+
+            // --- LLVM 18 SAFE LOAD ---
+            llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x, t, module.get());
+
+            // If we got a generic ptr, determine the specific scalar type
+            if (load_type->isPointerTy()) {
+                if (ASRUtils::is_real(*t)) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                    load_type = (kind == 8) ? llvm::Type::getDoubleTy(context) 
+                                            : llvm::Type::getFloatTy(context);
+                } else if (ASRUtils::is_integer(*t)) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                    load_type = llvm::Type::getIntNTy(context, kind * 8);
+                } else if (ASRUtils::is_logical(*t)) {
+                    load_type = llvm::Type::getInt1Ty(context);
+                }
+            }
+
+            if (tmp->getType()->isPointerTy() && !load_type->isVoidTy()) {
+                // Perform the load to turn the 'ptr' into a 'float/int' value register
+                tmp = builder->CreateLoad(load_type, tmp, is_volatile);
+            }
+        }
     }
     /*
         Visits the expression with the desired pointer loads
