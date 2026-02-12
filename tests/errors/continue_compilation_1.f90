@@ -74,7 +74,7 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
-    subroutine assumed_size_errors(a, b, c, d, e)
+    subroutine ubound_assumed_size(a, b, c, d, e)
         real :: a(*)
         real :: b(*)
         real :: c(10, *)

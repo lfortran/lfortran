@@ -21,35 +21,35 @@ semantic error: Dummy argument 'c' not defined
    | ...^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:88:31
+  --> tests/errors/continue_compilation_1.f90:81:31
    |
-88 |         real, intent(in) :: a(*, 10)
+81 |         real, intent(in) :: d(*, 10)
    |                               ^ 
 
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:87:5 - 89:18
-   |
-87 |        subroutine assumed_size_star_pos_1(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-89 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:92:19
+  --> tests/errors/continue_compilation_1.f90:82:19
    |
-92 |         real :: a(*, 10)
+82 |         real :: e(*, 10)
    |                   ^ 
 
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:91:5 - 93:18
+semantic error: Dummy argument 'd' not defined
+  --> tests/errors/continue_compilation_1.f90:77:5 - 87:18
    |
-91 |        subroutine assumed_size_star_pos_2(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+77 |        subroutine ubound_assumed_size(a, b, c, d, e)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-93 |        end subroutine
+87 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'e' not defined
+  --> tests/errors/continue_compilation_1.f90:77:5 - 87:18
+   |
+77 |        subroutine ubound_assumed_size(a, b, c, d, e)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+87 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Defined assignment procedure must not return a value
@@ -286,21 +286,21 @@ semantic error: Intent attribute can only be applied to procedure arguments
     |              ^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:82:18
+  --> tests/errors/continue_compilation_1.f90:84:18
    |
-82 |         print *, ubound(a, 1)
+84 |         print *, ubound(a, 1)
    |                  ^^^^^^^^^^^^ 
 
 semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
-  --> tests/errors/continue_compilation_1.f90:83:18
+  --> tests/errors/continue_compilation_1.f90:85:18
    |
-83 |         print *, ubound(b)
+85 |         print *, ubound(b)
    |                  ^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:84:18
+  --> tests/errors/continue_compilation_1.f90:86:18
    |
-84 |         print *, ubound(c, 2)
+86 |         print *, ubound(c, 2)
    |                  ^^^^^^^^^^^^ 
 
 semantic error: Character intrinsic 'trim' with class(*) argument must be inside 'type is (character(len=*))' guard
@@ -1210,3 +1210,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 563 |     b = (ieee_cls == ieee_quiet_nan)
     |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
+
+
+Note: Please report unclear, confusing or incorrect messages as bugs at
+https://github.com/lfortran/lfortran/issues.
