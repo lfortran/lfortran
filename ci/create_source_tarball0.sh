@@ -5,9 +5,6 @@ set -ex
 dest="$1"
 cmake -E make_directory $dest
 
-# Remove files we do not want
-cmake -E rm src/lfortran/parser/parser.output
-
 # Copy Directories:
 cmake -E copy_directory src $dest/src
 cmake -E copy_directory share $dest/share
