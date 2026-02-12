@@ -5165,6 +5165,47 @@ public:
             !is_list ) {
             llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
             fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            // For non-allocatable DescriptorArray character arrays,
+            // fill_array_details allocated an array of string_descriptors
+            // but their data pointers are uninitialized. Allocate a
+            // contiguous character data buffer and store it in
+            // descriptors[0].data so element accesses work correctly.
+            if (ASRUtils::is_character(*m_type) && !is_data_only) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(m_type));
+                if (str_type->m_len != nullptr &&
+                    str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+                    // Compute character length
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    visit_expr(*str_type->m_len);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* char_len = builder->CreateSExtOrTrunc(
+                        tmp, llvm::Type::getInt64Ty(context));
+                    // Compute total number of elements
+                    llvm::Value* total_elements = arr_descr->get_array_size(
+                        ptr_typ, ptr, nullptr, 4);
+                    total_elements = builder->CreateSExtOrTrunc(
+                        total_elements, llvm::Type::getInt64Ty(context));
+                    // Allocate total_elements * char_len bytes
+                    llvm::Value* total_size = builder->CreateMul(
+                        total_elements, char_len);
+                    llvm::Value* char_data = LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, total_size);
+                    // Store into descriptors[0].data
+                    llvm::Value* data_array_ptr = arr_descr->get_pointer_to_data(
+                        ptr_typ, ptr);
+                    llvm::Value* first_desc = builder->CreateLoad(
+                        llvm_data_type->getPointerTo(), data_array_ptr);
+                    llvm::Value* first_desc_data_ptr = llvm_utils->create_gep2(
+                        llvm_data_type, first_desc, 0);
+                    builder->CreateStore(char_data, first_desc_data_ptr);
+                    // Store char_len into descriptors[0].length
+                    llvm::Value* first_desc_len_ptr = llvm_utils->create_gep2(
+                        llvm_data_type, first_desc, 1);
+                    builder->CreateStore(char_len, first_desc_len_ptr);
+                }
+            }
         }
         const bool special_array_type = ASRUtils::is_character(*m_type) || ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
         if( is_array_type && is_malloc_array_type &&
