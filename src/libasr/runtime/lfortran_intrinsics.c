@@ -7943,9 +7943,7 @@ LFORTRAN_API void _lfortran_string_list_directed_read(
                 pos++;
             }
         }
-
         int32_t type_code = va_arg(args, int32_t);
-
         if (pos >= src_len) {
             // No more data - consume remaining va_args
             switch (type_code) {
