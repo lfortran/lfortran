@@ -1,5 +1,0 @@
-semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
- --> tests/errors/c_f_pointer_01.f90:5:34
-  |
-5 |     call c_f_pointer(queries, x, [2])
-  |                                  ^^^ 

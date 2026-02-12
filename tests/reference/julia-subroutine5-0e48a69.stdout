@@ -1,4 +1,0 @@
-function add(a::Float32, b::Float32, c::Base.RefValue{Float32})
-    c[] = a + b
-end
-

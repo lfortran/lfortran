@@ -5,9 +5,9 @@
     "infile_hash": "da0256e95ad866af376d9ded3cd439463cb1e47dffac6aa88c0bbadf",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "pass_global_stmts-global_scope4-2d4061d.stdout",
-    "stdout_hash": "f570f7768c8cbfe084e5928747d564e1390221dc5db3e0e10ebb68c2",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "pass_global_stmts-global_scope4-2d4061d.stderr",
+    "stderr_hash": "dd260e585cceddc13a1cb7b6fa4823289a3e73d2cf2284b890852c6e",
+    "returncode": 2
 }
