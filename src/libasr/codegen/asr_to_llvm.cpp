@@ -11092,6 +11092,27 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*x.m_step))
         LCOMPILERS_ASSERT(ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1 /*Fortran only has step of 1*/)
 
+        // Check if the base string is allocatable and verify it's allocated
+        if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v));
+            
+            if (var && ASRUtils::is_allocatable(var->m_type)) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                visit_expr_wrapper(x.m_arg, true);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* str_desc = tmp;
+                llvm::Value* data_ptr_field = llvm_utils->create_gep2(str_desc->getType()->getPointerElementType(), str_desc, 0);
+                llvm::Value* data_ptr = llvm_utils->CreateLoad2(character_type, data_ptr_field);
+                llvm::Value* is_not_allocated = builder->CreateICmpEQ(data_ptr,llvm::ConstantPointerNull::get(character_type));
+                
+                std::string error_msg = "Attempt to use unallocated allocatable variable '";
+                error_msg += var->m_name;
+                error_msg += "'.";
+                
+                llvm_utils->generate_runtime_error(is_not_allocated,error_msg,infile,x.base.base.loc,location_manager);
+            }
+        }
         /* Evaluate String */
         llvm::Value *str {};
         this->visit_expr_load_wrapper(x.m_arg, 0);
