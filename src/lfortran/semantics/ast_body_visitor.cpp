@@ -3348,7 +3348,7 @@ public:
                                 // Use the guard type (selector_type) as element type, preserving array structure from selector
                                 selector_type = make_typed_selector_view_type(
                                     type_stmt_name->base.base.loc, ASRUtils::type_get_past_allocatable(selector_variable_type), selector_type);
-                            } else {
+                            } else if (ASRUtils::is_pointer(selector_variable_type) || assoc_sym) {
                                 selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             }
                             selector_m_type_declaration = sym;
@@ -3393,8 +3393,7 @@ public:
                     if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector) && 
                             !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
                         selector_sym_for_map_tsn = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
-                        ASR::ttype_t* cast_type = assoc_name ? assoc_variable->m_type : 
-                            ASRUtils::type_get_past_pointer(assoc_variable->m_type);
+                        ASR::ttype_t* cast_type = assoc_variable->m_type;
                         select_type_casts_map[selector_sym_for_map_tsn] = {false, cast_type, sym};
                     }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);

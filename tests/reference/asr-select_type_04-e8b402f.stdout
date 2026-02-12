@@ -352,12 +352,14 @@
                                                         (Cast
                                                             (Var 8 tmp)
                                                             ClassToStruct
-                                                            (StructType
-                                                                [(Logical 4)
-                                                                (Logical 4)]
-                                                                []
-                                                                .true.
-                                                                .false.
+                                                            (Pointer
+                                                                (StructType
+                                                                    [(Logical 4)
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
                                                             )
                                                             ()
                                                             (Var 4 toml_table)

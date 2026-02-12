@@ -25,7 +25,8 @@ program select_type_10
   implicit none
 
   class(base), pointer :: val
-
+  type(int_val), target :: int_ptr
+  int_ptr%key = 100
   allocate(int_val :: val)
   select type(val)
   type is(int_val)
@@ -33,6 +34,8 @@ program select_type_10
       if (val%key /= 10) error stop
       call check2(val)
       if (val%key /= 20) error stop
+      val => int_ptr
+      if (val%key /= 100) error stop
   class default
     error stop
   end select

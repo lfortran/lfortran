@@ -268,11 +268,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 base)
@@ -295,11 +297,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 base)
@@ -357,11 +361,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 child)
@@ -374,11 +380,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 child)
@@ -401,11 +409,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 child)
@@ -431,11 +441,13 @@
                                                                 (Cast
                                                                     (Var 5 bptr)
                                                                     ClassToStruct
-                                                                    (StructType
-                                                                        [(Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     ()
                                                                     (Var 2 child)

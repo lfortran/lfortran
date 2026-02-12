@@ -93,11 +93,13 @@
                                                             (Cast
                                                                 (Var 7 ptr)
                                                                 ClassToStruct
-                                                                (StructType
-                                                                    [(Logical 4)]
-                                                                    []
-                                                                    .true.
-                                                                    .false.
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
                                                                 )
                                                                 ()
                                                                 (Var 4 child_value)
@@ -111,11 +113,13 @@
                                                             (Cast
                                                                 (Var 7 ptr)
                                                                 ClassToStruct
-                                                                (StructType
-                                                                    [(Logical 4)]
-                                                                    []
-                                                                    .true.
-                                                                    .false.
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
                                                                 )
                                                                 ()
                                                                 (Var 4 child_value)

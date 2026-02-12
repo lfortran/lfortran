@@ -4097,7 +4097,8 @@ public:
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+        if (LLVM::is_llvm_pointer(*x_m_v_type) && 
+            (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) || ASR::is_a<ASR::Cast_t>(*x.m_v)) &&
             !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
             tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
         }
@@ -16795,13 +16796,13 @@ public:
                 llvm::Type* llvm_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     arg, struct_type, module.get());
                 class_value = llvm_utils->create_gep2(arg_llvm_type, class_value, 1);
-                if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg))) {
+                if (!LLVM::is_llvm_pointer(*dest_type)) {
                     class_value = llvm_utils->CreateLoad2(
                         llvm_struct_type->getPointerTo(), class_value);
                 }         
             }
             llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    dest_arg, ASRUtils::expr_type(dest_arg), module.get());
+                    dest_arg, dest_type, module.get());
             return builder->CreateBitCast(class_value, dest_llvm_type->getPointerTo());
         }
         llvm::Value *value = nullptr;
