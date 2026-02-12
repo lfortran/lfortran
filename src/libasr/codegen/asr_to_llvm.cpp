@@ -16522,10 +16522,6 @@ public:
                     target_type = llvm::Type::getInt32Ty(context);
                 }
                 if (ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type)) {
-                    // For struct type arguments, check if we need to pass by pointer
-                    // If the value is not already a pointer (e.g., StructConstant from
-                    // compile-time value replacement) and the callee expects a pointer,
-                    // we need to allocate temporary storage and pass its address
                     bool pass_by_value = false;
                     ASR::Variable_t *struct_orig_arg = nullptr;
                     if (func_subrout->type == ASR::symbolType::Function) {

@@ -1,7 +1,3 @@
-! Test IEEE arithmetic functions with --fast optimization flag
-! This test verifies that struct constant arguments (like ieee_quiet_nan)
-! are correctly passed by reference when optimization passes replace
-! variables with compile-time constant values.
 program test_ieee_arithmetic_fast_01
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
     use, intrinsic :: ieee_arithmetic, only: ieee_positive_inf, ieee_is_finite
