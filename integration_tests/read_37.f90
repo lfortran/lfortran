@@ -1,21 +1,17 @@
-program p
+program read_struct_internal
   type :: t
      integer :: a
-     character(len=10) :: b
   end type t
 
   type(t) :: x
-  character(len=10) :: buf1
-  character(len=10) :: buf2
+  character(len=10) :: buf
 
-  buf1 = "42"
-  buf2 = "hello"
+  buf = "123"
 
-  read(buf1, *) x%a
-  read(buf2, *) x%b
+  ! This used to cause ICE (StructType passed to lowering)
+  read(buf, *) x
 
-  if (x%a /= 42) error stop "Integer component not read correctly"
-  if (trim(x%b) /= "hello") error stop "Character component not read correctly"
+  if (x%a /= 123) error stop "Struct read failed"
 
   print *, "OK"
-end program p
+end program read_struct_internal
