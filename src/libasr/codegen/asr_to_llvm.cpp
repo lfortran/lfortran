@@ -5167,43 +5167,35 @@ public:
             fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
             // For non-allocatable DescriptorArray character arrays,
             // fill_array_details allocated an array of string_descriptors
-            // but their data pointers are uninitialized. Allocate a
-            // contiguous character data buffer and store it in
-            // descriptors[0].data so element accesses work correctly.
-            if (ASRUtils::is_character(*m_type) && !is_data_only) {
+            // but their data pointers are uninitialized. Set the string
+            // length on descriptors[0], then allocate a contiguous
+            // character data buffer via set_array_of_strings_memory_on_heap.
+            if (!is_data_only && ASRUtils::is_character(*m_type)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
                     ASRUtils::extract_type(m_type));
                 if (str_type->m_len != nullptr &&
                     str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
-                    // Compute character length
-                    int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 2;
-                    visit_expr(*str_type->m_len);
-                    ptr_loads = ptr_loads_copy;
-                    llvm::Value* char_len = builder->CreateSExtOrTrunc(
-                        tmp, llvm::Type::getInt64Ty(context));
-                    // Compute total number of elements
-                    llvm::Value* total_elements = arr_descr->get_array_size(
-                        ptr_typ, ptr, nullptr, 4);
-                    total_elements = builder->CreateSExtOrTrunc(
-                        total_elements, llvm::Type::getInt64Ty(context));
-                    // Allocate total_elements * char_len bytes
-                    llvm::Value* total_size = builder->CreateMul(
-                        total_elements, char_len);
-                    llvm::Value* char_data = LLVMArrUtils::lfortran_malloc(
-                        context, *module, *builder, total_size);
-                    // Store into descriptors[0].data
-                    llvm::Value* data_array_ptr = arr_descr->get_pointer_to_data(
+                    // Load descriptors[0] from the array's data pointer
+                    llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
                         ptr_typ, ptr);
                     llvm::Value* first_desc = builder->CreateLoad(
-                        llvm_data_type->getPointerTo(), data_array_ptr);
-                    llvm::Value* first_desc_data_ptr = llvm_utils->create_gep2(
-                        llvm_data_type, first_desc, 0);
-                    builder->CreateStore(char_data, first_desc_data_ptr);
-                    // Store char_len into descriptors[0].length
-                    llvm::Value* first_desc_len_ptr = llvm_utils->create_gep2(
-                        llvm_data_type, first_desc, 1);
-                    builder->CreateStore(char_len, first_desc_len_ptr);
+                        llvm_data_type->getPointerTo(), data_ptr_ptr);
+                    // Set descriptors[0].length from the ASR string length
+                    setup_string_length(first_desc, str_type, str_type->m_len);
+                    // Compute array size (product of dimension lengths)
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    for (size_t r = 0; r < n_dims; r++) {
+                        load_array_size_deep_copy(m_dims[r].m_length);
+                        prod = builder->CreateMul(prod, tmp);
+                    }
+                    ptr_loads = ptr_loads_copy;
+                    // Allocate the flat character buffer
+                    llvm_utils->set_array_of_strings_memory_on_heap(
+                        str_type, first_desc,
+                        llvm_utils->get_string_length(str_type, first_desc),
+                        prod, false);
                 }
             }
         }
