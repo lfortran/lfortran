@@ -544,7 +544,23 @@ namespace LCompilers {
                             module_dependencies.push_back(al, x_m_name->m_module_name);
                         }
                     }
-                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
+                    for (size_t i = 0; i < x.n_args; i++) {
+                        if (x.m_args[i].m_value) {
+                            visit_expr(*x.m_args[i].m_value);
+                        }
+                    }
+                    if (x.m_value) {
+                        visit_expr(*x.m_value);
+                    }
+                    if (x.m_dt) {
+                        bool fill_variable_dependencies_copy = fill_variable_dependencies;
+                        if (fill_variable_dependencies) {
+                            fill_variable_dependencies = false;
+                        }
+                        visit_expr(*x.m_dt);
+                        fill_variable_dependencies = fill_variable_dependencies_copy;
+                    }
+                    visit_ttype(*x.m_type);
                 }
 
                 void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {

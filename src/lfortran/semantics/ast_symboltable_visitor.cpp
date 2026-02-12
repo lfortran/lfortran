@@ -348,10 +348,10 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &e) {
@@ -2855,13 +2855,47 @@ public:
             // Add called function as dependency to Variable node.
             SetChar var_dep;var_dep.reserve(al,0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
+            if (func_call->m_dt != nullptr) {
+                // VerifyVisitor does not count dependencies coming from m_dt;
+                // strip those to keep symbol dependencies consistent.
+                SetChar dt_dep;
+                dt_dep.reserve(al, 0);
+                ASRUtils::collect_variable_dependencies(al, dt_dep, nullptr, nullptr, func_call->m_dt);
+                if (dt_dep.n > 0) {
+                    SetChar filtered_dep;
+                    filtered_dep.reserve(al, var_dep.n);
+                    for (size_t i = 0; i < var_dep.n; i++) {
+                        bool is_dt_dependency = false;
+                        for (size_t j = 0; j < dt_dep.n; j++) {
+                            if (std::string(var_dep.p[i]) == std::string(dt_dep.p[j])) {
+                                is_dt_dependency = true;
+                                break;
+                            }
+                        }
+                        if (!is_dt_dependency) {
+                            filtered_dep.push_back(al, var_dep.p[i]);
+                        }
+                    }
+                    var_dep = filtered_dep;
+                }
+            }
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
             // Add called function as dependency to the owning-function's scope
             SetChar func_dep;
             func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+            ASR::symbol_t* asr_owner_sym = nullptr;
+            if (current_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            }
+            if (asr_owner_sym &&
+                current_scope->get_counter() != ASRUtils::symbol_parent_symtab(func_call->m_name)->get_counter() &&
+                !ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name) &&
+                !ASR::is_a<ASR::Variable_t>(*func_call->m_name)) {
+                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+            }
             func->m_dependencies = func_dep.p;
             func->n_dependencies = func_dep.n;
 
