@@ -106,8 +106,8 @@ program class_94
     total = sum_class_values(base_arr)
     if (total /= 63) error stop "Sum of base_arr failed"  ! (11 + 21 + 31)
     
-    ! total = sum_class_values(ext_arr)
-    ! if (total /= 63) error stop "Sum of ext_arr failed"   ! (11 + 21 + 31)
+    total = sum_class_values(ext_arr)
+    if (total /= 63) error stop "Sum of ext_arr failed"   ! (11 + 21 + 31)
     print *, "Test 5 passed"
 
     ! Test 6: Same type as class (base_type -> class(base_type))
@@ -118,6 +118,6 @@ program class_94
     base_arr(2)%value = 200
     total = sum_class_values(base_arr)
     print *, "Total:", total
-    ! if (total /= 300) error stop "Same type test failed"  !! TODO: fails with --fast
-    ! print *, "Test 6 passed"
+    if (total /= 300) error stop "Same type test failed"  !! Works with --fast
+    print *, "Test 6 passed"
 end program class_94

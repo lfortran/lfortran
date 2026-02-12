@@ -3020,7 +3020,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* declared_struct_type = getStructType(class_symbol, module);
         llvm::Value* struct_element = builder->CreateBitCast(element_ptr_i8, declared_struct_type->getPointerTo());
         
-        return struct_api->create_class_view(class_symbol, struct_element);
+        return struct_api->create_class_view(class_symbol, struct_element, vptr);
     }
 
     void LLVMUtils::validate_llvm_SSA([[maybe_unused]] llvm::Type* const type_to_check_against,[[maybe_unused]] llvm::Value* const llvm_SSA){
@@ -8632,9 +8632,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateStore(struct_ptr, struct_gep_out_of_class);
     }
     
-    llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol, llvm::Value* const viewed_struct){
+    llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol,
+            llvm::Value* const viewed_struct, llvm::Value* vptr){
         llvm::Value* const allocated_class_structure = builder->CreateAlloca(llvm_utils->getClassType(class_symbol));
-        store_class_vptr(&class_symbol->base, allocated_class_structure, llvm_utils->module);
+        if (vptr) {
+            if (vptr->getType() != llvm_utils->vptr_type) {
+                vptr = builder->CreateBitCast(vptr, llvm_utils->vptr_type);
+            }
+            llvm::Value* v_ptr = builder->CreateBitCast(
+                allocated_class_structure, llvm_utils->vptr_type->getPointerTo());
+            builder->CreateStore(vptr, v_ptr);
+        } else {
+            store_class_vptr(&class_symbol->base, allocated_class_structure, llvm_utils->module);
+        }
         store_class_struct(class_symbol, allocated_class_structure, viewed_struct);
         return allocated_class_structure;
 
@@ -9188,7 +9198,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LCOMPILERS_ASSERT(false);
             }
 
-            if (llvm_utils->compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(src_expr)) {
+            if (ASRUtils::is_allocatable(src_expr)) {
                 // Check if src_data is not null before realloc operations
                 llvm::Value* src_data_not_null = builder->CreateICmpNE(
                     src_data, llvm::Constant::getNullValue(src_data->getType()));

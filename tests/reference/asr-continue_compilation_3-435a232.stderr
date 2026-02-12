@@ -439,6 +439,12 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
+semantic error: cannot pass unallocatable string to allocatable argument
+   --> tests/errors/continue_compilation_3.f90:205:13
+    |
+205 |     call ss("hello")
+    |             ^^^^^^^ make this expression allocatable
+
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:208:23
     |

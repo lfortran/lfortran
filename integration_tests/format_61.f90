@@ -1,4 +1,4 @@
-program format_60
+program format_61
     implicit none
     character(len=100) :: output
 
@@ -18,4 +18,4 @@ program format_60
 
     write(output, '(g0)') 42
     if (trim(output) /= '42') error stop
-end program format_60
+end program format_61
