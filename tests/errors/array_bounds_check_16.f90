@@ -7,6 +7,5 @@ program T
 contains
     subroutine ss2(x)
     character(5) :: x
-    print *, x
     end subroutine ss2
 end

@@ -1,4 +1,4 @@
-runtime error: Attempt to use unallocated allocatable variable 'y'.
+runtime error: Argument 'y' of subroutine ss2 is unallocated.
  --> tests/errors/array_bounds_check_16.f90:5:14
   |
 5 |     call ss2(y)  ! should give runtime error

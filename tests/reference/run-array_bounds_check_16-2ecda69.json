@@ -2,12 +2,12 @@
     "basename": "run-array_bounds_check_16-2ecda69",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/array_bounds_check_16.f90",
-    "infile_hash": "f0d6f9bb24d648e0ea916463e236fbda5196bae8c70034c9794365ea",
+    "infile_hash": "c620167d31070ab24b5e3b9792887e49628426185c3bb4da5370ad88",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "run-array_bounds_check_16-2ecda69.stdout",
-    "stdout_hash": "2d6d67d91d0badcdd06cbbba1fe11538a68a37ec9c2e26457ceff12b",
+    "stdout": null,
+    "stdout_hash": null,
     "stderr": "run-array_bounds_check_16-2ecda69.stderr",
-    "stderr_hash": "a0e5c14f3d2aec45aa9fb0f73ba47946d83bc7f9178ff384333fadd7",
+    "stderr_hash": "0dfb74627986884a853706e86bd3840c5bee42df1464019a69f030f1",
     "returncode": 1
 }
