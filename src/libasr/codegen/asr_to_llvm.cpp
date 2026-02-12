@@ -12224,6 +12224,42 @@ public:
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+
+            // Fix for transfer with empty string or partial string
+            // We need to buffer the source into a zero-initialized memory of the target size
+            // only if the source is not an array (scalar transfer from string)
+            if (!ASRUtils::is_array(expr_type(x.m_source))) {
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+                    const_cast<ASR::expr_t*>(&x.base),
+                    ASRUtils::type_get_past_array(x.m_type),
+                    module.get());
+                uint64_t target_bytes = module->getDataLayout().getTypeAllocSize(target_type);
+
+                if (target_bytes > 0) {
+                     // Define the source length
+                     llvm::Value* source_len = get_string_length(x.m_source);
+
+                     // Allocate buffer
+                     llvm::Value* buffer = llvm_utils->CreateAlloca(builder->getInt8Ty(),
+                         llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes)), "transfer_buff");
+
+                     // Zero-init
+                     builder->CreateMemSet(buffer, builder->getInt8(0), target_bytes, llvm::MaybeAlign(1));
+
+                     // Copy min(source_len, target_bytes)
+                     llvm::Value* copy_len = builder->CreateSelect(
+                         builder->CreateICmpULT(source_len, llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes))),
+                         source_len,
+                         llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes))
+                     );
+
+                     builder->CreateMemCpy(buffer, llvm::MaybeAlign(1),
+                         source_ptr, llvm::MaybeAlign(1),
+                         copy_len);
+
+                     source_ptr = buffer;
+                }
+            }
         } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
         } else if (is_array) {
