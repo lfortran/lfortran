@@ -13,6 +13,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
     public:
 
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
+        std::map<ASR::symbol_t*, int> alloc_count;
 
         IsAllocatedCalled(std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
             scope2var(scope2var_) {}
@@ -102,6 +103,13 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         void visit_Allocate(const ASR::Allocate_t& x) {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
+                if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                    alloc_count[sym] += 1;
+                    if( alloc_count[sym] > 1 ) {
+                        push_to_scopes_until_symbol_scope(sym);
+                    }
+                }
                 if( !ASRUtils::is_dimension_dependent_only_on_arguments(
                         alloc_arg.m_dims, alloc_arg.n_dims, true) ||
                     is_array_size_called_on_pointer(alloc_arg.m_dims, alloc_arg.n_dims) ) {
@@ -109,6 +117,24 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
                         push_to_scopes_until_symbol_scope(sym);
                     }
+                }
+            }
+        }
+
+        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
+            for( size_t i = 0; i < x.n_vars; i++ ) {
+                if( ASR::is_a<ASR::Var_t>(*x.m_vars[i]) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_vars[i])->m_v;
+                    push_to_scopes_until_symbol_scope(sym);
+                }
+            }
+        }
+
+        void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
+            for( size_t i = 0; i < x.n_vars; i++ ) {
+                if( ASR::is_a<ASR::Var_t>(*x.m_vars[i]) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_vars[i])->m_v;
+                    push_to_scopes_until_symbol_scope(sym);
                 }
             }
         }

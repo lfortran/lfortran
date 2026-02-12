@@ -3049,6 +3049,66 @@ public:
         }
     }
 
+    ASR::expr_t* replace_loop_var_in_expr(ASR::expr_t* expr,
+                                          ASR::symbol_t* var_sym,
+                                          int64_t value,
+                                          ASR::ttype_t* int_type) {
+        if (!expr) return expr;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (sym == var_sym) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, expr->base.loc, value, int_type));
+            }
+            return expr;
+        } else if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            ASR::expr_t* left = replace_loop_var_in_expr(binop->m_left, var_sym, value, int_type);
+            ASR::expr_t* right = replace_loop_var_in_expr(binop->m_right, var_sym, value, int_type);
+            binop->m_left = left;
+            binop->m_right = right;
+            ASR::expr_t* left_val = ASRUtils::expr_value(left);
+            ASR::expr_t* right_val = ASRUtils::expr_value(right);
+            if (!left_val) left_val = left;
+            if (!right_val) right_val = right;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*left_val) &&
+                ASR::is_a<ASR::IntegerConstant_t>(*right_val)) {
+                int64_t lv = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
+                int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
+                int64_t result = 0;
+                switch (binop->m_op) {
+                    case ASR::binopType::Add: result = lv + rv; break;
+                    case ASR::binopType::Sub: result = lv - rv; break;
+                    case ASR::binopType::Mul: result = lv * rv; break;
+                    case ASR::binopType::Div: result = lv / rv; break;
+                    case ASR::binopType::Pow: {
+                        result = 1;
+                        for (int64_t p = 0; p < rv; p++) result *= lv;
+                        break;
+                    }
+                    default: return expr;
+                }
+                return ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, expr->base.loc, result, binop->m_type));
+            }
+            return expr;
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
+            ASR::IntegerUnaryMinus_t* umin = ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
+            ASR::expr_t* arg = replace_loop_var_in_expr(umin->m_arg, var_sym, value, int_type);
+            umin->m_arg = arg;
+            ASR::expr_t* arg_val = ASRUtils::expr_value(arg);
+            if (!arg_val) arg_val = arg;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*arg_val)) {
+                int64_t av = ASR::down_cast<ASR::IntegerConstant_t>(arg_val)->m_n;
+                return ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, expr->base.loc, -av, umin->m_type));
+            }
+            return expr;
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+            return expr;
+        }
+        return expr;
+    }
+
     void substitute_var_in_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
                                            ASR::symbol_t* var_sym,
                                            int64_t value,
@@ -3059,13 +3119,9 @@ public:
                 ASR::ArrayItem_t* arr = ASR::down_cast<ASR::ArrayItem_t>(val);
                 for (size_t j = 0; j < arr->n_args; j++) {
                     ASR::expr_t* idx = arr->m_args[j].m_right;
-                    if (idx && ASR::is_a<ASR::Var_t>(*idx)) {
-                        ASR::symbol_t* idx_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(idx)->m_v);
-                        if (idx_sym == var_sym) {
-                            arr->m_args[j].m_right = ASRUtils::EXPR(
-                                ASR::make_IntegerConstant_t(al, val->base.loc, value, int_type));
-                        }
+                    if (idx) {
+                        arr->m_args[j].m_right = replace_loop_var_in_expr(
+                            idx, var_sym, value, int_type);
                     }
                 }
             } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
@@ -3141,18 +3197,11 @@ public:
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
-                        ASR::array_index_t array_index = array_item_expr->m_args[arg_index];
-                        ASR::expr_t* index_expr = array_index.m_right;
-                        if (ASR::is_a<ASR::Var_t>(*index_expr)) {
-                            ASR::symbol_t* index_sym = ASRUtils::symbol_get_past_external(
-                                ASR::down_cast<ASR::Var_t>(index_expr)->m_v);
-                            if (index_sym == loop_var_sym) {
-                                array_item_expr->m_args[arg_index].m_right = ASRUtils::EXPR(
-                                                                            ASR::make_IntegerConstant_t(al,
-                                                                                implied_do_loop->base.base.loc,
-                                                                                loop_var, integer_type)
-                                                                            );
-                            }
+                        ASR::expr_t* index_expr = array_item_expr->m_args[arg_index].m_right;
+                        if (index_expr) {
+                            array_item_expr->m_args[arg_index].m_right =
+                                replace_loop_var_in_expr(index_expr, loop_var_sym,
+                                                        loop_var, integer_type);
                         }
                     }
                     ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
