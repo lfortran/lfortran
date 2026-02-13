@@ -14158,28 +14158,23 @@ public:
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
-                // For struct method operators, create an ExternalSymbol to
-                // the underlying function (not the method wrapper) to avoid
-                // the LLVM backend expecting m_dt to be set
-                v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
-                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                    ASRUtils::symbol_get_past_external(v));
+                // Type-bound operator: resolve the underlying function
+                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
                 ASR::symbol_t* func_sym = sm->m_proc;
-                ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                std::string func_ext_name = std::string(ASRUtils::symbol_name(v)) + "_func";
-                ASR::symbol_t* existing = current_scope->resolve_symbol(func_ext_name);
-                if (existing == nullptr) {
+                std::string func_name = ASRUtils::symbol_name(func_sym);
+                v = current_scope->resolve_symbol(func_name);
+                if (v == nullptr) {
+                    // Function is in another module, import it
+                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
                     v = ASR::down_cast<ASR::symbol_t>(
                         ASR::make_ExternalSymbol_t(
                             al, x.base.base.loc, current_scope,
-                            s2c(al, func_ext_name), func_sym,
+                            s2c(al, func_name), func_sym,
                             ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            ASRUtils::symbol_name(func_sym), ASR::accessType::Public
+                            s2c(al, func_name), ASR::accessType::Public
                         )
                     );
-                    current_scope->add_symbol(func_ext_name, v);
-                } else {
-                    v = existing;
+                    current_scope->add_symbol(func_name, v);
                 }
             } else {
                 std::string func_name = ASRUtils::symbol_name(v);
