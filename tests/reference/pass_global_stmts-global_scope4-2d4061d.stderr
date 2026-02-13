@@ -1,0 +1,5 @@
+syntax error: Statement or Declaration expected inside program, found Expression
+ --> tests/global_scope4.f90:4:1
+  |
+4 | 3*x
+  | ^^^ 

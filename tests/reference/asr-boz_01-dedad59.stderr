@@ -1,5 +1,0 @@
-warning: BOZ literal constant with 'Z' prefix truncated to maximum 16 characters from left to fit data type
-  --> tests/../integration_tests/boz_01.f90:12:13
-   |
-12 | boz_5 = int(Z'2234567890abcdef1')
-   |             ^^^^^^^^^^^^^^^^^^^^ BOZ truncation

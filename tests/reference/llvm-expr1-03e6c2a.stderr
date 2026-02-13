@@ -1,0 +1,5 @@
+syntax error: Statement or Declaration expected inside program, found Expression
+ --> tests/expr1.f90:1:1
+  |
+1 | 5
+  | ^ 

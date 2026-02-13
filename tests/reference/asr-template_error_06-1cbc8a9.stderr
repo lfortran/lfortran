@@ -1,5 +1,0 @@
-semantic error: Type parameter 'g' is not specified in any requirements
-  --> tests/errors/template_error_06.f90:16:11
-   |
-16 |           type(g) :: fst
-   |           ^^^^^^^^^^^^^^ 

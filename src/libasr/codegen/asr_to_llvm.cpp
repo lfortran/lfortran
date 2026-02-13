@@ -9933,15 +9933,16 @@ public:
         loop_or_block_end_names.pop_back();
         current_scope = current_scope_copy;
     }
-
+    
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
-        // Check if *x is nullptr.
         if( x == nullptr ) {
             throw CodeGenError("Internal error: x is nullptr");
         }
 
         this->visit_expr(*x);
 
+        // 1. Specialized Logic for New Classes / Struct Members
+        // If this block handles the load, we MUST return to avoid double-loading.
         if (compiler_options.new_classes && load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
@@ -9950,14 +9951,8 @@ public:
             return;
         }
 
-        if (compiler_options.new_classes && load_ref && 
-                LLVM::is_llvm_pointer(*ASRUtils::expr_type(x)) &&
-                ASRUtils::is_unlimited_polymorphic_type(x)) {
-            llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-            tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-            return;
-        }
-
+        // 2. Specialized Logic for Arrays and Struct Instance Members
+        // If this block handles the load, we MUST return.
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
@@ -9965,6 +9960,38 @@ public:
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 tmp = logical_load_val(tmp, x, is_volatile);
+            }
+        }
+        // 3. General Load Handling
+        if (load_ref) {
+            ASR::ttype_t* t = ASRUtils::expr_type(x);
+            if (!t) return;
+
+            // --- DESCRIPTOR GUARD ---
+            if (ASRUtils::is_array(t) || ASRUtils::is_character(*t)) {
+                return; 
+            }
+
+            // --- LLVM 18 SAFE LOAD ---
+            llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x, t, module.get());
+
+            // If we got a generic ptr, determine the specific scalar type
+            if (load_type->isPointerTy()) {
+                if (ASRUtils::is_real(*t)) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                    load_type = (kind == 8) ? llvm::Type::getDoubleTy(context) 
+                                            : llvm::Type::getFloatTy(context);
+                } else if (ASRUtils::is_integer(*t)) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                    load_type = llvm::Type::getIntNTy(context, kind * 8);
+                } else if (ASRUtils::is_logical(*t)) {
+                    load_type = llvm::Type::getInt1Ty(context);
+                }
+            }
+
+            if (tmp->getType()->isPointerTy() && !load_type->isVoidTy()) {
+                // Perform the load to turn the 'ptr' into a 'float/int' value register
+                tmp = builder->CreateLoad(load_type, tmp, is_volatile);
             }
         }
     }
@@ -13571,11 +13598,14 @@ public:
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
+        bool is_internal = false;
+        llvm::Value *src_data = nullptr;
+        llvm::Value *src_len  = nullptr;
+
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-
         // Handle namelist read
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
@@ -13814,8 +13844,20 @@ public:
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
+            std::vector<llvm::Value *> args;
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
+                // ===== LOGICAL ABI FIX (ported from working commit 317bff052) =====
+                if (ASRUtils::is_logical(*ASRUtils::expr_type(x.m_values[i]))) {
+                    this->visit_expr_wrapper(x.m_values[i], true, false);
+                    llvm::Value* logical_ptr =
+                        llvm_utils->CreateAlloca(
+                            *builder,
+                            llvm::Type::getInt32Ty(context));
+                        builder->CreateStore(tmp, logical_ptr);
+                        args.push_back(logical_ptr);
+                        continue;
+                }
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -14027,9 +14069,19 @@ public:
                         llvm::Value* dest_data, *dest_len;
                         std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
                             ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
-                        builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
+                        if (is_internal) {
+                            builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
+                        } else {
+                            builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
+                        }
                     } else {
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
+                        if (is_internal) {
+                            builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
+                        } else {
+                            // Note: If this is the external path, 
+                            // check if you need src_data or unit_val here.
+                            builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
+                        }
                     }
                     if (x.m_iostat) {
                         builder->CreateStore(
@@ -14095,7 +14147,11 @@ public:
                         if (read_ptr->getType() != expected_type) {
                             read_ptr = builder->CreateBitCast(read_ptr, expected_type);
                         }
-                        builder->CreateCall(fn, {read_ptr, unit_val, iostat});
+                        if (is_internal) {
+                            builder->CreateCall(fn, {var_to_read_into, src_data, src_len});
+                        } else {
+                            builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
+                        }
                     }
                 }
             }
@@ -15242,6 +15298,29 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
+        // ===== INTERNAL FILE WRITE SUPPORT (upstream style) =====
+        bool is_internal = false;
+        llvm::Value *src_data = nullptr;
+        llvm::Value *src_len  = nullptr;
+
+        if (ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {
+            is_internal = true;
+
+            // Get ADDRESS of internal unit (NOT loaded value)
+            this->visit_expr_wrapper(x.m_unit, false, false);
+            src_data = tmp;
+
+            // Extract length from DescriptorString at index 1
+            llvm::Type* unit_type =
+                llvm_utils->get_type_from_ttype_t_util(
+                    x.m_unit,
+                    ASRUtils::expr_type(x.m_unit),
+                    module.get());
+
+            src_len = builder->CreateLoad(
+                llvm::Type::getInt64Ty(context),
+                llvm_utils->create_gep2(unit_type, src_data, 1));
+        }
 
         // Handle namelist write
         if (x.m_nml) {
@@ -15324,6 +15403,11 @@ public:
             return;
         }
         std::vector<llvm::Value *> args;
+        // ===== Prepend internal file arguments (from working commit) =====
+        if (is_internal) {
+            args.insert(args.begin(), src_len);
+            args.insert(args.begin(), src_data);
+        }
         std::vector<llvm::Type *> args_type;
         std::vector<std::string> fmt;
         llvm::Value *sep_data {}, *sep_len {};
@@ -16012,7 +16096,6 @@ public:
         fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
 
         args[0] = fmt_ptr;
-        print_error(context, *module, *builder, args);
 
         /* EXIT WITH CODE */
         if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
