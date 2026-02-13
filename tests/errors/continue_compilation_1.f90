@@ -262,8 +262,8 @@ program continue_compilation_1
     integer :: bad_x
     type(ieee_class_type) :: ieee_cls
 
-
-
+    real(8), pointer :: p2(:, :) => null()
+    integer, allocatable :: ppp(:)
 
 
 
@@ -564,7 +564,8 @@ program continue_compilation_1
 
     integer, intent(out) :: out_intent
     integer, intent(in) :: in_intent
-    
+    print *, associated(p2)
+print *, associated(ppp)   
     contains
     subroutine sub(f)
         interface

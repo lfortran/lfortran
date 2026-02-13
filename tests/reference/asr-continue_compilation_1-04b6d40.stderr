@@ -1210,3 +1210,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 563 |     b = (ieee_cls == ieee_quiet_nan)
     |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
+
+semantic error: ‘pointer’ argument of ‘associated’ intrinsic must be a POINTER
+   --> tests/errors/continue_compilation_1.f90:568:21
+    |
+568 | print *, associated(ppp)   
+    |                     ^^^ 
