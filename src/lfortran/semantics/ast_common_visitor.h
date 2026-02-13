@@ -9065,9 +9065,8 @@ public:
                     ASR::symbol_t* type_declaration = nullptr;
                     ASR::ttype_t* ret_type_base = ASRUtils::extract_type(ret_type);
                     if (ASR::is_a<ASR::StructType_t>(*ret_type_base)) {
-                        type_declaration = ASRUtils::import_struct_type(al,
-                            ASRUtils::get_struct_sym_from_struct_expr(val),
-                            current_scope);
+                        type_declaration = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(val));
                     }
                     ASR::symbol_t* tmp_sym =
                         ASR::down_cast<ASR::symbol_t>(
