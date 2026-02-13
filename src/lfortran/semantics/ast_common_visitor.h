@@ -14196,8 +14196,8 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
-                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope,
-                current_function_dependencies, compiler_options.implicit_argument_casting);
+                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
             tmp = ASR::make_OverloadedStringConcat_t(al, x.base.base.loc,
                 left, right, return_type, nullptr, ASRUtils::EXPR(tmp));
         }
