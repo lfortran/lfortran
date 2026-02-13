@@ -12739,6 +12739,28 @@ public:
                 }
             }
         }
+        if (v && compiler_options.implicit_interface) {
+            ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+            if (ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(f2);
+                if (func->n_args == 0 && x.n_args > 0) {
+                    ASR::ttype_t* return_type = ASRUtils::expr_type(func->m_return_var);
+                    // Find which scope has this symbol
+                    SymbolTable* sym_scope = current_scope;
+                    while (sym_scope && sym_scope->get_scope().find(var_name) == sym_scope->get_scope().end()) {
+                        sym_scope = sym_scope->parent;
+                    }
+                    if (sym_scope) {
+                        SymbolTable* saved = current_scope;
+                        current_scope = sym_scope;
+                        sym_scope->erase_symbol(var_name);
+                        create_implicit_interface_function(x, var_name, true, return_type);
+                        current_scope = saved;
+                        v = current_scope->resolve_symbol(var_name);
+                    }
+                }
+            }
+        }
         // if v is a function which has null pointer return type, give error
         if (ASR::is_a<ASR::Function_t>(*v)){
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
