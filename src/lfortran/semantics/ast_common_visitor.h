@@ -9756,6 +9756,13 @@ public:
 
     ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
         ASR::expr_t* len_compiletime = nullptr;
+        ASR::ttype_t* v_type = ASRUtils::expr_type(v);
+        if( !ASRUtils::is_character(*v_type) ) {
+            diag.add(Diagnostic(
+                "Argument of 'len' intrinsic must be CHARACTER",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
