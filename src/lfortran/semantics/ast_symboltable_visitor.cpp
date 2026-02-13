@@ -942,7 +942,10 @@ public:
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
                     if (var->m_type_declaration != nullptr) {
                         std::string type_decl_name = ASRUtils::symbol_name(var->m_type_declaration);
-                        ASR::symbol_t *local_sym = parent_scope->get_symbol(type_decl_name);
+                        ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
+                        if (local_sym == nullptr) {
+                            local_sym = parent_scope->get_symbol(type_decl_name);
+                        }
                         if (local_sym != nullptr && local_sym != var->m_type_declaration) {
                             var->m_type_declaration = local_sym;
                         }

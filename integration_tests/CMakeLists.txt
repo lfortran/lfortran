@@ -992,6 +992,8 @@ RUN(NAME submodule_17 LABELS gfortran llvm)
 RUN(NAME submodule_18a LABELS gfortran llvm_submodule EXTRAFILES submodule_18b.f90 submodule_18c.f90)
 RUN(NAME submodule_19a LABELS gfortran llvm_submodule EXTRAFILES submodule_19b.f90 submodule_19c.f90)
 RUN(NAME submodule_20a LABELS gfortran llvm_submodule EXTRAFILES submodule_20b.f90 submodule_20c.f90)
+RUN(NAME submodule_21c LABELS gfortran llvm_submodule EXTRAFILES submodule_21a.f90 submodule_21b.f90)
+RUN(NAME submodule_22c LABELS gfortran llvm_submodule EXTRAFILES submodule_22a.f90 submodule_22b.f90)
 
 
 
@@ -1720,6 +1722,7 @@ RUN(NAME operator_overloading_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME operator_overloading_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2013,6 +2016,7 @@ RUN(NAME associate_25 LABELS gfortran llvm)
 RUN(NAME associate_26 LABELS llvm)
 RUN(NAME associate_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_28 LABELS gfortran llvm)
+RUN(NAME associate_29 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2721,6 +2725,7 @@ RUN(NAME procedure_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME procedure_27 LABELS gfortran llvm)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

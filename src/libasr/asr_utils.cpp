@@ -1875,6 +1875,18 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             }
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
+            // Resolve sym (original_name) from curr_scope so it points
+            // to a symbol within the current compilation unit.  Without
+            // this, sym may reference the parent module's symbol table
+            // which is not serialized into the submodule's .smod file,
+            // causing a deserialization crash.
+            if (sym) {
+                std::string sym_name = ASRUtils::symbol_name(sym);
+                ASR::symbol_t *local_sym = curr_scope->resolve_symbol(sym_name);
+                if (local_sym) {
+                    sym = local_sym;
+                }
+            }
             asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
                                             a_args.p, 2, nullptr, nullptr, false);
         }
@@ -1977,6 +1989,13 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         }
         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
+        if (sym) {
+            std::string sym_name = ASRUtils::symbol_name(sym);
+            ASR::symbol_t *local_sym = curr_scope->resolve_symbol(sym_name);
+            if (local_sym) {
+                sym = local_sym;
+            }
+        }
         asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
                                         a_args.p, a_args.n, nullptr, nullptr, false);
     }
