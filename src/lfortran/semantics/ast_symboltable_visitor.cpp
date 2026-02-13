@@ -2859,11 +2859,15 @@ public:
             variable->n_dependencies = var_dep.n;
 
             // Add called function as dependency to the owning-function's scope
-            SetChar func_dep;
-            func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
-            func->m_dependencies = func_dep.p;
-            func->n_dependencies = func_dep.n;
+            // ExternalSymbol calls are not tracked as function dependencies
+            // (consistent with how the verify pass collects dependencies)
+            if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
+                SetChar func_dep;
+                func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+                func->m_dependencies = func_dep.p;
+                func->n_dependencies = func_dep.n;
+            }
 
             // Revert current scope
             current_scope = current_scope_copy;
