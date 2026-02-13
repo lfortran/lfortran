@@ -4932,6 +4932,20 @@ public:
                     );
                     throw SemanticAbort();
             }
+
+            // Check for strict type equality for non-polymorphic derived types
+            if (ASRUtils::is_struct(*target_type) && !ASRUtils::is_class_type(target_type) && ASRUtils::is_struct(*value_type)) {
+                ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target));
+                ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value));
+                if (target_sym != value_sym) {
+                    diag.semantic_error_label(
+                        "Type mismatch in assignment, the types must be compatible",
+                        {target->base.loc, value->base.loc},
+                        "type mismatch (" + ltype + " and " + rtype + ")"
+                    );
+                    throw SemanticAbort();
+                }
+            }
             if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value)) {
                 // Allocate the target if the value is a function call returning an allocatable
                 // array and the target is allocatable
