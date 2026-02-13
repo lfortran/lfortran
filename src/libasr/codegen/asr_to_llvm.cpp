@@ -4026,6 +4026,11 @@ public:
         // Look up select type context by expression
         llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
         const std::string& ctx_der_type = get_select_type_block_der_type(x.m_v);
+        if (ASR::is_a<ASR::Cast_t>(*x.m_v) && LLVM::is_llvm_pointer(*x_m_v_type)) {
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_v, ASRUtils::type_get_past_allocatable_pointer(x_m_v_type), module.get());
+            tmp = llvm_utils->CreateLoad2(type->getPointerTo(), tmp);
+        }
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -4132,7 +4137,7 @@ public:
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
         if (LLVM::is_llvm_pointer(*x_m_v_type) && 
-            (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) || ASR::is_a<ASR::Cast_t>(*x.m_v)) &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
             !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
             tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
         }
@@ -16407,6 +16412,21 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+            } else if((ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) && 
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value))) && 
+                        !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)))) {
+                this->visit_expr_wrapper(x.m_args[i].m_value);
+                if (ASRUtils::is_class_type(
+                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))) {
+                    tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                        al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
+                } else if( orig_arg &&
+                    !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                    LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                    llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_args[i].m_value, ASRUtils::expr_type(x.m_args[i].m_value), module.get());
+                    tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
+                }
             } else if( ASR::is_a<ASR::FunctionType_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(
@@ -16620,6 +16640,7 @@ public:
                             !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                             LLVM::is_llvm_pointer(*arg_type)) &&
                             !ASRUtils::is_character(*arg_type) &&
+                            !ASRUtils::is_class_type(arg_type) &&
                             (!ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) || ASRUtils::is_value_constant(x.m_args[i].m_value)) ) {
                             llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                             if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
