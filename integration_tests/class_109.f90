@@ -15,15 +15,16 @@ module class_109_module
 
 contains
 
-    pure function nelements(self) result(n)
+    pure function nelements(self, i) result(n)
         class(base_type), intent(in) :: self
+        integer, intent(in) :: i
         integer :: n
         n = self%k
     end function nelements
 
     subroutine caller(self)
         class(wrapper), intent(in) :: self
-        real(8), dimension(self%obj%nelements()) :: a
+        real(8), dimension(self%obj%nelements(20)) :: a
         if (size(a) /= self%obj%k) error stop 1
     end subroutine caller
 
@@ -38,9 +39,10 @@ module class_109_abstract_module
     end type abstract_type
 
     abstract interface
-        pure function nelements_abstract_iface(self) result(n)
+        pure function nelements_abstract_iface(self, i) result(n)
             import :: abstract_type
             class(abstract_type), intent(in) :: self
+            integer, intent(in) :: i
             integer :: n
         end function nelements_abstract_iface
     end interface
@@ -59,15 +61,16 @@ module class_109_abstract_module
 
 contains
 
-    pure function concrete_nelements(self) result(n)
+    pure function concrete_nelements(self, i) result(n)
         class(concrete_type), intent(in) :: self
+        integer, intent(in) :: i
         integer :: n
         n = self%k
     end function concrete_nelements
 
     subroutine caller_abstract(self)
         class(wrapper_abstract), intent(in) :: self
-        real(8), dimension(self%obj%nelements()) :: a
+        real(8), dimension(self%obj%nelements(20)) :: a
         if (size(a) /= 5) error stop 2
     end subroutine caller_abstract
 
