@@ -932,24 +932,6 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
         symbol_duplicator.duplicate_SymbolTable(proc_interface->m_symtab, current_scope);
-
-        // Fix m_type_declaration for duplicated variables so they point to
-        // symbols accessible from the submodule's scope rather than to
-        // symbols in the parent module's scope. This is needed for correct
-        // serialization of .smod files.
-        for (auto &item : current_scope->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (var->m_type_declaration != nullptr) {
-                    std::string type_decl_name = ASRUtils::symbol_name(var->m_type_declaration);
-                    ASR::symbol_t* resolved = current_scope->resolve_symbol(type_decl_name);
-                    if (resolved != nullptr && resolved != var->m_type_declaration) {
-                        var->m_type_declaration = resolved;
-                    }
-                }
-            }
-        }
-
         Vec<ASR::expr_t*> new_func_args;
         new_func_args.reserve(al, proc_interface->n_args);
         for (size_t i=0;i<proc_interface->n_args;i++) {
