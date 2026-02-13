@@ -5165,39 +5165,6 @@ public:
             !is_list ) {
             llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
             fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
-            // For non-allocatable DescriptorArray character arrays,
-            // fill_array_details allocated an array of string_descriptors
-            // but their data pointers are uninitialized. Set the string
-            // length on descriptors[0], then allocate a contiguous
-            // character data buffer via set_array_of_strings_memory_on_heap.
-            if (!is_data_only && ASRUtils::is_character(*m_type)) {
-                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
-                    ASRUtils::extract_type(m_type));
-                if (str_type->m_len != nullptr &&
-                    str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
-                    // Load descriptors[0] from the array's data pointer
-                    llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
-                        ptr_typ, ptr);
-                    llvm::Value* first_desc = builder->CreateLoad(
-                        llvm_data_type->getPointerTo(), data_ptr_ptr);
-                    // Set descriptors[0].length from the ASR string length
-                    setup_string_length(first_desc, str_type, str_type->m_len);
-                    // Compute array size (product of dimension lengths)
-                    int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 2;
-                    llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-                    for (size_t r = 0; r < n_dims; r++) {
-                        load_array_size_deep_copy(m_dims[r].m_length);
-                        prod = builder->CreateMul(prod, tmp);
-                    }
-                    ptr_loads = ptr_loads_copy;
-                    // Allocate the flat character buffer
-                    llvm_utils->set_array_of_strings_memory_on_heap(
-                        str_type, first_desc,
-                        llvm_utils->get_string_length(str_type, first_desc),
-                        prod, false);
-                }
-            }
         }
         const bool special_array_type = ASRUtils::is_character(*m_type) || ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
         if( is_array_type && is_malloc_array_type &&
