@@ -1,6 +1,6 @@
-program separate_compilation_31
-    use separate_compilation_31b_module, only: client
+program separate_compilation_30
+    use separate_compilation_30b_module, only: client
     implicit none
 
     type(client) :: x
-end program separate_compilation_31
+end program separate_compilation_30
