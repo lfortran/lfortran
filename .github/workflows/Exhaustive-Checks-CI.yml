@@ -218,30 +218,27 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
-        python-version: ["3.10"]
+        llvm-version: [
+                        "7.0.1=h6bb024c_1002",
+                        "8.0.1=hc9558a2_0", 
+                        "9.0.1=default_hc23dcda_7",
+                        "10.0.0=hc9558a2_0", 
+                        "11.1.0=he0ac6c6_5", 
+                        "12.0.1=hf817b99_2", 
+                        "13.0.1=hf817b99_2", 
+                        "14.0.6=hcd5def8_4", 
+                        "15.0.7=ha7bfdaf_5", 
+                        "16.0.6=ha7bfdaf_4", 
+                        "17.0.6=ha7bfdaf_3", 
+                        "18.1.8=ha7bfdaf_3", 
+                        "19.1.7=h48f18f5_1", 
+                        "20.1.8=h3b15d91_0", 
+                        "21.1.0=h3b15d91_0"
+                      ]
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '19')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            nodejs=18.20.4
-            openmpi=5.0.6=hb85ec53_102
-            xonsh=0.16.0
-            zlib=1.3.1
-            zstd-static=1.5.6
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
@@ -249,93 +246,28 @@ jobs:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            nodejs=18.20.2
-            openmpi=5.0.6=hb85ec53_102
-            zlib=1.3.1
-            zstd-static=1.5.6
-            xonsh=0.16.0
+            nodejs=18.20.2=h84e79e0_0
+            llvm-openmp=14.0.4=he0ac6c6_0
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '18')
+        if: contains(matrix.llvm-version, '19')
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            xonsh=0.16.0
-            zlib=1.3.1
-            zstd-static=1.5.6
-            openmpi=5.0.6=hb85ec53_102
+            nodejs=18.20.4=hc55a1b2_1
+            llvm-openmp=14.0.4=he0ac6c6_0
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '20')
+        if: ${{! (startsWith(matrix.llvm-version, '10') || startsWith(matrix.llvm-version, '19'))}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            openmpi=5.0.6=hb85ec53_102
-            xonsh=0.16.0
-            zlib=1.3.1
-            zstd-static=1.5.7
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '21')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            llvmdev=21.1.0 
-            python=${{ matrix.python-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            openmpi=5.0.6=hb85ec53_102
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '12')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            openmpi=5.0.3
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21'))}}
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            openmpi=5.0.6=hb85ec53_102
+            llvm-openmp=14.0.4=he0ac6c6_0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -343,11 +275,11 @@ jobs:
           key: ${{ github.job }}-${{ matrix.llvm-version }}
 
       - name: Install libunwind
-        if: matrix.llvm-version > 11
-        run: micromamba install -y -n lf libunwind=1.7.2
+        if: ${{! (startsWith(matrix.llvm-version, '7') || startsWith(matrix.llvm-version, '8') || startsWith(matrix.llvm-version, '9') || startsWith(matrix.llvm-version, '10') || startsWith(matrix.llvm-version, '11'))}}
+        run: micromamba install -y -n lf libunwind=1.7.2=he02047a_0
 
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: startsWith(matrix.llvm-version, '10') || startsWith(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -634,11 +566,10 @@ jobs:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=3.10
-            mlir=19.1.6
-            llvm=19.1.6
-            llvm-openmp=19.1.6
-            libunwind=1.7.2
+            mlir=19.1.6=h629725b_0
+            llvm=19.1.6=h1c4df35_0
+            llvm-openmp=19.1.6=h024ca30_0
+            libunwind=1.7.2=he02047a_0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
