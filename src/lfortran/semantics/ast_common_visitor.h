@@ -1807,7 +1807,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_associated", "c_funloc"
+        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -9053,12 +9053,18 @@ public:
                     }
                     std::string tmp_name =
                         current_scope->get_unique_name("lfortran_tmp");
+                    ASR::symbol_t* type_declaration = nullptr;
+                    ASR::ttype_t* ret_type_base = ASRUtils::extract_type(ret_type);
+                    if (ASR::is_a<ASR::StructType_t>(*ret_type_base)) {
+                        type_declaration = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(val));
+                    }
                     ASR::symbol_t* tmp_sym =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util( al, val->base.loc, current_scope,
                                 s2c(al, tmp_name), nullptr, 0,
                                 ASR::intentType::Local, nullptr, nullptr,
-                                ASR::storage_typeType::Default, ret_type, nullptr, ASR::abiType::Source,
+                                ASR::storage_typeType::Default, ret_type, type_declaration, ASR::abiType::Source,
                                 ASR::accessType::Private, ASR::presenceType::Required, false
                             )
                         );
