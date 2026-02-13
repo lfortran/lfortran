@@ -1,5 +1,5 @@
-module separate_compilation_31b_module
-    use separate_compilation_31a_module, only: abstype, mytype
+module separate_compilation_30b_module
+    use separate_compilation_30a_module, only: abstype, mytype
     implicit none
     private
 
@@ -30,4 +30,4 @@ contains
         arr = mytype(ints, obj)
     end subroutine method
 
-end module separate_compilation_31b_module
+end module separate_compilation_30b_module
