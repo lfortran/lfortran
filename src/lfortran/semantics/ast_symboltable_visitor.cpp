@@ -2861,17 +2861,7 @@ public:
             // Add called function as dependency to the owning-function's scope
             SetChar func_dep;
             func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-            ASR::symbol_t* asr_owner_sym = nullptr;
-            if (current_scope->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            }
-            if (asr_owner_sym &&
-                current_scope->get_counter() != ASRUtils::symbol_parent_symtab(func_call->m_name)->get_counter() &&
-                !ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name) &&
-                !ASR::is_a<ASR::Variable_t>(*func_call->m_name)) {
-                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
-            }
+            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
             func->m_dependencies = func_dep.p;
             func->n_dependencies = func_dep.n;
 
