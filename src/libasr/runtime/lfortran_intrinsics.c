@@ -15,6 +15,13 @@
 #include <stddef.h>  /* ptrdiff_t */
 
 #define PI 3.14159265358979323846
+// Enum for float format types to avoid string comparison
+typedef enum {
+    FLOAT_FORMAT_F64,     // for default 64-bit float formatting
+    FLOAT_FORMAT_F32,     // for default 32-bit float formatting
+    FLOAT_FORMAT_CUSTOM   // for custom format strings like "F10.5"
+} FloatFormatType;
+
 #if defined(_WIN32)
 #  include <winsock2.h>
 #  include <io.h>
@@ -368,21 +375,22 @@ void handle_logical(char* format, bool val, char** result) {
 static void format_float_fortran(char* result, float val);
 static void format_double_fortran(char* result, double val);
 
-void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
+void handle_float(FloatFormatType format_type, char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     val = val * pow(10, scale); // scale the value
-    if (strcmp(format,"f-64") == 0) { //use c formatting.
+    if (format_type == FLOAT_FORMAT_F64) {
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
-    } else if(strcmp(format,"f-32") == 0){ //use c formatting.
+    } else if (format_type == FLOAT_FORMAT_F32) {
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     }
+    // FLOAT_FORMAT_CUSTOM: parse the format string
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
@@ -2546,7 +2554,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     free(temp_buf);
                 } else if (tolower(value[0]) == 'f') {
                     char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                    handle_float(value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    FloatFormatType float_fmt_type;
+                    if (strcmp(value, "f-64") == 0) {
+                        float_fmt_type = FLOAT_FORMAT_F64;
+                    } else if (strcmp(value, "f-32") == 0) {
+                        float_fmt_type = FLOAT_FORMAT_F32;
+                    } else {
+                        float_fmt_type = FLOAT_FORMAT_CUSTOM;
+                    }
+                    handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
                     result_len += temp_len;

@@ -5060,6 +5060,15 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape, lower_bounds);
     }
 
+    ASR::asr_t* create_CFProcPointer(const AST::SubroutineCall_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"cptr", "fptr"};
+        handle_intrinsic_node_args<AST::SubroutineCall_t>(x, args, kwarg_names, 2, 2, std::string("c_f_procpointer"));
+        ASR::expr_t *cptr = args[0], *fptr = args[1];
+        // Reusing CPtrToPointer for procedure pointers
+        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, nullptr, nullptr);
+    }
+
     ASR::asr_t* intrinsic_subroutine_as_node(const AST::SubroutineCall_t &x, std::string var_name) {
         if (is_intrinsic_registry_subroutine(var_name)) {
             if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name)) {
@@ -5632,6 +5641,8 @@ public:
                     intrinsic_module_procedures_as_asr_nodes.end()) {
                     if (sub_name == "c_f_pointer") {
                         tmp = create_CFPointer(x);
+                    } else if (sub_name == "c_f_procpointer") {
+                        tmp = create_CFProcPointer(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }

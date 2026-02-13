@@ -6903,10 +6903,18 @@ public:
                 llvm::Value* const charPTR_ref = llvm_utils->get_string_data(ASRUtils::get_string_type(fptr_type), llvm_fptr, true);
                 builder->CreateStore(cptr_to_charPTR, charPTR_ref);
             } else {
-                llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
-                    ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)), module.get());
-                llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_type->getPointerTo());
-                builder->CreateStore(llvm_cptr, llvm_fptr);
+                ASR::ttype_t* fptr_asr_type = ASRUtils::expr_type(fptr);
+                ASR::ttype_t* fptr_contained = ASRUtils::type_get_past_pointer(fptr_asr_type);
+                bool is_proc_ptr = ASR::is_a<ASR::FunctionType_t>(*fptr_contained);
+                llvm::Type* llvm_fptr_elem_type =llvm_utils->get_type_from_ttype_t_util(fptr, fptr_contained, module.get());
+                if (is_proc_ptr) {
+                    // procedure pointer cast to function pointer
+                    llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type);
+                    builder->CreateStore(llvm_cptr, llvm_fptr);
+                } else {
+                    llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type->getPointerTo());
+                    builder->CreateStore(llvm_cptr, llvm_fptr);
+                }
             }
             ptr_loads = ptr_loads_copy;
             tmp = nullptr;

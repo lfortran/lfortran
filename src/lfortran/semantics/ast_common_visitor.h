@@ -1807,7 +1807,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_associated", "c_funloc"
+        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc"
     };
 
     ASR::accessType dflt_access = ASR::Public;
