@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     2
                                     1_test_obj_ptr
-                                    11 ptr
+                                    12 ptr
                                     test_obj
                                     []
                                     ptr
@@ -103,6 +103,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_f_pointer
+                                    Public
+                                ),
+                            c_f_procpointer:
+                                (ExternalSymbol
+                                    2
+                                    c_f_procpointer
+                                    4 c_f_procpointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_procpointer
                                     Public
                                 ),
                             c_float:
@@ -403,11 +413,11 @@
                             test_obj:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             ptr:
                                                 (Variable
-                                                    11
+                                                    12
                                                     ptr
                                                     []
                                                     Local

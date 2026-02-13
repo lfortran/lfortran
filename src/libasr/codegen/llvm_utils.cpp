@@ -9198,7 +9198,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LCOMPILERS_ASSERT(false);
             }
 
-            if (llvm_utils->compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(src_expr)) {
+            if (ASRUtils::is_allocatable(src_expr)) {
                 // Check if src_data is not null before realloc operations
                 llvm::Value* src_data_not_null = builder->CreateICmpNE(
                     src_data, llvm::Constant::getNullValue(src_data->getType()));

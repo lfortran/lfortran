@@ -1998,32 +1998,43 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
             sym = arg_struct->m_symtab->resolve_symbol(read_write);
             expr_dt = args[0];
         }
-    } else {
+    }
+    if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
-            switch( proc->type ) {
-                case ASR::symbolType::Function: {
-                    process_overloaded_read_write_function(read_write, proc, args, arg_type,
-                        found, al, args[0]->base.loc, curr_scope,
-                        current_function_dependencies, current_module_dependencies, asr, sym,
-                        loc, expr_dt, err);
-                    break;
-                }
-                case ASR::symbolType::StructMethodDeclaration: {
-                    ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
-                    process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
-                        found, al, args[0]->base.loc, curr_scope,
-                        current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                        expr_dt, err, class_proc->m_self_argument);
-                    break;
-                }
-                default: {
-                    err("Only functions and class procedures can be used for generic read/write statement, found " + std::to_string(proc->type), loc);
+        auto process_proc_list = [&](ASR::symbol_t** procs, size_t n_procs) {
+            for( size_t i = 0; i < n_procs && !found; i++ ) {
+                ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
+                switch( proc->type ) {
+                    case ASR::symbolType::Function: {
+                        process_overloaded_read_write_function(read_write, proc, args, arg_type,
+                            found, al, args[0]->base.loc, curr_scope,
+                            current_function_dependencies, current_module_dependencies, asr, sym,
+                            loc, expr_dt, err);
+                        break;
+                    }
+                    case ASR::symbolType::StructMethodDeclaration: {
+                        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                        ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
+                        process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
+                            found, al, args[0]->base.loc, curr_scope,
+                            current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
+                            expr_dt, err, class_proc->m_self_argument);
+                        break;
+                    }
+                    default: {
+                        err("Only functions and class procedures can be used for generic read/write statement, found " + std::to_string(proc->type), loc);
+                    }
                 }
             }
+        };
+        if (ASR::is_a<ASR::CustomOperator_t>(*orig_sym)) {
+            ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+            process_proc_list(gen_proc->m_procs, gen_proc->n_procs);
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*orig_sym)) {
+            ASR::GenericProcedure_t* gen_proc = ASR::down_cast<ASR::GenericProcedure_t>(orig_sym);
+            process_proc_list(gen_proc->m_procs, gen_proc->n_procs);
+        } else {
+            err("Only generic procedures can be used for overloaded read/write statement, found " + std::to_string(orig_sym->type), loc);
         }
     }
     return found;

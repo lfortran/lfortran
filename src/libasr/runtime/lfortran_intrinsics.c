@@ -15,6 +15,13 @@
 #include <stddef.h>  /* ptrdiff_t */
 
 #define PI 3.14159265358979323846
+// Enum for float format types to avoid string comparison
+typedef enum {
+    FLOAT_FORMAT_F64,     // for default 64-bit float formatting
+    FLOAT_FORMAT_F32,     // for default 32-bit float formatting
+    FLOAT_FORMAT_CUSTOM   // for custom format strings like "F10.5"
+} FloatFormatType;
+
 #if defined(_WIN32)
 #  include <winsock2.h>
 #  include <io.h>
@@ -368,21 +375,22 @@ void handle_logical(char* format, bool val, char** result) {
 static void format_float_fortran(char* result, float val);
 static void format_double_fortran(char* result, double val);
 
-void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
+void handle_float(FloatFormatType format_type, char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     val = val * pow(10, scale); // scale the value
-    if (strcmp(format,"f-64") == 0) { //use c formatting.
+    if (format_type == FLOAT_FORMAT_F64) {
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
-    } else if(strcmp(format,"f-32") == 0){ //use c formatting.
+    } else if (format_type == FLOAT_FORMAT_F32) {
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     }
+    // FLOAT_FORMAT_CUSTOM: parse the format string
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
@@ -432,6 +440,12 @@ void handle_float(char* format, double val, int scale, char** result, bool use_s
                         1 /*dot `.`*/   +
                         decimal_digits  +
                         sign_plus_exist ;
+
+    bool drop_leading_zero = false;
+    if (integer_part == 0 && width > 0 && total_length > width) {
+        drop_leading_zero = true;
+        total_length -= 1;
+    }
     
     if (width == 0) {
         width = total_length;
@@ -449,8 +463,8 @@ void handle_float(char* format, double val, int scale, char** result, bool use_s
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && decimal_part!= 0 && format[1] == '0') {
-        strcat(formatted_value, "");
+    if (integer_part == 0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
+        // Omit the leading zero
     } else {
         strcat(formatted_value, int_str);
     }
@@ -2540,7 +2554,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     free(temp_buf);
                 } else if (tolower(value[0]) == 'f') {
                     char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                    handle_float(value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    FloatFormatType float_fmt_type;
+                    if (strcmp(value, "f-64") == 0) {
+                        float_fmt_type = FLOAT_FORMAT_F64;
+                    } else if (strcmp(value, "f-32") == 0) {
+                        float_fmt_type = FLOAT_FORMAT_F32;
+                    } else {
+                        float_fmt_type = FLOAT_FORMAT_CUSTOM;
+                    }
+                    handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
@@ -5817,8 +5839,8 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
     }
 
     if (unit_file_bin) {
-        int32_t temp = 0;
         if (access_id == 0) {
+            int32_t temp = 0;
             int32_t record_start = 0, record_end = 0;
             if (fread(&record_start, sizeof(int32_t), 1, filep) != 1 ||
                 fread(&temp, sizeof(int32_t), 1, filep) != 1 ||
@@ -5832,14 +5854,16 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
                 fprintf(stderr, "Error: Invalid record marker while reading logical.\n");
                 exit(1);
             }
+            *p = (temp != 0);
         } else {
+            int32_t temp = 0;
             if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read logical from binary file.\n");
                 exit(1);
             }
+            *p = (temp != 0);
         }
-        *p = (temp != 0);
     } else {
         char token[100] = {0};
         if (fscanf(filep, "%99s", token) != 1) {
@@ -5956,10 +5980,15 @@ LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t 
                 exit(1);
             }
         }
-        if (fread(p, sizeof(bool), array_size, filep) != (size_t)array_size) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
-            exit(1);
+        // Each logical element is stored as int32_t (4 bytes) in binary files
+        for (int i = 0; i < array_size; i++) {
+            int32_t temp = 0;
+            if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+                exit(1);
+            }
+            p[i] = (temp != 0);
         }
     } else {
         for (int i = 0; i < array_size; i++) {
@@ -6150,36 +6179,42 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
     }
 
     if (unit_file_bin) {
-        int32_t data_length = 0;
-
-        if (access_id == 0 && ftell(filep) == 0) {
-            if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+        if (access_id == 2 || access_id == 1) {
+            int32_t data_length = (int32_t)p_len;
+            if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                printf("Error reading data length from file.\n");
+                printf("Error reading data from file.\n");
                 exit(1);
             }
-        }
-
-        long current_pos = ftell(filep);
-        fseek(filep, 0L, SEEK_END);
-        long end_pos = ftell(filep);
-        fseek(filep, current_pos, SEEK_SET);
-
-        if (access_id == 0) {
-            data_length = (int32_t)(end_pos - current_pos - 4);
+            pad_with_spaces(*p, data_length, p_len);
         } else {
-            data_length = (int32_t)(end_pos - current_pos);
+            int32_t data_length = 0;
+
+            if (ftell(filep) == 0) {
+                if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    printf("Error reading data length from file.\n");
+                    exit(1);
+                }
+            }
+
+            long current_pos = ftell(filep);
+            fseek(filep, 0L, SEEK_END);
+            long end_pos = ftell(filep);
+            fseek(filep, current_pos, SEEK_SET);
+
+            data_length = (int32_t)(end_pos - current_pos - 4);
+
+            if (data_length > p_len) data_length = (int32_t)p_len;
+
+            if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                printf("Error reading data from file.\n");
+                exit(1);
+            }
+
+            pad_with_spaces(*p, data_length, p_len);
         }
-
-        if (data_length > p_len) data_length = (int32_t)p_len;
-
-        if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-            printf("Error reading data from file.\n");
-            exit(1);
-        }
-
-        pad_with_spaces(*p, data_length, p_len);
 
     } else {
         char *tmp_buffer = (char *)malloc((p_len + 1) * sizeof(char));
@@ -7856,7 +7891,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
-    if (filep != stdout && filep != stderr) {
+    // Do not truncate direct access files, as records may be written out of order
+    if (filep != stdout && filep != stderr && access_id != 2) {
         (void)!ftruncate(fileno(filep), ftell(filep));
     }
 }

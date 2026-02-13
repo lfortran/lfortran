@@ -5,11 +5,11 @@
             bindc_06:
                 (Program
                     (SymbolTable
-                        11
+                        12
                         {
                             c_f_pointer:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     c_f_pointer
                                     4 c_f_pointer
                                     lfortran_intrinsic_iso_c_binding
@@ -19,7 +19,7 @@
                                 ),
                             c_int:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     c_int
                                     4 c_int
                                     lfortran_intrinsic_iso_c_binding
@@ -29,7 +29,7 @@
                                 ),
                             c_ptr:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     c_ptr
                                     4 c_ptr
                                     lfortran_intrinsic_iso_c_binding
@@ -39,7 +39,7 @@
                                 ),
                             f_int4:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     f_int4
                                     2 f_int4
                                     bindc_06_mod
@@ -49,7 +49,7 @@
                                 ),
                             f_int8:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     f_int8
                                     2 f_int8
                                     bindc_06_mod
@@ -59,7 +59,7 @@
                                 ),
                             f_logical:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     f_logical
                                     2 f_logical
                                     bindc_06_mod
@@ -69,7 +69,7 @@
                                 ),
                             f_type_c_ptr:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     f_type_c_ptr
                                     2 f_type_c_ptr
                                     bindc_06_mod
@@ -79,7 +79,7 @@
                                 ),
                             ptr_f_type_c_ptr:
                                 (Variable
-                                    11
+                                    12
                                     ptr_f_type_c_ptr
                                     []
                                     Local
@@ -111,7 +111,7 @@
                                 "f_int4: "
                                 (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 11 f_int4)]
+                            (Var 12 f_int4)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -122,7 +122,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 11 f_int4)
+                            (Var 12 f_int4)
                             NotEq
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
@@ -140,7 +140,7 @@
                                 "f_int8: "
                                 (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 11 f_int8)]
+                            (Var 12 f_int8)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -151,7 +151,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 11 f_int8)
+                            (Var 12 f_int8)
                             NotEq
                             (Cast
                                 (IntegerConstant 2 (Integer 4) Decimal)
@@ -174,7 +174,7 @@
                                 "f_logical: "
                                 (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 11 f_logical)]
+                            (Var 12 f_logical)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -185,7 +185,7 @@
                     (If
                         ()
                         (LogicalBinOp
-                            (Var 11 f_logical)
+                            (Var 12 f_logical)
                             NEqv
                             (LogicalConstant
                                 .false.
@@ -200,8 +200,8 @@
                         []
                     )
                     (CPtrToPointer
-                        (Var 11 f_type_c_ptr)
-                        (Var 11 ptr_f_type_c_ptr)
+                        (Var 12 f_type_c_ptr)
+                        (Var 12 ptr_f_type_c_ptr)
                         ()
                         ()
                     )
@@ -212,7 +212,7 @@
                                 "ptr_f_type_c_ptr: "
                                 (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 11 ptr_f_type_c_ptr)]
+                            (Var 12 ptr_f_type_c_ptr)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -223,7 +223,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 11 ptr_f_type_c_ptr)
+                            (Var 12 ptr_f_type_c_ptr)
                             NotEq
                             (IntegerConstant 12 (Integer 4) Decimal)
                             (Logical 4)

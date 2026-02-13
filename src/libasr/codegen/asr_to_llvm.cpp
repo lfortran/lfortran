@@ -5165,6 +5165,39 @@ public:
             !is_list ) {
             llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
             fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            // For non-allocatable DescriptorArray character arrays,
+            // fill_array_details allocated an array of string_descriptors
+            // but their data pointers are uninitialized. Set the string
+            // length on descriptors[0], then allocate a contiguous
+            // character data buffer via set_array_of_strings_memory_on_heap.
+            if (!is_data_only && ASRUtils::is_character(*m_type)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(m_type));
+                if (str_type->m_len != nullptr &&
+                    str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+                    // Load descriptors[0] from the array's data pointer
+                    llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                        ptr_typ, ptr);
+                    llvm::Value* first_desc = builder->CreateLoad(
+                        llvm_data_type->getPointerTo(), data_ptr_ptr);
+                    // Set descriptors[0].length from the ASR string length
+                    setup_string_length(first_desc, str_type, str_type->m_len);
+                    // Compute array size (product of dimension lengths)
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    for (size_t r = 0; r < n_dims; r++) {
+                        load_array_size_deep_copy(m_dims[r].m_length);
+                        prod = builder->CreateMul(prod, tmp);
+                    }
+                    ptr_loads = ptr_loads_copy;
+                    // Allocate the flat character buffer
+                    llvm_utils->set_array_of_strings_memory_on_heap(
+                        str_type, first_desc,
+                        llvm_utils->get_string_length(str_type, first_desc),
+                        prod, false);
+                }
+            }
         }
         const bool special_array_type = ASRUtils::is_character(*m_type) || ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
         if( is_array_type && is_malloc_array_type &&
@@ -6903,10 +6936,18 @@ public:
                 llvm::Value* const charPTR_ref = llvm_utils->get_string_data(ASRUtils::get_string_type(fptr_type), llvm_fptr, true);
                 builder->CreateStore(cptr_to_charPTR, charPTR_ref);
             } else {
-                llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
-                    ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)), module.get());
-                llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_type->getPointerTo());
-                builder->CreateStore(llvm_cptr, llvm_fptr);
+                ASR::ttype_t* fptr_asr_type = ASRUtils::expr_type(fptr);
+                ASR::ttype_t* fptr_contained = ASRUtils::type_get_past_pointer(fptr_asr_type);
+                bool is_proc_ptr = ASR::is_a<ASR::FunctionType_t>(*fptr_contained);
+                llvm::Type* llvm_fptr_elem_type =llvm_utils->get_type_from_ttype_t_util(fptr, fptr_contained, module.get());
+                if (is_proc_ptr) {
+                    // procedure pointer cast to function pointer
+                    llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type);
+                    builder->CreateStore(llvm_cptr, llvm_fptr);
+                } else {
+                    llvm_cptr = builder->CreateBitCast(llvm_cptr,llvm_fptr_elem_type->getPointerTo());
+                    builder->CreateStore(llvm_cptr, llvm_fptr);
+                }
             }
             ptr_loads = ptr_loads_copy;
             tmp = nullptr;
@@ -13459,6 +13500,76 @@ public:
         return fn;
     }
 
+    void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
+            llvm::Value* unit_val, llvm::Value* iostat) {
+        ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+
+        this->visit_expr_wrapper(idl->m_start, true);
+        llvm::Value* start_val = tmp;
+        this->visit_expr_wrapper(idl->m_end, true);
+        llvm::Value* end_val = tmp;
+        llvm::Value* inc_val;
+        if (idl->m_increment) {
+            this->visit_expr_wrapper(idl->m_increment, true);
+            inc_val = tmp;
+        } else {
+            inc_val = llvm::ConstantInt::get(start_val->getType(), 1);
+        }
+
+        uint32_t loop_var_hash = get_hash((ASR::asr_t*)loop_var_sym);
+        llvm::Value* loop_var_ptr;
+        if (llvm_symtab.find(loop_var_hash) == llvm_symtab.end()) {
+            loop_var_ptr = builder->CreateAlloca(start_val->getType(), nullptr,
+                loop_var_sym->m_name);
+            llvm_symtab[loop_var_hash] = loop_var_ptr;
+        } else {
+            loop_var_ptr = llvm_symtab[loop_var_hash];
+        }
+
+        builder->CreateStore(start_val, loop_var_ptr);
+        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "idl.cond", fn);
+        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "idl.body", fn);
+        llvm::BasicBlock* loop_inc = llvm::BasicBlock::Create(context, "idl.inc", fn);
+        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(context, "idl.end", fn);
+
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_cond);
+        llvm::Value* curr_val = builder->CreateLoad(start_val->getType(), loop_var_ptr);
+        llvm::Value* cond = builder->CreateICmpSLE(curr_val, end_val);
+        builder->CreateCondBr(cond, loop_body, loop_end);
+        builder->SetInsertPoint(loop_body);
+
+        if (idl->n_values == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])) {
+            ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[0]);
+            generate_read_implied_do_loop(inner_idl, unit_val, iostat);
+        } else {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*idl->m_values[0]);
+            llvm::Value* elem_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
+            llvm::Function* read_fn = get_read_function(elem_type);
+            llvm::Value* read_elem_ptr = elem_ptr;
+            llvm::Type* expected_param_type = read_fn->getFunctionType()->getParamType(0);
+            if (read_elem_ptr->getType() != expected_param_type) {
+                read_elem_ptr = builder->CreateBitCast(read_elem_ptr, expected_param_type);
+            }
+            builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+        }
+
+        builder->CreateBr(loop_inc);
+        builder->SetInsertPoint(loop_inc);
+        llvm::Value* next_val = builder->CreateAdd(
+            builder->CreateLoad(start_val->getType(), loop_var_ptr), inc_val);
+        builder->CreateStore(next_val, loop_var_ptr);
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_end);
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
@@ -13903,79 +14014,14 @@ public:
                     }
                     // General case: generate a loop to read elements one by one
                     // This handles multi-dimensional arrays like (a(i,j), j=1,n)
-                    if (idl->n_values == 1 && ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0])) {
-                        ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
-                            ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
-
-                        // Get loop bounds
-                        this->visit_expr_wrapper(idl->m_start, true);
-                        llvm::Value* start_val = tmp;
-                        this->visit_expr_wrapper(idl->m_end, true);
-                        llvm::Value* end_val = tmp;
-                        llvm::Value* inc_val;
-                        if (idl->m_increment) {
-                            this->visit_expr_wrapper(idl->m_increment, true);
-                            inc_val = tmp;
-                        } else {
-                            inc_val = llvm::ConstantInt::get(start_val->getType(), 1);
+                    {
+                        bool can_handle = (idl->n_values == 1 &&
+                            (ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0]) ||
+                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])));
+                        if (can_handle) {
+                            generate_read_implied_do_loop(idl, unit_val, iostat);
+                            continue;
                         }
-
-                        // Create loop variable alloca if not already in symtab
-                        uint32_t loop_var_hash = get_hash((ASR::asr_t*)loop_var_sym);
-                        llvm::Value* loop_var_ptr;
-                        if (llvm_symtab.find(loop_var_hash) == llvm_symtab.end()) {
-                            loop_var_ptr = builder->CreateAlloca(start_val->getType(), nullptr,
-                                loop_var_sym->m_name);
-                            llvm_symtab[loop_var_hash] = loop_var_ptr;
-                        } else {
-                            loop_var_ptr = llvm_symtab[loop_var_hash];
-                        }
-
-                        // Initialize loop variable
-                        builder->CreateStore(start_val, loop_var_ptr);
-
-                        // Create loop blocks
-                        llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "idl.cond", fn);
-                        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "idl.body", fn);
-                        llvm::BasicBlock* loop_inc = llvm::BasicBlock::Create(context, "idl.inc", fn);
-                        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(context, "idl.end", fn);
-
-                        builder->CreateBr(loop_cond);
-
-                        // Loop condition
-                        builder->SetInsertPoint(loop_cond);
-                        llvm::Value* curr_val = builder->CreateLoad(start_val->getType(), loop_var_ptr);
-                        llvm::Value* cond = builder->CreateICmpSLE(curr_val, end_val);
-                        builder->CreateCondBr(cond, loop_body, loop_end);
-
-                        // Loop body - read one element
-                        builder->SetInsertPoint(loop_body);
-
-                        // Get pointer to array element
-                        int ptr_loads_copy = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*idl->m_values[0]);
-                        llvm::Value* elem_ptr = tmp;
-                        ptr_loads = ptr_loads_copy;
-
-                        // Read into this element
-                        ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
-                        llvm::Function* read_fn = get_read_function(elem_type);
-                        builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
-
-                        builder->CreateBr(loop_inc);
-
-                        // Loop increment
-                        builder->SetInsertPoint(loop_inc);
-                        llvm::Value* next_val = builder->CreateAdd(
-                            builder->CreateLoad(start_val->getType(), loop_var_ptr), inc_val);
-                        builder->CreateStore(next_val, loop_var_ptr);
-                        builder->CreateBr(loop_cond);
-
-                        // Continue after loop
-                        builder->SetInsertPoint(loop_end);
-                        continue;
                     }
                     // Unsupported ImpliedDoLoop pattern - fall through to default handling
                 }
@@ -14119,7 +14165,12 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
+                        llvm::Value* read_ptr = var_to_read_into;
+                        llvm::Type* expected_type = fn->getFunctionType()->getParamType(0);
+                        if (read_ptr->getType() != expected_type) {
+                            read_ptr = builder->CreateBitCast(read_ptr, expected_type);
+                        }
+                        builder->CreateCall(fn, {read_ptr, unit_val, iostat});
                     }
                 }
             }
@@ -14290,6 +14341,11 @@ public:
                     elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
                                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                    elem_ptr = llvm_utils->get_string_element_in_array(
+                        str_type, var_ptr,
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
                 } else {
                     llvm::Value *data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
                     data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
@@ -14584,6 +14640,11 @@ public:
                         elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                              llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                    } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                        ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                        elem_ptr = llvm_utils->get_string_element_in_array(
+                            str_type, var_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx));
                     } else {
                         llvm::Value* data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
                         data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
@@ -15444,7 +15505,84 @@ public:
                 }
                 llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i])) &&
+                    ASR::is_a<ASR::Logical_t>(*value_type_base)) {
+                    ASR::ArraySize_t* array_size_node = ASR::down_cast2<ASR::ArraySize_t>(
+                        ASR::make_ArraySize_t(al, m_values[i]->base.loc,
+                            m_values[i], nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size_node);
+                    llvm::Value* array_size_val = tmp;
+                    args.push_back(builder->CreateMul(kind_val, array_size_val));
+                    {
+                        int64_t ptr_loads_save = ptr_loads;
+                        int reduce_loads = 0;
+                        ptr_loads = 2;
+                        if (ASR::is_a<ASR::Var_t>(*m_values[i])) {
+                            ASR::Variable_t* var = ASRUtils::EXPR2VAR(m_values[i]);
+                            reduce_loads = var->m_intent == ASRUtils::intent_in;
+                            if (LLVM::is_llvm_pointer(*var->m_type)) {
+                                ptr_loads = 1;
+                            }
+                        }
+                        ptr_loads = ptr_loads - reduce_loads;
+                        ASR::ttype_t *arr_t = ASRUtils::expr_type(m_values[i]);
+                        this->visit_expr_load_wrapper(m_values[i], (ASRUtils::is_character(*arr_t) ? 0 : ptr_loads), true);
+                        ptr_loads = ptr_loads_save;
+                        load_non_array_non_character_pointers(m_values[i], arr_t, tmp);
+                        if (ASRUtils::is_array(arr_t) && ASRUtils::is_allocatable(arr_t)) {
+                            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(m_values[i],
+                                ASRUtils::extract_type(arr_t), module.get());
+                            tmp = llvm_utils->CreateLoad2(llvm_type->getPointerTo(), tmp);
+                        }
+                    }
+                    llvm::Value* src_ptr = tmp;
+                    llvm::Type* i8_ptr_ty = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+                    if (src_ptr->getType() != i8_ptr_ty) {
+                        src_ptr = builder->CreateBitCast(src_ptr, i8_ptr_ty);
+                    }
+
+                    llvm::Value* tmp_i32_arr = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt32Ty(context), array_size_val);
+
+                    llvm::BasicBlock *loop_head = llvm::BasicBlock::Create(
+                        context, "logical_expand_head", builder->GetInsertBlock()->getParent());
+                    llvm::BasicBlock *loop_body = llvm::BasicBlock::Create(
+                        context, "logical_expand_body", builder->GetInsertBlock()->getParent());
+                    llvm::BasicBlock *loop_end = llvm::BasicBlock::Create(
+                        context, "logical_expand_end", builder->GetInsertBlock()->getParent());
+
+                    llvm::Value* idx_ptr = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt32Ty(context));
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx_ptr);
+                    builder->CreateBr(loop_head);
+                    
+                    builder->SetInsertPoint(loop_head);
+                    llvm::Value* idx = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), idx_ptr);
+                    llvm::Value* cond = builder->CreateICmpSLT(idx, array_size_val);
+                    builder->CreateCondBr(cond, loop_body, loop_end);
+
+                    builder->SetInsertPoint(loop_body);
+                    idx = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr);
+                    llvm::Value* src_elem_ptr = builder->CreateGEP(
+                        llvm::Type::getInt8Ty(context), src_ptr, idx);
+                    llvm::Value* elem_i8 = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt8Ty(context), src_elem_ptr);
+                    llvm::Value* elem_i32 = builder->CreateZExt(
+                        elem_i8, llvm::Type::getInt32Ty(context));
+                    llvm::Value* dst_elem_ptr = builder->CreateGEP(
+                        llvm::Type::getInt32Ty(context), tmp_i32_arr, idx);
+                    builder->CreateStore(elem_i32, dst_elem_ptr);
+                    llvm::Value* next_idx = builder->CreateAdd(
+                        idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                    builder->CreateStore(next_idx, idx_ptr);
+                    builder->CreateBr(loop_head);
+                    
+                    builder->SetInsertPoint(loop_end);
+                    args.push_back(tmp_i32_arr);
+                    continue;
+                } else if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
                         m_values[i], nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);

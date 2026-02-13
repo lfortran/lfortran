@@ -62,6 +62,6 @@ patch -p1 < ci/parser.yy.patch
 sed -i '/^%expect-rr/d' src/lfortran/parser/parser.yy
 sed -i 's/^%expect .*/%expect 0/' src/lfortran/parser/parser.yy
 sed -i '/^%glr-parser/d' src/lfortran/parser/parser.yy
-(cd src/lfortran/parser && bison -Wall -d -r all parser.yy)
+(cd src/lfortran/parser && bison -Wall -d parser.yy)
 
 echo "Patched grammar is LALR(1), no essential conflicts in GLR."

@@ -46,6 +46,13 @@ interface
     integer, intent(in), optional :: shape(:)
     end subroutine
 
+    subroutine c_f_procpointer(cptr, fptr)
+    import c_funptr
+    type(c_funptr), intent(in) :: cptr
+    !procedure(*), pointer, intent(out) :: fptr
+    integer, pointer, intent(out) :: fptr
+    end subroutine
+
     !type(c_ptr) function c_loc(x)
     integer function c_loc(x)
     import c_ptr

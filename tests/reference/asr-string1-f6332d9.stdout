@@ -49,16 +49,16 @@
                             f_string_cptr:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
-                                                        14
+                                                        15
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -79,7 +79,7 @@
                                                                 ),
                                                             s:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     s
                                                                     []
                                                                     In
@@ -115,9 +115,9 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 14 s)]
+                                                    [(Var 15 s)]
                                                     []
-                                                    (Var 14 r)
+                                                    (Var 15 r)
                                                     Public
                                                     .false.
                                                     .false.
@@ -125,7 +125,7 @@
                                                 ),
                                             cptr:
                                                 (Variable
-                                                    13
+                                                    14
                                                     cptr
                                                     []
                                                     In
@@ -146,7 +146,7 @@
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
-                                                    13
+                                                    14
                                                     lfortran_tmp
                                                     []
                                                     Local
@@ -167,7 +167,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    13
+                                                    14
                                                     s
                                                     []
                                                     ReturnVar
@@ -207,13 +207,13 @@
                                         .false.
                                     )
                                     [f_string_cptr_n]
-                                    [(Var 13 cptr)]
+                                    [(Var 14 cptr)]
                                     [(Assignment
-                                        (Var 13 lfortran_tmp)
+                                        (Var 14 lfortran_tmp)
                                         (FunctionCall
-                                            13 c_strlen
+                                            14 c_strlen
                                             ()
-                                            [((Var 13 cptr))]
+                                            [((Var 14 cptr))]
                                             (Integer 8)
                                             ()
                                             ()
@@ -223,13 +223,13 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 13 s)
+                                        (Var 14 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
-                                            [((Var 13 cptr))
-                                            ((Var 13 lfortran_tmp))]
-                                            (String 1 (Var 13 lfortran_tmp) ExpressionLength DescriptorString)
+                                            [((Var 14 cptr))
+                                            ((Var 14 lfortran_tmp))]
+                                            (String 1 (Var 14 lfortran_tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )
@@ -237,7 +237,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 13 s)
+                                    (Var 14 s)
                                     Public
                                     .false.
                                     .false.
@@ -246,11 +246,11 @@
                             f_string_cptr_n:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        16
                                         {
                                             cptr:
                                                 (Variable
-                                                    15
+                                                    16
                                                     cptr
                                                     []
                                                     In
@@ -271,7 +271,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    15
+                                                    16
                                                     n
                                                     []
                                                     In
@@ -292,14 +292,14 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    15
+                                                    16
                                                     s
                                                     [n]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 15 n) ExpressionLength DescriptorString)
+                                                    (String 1 (Var 16 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -333,10 +333,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 15 cptr)
-                                    (Var 15 n)]
+                                    [(Var 16 cptr)
+                                    (Var 16 n)]
                                     []
-                                    (Var 15 s)
+                                    (Var 16 s)
                                     Public
                                     .false.
                                     .false.
@@ -345,11 +345,11 @@
                             f_string~genericprocedure:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             c_string:
                                                 (Variable
-                                                    12
+                                                    13
                                                     c_string
                                                     []
                                                     In
@@ -375,7 +375,7 @@
                                                 ),
                                             f_string:
                                                 (Variable
-                                                    12
+                                                    13
                                                     f_string
                                                     []
                                                     ReturnVar
@@ -420,9 +420,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 12 c_string)]
+                                    [(Var 13 c_string)]
                                     []
-                                    (Var 12 f_string)
+                                    (Var 13 f_string)
                                     Public
                                     .false.
                                     .false.
@@ -431,11 +431,11 @@
                             string_t:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             s:
                                                 (Variable
-                                                    11
+                                                    12
                                                     s
                                                     []
                                                     Local

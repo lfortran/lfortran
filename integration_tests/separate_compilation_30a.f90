@@ -1,4 +1,4 @@
-module separate_compilation_31a_module
+module separate_compilation_30a_module
     implicit none
     private
 
@@ -24,4 +24,4 @@ contains
         self%obj = obj
     end function constructor
 
-end module separate_compilation_31a_module
+end module separate_compilation_30a_module
