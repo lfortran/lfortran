@@ -31,13 +31,13 @@ module continue_compilation_1_mod
         module procedure assign_bad_rhs
     end interface
 
+    type :: Base
+        integer :: x
+    end type Base
 
-
-
-
-
-
-
+    type, extends(Base) :: Derived
+        real :: r
+    end type Derived
 
 
 
@@ -261,8 +261,8 @@ program continue_compilation_1
 
     integer :: bad_x
     type(ieee_class_type) :: ieee_cls
-
-
+    type(Base) :: base_var
+    type(Derived) :: derived_var
 
 
 
@@ -565,6 +565,7 @@ program continue_compilation_1
     integer, intent(out) :: out_intent
     integer, intent(in) :: in_intent
     
+    base_var = derived_var
     contains
     subroutine sub(f)
         interface
