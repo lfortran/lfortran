@@ -6050,15 +6050,7 @@ public:
         }
         void visit_FunctionCall(const ASR::FunctionCall_t &x){
             identifiers.push_back(al, ASRUtils::symbol_name(x.m_name));
-            for (size_t i = 0; i < x.n_args; i++) {
-                visit_call_arg(x.m_args[i]);
-            }
-            visit_ttype(*x.m_type);
-            if (x.m_value) {
-                visit_expr(*x.m_value);
-            }
-            // Match VerifyVisitor dependency accounting: dependencies from m_dt
-            // are not treated as variable dependencies.
+            ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression>::visit_FunctionCall(x);
         }
 };
 
