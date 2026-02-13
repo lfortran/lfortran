@@ -14157,42 +14157,37 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
-            bool is_struct_method = ASR::is_a<ASR::StructMethodDeclaration_t>(*v);
-            ASR::symbol_t* func_sym = nullptr;
-            if (is_struct_method) {
-                // For operators, import and then use the underlying function,
-                // not the struct method wrapper
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
+                // For struct method operators, create an ExternalSymbol to
+                // the underlying function (not the method wrapper) to avoid
+                // the LLVM backend expecting m_dt to be set
                 v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
                 ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(
                     ASRUtils::symbol_get_past_external(v));
-                func_sym = sm->m_proc;
+                ASR::symbol_t* func_sym = sm->m_proc;
+                ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
+                std::string func_ext_name = std::string(ASRUtils::symbol_name(v)) + "_func";
+                ASR::symbol_t* existing = current_scope->resolve_symbol(func_ext_name);
+                if (existing == nullptr) {
+                    v = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, x.base.base.loc, current_scope,
+                            s2c(al, func_ext_name), func_sym,
+                            ASRUtils::symbol_name(func_parent), nullptr, 0,
+                            ASRUtils::symbol_name(func_sym), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(func_ext_name, v);
+                } else {
+                    v = existing;
+                }
             } else {
                 std::string func_name = ASRUtils::symbol_name(v);
-                ASR::symbol_t *resolved_v = current_scope->resolve_symbol(func_name);
-                if (resolved_v == nullptr) {
-                    resolved_v = current_scope->resolve_symbol(func_name + "@~concat");
+                v = current_scope->resolve_symbol(func_name);
+                if (v == nullptr) {
+                    v = current_scope->resolve_symbol(func_name + "@~concat");
                 }
-                if (resolved_v != nullptr) {
-                    v = resolved_v;
-                }
-                func_sym = v;
-            }
-            // Check if symbol is accessible from current scope
-            // Allow if it's an ExternalSymbol, or if it's accessible through parent scopes
-            if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter() &&
-                !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                // Check if symbol is accessible through parent scope hierarchy
-                bool is_accessible = false;
-                SymbolTable* scope = current_scope;
-                while (scope != nullptr) {
-                    if (scope->get_counter() == ASRUtils::symbol_parent_symtab(v)->get_counter()) {
-                        is_accessible = true;
-                        break;
-                    }
-                    scope = scope->parent;
-                }
-                if (!is_accessible) {
-                    std::string func_name = ASRUtils::symbol_name(v);
+                if (v == nullptr) {
                     diag.add(Diagnostic("'" + func_name +
                         "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
@@ -14200,33 +14195,8 @@ public:
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-            // For struct methods in operators, create an ExternalSymbol to the function
-            // to avoid LLVM backend expecting m_dt to be set
-            ASR::symbol_t* call_sym = v;
-            if (is_struct_method && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                ASR::ExternalSymbol_t* es = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-                std::string func_ext_name = std::string(es->m_name) + "_func";
-                ASR::symbol_t* existing_func_ext = current_scope->resolve_symbol(func_ext_name);
-                if (existing_func_ext == nullptr) {
-                    // Get the module that contains the function
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    const char* module_name = ASRUtils::symbol_name(func_parent);
-                    ASR::symbol_t* func_ext = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_ext_name), func_sym,
-                            s2c(al, module_name), nullptr, 0,
-                            ASRUtils::symbol_name(func_sym), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_ext_name, func_ext);
-                    call_sym = func_ext;
-                } else {
-                    call_sym = existing_func_ext;
-                }
-            }
-            tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, call_sym,
-                call_sym, args.p, args.size(), return_type, nullptr, nullptr, current_scope,
+            tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
+                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope,
                 current_function_dependencies, compiler_options.implicit_argument_casting);
             tmp = ASR::make_OverloadedStringConcat_t(al, x.base.base.loc,
                 left, right, return_type, nullptr, ASRUtils::EXPR(tmp));
