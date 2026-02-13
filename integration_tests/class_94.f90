@@ -34,7 +34,7 @@ contains
         integer :: i
 
         do i = 1, size(arr)
-             select type(arr)   !! TODO: fix this select type
+             select type(arr)
              type is (base_type)
                 arr(i)%value = arr(i)%value + 1
              type is (extended_type)
