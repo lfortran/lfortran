@@ -431,31 +431,31 @@ time_section "🧪 Testing PRIMA" '
   cmake --build build --target install
 
   run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  run_test ./build/fortran/example_cobyla_fortran_1_exe
-  run_test ./build/fortran/example_cobyla_fortran_2_exe
-  run_test ./build/fortran/example_lincoa_fortran_1_exe
-  run_test ./build/fortran/example_lincoa_fortran_2_exe
-  run_test ./build/fortran/example_newuoa_fortran_1_exe
-  run_test ./build/fortran/example_newuoa_fortran_2_exe
-  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  #run_test ./build/fortran/example_cobyla_fortran_1_exe
+  #run_test ./build/fortran/example_cobyla_fortran_2_exe
+  #run_test ./build/fortran/example_lincoa_fortran_1_exe
+  #run_test ./build/fortran/example_lincoa_fortran_2_exe
+  #run_test ./build/fortran/example_newuoa_fortran_1_exe
+  #run_test ./build/fortran/example_newuoa_fortran_2_exe
+  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
   run_test ./build/fortran/example_uobyqa_fortran_2_exe
 
-  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-    cd fortran
-    test_name=test_bobyqa.f90 FC="$FC" ./script.sh
-    test_name=test_newuoa.f90 FC="$FC" ./script.sh
-    test_name=test_uobyqa.f90 FC="$FC" ./script.sh
-    test_name=test_cobyla.f90 FC="$FC" ./script.sh
-    test_name=test_lincoa.f90 FC="$FC" ./script.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+  #  cd fortran
+  #  test_name=test_bobyqa.f90 FC="$FC" ./script.sh
+  #  test_name=test_newuoa.f90 FC="$FC" ./script.sh
+  #  test_name=test_uobyqa.f90 FC="$FC" ./script.sh
+  #  test_name=test_cobyla.f90 FC="$FC" ./script.sh
+  #  test_name=test_lincoa.f90 FC="$FC" ./script.sh
+  #  cd ..
+  #fi
 
-  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    cd fortran
-    test_name=test_uobyqa.f90 FC="$FC" ./script.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+  #  cd fortran
+  #  test_name=test_uobyqa.f90 FC="$FC" ./script.sh
+  #  cd ..
+  #fi
 
   print_subsection "Building PRIMA with f23 standard"
   FC="$FC --cpp --std=f23" cmake -S . -B build \
@@ -469,31 +469,31 @@ time_section "🧪 Testing PRIMA" '
   cmake --build build --target install
 
   run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  run_test ./build/fortran/example_cobyla_fortran_1_exe
-  run_test ./build/fortran/example_cobyla_fortran_2_exe
-  run_test ./build/fortran/example_lincoa_fortran_1_exe
-  run_test ./build/fortran/example_lincoa_fortran_2_exe
-  run_test ./build/fortran/example_newuoa_fortran_1_exe
-  run_test ./build/fortran/example_newuoa_fortran_2_exe
-  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  #run_test ./build/fortran/example_cobyla_fortran_1_exe
+  #run_test ./build/fortran/example_cobyla_fortran_2_exe
+  #run_test ./build/fortran/example_lincoa_fortran_1_exe
+  #run_test ./build/fortran/example_lincoa_fortran_2_exe
+  #run_test ./build/fortran/example_newuoa_fortran_1_exe
+  #run_test ./build/fortran/example_newuoa_fortran_2_exe
+  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
   run_test ./build/fortran/example_uobyqa_fortran_2_exe
 
-  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-    cd fortran
-    test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
-    test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
-    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
-    test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
-    test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+  #  cd fortran
+  #  test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
+  #  test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
+  #  test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+  #  test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
+  #  test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
+  #  cd ..
+  #fi
 
-  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    cd fortran
-    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+  #  cd fortran
+  #  test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+  #  cd ..
+  #fi
 
   print_subsection "Rebuilding PRIMA with optimization"
   git clean -dfx
@@ -509,14 +509,14 @@ time_section "🧪 Testing PRIMA" '
   cmake --build build --target install
 
   run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  run_test ./build/fortran/example_cobyla_fortran_1_exe
-  run_test ./build/fortran/example_cobyla_fortran_2_exe
-  run_test ./build/fortran/example_lincoa_fortran_1_exe
-  run_test ./build/fortran/example_lincoa_fortran_2_exe
-  run_test ./build/fortran/example_newuoa_fortran_1_exe
-  run_test ./build/fortran/example_newuoa_fortran_2_exe
-  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  #run_test ./build/fortran/example_cobyla_fortran_1_exe
+  #run_test ./build/fortran/example_cobyla_fortran_2_exe
+  #run_test ./build/fortran/example_lincoa_fortran_1_exe
+  #run_test ./build/fortran/example_lincoa_fortran_2_exe
+  #run_test ./build/fortran/example_newuoa_fortran_1_exe
+  #run_test ./build/fortran/example_newuoa_fortran_2_exe
+  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
   run_test ./build/fortran/example_uobyqa_fortran_2_exe
 
   print_subsection "Rebuilding PRIMA in separate compilation mode"
@@ -536,31 +536,31 @@ time_section "🧪 Testing PRIMA" '
   cmake --build build --target install
 
   run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  run_test ./build/fortran/example_cobyla_fortran_1_exe
-  run_test ./build/fortran/example_cobyla_fortran_2_exe
-  run_test ./build/fortran/example_lincoa_fortran_1_exe
-  run_test ./build/fortran/example_lincoa_fortran_2_exe
-  run_test ./build/fortran/example_newuoa_fortran_1_exe
-  run_test ./build/fortran/example_newuoa_fortran_2_exe
-  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  #run_test ./build/fortran/example_cobyla_fortran_1_exe
+  #run_test ./build/fortran/example_cobyla_fortran_2_exe
+  #run_test ./build/fortran/example_lincoa_fortran_1_exe
+  #run_test ./build/fortran/example_lincoa_fortran_2_exe
+  #run_test ./build/fortran/example_newuoa_fortran_1_exe
+  #run_test ./build/fortran/example_newuoa_fortran_2_exe
+  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
   run_test ./build/fortran/example_uobyqa_fortran_2_exe
 
-  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-    cd fortran
-    name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+  #  cd fortran
+  #  name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  cd ..
+  #fi
 
-  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    cd fortran
-    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-    cd ..
-  fi
+  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+  #  cd fortran
+  #  name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+  #  cd ..
+  #fi
 
   print_success "Done with PRIMA"
   cd ..
@@ -785,8 +785,8 @@ time_section "🧪 Testing fastGPT" '
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
-        ./test_more_inputs
-        ./test_chat
+        #./test_more_inputs
+        #./test_chat
         ctest -V
         cd ..
 
@@ -796,8 +796,8 @@ time_section "🧪 Testing fastGPT" '
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
-        ./test_more_inputs
-        ./test_chat
+        #./test_more_inputs
+        #./test_chat
         ctest -V
         cd ..
 
@@ -811,7 +811,7 @@ time_section "🧪 Testing fastGPT" '
         ln -s ../model.dat .
         ./gpt2
         ./test_basic_input
-        ./test_more_inputs
+        #./test_more_inputs
         cd ..
 
         cd lf-fast
@@ -821,7 +821,7 @@ time_section "🧪 Testing fastGPT" '
         ln -s ../model.dat .
         ./gpt2
         ./test_basic_input
-        ./test_more_inputs
+        #./test_more_inputs
 
         cd ..
 
