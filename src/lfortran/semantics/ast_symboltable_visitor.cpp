@@ -942,7 +942,20 @@ public:
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
                     if (var->m_type_declaration != nullptr) {
                         std::string type_decl_name = ASRUtils::symbol_name(var->m_type_declaration);
-                        ASR::symbol_t *local_sym = parent_scope->get_symbol(type_decl_name);
+                        ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
+                        if (local_sym == nullptr) {
+                            // Create ExternalSymbol in the submodule for the type declaration
+                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(type_decl_name));
+                            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(ASRUtils::symbol_parent_symtab(orig_sym)->asr_owner);
+                            if (orig_sym && ASR::is_a<ASR::Module_t>(*owner)) {
+                               ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
+                                   al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
+                                   orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
+                                       s2c(al, type_decl_name), dflt_access));
+                               current_scope->add_symbol(type_decl_name, external_sym);
+                               local_sym = external_sym;
+                            }
+                        }
                         if (local_sym != nullptr && local_sym != var->m_type_declaration) {
                             var->m_type_declaration = local_sym;
                         }
