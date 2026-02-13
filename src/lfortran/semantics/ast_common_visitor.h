@@ -2538,13 +2538,12 @@ public:
             != generic_procedures.end());
     }
 
-    bool is_type_bound_func_call_without_args(AST::expr_t* expr) {
+    bool is_type_bound_func_call(AST::expr_t* expr) {
         if (!AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
             return false;
         }
         AST::FuncCallOrArray_t* call = AST::down_cast<AST::FuncCallOrArray_t>(expr);
-        return call->n_member > 0 && call->n_args == 0 &&
-               call->n_subargs == 0 && call->n_keywords == 0;
+        return call->n_member > 0;
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
@@ -2591,7 +2590,7 @@ public:
             if (m_dim[i].m_end) {
                 ASR::expr_t* end{};
                 if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_end) ||
-                   is_type_bound_func_call_without_args(m_dim[i].m_end)){ // Delay
+                   is_type_bound_func_call(m_dim[i].m_end)){ // Delay
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_length,
                         current_scope, m_dim[i].m_end, var_name, 
                         [this](ASR::expr_t* start){dimension_attribute_error_check(start);});
