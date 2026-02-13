@@ -17533,56 +17533,31 @@ public:
                     builder->CreateBr(optional_check_mergeBB);
                     start_new_block(optional_check_mergeBB);
                 }
-            } else if (ASRUtils::is_allocatable(arg_expr_type)) {
-                ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
-                ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i + is_method]);
-                LCOMPILERS_ASSERT(func_arg_variable != nullptr);
-                if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
-                    ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
-                    llvm_utils->generate_runtime_error(expr_is_unallocated(arg_expr),
-                            "Argument %d of subroutine %s is unallocated.",
+            } else if (ASRUtils::is_allocatable(arg_expr_type) || ASR::is_a<ASR::StringSection_t>(*arg_expr)) {
+                ASR::expr_t* alloc_check_expr = arg_expr;
+                if (ASR::is_a<ASR::StringSection_t>(*arg_expr)) {
+                    alloc_check_expr =ASR::down_cast<ASR::StringSection_t>(arg_expr)->m_arg;
+                }
+                if (ASR::is_a<ASR::Var_t>(*alloc_check_expr)) {
+                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(alloc_check_expr);
+                    // Only proceed if the source variable is actually allocatable
+                    if (!ASRUtils::is_allocatable(var->m_type)) {
+                        continue; // 
+                    }
+                    ASR::FunctionType_t* ft =ASRUtils::get_FunctionType(function);
+                    ASR::Variable_t* func_arg_variable =ASRUtils::expr_to_variable_or_null(function->m_args[i + is_method]);
+                    LCOMPILERS_ASSERT(func_arg_variable != nullptr);
+
+                    if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
+                        ASRUtils::symbol_intent((ASR::symbol_t*)func_arg_variable)!= ASRUtils::intent_out) {
+                        llvm::Value* cond = expr_is_unallocated(alloc_check_expr);
+                        llvm_utils->generate_runtime_error(cond,
+                            "Argument '%s' of subroutine %s is unallocated.",
                             infile,
                             arg_expr->base.loc,
                             location_manager,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
-                }
-            } else if (ASR::is_a<ASR::StringSection_t>(*arg_expr)) {
-                ASR::StringSection_t* str_section = ASR::down_cast<ASR::StringSection_t>(arg_expr);
-                ASR::expr_t* source_expr = str_section->m_arg;
-                if (ASR::is_a<ASR::Var_t>(*source_expr)) {
-                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(source_expr);
-                    const std::string &arg_name = var->m_name;
-                    if (ASRUtils::is_allocatable(var->m_type)) {
-                        ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
-                        ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i + is_method]);
-                        LCOMPILERS_ASSERT(func_arg_variable != nullptr);
-                        
-                        if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) && ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
-                            int64_t ptr_loads_copy = ptr_loads;
-                            ptr_loads = 1 - !LLVM::is_llvm_pointer(*var->m_type);
-                            this->visit_expr_wrapper(source_expr, false);
-                            ptr_loads = ptr_loads_copy;
-
-                            llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(source_expr, var->m_type, module.get());
-                            llvm::Value* cond = nullptr;                            
-                            if (ASRUtils::is_string_only(var->m_type)) {
-                                tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(var->m_type)), tmp);
-                            }
-                            
-                            cond = builder->CreateICmpEQ(builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
-                                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
-                                llvm::Type::getInt64Ty(context)));
-                            
-                            llvm_utils->generate_runtime_error(cond,
-                                "Argument '%s' of subroutine %s is unallocated.",
-                                infile,
-                                arg_expr->base.loc,
-                                location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, arg_name),
-                                LCompilers::create_global_string_ptr(context, *module, *builder,
-                                    ASRUtils::symbol_name(x.m_name)));
-                        }
+                            LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name),
+                            LCompilers::create_global_string_ptr(context, *module, *builder,ASRUtils::symbol_name(x.m_name)));
                     }
                 }
             }
