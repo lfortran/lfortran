@@ -14167,36 +14167,17 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
-                // Type-bound operator: resolve the underlying function
-                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = sm->m_proc;
-                std::string func_name = ASRUtils::symbol_name(func_sym);
-                v = current_scope->resolve_symbol(func_name);
-                if (v == nullptr) {
-                    // Function is in another module, import it
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    v = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_name), func_sym,
-                            ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_name, v);
-                }
-            } else {
-                std::string func_name = ASRUtils::symbol_name(v);
-                v = current_scope->resolve_symbol(func_name);
-                if (v == nullptr) {
-                    v = current_scope->resolve_symbol(func_name + "@~concat");
-                }
-                if (v == nullptr) {
-                    diag.add(Diagnostic("'" + func_name +
-                        "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
+            std::string func_name = ASRUtils::symbol_name(v);
+            v = current_scope->resolve_symbol(func_name);
+            if (v == nullptr) {
+                std::string mangled_name = func_name + "@~concat";
+                func_name = mangled_name;
+            }
+            v = current_scope->resolve_symbol(func_name);
+            if( v == nullptr ) {
+                diag.add(Diagnostic("'" + func_name +
+                    "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {v->base.loc})}));
+                throw SemanticAbort();
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
