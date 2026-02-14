@@ -7193,7 +7193,25 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
+                    // When is_method is true, FunctionParam(0) refers to 'self' (a_dt),
+                    // but a_args doesn't include 'self'. We need to construct a full
+                    // args array with a_dt prepended so FunctionParam indices match.
+                    ASR::call_arg_t* full_args = a_args;
+                    size_t full_n_args = n_args;
+                    Vec<ASR::call_arg_t> full_args_vec;
+                    if (is_method && a_dt) {
+                        full_args_vec.reserve(al, n_args + 1);
+                        ASR::call_arg_t self_arg;
+                        self_arg.loc = a_dt->base.loc;
+                        self_arg.m_value = a_dt;
+                        full_args_vec.push_back(al, self_arg);
+                        for (size_t j = 0; j < n_args; j++) {
+                            full_args_vec.push_back(al, a_args[j]);
+                        }
+                        full_args = full_args_vec.p;
+                        full_n_args = full_args_vec.n;
+                    }
+                    ReplaceFunctionParamWithArg r(al, full_args, full_n_args, false);
                     SetChar temp_function_dependencies;
                     CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
                     bool valid_symbols = true;
