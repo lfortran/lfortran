@@ -129,6 +129,11 @@ contains
         integer, intent(out) :: rhs
     end subroutine assign_bad_rhs
 
+    subroutine test_assumed_size_nonlast_dim(a, b)
+        integer, intent(in) :: a(*, 1)
+        real :: b(*, 10)
+    end subroutine test_assumed_size_nonlast_dim
+
 
 
 
@@ -253,6 +258,8 @@ program continue_compilation_1
     type(MyClass) :: err_obj3 = non_parameter_var
     type(MyClass) :: err_obj4 = myclass_array
     type(MyClass) :: err_obj5 = uninitialized_param_local
+    integer, intent(out) :: out_intent_err
+    integer, intent(in) :: in_intent_err
 
     ! Unary defined operator with missing procedure
     interface operator(.bad.)
