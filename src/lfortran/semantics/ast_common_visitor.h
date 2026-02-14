@@ -7556,6 +7556,65 @@ public:
             if (type == nullptr) {
                 type = expr_type;
                 extracted_type = ASRUtils::extract_type(type);
+                if (ASR::is_a<ASR::Tuple_t>(*extracted_type)) {
+                     ASR::Tuple_t *t = ASR::down_cast<ASR::Tuple_t>(extracted_type);
+                     if (t->n_type > 0) {
+                         // Check for mixed types and report error, OR cast if compatible
+                         bool has_numeric = true;
+                         for(size_t k=0; k<t->n_type; k++) {
+                             ASR::ttype_t* t_extracted = ASRUtils::extract_type(t->m_type[k]);
+                             if (!(ASRUtils::is_integer(*t_extracted) || ASRUtils::is_real(*t_extracted)
+                                || ASRUtils::is_complex(*t_extracted))) {
+                                 has_numeric = false;
+                                 break;
+                             }
+                        }
+
+                        if (has_numeric) {
+                             // Determine dominant type
+                             ASR::ttype_t* dominant_type = t->m_type[0];
+                             for(size_t k=1; k<t->n_type; k++) {
+                                 ASR::ttype_t* curr = t->m_type[k];
+                                 ASR::ttype_t* t1 = ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(dominant_type));
+                                 ASR::ttype_t* t2 = ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(curr));
+                                 int p1 = ImplicitCastRules::get_type_priority(t1->type);
+                                 int p2 = ImplicitCastRules::get_type_priority(t2->type);
+                                 if (p1 < p2) {
+                                     dominant_type = curr;
+                                 } else if (p1 == p2) {
+                                     int k1 = ASRUtils::extract_kind_from_ttype_t(t1);
+                                     int k2 = ASRUtils::extract_kind_from_ttype_t(t2);
+                                     if (k1 < k2) {
+                                         dominant_type = curr;
+                                     }
+                                 }
+                             }
+                             if (dominant_type) {
+                                  // Cast elements in ImpliedDoLoop
+                                  if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                                      ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                                      for(size_t k=0; k<idl->n_values; k++) {
+                                          ImplicitCastRules::set_converted_value(al, idl->m_values[k]->base.loc,
+                                              &idl->m_values[k], ASRUtils::expr_type(idl->m_values[k]), dominant_type, diag);
+                                      }
+                                      idl->m_type = dominant_type;
+                                      type = dominant_type;
+                                      extracted_type = ASRUtils::extract_type(type);
+                                  }
+                             }
+                        } else {
+                             ASR::ttype_t *first_t = t->m_type[0];
+                             for(size_t k=1; k<t->n_type; k++) {
+                                 if (!ASRUtils::check_equal_type(t->m_type[k], first_t, expr, expr, true)) {
+                                     std::string msg = "Different types of elements found in array constructor: " + ASRUtils::type_to_str_with_kind(first_t, expr) + 
+                                                    " and " + ASRUtils::type_to_str_with_kind(t->m_type[k], expr);
+                                     diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+                                     throw SemanticAbort();
+                                 }
+                             }
+                        }
+                     }
+                }
             } else if (is_type_spec_ommitted) {
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
@@ -12184,8 +12243,8 @@ public:
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
-            type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
-        }
+        type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
+    }
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                         a_var, a_start, a_end, a_increment,
                                         type, nullptr);
