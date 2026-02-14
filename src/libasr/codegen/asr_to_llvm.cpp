@@ -12880,12 +12880,12 @@ public:
             }
             case (ASR::cast_kindType::ClassToStruct): {
                 ASR::symbol_t* struct_sym = nullptr;
-                if (x.m_dest) {
+                if (x.m_dest_struct) {
                     struct_sym = ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest));
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest_struct));
                 }
                 this->visit_expr_load_wrapper(x.m_arg, 0);
-                ASR::expr_t* dest_arg = x.m_dest ? x.m_dest : const_cast<ASR::expr_t*>(&x.base);
+                ASR::expr_t* dest_arg = x.m_dest_struct ? x.m_dest_struct : const_cast<ASR::expr_t*>(&x.base);
                 tmp = convert_class_to_type(x.m_arg, dest_arg, x.m_type, tmp);
                 if (struct_sym) {
                     current_der_type_name = ASRUtils::symbol_name(struct_sym);
@@ -12894,9 +12894,9 @@ public:
             }
             case (ASR::cast_kindType::ClassToClass): {
                 ASR::symbol_t* struct_sym = nullptr;
-                if (x.m_dest) {
+                if (x.m_dest_struct) {
                     struct_sym = ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest));
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_dest_struct));
                 }
                 this->visit_expr_load_wrapper(x.m_arg, 0);
                 tmp = convert_class_to_class(x.m_arg, tmp, x.m_type, struct_sym);

@@ -177,7 +177,7 @@ expr
     | OverloadedBoolOp(expr left, logicalbinop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedUnaryMinus(expr arg, ttype type, expr? value, expr overloaded)
     | OverloadedStringConcat(expr left, expr right, ttype type, expr? value, expr overloaded)
-    | Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
+    | Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest_struct)
     | ArrayPhysicalCast(expr arg, array_physical_type old, array_physical_type new, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
