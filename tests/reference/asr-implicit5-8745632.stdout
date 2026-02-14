@@ -241,6 +241,7 @@
                                             RealToReal
                                             (Real 8)
                                             ()
+                                            ()
                                         )
                                         (Real 8)
                                         ()
@@ -250,6 +251,7 @@
                                         (Var 2 z)
                                         RealToReal
                                         (Real 8)
+                                        ()
                                         ()
                                     )
                                     (Real 8)
@@ -261,6 +263,7 @@
                             )
                             RealToReal
                             (Real 4)
+                            ()
                             ()
                         )
                         ()
@@ -285,6 +288,7 @@
                                     (Var 2 n)
                                     IntegerToReal
                                     (Real 8)
+                                    ()
                                     ()
                                 )
                                 (Real 8)

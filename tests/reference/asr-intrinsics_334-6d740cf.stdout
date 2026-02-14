@@ -383,7 +383,18 @@
                                         ()
                                         (IntegerCompare
                                             (StructInstanceMember
-                                                (Var 2 struct_to3)
+                                                (Cast
+                                                    (Var 2 struct_to3)
+                                                    ClassToStruct
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    (Var 2 toml_value)
+                                                )
                                                 5 1_toml_value_x
                                                 (Integer 4)
                                                 ()
@@ -420,7 +431,18 @@
                                         ()
                                         (IntegerCompare
                                             (StructInstanceMember
-                                                (Var 2 struct_to3)
+                                                (Cast
+                                                    (Var 2 struct_to3)
+                                                    ClassToStruct
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    (Var 2 toml_value)
+                                                )
                                                 6 1_toml_value_x
                                                 (Integer 4)
                                                 ()

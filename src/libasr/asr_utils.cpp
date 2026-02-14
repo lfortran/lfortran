@@ -41,7 +41,7 @@ inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const strin
     if(is_length_present && is_size_present){ // character()
        return ASR::down_cast2<ASR::Cast_t>(
                 ASR::make_Cast_t(al, string_expr->base.loc, string_expr
-                            , ASR::StringToArray, array_type_dup, nullptr));
+                            , ASR::StringToArray, array_type_dup, nullptr, nullptr));
     } else if(is_length_present && !is_size_present){
         ASRBuilder b(al, string_expr->base.loc);
         ASR::expr_t* const castedString_len = extract_kind_from_ttype_t(expr_type(dest_string_t->m_len)) != 4? 
@@ -52,14 +52,14 @@ inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const strin
         array_t->m_dims[0].m_length = arr_size;
        return ASR::down_cast2<ASR::Cast_t>(
                 ASR::make_Cast_t(al, string_expr->base.loc, string_expr
-                , ASR::StringToArray, array_type_dup, nullptr));
+                , ASR::StringToArray, array_type_dup, nullptr, nullptr));
     } else if(!is_length_present && is_size_present){
         ASRBuilder b(al, string_expr->base.loc);
         dest_string_t->m_len = b.StringLen(string_expr);
         dest_string_t->m_len_kind = ASR::ExpressionLength;
        return ASR::down_cast2<ASR::Cast_t>(
                 ASR::make_Cast_t(al, string_expr->base.loc, string_expr
-                , ASR::StringToArray, array_type_dup, nullptr));
+                , ASR::StringToArray, array_type_dup, nullptr, nullptr));
     } else {
         ASRBuilder b(al, string_expr->base.loc);
         dest_string_t->m_len = b.StringLen(string_expr);
@@ -68,7 +68,7 @@ inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const strin
         array_t->m_dims[0].m_length = b.i32(1);
        return ASR::down_cast2<ASR::Cast_t>(
                 ASR::make_Cast_t(al, string_expr->base.loc, string_expr
-                , ASR::StringToArray, array_type_dup, nullptr));
+                , ASR::StringToArray, array_type_dup, nullptr, nullptr));
     }
 
 }
@@ -465,6 +465,9 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::Cast: {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expression);
+            if (cast->m_dest) {
+                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(cast->m_dest));
+            }
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(cast->m_arg));
         }
         case ASR::exprType::ArrayReshape: {
@@ -2740,7 +2743,7 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         }
     }
 
-    return ASR::make_Cast_t(al, a_loc, a_arg, a_kind, a_type, value);
+    return ASR::make_Cast_t(al, a_loc, a_arg, a_kind, a_type, value, nullptr);
 }
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,

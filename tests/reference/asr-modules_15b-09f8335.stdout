@@ -3421,6 +3421,7 @@
                                                 IntegerToInteger
                                                 (Integer 8)
                                                 (IntegerConstant 2 (Integer 8) Decimal)
+                                                ()
                                             )
                                             (Integer 8)
                                             ()
@@ -3510,6 +3511,7 @@
                                                 IntegerToInteger
                                                 (Integer 8)
                                                 (IntegerConstant 2 (Integer 8) Decimal)
+                                                ()
                                             )
                                             (Integer 8)
                                             ()

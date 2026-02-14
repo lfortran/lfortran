@@ -70,6 +70,7 @@
                                     0.000000
                                     (Complex 4)
                                 )
+                                ()
                             )
                             (Complex 4)
                             ()
@@ -101,6 +102,7 @@
                                     0.000000
                                     (Complex 4)
                                 )
+                                ()
                             )
                             Div
                             (Var 2 x)
@@ -134,6 +136,7 @@
                                     0.000000
                                     (Complex 4)
                                 )
+                                ()
                             )
                             Div
                             (ComplexBinOp

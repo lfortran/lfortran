@@ -396,7 +396,7 @@ public:
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0,
                     ASRUtils::TYPE(ASR::make_Integer_t(al, xx.base.base.loc, 4)))),
                     (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, type2,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0, type2))));
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0, type2)), nullptr));
 
                 // statement 2
                 ASR::expr_t* value2 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, xx.base.base.loc, CPtr_type, nullptr));
@@ -567,7 +567,7 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*cast_arg)) {
                     ASR::ttype_t* cast_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
                     ASR::expr_t* value = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, cast_arg,
-                        (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, cast_type, nullptr));
+                        (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, cast_type, nullptr, nullptr));
                     pass_result.push_back(al, integer_set_si(x.base.base.loc, x.m_target, value));
                 } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*cast_value)) {
                     ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(cast_value);
@@ -588,7 +588,7 @@ public:
                         ASR::ttype_t* cast_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
                         ASR::expr_t* value = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, cast_arg,
                             (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, cast_type,
-                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, const_value, cast_type))));
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, const_value, cast_type)), nullptr));
                         pass_result.push_back(al, integer_set_si(x.base.base.loc, x.m_target, value));
                     }
                 }
@@ -948,7 +948,7 @@ public:
                 ASR::ttype_t* cast_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
                 ASR::expr_t* value = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, cast_arg,
                     (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, cast_type,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, const_value, cast_type))));
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, const_value, cast_type)), nullptr));
                 pass_result.push_back(al, integer_set_si(x.base.base.loc, target, value));
             }
         }
