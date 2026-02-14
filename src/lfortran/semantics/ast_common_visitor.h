@@ -11242,6 +11242,22 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        if (!ASRUtils::is_pointer(ASRUtils::expr_type(ptr_))) {
+            bool is_c_associated = false;
+            if (x.m_func) {
+                std::string func_name = to_lower(std::string(x.m_func));
+                if (func_name.find("c_associated") != std::string::npos) {
+                    is_c_associated = true;
+                }
+            }
+            if (!is_c_associated) {
+                 diag.add(Diagnostic(
+                    "‘pointer’ argument of ‘associated’ intrinsic must be a POINTER",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {args[0]->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
