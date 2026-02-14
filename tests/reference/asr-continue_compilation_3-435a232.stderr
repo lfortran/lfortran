@@ -438,6 +438,11 @@ semantic error: cannot pass unallocatable string to allocatable argument
     |
 205 |     call ss("hello")
     |             ^^^^^^^ make this expression allocatable
+semantic error: Different types of elements found in array constructor: string and integer(4)
+   --> tests/errors/continue_compilation_3.f90:205:16
+    |
+205 |     print *,  [( '*',i , i = 1, 10 )] 
+    |                ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:208:23
