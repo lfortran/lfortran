@@ -162,11 +162,34 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
         enddo_insert_count--;
         if (enddo_insert_count > 0) {
             enddo_state = 1;
+            return yytokentype::TK_NEWLINE;
         } else {
-            enddo_state = 0;
-            token_loc(loc); line_num++; cur_line=cur;
-            last_token = yytokentype::TK_NEWLINE;
+            if (enddo_saved_name_start != nullptr) {
+                // Emit construct name before the final newline
+                enddo_state = 4;
+                tok = enddo_saved_name_start;
+                cur = enddo_saved_name_end;
+                enddo_saved_name_start = nullptr;
+                enddo_saved_name_end = nullptr;
+                Str s;
+                s.p = (char*) tok;
+                s.n = cur - tok;
+                yylval.string = s;
+                token_loc(loc);
+                last_token = yytokentype::TK_NAME;
+                return yytokentype::TK_NAME;
+            } else {
+                enddo_state = 0;
+                token_loc(loc); line_num++; cur_line=cur;
+                last_token = yytokentype::TK_NEWLINE;
+                return yytokentype::TK_NEWLINE;
+            }
         }
+    } else if (enddo_state == 4) {
+        // Emit the final newline after the construct name
+        enddo_state = 0;
+        token_loc(loc); line_num++; cur_line=cur;
+        last_token = yytokentype::TK_NEWLINE;
         return yytokentype::TK_NEWLINE;
     }
     for (;;) {
@@ -386,6 +409,16 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             'end' whitespace 'do' {
                 if (enddo_newline_process) {
+                    // Save optional trailing construct name for later emission
+                    unsigned char *p = cur;
+                    while (*p == ' ' || *p == '\t') p++;
+                    if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') {
+                        enddo_saved_name_start = p;
+                        p++;
+                        while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_' || (*p >= '0' && *p <= '9')) p++;
+                        enddo_saved_name_end = p;
+                        cur = p;
+                    }
                     KW(CONTINUE)
                 } else {
                     KW(END_DO)
@@ -393,6 +426,16 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             }
             'enddo' {
                 if (enddo_newline_process) {
+                    // Save optional trailing construct name for later emission
+                    unsigned char *p = cur;
+                    while (*p == ' ' || *p == '\t') p++;
+                    if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') {
+                        enddo_saved_name_start = p;
+                        p++;
+                        while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_' || (*p >= '0' && *p <= '9')) p++;
+                        enddo_saved_name_end = p;
+                        cur = p;
+                    }
                     KW(CONTINUE)
                 } else {
                     KW(ENDDO)
