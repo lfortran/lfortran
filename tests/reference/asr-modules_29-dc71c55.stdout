@@ -1435,10 +1435,7 @@
                                     [(Var 6 self)
                                     (Var 6 table)
                                     (Var 6 error)]
-                                    [(ImplicitDeallocate
-                                        [(Var 6 error)]
-                                    )
-                                    (SubroutineCall
+                                    [(SubroutineCall
                                         4 new_dependencies
                                         ()
                                         [((StructInstanceMember
