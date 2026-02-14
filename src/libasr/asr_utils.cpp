@@ -1965,7 +1965,8 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             a_args.push_back(al, arg);
         }
         std::string subrout_name = to_lower(subrout->m_name);
-        if( curr_scope->resolve_symbol(subrout_name) ) {
+        ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
+        if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
             matched_subrout_name = subrout_name;
         } else {
             std::string mangled_name = subrout_name + "@" + read_write;
@@ -1973,14 +1974,19 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         }
         ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
         if( a_name == nullptr ) {
-            err("Unable to resolve matched subroutine for read/write overloading, " + matched_subrout_name, loc);
+            a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                        nullptr, 0, subrout->m_name, ASR::accessType::Public));
+            curr_scope->add_symbol(matched_subrout_name, a_name);
         }
         if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
         }
         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
-        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
+        ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
+        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
                                         a_args.p, a_args.n, nullptr, nullptr, false);
     }
 }
