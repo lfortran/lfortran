@@ -15167,6 +15167,22 @@ public:
         builder->CreateCall(fn, {unit_val});
     }
 
+    void visit_FileEndfile(const ASR::FileEndfile_t &x) {
+        std::string runtime_func_name = "_lfortran_endfile";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+        }
+        this->visit_expr_wrapper(x.m_unit, true);
+        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        builder->CreateCall(fn, {unit_val});
+    }
+
     void visit_FileBackspace(const ASR::FileBackspace_t &x) {
         std::string runtime_func_name = "_lfortran_backspace";
         llvm::Function *fn = module->getFunction(runtime_func_name);

@@ -1276,6 +1276,8 @@ public:
 
     // void visit_FileRewind(const ASR::FileRewind_t &x) {}
 
+    // void visit_FileEndfile(const ASR::FileEndfile_t &x) {}
+
     // void visit_FileInquire(const ASR::FileInquire_t &x) {}
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {

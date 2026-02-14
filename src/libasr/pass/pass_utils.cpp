@@ -1349,7 +1349,8 @@ namespace LCompilers {
         }
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp, bool use_loop_variable_after_loop) {
+                                         int comp, bool use_loop_variable_after_loop,
+                                         SymbolTable* current_scope) {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
@@ -1358,6 +1359,8 @@ namespace LCompilers {
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
+            Vec<ASR::stmt_t*> pre_loop_stmts;
+            pre_loop_stmts.reserve(al, 2);
             if( loop.m_head.m_v ) {
                 ASR::expr_t* loop_head = loop.m_head.m_v;
                 cast_util(loop_head, a, al, true);
@@ -1382,6 +1385,31 @@ namespace LCompilers {
                     c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
                 }
                 LCOMPILERS_ASSERT(c);
+
+                // Per the Fortran standard, do loop bounds are evaluated once
+                // before the loop begins. Save non-constant upper bound and
+                // increment expressions to temporary variables so they are not
+                // re-evaluated each iteration.
+                if (current_scope && b &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*b)) {
+                    std::string name = current_scope->get_unique_name("__do_loop_end");
+                    ASR::stmt_t* assign;
+                    b = create_auxiliary_variable_for_expr(b, name, al,
+                            current_scope, assign);
+                    pre_loop_stmts.push_back(al, assign);
+                }
+                if (current_scope && c &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*c) &&
+                        !(ASR::is_a<ASR::IntegerUnaryMinus_t>(*c) &&
+                          ASR::is_a<ASR::IntegerConstant_t>(
+                            *ASR::down_cast<ASR::IntegerUnaryMinus_t>(c)->m_arg))) {
+                    std::string name = current_scope->get_unique_name("__do_loop_inc");
+                    ASR::stmt_t* assign;
+                    c = create_auxiliary_variable_for_expr(c, name, al,
+                            current_scope, assign);
+                    pre_loop_stmts.push_back(al, assign);
+                }
+
                 ASR::cmpopType cmp_op;
 
                 if( comp == -1 ) {
@@ -1498,7 +1526,10 @@ namespace LCompilers {
             ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size(), loop.m_orelse, loop.n_orelse));
             Vec<ASR::stmt_t*> result;
-            result.reserve(al, 2);
+            result.reserve(al, 2 + pre_loop_stmts.size());
+            for (size_t i = 0; i < pre_loop_stmts.size(); i++) {
+                result.push_back(al, pre_loop_stmts[i]);
+            }
             if( loop_init_stmt ) {
                 result.push_back(al, loop_init_stmt);
             }

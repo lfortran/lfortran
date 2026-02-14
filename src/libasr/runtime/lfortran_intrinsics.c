@@ -5425,6 +5425,21 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
     rewind(filep);
 }
 
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
+{
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if( filep == NULL ) {
+        printf("Specified UNIT %d in ENDFILE is not created or connected.\n", unit_num);
+        exit(1);
+    }
+    fflush(filep);
+    long pos = ftell(filep);
+    if (pos >= 0) {
+        (void)!ftruncate(fileno(filep), pos);
+    }
+}
+
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
@@ -7860,6 +7875,20 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         if(strcmp(format_data, "%s%s") == 0){
             char* end = va_arg(args, char*);
             int64_t end_len = va_arg(args, int64_t);
+
+            // In Fortran, each WRITE produces a record terminated by a
+            // newline.  When the formatted data ends with '\n' (e.g.
+            // from '/' edit descriptor or new_line() in data), the
+            // last trailing '\n' already acts as the record terminator,
+            // so remove it from the data and skip the end-of-record
+            // to avoid duplicate blank lines.
+            if (end_len == 1 && end[0] == '\n') {
+                if (str_len > 0 && str[str_len - 1] == '\n') {
+                    str_len--;
+                    end_len = 0;
+                    end = "";
+                }
+            }
 
             if(open_delim != '\0') {
                 fprintf(filep, "%c%.*s%c%.*s",

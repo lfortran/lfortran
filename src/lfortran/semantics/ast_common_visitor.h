@@ -2538,6 +2538,14 @@ public:
             != generic_procedures.end());
     }
 
+    bool is_type_bound_func_call(AST::expr_t* expr) {
+        if (!AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
+            return false;
+        }
+        AST::FuncCallOrArray_t* call = AST::down_cast<AST::FuncCallOrArray_t>(expr);
+        return call->n_member > 0;
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type, bool is_argument, char* var_name) {  
@@ -2581,7 +2589,8 @@ public:
             }
             if (m_dim[i].m_end) {
                 ASR::expr_t* end{};
-                if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_end)){ // Delay
+                if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_end) ||
+                   is_type_bound_func_call(m_dim[i].m_end)){ // Delay
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_length,
                         current_scope, m_dim[i].m_end, var_name, 
                         [this](ASR::expr_t* start){dimension_attribute_error_check(start);});
@@ -2983,6 +2992,39 @@ public:
                 }
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                if (ASR::is_a<ASR::String_t>(*array_type->m_type)) {
+                    ASR::String_t* target_str_type = ASR::down_cast<ASR::String_t>(array_type->m_type);
+                    ASR::expr_t* value_to_check = ASRUtils::expr_value(value);
+                    if (value_to_check && ASR::is_a<ASR::StringConstant_t>(*value_to_check)) {
+                        ASR::String_t* value_str_type = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(value));
+        
+                        int64_t target_len = 0, value_len = 0;
+                        bool target_len_known = ASRUtils::extract_value(target_str_type->m_len, target_len);
+                        bool value_len_known = ASRUtils::extract_value(value_str_type->m_len, value_len);
+                        
+                        if (target_len_known && value_len_known && target_len != value_len) {
+                            ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value_to_check);
+                            char* original_str = str_const->m_s;
+                            size_t new_length = static_cast<size_t>(target_len);
+                            char* adjusted_str = al.allocate<char>(new_length + 1);
+                            
+                            if (target_len < value_len) {
+                                std::memcpy(adjusted_str, original_str, new_length);
+                            } else {
+                                std::memcpy(adjusted_str, original_str, value_len);
+                                std::memset(adjusted_str + value_len, ' ', new_length - value_len);
+                            }
+                            adjusted_str[new_length] = '\0';
+                            
+                            // Create new string constant with adjusted value and correct type
+                            ASR::ttype_t* adjusted_type = ASRUtils::TYPE(ASR::make_String_t(al, value->base.loc, 1,
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, value->base.loc, target_len, ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4)))),
+                                ASR::string_length_kindType::ExpressionLength,
+                                ASR::string_physical_typeType::DescriptorString));
+                            value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, value->base.loc, adjusted_str, adjusted_type));
+                        }
+                    }
+                }
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                     diag.add(Diagnostic(
                         "Type mismatch during data initialization",
@@ -14158,17 +14200,36 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
-            std::string func_name = ASRUtils::symbol_name(v);
-            v = current_scope->resolve_symbol(func_name);
-            if (v == nullptr) {
-                std::string mangled_name = func_name + "@~concat";
-                func_name = mangled_name;
-            }
-            v = current_scope->resolve_symbol(func_name);
-            if( v == nullptr ) {
-                diag.add(Diagnostic("'" + func_name +
-                    "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {v->base.loc})}));
-                throw SemanticAbort();
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
+                // Type-bound operator: resolve the underlying function
+                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
+                ASR::symbol_t* func_sym = sm->m_proc;
+                std::string func_name = ASRUtils::symbol_name(func_sym);
+                v = current_scope->resolve_symbol(func_name);
+                if (v == nullptr) {
+                    // Function is in another module, import it
+                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
+                    v = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, x.base.base.loc, current_scope,
+                            s2c(al, func_name), func_sym,
+                            ASRUtils::symbol_name(func_parent), nullptr, 0,
+                            s2c(al, func_name), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(func_name, v);
+                }
+            } else {
+                std::string func_name = ASRUtils::symbol_name(v);
+                v = current_scope->resolve_symbol(func_name);
+                if (v == nullptr) {
+                    v = current_scope->resolve_symbol(func_name + "@~concat");
+                }
+                if (v == nullptr) {
+                    diag.add(Diagnostic("'" + func_name +
+                        "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
