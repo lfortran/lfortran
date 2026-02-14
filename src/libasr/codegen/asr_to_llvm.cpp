@@ -12233,24 +12233,36 @@ public:
                     const_cast<ASR::expr_t*>(&x.base),
                     ASRUtils::type_get_past_array(x.m_type),
                     module.get());
-                uint64_t target_bytes = module->getDataLayout().getTypeAllocSize(target_type);
+                uint64_t element_bytes = module->getDataLayout().getTypeAllocSize(target_type);
 
-                if (target_bytes > 0) {
+                if (element_bytes > 0) {
+                     llvm::Value* target_bytes_val = llvm::ConstantInt::get(context, llvm::APInt(64, element_bytes));
+
+                     if (ASRUtils::is_array(x.m_type)) {
+                         ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+                         for (size_t i = 0; i < arr_type->n_dims; i++) {
+                             visit_expr(*(arr_type->m_dims[i].m_length));
+                             llvm::Value* len_val = tmp;
+                             len_val = builder->CreateIntCast(len_val, builder->getInt64Ty(), false);
+                             target_bytes_val = builder->CreateMul(target_bytes_val, len_val);
+                         }
+                     }
+
                      // Define the source length
                      llvm::Value* source_len = get_string_length(x.m_source);
 
                      // Allocate buffer
                      llvm::Value* buffer = llvm_utils->CreateAlloca(builder->getInt8Ty(),
-                         llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes)), "transfer_buff");
+                         target_bytes_val, "transfer_buff");
 
                      // Zero-init
-                     builder->CreateMemSet(buffer, builder->getInt8(0), target_bytes, llvm::MaybeAlign(1));
+                     builder->CreateMemSet(buffer, builder->getInt8(0), target_bytes_val, llvm::MaybeAlign(1));
 
-                     // Copy min(source_len, target_bytes)
+                     // Copy min(source_len, target_bytes_val)
                      llvm::Value* copy_len = builder->CreateSelect(
-                         builder->CreateICmpULT(source_len, llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes))),
+                         builder->CreateICmpULT(source_len, target_bytes_val),
                          source_len,
-                         llvm::ConstantInt::get(context, llvm::APInt(64, target_bytes))
+                         target_bytes_val
                      );
 
                      builder->CreateMemCpy(buffer, llvm::MaybeAlign(1),
