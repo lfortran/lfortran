@@ -3,6 +3,8 @@ set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
 : "${FC:=gfortran}"
+: "${LFORTRAN_LAPACK_TEST_MODE:=full}"
+LAPACK_TEST_MODE="$LFORTRAN_LAPACK_TEST_MODE"
 
 # Color definitions for pretty output
 GREEN='\033[0;32m'
@@ -11,6 +13,12 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Helper functions for logging
+print_usage() {
+  cat <<EOF
+Usage: $0 [--lapack-mode <smoke|full>]
+EOF
+}
+
 print_section() {
   echo -e "\n${BLUE}==============================="
   echo -e "$1"
@@ -40,6 +48,38 @@ time_section() {
   local END=$(date +%s)
   print_subsection "⏱ Duration: $((END - START)) seconds"
 }
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lapack-mode)
+      if [[ $# -lt 2 ]]; then
+        echo "ERROR: --lapack-mode requires a value"
+        print_usage
+        exit 1
+      fi
+      LAPACK_TEST_MODE="$2"
+      shift 2
+      ;;
+    --lapack-mode=*)
+      LAPACK_TEST_MODE="${1#*=}"
+      shift
+      ;;
+    -h|--help)
+      print_usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown option: $1"
+      print_usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$LAPACK_TEST_MODE" != "smoke" && "$LAPACK_TEST_MODE" != "full" ]]; then
+  echo "ERROR: invalid LAPACK test mode '$LAPACK_TEST_MODE' (expected 'smoke' or 'full')"
+  exit 1
+fi
 
 # Setup a temporary workspace
 TMP_DIR=$(mktemp -d)
@@ -889,6 +929,7 @@ time_section "🧪 Testing LAPACK" '
 # Section 14: Reference-LAPACK Full Test Suite (32-bit and 64-bit integers)
 ##########################
 time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
+    print_subsection "LAPACK test mode: ${LAPACK_TEST_MODE}"
     export PATH="$(pwd)/../src/bin:$PATH"
     git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing
     cd lapack-testing
@@ -940,7 +981,7 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
     }
 
     # Function to run the full LAPACK test suite
-    run_lapack_test_suite() {
+    run_lapack_full_test_suite() {
         local MODE="$1"  # empty or "(ILP64)"
 
         # === LINEAR EQUATION TESTS ===
@@ -993,6 +1034,29 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
         print_success "All LAPACK tests passed ${MODE}"
     }
 
+    # Function to run a reduced smoke test suite
+    run_lapack_smoke_test_suite() {
+        local MODE="$1"  # empty or "(ILP64)"
+
+        print_section "LAPACK Smoke Tests ${MODE}"
+        run_lapack_test xlintsts stest.in "Smoke Single Real Linear Equations ${MODE}"
+        run_lapack_test xlintstd dtest.in "Smoke Double Real Linear Equations ${MODE}"
+        run_lapack_test xlintstz ztest.in "Smoke Double Complex Linear Equations ${MODE}"
+        if [ -f "../TESTING/nep.in" ]; then
+            run_lapack_test xeigtstd nep.in "Smoke Double Real Eigenvalue: nep ${MODE}"
+        fi
+        print_success "LAPACK smoke tests passed ${MODE}"
+    }
+
+    run_lapack_selected_test_suite() {
+        local MODE="$1"
+        if [ "$LAPACK_TEST_MODE" = "smoke" ]; then
+            run_lapack_smoke_test_suite "$MODE"
+        else
+            run_lapack_full_test_suite "$MODE"
+        fi
+    }
+
     # =======================================================================
     # Build and test with 32-bit integers (standard mode)
     # =======================================================================
@@ -1010,29 +1074,33 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
 
     cmake --build build -j8
     cd build
-    run_lapack_test_suite ""
+    run_lapack_selected_test_suite ""
     cd ..
 
     # =======================================================================
     # Build and test with 64-bit integers (ILP64 mode)
     # =======================================================================
-    print_section "Building LAPACK with 64-bit integers (ILP64)"
-    rm -rf build
-    cmake -S . -B build -G Ninja \
-      $TOOLCHAIN_OPT \
-      -DCMAKE_Fortran_COMPILER=lfortran \
-      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop -fdefault-integer-8" \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DBUILD_INDEX64=ON \
-      -DBUILD_INDEX64_EXT_API=OFF \
-      -DBUILD_COMPLEX=ON \
-      -DBUILD_COMPLEX16=ON \
-      -DBUILD_TESTING=ON
+    if [ "$LAPACK_TEST_MODE" = "full" ]; then
+        print_section "Building LAPACK with 64-bit integers (ILP64)"
+        rm -rf build
+        cmake -S . -B build -G Ninja \
+          $TOOLCHAIN_OPT \
+          -DCMAKE_Fortran_COMPILER=lfortran \
+          -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop -fdefault-integer-8" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_INDEX64=ON \
+          -DBUILD_INDEX64_EXT_API=OFF \
+          -DBUILD_COMPLEX=ON \
+          -DBUILD_COMPLEX16=ON \
+          -DBUILD_TESTING=ON
 
-    cmake --build build -j8
-    cd build
-    run_lapack_test_suite "(ILP64)"
-    cd ..
+        cmake --build build -j8
+        cd build
+        run_lapack_selected_test_suite "(ILP64)"
+        cd ..
+    else
+        print_section "Skipping ILP64 LAPACK build in smoke mode"
+    fi
 
     cd ..
 '
