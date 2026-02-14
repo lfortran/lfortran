@@ -19,6 +19,7 @@
 #include <set>
 #include <map>
 #include <limits>
+#include <limits>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -13194,6 +13195,77 @@ public:
         return false;
     }
 
+    int64_t power_check_overflow(int64_t base, int64_t exp, const Location& loc, int64_t kind) {
+        if (exp < 0) {
+            if (base == 0) {
+                diag.add(Diagnostic("Division by zero", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            if (std::abs(base) == 1) return (exp % 2 == 0) ? 1 : base;
+            return 0;
+        }
+        if (exp == 0) return 1;
+        if (base == 0) return 0;
+        if (base == 1) return 1;
+        if (base == -1) return (exp % 2 == 0) ? 1 : -1;
+
+        int64_t result = 1;
+        int64_t max_val, min_val;
+        if (kind == 4) {
+            max_val = std::numeric_limits<int32_t>::max();
+            min_val = std::numeric_limits<int32_t>::min();
+        } else {
+            max_val = std::numeric_limits<int64_t>::max();
+            min_val = std::numeric_limits<int64_t>::min();
+        }
+
+        int64_t b = base;
+        int64_t e = exp;
+
+        auto safe_mul = [&](int64_t a, int64_t b, int64_t& res) -> bool {
+            if (a == 0 || b == 0) {
+                res = 0;
+                return false;
+            }
+            bool overflow = false;
+            if (a > 0) {
+                if (b > 0) {
+                    if (a > max_val / b) overflow = true;
+                } else {
+                    if (b < min_val / a) overflow = true;
+                }
+            } else {
+                if (b > 0) {
+                    if (a < min_val / b) overflow = true;
+                } else {
+                    if (a < max_val / b) overflow = true;
+                }
+            }
+            if (overflow) return true;
+            res = a * b;
+            return false;
+        };
+        
+        while (e > 0) {
+            if (e % 2 == 1) {
+                if (safe_mul(result, b, result)) {
+                     diag.add(Diagnostic("Integer overflow in exponentiation", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                     throw SemanticAbort();
+                }
+            }
+            e /= 2;
+            if (e > 0) {
+                int64_t tmp;
+                if (safe_mul(b, b, tmp)) {
+                     diag.add(Diagnostic("Integer overflow in exponentiation", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                     throw SemanticAbort();
+                }
+                b = tmp;
+            }
+        }
+        return result;
+    }
+
     template<typename T>
     T perform_binop(T left_value, T right_value, ASR::binopType op) {
         T result;
@@ -13245,6 +13317,15 @@ public:
                     })
                 );
                 throw SemanticAbort();
+            }
+
+            if (op == ASR::Pow) {
+                int64_t kind = 4;
+                if (ASR::is_a<ASR::Integer_t>(*dest_type)) {
+                    kind = ASR::down_cast<ASR::Integer_t>(dest_type)->m_kind;
+                }
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
+                        power_check_overflow(left_value, right_value, loc, kind), dest_type));
             }
 
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
