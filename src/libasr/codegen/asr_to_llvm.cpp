@@ -16257,9 +16257,10 @@ public:
                                     bool pass_by_value = true;
                                     if ( ASR::is_a<ASR::Function_t>(*func_subrout) ) {
                                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_subrout);
-                                        if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ){
+                                        size_t arg_idx = i + is_method;
+                                        if ( arg_idx < func->n_args && ASR::is_a<ASR::Var_t>(*func->m_args[arg_idx]) ){
                                             ASR::symbol_t* func_var_sym = ASRUtils::symbol_get_past_external(
-                                                ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v);
+                                                ASR::down_cast<ASR::Var_t>(func->m_args[arg_idx])->m_v);
                                             if ( ASR::is_a<ASR::Variable_t>(*func_var_sym) ) {
                                                 ASR::Variable_t* func_variable = ASR::down_cast<ASR::Variable_t>(func_var_sym);
                                                 if ( func_variable->m_intent == ASRUtils::intent_inout || func_variable->m_intent == ASRUtils::intent_out ) {
