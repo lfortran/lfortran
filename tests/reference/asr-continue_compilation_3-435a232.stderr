@@ -439,6 +439,12 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
+semantic error: Different types of elements found in array constructor: string and integer(4)
+   --> tests/errors/continue_compilation_3.f90:205:16
+    |
+205 |     print *,  [( '*',i , i = 1, 10 )] 
+    |                ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:208:23
     |
