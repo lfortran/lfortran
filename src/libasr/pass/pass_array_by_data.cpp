@@ -463,6 +463,25 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     EditProcedureVisitor(PassArrayByDataProcedureVisitor& v_):
     v(v_), replacer(v) {}
 
+    ASR::ttype_t* replace_leaf_type_preserving_ptr_alloc_wrappers(
+        ASR::ttype_t* old_type, ASR::ttype_t* new_leaf_type) {
+        if (ASR::is_a<ASR::Pointer_t>(*old_type)) {
+            ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(old_type);
+            ASR::ttype_t* wrapped = replace_leaf_type_preserving_ptr_alloc_wrappers(
+                ptr->m_type, new_leaf_type);
+            return ASRUtils::TYPE(ASR::make_Pointer_t(v.al, ptr->base.base.loc,
+                ASRUtils::type_get_past_allocatable(wrapped)));
+        }
+        if (ASR::is_a<ASR::Allocatable_t>(*old_type)) {
+            ASR::Allocatable_t* alloc = ASR::down_cast<ASR::Allocatable_t>(old_type);
+            ASR::ttype_t* wrapped = replace_leaf_type_preserving_ptr_alloc_wrappers(
+                alloc->m_type, new_leaf_type);
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(v.al, alloc->base.base.loc,
+                ASRUtils::type_get_past_allocatable(wrapped)));
+        }
+        return new_leaf_type;
+    }
+
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
@@ -492,6 +511,15 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
             if ( ASR::is_a<ASR::Variable_t>(*it.second) &&
                 ASR::down_cast<ASR::Variable_t>(it.second)->m_type_declaration ) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+                ASR::ttype_t *var_base_type =
+                    ASRUtils::type_get_past_allocatable_pointer(var->m_type);
+                bool is_proc_var = ASR::is_a<ASR::FunctionType_t>(*var_base_type);
+                bool is_proc_array_var = ASR::is_a<ASR::Array_t>(*var_base_type) &&
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_allocatable_pointer(
+                        ASR::down_cast<ASR::Array_t>(var_base_type)->m_type));
+                if (!is_proc_var && !is_proc_array_var) {
+                    continue;
+                }
                 ASR::symbol_t* resolved_type_dec = nullptr;
                 if ( v.proc2newproc.find(var->m_type_declaration) != v.proc2newproc.end() ) {
                     resolved_type_dec = v.proc2newproc[var->m_type_declaration].first;
@@ -501,7 +529,16 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 if ( resolved_type_dec ) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(resolved_type_dec);
                     var->m_type_declaration = resolved_type_dec;
-                    var->m_type = fn->m_function_signature;
+                    if (is_proc_var) {
+                        var->m_type = fn->m_function_signature;
+                    } else {
+                        ASR::ttype_t* updated_type = ASRUtils::duplicate_type(v.al, var->m_type);
+                        ASR::Array_t* updated_arr = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_allocatable_pointer(updated_type));
+                        updated_arr->m_type = replace_leaf_type_preserving_ptr_alloc_wrappers(
+                            updated_arr->m_type, fn->m_function_signature);
+                        var->m_type = updated_type;
+                    }
                 }
             }
         }
@@ -841,7 +878,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                     if ( new_x_name != nullptr ) {
                         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
-                        ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_type = new_func->m_function_signature;
+                        ASR::Variable_t *x_name_var =
+                            ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name));
+                        ASR::ttype_t *x_name_base_type =
+                            ASRUtils::type_get_past_allocatable_pointer(x_name_var->m_type);
+                        if (ASR::is_a<ASR::FunctionType_t>(*x_name_base_type)) {
+                            x_name_var->m_type = new_func->m_function_signature;
+                        }
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
@@ -1024,7 +1067,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
             ASR::symbol_t* type_dec = x.m_type_declaration;
-            if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() &&
+            ASR::ttype_t *x_base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+            bool is_procedure_var = ASR::is_a<ASR::FunctionType_t>(*x_base_type);
+            if (is_procedure_var && type_dec &&
+                    v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() &&
                     v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
                 ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
                 ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
@@ -1038,7 +1084,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 v.proc2newproc[type_dec] = {new_func_sym_, {}};
                 x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
             }
-            if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() &&
+            if(is_procedure_var && type_dec &&
+                v.proc2newproc.find(type_dec) != v.proc2newproc.end() &&
                 ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
                 ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
                 if ( new_sym == nullptr ) {

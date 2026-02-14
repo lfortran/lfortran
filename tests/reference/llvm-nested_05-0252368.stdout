@@ -3,133 +3,350 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 
+@__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id = global i32 0
+@__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr = global i32 0
 @__module___lcompilers_created__nested_context__b__x = global i32 0
+@__module___lcompilers_created__nested_context__b__x__stack = global [1048576 x i32] zeroinitializer
 @__module___lcompilers_created__nested_context__b__y = global float 0.000000e+00
+@__module___lcompilers_created__nested_context__b__y__stack = global [1048576 x float] zeroinitializer
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [3 x i8] c"R4\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@4 = private unnamed_addr constant [9 x i8] c"x__stack\00", align 1
+@5 = private unnamed_addr constant [177 x i8] c"At 20:5 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@6 = private unnamed_addr constant [9 x i8] c"y__stack\00", align 1
+@7 = private unnamed_addr constant [177 x i8] c"At 21:5 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@8 = private unnamed_addr constant [9 x i8] c"x__stack\00", align 1
+@9 = private unnamed_addr constant [176 x i8] c"At 9:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@10 = private unnamed_addr constant [9 x i8] c"y__stack\00", align 1
+@11 = private unnamed_addr constant [177 x i8] c"At 10:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.2 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
-@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.3 = private unnamed_addr constant [3 x i8] c"R4\00", align 1
-@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@16 = private unnamed_addr constant [16 x i8] c"AssertionError\0A\00", align 1
+@17 = private unnamed_addr constant [9 x i8] c"x__stack\00", align 1
+@18 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@19 = private unnamed_addr constant [9 x i8] c"y__stack\00", align 1
+@20 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@21 = private unnamed_addr constant [9 x i8] c"x__stack\00", align 1
+@22 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@23 = private unnamed_addr constant [9 x i8] c"y__stack\00", align 1
+@24 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@25 = private unnamed_addr constant [9 x i8] c"x__stack\00", align 1
+@26 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@27 = private unnamed_addr constant [9 x i8] c"y__stack\00", align 1
+@28 = private unnamed_addr constant [177 x i8] c"At 13:1 of file tests/../integration_tests/nested_05.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@29 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.4 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
-@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@30 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@31 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.5 = private unnamed_addr constant [3 x i8] c"R4\00", align 1
-@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@32 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_nested_05_a_b() {
 .entry:
+  %__lfortran_nested_saved_ctx = alloca i32, align 4
   %x = alloca i32, align 4
   %y = alloca float, align 4
   store i32 6, i32* %x, align 4
-  store float 5.500000e+00, float* %y, align 4
-  %0 = alloca i64, align 8
-  %1 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %0, i32 0, i32 0, i32* %x)
-  %2 = load i64, i64* %0, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
-  %3 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %1, i8** %3, align 8
-  %4 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %2, i64* %4, align 4
-  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %6 = load i8*, i8** %5, align 8
-  %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %8 = load i64, i64* %7, align 4
-  %9 = trunc i64 %8 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %6, i32 %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
-  %10 = icmp eq i8* %1, null
-  br i1 %10, label %free_done, label %free_nonnull
+  %0 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %1 = icmp sgt i32 %0, 0
+  br i1 %1, label %then, label %else
 
-free_nonnull:                                     ; preds = %.entry
-  call void @_lfortran_free(i8* %1)
+then:                                             ; preds = %.entry
+  %2 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %3 = sub i32 %2, 1
+  %4 = mul i32 1, %3
+  %5 = add i32 0, %4
+  %6 = icmp slt i32 %2, 1
+  %7 = icmp sgt i32 %2, 1048576
+  %8 = or i1 %6, %7
+  br i1 %8, label %then1, label %ifcont
+
+then1:                                            ; preds = %then
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([176 x i8], [176 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @8, i32 0, i32 0), i32 %2, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %then
+  %9 = getelementptr [1048576 x i32], [1048576 x i32]* @__module___lcompilers_created__nested_context__b__x__stack, i32 0, i32 %5
+  %10 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  store i32 %10, i32* %9, align 4
+  br label %ifcont2
+
+else:                                             ; preds = %.entry
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %ifcont
+  store float 5.500000e+00, float* %y, align 4
+  %11 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %12 = icmp sgt i32 %11, 0
+  br i1 %12, label %then3, label %else6
+
+then3:                                            ; preds = %ifcont2
+  %13 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %14 = sub i32 %13, 1
+  %15 = mul i32 1, %14
+  %16 = add i32 0, %15
+  %17 = icmp slt i32 %13, 1
+  %18 = icmp sgt i32 %13, 1048576
+  %19 = or i1 %17, %18
+  br i1 %19, label %then4, label %ifcont5
+
+then4:                                            ; preds = %then3
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @10, i32 0, i32 0), i32 %13, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont5:                                          ; preds = %then3
+  %20 = getelementptr [1048576 x float], [1048576 x float]* @__module___lcompilers_created__nested_context__b__y__stack, i32 0, i32 %16
+  %21 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  store float %21, float* %20, align 4
+  br label %ifcont7
+
+else6:                                            ; preds = %ifcont2
+  br label %ifcont7
+
+ifcont7:                                          ; preds = %else6, %ifcont5
+  %22 = alloca i64, align 8
+  %23 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %22, i32 0, i32 0, i32* %x)
+  %24 = load i64, i64* %22, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %23, i8** %25, align 8
+  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %24, i64* %26, align 4
+  %27 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %28 = load i8*, i8** %27, align 8
+  %29 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %30 = load i64, i64* %29, align 4
+  %31 = trunc i64 %30 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %28, i32 %31, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  %32 = icmp eq i8* %23, null
+  br i1 %32, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont7
+  call void @_lfortran_free(i8* %23)
   br label %free_done
 
-free_done:                                        ; preds = %free_nonnull, %.entry
-  %11 = alloca i64, align 8
-  %12 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %11, i32 0, i32 0, float* %y)
-  %13 = load i64, i64* %11, align 4
-  %stringFormat_desc1 = alloca %string_descriptor, align 8
-  %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
-  store i8* %12, i8** %14, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
-  store i64 %13, i64* %15, align 4
-  %16 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
-  %17 = load i8*, i8** %16, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
-  %19 = load i64, i64* %18, align 4
-  %20 = trunc i64 %19 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %17, i32 %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
-  %21 = icmp eq i8* %12, null
-  br i1 %21, label %free_done3, label %free_nonnull2
+free_done:                                        ; preds = %free_nonnull, %ifcont7
+  %33 = alloca i64, align 8
+  %34 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %33, i32 0, i32 0, float* %y)
+  %35 = load i64, i64* %33, align 4
+  %stringFormat_desc8 = alloca %string_descriptor, align 8
+  %36 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 0
+  store i8* %34, i8** %36, align 8
+  %37 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 1
+  store i64 %35, i64* %37, align 4
+  %38 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 0
+  %39 = load i8*, i8** %38, align 8
+  %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 1
+  %41 = load i64, i64* %40, align 4
+  %42 = trunc i64 %41 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %39, i32 %42, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
+  %43 = icmp eq i8* %34, null
+  br i1 %43, label %free_done10, label %free_nonnull9
 
-free_nonnull2:                                    ; preds = %free_done
-  call void @_lfortran_free(i8* %12)
-  br label %free_done3
+free_nonnull9:                                    ; preds = %free_done
+  call void @_lfortran_free(i8* %34)
+  br label %free_done10
 
-free_done3:                                       ; preds = %free_nonnull2, %free_done
-  %22 = load i32, i32* %x, align 4
-  store i32 %22, i32* @__module___lcompilers_created__nested_context__b__x, align 4
-  %23 = load float, float* %y, align 4
-  store float %23, float* @__module___lcompilers_created__nested_context__b__y, align 4
+free_done10:                                      ; preds = %free_nonnull9, %free_done
+  %44 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  store i32 %44, i32* %__lfortran_nested_saved_ctx, align 4
+  %45 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %46 = icmp slt i32 %45, 1048576
+  br i1 %46, label %then11, label %else12
+
+then11:                                           ; preds = %free_done10
+  br label %ifcont13
+
+else12:                                           ; preds = %free_done10
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @16, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont13
+
+ifcont13:                                         ; preds = %else12, %then11
+  %47 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %48 = add i32 %47, 1
+  store i32 %48, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %49 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %50 = add i32 %49, 1
+  %51 = sub i32 %50, 1
+  %52 = mul i32 1, %51
+  %53 = add i32 0, %52
+  %54 = icmp slt i32 %50, 1
+  %55 = icmp sgt i32 %50, 1048576
+  %56 = or i1 %54, %55
+  br i1 %56, label %then14, label %ifcont15
+
+then14:                                           ; preds = %ifcont13
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @17, i32 0, i32 0), i32 %50, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont15:                                         ; preds = %ifcont13
+  %57 = getelementptr [1048576 x i32], [1048576 x i32]* @__module___lcompilers_created__nested_context__b__x__stack, i32 0, i32 %53
+  %58 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  store i32 %58, i32* %57, align 4
+  %59 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %60 = add i32 %59, 1
+  %61 = sub i32 %60, 1
+  %62 = mul i32 1, %61
+  %63 = add i32 0, %62
+  %64 = icmp slt i32 %60, 1
+  %65 = icmp sgt i32 %60, 1048576
+  %66 = or i1 %64, %65
+  br i1 %66, label %then16, label %ifcont17
+
+then16:                                           ; preds = %ifcont15
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @19, i32 0, i32 0), i32 %60, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont17:                                         ; preds = %ifcont15
+  %67 = getelementptr [1048576 x float], [1048576 x float]* @__module___lcompilers_created__nested_context__b__y__stack, i32 0, i32 %63
+  %68 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  store float %68, float* %67, align 4
+  %69 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_next_id, align 4
+  %70 = add i32 %69, 1
+  store i32 %70, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %71 = load i32, i32* %x, align 4
+  store i32 %71, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  %72 = load float, float* %y, align 4
+  store float %72, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  %73 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %74 = sub i32 %73, 1
+  %75 = mul i32 1, %74
+  %76 = add i32 0, %75
+  %77 = icmp slt i32 %73, 1
+  %78 = icmp sgt i32 %73, 1048576
+  %79 = or i1 %77, %78
+  br i1 %79, label %then18, label %ifcont19
+
+then18:                                           ; preds = %ifcont17
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @22, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @21, i32 0, i32 0), i32 %73, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont19:                                         ; preds = %ifcont17
+  %80 = getelementptr [1048576 x i32], [1048576 x i32]* @__module___lcompilers_created__nested_context__b__x__stack, i32 0, i32 %76
+  %81 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  store i32 %81, i32* %80, align 4
+  %82 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %83 = sub i32 %82, 1
+  %84 = mul i32 1, %83
+  %85 = add i32 0, %84
+  %86 = icmp slt i32 %82, 1
+  %87 = icmp sgt i32 %82, 1048576
+  %88 = or i1 %86, %87
+  br i1 %88, label %then20, label %ifcont21
+
+then20:                                           ; preds = %ifcont19
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @24, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @23, i32 0, i32 0), i32 %82, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont21:                                         ; preds = %ifcont19
+  %89 = getelementptr [1048576 x float], [1048576 x float]* @__module___lcompilers_created__nested_context__b__y__stack, i32 0, i32 %85
+  %90 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  store float %90, float* %89, align 4
   call void @b.__module_nested_05_a_c()
-  %24 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
-  store i32 %24, i32* %x, align 4
-  %25 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
-  store float %25, float* %y, align 4
-  %26 = alloca i64, align 8
-  %27 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.4, i32 0, i32 0), i64* %26, i32 0, i32 0, i32* %x)
-  %28 = load i64, i64* %26, align 4
-  %stringFormat_desc4 = alloca %string_descriptor, align 8
-  %29 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 0
-  store i8* %27, i8** %29, align 8
-  %30 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 1
-  store i64 %28, i64* %30, align 4
-  %31 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 0
-  %32 = load i8*, i8** %31, align 8
-  %33 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 1
-  %34 = load i64, i64* %33, align 4
-  %35 = trunc i64 %34 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %32, i32 %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
-  %36 = icmp eq i8* %27, null
-  br i1 %36, label %free_done6, label %free_nonnull5
+  %91 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  store i32 %91, i32* %x, align 4
+  %92 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  store float %92, float* %y, align 4
+  %93 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %94 = sub i32 %93, 1
+  %95 = mul i32 1, %94
+  %96 = add i32 0, %95
+  %97 = icmp slt i32 %93, 1
+  %98 = icmp sgt i32 %93, 1048576
+  %99 = or i1 %97, %98
+  br i1 %99, label %then22, label %ifcont23
 
-free_nonnull5:                                    ; preds = %free_done3
-  call void @_lfortran_free(i8* %27)
-  br label %free_done6
+then22:                                           ; preds = %ifcont21
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @25, i32 0, i32 0), i32 %93, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
 
-free_done6:                                       ; preds = %free_nonnull5, %free_done3
-  %37 = alloca i64, align 8
-  %38 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.5, i32 0, i32 0), i64* %37, i32 0, i32 0, float* %y)
-  %39 = load i64, i64* %37, align 4
-  %stringFormat_desc7 = alloca %string_descriptor, align 8
-  %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc7, i32 0, i32 0
-  store i8* %38, i8** %40, align 8
-  %41 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc7, i32 0, i32 1
-  store i64 %39, i64* %41, align 4
-  %42 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc7, i32 0, i32 0
-  %43 = load i8*, i8** %42, align 8
-  %44 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc7, i32 0, i32 1
-  %45 = load i64, i64* %44, align 4
-  %46 = trunc i64 %45 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %43, i32 %46, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
-  %47 = icmp eq i8* %38, null
-  br i1 %47, label %free_done9, label %free_nonnull8
+ifcont23:                                         ; preds = %ifcont21
+  %100 = getelementptr [1048576 x i32], [1048576 x i32]* @__module___lcompilers_created__nested_context__b__x__stack, i32 0, i32 %96
+  %101 = load i32, i32* %100, align 4
+  store i32 %101, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  %102 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %103 = sub i32 %102, 1
+  %104 = mul i32 1, %103
+  %105 = add i32 0, %104
+  %106 = icmp slt i32 %102, 1
+  %107 = icmp sgt i32 %102, 1048576
+  %108 = or i1 %106, %107
+  br i1 %108, label %then24, label %ifcont25
 
-free_nonnull8:                                    ; preds = %free_done6
-  call void @_lfortran_free(i8* %38)
-  br label %free_done9
+then24:                                           ; preds = %ifcont23
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @28, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @27, i32 0, i32 0), i32 %102, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
 
-free_done9:                                       ; preds = %free_nonnull8, %free_done6
+ifcont25:                                         ; preds = %ifcont23
+  %109 = getelementptr [1048576 x float], [1048576 x float]* @__module___lcompilers_created__nested_context__b__y__stack, i32 0, i32 %105
+  %110 = load float, float* %109, align 4
+  store float %110, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  %111 = load i32, i32* %__lfortran_nested_saved_ctx, align 4
+  store i32 %111, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %112 = alloca i64, align 8
+  %113 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.4, i32 0, i32 0), i64* %112, i32 0, i32 0, i32* %x)
+  %114 = load i64, i64* %112, align 4
+  %stringFormat_desc26 = alloca %string_descriptor, align 8
+  %115 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc26, i32 0, i32 0
+  store i8* %113, i8** %115, align 8
+  %116 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc26, i32 0, i32 1
+  store i64 %114, i64* %116, align 4
+  %117 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc26, i32 0, i32 0
+  %118 = load i8*, i8** %117, align 8
+  %119 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc26, i32 0, i32 1
+  %120 = load i64, i64* %119, align 4
+  %121 = trunc i64 %120 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* %118, i32 %121, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0), i32 1)
+  %122 = icmp eq i8* %113, null
+  br i1 %122, label %free_done28, label %free_nonnull27
+
+free_nonnull27:                                   ; preds = %ifcont25
+  call void @_lfortran_free(i8* %113)
+  br label %free_done28
+
+free_done28:                                      ; preds = %free_nonnull27, %ifcont25
+  %123 = alloca i64, align 8
+  %124 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.5, i32 0, i32 0), i64* %123, i32 0, i32 0, float* %y)
+  %125 = load i64, i64* %123, align 4
+  %stringFormat_desc29 = alloca %string_descriptor, align 8
+  %126 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc29, i32 0, i32 0
+  store i8* %124, i8** %126, align 8
+  %127 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc29, i32 0, i32 1
+  store i64 %125, i64* %127, align 4
+  %128 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc29, i32 0, i32 0
+  %129 = load i8*, i8** %128, align 8
+  %130 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc29, i32 0, i32 1
+  %131 = load i64, i64* %130, align 4
+  %132 = trunc i64 %131 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @32, i32 0, i32 0), i8* %129, i32 %132, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @31, i32 0, i32 0), i32 1)
+  %133 = icmp eq i8* %124, null
+  br i1 %133, label %free_done31, label %free_nonnull30
+
+free_nonnull30:                                   ; preds = %free_done28
+  call void @_lfortran_free(i8* %124)
+  br label %free_done31
+
+free_done31:                                      ; preds = %free_nonnull30, %free_done28
   br label %return
 
-return:                                           ; preds = %free_done9
+return:                                           ; preds = %free_done31
   br label %FINALIZE_SYMTABLE_b
 
 FINALIZE_SYMTABLE_b:                              ; preds = %return
@@ -183,10 +400,68 @@ free_nonnull2:                                    ; preds = %free_done
 
 free_done3:                                       ; preds = %free_nonnull2, %free_done
   store i32 4, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  %22 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %23 = icmp sgt i32 %22, 0
+  br i1 %23, label %then, label %else
+
+then:                                             ; preds = %free_done3
+  %24 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %25 = sub i32 %24, 1
+  %26 = mul i32 1, %25
+  %27 = add i32 0, %26
+  %28 = icmp slt i32 %24, 1
+  %29 = icmp sgt i32 %24, 1048576
+  %30 = or i1 %28, %29
+  br i1 %30, label %then4, label %ifcont
+
+then4:                                            ; preds = %then
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @4, i32 0, i32 0), i32 %24, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %then
+  %31 = getelementptr [1048576 x i32], [1048576 x i32]* @__module___lcompilers_created__nested_context__b__x__stack, i32 0, i32 %27
+  %32 = load i32, i32* @__module___lcompilers_created__nested_context__b__x, align 4
+  store i32 %32, i32* %31, align 4
+  br label %ifcont5
+
+else:                                             ; preds = %free_done3
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %else, %ifcont
   store float 3.500000e+00, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  %33 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %34 = icmp sgt i32 %33, 0
+  br i1 %34, label %then6, label %else9
+
+then6:                                            ; preds = %ifcont5
+  %35 = load i32, i32* @__module___lcompilers_created__nested_context__b____lfortran_nested_ctx_stack_ptr, align 4
+  %36 = sub i32 %35, 1
+  %37 = mul i32 1, %36
+  %38 = add i32 0, %37
+  %39 = icmp slt i32 %35, 1
+  %40 = icmp sgt i32 %35, 1048576
+  %41 = or i1 %39, %40
+  br i1 %41, label %then7, label %ifcont8
+
+then7:                                            ; preds = %then6
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([177 x i8], [177 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), i32 %35, i32 1, i32 1, i32 1048576)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont8:                                          ; preds = %then6
+  %42 = getelementptr [1048576 x float], [1048576 x float]* @__module___lcompilers_created__nested_context__b__y__stack, i32 0, i32 %38
+  %43 = load float, float* @__module___lcompilers_created__nested_context__b__y, align 4
+  store float %43, float* %42, align 4
+  br label %ifcont10
+
+else9:                                            ; preds = %ifcont5
+  br label %ifcont10
+
+ifcont10:                                         ; preds = %else9, %ifcont8
   br label %return
 
-return:                                           ; preds = %free_done3
+return:                                           ; preds = %ifcont10
   br label %FINALIZE_SYMTABLE_c
 
 FINALIZE_SYMTABLE_c:                              ; preds = %return
@@ -198,6 +473,10 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ..
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free(i8*)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @exit(i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

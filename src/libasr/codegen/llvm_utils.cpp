@@ -527,6 +527,29 @@ namespace LCompilers {
                 el_type = get_StringType(m_type_);
                 break;
             }
+            case ASR::ttypeType::FunctionType: {
+                ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(m_type);
+                llvm::Type* return_type = llvm::Type::getVoidTy(context);
+                if (ft->m_return_var_type != nullptr) {
+                    return_type = get_type_from_ttype_t_util(nullptr, ft->m_return_var_type, module);
+                }
+                std::vector<llvm::Type*> arg_types;
+                for (size_t i = 0; i < ft->n_arg_types; i++) {
+                    int n_dims_ = 0, a_kind_ = 4;
+                    bool is_array_type_ = false;
+                    ASR::storage_typeType m_storage_ = ASR::storage_typeType::Default;
+                    llvm::Type* arg_t = get_arg_type_from_ttype_t(nullptr, ft->m_arg_types[i], nullptr,
+                        ft->m_abi, ft->m_abi, m_storage_, false, n_dims_, a_kind_, is_array_type_,
+                        ASR::intentType::Unspecified, module, false);
+                    if (is_array_type_) {
+                        arg_t = arg_t->getPointerTo();
+                    }
+                    arg_types.push_back(arg_t);
+                }
+                llvm::FunctionType* fn_type = llvm::FunctionType::get(return_type, arg_types, false);
+                el_type = fn_type->getPointerTo();
+                break;
+            }
             default:
                 LCOMPILERS_ASSERT(false);
                 break;
@@ -937,9 +960,16 @@ namespace LCompilers {
                     }
                     std::vector<llvm::Type*> arg_types;
                     for (size_t i = 0; i < ft->n_arg_types; i++) {
-                        llvm::Type* arg_t = get_type_from_ttype_t_util(nullptr, ft->m_arg_types[i], module);
-                        // Function arguments are passed as pointers
-                        arg_types.push_back(arg_t->getPointerTo());
+                        int n_dims_ = 0, a_kind_ = 4;
+                        bool is_array_type_ = false;
+                        ASR::storage_typeType m_storage_ = ASR::storage_typeType::Default;
+                        llvm::Type* arg_t = get_arg_type_from_ttype_t(nullptr, ft->m_arg_types[i], nullptr,
+                            ft->m_abi, ft->m_abi, m_storage_, false, n_dims_, a_kind_, is_array_type_,
+                            ASR::intentType::Unspecified, module, false);
+                        if (is_array_type_) {
+                            arg_t = arg_t->getPointerTo();
+                        }
+                        arg_types.push_back(arg_t);
                     }
                     llvm::FunctionType* fn_type = llvm::FunctionType::get(return_type, arg_types, false);
                     type = fn_type->getPointerTo();
@@ -1271,33 +1301,45 @@ namespace LCompilers {
                 m_dims = v_type->m_dims;
                 n_dims = v_type->n_dims;
                 a_kind = ASRUtils::extract_kind_from_ttype_t(v_type->m_type);
-                                switch( v_type->m_physical_type ) {
+                auto get_array_el_type = [&]() -> llvm::Type* {
+                    ASR::ttype_t* el_asr_type = ASRUtils::type_get_past_pointer(v_type->m_type);
+                    if (type_declaration != nullptr &&
+                        ASR::is_a<ASR::FunctionType_t>(*el_asr_type)) {
+                        ASR::symbol_t* fn_sym = ASRUtils::symbol_get_past_external(type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+                            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+                            return get_function_type(*fn, module)->getPointerTo();
+                        }
+                    }
+                    return get_el_type(arg_expr, v_type->m_type, module);
+                };
+                switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
-                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm::Type* el_type = get_array_el_type();
                         llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                         break;
                     }
                     case ASR::array_physical_typeType::PointerArray:
                     case ASR::array_physical_typeType::UnboundedPointerArray : {
-                        llvm_type = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm_type = get_array_el_type();
                         llvm_type = ASRUtils::is_character(*v_type->m_type) ? llvm_type
                             : llvm_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims));
-                        llvm_type = llvm::ArrayType::get(get_el_type(arg_expr, v_type->m_type, module),
+                        llvm_type = llvm::ArrayType::get(get_array_el_type(),
                                         ASRUtils::get_fixed_size_of_array(
                                             v_type->m_dims, v_type->n_dims));
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
 #if LLVM_VERSION_MAJOR >= 11
-                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
+                        llvm_type = llvm::VectorType::get(get_array_el_type(),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
 #else
-                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
+                        llvm_type = llvm::VectorType::get(get_array_el_type(),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
 #endif
                         break;
@@ -1307,7 +1349,7 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::AssumedRankArray: {
-                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm::Type* el_type = get_array_el_type();
                         llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                         is_array_type = true;
                         break;
