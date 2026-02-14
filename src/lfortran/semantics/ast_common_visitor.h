@@ -19,7 +19,6 @@
 #include <set>
 #include <map>
 #include <limits>
-#include <limits>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
