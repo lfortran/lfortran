@@ -1,0 +1,13 @@
+{
+    "basename": "asr-len_01-8954622",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/len_01.f90",
+    "infile_hash": "4df17c2f275c9365c8849cf93e44ea028d4e0b091002885e5288ebd1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-len_01-8954622.stderr",
+    "stderr_hash": "8af4c0bd4037719561ce1d1ed6f6a13e14aecb09a2eefaa63368330e",
+    "returncode": 2
+}

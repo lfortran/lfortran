@@ -1,0 +1,5 @@
+semantic error: Argument of 'len' intrinsic must be CHARACTER
+ --> tests/errors/len_01.f90:7:18
+  |
+7 |         print *, len(generic)
+  |                  ^^^^^^^^^^^^ 
