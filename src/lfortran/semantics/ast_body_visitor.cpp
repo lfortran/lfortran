@@ -1972,42 +1972,6 @@ public:
                     })) {
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
-            // If no overload found and single struct value, then expand struct components
-            if (overloaded_stmt == nullptr &&
-                a_values_vec.size() == 1) {
-                ASR::expr_t* expr = a_values_vec[0];
-                ASR::ttype_t* type = ASRUtils::expr_type(expr);
-                type = ASRUtils::type_get_past_pointer(type);
-                if (ASR::is_a<ASR::StructType_t>(*type)) {
-                    ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(expr);
-                    ASR::symbol_t *var_sym = var->m_v;
-                    ASR::Variable_t *var_decl =
-                        ASR::down_cast<ASR::Variable_t>(
-                            ASRUtils::symbol_get_past_external(var_sym));
-                    ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
-                        var_decl->m_type_declaration);
-
-                    ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-                    if (struct_def->n_members > 0) {
-                        a_values_vec.n = 0;
-                        for (size_t j = 0; j < struct_def->n_members; j++) {
-                            char *member_name = struct_def->m_members[j];
-                            ASR::symbol_t *member_sym =
-                                struct_def->m_symtab->resolve_symbol(std::string(member_name));
-
-                            ASR::Variable_t *member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
-
-                            ASR::expr_t *member_expr = ASRUtils::EXPR(
-                                ASR::make_StructInstanceMember_t(
-                                    al, expr->base.loc, expr,
-                                    member_sym, member_var->m_type, nullptr));
-                            a_values_vec.push_back(al, member_expr);
-                        }
-                    }
-                }
-            }
-
             if (overloaded_stmt != nullptr) {
                 needs_internal_iostat = true;
             }
