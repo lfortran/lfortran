@@ -2992,6 +2992,39 @@ public:
                 }
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                if (ASR::is_a<ASR::String_t>(*array_type->m_type)) {
+                    ASR::String_t* target_str_type = ASR::down_cast<ASR::String_t>(array_type->m_type);
+                    ASR::expr_t* value_to_check = ASRUtils::expr_value(value);
+                    if (value_to_check && ASR::is_a<ASR::StringConstant_t>(*value_to_check)) {
+                        ASR::String_t* value_str_type = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(value));
+        
+                        int64_t target_len = 0, value_len = 0;
+                        bool target_len_known = ASRUtils::extract_value(target_str_type->m_len, target_len);
+                        bool value_len_known = ASRUtils::extract_value(value_str_type->m_len, value_len);
+                        
+                        if (target_len_known && value_len_known && target_len != value_len) {
+                            ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value_to_check);
+                            char* original_str = str_const->m_s;
+                            size_t new_length = static_cast<size_t>(target_len);
+                            char* adjusted_str = al.allocate<char>(new_length + 1);
+                            
+                            if (target_len < value_len) {
+                                std::memcpy(adjusted_str, original_str, new_length);
+                            } else {
+                                std::memcpy(adjusted_str, original_str, value_len);
+                                std::memset(adjusted_str + value_len, ' ', new_length - value_len);
+                            }
+                            adjusted_str[new_length] = '\0';
+                            
+                            // Create new string constant with adjusted value and correct type
+                            ASR::ttype_t* adjusted_type = ASRUtils::TYPE(ASR::make_String_t(al, value->base.loc, 1,
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, value->base.loc, target_len, ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4)))),
+                                ASR::string_length_kindType::ExpressionLength,
+                                ASR::string_physical_typeType::DescriptorString));
+                            value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, value->base.loc, adjusted_str, adjusted_type));
+                        }
+                    }
+                }
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                     diag.add(Diagnostic(
                         "Type mismatch during data initialization",
