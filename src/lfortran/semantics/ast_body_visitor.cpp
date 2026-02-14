@@ -2177,6 +2177,15 @@ public:
         tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
     }
 
+    void visit_Endfile(const AST::Endfile_t& x) {
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::vector<ASR::expr_t*> args;
+        std::string node_name = "Endfile";
+        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
+        tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+    }
+
     void visit_Instantiate(const AST::Instantiate_t &x) {
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
