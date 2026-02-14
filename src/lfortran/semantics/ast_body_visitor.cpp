@@ -1876,7 +1876,45 @@ public:
             overload_args.push_back(al, a_unit);
             if (formatted) {
                 if (a_fmt) {
-                    overload_args.push_back(al, a_fmt);
+                    // For user-defined derived-type I/O, the iotype argument
+                    // should be "DT" (or "DT<suffix>"), not the full format
+                    // string like "(dt)" or "(dt'suffix')".
+                    ASR::expr_t* iotype_arg = a_fmt;
+                    if (ASR::is_a<ASR::StringConstant_t>(*a_fmt)) {
+                        std::string fmt_str = ASR::down_cast<ASR::StringConstant_t>(a_fmt)->m_s;
+                        // Strip outer parentheses if present
+                        if (fmt_str.size() >= 2 && fmt_str[0] == '(' && fmt_str.back() == ')') {
+                            fmt_str = fmt_str.substr(1, fmt_str.size() - 2);
+                        }
+                        // Check if the format descriptor is "dt" (case-insensitive)
+                        if (fmt_str.size() >= 2 &&
+                            (fmt_str[0] == 'd' || fmt_str[0] == 'D') &&
+                            (fmt_str[1] == 't' || fmt_str[1] == 'T')) {
+                            std::string iotype_str = "DT";
+                            // Extract optional suffix (e.g., dt"mysuffix" or dt'mysuffix')
+                            if (fmt_str.size() > 2) {
+                                std::string suffix = fmt_str.substr(2);
+                                // Remove surrounding quotes if present
+                                if (suffix.size() >= 2 &&
+                                    ((suffix[0] == '\'' && suffix.back() == '\'') ||
+                                     (suffix[0] == '"' && suffix.back() == '"'))) {
+                                    suffix = suffix.substr(1, suffix.size() - 2);
+                                }
+                                iotype_str += suffix;
+                            }
+                            ASR::ttype_t* char_type = ASRUtils::TYPE(
+                                ASR::make_String_t(
+                                    al, loc, 1,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                                        static_cast<int64_t>(iotype_str.size()),
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::DescriptorString));
+                            iotype_arg = ASRUtils::EXPR(
+                                ASR::make_StringConstant_t(al, loc, s2c(al, iotype_str), char_type));
+                        }
+                    }
+                    overload_args.push_back(al, iotype_arg);
                 } else {
                     ASR::ttype_t* char_type = ASRUtils::TYPE(
                         ASR::make_String_t(
