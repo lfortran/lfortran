@@ -261,7 +261,7 @@ program continue_compilation_1
 
     integer :: bad_x
     type(ieee_class_type) :: ieee_cls
-
+    integer(8) :: mask_overflow
 
 
 
@@ -460,7 +460,7 @@ program continue_compilation_1
     print *, present()
     print *, ieor(x)
     print *, ieor()
-
+    mask_overflow = 2_8**63
     exit
 
     ! calling function with less arguments

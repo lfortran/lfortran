@@ -918,6 +918,12 @@ semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It
 462 |     print *, ieor()
     |              ^^^^^^ 
 
+semantic error: Integer overflow in exponentiation
+   --> tests/errors/continue_compilation_1.f90:463:21
+    |
+463 |     mask_overflow = 2_8**63
+    |                     ^^^^^^^ 
+
 semantic error: `exit` statements cannot be outside of loops or blocks
    --> tests/errors/continue_compilation_1.f90:464:5
     |
