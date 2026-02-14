@@ -7385,6 +7385,17 @@ public:
                 value_type_past_alloc, module.get());
             if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
                 value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                ASR::ttype_t* v_type = ASRUtils::expr_type(as->m_v);
+                if (ASRUtils::is_allocatable(v_type) || ASRUtils::is_pointer(v_type)) {
+                    value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+                }
+            } else if (ASR::is_a<ASR::Var_t>(*x.m_value)) {
+                if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_value)) ||
+                    ASRUtils::is_pointer(ASRUtils::expr_type(x.m_value))) {
+                    value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+                }
             }
             value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
@@ -7414,6 +7425,7 @@ public:
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, target_rank)),
             arr_descr->get_rank(target_type_llvm, new_desc, true));
         
+        llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
@@ -7425,10 +7437,8 @@ public:
             llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
             llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
 
-            // Set stride to 1 for contiguous data
-            builder->CreateStore(
-                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)),
-                stride_ptr);
+            // Set stride to current_stride
+            builder->CreateStore(current_stride, stride_ptr);
 
             // Set lower bound from target section
             llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
@@ -7440,6 +7450,9 @@ public:
                 builder->CreateSub(ub_idx, lb_idx),
                 llvm::ConstantInt::get(idx_type, 1));
             builder->CreateStore(size, size_ptr);
+
+            // Update current_stride
+            current_stride = builder->CreateMul(current_stride, size);
         }
         
         // Store the new descriptor to the target pointer
