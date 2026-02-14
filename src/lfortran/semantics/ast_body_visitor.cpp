@@ -1977,8 +1977,10 @@ public:
                 a_values_vec.size() == 1) {
                 ASR::expr_t* expr = a_values_vec[0];
                 ASR::ttype_t* type = ASRUtils::expr_type(expr);
-                type = ASRUtils::type_get_past_pointer(type);
-                if (ASR::is_a<ASR::StructType_t>(*type)) {
+                type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(type));
+                if (ASR::is_a<ASR::StructType_t>(*type) &&
+                    ASR::is_a<ASR::Var_t>(*expr)) {
                     ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(expr);
                     ASR::symbol_t *var_sym = var->m_v;
                     ASR::Variable_t *var_decl =
