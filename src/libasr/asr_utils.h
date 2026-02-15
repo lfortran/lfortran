@@ -5838,6 +5838,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
             !ASRUtils::is_class_type(ASRUtils::type_get_past_array(argi->m_type)) &&
             !ASR::is_a<ASR::String_t>(*argi->m_type) &&
+            !argi->m_target_attr &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
