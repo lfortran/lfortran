@@ -1609,6 +1609,7 @@ RUN(NAME select_type_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_23 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_type_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_25 LABELS gfortran llvm)
+RUN(NAME select_type_26 LABELS gfortran llvm)
 
 RUN(NAME program_02 LABELS gfortran llvm)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
