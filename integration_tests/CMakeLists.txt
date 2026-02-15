@@ -2021,6 +2021,7 @@ RUN(NAME associate_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_28 LABELS gfortran llvm)
 RUN(NAME associate_29 LABELS gfortran llvm)
 RUN(NAME associate_30 LABELS gfortran llvm)
+RUN(NAME associate_31 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
