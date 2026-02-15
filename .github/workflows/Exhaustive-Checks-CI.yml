@@ -532,7 +532,12 @@ jobs:
         if: ${{! (matrix.llvm-version == '7') }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
+            LAPACK_MODE="smoke"
+            if [[ "${{ matrix.llvm-version }}" == "11" || "${{ matrix.llvm-version }}" == "21" ]]; then
+                LAPACK_MODE="full"
+            fi
+            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
   upload_tarball:
     name: Upload Tarball
