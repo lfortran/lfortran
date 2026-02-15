@@ -11346,7 +11346,14 @@ public:
                 int64_t exponent_const =  INT64_MAX;
                 ASRUtils::extract_value(x.m_right, exponent_const);
                 // Handle simple-common exponent cases for faster computation.
-                if (exponent_const == 2) {
+                if (exponent_const == 0) {
+                    // x^0 = 1
+                    tmp = llvm::ConstantInt::get(left_val->getType(), 1);
+                } else if (exponent_const == 1) {
+                    // x^1 = x
+                    tmp = left_val;
+                } else if (exponent_const == 2) {
+                    // x^2 = x * x
                     tmp = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
                 } else if (exponent_const == 3) {
                     tmp = builder->CreateMul(
@@ -11356,7 +11363,23 @@ public:
                                 left_val,
                                 "simplified_pow_operation"),
                             "simplified_pow_operation");
-                } else { // Use `pow` function
+                } else if (exponent_const == 4) {
+                    // x^4 = (x*x) * (x*x)
+                    llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                    tmp = builder->CreateMul(x2, x2, "simplified_pow_operation");
+                } else if (exponent_const == 5) {
+                    // x^5 = x^4 * x = (x*x)*(x*x) * x
+                    llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateMul(x4, left_val, "simplified_pow_operation");
+                } else if (exponent_const > 0 && exponent_const <= 10) {
+                    // For small positive exponents (6-10), use repeated multiplication
+                    // This is faster than calling the pow function
+                    tmp = left_val;
+                    for (int64_t i = 1; i < exponent_const; i++) {
+                        tmp = builder->CreateMul(tmp, left_val, "simplified_pow_operation");
+                    }
+                } else { // Use `pow` function for large or negative exponents
                     llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
                     llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
                     llvm::Value* _left = llvm_utils->convert_kind(left_val, i64_ty);
@@ -11455,7 +11478,11 @@ public:
                 int64_t exponent_const =  INT64_MAX;
                 ASRUtils::extract_value(x.m_right, exponent_const);
                 // Handle simple-common exponent cases for faster computation.
-                if (exponent_const == 2) {
+                if (exponent_const == 0) {
+                    tmp = llvm::ConstantFP::get(left_val->getType(), 1.0);
+                } else if (exponent_const == 1) {
+                    tmp = left_val;
+                } else if (exponent_const == 2) {
                     tmp = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
                 } else if (exponent_const == 3) {
                     tmp = builder->CreateFMul(
@@ -11465,6 +11492,26 @@ public:
                                 left_val,
                                 "simplified_pow_operation"),
                             "simplified_pow_operation");
+                } else if (exponent_const == 4) {
+                    llvm::Value* x2 = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                    tmp = builder->CreateFMul(x2, x2, "simplified_pow_operation");
+                } else if (exponent_const == 5) {
+                    llvm::Value* x2 = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateFMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateFMul(x4, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 6) {
+                    llvm::Value* x2 = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateFMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateFMul(x4, x2, "simplified_pow_operation");
+                } else if (exponent_const == 7) {
+                    llvm::Value* x2 = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateFMul(x2, x2, "simplified_pow_operation");
+                    llvm::Value* x6 = builder->CreateFMul(x4, x2, "simplified_pow_operation");
+                    tmp = builder->CreateFMul(x6, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 8) {
+                    llvm::Value* x2 = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateFMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateFMul(x4, x4, "simplified_pow_operation");
                 } else { // Use `pow` function
                     const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
                     llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
