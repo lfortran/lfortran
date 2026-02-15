@@ -294,55 +294,6 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
 
-            template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, std::string infile, Location loc, LocationManager& lm, Args... args)
-            {
-                llvm::Function *fn = builder->GetInsertBlock()->getParent();
-
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                uint32_t line, column;
-                if (infile != "" && loc.first != 0 && loc.last != 0) {
-                    lm.pos_to_linecol(lm.output_to_input_pos(loc.first, false),
-                        line, column, infile);
-                    std::stringstream ss;
-                    ss << "At " << line << ":" << column << " of file " << infile << "\n" << message;
-                    message = ss.str();
-                }
-
-                builder->CreateCondBr(cond, thenBB, mergeBB);
-                builder->SetInsertPoint(thenBB); {
-                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
-                        llvm::Function* print_error_fn = module->getFunction("_lcompilers_print_error");
-                        if (!print_error_fn) {
-                            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            print_error_fn = llvm::Function::Create(error_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_print_error", module);
-                        }
-
-                        std::vector<llvm::Value*> vec = {formatted_msg, args...};
-                        builder->CreateCall(print_error_fn, vec);
-
-                        llvm::Function* exit_fn = module->getFunction("exit");
-                        if (!exit_fn) {
-                            llvm::FunctionType* exit_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt32Ty(context)},
-                                false);
-                            exit_fn = llvm::Function::Create(exit_fn_type,
-                                llvm::Function::ExternalLinkage, "exit", module);
-                        }
-
-                        builder->CreateCall(exit_fn, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
-                        builder->CreateUnreachable();
-                }
-                start_new_block(mergeBB);
-            }
-
             /*
             * A Label for runtime error messages
             */
@@ -361,7 +312,7 @@ class ASRToLLVMVisitor;
             };
 
             template<typename... Args>
-            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 

@@ -1674,12 +1674,13 @@ public:
                                 ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
                             var_name = ASRUtils::symbol_name(sym);
                         }
+                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
                         llvm_utils->generate_runtime_error(is_allocated,
                             "Attempting to allocate already allocated variable '%s'",
+                            {LLVMUtils::RuntimeLabel("Cannot allocate '%s' because it is already allocated", {tmp_expr->base.loc}, {var_name_llvm})},
                             infile,
-                            x.base.base.loc,
                             location_manager,
-                            LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
+                            var_name_llvm);
                     }
                     llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -1964,12 +1965,13 @@ public:
                             ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
                         var_name = ASRUtils::symbol_name(sym);
                     }
+                    llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
                     llvm_utils->generate_runtime_error(is_allocated,
                         "Attempting to allocate already allocated variable '%s'",
+                        {LLVMUtils::RuntimeLabel("Cannot allocate '%s' because it is already allocated", {tmp_expr->base.loc}, {var_name_llvm})},
                         infile,
-                        x.base.base.loc,
                         location_manager,
-                        LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
+                        var_name_llvm);
                 }
                 ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(
                     ASRUtils::expr_type(tmp_expr));
@@ -3552,8 +3554,8 @@ public:
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Array '%s' is indexed but not allocated.",
+                    {LLVMUtils::RuntimeLabel("", {x.m_v->base.loc})},
                     infile,
-                    x.m_v->base.loc,
                     location_manager,
                     LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
             }
@@ -4004,12 +4006,13 @@ public:
                     builder->CreatePtrToInt(llvm::ConstantPointerNull::get(
                         llvm::cast<llvm::PointerType>(class_instance_ptr->getType())),
                         llvm::Type::getInt64Ty(context)));
+                llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
                 llvm_utils->generate_runtime_error(cond,
                         "Tried to access member of unallocated variable '%s'",
+                        {LLVMUtils::RuntimeLabel("'%s' unallocated here", {cast_expr->m_arg->base.loc}, {var_name_llvm})},
                         infile,
-                        cast_expr->m_arg->base.loc,
                         location_manager,
-                        LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
+                        var_name_llvm);
             }
         }
 
@@ -4038,6 +4041,7 @@ public:
                 if (LLVM::is_llvm_pointer(*x_m_v_type)) {
                     if (compiler_options.po.bounds_checking) {
                         std::string _var_name = ASRUtils::EXPR2VAR(x.m_v)->m_name;
+                        llvm::Value* _var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, _var_name);
                         llvm::Value* cond = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(tmp,
                                 llvm::Type::getInt64Ty(context)),
@@ -4045,10 +4049,10 @@ public:
                                 llvm::Type::getInt64Ty(context)));
                         llvm_utils->generate_runtime_error(cond,
                                 "Tried to access member of unallocated variable '%s'",
+                                {LLVMUtils::RuntimeLabel("'%s' unallocated here", {x.m_v->base.loc}, {_var_name_llvm})},
                                 infile,
-                                x.m_v->base.loc,
                                 location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, _var_name));
+                                _var_name_llvm);
                     }
                     tmp = llvm_utils->CreateLoad2(x_mv_llvm_type->getPointerTo(), tmp);
                 }
@@ -4073,6 +4077,7 @@ public:
                 if (compiler_options.po.bounds_checking) {
                     ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
                     if (var) {
+                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name);
                         llvm::Value* cond = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(tmp,
                                 llvm::Type::getInt64Ty(context)),
@@ -4080,10 +4085,10 @@ public:
                                 llvm::Type::getInt64Ty(context)));
                         llvm_utils->generate_runtime_error(cond,
                                 "Tried to access member of unallocated variable '%s'",
+                                {LLVMUtils::RuntimeLabel("'%s' unallocated here", {x.m_v->base.loc}, {var_name_llvm})},
                                 infile,
-                                x.m_v->base.loc,
                                 location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name));
+                                var_name_llvm);
                     }
                 }
                 tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
@@ -4100,17 +4105,18 @@ public:
             ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
             if (var) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type, module.get());
+                llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name);
                 llvm::Value* cond = builder->CreateICmpEQ(
                     builder->CreatePtrToInt(tmp,
                         llvm::Type::getInt64Ty(context)),
                     builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
                         llvm::Type::getInt64Ty(context)));
                 llvm_utils->generate_runtime_error(cond,
-                        "Tried to access member of unallocated variable '%s'\n",
+                        "Tried to access member of unallocated variable '%s'",
+                        {LLVMUtils::RuntimeLabel("'%s' unallocated here", {x.m_v->base.loc}, {var_name_llvm})},
                         infile,
-                        x.m_v->base.loc,
                         location_manager,
-                        LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name));
+                        var_name_llvm);
             }
         }
         if (ASR::is_a<ASR::Struct_t>(*symbol_get_past_external(x.m_m))) {
@@ -9377,8 +9383,9 @@ public:
                 llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Array shape mismatch in binary operation with operands '%s' and '%s'. Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.",
+                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_llvm_size}),
+                                                    LLVMUtils::RuntimeLabel("RHS size is %d", {right->base.loc}, {right_llvm_size})},
                                                     infile,
-                                                    left->base.loc,
                                                     location_manager,
                                                     left_name,
                                                     right_name,
@@ -9391,8 +9398,9 @@ public:
             } else {
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Array shape mismatch in binary operation. Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.",
+                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_llvm_size}),
+                                                    LLVMUtils::RuntimeLabel("RHS size is %d", {right->base.loc}, {right_llvm_size})},
                                                     infile,
-                                                    left->base.loc,
                                                     location_manager,
                                                     left_llvm_size,
                                                     dim_llvm,
@@ -9445,12 +9453,13 @@ public:
                         // With move don't throw error when target is unallocated
                         if (!x.m_move_allocation) {
                             llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
+                            llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
                             llvm_utils->generate_runtime_error(is_not_allocated,
                                 "Array '%s' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
+                                    {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
                                     infile,
-                                    x.m_target->base.loc,
                                     location_manager,
-                                    LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
+                                    target_var_name_llvm);
                         }
 
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -9463,9 +9472,10 @@ public:
                         builder->SetInsertPoint(thenBB); {
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                                 "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
+                                                                {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                                                LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
                                                                 infile,
-                                                            x.m_target->base.loc,
-                                                            location_manager,
+                                                                location_manager,
                                                                 LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                                 target_size,
                                                                 dim_llvm,
@@ -9478,8 +9488,9 @@ public:
                     } else {
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
-                                                            infile,
-                                                        x.m_target->base.loc,
+                                                     {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                                         LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                          infile,
                                                         location_manager,
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
@@ -9490,8 +9501,9 @@ public:
                 } else {
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
+                                                   {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                                       LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
                                                         infile,
-                                                        x.m_target->base.loc,
                                                         location_manager,
                                                         target_size,
                                                         dim_llvm,
@@ -12090,8 +12102,8 @@ public:
                                 // TODO: Set location here
                                 llvm_utils->generate_runtime_error(cond,
                                     "Variable '%s' is not allocated.",
+                                    {LLVMUtils::RuntimeLabel("", {x->base.base.loc})},
                                     infile,
-                                    {0, 0},
                                     location_manager,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, x->m_name));
                             }
@@ -17561,8 +17573,8 @@ public:
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
                     llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
                             "Argument %d of subroutine %s is unallocated.",
+                            {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc}, {})},
                             infile,
-                            arg_expr->base.loc,
                             location_manager,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
@@ -17594,7 +17606,7 @@ public:
                             } else {
                                 cond = builder->CreateICmpSLT(descriptor_length, pointer_length);
                             }
-                            llvm_utils->generate_runtime_error2(cond,
+                            llvm_utils->generate_runtime_error(cond,
                                     "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
                                     {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc}),
                                         function->m_start_name ? LLVMUtils::RuntimeLabel("Here", {*function->m_start_name}, {}, false): LLVMUtils::RuntimeLabel("", {}),
@@ -17623,8 +17635,8 @@ public:
                     }
                     llvm_utils->generate_runtime_error(cond,
                             "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                            {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                             infile,
-                            arg_expr->base.loc,
                             location_manager,
                             LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                             desc_size,
@@ -17658,8 +17670,8 @@ public:
                                 llvm_utils->generate_runtime_error(cond,
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                        {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                         infile,
-                                        arg_expr->base.loc,
                                         location_manager,
                                         LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                         fixed_length,
@@ -17683,8 +17695,8 @@ public:
                         llvm_utils->generate_runtime_error(cond,
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                 infile,
-                                arg_expr->base.loc,
                                 location_manager,
                                 LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                 fixed_size,
@@ -17705,8 +17717,9 @@ public:
                     ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
                     llvm_utils->generate_runtime_error(expr_is_unallocated(arg_expr),
                             "Argument %d of subroutine %s is unallocated.",
+                            {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
                             infile,
-                            arg_expr->base.loc,
+                            // arg_expr->base.loc,
                             location_manager,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
@@ -19174,8 +19187,8 @@ public:
                     if (ASRUtils::is_allocatable(arg_expr_type)) {
                         llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
                                 "Argument %d is unallocated.",
+                                {LLVMUtils::RuntimeLabel("This is unallocated", {x.m_args[i]->base.loc})},
                                 infile,
-                                x.m_args[i]->base.loc,
                                 location_manager,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)));
                     }

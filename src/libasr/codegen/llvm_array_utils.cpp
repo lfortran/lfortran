@@ -798,8 +798,8 @@ namespace LCompilers {
                                                             lbound_check,
                                                             ubound_check),
                                                 "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                                                {LLVMUtils::RuntimeLabel("", {loc})},
                                                      infile,
-                                                     loc,
                                                      lm,
                                                      LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
@@ -850,10 +850,9 @@ namespace LCompilers {
                         llvm_utils->generate_runtime_error(builder->CreateOr(
                                                                 lbound_check,
                                                                 ubound_check),
-                                                "Runtime error: Array '%s' index out of bounds.\n\n"
-                                                        "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                "Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                                                        {LLVMUtils::RuntimeLabel("", {loc})},
                                                         infile,
-                                                        loc,
                                                         lm,
                                                         LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
