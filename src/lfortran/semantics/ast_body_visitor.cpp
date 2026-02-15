@@ -3211,6 +3211,36 @@ public:
             ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
             std::string tmp_name = current_scope->get_unique_name("~select_type_selector_tmp_");
             ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
+            // The type_declaration obtained above may reference a symbol
+            // in a sibling scope (e.g. the called function's scope). We must
+            // resolve it to a symbol accessible from current_scope so that
+            // serialization (modfile) does not produce cross-scope references.
+            if (type_decl != nullptr) {
+                std::string decl_name = ASRUtils::symbol_name(type_decl);
+                ASR::symbol_t* local_decl = current_scope->resolve_symbol(decl_name);
+                if (local_decl != nullptr) {
+                    type_decl = local_decl;
+                } else {
+                    // Symbol not found in scope hierarchy; create it locally.
+                    // This happens for ~unlimited_polymorphic_type when the
+                    // current scope has no class(*) variable declaration yet.
+                    SymbolTable *parent_scope = current_scope;
+                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                    ASR::asr_t* dtype = ASR::make_Struct_t(al, x.base.base.loc,
+                        current_scope, s2c(al, decl_name), nullptr,
+                        nullptr, 0, nullptr, 0, nullptr, 0,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        false, true, nullptr, 0, nullptr, nullptr);
+                    ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                    ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
+                        al, x.base.base.loc, struct_symbol, false);
+                    ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
+                    struct_->m_struct_signature = struct_type;
+                    parent_scope->add_symbol(decl_name, struct_symbol);
+                    current_scope = parent_scope;
+                    type_decl = struct_symbol;
+                }
+            }
             ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, tmp_name),
                 nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
