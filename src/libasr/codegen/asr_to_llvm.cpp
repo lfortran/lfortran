@@ -17584,20 +17584,11 @@ public:
                         if (m_dims[j].m_length) {
                             llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
                             llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
-                            llvm::Value *lbound = nullptr;
-                            if (m_dims[j].m_start) {
-                                this->visit_expr_wrapper(m_dims[j].m_start, true);
-                                lbound = builder->CreateSExtOrTrunc(
-                                    tmp, llvm::Type::getInt32Ty(context));
-                            } else {
-                                lbound = llvm::ConstantInt::get(llvm_utils->getIntType(4), 1);
-                            }
                             load_array_size_deep_copy(m_dims[j].m_length);
                             // Convert user dimension expression to i32 to match descriptor format
                             llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
                                 tmp, llvm::Type::getInt32Ty(context));
                             llvm::Value* cond = nullptr;
-                            llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lbound, pointer_length), llvm::ConstantInt::get(llvm_utils->getIntType(4), 1));
                             if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                 cond = builder->CreateICmpNE(descriptor_length, pointer_length);
                             } else {
@@ -17607,7 +17598,7 @@ public:
                                     "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
                                     {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc}),
                                         function->m_start_name ? LLVMUtils::RuntimeLabel("Here", {*function->m_start_name}, {}, false): LLVMUtils::RuntimeLabel("", {}),
-                                        LLVMUtils::RuntimeLabel("Expected range %d:%d, got %d", {m_dims[j].loc}, {lbound, ubound, descriptor_length}, false)},
+                                        LLVMUtils::RuntimeLabel("Parameter is size %d, argument is size %d", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
                                     infile,
                                     location_manager,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),

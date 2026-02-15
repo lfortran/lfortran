@@ -5,4 +5,4 @@ runtime error: Array shape mismatch in subroutine 'f_integer____0'. Tried to mat
   |     ^
   |
 8 |     e = f(a)
-  |     ~ Expected range 1:2, got 3
+  |     ~ Parameter is size 2, argument is size 3
