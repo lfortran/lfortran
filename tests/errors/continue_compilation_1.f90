@@ -263,8 +263,13 @@ program continue_compilation_1
     type(ieee_class_type) :: ieee_cls
     type(Base) :: base_var
     type(Derived) :: derived_var
+<<<<<<< HEAD
     class(type_t) :: inst_tt
 
+=======
+
+    real(8), parameter :: erfc_param = erfc(40.12_8) 
+>>>>>>> 13bb61f30 (test references updated)
 
 
 
