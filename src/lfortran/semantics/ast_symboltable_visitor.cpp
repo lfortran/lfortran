@@ -1990,6 +1990,7 @@ public:
     void process_simd_variables() {
         for (auto &var : simd_variables) {
             ASR::symbol_t *s = current_scope->get_symbol(var.first);
+            Location var_loc = s->base.loc;
             if (s) {
                 ASR::ttype_t *t = ASRUtils::symbol_type(s);
                 // allocatable
@@ -1997,7 +1998,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be allocatable: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2006,7 +2007,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be pointers: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2015,7 +2016,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "The SIMD variable `" + var.first + "` must be an array",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2026,7 +2027,7 @@ public:
                         "SIMD arrays must be 1 dimensional, but `" + var.first +
                         "` has " + std::to_string(a->n_dims) + " dimensions",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2036,7 +2037,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD array `" + var.first + "` must have an explicit size",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2047,7 +2048,7 @@ public:
                         "` must have a compile-time constant size "
                         "(integer literal or parameter)",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2059,7 +2060,7 @@ public:
                         "SIMD arrays must have Real or Integer element type, but `" +
                         var.first + "` has an incompatible type",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2070,7 +2071,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "The SIMD variable `" + var.first + "` is not declared",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {var.second})}));
+                        diag::Label("", {var_loc})}));
                 if ( !compiler_options.continue_compilation ) throw SemanticAbort();
             }
 
