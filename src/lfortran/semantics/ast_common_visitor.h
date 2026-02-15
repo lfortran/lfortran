@@ -8253,8 +8253,8 @@ public:
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (!v_class_proc->m_is_nopass) {
                 ASR::call_arg_t self_arg;
-                self_arg.loc = func->m_args[0]->base.loc;
-                self_arg.m_value = func->m_args[0];
+                self_arg.loc = v_expr->base.loc;
+                self_arg.m_value = v_expr;
                 args = {};
                 args.reserve(al, func->n_args);
                 visit_expr_list(m_args, n_args, args);
