@@ -3217,7 +3217,7 @@ public:
             // serialization (modfile) does not produce cross-scope references.
             if (type_decl != nullptr) {
                 std::string decl_name = ASRUtils::symbol_name(type_decl);
-                ASR::symbol_t* local_decl = current_scope->resolve_symbol(decl_name);
+                ASR::symbol_t* local_decl = current_scope->get_symbol(decl_name);
                 if (local_decl != nullptr) {
                     type_decl = local_decl;
                 } else {
