@@ -1,5 +1,5 @@
 ! Test: associate with implied-do array constructor (runtime-sized)
-module associate_29_mod
+module associate_30_mod
   implicit none
 contains
   logical function f(args)
@@ -11,8 +11,8 @@ contains
   end function
 end module
 
-program associate_29
-  use associate_29_mod, only : f
+program associate_30
+  use associate_30_mod, only : f
   logical :: res
   res = f(["hello"])
   if (.not. res) error stop
