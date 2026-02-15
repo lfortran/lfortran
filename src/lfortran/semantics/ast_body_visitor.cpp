@@ -3221,24 +3221,15 @@ public:
                 if (local_decl != nullptr) {
                     type_decl = local_decl;
                 } else {
-                    // Symbol not found in scope hierarchy; create it locally.
-                    // This happens for ~unlimited_polymorphic_type when the
-                    // current scope has no class(*) variable declaration yet.
-                    SymbolTable *parent_scope = current_scope;
-                    current_scope = al.make_new<SymbolTable>(parent_scope);
-                    ASR::asr_t* dtype = ASR::make_Struct_t(al, x.base.base.loc,
-                        current_scope, s2c(al, decl_name), nullptr,
-                        nullptr, 0, nullptr, 0, nullptr, 0,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        false, true, nullptr, 0, nullptr, nullptr);
-                    ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                    ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
-                        al, x.base.base.loc, struct_symbol, false);
-                    ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
-                    struct_->m_struct_signature = struct_type;
-                    parent_scope->add_symbol(decl_name, struct_symbol);
-                    current_scope = parent_scope;
-                    type_decl = struct_symbol;
+                    // Symbol not found in current scope; add an ExternalSymbol
+                    // referencing the original struct from its owner scope.
+                    type_decl = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, x.base.base.loc, current_scope,
+                        s2c(al, decl_name), type_decl,
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(type_decl)),
+                        nullptr, 0, s2c(al, decl_name),
+                        ASR::accessType::Public));
+                    current_scope->add_symbol(decl_name, type_decl);
                 }
             }
             ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
