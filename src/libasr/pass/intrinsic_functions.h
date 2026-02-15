@@ -4,6 +4,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
+#include <limits>
 
 namespace LCompilers::ASRUtils {
 
@@ -470,7 +471,36 @@ create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
-create_unary_function(Erfc, erfc, erfc)
+
+namespace Erfc {
+    static inline ASR::expr_t *eval_Erfc(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
+            diag::Diagnostics& diag) {
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double val = std::erfc(rv);
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);
+        double tiny = (kind == 4) ? std::numeric_limits<float>::min() : std::numeric_limits<double>::min();
+        if (std::abs(val) < tiny) {
+             diag.add(diag::Diagnostic(
+                "Result of `erfc` underflows its kind",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})
+                }));
+             return nullptr;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.f_t(val, t);
+    }
+    static inline ASR::expr_t* instantiate_Erfc (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id,
+            int index_kind) {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "erfc", arg_types[0], return_type, new_args, overload_id,
+            index_kind);
+    }
+}
 
 namespace Isnan{
     static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,
