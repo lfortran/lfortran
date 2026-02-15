@@ -273,6 +273,12 @@ semantic error: Symbol not found: `uninitialized_param_local`
 255 |     type(MyClass) :: err_obj5 = uninitialized_param_local
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: CLASS variable 'inst_tt' must be dummy, allocatable or pointer
+   --> tests/errors/continue_compilation_1.f90:266:5
+    |
+266 |     class(type_t) :: inst_tt
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:565:14
     |

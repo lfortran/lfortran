@@ -5666,6 +5666,19 @@ public:
                         "");
                     throw SemanticAbort();
                 }
+                if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                    AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                    if (sym_type->m_type == AST::decl_typeType::TypeClass) {
+                        if (!is_argument && !is_allocatable && !is_pointer) {
+                            diag.add(Diagnostic(
+                                "CLASS variable '" + std::string(s.m_name) + "' must be dummy, allocatable or pointer",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
