@@ -2423,6 +2423,14 @@ public:
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
                     ASRUtils::type_get_past_allocatable(tmp_type)));
+            } else if ( !create_associate_stmt && ASRUtils::is_array(tmp_type) &&
+                        ASRUtils::is_dimension_empty(tmp_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*tmp_type) ) {
+                // For non-lvalue array expressions (e.g., array constructors
+                // with runtime-determined sizes), wrap in Allocatable so that
+                // the subsequent assignment can allocate memory for the target.
+                tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+                    tmp_type->base.loc, tmp_type));
             }
 
             std::string name = to_lower(x.m_syms[i].m_name);
@@ -2443,7 +2451,10 @@ public:
                 body.push_back(al, associate_stmt);
             } else {
                 ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                // For non-lvalue associate expressions (e.g., array constructors),
+                // always use realloc_lhs to ensure memory is allocated for
+                // the target variable whose dimensions may be runtime-determined.
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, true, false));
                 body.push_back(al, assign_stmt);
             }
         }
