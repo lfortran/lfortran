@@ -158,9 +158,6 @@
                                         )]
                                         []
                                     )
-                                    (ImplicitDeallocate
-                                        [(Var 3 table)]
-                                    )
                                     (SubroutineCall
                                         3 toml_parse@toml_parse_string
                                         3 toml_parse

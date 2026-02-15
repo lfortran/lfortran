@@ -172,10 +172,6 @@ public:
             } else {
                 if (tmp) {
                     ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
-                    if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
-                        ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
-                        if (impl_decl) body.push_back(al, impl_decl);
-                    }
                     body.push_back(al, tmp_stmt);
                 } else if (!tmp_vec.empty()) {
                     for (auto &x : tmp_vec) body.push_back(al, ASRUtils::STMT(x));
@@ -3759,81 +3755,6 @@ public:
         tmp = nullptr;
     }
 
-    ASR::stmt_t* create_implicit_deallocate_subrout_call(ASR::stmt_t* x) {
-        ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(x);
-        const ASR::symbol_t* subrout_sym = ASRUtils::symbol_get_past_external(subrout_call->m_name);
-        if( ! ASR::is_a<ASR::Function_t>(*subrout_sym)
-            || ASR::down_cast<ASR::Function_t>(subrout_sym)->m_return_var != nullptr ) {
-            return nullptr;
-        }
-        ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        Vec<ASR::expr_t*> del_syms;
-        del_syms.reserve(al, 1);
-        for( size_t i = 0; i < subrout_call->n_args; i++ ) {
-            if (!subrout_call->m_args[i].m_value) continue;
-            // Bounds check: call may have more args than definition (optional args)
-            if (i >= subrout->n_args) continue;
-            if (!subrout->m_args[i] || subrout->m_args[i]->type != ASR::exprType::Var) continue;
-
-            const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
-            const ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(orig_arg_var->m_v);
-            if (orig_sym->type != ASR::symbolType::Variable) continue;
-            ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
-
-            if (orig_var->m_intent != ASR::intentType::Out) continue;
-            if (!ASRUtils::is_allocatable(orig_var->m_type) &&
-                !ASR::is_a<ASR::StructType_t>(*orig_var->m_type)) continue;
-
-            if( subrout_call->m_args[i].m_value &&
-                subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
-                const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(subrout_call->m_args[i].m_value);
-                const ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(arg_var->m_v);
-                if( sym->type == ASR::symbolType::Variable ) {
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                    if( ASR::is_a<ASR::Allocatable_t>(*var->m_type) &&
-                        ASR::is_a<ASR::Allocatable_t>(*orig_var->m_type) &&
-                        orig_var->m_intent == ASR::intentType::Out ) {
-                        del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
-                    }
-                    // Check struct-type members
-                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(sym))
-                        && !ASRUtils::is_class_type(ASRUtils::symbol_type(sym))
-                        && ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out) {
-                        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(var->m_type_declaration));
-                        while (struct_type) {
-                            SymbolTable* sym_table_of_struct = struct_type->m_symtab;
-                            for(auto struct_member : sym_table_of_struct->get_scope()){
-                                if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
-                                    ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
-                                    del_syms.push_back(al, ASRUtils::EXPR(
-                                        ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
-                                        (ASR::asr_t*)subrout_call->m_args[i].m_value,
-                                        const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
-                                }
-                            }
-                            if (struct_type->m_parent) {
-                                struct_type = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(struct_type->m_parent));
-                            } else {
-                                struct_type = nullptr;
-                            }
-                        }
-                    }
-                }
-            }
-            // NOTE: StructInstanceMember actuals are NOT handled here because
-            // the pass_insert_deallocate pass adds deallocation at function entry
-            // for allocatable intent(out) dummies. Adding ImplicitDeallocate at
-            // the call site would cause double-free.
-        }
-        if( del_syms.size() == 0 ) {
-            return nullptr;
-        }
-        return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, x->base.loc,
-                    del_syms.p, del_syms.size()));
-    }
-
     void visit_Entry(const AST::Entry_t& /*x*/) {
         tmp = nullptr;
     }
@@ -4008,12 +3929,6 @@ public:
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
                 tmp_stmt = ASRUtils::STMT(tmp);
-                if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
-                    ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
-                    if (impl_decl != nullptr) {
-                        stmt_vector.push_back(impl_decl);
-                    }
-                }
                 if (tmp_stmt->type == ASR::stmtType::Assignment) {
                     // if it is an assignment to any of the entry function return variables, then
                     // make an assignment to return variable of master function
