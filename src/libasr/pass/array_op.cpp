@@ -62,6 +62,12 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_FunctionCall(x);
     }
 
+    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
+        // Do not descend into intrinsic array functions (reductions like
+        // MaxVal, MinVal, Sum, etc.) because they operate on whole arrays
+        // and their array arguments must not be replaced with element accesses.
+    }
+
 };
 
 class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<ArrayVarAddressCollector> {
