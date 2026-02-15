@@ -1,35 +1,35 @@
 semantic error: SIMD arrays must be 1 dimensional, but `simd_2d` has 2 dimensions
- --> tests/errors/continue_compilation_simd.f90:5:5
+ --> tests/errors/continue_compilation_simd.f90:5:13
   |
 5 |     real :: simd_2d(8, 8)
-  |     ^^^^^^^^^^^^^^^^^^^^^ 
+  |             ^^^^^^^^^^^^^ 
 
 semantic error: SIMD arrays cannot be allocatable: `simd_alloc`
- --> tests/errors/continue_compilation_simd.f90:6:5
+ --> tests/errors/continue_compilation_simd.f90:6:26
   |
 6 |     real, allocatable :: simd_alloc(:)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+  |                          ^^^^^^^^^^^^^ 
 
 semantic error: SIMD arrays cannot be pointers: `simd_ptr`
- --> tests/errors/continue_compilation_simd.f90:7:5
+ --> tests/errors/continue_compilation_simd.f90:7:22
   |
 7 |     real, pointer :: simd_ptr(:)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+  |                      ^^^^^^^^^^^ 
 
 semantic error: The SIMD variable `simd_scalar` must be an array
- --> tests/errors/continue_compilation_simd.f90:8:5
+ --> tests/errors/continue_compilation_simd.f90:8:13
   |
 8 |     real :: simd_scalar
-  |     ^^^^^^^^^^^^^^^^^^^ 
+  |             ^^^^^^^^^^^ 
 
 semantic error: SIMD arrays must have Real or Integer element type, but `simd_char` has an incompatible type
- --> tests/errors/continue_compilation_simd.f90:9:5
+ --> tests/errors/continue_compilation_simd.f90:9:18
   |
 9 |     character :: simd_char(8)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+  |                  ^^^^^^^^^^^^ 
 
 semantic error: The SIMD variable `x` must be an array
-  --> tests/errors/continue_compilation_simd.f90:10:5
+  --> tests/errors/continue_compilation_simd.f90:10:13
    |
 10 |     real :: x
-   |     ^^^^^^^^^ 
+   |             ^ 
