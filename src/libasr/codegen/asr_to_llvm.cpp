@@ -11372,13 +11372,22 @@ public:
                     llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
                     llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
                     tmp = builder->CreateMul(x4, left_val, "simplified_pow_operation");
-                } else if (exponent_const > 0 && exponent_const <= 10) {
-                    // For small positive exponents (6-10), use repeated multiplication
-                    // This is faster than calling the pow function
-                    tmp = left_val;
-                    for (int64_t i = 1; i < exponent_const; i++) {
-                        tmp = builder->CreateMul(tmp, left_val, "simplified_pow_operation");
-                    }
+                } else if (exponent_const == 6) {
+                    // x^6 = x^4 * x^2 = (x*x)*(x*x) * (x*x)
+                    llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateMul(x4, x2, "simplified_pow_operation");
+                } else if (exponent_const == 7) {
+                    // x^7 = x^4 * x^2 * x
+                    llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
+                    llvm::Value* x6 = builder->CreateMul(x4, x2, "simplified_pow_operation");
+                    tmp = builder->CreateMul(x6, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 8) {
+                    // x^8 = (x^4)^2 = ((x*x)*(x*x))^2
+                    llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                    llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
+                    tmp = builder->CreateMul(x4, x4, "simplified_pow_operation");
                 } else { // Use `pow` function for large or negative exponents
                     llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
                     llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
