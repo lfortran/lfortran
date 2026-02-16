@@ -10386,7 +10386,12 @@ public:
                     ASR::TypeStmtType_t* type_stmt_type_t = ASR::down_cast<ASR::TypeStmtType_t>(select_type_stmts[i]);
                     ASR::ttype_t* type_stmt_type = type_stmt_type_t->m_type;
                     ctx.block_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, type_stmt_type, module.get());
-                    ctx.block_type_asr = type_stmt_type;
+                    // block_type_asr is no longer consumed by any code path for new_classes
+                    // (the macro load_unlimited_polymorpic_value was removed).
+                    // Keep it set for the !new_classes path.
+                    if (!compiler_options.new_classes) {
+                        ctx.block_type_asr = type_stmt_type;
+                    }
                     ctx.der_type.clear();
                     int kind = ASRUtils::extract_kind_from_ttype_t(type_stmt_type);
                     if (compiler_options.new_classes) {
@@ -10471,7 +10476,11 @@ public:
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
                     // Look up association symbol in block's symtab and add to map
                     ASR::symbol_t* block_assoc_sym = block->m_symtab->resolve_symbol(assoc_name);
-                    if (block_assoc_sym && block_assoc_sym != selector_sym) {
+                    // For TypeStmtType under new_classes, ClassToIntrinsic Cast nodes
+                    // handle value extraction, so don't add to select_type_context_map.
+                    bool skip_context = compiler_options.new_classes &&
+                        select_type_stmts[i]->type == ASR::type_stmtType::TypeStmtType;
+                    if (block_assoc_sym && block_assoc_sym != selector_sym && !skip_context) {
                         assoc_sym = ASRUtils::symbol_get_past_external(block_assoc_sym);
                         select_type_context_map[assoc_sym] = ctx;
                     }
