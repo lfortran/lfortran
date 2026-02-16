@@ -8689,12 +8689,9 @@ public:
                         bool rhs_size_known = true;
                         for (size_t i = 0; i < arr_rhs->n_dims; i++) {
                             std::int64_t rhs_dim = ASRUtils::extract_dim_value_int(arr_rhs->m_dims[i].m_length);
-                            if( rhs_dim != -1 ){
-                                rhs_ele *= rhs_dim;
-                            } else {
-                                rhs_size_known = false;
-                                break;
-                            }
+                            rhs_ele *= rhs_dim;
+                            if (rhs_ele < 0) break;
+                        }
                         }
                         if ( arr_rhs->n_dims == 0 ) {
                             rhs_size_known = false;
@@ -8708,7 +8705,7 @@ public:
                                 break;
                             }
                         }
-                        if( rhs_size_known && lhs_ele < rhs_ele ){
+                        if( arr_rhs->n_dims ==0 && rhs_ele < 0 && lhs_ele < rhs_ele ){
                             diag.add(Diagnostic("Array passed into function has `" + std::to_string(lhs_ele) +
                                 "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
