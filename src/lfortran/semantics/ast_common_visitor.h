@@ -8693,9 +8693,6 @@ public:
                             if (rhs_ele < 0) break;
                         }
                         }
-                        if ( arr_rhs->n_dims == 0 ) {
-                            rhs_size_known = false;
-                        }
                         for (size_t i = 0; i < arr_lhs->n_dims; i++) {
                             std::int64_t lhs_dim = ASRUtils::extract_dim_value_int(arr_lhs->m_dims[i].m_length);
                             if( lhs_dim != -1 ){
