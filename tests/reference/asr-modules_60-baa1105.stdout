@@ -39,7 +39,8 @@
                                 )
                         })
                     bobyqa_exmp
-                    [infnan_mod_1]
+                    [infnan_mod_1
+                    inf_mod_1]
                     [(SubroutineCall
                         6 is_finite_1
                         ()

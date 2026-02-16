@@ -59,7 +59,8 @@
                                 )
                         })
                     template_sort_01
-                    [template_sort_01_m]
+                    [template_sort_01_m
+                    template_sort_01_type]
                     [(SubroutineCall
                         18 test_template
                         ()

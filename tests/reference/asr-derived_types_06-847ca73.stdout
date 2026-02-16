@@ -1894,7 +1894,8 @@
                         })
                     tomlf_utils
                     ()
-                    [tomlf_utils_convert]
+                    [tomlf_utils_convert
+                    tomlf_datetime]
                     .false.
                     .false.
                     .false.
