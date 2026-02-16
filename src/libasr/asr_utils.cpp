@@ -1967,8 +1967,11 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         }
         found = true;
         Vec<ASR::call_arg_t> a_args;
-        a_args.reserve(al, args.size());
+        a_args.reserve(al, 1);
         for (size_t i = 0; i < args.size(); i++) {
+            if (i == 0 && (expr_dt != nullptr)) {
+                continue;
+            }
             ASR::call_arg_t arg;
             arg.loc = arg_loc;
             arg.m_value = args[i];
@@ -1983,6 +1986,12 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             matched_subrout_name = mangled_name;
         }
         ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+        if (expr_dt != nullptr) {
+            ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
+            a_name = ASRUtils::import_class_procedure(al, loc,
+                temp_struct->m_symtab->get_symbol(subrout_name), curr_scope);
+        }
         if( a_name == nullptr ) {
             a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                         al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
@@ -1994,10 +2003,10 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
         }
         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
+        ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
         ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
         asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
-                                        a_args.p, a_args.n, nullptr, nullptr, false);
+                                        a_args.p, a_args.n, expr_dt, nullptr, false);
     }
 }
 
