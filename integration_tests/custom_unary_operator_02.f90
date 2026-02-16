@@ -6,11 +6,7 @@ module custom_unary_operator_02_module
   end type
 
   interface operator(.sumall.)
-    pure function sum_values(a) result(r)
-      import t
-      type(t), intent(in) :: a(:)
-      type(t) :: r
-    end function
+    module procedure sum_values
   end interface
 
 contains
