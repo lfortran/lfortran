@@ -1,5 +1,0 @@
-runtime error: Array shape mismatch in binary operation with operands 'x' and 'y'. Tried to match size 3 of dimension 1 of 'x' with size 4 of dimension 1 of 'y'.
-  --> tests/errors/array_bounds_check_07.f90:12:9
-   |
-12 |     z = x + y
-   |         ^ 

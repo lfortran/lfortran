@@ -1,5 +1,0 @@
-runtime error: Attempting to allocate already allocated variable 'arr'
- --> tests/errors/allocated_05.f90:6:5
-  |
-6 |     allocate(arr(20))  ! Error: double allocation of array
-  |     ^^^^^^^^^^^^^^^^^ 

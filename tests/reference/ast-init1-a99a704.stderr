@@ -1,5 +1,0 @@
-syntax error: Invalid syntax for variable initialization (try inserting '::' after the type)
- --> tests/errors/init1.f90:2:1
-  |
-2 | integer x = 1
-  | ^^^^^^^^^^^^^ 

@@ -14263,7 +14263,6 @@ public:
                         if (read_ptr->getType() != expected_type) {
                             read_ptr = builder->CreateBitCast(read_ptr, expected_type);
                         }
-                        builder->CreateCall(fn, {read_ptr, unit_val, iostat});
                         if (is_internal) {
                             builder->CreateCall(fn, {var_to_read_into, src_data, src_len});
                         } else {
