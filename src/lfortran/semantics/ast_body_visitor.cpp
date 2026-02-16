@@ -3555,7 +3555,16 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, view_type, nullptr, nullptr, assoc_variable_name);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type_declaration = type_declaration;
+                        if (is_selector_array) {
+                            // For arrays, we rewrote m_type to the guard type, so use
+                            // the type_declaration from determine_type().
+                            assoc_variable->m_type_declaration = type_declaration;
+                        } else {
+                            // For scalars, the variable keeps class(*) type (StructType).
+                            // The verifier requires StructType variables to have a type
+                            // declaration, so use the selector's type declaration.
+                            assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                        }
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
@@ -4913,7 +4922,8 @@ public:
         );
 
         is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
-            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))));
+            (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))) ||
+             ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic));
 
         // Allow function calls on LHS if they return a POINTER
         if (!is_valid_lhs && target->type == ASR::exprType::FunctionCall) {
