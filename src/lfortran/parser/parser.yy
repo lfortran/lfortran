@@ -2439,6 +2439,9 @@ def_unary_operand
     | ".true."          { $$ = TRUE(@$); }
     | ".false."         { $$ = FALSE(@$); }
     | "(" expr ")"      { $$ = PAREN($2, @$); }
+    | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
+    | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
+    | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
     ;
 
 expr
