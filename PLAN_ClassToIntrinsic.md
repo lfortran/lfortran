@@ -429,27 +429,66 @@ With ClassToIntrinsic, the value extraction is handled by the Cast node, so:
 
 ### Phase 2a: Enable ClassToIntrinsic Emission + Store-Through (Minimum Viable)
 
-1. **Emit ClassToIntrinsic** in `select_type_casts_map` for both
-   `assoc_sym` and `!assoc_sym` paths in `TypeStmtType`.
-2. **Stop rewriting** `assoc_variable->m_type` — keep it as `class(*)`.
-3. **Add store-through** in `visit_Assignment` for `ClassToIntrinsic` on LHS.
-4. **Test** with all 2433 integration tests.
-5. Fix any failures.
+1. ✅ **Emit ClassToIntrinsic** in `select_type_casts_map` for both
+   `assoc_sym` and `!assoc_sym` paths in `TypeStmtType` (scalars only).
+2. ✅ **Stop rewriting** `assoc_variable->m_type` — keep it as `class(*)`
+   for scalars. Arrays still rewrite to the guard type.
+3. ✅ **Add store-through** in `visit_Assignment` for `ClassToIntrinsic`
+   on LHS (including string special case via `lfortran_str_copy`).
+4. ✅ **`visit_Cast` handler** for `ClassToIntrinsic` — read path for
+   both scalar (GEP + bitcast + load) and array (delegates to
+   `convert_class_to_type`).
+5. ✅ **`convert_call_args`** handles `ClassToIntrinsic` with `ptr_loads=0`
+   for pass-by-reference.
+6. ✅ **LHS validity check** updated to allow `ClassToIntrinsic` Cast as
+   assignment target.
+7. ✅ **`SelectTypeCastInfo`** refactored: `bool is_class_is` replaced
+   with `ASR::cast_kindType cast_kind` enum.
+8. ✅ **`resolve_variable()`** handles nullable `struct_sym` for
+   `ClassToIntrinsic` (no dest expr needed).
+9. ✅ **String-as-call-argument fix:** store to temp alloca when
+   value is not a pointer (e.g., from `ClassToIntrinsic` cast).
+10. ✅ **New test `select_type_27`** — `real()`/`aimag()` intrinsics on
+    `class(*)` complex values.
+11. ✅ **All integration tests pass.**
 
-### Phase 2b: Clean Up Old Mechanisms
+### Phase 2b: Clean Up Old Mechanisms — TODO
 
-6. Make `load_unlimited_polymorphic_value` macro a **no-op** (keep call sites).
+6. Make `load_unlimited_polymorpic_value` macro a **no-op** (keep call
+   sites). The macro is still fully live with 15 call sites. For scalar
+   `type is` blocks, the Cast wrapping now handles extraction, making the
+   macro redundant for those cases. Arrays still use the old mechanism.
+   Add `LCOMPILERS_ASSERT` at call sites to verify that scalar
+   unlimited-polymorphic `Var_t` nodes no longer reach them.
 7. Test — any failures reveal cases where the Cast wrapping is missing.
 8. Delete macro call sites.
 9. Stop populating `select_type_context_map` for `TypeStmtType` under
-   `new_classes`.
-10. Test again.
+   `new_classes` (scalars). The map is still populated and used; arrays
+   still depend on it.
+10. Remove `SelectTypeContext` struct and helper methods
+    (`get_select_type_block_type()`, `get_select_type_block_type_asr()`)
+    once the macro and map are no longer needed.
+11. Test again.
 
-### Phase 2c: Unification (Optional)
+### Phase 2b (Investigate)
 
-11. Consider converting `TypeStmtName` to also use `select_type_casts_map`
+12. **`current_select_type_guard`** — still used at line ~3656-3659
+    (set/restore around `transform_stmts`) and consumed at line ~6691
+    for string validation. Investigate whether it can be removed or if
+    it's still needed for that check.
+
+### Phase 2c: Unification (Optional) — TODO
+
+13. Extend `ClassToIntrinsic` to **arrays**, eliminating the fallback to
+    the old mechanism (rewriting `assoc_variable->m_type` +
+    `select_type_context_map` + `load_unlimited_polymorpic_value`).
+    This is the main blocker for fully removing the old path.
+14. Consider converting `TypeStmtName` to also use `select_type_casts_map`
     for all value extraction (it already does for `!assoc_sym`).
-12. Consider removing `select_type_context_map` entirely (for `new_classes`).
+15. Consider removing `select_type_context_map` entirely (for `new_classes`).
+16. Verify `resolve_variable2` and struct member access: no test should do
+    `x%something` inside a `type is (integer)` block (ClassToIntrinsic
+    variables are not structs).
 
 ---
 
