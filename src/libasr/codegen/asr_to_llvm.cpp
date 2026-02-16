@@ -8884,7 +8884,7 @@ public:
             ptr_loads = LLVM::is_llvm_pointer(*asr_target_type);
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
-            this->visit_expr(*x.m_target);
+            this->visit_expr_wrapper(x.m_target, true);
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target = tmp;
             ptr_loads = ptr_loads_copy;
