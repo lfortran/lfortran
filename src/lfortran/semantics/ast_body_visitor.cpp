@@ -3204,26 +3204,6 @@ public:
         }
         visit_expr(*x.m_selector);
         ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
-        // When the selector is a function call, create a temporary variable
-        // to hold the result. The codegen expects Var or StructInstanceMember
-        // as the selector, not a FunctionCall.
-        if( ASR::is_a<ASR::FunctionCall_t>(*m_selector) ) {
-            ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
-            std::string tmp_name = current_scope->get_unique_name("~select_type_selector_tmp_");
-            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
-            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-                al, x.base.base.loc, current_scope, s2c(al, tmp_name),
-                nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, selector_type, type_decl,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false));
-            current_scope->add_symbol(tmp_name, tmp_sym);
-            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, tmp_sym));
-            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, x.base.base.loc, tmp_var, m_selector, nullptr,
-                compiler_options.po.realloc_lhs_arrays, false)));
-            m_selector = tmp_var;
-        }
         Vec<ASR::stmt_t*> select_type_default;
         select_type_default.reserve(al, 1);
         Vec<ASR::type_stmt_t*> select_type_body;

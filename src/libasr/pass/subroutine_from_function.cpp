@@ -14,6 +14,163 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+class SelectTypeExtractionVisitor : public ASR::BaseWalkVisitor<SelectTypeExtractionVisitor> {
+private:
+    Allocator &al;
+    SymbolTable *current_scope;
+    Vec<ASR::stmt_t*> pass_result;
+public:
+    SelectTypeExtractionVisitor(Allocator &al_) : al(al_), current_scope(nullptr) {
+        pass_result.n = 0;
+        pass_result.reserve(al, 1);
+    }
+
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        for (auto &item : x.m_symtab->get_scope()) {
+            this->visit_symbol(*item.second);
+        }
+    }
+
+    void visit_Program(const ASR::Program_t &x) {
+        SymbolTable *old_scope = current_scope;
+        current_scope = x.m_symtab;
+        ASR::stmt_t** m_body = const_cast<ASR::stmt_t**>(x.m_body);
+        size_t n_body = x.n_body;
+        transform_stmts(m_body, n_body);
+        const_cast<ASR::Program_t&>(x).m_body = m_body;
+        const_cast<ASR::Program_t&>(x).n_body = n_body;
+        for (auto &item : x.m_symtab->get_scope()) {
+            this->visit_symbol(*item.second);
+        }
+        current_scope = old_scope;
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        SymbolTable *old_scope = current_scope;
+        current_scope = x.m_symtab;
+        ASR::stmt_t** m_body = const_cast<ASR::stmt_t**>(x.m_body);
+        size_t n_body = x.n_body;
+        transform_stmts(m_body, n_body);
+        const_cast<ASR::Function_t&>(x).m_body = m_body;
+        const_cast<ASR::Function_t&>(x).n_body = n_body;
+        for (auto &item : x.m_symtab->get_scope()) {
+            this->visit_symbol(*item.second);
+        }
+        current_scope = old_scope;
+    }
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(*m_body[i]);
+            if (!pass_result.empty()) {
+                for (size_t j = 0; j < pass_result.size(); j++) {
+                    body.push_back(al, pass_result[j]);
+                }
+                pass_result.n = 0;
+            }
+            body.push_back(al, m_body[i]);
+        }
+        m_body = body.p;
+        n_body = body.size();
+    }
+
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        if (x.m_selector && is_a<ASR::FunctionCall_t>(*x.m_selector)) {
+            ASR::expr_t* func_call = x.m_selector;
+            ASR::ttype_t* selector_type = ASRUtils::expr_type(func_call);
+            std::string tmp_name = current_scope->get_unique_name("__select_type_tmp_");
+            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(func_call);
+            
+            if (type_decl == nullptr && ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
+                ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(func_call);
+                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
+                if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                    if (func->m_return_var) {
+                        ASR::Variable_t* res = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(func->m_return_var)->m_v));
+                        if (res->m_type_declaration) {
+                            type_decl = res->m_type_declaration;
+                        }
+                    }
+                }
+            }
+
+            ASR::asr_t* tmp_var_asr = ASRUtils::make_Variable_t_util(
+                al, x.base.base.loc, current_scope, s2c(al, tmp_name),
+                nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, selector_type, type_decl,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(tmp_var_asr);
+            current_scope->add_symbol(tmp_name, tmp_sym);
+            ASR::expr_t* result_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, tmp_sym));
+
+            const_cast<ASR::SelectType_t&>(x).m_selector = result_var;
+            for (size_t i = 0; i < x.n_body; i++) {
+                replace_select_type_body_selector(x.m_body[i], result_var);
+            }
+            replace_selector_in_body_robust(const_cast<ASR::SelectType_t&>(x).m_default, x.n_default, result_var);
+
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, x.base.base.loc, result_var, func_call,
+                nullptr, false, false)));
+        }
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_type_stmt(*x.m_body[i]);
+        }
+        transform_stmts(const_cast<ASR::SelectType_t&>(x).m_default, const_cast<ASR::SelectType_t&>(x).n_default);
+    }
+
+    void replace_selector_in_body_robust(ASR::stmt_t **body, size_t n_body, ASR::expr_t* result_var) {
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(
+                    ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
+                for (size_t j = 0; j < block->n_body; j++) {
+                    if (ASR::is_a<ASR::Associate_t>(*block->m_body[j])) {
+                        ASR::Associate_t* assoc = ASR::down_cast<
+                            ASR::Associate_t>(block->m_body[j]);
+                        if (is_a<ASR::FunctionCall_t>(*assoc->m_value)) {
+                            assoc->m_value = result_var;
+                        } else if (is_a<ASR::Cast_t>(*assoc->m_value)) {
+                            ASR::Cast_t* cast = ASR::down_cast<
+                                ASR::Cast_t>(assoc->m_value);
+                            if (is_a<ASR::FunctionCall_t>(*cast->m_arg)) {
+                                cast->m_arg = result_var;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void replace_select_type_body_selector(ASR::type_stmt_t* ts,
+            ASR::expr_t* new_selector) {
+        ASR::stmt_t** body = nullptr;
+        size_t n_body = 0;
+        switch (ts->type) {
+            case ASR::type_stmtType::TypeStmtName: {
+                auto* t = ASR::down_cast<ASR::TypeStmtName_t>(ts);
+                body = t->m_body; n_body = t->n_body; break;
+            }
+            case ASR::type_stmtType::TypeStmtType: {
+                auto* t = ASR::down_cast<ASR::TypeStmtType_t>(ts);
+                body = t->m_body; n_body = t->n_body; break;
+            }
+            case ASR::type_stmtType::ClassStmt: {
+                auto* t = ASR::down_cast<ASR::ClassStmt_t>(ts);
+                body = t->m_body; n_body = t->n_body; break;
+            }
+            default: return;
+        }
+        replace_selector_in_body_robust(body, n_body, new_selector);
+    }
+};
 
 /**
  * @class CreateFunctionFromSubroutine
@@ -391,7 +548,8 @@ public :
             ASR::expr_t* result_var = PassUtils::create_var(
                                             result_counter++,
                                             "return_slot", x->base.base.loc,
-                                            create_type_for_return_slot_var(x->m_type) , al, current_scope);
+                                            create_type_for_return_slot_var(x->m_type) , al, current_scope,
+                                            ASRUtils::EXPR((ASR::asr_t*)x));
 
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
             if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
@@ -700,6 +858,11 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
                                           const LCompilers::PassOptions& /*pass_options*/) {
+    // 1. Pre-pass to extract SelectType selectors
+    SelectTypeExtractionVisitor pre(al);
+    pre.visit_TranslationUnit(unit);
+    
+    // 2. Regular pass
     std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
     CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
     v.visit_TranslationUnit(unit);
