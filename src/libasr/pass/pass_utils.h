@@ -109,7 +109,8 @@ namespace LCompilers {
             SymbolTable*& global_scope, Location& loc);
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp=-1, bool use_loop_variable_after_loop=false);
+                                         int comp=-1, bool use_loop_variable_after_loop=false,
+                                         SymbolTable* current_scope=nullptr);
 
         ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
@@ -732,7 +733,7 @@ namespace LCompilers {
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
                         x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
-                            x_m_args_i, cast_kind, casted_type, nullptr));
+                            x_m_args_i, cast_kind, casted_type, nullptr, nullptr));
                     }
                     ASR::stmt_t* assign;
                     if (ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args_i))) {
@@ -827,7 +828,7 @@ namespace LCompilers {
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
                         idoloop_m_values_i = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                            idoloop_m_values_i, cast_kind, casted_type, nullptr));
+                            idoloop_m_values_i, cast_kind, casted_type, nullptr, nullptr));
                     }
                     ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, arr_var->base.loc,
                                                     array_ref, idoloop_m_values_i, nullptr, false, false));
@@ -1179,7 +1180,7 @@ namespace LCompilers {
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
                         x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
-                            x_m_args_k, cast_kind, casted_type, nullptr));
+                            x_m_args_k, cast_kind, casted_type, nullptr, nullptr));
                     }
                     ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
                                                     array_ref, x_m_args_k, nullptr, false, false));
@@ -1306,7 +1307,7 @@ namespace LCompilers {
                         if( perform_cast ) {
                             LCOMPILERS_ASSERT(casted_type != nullptr);
                             x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
-                                x_m_args_k, cast_kind, casted_type, nullptr));
+                                x_m_args_k, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
                                                         array_ref, x_m_args_k, nullptr, false, false));

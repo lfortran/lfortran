@@ -391,8 +391,12 @@ static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
 }
 
 static inline ASR::Variable_t* expr_to_variable_or_null(ASR::expr_t* expr) {
-    if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) {
+    if (!expr || !(ASR::is_a<ASR::Var_t>(*expr) || ASR::is_a<ASR::Cast_t>(*expr))) {
         return nullptr;
+    }
+
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return expr_to_variable_or_null(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
     }
 
     ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
@@ -4253,6 +4257,10 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    return types_equal(a, b, nullptr, nullptr, true);
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4396,6 +4404,10 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    return types_equal(a, b, nullptr, nullptr, true);
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4495,6 +4507,10 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
 
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
+
+        if (left_func == nullptr || right_func == nullptr) {
+            return types_equal(x, y, nullptr, nullptr, true);
+        }
 
         if (left_ft->n_arg_types != right_ft->n_arg_types) {
             return false;
@@ -5822,6 +5838,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
             !ASRUtils::is_class_type(ASRUtils::type_get_past_array(argi->m_type)) &&
             !ASR::is_a<ASR::String_t>(*argi->m_type) &&
+            !argi->m_target_attr &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
@@ -6847,6 +6864,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                 case ASR::exprType::StructInstanceMember:
                                 case ASR::exprType::IntrinsicArrayFunction:
                                 case ASR::exprType::ListItem:
+                                case ASR::exprType::Cast:
                                     // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
                                     is_valid_variable = true;
                                     break;
@@ -7034,7 +7052,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
                             al, arg->base.loc, arg,
                             ASR::cast_kindType::IntegerToInteger,
-                            orig_arg_type, nullptr));
+                            orig_arg_type, nullptr, nullptr));
                         continue;
                     }
                 }
@@ -7176,7 +7194,25 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
+                    // When is_method is true, FunctionParam(0) refers to 'self' (a_dt),
+                    // but a_args doesn't include 'self'. We need to construct a full
+                    // args array with a_dt prepended so FunctionParam indices match.
+                    ASR::call_arg_t* full_args = a_args;
+                    size_t full_n_args = n_args;
+                    Vec<ASR::call_arg_t> full_args_vec;
+                    if (is_method && a_dt) {
+                        full_args_vec.reserve(al, n_args + 1);
+                        ASR::call_arg_t self_arg;
+                        self_arg.loc = a_dt->base.loc;
+                        self_arg.m_value = a_dt;
+                        full_args_vec.push_back(al, self_arg);
+                        for (size_t j = 0; j < n_args; j++) {
+                            full_args_vec.push_back(al, a_args[j]);
+                        }
+                        full_args = full_args_vec.p;
+                        full_n_args = full_args_vec.n;
+                    }
+                    ReplaceFunctionParamWithArg r(al, full_args, full_n_args, false);
                     SetChar temp_function_dependencies;
                     CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
                     bool valid_symbols = true;
@@ -7300,7 +7336,8 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
-        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) &&
+        !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
@@ -7657,7 +7694,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
@@ -7667,7 +7704,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else {
             diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},

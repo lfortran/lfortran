@@ -349,7 +349,21 @@
                                                     ~select_type_block_
                                                     [(Associate
                                                         (Var 8 ptr)
-                                                        (Var 8 tmp)
+                                                        (Cast
+                                                            (Var 8 tmp)
+                                                            ClassToStruct
+                                                            (Pointer
+                                                                (StructType
+                                                                    [(Logical 4)
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            )
+                                                            ()
+                                                            (Var 4 toml_table)
+                                                        )
                                                     )
                                                     (If
                                                         ()
@@ -726,7 +740,8 @@
                         })
                     class_default_select_type_user1
                     ()
-                    [class_default_select_type_user]
+                    [class_default_select_type_user
+                    class_default_select_type]
                     .false.
                     .false.
                     .false.

@@ -334,6 +334,7 @@
                                     IntegerToInteger
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8) Decimal)
+                                    ()
                                 )
                                 (Logical 4)
                                 (LogicalConstant

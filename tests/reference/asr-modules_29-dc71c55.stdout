@@ -1435,10 +1435,7 @@
                                     [(Var 6 self)
                                     (Var 6 table)
                                     (Var 6 error)]
-                                    [(ImplicitDeallocate
-                                        [(Var 6 error)]
-                                    )
-                                    (SubroutineCall
+                                    [(SubroutineCall
                                         4 new_dependencies
                                         ()
                                         [((StructInstanceMember
@@ -1574,7 +1571,8 @@
                                 )
                         })
                     modules_29
-                    [fpm_manifest_executable]
+                    [fpm_manifest_executable
+                    fpm_manifest_dependency1]
                     [(Print
                         (StringConstant
                             "running modules_29 program"

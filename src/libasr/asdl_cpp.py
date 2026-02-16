@@ -2836,6 +2836,8 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
                 return ASR::down_cast<ASR::Function_t>(s)->m_function_signature;
             } else if( s->type == ASR::symbolType::Variable ) {
                 return ASR::down_cast<ASR::Variable_t>(s)->m_type;
+            } else if( s->type == ASR::symbolType::Struct ) {
+                return ASR::down_cast<ASR::Struct_t>(s)->m_struct_signature;
             } else {
                 // ICE: only Function and Variable have types, this symbol
                 // does not have a type
@@ -2911,7 +2913,7 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
                 LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
                 s = e->m_external;
             }
-            if( ASR::is_a<ASR::Function_t>(*s) ||
+            if( ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s) ||
                 ASR::down_cast<ASR::Variable_t>(s)->m_storage !=
                 ASR::storage_typeType::Parameter ) {
                 return nullptr;

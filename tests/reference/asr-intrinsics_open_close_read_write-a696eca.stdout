@@ -316,6 +316,7 @@
                                     IntegerToReal
                                     (Real 4)
                                     ()
+                                    ()
                                 )
                                 Mul
                                 (RealConstant
@@ -365,6 +366,7 @@
                                             1.000000
                                             (Real 4)
                                         )
+                                        ()
                                     )
                                     Sub
                                     (IntrinsicElementalFunction

@@ -51,6 +51,13 @@ public:
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
                 }
             }
+
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*a.second) && 
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+                }
+            }
         }
 
         void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
@@ -59,6 +66,34 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
                 }
+            }
+            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*str_sym_pair.second) && 
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(str_sym_pair.second)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(str_sym_pair.second));
+                }
+            }
+        }
+
+        void visit_Module(const ASR::Module_t &x) {
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*a.second)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(a.second));
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*a.second) && 
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+                }
+            }
+        }
+
+        void visit_Variable(const ASR::Variable_t &x){
+            ASR::Variable_t* x_ptr = &const_cast<ASR::Variable_t&>(x);
+            if(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))){
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration));
+                x_ptr->m_type = func->m_function_signature;
             }
         }
 

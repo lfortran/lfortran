@@ -39,7 +39,8 @@
                                 )
                         })
                     modules_39
-                    [modules_39_fpm_39]
+                    [modules_39_fpm_39
+                    modules_39_module_fpm_filesystem_39]
                     [(SubroutineCall
                         8 build_model
                         ()

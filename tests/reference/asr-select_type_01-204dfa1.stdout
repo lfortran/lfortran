@@ -265,7 +265,20 @@
                                                                 (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 base)
+                                                                )
                                                                 6 1_base_i
                                                                 (Integer 4)
                                                                 ()
@@ -281,7 +294,20 @@
                                                         ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 base)
+                                                                )
                                                                 6 1_base_i
                                                                 (Integer 4)
                                                                 ()
@@ -332,13 +358,39 @@
                                                                 (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 child)
+                                                                )
                                                                 7 1_base_i
                                                                 (Integer 4)
                                                                 ()
                                                             )
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 child)
+                                                                )
                                                                 7 1_child_j
                                                                 (Integer 4)
                                                                 ()
@@ -354,7 +406,20 @@
                                                         ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 child)
+                                                                )
                                                                 7 1_base_i
                                                                 (Integer 4)
                                                                 ()
@@ -373,7 +438,20 @@
                                                         ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
-                                                                (Var 5 bptr)
+                                                                (Cast
+                                                                    (Var 5 bptr)
+                                                                    ClassToStruct
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Integer 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    (Var 2 child)
+                                                                )
                                                                 7 1_child_j
                                                                 (Integer 4)
                                                                 ()

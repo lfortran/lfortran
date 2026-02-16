@@ -947,7 +947,7 @@ public:
 
             call_args.p[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(al, actual_arg->base.loc,
                 actual_arg, ASR::cast_kindType::ClassToStruct,
-                ASRUtils::duplicate_type(al, ASRUtils::expr_type(formal_arg)), nullptr));
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(formal_arg)), nullptr, nullptr));
         }
     }
 

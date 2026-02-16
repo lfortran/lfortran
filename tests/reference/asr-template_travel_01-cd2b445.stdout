@@ -59,7 +59,9 @@
                                 )
                         })
                     template_travel_01
-                    [template_travel_01_m]
+                    [template_travel_01_m
+                    template_travel_01_math
+                    template_travel_01_travel]
                     [(SubroutineCall
                         22 test_template
                         ()

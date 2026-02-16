@@ -87,7 +87,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                                     al, x->base.base.loc, 1, x->m_type));
         for( int i = 0; i < n; i++ ) {
             ASR::expr_t* dim_length = ASRUtils::EXPR(ASR::make_Cast_t(
-                al, x->base.base.loc, dims[i].m_length, ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr));
+                al, x->base.base.loc, dims[i].m_length, ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
 
             array_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
                             array_size, ASR::binopType::Mul, dim_length, x->m_type,

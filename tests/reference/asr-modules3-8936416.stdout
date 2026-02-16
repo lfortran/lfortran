@@ -237,7 +237,9 @@
                         })
                     tomlf_type
                     ()
-                    [tomlf_type_array]
+                    [tomlf_type_array
+                    tomlf_structure_base
+                    tomlf_type_value]
                     .false.
                     .false.
                     .false.

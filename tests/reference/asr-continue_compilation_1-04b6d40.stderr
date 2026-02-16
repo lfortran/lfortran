@@ -273,6 +273,18 @@ semantic error: Symbol not found: `uninitialized_param_local`
 255 |     type(MyClass) :: err_obj5 = uninitialized_param_local
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: CLASS variable 'inst_tt' must be dummy, allocatable or pointer
+   --> tests/errors/continue_compilation_1.f90:266:5
+    |
+266 |     class(type_t) :: inst_tt
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `erfc` underflows its kind
+   --> tests/errors/continue_compilation_1.f90:267:40
+    |
+267 |     real(8), parameter :: erfc_param = erfc(40.12_8)
+    |                                        ^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:565:14
     |
@@ -1210,3 +1222,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 563 |     b = (ieee_cls == ieee_quiet_nan)
     |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:568:5
+    |
+568 |     base_var = derived_var
+    |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)

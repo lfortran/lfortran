@@ -394,7 +394,21 @@
                                     ~select_type_block_
                                     [(Associate
                                         (Var 7 an)
-                                        (Var 4 p_or_cp)
+                                        (Cast
+                                            (Var 4 p_or_cp)
+                                            ClassToClass
+                                            (Pointer
+                                                (StructType
+                                                    [(Real 4)
+                                                    (Real 4)]
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )
+                                            ()
+                                            (Var 7 an)
+                                        )
                                     )
                                     (Print
                                         (StringFormat
@@ -490,7 +504,20 @@
                                     ~select_type_block_1
                                     [(Associate
                                         (Var 8 an)
-                                        (Var 4 p_or_cp)
+                                        (Cast
+                                            (Var 4 p_or_cp)
+                                            ClassToStruct
+                                            (Pointer
+                                                (StructType
+                                                    [(Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            ()
+                                            (Var 8 an)
+                                        )
                                     )
                                     (Print
                                         (StringFormat

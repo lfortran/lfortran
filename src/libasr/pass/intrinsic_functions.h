@@ -4,6 +4,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
+#include <limits>
 
 namespace LCompilers::ASRUtils {
 
@@ -470,7 +471,36 @@ create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
-create_unary_function(Erfc, erfc, erfc)
+
+namespace Erfc {
+    static inline ASR::expr_t *eval_Erfc(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
+            diag::Diagnostics& diag) {
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double val = std::erfc(rv);
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);
+        double tiny = (kind == 4) ? std::numeric_limits<float>::min() : std::numeric_limits<double>::min();
+        if (std::abs(val) < tiny) {
+             diag.add(diag::Diagnostic(
+                "Result of `erfc` underflows its kind",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})
+                }));
+             return nullptr;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.f_t(val, t);
+    }
+    static inline ASR::expr_t* instantiate_Erfc (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id,
+            int index_kind) {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "erfc", arg_types[0], return_type, new_args, overload_id,
+            index_kind);
+    }
+}
 
 namespace Isnan{
     static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,
@@ -7331,10 +7361,10 @@ namespace Conjg {
         body.push_back(al, b.Assignment(result, b.Sub(
             EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_ComplexRe_t(al, loc,
             args[0], TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(arg_types[0]))), nullptr)),
-            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr)),
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)),
             b.Mul(EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_ComplexIm_t(al, loc,
             args[0], TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(arg_types[0]))), nullptr)),
-            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr)), EXPR(ASR::make_ComplexConstant_t(al, loc,
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)), EXPR(ASR::make_ComplexConstant_t(al, loc,
             0.0, 1.0, arg_types[0]))))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -7392,7 +7422,7 @@ namespace Loc {
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t* arg = args[0];
         ASR::ttype_t* int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, ASR::cast_kindType::PointerToInteger, int64_type, nullptr));
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, ASR::cast_kindType::PointerToInteger, int64_type, nullptr, nullptr));
     }
 
 }   // namespace Loc

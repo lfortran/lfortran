@@ -564,7 +564,7 @@ public:
 
       *convert_can = (ASR::expr_t *)ASR::make_Cast_t(
           al, a_loc, *convert_can, (ASR::cast_kindType)cast_kind, dest_type,
-          value);
+          value, nullptr);
     }
   }
 

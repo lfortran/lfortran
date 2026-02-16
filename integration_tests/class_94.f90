@@ -18,13 +18,13 @@ contains
         integer :: i
 
         do i = 1, size(arr)
-            ! select type(arr)   !! TODO: fix this select type
-            ! type is (base_type)
+             select type(arr)
+             type is (base_type)
                 if (arr(i)%value /= i * 10) error stop "Base type value mismatch"
-            ! type is (extended_type)
-            !     if (arr(i)%value /= i * 10) error stop "Extended type value mismatch"
-                ! if (arr(i)%extra /= i * 100) error stop "Extended type extra mismatch"
-            ! end select
+             type is (extended_type)
+                 if (arr(i)%value /= i * 10) error stop "Extended type value mismatch"
+                 if (arr(i)%extra /= i * 100) error stop "Extended type extra mismatch"
+             end select
         end do
     end subroutine process_class_array
 
@@ -34,13 +34,13 @@ contains
         integer :: i
 
         do i = 1, size(arr)
-            ! select type(arr)   !! TODO: fix this select type
-            ! type is (base_type)
+             select type(arr)
+             type is (base_type)
                 arr(i)%value = arr(i)%value + 1
-            ! type is (extended_type)
-            !     arr(i)%value = arr(i)%value + 1
-            !     arr(i)%extra = arr(i)%extra + 1
-            ! end select
+             type is (extended_type)
+                 arr(i)%value = arr(i)%value + 1
+                 arr(i)%extra = arr(i)%extra + 1
+             end select
         end do
     end subroutine modify_class_array
 
@@ -92,12 +92,12 @@ program class_94
     end do
     print *, "Test 3 passed"
 
-    ! TODO: Test 4: Modify extended_type array via class array parameter
+    !Test 4: Modify extended_type array via class array parameter
      print *, "Test 4: Modify extended_type array"
      call modify_class_array(ext_arr)
      do i = 1, 3
          if (ext_arr(i)%value /= i * 10 + 1) error stop "Extended modification failed"
-    !     if (ext_arr(i)%extra /= i * 100 + 1) error stop "Extended extra modification failed"
+         if (ext_arr(i)%extra /= i * 100 + 1) error stop "Extended extra modification failed"
      end do
      print *, "Test 4 passed"
 
@@ -118,6 +118,6 @@ program class_94
     base_arr(2)%value = 200
     total = sum_class_values(base_arr)
     print *, "Total:", total
-    if (total /= 300) error stop "Same type test failed"  !! Works with --fast
+    if (total /= 300) error stop "Same type test failed"
     print *, "Test 6 passed"
 end program class_94

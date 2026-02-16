@@ -31,6 +31,7 @@
             IntegerToInteger
             (Integer 8)
             (IntegerConstant 6 (Integer 8) Decimal)
+            ()
         )
         ()
         .false.

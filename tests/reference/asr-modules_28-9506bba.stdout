@@ -1047,7 +1047,8 @@
                                 )
                         })
                     modules_28
-                    [fpm_manifest_dependency]
+                    [fpm_manifest_dependency
+                    fpm_git]
                     [(Print
                         (StringConstant
                             "running modules_28 program"

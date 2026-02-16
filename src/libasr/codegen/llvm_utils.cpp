@@ -9396,6 +9396,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::Type* struct_llvm_type = llvm_utils->getStructType(struct_sym, module);
                     src_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
                         llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                    dest = builder->CreateBitCast(dest, poly_llvm_type->getPointerTo());
                     dest_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
                         llvm_utils->create_gep2(poly_llvm_type, dest, 1));
                     src_ptr = builder->CreateBitCast(src_ptr, llvm_utils->i8_ptr);

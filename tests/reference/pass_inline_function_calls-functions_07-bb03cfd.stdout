@@ -51,6 +51,7 @@
                                             5.000000
                                             (Real 4)
                                         )
+                                        ()
                                     )
                                     (RealConstant
                                         5.000000
@@ -218,7 +219,9 @@
                                 )
                         })
                     functions_07
-                    [functions_07_c]
+                    [functions_07_c
+                    functions_07_a
+                    functions_07_b]
                     [(Assignment
                         (Var 8 w)
                         (Var 8 p)
@@ -827,7 +830,8 @@
                         })
                     functions_07_c
                     ()
-                    [functions_07_b]
+                    [functions_07_b
+                    functions_07_a]
                     .false.
                     .false.
                     .false.

@@ -100,9 +100,6 @@
                         ()
                         ()
                     )
-                    (ImplicitDeallocate
-                        [(Var 5 settings)]
-                    )
                     (SubroutineCall
                         5 get_command_line_settings
                         ()
