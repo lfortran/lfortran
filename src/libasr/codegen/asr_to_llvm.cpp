@@ -8856,6 +8856,9 @@ public:
                     ASRUtils::extract_kind_from_ttype_t(asr_value_type), target, module.get());
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
+                if (value->getType()->isPointerTy()) {
+                    value = llvm_utils->CreateLoad2(value_llvm_type, value);
+                }
                 target = llvm_utils->create_gep2(target_llvm_type, target, 1);
                 target = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target);
                 target = builder->CreateBitCast(target, value_llvm_type->getPointerTo());
