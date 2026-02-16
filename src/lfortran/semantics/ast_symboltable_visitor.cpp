@@ -3247,6 +3247,17 @@ public:
                     dflt_access
                     );
                 current_scope->add_or_overwrite_symbol(item.first, ASR::down_cast<ASR::symbol_t>(es));
+                // If the symbol originates from a different module than the one
+                // we are directly importing from, add the origin module as a
+                // transitive dependency so that the verify pass does not fail.
+                // Only do this for top-level modules (whose parent is the
+                // TranslationUnit), not for nested modules like enums.
+                if (std::string(es0->m_module_name) != std::string(m->m_name)) {
+                    ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(es0->m_module_name);
+                    if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
+                        current_module_dependencies.push_back(al, es0->m_module_name);
+                    }
+                }
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -3653,6 +3664,17 @@ public:
                 nullptr, 0, ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
+            // If the symbol originates from a different module than the one
+            // we are directly importing from, add the origin module as a
+            // transitive dependency so that the verify pass does not fail.
+            // Only do this for top-level modules (whose parent is the
+            // TranslationUnit), not for nested modules like enums.
+            if (std::string(ext_sym->m_module_name) != std::string(m->m_name)) {
+                ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(ext_sym->m_module_name);
+                if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
+                    current_module_dependencies.push_back(al, ext_sym->m_module_name);
+                }
+            }
             ASR::symbol_t *ext = ASRUtils::symbol_get_past_external(ext_sym->m_external);
             if (remote_sym.size() > 0 && remote_sym[0] != '~' &&
                     ASR::is_a<ASR::Struct_t>(*ext)) {

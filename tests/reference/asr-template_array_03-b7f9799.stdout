@@ -99,7 +99,8 @@
                                 )
                         })
                     template_array_03
-                    [template_array_03_m]
+                    [template_array_03_m
+                    template_array_03_math]
                     [(SubroutineCall
                         21 test_template
                         ()
