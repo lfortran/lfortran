@@ -1,0 +1,9 @@
+syntax error: Expected program end
+ --> tests/global_scope2.f90:1:1 - 2:5
+  |
+1 |    integer :: x
+  |    ^^^^^^^^^^^^...
+...
+  |
+2 |    x = 6
+  | ...^^^^^ 

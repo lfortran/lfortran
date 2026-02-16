@@ -1,0 +1,393 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%complex_4 = type <{ float, float }>
+
+@0 = private unnamed_addr constant [2 x i8] c"i\00", align 1
+@1 = private unnamed_addr constant [125 x i8] c"At 9:5 of file tests/../integration_tests/automatic_allocation_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"r\00", align 1
+@3 = private unnamed_addr constant [126 x i8] c"At 10:5 of file tests/../integration_tests/automatic_allocation_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@5 = private unnamed_addr constant [126 x i8] c"At 11:5 of file tests/../integration_tests/automatic_allocation_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"l\00", align 1
+@7 = private unnamed_addr constant [126 x i8] c"At 12:5 of file tests/../integration_tests/automatic_allocation_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"i\00", align 1
+@9 = private unnamed_addr constant [32 x i8] c"Variable '%s' is not allocated.\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"r\00", align 1
+@13 = private unnamed_addr constant [32 x i8] c"Variable '%s' is not allocated.\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@17 = private unnamed_addr constant [32 x i8] c"Variable '%s' is not allocated.\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c"l\00", align 1
+@21 = private unnamed_addr constant [32 x i8] c"Variable '%s' is not allocated.\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %c = alloca ptr, align 8
+  store ptr null, ptr %c, align 8
+  %i = alloca ptr, align 8
+  store ptr null, ptr %i, align 8
+  %l = alloca ptr, align 8
+  store ptr null, ptr %l, align 8
+  %r = alloca ptr, align 8
+  store ptr null, ptr %r, align 8
+  %2 = load ptr, ptr %i, align 8
+  %3 = icmp eq ptr %2, null
+  br i1 %3, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %4 = load ptr, ptr %i, align 8
+  %5 = ptrtoint ptr %4 to i64
+  %6 = icmp ne i64 %5, 0
+  br i1 %6, label %then1, label %ifcont
+
+then1:                                            ; preds = %then
+  call void (ptr, ...) @_lcompilers_print_error(ptr @1, ptr @0)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %then
+  %7 = call ptr @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0.i32(ptr %7, i8 0, i32 4, i1 false)
+  store ptr %7, ptr %i, align 8
+  br label %ifcont2
+
+else:                                             ; preds = %.entry
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %ifcont
+  %8 = load ptr, ptr %i, align 8
+  store i32 10, ptr %8, align 4
+  %9 = load ptr, ptr %r, align 8
+  %10 = icmp eq ptr %9, null
+  br i1 %10, label %then3, label %else6
+
+then3:                                            ; preds = %ifcont2
+  %11 = load ptr, ptr %r, align 8
+  %12 = ptrtoint ptr %11 to i64
+  %13 = icmp ne i64 %12, 0
+  br i1 %13, label %then4, label %ifcont5
+
+then4:                                            ; preds = %then3
+  call void (ptr, ...) @_lcompilers_print_error(ptr @3, ptr @2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont5:                                          ; preds = %then3
+  %14 = call ptr @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0.i32(ptr %14, i8 0, i32 4, i1 false)
+  store ptr %14, ptr %r, align 8
+  br label %ifcont7
+
+else6:                                            ; preds = %ifcont2
+  br label %ifcont7
+
+ifcont7:                                          ; preds = %else6, %ifcont5
+  %15 = load ptr, ptr %r, align 8
+  store float 0x40119999A0000000, ptr %15, align 4
+  %16 = load ptr, ptr %c, align 8
+  %17 = icmp eq ptr %16, null
+  br i1 %17, label %then8, label %else11
+
+then8:                                            ; preds = %ifcont7
+  %18 = load ptr, ptr %c, align 8
+  %19 = ptrtoint ptr %18 to i64
+  %20 = icmp ne i64 %19, 0
+  br i1 %20, label %then9, label %ifcont10
+
+then9:                                            ; preds = %then8
+  call void (ptr, ...) @_lcompilers_print_error(ptr @5, ptr @4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont10:                                         ; preds = %then8
+  %21 = call ptr @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0.i32(ptr %21, i8 0, i32 8, i1 false)
+  store ptr %21, ptr %c, align 8
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont7
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %ifcont10
+  %22 = load ptr, ptr %c, align 8
+  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, ptr %22, align 1
+  %23 = load ptr, ptr %l, align 8
+  %24 = icmp eq ptr %23, null
+  br i1 %24, label %then13, label %else16
+
+then13:                                           ; preds = %ifcont12
+  %25 = load ptr, ptr %l, align 8
+  %26 = ptrtoint ptr %25 to i64
+  %27 = icmp ne i64 %26, 0
+  br i1 %27, label %then14, label %ifcont15
+
+then14:                                           ; preds = %then13
+  call void (ptr, ...) @_lcompilers_print_error(ptr @7, ptr @6)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont15:                                         ; preds = %then13
+  %28 = call ptr @_lfortran_malloc(i64 1)
+  call void @llvm.memset.p0.i32(ptr %28, i8 0, i32 1, i1 false)
+  store ptr %28, ptr %l, align 8
+  br label %ifcont17
+
+else16:                                           ; preds = %ifcont12
+  br label %ifcont17
+
+ifcont17:                                         ; preds = %else16, %ifcont15
+  %29 = load ptr, ptr %l, align 8
+  store i1 true, ptr %29, align 1
+  %30 = load ptr, ptr %i, align 8
+  %31 = ptrtoint ptr %30 to i64
+  %32 = icmp eq i64 %31, 0
+  br i1 %32, label %then18, label %ifcont19
+
+then18:                                           ; preds = %ifcont17
+  call void (ptr, ...) @_lcompilers_print_error(ptr @9, ptr @8)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont19:                                         ; preds = %ifcont17
+  %33 = load ptr, ptr %i, align 8
+  %34 = load i32, ptr %33, align 4
+  %35 = icmp ne i32 %34, 10
+  br i1 %35, label %then20, label %else21
+
+then20:                                           ; preds = %ifcont19
+  call void @exit(i32 1)
+  br label %ifcont22
+
+else21:                                           ; preds = %ifcont19
+  br label %ifcont22
+
+ifcont22:                                         ; preds = %else21, %then20
+  %36 = load ptr, ptr %r, align 8
+  %37 = ptrtoint ptr %36 to i64
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %then23, label %ifcont24
+
+then23:                                           ; preds = %ifcont22
+  call void (ptr, ...) @_lcompilers_print_error(ptr @13, ptr @12)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont24:                                         ; preds = %ifcont22
+  %39 = load ptr, ptr %r, align 8
+  %40 = load float, ptr %39, align 4
+  %41 = fcmp une float %40, 0x40119999A0000000
+  br i1 %41, label %then25, label %else26
+
+then25:                                           ; preds = %ifcont24
+  call void @exit(i32 1)
+  br label %ifcont27
+
+else26:                                           ; preds = %ifcont24
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %else26, %then25
+  %42 = load ptr, ptr %c, align 8
+  %43 = ptrtoint ptr %42 to i64
+  %44 = icmp eq i64 %43, 0
+  br i1 %44, label %then28, label %ifcont29
+
+then28:                                           ; preds = %ifcont27
+  call void (ptr, ...) @_lcompilers_print_error(ptr @17, ptr @16)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont29:                                         ; preds = %ifcont27
+  %45 = load ptr, ptr %c, align 8
+  %46 = load %complex_4, ptr %45, align 1
+  %47 = extractvalue %complex_4 %46, 0
+  %48 = extractvalue %complex_4 %46, 1
+  %49 = fcmp one float %47, 1.000000e+00
+  %50 = fcmp one float %48, 2.000000e+00
+  %51 = or i1 %49, %50
+  br i1 %51, label %then30, label %else31
+
+then30:                                           ; preds = %ifcont29
+  call void @exit(i32 1)
+  br label %ifcont32
+
+else31:                                           ; preds = %ifcont29
+  br label %ifcont32
+
+ifcont32:                                         ; preds = %else31, %then30
+  %52 = load ptr, ptr %l, align 8
+  %53 = ptrtoint ptr %52 to i64
+  %54 = icmp eq i64 %53, 0
+  br i1 %54, label %then33, label %ifcont34
+
+then33:                                           ; preds = %ifcont32
+  call void (ptr, ...) @_lcompilers_print_error(ptr @21, ptr @20)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont34:                                         ; preds = %ifcont32
+  %55 = load ptr, ptr %l, align 8
+  %56 = load i1, ptr %55, align 1
+  %57 = icmp eq i1 %56, false
+  %58 = xor i1 %56, true
+  br i1 %58, label %then35, label %else36
+
+then35:                                           ; preds = %ifcont34
+  call void @exit(i32 1)
+  br label %ifcont37
+
+else36:                                           ; preds = %ifcont34
+  br label %ifcont37
+
+ifcont37:                                         ; preds = %else36, %then35
+  %59 = load ptr, ptr %i, align 8
+  %60 = ptrtoint ptr %59 to i64
+  %61 = icmp ne i64 %60, 0
+  br i1 %61, label %then38, label %else39
+
+then38:                                           ; preds = %ifcont37
+  %62 = alloca ptr, align 8
+  store ptr %59, ptr %62, align 8
+  %63 = load ptr, ptr %62, align 8
+  call void @_lfortran_free(ptr %63)
+  store ptr null, ptr %i, align 8
+  br label %ifcont40
+
+else39:                                           ; preds = %ifcont37
+  br label %ifcont40
+
+ifcont40:                                         ; preds = %else39, %then38
+  %64 = load ptr, ptr %r, align 8
+  %65 = ptrtoint ptr %64 to i64
+  %66 = icmp ne i64 %65, 0
+  br i1 %66, label %then41, label %else42
+
+then41:                                           ; preds = %ifcont40
+  %67 = alloca ptr, align 8
+  store ptr %64, ptr %67, align 8
+  %68 = load ptr, ptr %67, align 8
+  call void @_lfortran_free(ptr %68)
+  store ptr null, ptr %r, align 8
+  br label %ifcont43
+
+else42:                                           ; preds = %ifcont40
+  br label %ifcont43
+
+ifcont43:                                         ; preds = %else42, %then41
+  %69 = load ptr, ptr %c, align 8
+  %70 = ptrtoint ptr %69 to i64
+  %71 = icmp ne i64 %70, 0
+  br i1 %71, label %then44, label %else45
+
+then44:                                           ; preds = %ifcont43
+  %72 = alloca ptr, align 8
+  store ptr %69, ptr %72, align 8
+  %73 = load ptr, ptr %72, align 8
+  call void @_lfortran_free(ptr %73)
+  store ptr null, ptr %c, align 8
+  br label %ifcont46
+
+else45:                                           ; preds = %ifcont43
+  br label %ifcont46
+
+ifcont46:                                         ; preds = %else45, %then44
+  %74 = load ptr, ptr %l, align 8
+  %75 = ptrtoint ptr %74 to i64
+  %76 = icmp ne i64 %75, 0
+  br i1 %76, label %then47, label %else48
+
+then47:                                           ; preds = %ifcont46
+  %77 = alloca ptr, align 8
+  store ptr %74, ptr %77, align 8
+  %78 = load ptr, ptr %77, align 8
+  call void @_lfortran_free(ptr %78)
+  store ptr null, ptr %l, align 8
+  br label %ifcont49
+
+else48:                                           ; preds = %ifcont46
+  br label %ifcont49
+
+ifcont49:                                         ; preds = %else48, %then47
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %ifcont49
+  br label %FINALIZE_SYMTABLE_automatic_allocation_02
+
+FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
+  %79 = load ptr, ptr %c, align 8
+  %80 = icmp eq ptr %79, null
+  br i1 %80, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_c
+  call void @_lfortran_free(ptr %79)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_c
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %free_done
+  %81 = load ptr, ptr %i, align 8
+  %82 = icmp eq ptr %81, null
+  br i1 %82, label %free_done51, label %free_nonnull50
+
+free_nonnull50:                                   ; preds = %Finalize_Variable_i
+  call void @_lfortran_free(ptr %81)
+  br label %free_done51
+
+free_done51:                                      ; preds = %free_nonnull50, %Finalize_Variable_i
+  br label %Finalize_Variable_l
+
+Finalize_Variable_l:                              ; preds = %free_done51
+  %83 = load ptr, ptr %l, align 8
+  %84 = icmp eq ptr %83, null
+  br i1 %84, label %free_done53, label %free_nonnull52
+
+free_nonnull52:                                   ; preds = %Finalize_Variable_l
+  call void @_lfortran_free(ptr %83)
+  br label %free_done53
+
+free_done53:                                      ; preds = %free_nonnull52, %Finalize_Variable_l
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %free_done53
+  %85 = load ptr, ptr %r, align 8
+  %86 = icmp eq ptr %85, null
+  br i1 %86, label %free_done55, label %free_nonnull54
+
+free_nonnull54:                                   ; preds = %Finalize_Variable_r
+  call void @_lfortran_free(ptr %85)
+  br label %free_done55
+
+free_done55:                                      ; preds = %free_nonnull54, %Finalize_Variable_r
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lcompilers_print_error(ptr, ...)
+
+declare void @exit(i32)
+
+declare ptr @_lfortran_malloc(i64)
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset.p0.i32(ptr nocapture writeonly, i8, i32, i1 immarg) #0
+
+declare void @_lfortran_free(ptr)
+
+declare void @_lpython_free_argv()
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

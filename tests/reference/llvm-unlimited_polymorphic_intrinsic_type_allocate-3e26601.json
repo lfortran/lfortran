@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-unlimited_polymorphic_intrinsic_type_allocate-3e26601",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/unlimited_polymorphic_intrinsic_type_allocate.f90",
+    "infile_hash": "5e3fd98f08d2d9173c3610e43114224b2865c77917c3c0faa1951861",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-unlimited_polymorphic_intrinsic_type_allocate-3e26601.stdout",
+    "stdout_hash": "4b54c6fabd937580b18ed8254ae62027027558b7257b9733b6b9f5a9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

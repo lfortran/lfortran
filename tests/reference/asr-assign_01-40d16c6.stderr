@@ -1,0 +1,8 @@
+semantic error: Cannot assign to a constant variable
+ --> tests/errors/assign_01.f90:5:5
+  |
+5 |     x = 1
+  |     ^^^^^ assignment here
+  |
+4 |     integer, parameter :: x = 2
+  |                           ~~~~~ declared as constant

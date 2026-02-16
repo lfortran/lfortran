@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_constructor_with_integer_real_array_types-c665202",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/array_constructor_with_integer_real_array_types.f90",
+    "infile_hash": "17fbb7758226f84e587218354c221dad9ae645d719e685881fd7eea3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_constructor_with_integer_real_array_types-c665202.stderr",
+    "stderr_hash": "27ae450141135b7ff688eaef0b41422c1d2ace6ac28e8f3664a7f41e",
+    "returncode": 2
+}

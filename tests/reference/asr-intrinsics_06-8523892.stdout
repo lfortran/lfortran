@@ -1,0 +1,286 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_06:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_06
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Asin
+                            [(RealConstant
+                                0.841471
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Acos
+                            [(RealConstant
+                                0.540302
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Atan
+                            [(RealConstant
+                                1.557408
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Atan
+                                [(RealConstant
+                                    1.557408
+                                    (Real 8)
+                                )]
+                                0
+                                (Real 8)
+                                (RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                            )
+                            RealToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Asinh
+                            [(RealConstant
+                                1.175201
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Acosh
+                            [(RealConstant
+                                1.543081
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntrinsicElementalFunction
+                            Atanh
+                            [(RealConstant
+                                0.761594
+                                (Real 4)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

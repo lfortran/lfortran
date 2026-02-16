@@ -1,0 +1,1415 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            tomlf_structure_vector:
+                (Module
+                    (SymbolTable
+                        9
+                        {
+                            find:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            1_toml_node_val:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_node_val
+                                                    10 val
+                                                    toml_node
+                                                    []
+                                                    val
+                                                    Public
+                                                ),
+                                            1_toml_value_match_key:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_value_match_key
+                                                    3 match_key
+                                                    toml_value
+                                                    []
+                                                    match_key
+                                                    Public
+                                                ),
+                                            1_toml_vector_lst:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_vector_lst
+                                                    11 lst
+                                                    toml_vector
+                                                    []
+                                                    lst
+                                                    Public
+                                                ),
+                                            1_toml_vector_n:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_vector_n
+                                                    11 n
+                                                    toml_vector
+                                                    []
+                                                    n
+                                                    Public
+                                                ),
+                                            i:
+                                                (Variable
+                                                    13
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            key:
+                                                (Variable
+                                                    13
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    13
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    9 toml_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    13
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    9 toml_vector
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    find
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (Pointer
+                                            (StructType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 self)
+                                    (Var 13 key)
+                                    (Var 13 ptr)]
+                                    [(Nullify
+                                        [(Var 13 ptr)]
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 13 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (StructInstanceMember
+                                            (Var 13 self)
+                                            13 1_toml_vector_n
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(If
+                                            ()
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
+                                                    (ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 13 self)
+                                                            13 1_toml_vector_lst
+                                                            (Allocatable
+                                                                (Array
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 13 i)
+                                                        ())]
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    13 1_toml_node_val
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(If
+                                                ()
+                                                (FunctionCall
+                                                    13 1_toml_value_match_key
+                                                    ()
+                                                    [((Var 13 key))]
+                                                    (Logical 4)
+                                                    ()
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        ()
+                                                    )
+                                                )
+                                                [(Associate
+                                                    (Var 13 ptr)
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        ()
+                                                    )
+                                                )
+                                                (Exit
+                                                    ()
+                                                )]
+                                                []
+                                            )]
+                                            []
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            new_vector:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            1_toml_vector_lst:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_vector_lst
+                                                    11 lst
+                                                    toml_vector
+                                                    []
+                                                    lst
+                                                    Public
+                                                ),
+                                            1_toml_vector_n:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_vector_n
+                                                    11 n
+                                                    toml_vector
+                                                    []
+                                                    n
+                                                    Public
+                                                ),
+                                            n:
+                                                (Variable
+                                                    12
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    12
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    9 toml_vector
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    new_vector
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 12 self)
+                                    (Var 12 n)]
+                                    [(Assignment
+                                        (StructInstanceMember
+                                            (Var 12 self)
+                                            12 1_toml_vector_n
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 12 n)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Allocate
+                                            [((StructInstanceMember
+                                                (Var 12 self)
+                                                12 1_toml_vector_lst
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntrinsicElementalFunction
+                                                Min
+                                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                                (Var 12 n)]
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            ()
+                                            ()
+                                            ())]
+                                            ()
+                                            ()
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_node:
+                                (Struct
+                                    (SymbolTable
+                                        10
+                                        {
+                                            val:
+                                                (Variable
+                                                    10
+                                                    val
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    9 toml_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_node
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [val]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            toml_value:
+                                (ExternalSymbol
+                                    9
+                                    toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                ),
+                            toml_vector:
+                                (Struct
+                                    (SymbolTable
+                                        11
+                                        {
+                                            lst:
+                                                (Variable
+                                                    11
+                                                    lst
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    9 toml_node
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    11
+                                                    n
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_vector
+                                    (StructType
+                                        [(Allocatable
+                                            (Array
+                                                (StructType
+                                                    [(Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [n
+                                    lst]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    tomlf_structure_vector
+                    ()
+                    [tomlf_type_value]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            tomlf_type_keyval:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            destroy:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_toml_keyval_raw:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_toml_keyval_raw
+                                                    7 raw
+                                                    toml_keyval
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
+                                            1_toml_value_key:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_toml_value_key
+                                                    3 key
+                                                    toml_value
+                                                    []
+                                                    key
+                                                    Public
+                                                ),
+                                            self:
+                                                (Variable
+                                                    8
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    6 toml_keyval
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    destroy
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 self)]
+                                    [(If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_value_key
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ExplicitDeallocate
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_value_key
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_keyval_raw
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ExplicitDeallocate
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_keyval_raw
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_keyval:
+                                (Struct
+                                    (SymbolTable
+                                        7
+                                        {
+                                            destroy:
+                                                (StructMethodDeclaration
+                                                    7
+                                                    destroy
+                                                    ()
+                                                    destroy
+                                                    6 destroy
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            raw:
+                                                (Variable
+                                                    7
+                                                    raw
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_keyval
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [raw]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    6 toml_value
+                                ),
+                            toml_value:
+                                (ExternalSymbol
+                                    6
+                                    toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                )
+                        })
+                    tomlf_type_keyval
+                    ()
+                    [tomlf_type_value]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            tomlf_type_value:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            destroy:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 toml_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    destroy
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            match_key:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_toml_value_key:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_toml_value_key
+                                                    3 key
+                                                    toml_value
+                                                    []
+                                                    key
+                                                    Public
+                                                ),
+                                            key:
+                                                (Variable
+                                                    5
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            match:
+                                                (Variable
+                                                    5
+                                                    match
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    5
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 toml_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    match_key
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                        (String 1 () AssumedLength DescriptorString)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 self)
+                                    (Var 5 key)]
+                                    [(If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_toml_value_key
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 5 match)
+                                            (StringCompare
+                                                (Var 5 key)
+                                                Eq
+                                                (StructInstanceMember
+                                                    (Var 5 self)
+                                                    5 1_toml_value_key
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        [(Assignment
+                                            (Var 5 match)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                    )]
+                                    (Var 5 match)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_value:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            destroy:
+                                                (StructMethodDeclaration
+                                                    3
+                                                    destroy
+                                                    ()
+                                                    destroy
+                                                    2 destroy
+                                                    Source
+                                                    .true.
+                                                    .false.
+                                                ),
+                                            key:
+                                                (Variable
+                                                    3
+                                                    key
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            match_key:
+                                                (StructMethodDeclaration
+                                                    3
+                                                    match_key
+                                                    ()
+                                                    match_key
+                                                    2 match_key
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_value
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [key]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    tomlf_type_value
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

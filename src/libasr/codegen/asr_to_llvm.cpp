@@ -10007,15 +10007,15 @@ public:
         }
 
         // INTERNAL READ SUPPORT:
-        // Only load when requested. For internal file READ we call with load_ref=false.
-        if (load_ref) {
+        // 3. General Load Handling
+        if (load_ref && !ASRUtils::is_value_constant(x)) {
             // ===== INTERNAL FILE FIX =====
-            // Use camelCase is_descriptorString to match ASRUtils definition
             bool is_internal_unit =
                 ASRUtils::is_character(*ASRUtils::expr_type(x)) &&
                 ASRUtils::is_descriptorString(ASRUtils::expr_type(x));
 
-            if (!is_internal_unit) {
+            // Only load HERE if it is a character descriptor (internal unit)
+            if (is_internal_unit) {
                 llvm::Type* x_llvm_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         x,
@@ -10026,8 +10026,12 @@ public:
                     x_llvm_type,
                     tmp,
                     is_volatile);
+                
+                return; // 👈 CRITICAL: Exit so the upstream logic below doesn't load it again
             }
-        }
+        } 
+        // Standard variables (like 'i' in do7) skip the block above 
+        // and fall through to the upstream logic below.
 
         if (compiler_options.new_classes && load_ref && 
                 LLVM::is_llvm_pointer(*ASRUtils::expr_type(x)) &&

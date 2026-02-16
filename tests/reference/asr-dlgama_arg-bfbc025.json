@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dlgama_arg-bfbc025",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dlgama_arg.f90",
+    "infile_hash": "cca18dc8b2576ee299d7a12cc26cbd82f78f8a23463402f5a12df3f9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dlgama_arg-bfbc025.stderr",
+    "stderr_hash": "f3a481568df855e9e746a861cc31c7673d66397eeb35bb0cba2ebec0",
+    "returncode": 2
+}

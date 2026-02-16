@@ -1,0 +1,9 @@
+syntax error: End function name does not match function name
+ --> tests/errors/end_function_name_not_match.f90:1:1 - 6:23
+  |
+1 |    real function square(x)
+  |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+6 |    end function square_int
+  | ...^^^^^^^^^^^^^^^^^^^^^^^ 

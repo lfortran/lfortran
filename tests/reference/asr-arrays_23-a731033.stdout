@@ -1,0 +1,512 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            arrays_23:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            add_context:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_toml_context_num:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_toml_context_num
+                                                    3 num
+                                                    toml_context
+                                                    []
+                                                    num
+                                                    Public
+                                                ),
+                                            1_toml_context_ptr:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_toml_context_ptr
+                                                    3 ptr
+                                                    toml_context
+                                                    []
+                                                    ptr
+                                                    Public
+                                                ),
+                                            context:
+                                                (Variable
+                                                    4
+                                                    context
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Pointer
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 toml_context
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_iomsg:
+                                                (Variable
+                                                    4
+                                                    lfortran_iomsg
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_tmp_iostat:
+                                                (Variable
+                                                    4
+                                                    lfortran_tmp_iostat
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            line_break:
+                                                (Variable
+                                                    4
+                                                    line_break
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            message:
+                                                (Variable
+                                                    4
+                                                    message
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            num:
+                                                (Variable
+                                                    4
+                                                    num
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    add_context
+                                    (FunctionType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Pointer
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 message)
+                                    (Var 4 context)]
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (Var 4 context)
+                                                4 1_toml_context_num
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(FileWrite
+                                            0
+                                            (Var 4 num)
+                                            (Var 4 lfortran_iomsg)
+                                            ()
+                                            ()
+                                            [(StringFormat
+                                                (StringConstant
+                                                    "(\"line\",1x,i0,\":\")"
+                                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                [(StructInstanceMember
+                                                    (Var 4 context)
+                                                    4 1_toml_context_num
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            ()
+                                            ()
+                                            ()
+                                            .true.
+                                            ()
+                                            ()
+                                        )
+                                        (Assignment
+                                            (Var 4 message)
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(StringSection
+                                                    (Var 4 num)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerBinOp
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(Var 4 num)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (String 1 (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntrinsicElementalFunction
+                                                                    StringLenTrim
+                                                                    [(Var 4 num)]
+                                                                    0
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Add
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Sub
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength DescriptorString)
+                                                    ()
+                                                )
+                                                (Var 4 message)]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 4 message)
+                                        (IntrinsicElementalFunction
+                                            StringConcat
+                                            [(IntrinsicElementalFunction
+                                                StringConcat
+                                                [(IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 4 message)
+                                                    (StringConstant
+                                                        "   | "
+                                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                    ()
+                                                )
+                                                (StringSection
+                                                    (StructInstanceMember
+                                                        (Var 4 context)
+                                                        4 1_toml_context_ptr
+                                                        (Pointer
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 4 line_break)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (String 1 (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (Var 4 line_break)
+                                                            Sub
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength DescriptorString)
+                                                    ()
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
+                                                ()
+                                            )
+                                            (StringConstant
+                                                "   |"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )]
+                                            0
+                                            (String 1 () DeferredLength DescriptorString)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_context:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            num:
+                                                (Variable
+                                                    3
+                                                    num
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    3
+                                                    pos
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    3
+                                                    ptr
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_context
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Pointer
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [pos
+                                    num
+                                    ptr]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    arrays_23
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            add_context:
+                                (ExternalSymbol
+                                    5
+                                    add_context
+                                    2 add_context
+                                    arrays_23
+                                    []
+                                    add_context
+                                    Public
+                                ),
+                            toml_context:
+                                (ExternalSymbol
+                                    5
+                                    toml_context
+                                    2 toml_context
+                                    arrays_23
+                                    []
+                                    toml_context
+                                    Public
+                                )
+                        })
+                    main
+                    [arrays_23]
+                    [(Print
+                        (StringConstant
+                            "working"
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                )
+        })
+    []
+)

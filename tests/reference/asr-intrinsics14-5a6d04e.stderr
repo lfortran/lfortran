@@ -1,0 +1,5 @@
+semantic error: Unexpected args, Scale expects (real, int) as arguments
+ --> tests/errors/intrinsics14.f90:2:14
+  |
+2 |     print *, scale([1, 2, 3], 2)
+  |              ^^^^^^^^^^^^^^^^^^^ 

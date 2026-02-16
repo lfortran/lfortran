@@ -1,0 +1,42 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+GEP base pointer is not a vector or a vector of pointers
+  %7 = getelementptr %string_descriptor, %string_descriptor %6, i32 0, i32 0
+Load operand must be a pointer.
+  %8 = load ptr, %string_descriptor %7, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %11 = getelementptr %string_descriptor, %string_descriptor %8, i32 0, i32 0
+Load operand must be a pointer.
+  %12 = load ptr, %string_descriptor %11, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %13 = getelementptr %string_descriptor, %string_descriptor %8, i32 0, i32 1
+Load operand must be a pointer.
+  %14 = load i64, %string_descriptor %13, align 4
+Load operand must be a pointer.
+  %7 = load %string_descriptor, %string_descriptor %6, align 1
+GEP base pointer is not a vector or a vector of pointers
+  %15 = getelementptr %string_descriptor, %string_descriptor %14, i32 0, i32 1
+Load operand must be a pointer.
+  %16 = load i64, %string_descriptor %15, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %30 = getelementptr %string_descriptor, %string_descriptor %29, i32 0, i32 0
+Load operand must be a pointer.
+  %31 = load ptr, %string_descriptor %30, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %32 = getelementptr %string_descriptor, %string_descriptor %29, i32 0, i32 1
+Load operand must be a pointer.
+  %33 = load i64, %string_descriptor %32, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %50 = getelementptr %string_descriptor, %string_descriptor %47, i32 0, i32 0
+Load operand must be a pointer.
+  %51 = load ptr, %string_descriptor %50, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %52 = getelementptr %string_descriptor, %string_descriptor %47, i32 0, i32 1
+Load operand must be a pointer.
+  %53 = load i64, %string_descriptor %52, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %7 = getelementptr %string_descriptor, %string_descriptor %6, i32 0, i32 0
+Load operand must be a pointer.
+  %8 = load ptr, %string_descriptor %7, align 8
+Load operand must be a pointer.
+  %14 = load %string_descriptor, %string_descriptor %13, align 1
+

@@ -1,0 +1,8 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+Load operand must be a pointer.
+  %28 = load %string_descriptor, %string_descriptor %27, align 1
+Load operand must be a pointer.
+  %31 = load %string_descriptor, %string_descriptor %30, align 1
+Load operand must be a pointer.
+  %34 = load %string_descriptor, %string_descriptor %33, align 1
+

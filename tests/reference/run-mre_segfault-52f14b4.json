@@ -1,0 +1,13 @@
+{
+    "basename": "run-mre_segfault-52f14b4",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/mre_segfault.f90",
+    "infile_hash": "4bbc5104cf76f77bbe94f0bd5a2d2c4558db0315332c74155842e58d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-mre_segfault-52f14b4.stderr",
+    "stderr_hash": "4a8bc82ac1dcde5689eb3f0031b49058be8b83f63b8b62258c30220e",
+    "returncode": 1
+}

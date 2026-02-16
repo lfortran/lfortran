@@ -1,0 +1,5 @@
+runtime error: Array 'x' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+ --> tests/errors/array_bounds_check_03.f90:4:5
+  |
+4 |     x = [1, 2, 3]
+  |     ^ 

@@ -1,0 +1,5 @@
+syntax error: Token 'x' (of type 'identifier') is unexpected here
+ --> tests/errors/fixed_form_2.f:3:12
+  |
+3 |       y = 5x
+  |            ^ 

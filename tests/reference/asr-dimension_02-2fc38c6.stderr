@@ -1,0 +1,5 @@
+semantic error: Expecting a scalar integer or parameter annotated integer variable 
+ --> tests/errors/dimension_02.f90:3:26
+  |
+3 |     character, dimension(linelen) :: line
+  |                          ^^^^^^^ 

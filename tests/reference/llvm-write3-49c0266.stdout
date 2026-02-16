@@ -1,0 +1,63 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [11 x i8] c"Hello World"
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 11 }>
+@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %lfortran_iomsg = alloca %string_descriptor, align 8
+  store %string_descriptor zeroinitializer, ptr %lfortran_iomsg, align 1
+  %2 = getelementptr %string_descriptor, ptr %lfortran_iomsg, i32 0, i32 1
+  store i64 0, ptr %2, align 4
+  %3 = getelementptr %string_descriptor, ptr %lfortran_iomsg, i32 0, i32 0
+  %4 = call ptr @_lfortran_malloc(i64 1)
+  store ptr %4, ptr %3, align 8
+  %lfortran_tmp_iostat = alloca i32, align 4
+  %nwrite = alloca i32, align 4
+  store i32 6, ptr %nwrite, align 4
+  store i32 6, ptr %nwrite, align 4
+  %5 = load i32, ptr %nwrite, align 4
+  %6 = alloca ptr, align 8
+  store ptr null, ptr %6, align 8
+  %7 = load ptr, ptr %6, align 8
+  %8 = load ptr, ptr @string_const, align 8
+  call void (i32, ptr, ptr, i64, ...) @_lfortran_file_write(i32 %5, ptr %7, ptr @2, i64 4, ptr %8, i64 11, ptr @1, i64 1)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_lfortran_iomsg
+
+Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_main
+  %9 = getelementptr %string_descriptor, ptr %lfortran_iomsg, i32 0, i32 0
+  %10 = load ptr, ptr %9, align 8
+  %11 = icmp eq ptr %10, null
+  br i1 %11, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_lfortran_iomsg
+  call void @_lfortran_free(ptr %10)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_lfortran_iomsg
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare ptr @_lfortran_malloc(i64)
+
+declare void @_lfortran_file_write(i32, ptr, ptr, i64, ...)
+
+declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(ptr)

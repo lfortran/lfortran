@@ -1,0 +1,795 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            doloop_04:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __do_loop_inc:
+                                (Variable
+                                    2
+                                    __do_loop_inc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_loop_inc1:
+                                (Variable
+                                    2
+                                    __do_loop_inc1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            __do_loop_inc2:
+                                (Variable
+                                    2
+                                    __do_loop_inc2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    doloop_04
+                    []
+                    [(Assignment
+                        (Var 2 j)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 k)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_loop_inc)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (Var 2 __do_loop_inc)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc)
+                                    Gt
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc)
+                                    LtE
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (Var 2 __do_loop_inc)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 j)
+                            (IntegerBinOp
+                                (Var 2 j)
+                                Add
+                                (Var 2 i)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 j)
+                            NotEq
+                            (IntegerConstant 25 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 j)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 j)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 k)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -2 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_loop_inc1)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            Sub
+                            (Var 2 __do_loop_inc1)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc1)
+                                    Gt
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc1)
+                                    LtE
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (Var 2 __do_loop_inc1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 j)
+                            (IntegerBinOp
+                                (Var 2 j)
+                                Add
+                                (Var 2 i)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 j)
+                            NotEq
+                            (IntegerConstant 30 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 j)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 j)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        a
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 j)
+                            (IntegerBinOp
+                                (Var 2 j)
+                                Add
+                                (Var 2 i)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 2 i)
+                                Eq
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                a
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 j)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 j)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        b
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 j)
+                            (IntegerBinOp
+                                (Var 2 j)
+                                Add
+                                (Var 2 i)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 2 i)
+                                Eq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                b
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 j)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 j)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        c
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(Assignment
+                            (Var 2 j)
+                            (IntegerBinOp
+                                (Var 2 j)
+                                Add
+                                (Var 2 i)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 2 i)
+                                Eq
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                c
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 j)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 k)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __do_loop_inc2)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (Var 2 __do_loop_inc2)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc2)
+                                    Gt
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc2)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __do_loop_inc2)
+                                    LtE
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 __do_loop_inc2)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (Var 2 __do_loop_inc2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoToTarget
+                            100
+                            100
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

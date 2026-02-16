@@ -1,0 +1,5 @@
+semantic error: Unexpected args, Radix expects (int) or (real) as arguments
+ --> tests/errors/intrinsics1.f90:3:14
+  |
+3 |     print *, radix((2.4, 1.0))
+  |              ^^^^^^^^^^^^^^^^^ 

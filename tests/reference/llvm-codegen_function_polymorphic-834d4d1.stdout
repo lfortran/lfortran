@@ -1,0 +1,65 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%abstype_class = type <{ ptr, ptr }>
+
+define void @__module_codegen_function_polymorphic_my_func(ptr %obj) {
+.entry:
+  %0 = load ptr, ptr %obj, align 8
+  %1 = ptrtoint ptr %0 to i64
+  %2 = icmp ne i64 %1, 0
+  br i1 %2, label %then, label %else5
+
+then:                                             ; preds = %.entry
+  %3 = load ptr, ptr %obj, align 8
+  %4 = load ptr, ptr %obj, align 8
+  %5 = ptrtoint ptr %4 to i64
+  %6 = icmp ne i64 %5, 0
+  br i1 %6, label %then1, label %else3
+
+then1:                                            ; preds = %then
+  %7 = getelementptr %abstype_class, ptr %4, i32 0, i32 1
+  %8 = load ptr, ptr %7, align 8
+  %9 = ptrtoint ptr %8 to i64
+  %10 = icmp ne i64 %9, 0
+  br i1 %10, label %then2, label %else
+
+then2:                                            ; preds = %then1
+  %11 = alloca ptr, align 8
+  store ptr %8, ptr %11, align 8
+  %12 = load ptr, ptr %11, align 8
+  call void @_lfortran_free(ptr %12)
+  store ptr null, ptr %7, align 8
+  br label %ifcont
+
+else:                                             ; preds = %then1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then2
+  %13 = alloca ptr, align 8
+  store ptr %4, ptr %13, align 8
+  %14 = load ptr, ptr %13, align 8
+  call void @_lfortran_free(ptr %14)
+  store ptr null, ptr %obj, align 8
+  br label %ifcont4
+
+else3:                                            ; preds = %then
+  br label %ifcont4
+
+ifcont4:                                          ; preds = %else3, %ifcont
+  br label %ifcont6
+
+else5:                                            ; preds = %.entry
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %ifcont4
+  br label %return
+
+return:                                           ; preds = %ifcont6
+  br label %FINALIZE_SYMTABLE_my_func
+
+FINALIZE_SYMTABLE_my_func:                        ; preds = %return
+  ret void
+}
+
+declare void @_lfortran_free(ptr)

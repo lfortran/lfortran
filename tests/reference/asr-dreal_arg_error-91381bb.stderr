@@ -1,0 +1,5 @@
+semantic error: Unexpected args, Dreal expects (complex64) as arguments
+ --> tests/errors/dreal_arg_error.f90:4:14
+  |
+4 |     print *, dreal(a)
+  |              ^^^^^^^^ 

@@ -1,0 +1,70 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%complex_8 = type <{ double, double }>
+%complex_4 = type <{ float, float }>
+%string_descriptor = type <{ ptr, i64 }>
+
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [24 x i8] c"{R8,R8},{R4,R4},{R4,R4}\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %v = alloca %complex_8, align 8
+  %x = alloca %complex_4, align 8
+  %zero = alloca %complex_4, align 8
+  store %complex_4 zeroinitializer, ptr %zero, align 1
+  store %complex_8 <{ double 0x3FF0CCCCC0000000, double 0x3FF0CCCCC0000000 }>, ptr %v, align 1
+  store %complex_4 <{ float 0x3FF0CCCCC0000000, float 0x3FF0CCCCC0000000 }>, ptr %x, align 1
+  %2 = alloca i64, align 8
+  %3 = load %complex_8, ptr %v, align 1
+  %4 = alloca %complex_8, align 8
+  store %complex_8 %3, ptr %4, align 1
+  %5 = load %complex_4, ptr %x, align 1
+  %6 = alloca %complex_4, align 8
+  store %complex_4 %5, ptr %6, align 1
+  %7 = load %complex_4, ptr %zero, align 1
+  %8 = alloca %complex_4, align 8
+  store %complex_4 %7, ptr %8, align 1
+  %9 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %2, i32 0, i32 0, ptr %4, ptr %6, ptr %8)
+  %10 = load i64, ptr %2, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %11 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %9, ptr %11, align 8
+  %12 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %10, ptr %12, align 4
+  %13 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %14 = load ptr, ptr %13, align 8
+  %15 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %16 = load i64, ptr %15, align 4
+  %17 = trunc i64 %16 to i32
+  call void @_lfortran_printf(ptr @1, ptr %14, i32 %17, ptr @0, i32 1)
+  %18 = icmp eq ptr %9, null
+  br i1 %18, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(ptr %9)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %free_done
+  br label %FINALIZE_SYMTABLE_complex_dp
+
+FINALIZE_SYMTABLE_complex_dp:                     ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare void @_lfortran_free(ptr)
+
+declare void @_lpython_free_argv()

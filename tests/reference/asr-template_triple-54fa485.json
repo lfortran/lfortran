@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_triple-54fa485",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_triple.f90",
+    "infile_hash": "5d7a3ab9825f5285b40ca4edf152dc13eda9163c4892dd5a690f645b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_triple-54fa485.stdout",
+    "stdout_hash": "6650883c7f3f6b51037e9c59eaee71e9010cfadb43679e37c0d21c79",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

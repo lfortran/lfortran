@@ -1,0 +1,102 @@
+(TranslationUnit
+    [(Program
+        defop1
+        (TriviaNode
+            [(EndOfLine)
+            (Comment
+                "! Tests for syntax (AST) only:"
+            )]
+            []
+        )
+        []
+        []
+        []
+        [(Assignment
+            0
+            e
+            (DefBinOp
+                a
+                "in"
+                b
+            )
+            ()
+        )
+        (Assignment
+            0
+            E
+            (DefBinOp
+                A
+                "IN"
+                B
+            )
+            ()
+        )
+        (Assignment
+            0
+            e
+            (DefBinOp
+                s [(b
+                [])]
+                "op"
+                (** 3 4)
+            )
+            ()
+        )
+        (Assignment
+            0
+            E
+            (DefBinOp
+                S [(B
+                [])]
+                "OP"
+                (** 3 4)
+            )
+            ()
+        )
+        (Assignment
+            0
+            e
+            (DefBinOp
+                (+ a b)
+                "x"
+                (** y x)
+            )
+            ()
+        )
+        (Assignment
+            0
+            e
+            (DefBinOp
+                (** x x)
+                "x"
+                (** x x)
+            )
+            ()
+        )
+        (Assignment
+            0
+            E
+            (DefBinOp
+                (** X X)
+                "X"
+                (** X X)
+            )
+            ()
+        )
+        (Assignment
+            0
+            e
+            (** (DefBinOp
+                (DefBinOp
+                    x
+                    "x"
+                    x
+                )
+                "in"
+                3
+            ) 4)
+            ()
+        )]
+        []
+    )]
+)

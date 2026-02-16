@@ -1,0 +1,13 @@
+{
+    "basename": "ast-init1-a99a704",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/init1.f90",
+    "infile_hash": "9ec670cb5b8c7f2baae3997ae0911acdd19199100666c44da310ff4f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-init1-a99a704.stderr",
+    "stderr_hash": "201d19c7bf14660170792288e575568c171f968dfe1987869b73324b",
+    "returncode": 2
+}

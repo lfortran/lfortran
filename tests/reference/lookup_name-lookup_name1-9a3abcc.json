@@ -1,0 +1,13 @@
+{
+    "basename": "lookup_name-lookup_name1-9a3abcc",
+    "cmd": "lfortran --lookup-name --no-color {infile} -o {outfile}",
+    "infile": "tests/lookup_name1.f90",
+    "infile_hash": "6040a3665d4455ccb812ccc763c7d458221ef5b0eb639ed341de0618",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "lookup_name-lookup_name1-9a3abcc.stdout",
+    "stdout_hash": "8df160638b3c83441d1ecd0dd1fdff905f4f006d492e805dc0041307",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

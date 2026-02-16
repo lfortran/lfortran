@@ -1,0 +1,5 @@
+syntax error: Statement or Declaration expected inside program, found Expression
+ --> tests/global_scope7.f90:2:1
+  |
+2 | 2*x
+  | ^^^ 

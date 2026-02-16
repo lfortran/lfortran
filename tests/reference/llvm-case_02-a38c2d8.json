@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-case_02-a38c2d8",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/case_02.f90",
+    "infile_hash": "76d3020fba89787d565870ed03c1b5e8914d12b062cb9ca7a8c37550",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-case_02-a38c2d8.stdout",
+    "stdout_hash": "0fe7a97a581456faf79701ad9434d1de0f887b0897c1857931efb0dd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

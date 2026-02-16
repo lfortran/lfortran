@@ -1,0 +1,1769 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            bits_04:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    bits_04
+                    []
+                    [(If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bgt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -10 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -4 (Integer 8) Decimal)
+                                )]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    (IntegerConstant -10 (Integer 8) Decimal)
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)]
+                                0
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

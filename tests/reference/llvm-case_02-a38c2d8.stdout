@@ -1,0 +1,529 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [10 x i8] c"Excellent!"
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 10 }>
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.1 = private constant [10 x i8] c"Very good!"
+@string_const.2 = private global %string_descriptor <{ ptr @string_const_data.1, i64 10 }>
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.3 = private constant [10 x i8] c"Well done!"
+@string_const.4 = private global %string_descriptor <{ ptr @string_const_data.3, i64 10 }>
+@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.5 = private constant [8 x i8] c"Not bad!"
+@string_const.6 = private global %string_descriptor <{ ptr @string_const_data.5, i64 8 }>
+@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.7 = private constant [11 x i8] c"You passed!"
+@string_const.8 = private global %string_descriptor <{ ptr @string_const_data.7, i64 11 }>
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.9 = private constant [17 x i8] c"Better try again!"
+@string_const.10 = private global %string_descriptor <{ ptr @string_const_data.9, i64 17 }>
+@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.11 = private constant [13 x i8] c"Invalid marks"
+@string_const.12 = private global %string_descriptor <{ ptr @string_const_data.11, i64 13 }>
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [13 x i8] c"S-DESC-15,I4\00", align 1
+@string_const_data.13 = private constant [15 x i8] c"Your marks are "
+@string_const.14 = private global %string_descriptor <{ ptr @string_const_data.13, i64 15 }>
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.15 = private constant [10 x i8] c"Excellent!"
+@string_const.16 = private global %string_descriptor <{ ptr @string_const_data.15, i64 10 }>
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.17 = private constant [10 x i8] c"Very good!"
+@string_const.18 = private global %string_descriptor <{ ptr @string_const_data.17, i64 10 }>
+@21 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.19 = private constant [10 x i8] c"Well done!"
+@string_const.20 = private global %string_descriptor <{ ptr @string_const_data.19, i64 10 }>
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.21 = private constant [8 x i8] c"Not bad!"
+@string_const.22 = private global %string_descriptor <{ ptr @string_const_data.21, i64 8 }>
+@25 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.23 = private constant [11 x i8] c"You passed!"
+@string_const.24 = private global %string_descriptor <{ ptr @string_const_data.23, i64 11 }>
+@27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@28 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.25 = private constant [17 x i8] c"Better try again!"
+@string_const.26 = private global %string_descriptor <{ ptr @string_const_data.25, i64 17 }>
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@30 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.27 = private constant [13 x i8] c"Invalid marks"
+@string_const.28 = private global %string_descriptor <{ ptr @string_const_data.27, i64 13 }>
+@31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.29 = private unnamed_addr constant [13 x i8] c"S-DESC-15,I4\00", align 1
+@string_const_data.30 = private constant [15 x i8] c"Your marks are "
+@string_const.31 = private global %string_descriptor <{ ptr @string_const_data.30, i64 15 }>
+@33 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@34 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.32 = private constant [10 x i8] c"Excellent!"
+@string_const.33 = private global %string_descriptor <{ ptr @string_const_data.32, i64 10 }>
+@35 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@36 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.34 = private constant [10 x i8] c"Very good!"
+@string_const.35 = private global %string_descriptor <{ ptr @string_const_data.34, i64 10 }>
+@37 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@38 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.36 = private constant [10 x i8] c"Well done!"
+@string_const.37 = private global %string_descriptor <{ ptr @string_const_data.36, i64 10 }>
+@39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@40 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.38 = private constant [8 x i8] c"Not bad!"
+@string_const.39 = private global %string_descriptor <{ ptr @string_const_data.38, i64 8 }>
+@41 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@42 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.40 = private constant [11 x i8] c"You passed!"
+@string_const.41 = private global %string_descriptor <{ ptr @string_const_data.40, i64 11 }>
+@43 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@44 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.42 = private constant [17 x i8] c"Better try again!"
+@string_const.43 = private global %string_descriptor <{ ptr @string_const_data.42, i64 17 }>
+@45 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@46 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.44 = private constant [13 x i8] c"Invalid marks"
+@string_const.45 = private global %string_descriptor <{ ptr @string_const_data.44, i64 13 }>
+@47 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@48 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.46 = private unnamed_addr constant [13 x i8] c"S-DESC-15,I4\00", align 1
+@string_const_data.47 = private constant [15 x i8] c"Your marks are "
+@string_const.48 = private global %string_descriptor <{ ptr @string_const_data.47, i64 15 }>
+@49 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %marks = alloca i32, align 4
+  %out = alloca i32, align 4
+  store i32 81, ptr %marks, align 4
+  %2 = load i32, ptr %marks, align 4
+  %3 = icmp sle i32 91, %2
+  %4 = load i32, ptr %marks, align 4
+  %5 = icmp sle i32 %4, 100
+  %6 = icmp eq i1 %3, false
+  %7 = select i1 %6, i1 %3, i1 %5
+  br i1 %7, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i32 0, ptr %out, align 4
+  %8 = load ptr, ptr @string_const, align 8
+  call void @_lfortran_printf(ptr @1, ptr %8, i32 10, ptr @0, i32 1)
+  br label %ifcont15
+
+else:                                             ; preds = %.entry
+  %9 = load i32, ptr %marks, align 4
+  %10 = icmp sle i32 81, %9
+  %11 = load i32, ptr %marks, align 4
+  %12 = icmp sle i32 %11, 90
+  %13 = icmp eq i1 %10, false
+  %14 = select i1 %13, i1 %10, i1 %12
+  br i1 %14, label %then1, label %else2
+
+then1:                                            ; preds = %else
+  store i32 1, ptr %out, align 4
+  %15 = load ptr, ptr @string_const.2, align 8
+  call void @_lfortran_printf(ptr @3, ptr %15, i32 10, ptr @2, i32 1)
+  br label %ifcont14
+
+else2:                                            ; preds = %else
+  %16 = load i32, ptr %marks, align 4
+  %17 = icmp sle i32 71, %16
+  %18 = load i32, ptr %marks, align 4
+  %19 = icmp sle i32 %18, 80
+  %20 = icmp eq i1 %17, false
+  %21 = select i1 %20, i1 %17, i1 %19
+  br i1 %21, label %then3, label %else4
+
+then3:                                            ; preds = %else2
+  store i32 2, ptr %out, align 4
+  %22 = load ptr, ptr @string_const.4, align 8
+  call void @_lfortran_printf(ptr @5, ptr %22, i32 10, ptr @4, i32 1)
+  br label %ifcont13
+
+else4:                                            ; preds = %else2
+  %23 = load i32, ptr %marks, align 4
+  %24 = icmp sle i32 61, %23
+  %25 = load i32, ptr %marks, align 4
+  %26 = icmp sle i32 %25, 70
+  %27 = icmp eq i1 %24, false
+  %28 = select i1 %27, i1 %24, i1 %26
+  br i1 %28, label %then5, label %else6
+
+then5:                                            ; preds = %else4
+  store i32 3, ptr %out, align 4
+  %29 = load ptr, ptr @string_const.6, align 8
+  call void @_lfortran_printf(ptr @7, ptr %29, i32 8, ptr @6, i32 1)
+  br label %ifcont12
+
+else6:                                            ; preds = %else4
+  %30 = load i32, ptr %marks, align 4
+  %31 = icmp sle i32 41, %30
+  %32 = load i32, ptr %marks, align 4
+  %33 = icmp sle i32 %32, 60
+  %34 = icmp eq i1 %31, false
+  %35 = select i1 %34, i1 %31, i1 %33
+  br i1 %35, label %then7, label %else8
+
+then7:                                            ; preds = %else6
+  store i32 4, ptr %out, align 4
+  %36 = load ptr, ptr @string_const.8, align 8
+  call void @_lfortran_printf(ptr @9, ptr %36, i32 11, ptr @8, i32 1)
+  br label %ifcont11
+
+else8:                                            ; preds = %else6
+  %37 = load i32, ptr %marks, align 4
+  %38 = icmp sle i32 %37, 40
+  br i1 %38, label %then9, label %else10
+
+then9:                                            ; preds = %else8
+  store i32 5, ptr %out, align 4
+  %39 = load ptr, ptr @string_const.10, align 8
+  call void @_lfortran_printf(ptr @11, ptr %39, i32 17, ptr @10, i32 1)
+  br label %ifcont
+
+else10:                                           ; preds = %else8
+  store i32 6, ptr %out, align 4
+  %40 = load ptr, ptr @string_const.12, align 8
+  call void @_lfortran_printf(ptr @13, ptr %40, i32 13, ptr @12, i32 1)
+  br label %ifcont
+
+ifcont:                                           ; preds = %else10, %then9
+  br label %ifcont11
+
+ifcont11:                                         ; preds = %ifcont, %then7
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %ifcont11, %then5
+  br label %ifcont13
+
+ifcont13:                                         ; preds = %ifcont12, %then3
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %ifcont13, %then1
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %ifcont14, %then
+  %41 = alloca i64, align 8
+  %42 = load i32, ptr %marks, align 4
+  %43 = alloca i32, align 4
+  store i32 %42, ptr %43, align 4
+  %44 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %41, i32 0, i32 0, ptr @string_const.14, ptr %43)
+  %45 = load i64, ptr %41, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %46 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %44, ptr %46, align 8
+  %47 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %45, ptr %47, align 4
+  %48 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %49 = load ptr, ptr %48, align 8
+  %50 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %51 = load i64, ptr %50, align 4
+  %52 = trunc i64 %51 to i32
+  call void @_lfortran_printf(ptr @15, ptr %49, i32 %52, ptr @14, i32 1)
+  %53 = icmp eq ptr %44, null
+  br i1 %53, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont15
+  call void @_lfortran_free(ptr %44)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont15
+  %54 = load i32, ptr %out, align 4
+  %55 = icmp ne i32 %54, 1
+  br i1 %55, label %then16, label %else17
+
+then16:                                           ; preds = %free_done
+  call void @exit(i32 1)
+  br label %ifcont18
+
+else17:                                           ; preds = %free_done
+  br label %ifcont18
+
+ifcont18:                                         ; preds = %else17, %then16
+  %56 = load i32, ptr %marks, align 4
+  %57 = icmp sle i32 91, %56
+  %58 = load i32, ptr %marks, align 4
+  %59 = icmp sle i32 %58, 100
+  %60 = icmp eq i1 %57, false
+  %61 = select i1 %60, i1 %57, i1 %59
+  br i1 %61, label %then19, label %else20
+
+then19:                                           ; preds = %ifcont18
+  %62 = load ptr, ptr @string_const.16, align 8
+  call void @_lfortran_printf(ptr @19, ptr %62, i32 10, ptr @18, i32 1)
+  br label %ifcont36
+
+else20:                                           ; preds = %ifcont18
+  %63 = load i32, ptr %marks, align 4
+  %64 = icmp sle i32 81, %63
+  %65 = load i32, ptr %marks, align 4
+  %66 = icmp sle i32 %65, 90
+  %67 = icmp eq i1 %64, false
+  %68 = select i1 %67, i1 %64, i1 %66
+  br i1 %68, label %then21, label %else22
+
+then21:                                           ; preds = %else20
+  %69 = load ptr, ptr @string_const.18, align 8
+  call void @_lfortran_printf(ptr @21, ptr %69, i32 10, ptr @20, i32 1)
+  br label %ifcont35
+
+else22:                                           ; preds = %else20
+  %70 = load i32, ptr %marks, align 4
+  %71 = icmp sle i32 71, %70
+  %72 = load i32, ptr %marks, align 4
+  %73 = icmp sle i32 %72, 80
+  %74 = icmp eq i1 %71, false
+  %75 = select i1 %74, i1 %71, i1 %73
+  br i1 %75, label %then23, label %else24
+
+then23:                                           ; preds = %else22
+  %76 = load ptr, ptr @string_const.20, align 8
+  call void @_lfortran_printf(ptr @23, ptr %76, i32 10, ptr @22, i32 1)
+  br label %ifcont34
+
+else24:                                           ; preds = %else22
+  %77 = load i32, ptr %marks, align 4
+  %78 = icmp sle i32 61, %77
+  %79 = load i32, ptr %marks, align 4
+  %80 = icmp sle i32 %79, 70
+  %81 = icmp eq i1 %78, false
+  %82 = select i1 %81, i1 %78, i1 %80
+  br i1 %82, label %then25, label %else26
+
+then25:                                           ; preds = %else24
+  %83 = load ptr, ptr @string_const.22, align 8
+  call void @_lfortran_printf(ptr @25, ptr %83, i32 8, ptr @24, i32 1)
+  br label %ifcont33
+
+else26:                                           ; preds = %else24
+  %84 = load i32, ptr %marks, align 4
+  %85 = icmp sle i32 41, %84
+  %86 = load i32, ptr %marks, align 4
+  %87 = icmp sle i32 %86, 60
+  %88 = icmp eq i1 %85, false
+  %89 = select i1 %88, i1 %85, i1 %87
+  br i1 %89, label %then27, label %else28
+
+then27:                                           ; preds = %else26
+  %90 = load ptr, ptr @string_const.24, align 8
+  call void @_lfortran_printf(ptr @27, ptr %90, i32 11, ptr @26, i32 1)
+  br label %ifcont32
+
+else28:                                           ; preds = %else26
+  %91 = load i32, ptr %marks, align 4
+  %92 = icmp sle i32 %91, 40
+  br i1 %92, label %then29, label %else30
+
+then29:                                           ; preds = %else28
+  %93 = load ptr, ptr @string_const.26, align 8
+  call void @_lfortran_printf(ptr @29, ptr %93, i32 17, ptr @28, i32 1)
+  br label %ifcont31
+
+else30:                                           ; preds = %else28
+  %94 = load ptr, ptr @string_const.28, align 8
+  call void @_lfortran_printf(ptr @31, ptr %94, i32 13, ptr @30, i32 1)
+  br label %ifcont31
+
+ifcont31:                                         ; preds = %else30, %then29
+  br label %ifcont32
+
+ifcont32:                                         ; preds = %ifcont31, %then27
+  br label %ifcont33
+
+ifcont33:                                         ; preds = %ifcont32, %then25
+  br label %ifcont34
+
+ifcont34:                                         ; preds = %ifcont33, %then23
+  br label %ifcont35
+
+ifcont35:                                         ; preds = %ifcont34, %then21
+  br label %ifcont36
+
+ifcont36:                                         ; preds = %ifcont35, %then19
+  %95 = alloca i64, align 8
+  %96 = load i32, ptr %marks, align 4
+  %97 = alloca i32, align 4
+  store i32 %96, ptr %97, align 4
+  %98 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.29, ptr %95, i32 0, i32 0, ptr @string_const.31, ptr %97)
+  %99 = load i64, ptr %95, align 4
+  %stringFormat_desc37 = alloca %string_descriptor, align 8
+  %100 = getelementptr %string_descriptor, ptr %stringFormat_desc37, i32 0, i32 0
+  store ptr %98, ptr %100, align 8
+  %101 = getelementptr %string_descriptor, ptr %stringFormat_desc37, i32 0, i32 1
+  store i64 %99, ptr %101, align 4
+  %102 = getelementptr %string_descriptor, ptr %stringFormat_desc37, i32 0, i32 0
+  %103 = load ptr, ptr %102, align 8
+  %104 = getelementptr %string_descriptor, ptr %stringFormat_desc37, i32 0, i32 1
+  %105 = load i64, ptr %104, align 4
+  %106 = trunc i64 %105 to i32
+  call void @_lfortran_printf(ptr @33, ptr %103, i32 %106, ptr @32, i32 1)
+  %107 = icmp eq ptr %98, null
+  br i1 %107, label %free_done39, label %free_nonnull38
+
+free_nonnull38:                                   ; preds = %ifcont36
+  call void @_lfortran_free(ptr %98)
+  br label %free_done39
+
+free_done39:                                      ; preds = %free_nonnull38, %ifcont36
+  %108 = load i32, ptr %marks, align 4
+  %109 = icmp sle i32 91, %108
+  %110 = load i32, ptr %marks, align 4
+  %111 = icmp sle i32 %110, 100
+  %112 = icmp eq i1 %109, false
+  %113 = select i1 %112, i1 %109, i1 %111
+  br i1 %113, label %then40, label %else41
+
+then40:                                           ; preds = %free_done39
+  %114 = load ptr, ptr @string_const.33, align 8
+  call void @_lfortran_printf(ptr @35, ptr %114, i32 10, ptr @34, i32 1)
+  br label %ifcont57
+
+else41:                                           ; preds = %free_done39
+  %115 = load i32, ptr %marks, align 4
+  %116 = icmp sle i32 81, %115
+  %117 = load i32, ptr %marks, align 4
+  %118 = icmp sle i32 %117, 90
+  %119 = icmp eq i1 %116, false
+  %120 = select i1 %119, i1 %116, i1 %118
+  br i1 %120, label %then42, label %else43
+
+then42:                                           ; preds = %else41
+  %121 = load ptr, ptr @string_const.35, align 8
+  call void @_lfortran_printf(ptr @37, ptr %121, i32 10, ptr @36, i32 1)
+  br label %ifcont56
+
+else43:                                           ; preds = %else41
+  %122 = load i32, ptr %marks, align 4
+  %123 = icmp sle i32 71, %122
+  %124 = load i32, ptr %marks, align 4
+  %125 = icmp sle i32 %124, 80
+  %126 = icmp eq i1 %123, false
+  %127 = select i1 %126, i1 %123, i1 %125
+  br i1 %127, label %then44, label %else45
+
+then44:                                           ; preds = %else43
+  %128 = load ptr, ptr @string_const.37, align 8
+  call void @_lfortran_printf(ptr @39, ptr %128, i32 10, ptr @38, i32 1)
+  br label %ifcont55
+
+else45:                                           ; preds = %else43
+  %129 = load i32, ptr %marks, align 4
+  %130 = icmp sle i32 61, %129
+  %131 = load i32, ptr %marks, align 4
+  %132 = icmp sle i32 %131, 70
+  %133 = icmp eq i1 %130, false
+  %134 = select i1 %133, i1 %130, i1 %132
+  br i1 %134, label %then46, label %else47
+
+then46:                                           ; preds = %else45
+  %135 = load ptr, ptr @string_const.39, align 8
+  call void @_lfortran_printf(ptr @41, ptr %135, i32 8, ptr @40, i32 1)
+  br label %ifcont54
+
+else47:                                           ; preds = %else45
+  %136 = load i32, ptr %marks, align 4
+  %137 = icmp sle i32 41, %136
+  %138 = load i32, ptr %marks, align 4
+  %139 = icmp sle i32 %138, 60
+  %140 = icmp eq i1 %137, false
+  %141 = select i1 %140, i1 %137, i1 %139
+  br i1 %141, label %then48, label %else49
+
+then48:                                           ; preds = %else47
+  %142 = load ptr, ptr @string_const.41, align 8
+  call void @_lfortran_printf(ptr @43, ptr %142, i32 11, ptr @42, i32 1)
+  br label %ifcont53
+
+else49:                                           ; preds = %else47
+  %143 = load i32, ptr %marks, align 4
+  %144 = icmp sle i32 %143, 40
+  br i1 %144, label %then50, label %else51
+
+then50:                                           ; preds = %else49
+  %145 = load ptr, ptr @string_const.43, align 8
+  call void @_lfortran_printf(ptr @45, ptr %145, i32 17, ptr @44, i32 1)
+  br label %ifcont52
+
+else51:                                           ; preds = %else49
+  %146 = load ptr, ptr @string_const.45, align 8
+  call void @_lfortran_printf(ptr @47, ptr %146, i32 13, ptr @46, i32 1)
+  br label %ifcont52
+
+ifcont52:                                         ; preds = %else51, %then50
+  br label %ifcont53
+
+ifcont53:                                         ; preds = %ifcont52, %then48
+  br label %ifcont54
+
+ifcont54:                                         ; preds = %ifcont53, %then46
+  br label %ifcont55
+
+ifcont55:                                         ; preds = %ifcont54, %then44
+  br label %ifcont56
+
+ifcont56:                                         ; preds = %ifcont55, %then42
+  br label %ifcont57
+
+ifcont57:                                         ; preds = %ifcont56, %then40
+  %147 = alloca i64, align 8
+  %148 = load i32, ptr %marks, align 4
+  %149 = alloca i32, align 4
+  store i32 %148, ptr %149, align 4
+  %150 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.46, ptr %147, i32 0, i32 0, ptr @string_const.48, ptr %149)
+  %151 = load i64, ptr %147, align 4
+  %stringFormat_desc58 = alloca %string_descriptor, align 8
+  %152 = getelementptr %string_descriptor, ptr %stringFormat_desc58, i32 0, i32 0
+  store ptr %150, ptr %152, align 8
+  %153 = getelementptr %string_descriptor, ptr %stringFormat_desc58, i32 0, i32 1
+  store i64 %151, ptr %153, align 4
+  %154 = getelementptr %string_descriptor, ptr %stringFormat_desc58, i32 0, i32 0
+  %155 = load ptr, ptr %154, align 8
+  %156 = getelementptr %string_descriptor, ptr %stringFormat_desc58, i32 0, i32 1
+  %157 = load i64, ptr %156, align 4
+  %158 = trunc i64 %157 to i32
+  call void @_lfortran_printf(ptr @49, ptr %155, i32 %158, ptr @48, i32 1)
+  %159 = icmp eq ptr %150, null
+  br i1 %159, label %free_done60, label %free_nonnull59
+
+free_nonnull59:                                   ; preds = %ifcont57
+  call void @_lfortran_free(ptr %150)
+  br label %free_done60
+
+free_done60:                                      ; preds = %free_nonnull59, %ifcont57
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %free_done60
+  br label %FINALIZE_SYMTABLE_case_02
+
+FINALIZE_SYMTABLE_case_02:                        ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_free(ptr)
+
+declare void @exit(i32)
+
+declare void @_lpython_free_argv()

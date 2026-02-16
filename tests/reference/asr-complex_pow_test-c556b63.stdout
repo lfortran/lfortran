@@ -1,0 +1,147 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            complex2:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    complex2
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (ComplexConstructor
+                            (RealConstant
+                                3.000000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                4.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                3.000000
+                                4.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (ComplexConstructor
+                            (RealConstant
+                                3.000000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                3.000000
+                                2.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (ComplexBinOp
+                            (Var 2 x)
+                            Pow
+                            (Var 2 y)
+                            (Complex 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

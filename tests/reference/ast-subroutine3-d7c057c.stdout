@@ -1,0 +1,28 @@
+(TranslationUnit
+    [(Function
+        f
+        []
+        [(AttrType
+            TypeInteger
+            []
+            ()
+            ()
+            None
+        )]
+        ()
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(Assignment
+            0
+            f
+            42
+            ()
+        )]
+        []
+        []
+    )]
+)

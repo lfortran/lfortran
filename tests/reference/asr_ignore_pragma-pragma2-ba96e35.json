@@ -1,0 +1,13 @@
+{
+    "basename": "asr_ignore_pragma-pragma2-ba96e35",
+    "cmd": "lfortran --ignore-pragma --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/pragma2.f90",
+    "infile_hash": "c76c30115a39aa0c98b24173c8517df1fb525bf101023b12dc38ca3e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_ignore_pragma-pragma2-ba96e35.stdout",
+    "stdout_hash": "ac96c07cf7a2cf908737a584abd6621444120b8b05875f132e8cc5ef",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

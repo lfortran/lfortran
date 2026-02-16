@@ -1,0 +1,407 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            subroutines_06:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            assign_large:
+                                (ExternalSymbol
+                                    7
+                                    assign_large
+                                    2 assign_large
+                                    subroutines_06_bitset
+                                    []
+                                    assign_large
+                                    Public
+                                ),
+                            assign_logint8_large:
+                                (ExternalSymbol
+                                    7
+                                    assign_logint8_large
+                                    2 assign_logint8_large
+                                    subroutines_06_bitset
+                                    []
+                                    assign_logint8_large
+                                    Public
+                                ),
+                            error_handler:
+                                (ExternalSymbol
+                                    7
+                                    error_handler
+                                    2 error_handler
+                                    subroutines_06_bitset
+                                    []
+                                    error_handler
+                                    Public
+                                ),
+                            error_handler~genericprocedure:
+                                (ExternalSymbol
+                                    7
+                                    error_handler~genericprocedure
+                                    2 error_handler~genericprocedure
+                                    subroutines_06_bitset
+                                    []
+                                    error_handler~genericprocedure
+                                    Public
+                                ),
+                            ~assign:
+                                (ExternalSymbol
+                                    7
+                                    ~assign
+                                    2 ~assign
+                                    subroutines_06_bitset
+                                    []
+                                    ~assign
+                                    Public
+                                )
+                        })
+                    subroutines_06
+                    [subroutines_06_bitset]
+                    []
+                ),
+            subroutines_06_bitset:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            assign_large:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            set1:
+                                                (Variable
+                                                    3
+                                                    set1
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            set2:
+                                                (Variable
+                                                    3
+                                                    set2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    assign_large
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 set1)
+                                    (Var 3 set2)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            assign_logint8_large:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            logical_vector:
+                                                (Variable
+                                                    4
+                                                    logical_vector
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Logical 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    assign_logint8_large
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Array
+                                            (Logical 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)
+                                    (Var 4 logical_vector)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            error_handler:
+                                (GenericProcedure
+                                    2
+                                    error_handler
+                                    [2 error_handler~genericprocedure]
+                                    Public
+                                ),
+                            error_handler~genericprocedure:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            error:
+                                                (Variable
+                                                    6
+                                                    error
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            message:
+                                                (Variable
+                                                    6
+                                                    message
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            module:
+                                                (Variable
+                                                    6
+                                                    module
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            procedure:
+                                                (Variable
+                                                    6
+                                                    procedure
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            status:
+                                                (Variable
+                                                    6
+                                                    status
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    error_handler~genericprocedure
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 6 message)
+                                    (Var 6 error)
+                                    (Var 6 status)
+                                    (Var 6 module)
+                                    (Var 6 procedure)]
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(Var 6 error)
+                                            (Var 6 status)]
+                                            FormatFortran
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ~assign:
+                                (CustomOperator
+                                    2
+                                    ~assign
+                                    [2 assign_large
+                                    2 assign_logint8_large]
+                                    Public
+                                )
+                        })
+                    subroutines_06_bitset
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .true.
+                )
+        })
+    []
+)

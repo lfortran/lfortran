@@ -1,0 +1,5 @@
+semantic error: Different `character` lengths 1 and 4 in array constructor
+ --> tests/errors/array_constructor_with_different_char_lengths.f90:2:25
+  |
+2 |     print *, ["a", "b", "ball", "cat"]
+  |                         ^^^^^^ 

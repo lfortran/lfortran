@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-global_scope4-10fa534",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/global_scope4.f90",
+    "infile_hash": "da0256e95ad866af376d9ded3cd439463cb1e47dffac6aa88c0bbadf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "llvm-global_scope4-10fa534.stderr",
+    "stderr_hash": "dd260e585cceddc13a1cb7b6fa4823289a3e73d2cf2284b890852c6e",
+    "returncode": 1
+}

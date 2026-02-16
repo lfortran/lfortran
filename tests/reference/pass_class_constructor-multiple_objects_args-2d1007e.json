@@ -1,0 +1,13 @@
+{
+    "basename": "pass_class_constructor-multiple_objects_args-2d1007e",
+    "cmd": "lfortran --pass=class_constructor --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/multiple_objects_args.f90",
+    "infile_hash": "08d1551d4b73ca92d0a09c318304281b80bb8e069e38b45ffc41f5b9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_class_constructor-multiple_objects_args-2d1007e.stdout",
+    "stdout_hash": "a04c5cb81ad038e4f00443ebb0dd86701a6192078c48aba79cff2572",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

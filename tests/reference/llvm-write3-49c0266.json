@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-write3-49c0266",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/write3.f90",
+    "infile_hash": "18ea0138e234c907c606aa064960397fc7dd75f1f2fab0ca42f74c13",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-write3-49c0266.stdout",
+    "stdout_hash": "3cd79348e7a467c9e1a05be33ed981e2dcdf5f4dc26532292127457a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

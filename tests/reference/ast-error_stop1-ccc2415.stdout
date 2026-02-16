@@ -1,0 +1,21 @@
+(TranslationUnit
+    [(Subroutine
+        f
+        []
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(ErrorStop
+            0
+            ()
+            ()
+            ()
+        )]
+        []
+        []
+    )]
+)

@@ -1,0 +1,183 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            clqmn:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            ls:
+                                (Variable
+                                    3
+                                    ls
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    3
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    clqmn
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Aimag
+                                [(Var 3 z)]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Eq
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 3 ls)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            dnan:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            dnan:
+                                (Variable
+                                    2
+                                    dnan
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    dnan
+                    (FunctionType
+                        []
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(Assignment
+                        (Var 2 dnan)
+                        (Cast
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                    (Var 2 dnan)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

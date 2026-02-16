@@ -1,0 +1,22 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %unreachable_after_return, %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lpython_free_argv()

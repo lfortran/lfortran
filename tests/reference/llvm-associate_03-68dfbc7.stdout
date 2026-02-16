@@ -1,0 +1,128 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+
+@associate_03.t1 = internal global i32 2
+@associate_03.t2 = internal global i32 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [6 x i8] c"I4,I4\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.1 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %i = alloca i32, align 4
+  %p1 = alloca ptr, align 8
+  store ptr null, ptr %p1, align 8
+  %2 = alloca i64, align 8
+  %3 = load i32, ptr @associate_03.t1, align 4
+  %4 = alloca i32, align 4
+  store i32 %3, ptr %4, align 4
+  %5 = load i32, ptr @associate_03.t2, align 4
+  %6 = alloca i32, align 4
+  store i32 %5, ptr %6, align 4
+  %7 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %2, i32 0, i32 0, ptr %4, ptr %6)
+  %8 = load i64, ptr %2, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %9 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %7, ptr %9, align 8
+  %10 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %8, ptr %10, align 4
+  %11 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %12 = load ptr, ptr %11, align 8
+  %13 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %14 = load i64, ptr %13, align 4
+  %15 = trunc i64 %14 to i32
+  call void @_lfortran_printf(ptr @1, ptr %12, i32 %15, ptr @0, i32 1)
+  %16 = icmp eq ptr %7, null
+  br i1 %16, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(ptr %7)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  %17 = load i32, ptr @associate_03.t1, align 4
+  %18 = load i32, ptr @associate_03.t2, align 4
+  %19 = icmp sgt i32 %17, %18
+  br i1 %19, label %then, label %else
+
+then:                                             ; preds = %free_done
+  store ptr @associate_03.t1, ptr %p1, align 8
+  br label %ifcont
+
+else:                                             ; preds = %free_done
+  store ptr @associate_03.t2, ptr %p1, align 8
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %20 = alloca i64, align 8
+  %21 = load ptr, ptr %p1, align 8
+  %22 = load i32, ptr %21, align 4
+  %23 = alloca i32, align 4
+  store i32 %22, ptr %23, align 4
+  %24 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.1, ptr %20, i32 0, i32 0, ptr %23)
+  %25 = load i64, ptr %20, align 4
+  %stringFormat_desc1 = alloca %string_descriptor, align 8
+  %26 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
+  store ptr %24, ptr %26, align 8
+  %27 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
+  store i64 %25, ptr %27, align 4
+  %28 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
+  %29 = load ptr, ptr %28, align 8
+  %30 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
+  %31 = load i64, ptr %30, align 4
+  %32 = trunc i64 %31 to i32
+  call void @_lfortran_printf(ptr @3, ptr %29, i32 %32, ptr @2, i32 1)
+  %33 = icmp eq ptr %24, null
+  br i1 %33, label %free_done3, label %free_nonnull2
+
+free_nonnull2:                                    ; preds = %ifcont
+  call void @_lfortran_free(ptr %24)
+  br label %free_done3
+
+free_done3:                                       ; preds = %free_nonnull2, %ifcont
+  %34 = load ptr, ptr %p1, align 8
+  %35 = load i32, ptr %34, align 4
+  store i32 %35, ptr %i, align 4
+  %36 = load i32, ptr %i, align 4
+  %37 = load i32, ptr @associate_03.t2, align 4
+  %38 = icmp eq i32 %36, %37
+  br i1 %38, label %then4, label %else5
+
+then4:                                            ; preds = %free_done3
+  call void @exit(i32 1)
+  br label %ifcont6
+
+else5:                                            ; preds = %free_done3
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %then4
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %ifcont6
+  br label %FINALIZE_SYMTABLE_associate_03
+
+FINALIZE_SYMTABLE_associate_03:                   ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare void @_lfortran_free(ptr)
+
+declare void @exit(i32)
+
+declare void @_lpython_free_argv()

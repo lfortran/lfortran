@@ -1,0 +1,336 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            entry1:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dummy:
+                                (Variable
+                                    2
+                                    dummy
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    entry1
+                    []
+                    [(Assignment
+                        (Var 2 dummy)
+                        (Cast
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                10.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 x
+                        ()
+                        [((Var 2 dummy))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 y
+                        ()
+                        [((Var 2 dummy))]
+                        ()
+                        .false.
+                    )]
+                ),
+            x:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            dummy:
+                                (Variable
+                                    3
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    x
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [x_main__lcompilers]
+                    [(Var 3 dummy)]
+                    [(SubroutineCall
+                        1 x_main__lcompilers
+                        1 x_main__lcompilers
+                        [((IntegerConstant 1 (Integer 4) Decimal))
+                        ((Var 3 dummy))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            x_main__lcompilers:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            dummy:
+                                (Variable
+                                    5
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            entry__lcompilers:
+                                (Variable
+                                    5
+                                    entry__lcompilers
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    x_main__lcompilers
+                    (FunctionType
+                        [(Integer 4)
+                        (Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 5 entry__lcompilers)
+                    (Var 5 dummy)]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (Var 5 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            1
+                            1
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 5 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            2
+                            2
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        1
+                        1
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using subroutine call: "
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 5 dummy)
+                        (RealConstant
+                            5.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Return)
+                    (GoToTarget
+                        2
+                        2
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using entry statement: "
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            y:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            dummy:
+                                (Variable
+                                    4
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    y
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [x_main__lcompilers]
+                    [(Var 4 dummy)]
+                    [(SubroutineCall
+                        1 x_main__lcompilers
+                        1 x_main__lcompilers
+                        [((IntegerConstant 2 (Integer 4) Decimal))
+                        ((Var 4 dummy))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

@@ -1,0 +1,13 @@
+{
+    "basename": "rename_symbol-collect_occurence2-a095a33",
+    "cmd": "lfortran --rename-symbol --no-color {infile} -o {outfile}",
+    "infile": "tests/collect_occurence2.f90",
+    "infile_hash": "64f44de76cd08c4e21e4f8e05bb2747574f998c95bcdb8d474c8c449",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rename_symbol-collect_occurence2-a095a33.stdout",
+    "stdout_hash": "ceb3972a4c1cdd81d16bc86d83173dbab5f181773ce8f1b1defed487",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

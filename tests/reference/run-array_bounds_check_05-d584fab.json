@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_bounds_check_05-d584fab",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/array_bounds_check_05.f90",
+    "infile_hash": "9ef4f46c35739ba9241c8707b603e057f3ec10d97212ae6dd2ec1796",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-array_bounds_check_05-d584fab.stderr",
+    "stderr_hash": "fe29fd29e38fb094f329c6d6a9c0f87e94a6ea38a8a56e2a15384352",
+    "returncode": 1
+}

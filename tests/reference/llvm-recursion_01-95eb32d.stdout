@@ -1,0 +1,138 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+
+@__module___lcompilers_created__nested_context__sub1__x = global i32 0
+@__module_recursion_01_n = global i32 0
+@__module_recursion_01_x = global i32 0
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.1 = private unnamed_addr constant [12 x i8] c"S-DESC-4,I4\00", align 1
+@string_const_data = private constant [4 x i8] c"x = "
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 4 }>
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define void @__module_recursion_01_sub1(ptr %x) {
+.entry:
+  %0 = load i32, ptr %x, align 4
+  %1 = load i32, ptr @__module_recursion_01_n, align 4
+  %2 = icmp slt i32 %0, %1
+  br i1 %2, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %3 = load i32, ptr %x, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %x, align 4
+  %5 = alloca i64, align 8
+  %6 = load i32, ptr %x, align 4
+  %7 = alloca i32, align 4
+  store i32 %6, ptr %7, align 4
+  %8 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.1, ptr %5, i32 0, i32 0, ptr @string_const, ptr %7)
+  %9 = load i64, ptr %5, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %10 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %8, ptr %10, align 8
+  %11 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %9, ptr %11, align 4
+  %12 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %13 = load ptr, ptr %12, align 8
+  %14 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %15 = load i64, ptr %14, align 4
+  %16 = trunc i64 %15 to i32
+  call void @_lfortran_printf(ptr @3, ptr %13, i32 %16, ptr @2, i32 1)
+  %17 = icmp eq ptr %8, null
+  br i1 %17, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %then
+  call void @_lfortran_free(ptr %8)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %then
+  %18 = load i32, ptr %x, align 4
+  store i32 %18, ptr @__module___lcompilers_created__nested_context__sub1__x, align 4
+  call void @sub1.__module_recursion_01_sub2()
+  %19 = load i32, ptr @__module___lcompilers_created__nested_context__sub1__x, align 4
+  store i32 %19, ptr %x, align 4
+  call void @__module_recursion_01_sub1(ptr %x)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %free_done
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_sub1
+
+FINALIZE_SYMTABLE_sub1:                           ; preds = %return
+  ret void
+}
+
+define void @sub1.__module_recursion_01_sub2() {
+.entry:
+  %0 = load i32, ptr @__module___lcompilers_created__nested_context__sub1__x, align 4
+  %1 = add i32 %0, 1
+  store i32 %1, ptr @__module___lcompilers_created__nested_context__sub1__x, align 4
+  %2 = alloca i64, align 8
+  %3 = load i32, ptr @__module___lcompilers_created__nested_context__sub1__x, align 4
+  %4 = alloca i32, align 4
+  store i32 %3, ptr %4, align 4
+  %5 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %2, i32 0, i32 0, ptr %4)
+  %6 = load i64, ptr %2, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %7 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %5, ptr %7, align 8
+  %8 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %6, ptr %8, align 4
+  %9 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %10 = load ptr, ptr %9, align 8
+  %11 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %12 = load i64, ptr %11, align 4
+  %13 = trunc i64 %12 to i32
+  call void @_lfortran_printf(ptr @1, ptr %10, i32 %13, ptr @0, i32 1)
+  %14 = icmp eq ptr %5, null
+  br i1 %14, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(ptr %5)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  call void @__module_recursion_01_sub1(ptr @__module___lcompilers_created__nested_context__sub1__x)
+  br label %return
+
+return:                                           ; preds = %free_done
+  br label %FINALIZE_SYMTABLE_sub2
+
+FINALIZE_SYMTABLE_sub2:                           ; preds = %return
+  ret void
+}
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare void @_lfortran_free(ptr)
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  store i32 10, ptr @__module_recursion_01_n, align 4
+  call void @__module_recursion_01_sub1(ptr @__module_recursion_01_x)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lpython_free_argv()

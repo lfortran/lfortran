@@ -1,0 +1,5 @@
+semantic error: Kind of all the arguments of Ieor must be the same
+ --> tests/errors/intrinsics6.f90:2:14
+  |
+2 |     print *, ieor(1, 1_8)
+  |              ^^^^^^^^^^^^ 

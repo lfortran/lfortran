@@ -1,0 +1,5 @@
+semantic error: Empty array constructor is not allowed
+ --> tests/errors/array_02.f90:4:12
+  |
+4 | print *, [[[], [[]]], [[]], []]
+  |            ^^ 

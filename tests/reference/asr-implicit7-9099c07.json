@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit7-9099c07",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit7.f90",
+    "infile_hash": "f389525fdeb3f01a6e2f3902da259e8c9b117370a482a4d4bc9d1b01",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-implicit7-9099c07.stdout",
+    "stdout_hash": "972282980243141241ab28dbb61a65705da3c9f25cd49741087e4ba6",
+    "stderr": "asr-implicit7-9099c07.stderr",
+    "stderr_hash": "990f7ef15c8d2c60ec8d73a265e14bb411465d30f296b633a274ad4f",
+    "returncode": 0
+}

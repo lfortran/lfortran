@@ -1,0 +1,593 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            test_c_ptr_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            1_test_obj_ptr:
+                                (ExternalSymbol
+                                    2
+                                    1_test_obj_ptr
+                                    12 ptr
+                                    test_obj
+                                    []
+                                    ptr
+                                    Public
+                                ),
+                            c_arr:
+                                (Variable
+                                    2
+                                    c_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
+                            c_bool:
+                                (ExternalSymbol
+                                    2
+                                    c_bool
+                                    4 c_bool
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_bool
+                                    Public
+                                ),
+                            c_char:
+                                (ExternalSymbol
+                                    2
+                                    c_char
+                                    4 c_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_char
+                                    Public
+                                ),
+                            c_double:
+                                (ExternalSymbol
+                                    2
+                                    c_double
+                                    4 c_double
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_double
+                                    Public
+                                ),
+                            c_double_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_double_complex
+                                    4 c_double_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_double_complex
+                                    Public
+                                ),
+                            c_f_pointer:
+                                (ExternalSymbol
+                                    2
+                                    c_f_pointer
+                                    4 c_f_pointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_pointer
+                                    Public
+                                ),
+                            c_f_procpointer:
+                                (ExternalSymbol
+                                    2
+                                    c_f_procpointer
+                                    4 c_f_procpointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_procpointer
+                                    Public
+                                ),
+                            c_float:
+                                (ExternalSymbol
+                                    2
+                                    c_float
+                                    4 c_float
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_float
+                                    Public
+                                ),
+                            c_float_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_float_complex
+                                    4 c_float_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_float_complex
+                                    Public
+                                ),
+                            c_funloc:
+                                (ExternalSymbol
+                                    2
+                                    c_funloc
+                                    4 c_funloc
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_funloc
+                                    Public
+                                ),
+                            c_funptr:
+                                (ExternalSymbol
+                                    2
+                                    c_funptr
+                                    4 c_funptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_funptr
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    2
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_int16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int16_t
+                                    4 c_int16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int16_t
+                                    Public
+                                ),
+                            c_int32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int32_t
+                                    4 c_int32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int32_t
+                                    Public
+                                ),
+                            c_int64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int64_t
+                                    4 c_int64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int64_t
+                                    Public
+                                ),
+                            c_int8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int8_t
+                                    4 c_int8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int8_t
+                                    Public
+                                ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
+                            c_loc:
+                                (ExternalSymbol
+                                    2
+                                    c_loc
+                                    4 c_loc
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_loc
+                                    Public
+                                ),
+                            c_long:
+                                (ExternalSymbol
+                                    2
+                                    c_long
+                                    4 c_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long
+                                    Public
+                                ),
+                            c_long_double:
+                                (ExternalSymbol
+                                    2
+                                    c_long_double
+                                    4 c_long_double
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_double
+                                    Public
+                                ),
+                            c_long_double_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_long_double_complex
+                                    4 c_long_double_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_double_complex
+                                    Public
+                                ),
+                            c_long_long:
+                                (ExternalSymbol
+                                    2
+                                    c_long_long
+                                    4 c_long_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_long
+                                    Public
+                                ),
+                            c_new_line:
+                                (ExternalSymbol
+                                    2
+                                    c_new_line
+                                    4 c_new_line
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_new_line
+                                    Public
+                                ),
+                            c_null_char:
+                                (ExternalSymbol
+                                    2
+                                    c_null_char
+                                    4 c_null_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_char
+                                    Public
+                                ),
+                            c_null_funptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_funptr
+                                    4 c_null_funptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_funptr
+                                    Public
+                                ),
+                            c_null_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_ptr
+                                    4 c_null_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_ptr
+                                    Public
+                                ),
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            c_short:
+                                (ExternalSymbol
+                                    2
+                                    c_short
+                                    4 c_short
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_short
+                                    Public
+                                ),
+                            c_size_t:
+                                (ExternalSymbol
+                                    2
+                                    c_size_t
+                                    4 c_size_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_size_t
+                                    Public
+                                ),
+                            instance:
+                                (Variable
+                                    2
+                                    instance
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(CPtr)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 test_obj
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            r_ptr:
+                                (Variable
+                                    2
+                                    r_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            temp_ptr:
+                                (Variable
+                                    2
+                                    temp_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            test_obj:
+                                (Struct
+                                    (SymbolTable
+                                        12
+                                        {
+                                            ptr:
+                                                (Variable
+                                                    12
+                                                    ptr
+                                                    []
+                                                    Local
+                                                    (PointerNullConstant
+                                                        (CPtr)
+                                                        ()
+                                                    )
+                                                    (PointerNullConstant
+                                                        (CPtr)
+                                                        ()
+                                                    )
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    test_obj
+                                    (StructType
+                                        [(CPtr)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [ptr]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    test_c_ptr_02
+                    [iso_c_binding]
+                    [(Assignment
+                        (Var 2 temp_ptr)
+                        (StructInstanceMember
+                            (Var 2 instance)
+                            2 1_test_obj_ptr
+                            (CPtr)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 c_arr)
+                        (ArrayBroadcast
+                            (ComplexConstructor
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Complex 4)
+                                (ComplexConstant
+                                    1.000000
+                                    2.000000
+                                    (Complex 4)
+                                )
+                            )
+                            (ArrayConstant
+                                4
+                                [2]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Complex 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (CPtrToPointer
+                        (PointerToCPtr
+                            (GetPointer
+                                (Var 2 c_arr)
+                                (Pointer
+                                    (Array
+                                        (Complex 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                )
+                                ()
+                            )
+                            (CPtr)
+                            ()
+                        )
+                        (Var 2 r_ptr)
+                        (ArrayConstant
+                            4
+                            [4]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                PointerArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 c_arr)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 r_ptr)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (PointerAssociated
+                                (Var 2 temp_ptr)
+                                ()
+                                (Logical 4)
+                                ()
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

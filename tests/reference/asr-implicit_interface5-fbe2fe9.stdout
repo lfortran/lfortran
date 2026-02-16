@@ -1,0 +1,233 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implicit_interface5:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    [n]
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 n))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    [n]
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 n))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            driver:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            driver_arg_0:
+                                                (Variable
+                                                    3
+                                                    driver_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        PointerArray
+                                                    )
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            driver_arg_1:
+                                                (Variable
+                                                    3
+                                                    driver_arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        PointerArray
+                                                    )
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    driver
+                                    (FunctionType
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            PointerArray
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            PointerArray
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 driver_arg_0)
+                                    (Var 3 driver_arg_1)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    implicit_interface5
+                    (FunctionType
+                        [(Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerArray
+                        )
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerArray
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 a)
+                    (Var 2 b)
+                    (Var 2 n)]
+                    [(SubroutineCall
+                        2 driver
+                        ()
+                        [((Var 2 a))
+                        ((Var 2 b))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

@@ -1,0 +1,76 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            int_dp:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            u:
+                                (Variable
+                                    2
+                                    u
+                                    []
+                                    Local
+                                    (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                    (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            v:
+                                (Variable
+                                    2
+                                    v
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 2147483647 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (IntegerConstant 2147483647 (Integer 8) Decimal)
+                                    Save
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    int_dp
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 u)
+                            (Var 2 v)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

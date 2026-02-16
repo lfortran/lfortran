@@ -1,0 +1,505 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            floor_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a1:
+                                (Variable
+                                    2
+                                    a1
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.300000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.300000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            a2:
+                                (Variable
+                                    2
+                                    a2
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.500000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.500000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            a3:
+                                (Variable
+                                    2
+                                    a3
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.700000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.700000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b1:
+                                (Variable
+                                    2
+                                    b1
+                                    []
+                                    Local
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            3.300000
+                                            (Real 4)
+                                        )
+                                        (Real 4)
+                                        (RealConstant
+                                            -3.300000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        -3.300000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b2:
+                                (Variable
+                                    2
+                                    b2
+                                    []
+                                    Local
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            3.500000
+                                            (Real 4)
+                                        )
+                                        (Real 4)
+                                        (RealConstant
+                                            -3.500000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        -3.500000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b3:
+                                (Variable
+                                    2
+                                    b3
+                                    []
+                                    Local
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            3.700000
+                                            (Real 4)
+                                        )
+                                        (Real 4)
+                                        (RealConstant
+                                            -3.700000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        -3.700000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x1:
+                                (Variable
+                                    2
+                                    x1
+                                    [a1]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 a1)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x2:
+                                (Variable
+                                    2
+                                    x2
+                                    [a2]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 a2)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x3:
+                                (Variable
+                                    2
+                                    x3
+                                    [a3]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 a3)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y1:
+                                (Variable
+                                    2
+                                    y1
+                                    [b1]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 b1)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant -4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y2:
+                                (Variable
+                                    2
+                                    y2
+                                    [b2]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 b2)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant -4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y3:
+                                (Variable
+                                    2
+                                    y3
+                                    [b3]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Floor
+                                        [(Var 2 b3)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant -4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    floor_02
+                    []
+                    [(If
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 x1)
+                                    NotEq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                Or
+                                (IntegerCompare
+                                    (Var 2 x2)
+                                    NotEq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            Or
+                            (IntegerCompare
+                                (Var 2 x3)
+                                NotEq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 y1)
+                                    NotEq
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -4 (Integer 4) Decimal)
+                                    )
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                Or
+                                (IntegerCompare
+                                    (Var 2 y2)
+                                    NotEq
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -4 (Integer 4) Decimal)
+                                    )
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            Or
+                            (IntegerCompare
+                                (Var 2 y3)
+                                NotEq
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -4 (Integer 4) Decimal)
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x1)
+                            (Var 2 x2)
+                            (Var 2 x3)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 y1)
+                            (Var 2 y2)
+                            (Var 2 y3)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

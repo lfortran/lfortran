@@ -1,0 +1,5 @@
+semantic error: Variable 'abcx' is not declared
+  --> tests/errors/cpp8.f90:12:12
+   |
+12 |   print *, abcx
+   |            ^^^^ 'abcx' is undeclared

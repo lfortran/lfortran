@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-mangle_underscore_external_01-c26c50a",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/mangle_underscore_external_01.f90",
+    "infile_hash": "2e8c05ad551bccbce7f14d927259e3824749eeba2389cdf53ba7bd02",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-mangle_underscore_external_01-c26c50a.stdout",
+    "stdout_hash": "e4b8d7fb6af0c1c28d4722e793a758c4e9c4331fb3215004bcc8b714",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,438 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            int_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            ans:
+                                (Variable
+                                    2
+                                    ans
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            i4:
+                                (Variable
+                                    2
+                                    i4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            i8:
+                                (Variable
+                                    2
+                                    i8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            w4:
+                                (Variable
+                                    2
+                                    w4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            w8:
+                                (Variable
+                                    2
+                                    w8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    int_03
+                    []
+                    [(Assignment
+                        (ArrayItem
+                            (Var 2 ans)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 8)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 8524933037632333570 (Integer 8) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 ans)
+                            [(()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (Integer 8)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerUnaryMinus
+                            (IntegerConstant 1069250973542918798 (Integer 8) Decimal)
+                            (Integer 8)
+                            (IntegerConstant -1069250973542918798 (Integer 8) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 ans)
+                            [(()
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            ())]
+                            (Integer 8)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerUnaryMinus
+                            (IntegerConstant 5123867065024149335 (Integer 8) Decimal)
+                            (Integer 8)
+                            (IntegerConstant -5123867065024149335 (Integer 8) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 ans)
+                            [(()
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            ())]
+                            (Integer 8)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 7303655603304982073 (Integer 8) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 ans)
+                            [(()
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            ())]
+                            (Integer 8)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 5108441843522503546 (Integer 8) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 ans)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 w8)
+                        (ComplexConstructor
+                            (RealConstant
+                                7.700000
+                                (Real 8)
+                            )
+                            (RealConstant
+                                5.000000
+                                (Real 8)
+                            )
+                            (Complex 8)
+                            (ComplexConstant
+                                7.700000
+                                5.000000
+                                (Complex 8)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i4)
+                        (Cast
+                            (Var 2 w8)
+                            ComplexToInteger
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i8)
+                        (Cast
+                            (Var 2 w8)
+                            ComplexToInteger
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i4)
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i8)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 7 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 7 (Integer 8) Decimal)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 w4)
+                        (ComplexConstructor
+                            (RealConstant
+                                7.700000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                5.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                7.700000
+                                5.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i4)
+                        (Cast
+                            (Var 2 w4)
+                            ComplexToInteger
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i8)
+                        (Cast
+                            (Var 2 w4)
+                            ComplexToInteger
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i4)
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i8)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 7 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 7 (Integer 8) Decimal)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

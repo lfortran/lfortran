@@ -1,0 +1,13 @@
+{
+    "basename": "asr-class_procedure_extra_args-543ebdc",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/class_procedure_extra_args.f90",
+    "infile_hash": "f53275da38d64c0a3c278bed536e3423f2ac0b91546f2c30ddf9570e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-class_procedure_extra_args-543ebdc.stderr",
+    "stderr_hash": "f5a22cd690dbe013e7c1d0bc4205e17be3cd338286c55f69a5116c04",
+    "returncode": 2
+}

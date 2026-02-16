@@ -1,0 +1,2117 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_simple_02:
+                (Program
+                    (SymbolTable
+                        14
+                        {
+                            cast_r:
+                                (ExternalSymbol
+                                    14
+                                    cast_r
+                                    2 cast_r
+                                    template_simple_02_m
+                                    []
+                                    cast_r
+                                    Public
+                                ),
+                            generic_sum:
+                                (ExternalSymbol
+                                    14
+                                    generic_sum
+                                    2 generic_sum
+                                    template_simple_02_m
+                                    []
+                                    generic_sum
+                                    Public
+                                ),
+                            operator_r:
+                                (ExternalSymbol
+                                    14
+                                    operator_r
+                                    2 operator_r
+                                    template_simple_02_m
+                                    []
+                                    operator_r
+                                    Public
+                                ),
+                            test_template:
+                                (ExternalSymbol
+                                    14
+                                    test_template
+                                    2 test_template
+                                    template_simple_02_m
+                                    []
+                                    test_template
+                                    Public
+                                )
+                        })
+                    template_simple_02
+                    [template_simple_02_m]
+                    [(SubroutineCall
+                        14 test_template
+                        ()
+                        []
+                        ()
+                        .false.
+                    )]
+                ),
+            template_simple_02_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            cast_integer:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            arg:
+                                                (Variable
+                                                    7
+                                                    arg
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    7
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    cast_integer
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 7 arg)]
+                                    [(Assignment
+                                        (Var 7 res)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 7 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            cast_r:
+                                (Requirement
+                                    (SymbolTable
+                                        5
+                                        {
+                                            cast:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            arg:
+                                                                (Variable
+                                                                    6
+                                                                    arg
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    6
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    cast
+                                                    (FunctionType
+                                                        [(Integer 4)]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 arg)]
+                                                    []
+                                                    (Var 6 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    cast_r
+                                    [t
+                                    cast]
+                                    []
+                                ),
+                            cast_real:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            arg:
+                                                (Variable
+                                                    8
+                                                    arg
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    8
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    cast_real
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 arg)]
+                                    [(Assignment
+                                        (Var 8 res)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 8 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            generic_sum:
+                                (Template
+                                    (SymbolTable
+                                        9
+                                        {
+                                            add:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    10
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    10
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    10
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    add
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 10 lhs)
+                                                    (Var 10 rhs)]
+                                                    []
+                                                    (Var 10 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            cast:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            arg:
+                                                                (Variable
+                                                                    11
+                                                                    arg
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    11
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    cast
+                                                    (FunctionType
+                                                        [(Integer 4)]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 11 arg)]
+                                                    []
+                                                    (Var 11 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            generic_sum:
+                                                (Function
+                                                    (SymbolTable
+                                                        12
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    12
+                                                                    arr
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    12
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    12
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    12
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    generic_sum
+                                                    (FunctionType
+                                                        [(Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [cast
+                                                    add]
+                                                    [(Var 12 arr)]
+                                                    [(Assignment
+                                                        (Var 12 n)
+                                                        (ArraySize
+                                                            (Var 12 arr)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 12 res)
+                                                        (FunctionCall
+                                                            9 cast
+                                                            ()
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (If
+                                                        ()
+                                                        (IntegerCompare
+                                                            (Var 12 n)
+                                                            Gt
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 12 res)
+                                                            (ArrayItem
+                                                                (Var 12 arr)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 12 i)
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Var 12 n)
+                                                            ())
+                                                            [(Assignment
+                                                                (Var 12 res)
+                                                                (FunctionCall
+                                                                    9 add
+                                                                    ()
+                                                                    [((Var 12 res))
+                                                                    ((ArrayItem
+                                                                        (Var 12 arr)
+                                                                        [(()
+                                                                        (Var 12 i)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                            )]
+                                                            []
+                                                        )]
+                                                        []
+                                                    )]
+                                                    (Var 12 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    9
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    generic_sum
+                                    [t
+                                    add
+                                    cast]
+                                    [(Require
+                                        operator_r
+                                        [t
+                                        add]
+                                    )
+                                    (Require
+                                        cast_r
+                                        [t
+                                        cast]
+                                    )]
+                                ),
+                            operator_r:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            binary_func:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    4
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    4
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        v
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    4
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        u
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    binary_func
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            u
+                                                        )]
+                                                        (TypeParameter
+                                                            v
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 4 lhs)
+                                                    (Var 4 rhs)]
+                                                    []
+                                                    (Var 4 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            u:
+                                                (Variable
+                                                    3
+                                                    u
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        u
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            v:
+                                                (Variable
+                                                    3
+                                                    v
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        v
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    operator_r
+                                    [t
+                                    u
+                                    v
+                                    binary_func]
+                                    []
+                                ),
+                            test_template:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            __instantiated_generic_sum:
+                                                (Function
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    16
+                                                                    arr
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    16
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    16
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    16
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __instantiated_generic_sum
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [cast_integer
+                                                    ~add_intrinsic]
+                                                    [(Var 16 arr)]
+                                                    [(Assignment
+                                                        (Var 16 n)
+                                                        (ArraySize
+                                                            (Var 16 arr)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 16 res)
+                                                        (FunctionCall
+                                                            2 cast_integer
+                                                            ()
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (If
+                                                        ()
+                                                        (IntegerCompare
+                                                            (Var 16 n)
+                                                            Gt
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 16 res)
+                                                            (ArrayItem
+                                                                (Var 16 arr)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 16 i)
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Var 16 n)
+                                                            ())
+                                                            [(Assignment
+                                                                (Var 16 res)
+                                                                (FunctionCall
+                                                                    13 ~add_intrinsic
+                                                                    ()
+                                                                    [((Var 16 res))
+                                                                    ((ArrayItem
+                                                                        (Var 16 arr)
+                                                                        [(()
+                                                                        (Var 16 i)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                            )]
+                                                            []
+                                                        )]
+                                                        []
+                                                    )]
+                                                    (Var 16 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __instantiated_generic_sum1:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    18
+                                                                    arr
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    18
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    18
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    18
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __instantiated_generic_sum1
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [cast_real
+                                                    ~add_intrinsic1]
+                                                    [(Var 18 arr)]
+                                                    [(Assignment
+                                                        (Var 18 n)
+                                                        (ArraySize
+                                                            (Var 18 arr)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 18 res)
+                                                        (FunctionCall
+                                                            2 cast_real
+                                                            ()
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (If
+                                                        ()
+                                                        (IntegerCompare
+                                                            (Var 18 n)
+                                                            Gt
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 18 res)
+                                                            (ArrayItem
+                                                                (Var 18 arr)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 18 i)
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Var 18 n)
+                                                            ())
+                                                            [(Assignment
+                                                                (Var 18 res)
+                                                                (FunctionCall
+                                                                    13 ~add_intrinsic1
+                                                                    ()
+                                                                    [((Var 18 res))
+                                                                    ((ArrayItem
+                                                                        (Var 18 arr)
+                                                                        [(()
+                                                                        (Var 18 i)
+                                                                        ())]
+                                                                        (Real 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Real 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                            )]
+                                                            []
+                                                        )]
+                                                        []
+                                                    )]
+                                                    (Var 18 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __instantiated_generic_sum2:
+                                                (Function
+                                                    (SymbolTable
+                                                        19
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    19
+                                                                    arr
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    19
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    19
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    19
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __instantiated_generic_sum2
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [cast_integer
+                                                    ~add_intrinsic]
+                                                    [(Var 19 arr)]
+                                                    [(Assignment
+                                                        (Var 19 n)
+                                                        (ArraySize
+                                                            (Var 19 arr)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 19 res)
+                                                        (FunctionCall
+                                                            2 cast_integer
+                                                            ()
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (If
+                                                        ()
+                                                        (IntegerCompare
+                                                            (Var 19 n)
+                                                            Gt
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 19 res)
+                                                            (ArrayItem
+                                                                (Var 19 arr)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 19 i)
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Var 19 n)
+                                                            ())
+                                                            [(Assignment
+                                                                (Var 19 res)
+                                                                (FunctionCall
+                                                                    13 ~add_intrinsic
+                                                                    ()
+                                                                    [((Var 19 res))
+                                                                    ((ArrayItem
+                                                                        (Var 19 arr)
+                                                                        [(()
+                                                                        (Var 19 i)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                            )]
+                                                            []
+                                                        )]
+                                                        []
+                                                    )]
+                                                    (Var 19 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            a_i:
+                                                (Variable
+                                                    13
+                                                    a_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a_r:
+                                                (Variable
+                                                    13
+                                                    a_r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    13
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            s_i:
+                                                (Variable
+                                                    13
+                                                    s_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            s_r:
+                                                (Variable
+                                                    13
+                                                    s_r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ~add:
+                                                (CustomOperator
+                                                    13
+                                                    ~add
+                                                    [13 ~add_intrinsic
+                                                    13 ~add_intrinsic1]
+                                                    Public
+                                                ),
+                                            ~add_intrinsic:
+                                                (Function
+                                                    (SymbolTable
+                                                        15
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    15
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    15
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    15
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ~add_intrinsic
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 15 arg0)
+                                                    (Var 15 arg1)]
+                                                    [(Assignment
+                                                        (Var 15 ret)
+                                                        (IntegerBinOp
+                                                            (Var 15 arg0)
+                                                            Add
+                                                            (Var 15 arg1)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 15 ret)
+                                                    Public
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~add_intrinsic1:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    17
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    17
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    17
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ~add_intrinsic1
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 17 arg0)
+                                                    (Var 17 arg1)]
+                                                    [(Assignment
+                                                        (Var 17 ret)
+                                                        (RealBinOp
+                                                            (Var 17 arg0)
+                                                            Add
+                                                            (Var 17 arg1)
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 17 ret)
+                                                    Public
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                )
+                                        })
+                                    test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(DoLoop
+                                        ()
+                                        ((Var 13 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (ArraySize
+                                            (Var 13 a_i)
+                                            ()
+                                            (Integer 4)
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 13 a_i)
+                                                [(()
+                                                (Var 13 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Var 13 i)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (ArrayItem
+                                                (Var 13 a_r)
+                                                [(()
+                                                (Var 13 i)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Cast
+                                                (Var 13 i)
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 13 s_i)
+                                        (FunctionCall
+                                            13 __instantiated_generic_sum
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 13 a_i)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 13 s_r)
+                                        (FunctionCall
+                                            13 __instantiated_generic_sum1
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 13 a_r)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))]
+                                            (Real 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 13 s_i)
+                                        (FunctionCall
+                                            13 __instantiated_generic_sum2
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 13 a_i)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Print
+                                        (StringFormat
+                                            ()
+                                            [(Var 13 s_i)]
+                                            FormatFortran
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                    )
+                                    (Print
+                                        (StringFormat
+                                            ()
+                                            [(Var 13 s_r)]
+                                            FormatFortran
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_simple_02_m
+                    ()
+                    [template_simple_02_m]
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

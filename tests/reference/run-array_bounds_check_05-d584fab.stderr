@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in subroutine 'my'. Tried to match size 3 of dimension 1 of argument number 1, but expected size is 5
+ --> tests/errors/array_bounds_check_05.f90:7:13
+  |
+7 |     call my(x, 5)
+  |             ^
+  |
+7 |     call my(x, 5)
+  |             ~ Expected range 1:5, got 3

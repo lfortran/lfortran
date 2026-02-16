@@ -1,0 +1,13 @@
+{
+    "basename": "asr-maskr_incorrect_bit_size-0d2cb26",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/maskr_incorrect_bit_size.f90",
+    "infile_hash": "55ab6743eeb879b04470a9eafcb50e5fc4b79731f759b1bb0f41d6b2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-maskr_incorrect_bit_size-0d2cb26.stderr",
+    "stderr_hash": "245a1c253a53c1c9b0e01daf29fa89c70f4bcea5c93cb74c0d1b0818",
+    "returncode": 2
+}

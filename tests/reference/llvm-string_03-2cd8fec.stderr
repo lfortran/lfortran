@@ -1,0 +1,42 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+GEP base pointer is not a vector or a vector of pointers
+  %22 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 0
+Load operand must be a pointer.
+  %23 = load ptr, %string_descriptor %22, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %24 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 1
+Load operand must be a pointer.
+  %25 = load i64, %string_descriptor %24, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %44 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 0
+Load operand must be a pointer.
+  %45 = load ptr, %string_descriptor %44, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %46 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 1
+Load operand must be a pointer.
+  %47 = load i64, %string_descriptor %46, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %36 = getelementptr %string_descriptor, %string_descriptor %35, i32 0, i32 0
+Load operand must be a pointer.
+  %37 = load ptr, %string_descriptor %36, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %44 = getelementptr %string_descriptor, %string_descriptor %43, i32 0, i32 0
+Load operand must be a pointer.
+  %45 = load ptr, %string_descriptor %44, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %52 = getelementptr %string_descriptor, %string_descriptor %51, i32 0, i32 0
+Load operand must be a pointer.
+  %53 = load ptr, %string_descriptor %52, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %60 = getelementptr %string_descriptor, %string_descriptor %59, i32 0, i32 0
+Load operand must be a pointer.
+  %61 = load ptr, %string_descriptor %60, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %67 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 0
+Load operand must be a pointer.
+  %68 = load ptr, %string_descriptor %67, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %69 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 1
+Load operand must be a pointer.
+  %70 = load i64, %string_descriptor %69, align 4
+

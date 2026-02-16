@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-format2-ed47ddb",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/format2.f90",
+    "infile_hash": "24f2535488697afb5dd3d24d9f313087fe8386df6028895aea8bed12",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-format2-ed47ddb.stdout",
+    "stdout_hash": "dde2c6a0f901f5f313a14dda5b6785ae142d2f17d9bf0cececc3faf2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

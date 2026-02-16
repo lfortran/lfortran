@@ -1,0 +1,13 @@
+{
+    "basename": "run-array14-c9f6829",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/array14.f90",
+    "infile_hash": "c9c990e2fa0b1e76065f6886599c9d343b15ecf48d914ce3ade023ac",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-array14-c9f6829.stdout",
+    "stdout_hash": "74fc7283130ca59c5e68e5f6922184ad6c4ccd93f238ebfca1ea3632",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

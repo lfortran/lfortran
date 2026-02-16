@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in subroutine 'my'. Tried to match size 4 of dimension 2 of argument number 1, but expected size is 1
+ --> tests/errors/array_bounds_check_04.f90:5:13
+  |
+5 |     call my(x)
+  |             ^
+   |
+10 |             integer, intent(in) :: x(3, 1)
+   |                                         ~ Expected range 1:1, got 4

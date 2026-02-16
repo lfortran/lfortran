@@ -1,0 +1,13 @@
+{
+    "basename": "lookup_name-function_call1-c233951",
+    "cmd": "lfortran --lookup-name --no-color {infile} -o {outfile}",
+    "infile": "tests/function_call1.f90",
+    "infile_hash": "45acf463b1d977f1bdf3d9420205c7979fc03de58d60260cb37fd0bc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "lookup_name-function_call1-c233951.stdout",
+    "stdout_hash": "be13f54e037b9595915fd749f61a34c9b319d2e2a8cc223684168ef8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

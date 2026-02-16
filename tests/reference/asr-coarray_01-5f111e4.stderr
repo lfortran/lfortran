@@ -1,0 +1,5 @@
+semantic error: Coarrays are not supported yet
+ --> tests/errors/coarray_01.f90:3:11
+  |
+3 |     val = this_image ()
+  |           ^^^^^^^^^^^^^ 

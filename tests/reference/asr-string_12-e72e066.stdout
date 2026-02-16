@@ -1,0 +1,376 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_12:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            digits:
+                                (Variable
+                                    2
+                                    digits
+                                    [hex_digits]
+                                    Local
+                                    (StringSection
+                                        (Var 2 hex_digits)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "0123456789"
+                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "0123456789"
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            fullhex_digits:
+                                (Variable
+                                    2
+                                    fullhex_digits
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "0123456789ABCDEFabcdef"
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "0123456789ABCDEFabcdef"
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            hex_digits:
+                                (Variable
+                                    2
+                                    hex_digits
+                                    [fullhex_digits]
+                                    Local
+                                    (StringSection
+                                        (Var 2 fullhex_digits)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 16 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "0123456789ABCDEF"
+                                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "0123456789ABCDEF"
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            letters:
+                                (Variable
+                                    2
+                                    letters
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            lowercase:
+                                (Variable
+                                    2
+                                    lowercase
+                                    [letters]
+                                    Local
+                                    (StringSection
+                                        (Var 2 letters)
+                                        (IntegerConstant 27 (Integer 4) Decimal)
+                                        (StringLen
+                                            (Var 2 letters)
+                                            (Integer 4)
+                                            (IntegerConstant 52 (Integer 4) Decimal)
+                                        )
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "abcdefghijklmnopqrstuvwxyz"
+                                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            lowerhex_digits:
+                                (Variable
+                                    2
+                                    lowerhex_digits
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "0123456789abcdef"
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "0123456789abcdef"
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            octal_digits:
+                                (Variable
+                                    2
+                                    octal_digits
+                                    [digits]
+                                    Local
+                                    (StringSection
+                                        (Var 2 digits)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "01234567"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "01234567"
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            string:
+                                (Variable
+                                    2
+                                    string
+                                    [letters]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Char
+                                        [(StringLen
+                                            (Var 2 letters)
+                                            (Integer 4)
+                                            (IntegerConstant 52 (Integer 4) Decimal)
+                                        )]
+                                        0
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "4"
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "4"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            uppercase:
+                                (Variable
+                                    2
+                                    uppercase
+                                    [letters]
+                                    Local
+                                    (StringSection
+                                        (Var 2 letters)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 26 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    string_12
+                    []
+                    [(Print
+                        (Var 2 fullhex_digits)
+                    )
+                    (Print
+                        (Var 2 hex_digits)
+                    )
+                    (Print
+                        (Var 2 lowerhex_digits)
+                    )
+                    (Print
+                        (Var 2 digits)
+                    )
+                    (Print
+                        (Var 2 octal_digits)
+                    )
+                    (Print
+                        (Var 2 letters)
+                    )
+                    (Print
+                        (Var 2 uppercase)
+                    )
+                    (Print
+                        (Var 2 lowercase)
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "char("
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (StringLen
+                                (Var 2 letters)
+                                (Integer 4)
+                                (IntegerConstant 52 (Integer 4) Decimal)
+                            )
+                            (StringConstant
+                                ") = "
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 string)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "4"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

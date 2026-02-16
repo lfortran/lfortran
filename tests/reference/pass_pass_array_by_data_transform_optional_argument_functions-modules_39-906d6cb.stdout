@@ -1,0 +1,586 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_39:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            build_model:
+                                (ExternalSymbol
+                                    8
+                                    build_model
+                                    2 build_model
+                                    modules_39_fpm_39
+                                    []
+                                    build_model
+                                    Public
+                                ),
+                            join_path:
+                                (ExternalSymbol
+                                    8
+                                    join_path
+                                    4 join_path
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    join_path
+                                    Public
+                                )
+                        })
+                    modules_39
+                    [modules_39_fpm_39
+                    modules_39_module_fpm_filesystem_39]
+                    [(SubroutineCall
+                        8 build_model
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringConstant
+                            "executing modules_39"
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                ),
+            modules_39_fpm_39:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            build_model:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            __libasr_created_variable_:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_1:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_2:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    build_model
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(SubroutineCall
+                                        2 filewrite_string____1
+                                        2 filewrite_string____1
+                                        [((FunctionCall
+                                            2 join_path
+                                            ()
+                                            [((StringConstant
+                                                "build"
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            ((StringConstant
+                                                ".gitignore"
+                                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_1))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_2))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))]
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                            ()
+                                        ))
+                                        ((ArrayConstant
+                                            1
+                                            ["*"]
+                                            (Array
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                PointerArray
+                                            )
+                                            ColMajor
+                                        ))
+                                        ((IntegerConstant 1 (Integer 4) Decimal))]
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            filewrite_string____1:
+                                (ExternalSymbol
+                                    2
+                                    filewrite_string____1
+                                    4 filewrite_string____1
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    filewrite_string____1
+                                    Public
+                                ),
+                            join_path:
+                                (ExternalSymbol
+                                    2
+                                    join_path
+                                    4 join_path
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    join_path
+                                    Public
+                                )
+                        })
+                    modules_39_fpm_39
+                    ()
+                    [modules_39_module_fpm_filesystem_39]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            modules_39_module_fpm_filesystem_39:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            filewrite_string____1:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            __1filedata:
+                                                (Variable
+                                                    9
+                                                    __1filedata
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            filedata:
+                                                (Variable
+                                                    9
+                                                    filedata
+                                                    [__1filedata]
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 9 __1filedata))]
+                                                        PointerArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            filename:
+                                                (Variable
+                                                    9
+                                                    filename
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    filewrite_string____1
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (Array
+                                            (String 1 () AssumedLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerArray
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ""
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 filename)
+                                    (Var 9 filedata)
+                                    (Var 9 __1filedata)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            join_path:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            __libasr_is_present_a3:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_a4:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a4
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_a5:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a5
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a1:
+                                                (Variable
+                                                    6
+                                                    a1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a2:
+                                                (Variable
+                                                    6
+                                                    a2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a3:
+                                                (Variable
+                                                    6
+                                                    a3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a4:
+                                                (Variable
+                                                    6
+                                                    a4
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            a5:
+                                                (Variable
+                                                    6
+                                                    a5
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    6
+                                                    path
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    join_path
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (Logical 4)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (Logical 4)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (Logical 4)]
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 6 a1)
+                                    (Var 6 a2)
+                                    (Var 6 a3)
+                                    (Var 6 __libasr_is_present_a3)
+                                    (Var 6 a4)
+                                    (Var 6 __libasr_is_present_a4)
+                                    (Var 6 a5)
+                                    (Var 6 __libasr_is_present_a5)]
+                                    []
+                                    (Var 6 path)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    modules_39_module_fpm_filesystem_39
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

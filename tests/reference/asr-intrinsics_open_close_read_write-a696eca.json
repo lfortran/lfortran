@@ -1,0 +1,13 @@
+{
+    "basename": "asr-intrinsics_open_close_read_write-a696eca",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/intrinsics_open_close_read_write.f90",
+    "infile_hash": "8e24a004c0e3b808c25b3f9037daca1bd1f7581b98199f50f3404e2e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-intrinsics_open_close_read_write-a696eca.stdout",
+    "stdout_hash": "bb472ea62320a926bb2d595dc3fab374da21ef0f2b456032c441bf1a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

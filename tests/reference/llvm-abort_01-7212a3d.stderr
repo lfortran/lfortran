@@ -1,0 +1,5 @@
+warning: `abort` is an LFortran extension
+ --> tests/../integration_tests/abort_01.f90:3:16
+  |
+3 |   if (.false.) call abort()
+  |                ^^^^^^^^^^^^ Use `error stop` instead

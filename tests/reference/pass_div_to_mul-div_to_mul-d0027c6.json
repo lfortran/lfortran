@@ -1,0 +1,13 @@
+{
+    "basename": "pass_div_to_mul-div_to_mul-d0027c6",
+    "cmd": "lfortran --pass=div_to_mul --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/div_to_mul.f90",
+    "infile_hash": "6c1d702f410e8db6aae79c37b446d7a2fd6295166902746ff799d239",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_div_to_mul-div_to_mul-d0027c6.stdout",
+    "stdout_hash": "adea2b7a08d8527a0f862810b8a72b96ec532b0f411cb7523e68f157",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

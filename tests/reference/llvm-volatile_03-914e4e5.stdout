@@ -1,0 +1,60 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+
+@y_data = private global [1 x i8] c"2"
+@y = private global %string_descriptor <{ ptr @y_data, i64 1 }>
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %x = alloca %string_descriptor, align 8
+  store %string_descriptor zeroinitializer, ptr %x, align 1
+  %2 = getelementptr %string_descriptor, ptr %x, i32 0, i32 1
+  store i64 1, ptr %2, align 4
+  %3 = getelementptr %string_descriptor, ptr %x, i32 0, i32 0
+  %4 = call ptr @_lfortran_malloc(i64 1)
+  store ptr %4, ptr %3, align 8
+  %5 = load %string_descriptor, ptr %x, align 1
+  %6 = getelementptr %string_descriptor, %string_descriptor %5, i32 0, i32 0
+  %7 = load ptr, %string_descriptor %6, align 8
+  call void @_lfortran_strcpy(ptr @y, ptr getelementptr inbounds (%string_descriptor, ptr @y, i32 0, i32 1), i8 0, i8 0, ptr %7, i64 1)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_volatile_03
+
+FINALIZE_SYMTABLE_volatile_03:                    ; preds = %return
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_volatile_03
+  %8 = getelementptr %string_descriptor, ptr %x, i32 0, i32 0
+  %9 = load ptr, ptr %8, align 8
+  %10 = icmp eq ptr %9, null
+  br i1 %10, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_x
+  call void @_lfortran_free(ptr %9)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_x
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare ptr @_lfortran_malloc(i64)
+
+declare void @_lfortran_strcpy(ptr, ptr, i8, i8, ptr, i64)
+
+declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(ptr)
+asr_to_llvm: module failed verification. Error:
+GEP base pointer is not a vector or a vector of pointers
+  %6 = getelementptr %string_descriptor, %string_descriptor %5, i32 0, i32 0
+Load operand must be a pointer.
+  %7 = load ptr, %string_descriptor %6, align 8
+

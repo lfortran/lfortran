@@ -1,0 +1,769 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ ptr, i64 }>
+%circle_class = type <{ ptr, ptr }>
+%circle = type { %shape, float }
+%shape = type {}
+%rectangle_class = type <{ ptr, ptr }>
+%rectangle = type { %shape, float, float }
+%shape_class = type <{ ptr, ptr }>
+
+@_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
+@_Type_Info_shape = linkonce_odr unnamed_addr constant { ptr, ptr } { ptr @_Name_shape, ptr null }, align 8
+@_VTable_shape = linkonce_odr unnamed_addr constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_Type_Info_shape, ptr @_copy_select_type_13_module_shape, ptr @_allocate_struct_select_type_13_module_shape, ptr null] }, align 8
+@_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
+@_Type_Info_circle = linkonce_odr unnamed_addr constant { ptr, ptr, ptr } { ptr @_Name_circle, ptr inttoptr (i64 4 to ptr), ptr @_Type_Info_shape }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_Type_Info_circle, ptr @_copy_select_type_13_module_circle, ptr @_allocate_struct_select_type_13_module_circle, ptr @__module_select_type_13_module_circle_area] }, align 8
+@_Name_rectangle = private unnamed_addr constant [10 x i8] c"rectangle\00", align 1
+@_Type_Info_rectangle = linkonce_odr unnamed_addr constant { ptr, ptr, ptr } { ptr @_Name_rectangle, ptr inttoptr (i64 8 to ptr), ptr @_Type_Info_shape }, align 8
+@_VTable_rectangle = linkonce_odr unnamed_addr constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_Type_Info_rectangle, ptr @_copy_select_type_13_module_rectangle, ptr @_allocate_struct_select_type_13_module_rectangle, ptr @__module_select_type_13_module_rectangle_area] }, align 8
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [20 x i8] c"Matched as rectangle"
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 20 }>
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.1 = private constant [17 x i8] c"Matched as circle"
+@string_const.2 = private global %string_descriptor <{ ptr @string_const_data.1, i64 17 }>
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@4 = private unnamed_addr constant [3 x i8] c"s1\00", align 1
+@5 = private unnamed_addr constant [114 x i8] c"At 56:7 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
+@7 = private unnamed_addr constant [3 x i8] c"s1\00", align 1
+@8 = private unnamed_addr constant [115 x i8] c"At 57:16 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@10 = private unnamed_addr constant [3 x i8] c"s1\00", align 1
+@11 = private unnamed_addr constant [115 x i8] c"At 58:11 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.3 = private constant [16 x i8] c"Matched as shape"
+@string_const.4 = private global %string_descriptor <{ ptr @string_const_data.3, i64 16 }>
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.5 = private constant [17 x i8] c"Matched as circle"
+@string_const.6 = private global %string_descriptor <{ ptr @string_const_data.5, i64 17 }>
+@17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.7 = private constant [20 x i8] c"Matched as rectangle"
+@string_const.8 = private global %string_descriptor <{ ptr @string_const_data.7, i64 20 }>
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@21 = private unnamed_addr constant [114 x i8] c"At 72:7 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@22 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@23 = private unnamed_addr constant [114 x i8] c"At 73:7 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.9 = private unnamed_addr constant [6 x i8] c"R4,R4\00", align 1
+@25 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@26 = private unnamed_addr constant [115 x i8] c"At 74:16 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@27 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@28 = private unnamed_addr constant [115 x i8] c"At 74:22 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@30 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@31 = private unnamed_addr constant [115 x i8] c"At 75:11 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@33 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@34 = private unnamed_addr constant [3 x i8] c"s2\00", align 1
+@35 = private unnamed_addr constant [115 x i8] c"At 76:11 of file tests/../integration_tests/select_type_13.f90\0ATried to access member of unallocated variable '%s'\00", align 1
+@36 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@37 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@38 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.10 = private constant [16 x i8] c"Matched as shape"
+@string_const.11 = private global %string_descriptor <{ ptr @string_const_data.10, i64 16 }>
+@39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define float @__module_select_type_13_module_circle_area(ptr %this) {
+.entry:
+  %circle_area = alloca float, align 4
+  %0 = getelementptr %circle_class, ptr %this, i32 0, i32 1
+  %1 = load ptr, ptr %0, align 8
+  %2 = getelementptr %circle, ptr %1, i32 0, i32 1
+  %3 = load float, ptr %2, align 4
+  %4 = fmul float 0x400921FA00000000, %3
+  %5 = getelementptr %circle_class, ptr %this, i32 0, i32 1
+  %6 = load ptr, ptr %5, align 8
+  %7 = getelementptr %circle, ptr %6, i32 0, i32 1
+  %8 = load float, ptr %7, align 4
+  %9 = fmul float %4, %8
+  store float %9, ptr %circle_area, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_circle_area
+
+FINALIZE_SYMTABLE_circle_area:                    ; preds = %return
+  %10 = load float, ptr %circle_area, align 4
+  ret float %10
+}
+
+define float @__module_select_type_13_module_rectangle_area(ptr %this) {
+.entry:
+  %rectangle_area = alloca float, align 4
+  %0 = getelementptr %rectangle_class, ptr %this, i32 0, i32 1
+  %1 = load ptr, ptr %0, align 8
+  %2 = getelementptr %rectangle, ptr %1, i32 0, i32 1
+  %3 = load float, ptr %2, align 4
+  %4 = getelementptr %rectangle_class, ptr %this, i32 0, i32 1
+  %5 = load ptr, ptr %4, align 8
+  %6 = getelementptr %rectangle, ptr %5, i32 0, i32 2
+  %7 = load float, ptr %6, align 4
+  %8 = fmul float %3, %7
+  store float %8, ptr %rectangle_area, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_rectangle_area
+
+FINALIZE_SYMTABLE_rectangle_area:                 ; preds = %return
+  %9 = load float, ptr %rectangle_area, align 4
+  ret float %9
+}
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %s1 = alloca %shape_class, align 8
+  store ptr null, ptr %s1, align 8
+  %s2 = alloca %shape_class, align 8
+  store ptr null, ptr %s2, align 8
+  %2 = call ptr @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0.i32(ptr %2, i8 0, i32 4, i1 false)
+  %3 = call ptr @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0.i32(ptr %3, i8 0, i32 16, i1 false)
+  store ptr %3, ptr %s1, align 8
+  %4 = load ptr, ptr %s1, align 8
+  %5 = getelementptr %shape_class, ptr %4, i32 0, i32 1
+  store ptr %2, ptr %5, align 8
+  %6 = load ptr, ptr %5, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_circle, i32 0, i32 0, i32 2), ptr %3, align 8
+  %7 = getelementptr %circle, ptr %6, i32 0, i32 1
+  %8 = getelementptr %circle, ptr %6, i32 0, i32 0
+  %9 = alloca i1, align 1
+  %10 = load ptr, ptr %s1, align 8
+  %11 = ptrtoint ptr %10 to i64
+  %12 = icmp eq i64 %11, 0
+  br i1 %12, label %then1, label %else
+
+then:                                             ; preds = %ifcont
+  br label %"~select_type_block_.start"
+
+then1:                                            ; preds = %.entry
+  %13 = alloca ptr, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_shape, i32 0, i32 0, i32 2), ptr %13, align 8
+  %14 = call ptr @__lfortran_dynamic_cast(ptr %13, ptr @_Type_Info_rectangle, i1 false)
+  %15 = icmp ne ptr %14, null
+  store i1 %15, ptr %9, align 1
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %16 = call ptr @__lfortran_dynamic_cast(ptr %10, ptr @_Type_Info_rectangle, i1 false)
+  %17 = icmp ne ptr %16, null
+  store i1 %17, ptr %9, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then1
+  %18 = load i1, ptr %9, align 1
+  br i1 %18, label %then, label %else2
+
+"~select_type_block_.start":                      ; preds = %then
+  %19 = load ptr, ptr @string_const, align 8
+  call void @_lfortran_printf(ptr @1, ptr %19, i32 20, ptr @0, i32 1)
+  br label %"~select_type_block_.end"
+
+"~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_"
+
+"FINALIZE_SYMTABLE_~select_type_block_":          ; preds = %"~select_type_block_.end"
+  br label %ifcont17
+
+else2:                                            ; preds = %ifcont
+  %20 = alloca i1, align 1
+  %21 = load ptr, ptr %s1, align 8
+  %22 = ptrtoint ptr %21 to i64
+  %23 = icmp eq i64 %22, 0
+  br i1 %23, label %then4, label %else5
+
+then3:                                            ; preds = %ifcont6
+  br label %"~select_type_block_1.start"
+
+then4:                                            ; preds = %else2
+  %24 = alloca ptr, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_shape, i32 0, i32 0, i32 2), ptr %24, align 8
+  %25 = call ptr @__lfortran_dynamic_cast(ptr %24, ptr @_Type_Info_circle, i1 false)
+  %26 = icmp ne ptr %25, null
+  store i1 %26, ptr %20, align 1
+  br label %ifcont6
+
+else5:                                            ; preds = %else2
+  %27 = call ptr @__lfortran_dynamic_cast(ptr %21, ptr @_Type_Info_circle, i1 false)
+  %28 = icmp ne ptr %27, null
+  store i1 %28, ptr %20, align 1
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %then4
+  %29 = load i1, ptr %20, align 1
+  br i1 %29, label %then3, label %else16
+
+"~select_type_block_1.start":                     ; preds = %then3
+  %30 = load ptr, ptr @string_const.2, align 8
+  call void @_lfortran_printf(ptr @3, ptr %30, i32 17, ptr @2, i32 1)
+  %31 = load ptr, ptr %s1, align 8
+  %32 = ptrtoint ptr %31 to i64
+  %33 = icmp eq i64 %32, 0
+  br i1 %33, label %then7, label %ifcont8
+
+then7:                                            ; preds = %"~select_type_block_1.start"
+  call void (ptr, ...) @_lcompilers_print_error(ptr @5, ptr @4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont8:                                          ; preds = %"~select_type_block_1.start"
+  %34 = load ptr, ptr %s1, align 8
+  %35 = load %shape_class, ptr %34, align 1
+  %36 = load ptr, ptr %s1, align 8
+  %37 = getelementptr %circle_class, ptr %36, i32 0, i32 1
+  %38 = load ptr, ptr %37, align 8
+  %39 = getelementptr %circle, ptr %38, i32 0, i32 1
+  store float 1.000000e+01, ptr %39, align 4
+  %40 = alloca i64, align 8
+  %41 = load ptr, ptr %s1, align 8
+  %42 = ptrtoint ptr %41 to i64
+  %43 = icmp eq i64 %42, 0
+  br i1 %43, label %then9, label %ifcont10
+
+then9:                                            ; preds = %ifcont8
+  call void (ptr, ...) @_lcompilers_print_error(ptr @8, ptr @7)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont10:                                         ; preds = %ifcont8
+  %44 = load ptr, ptr %s1, align 8
+  %45 = load %shape_class, ptr %44, align 1
+  %46 = load ptr, ptr %s1, align 8
+  %47 = getelementptr %circle_class, ptr %46, i32 0, i32 1
+  %48 = load ptr, ptr %47, align 8
+  %49 = getelementptr %circle, ptr %48, i32 0, i32 1
+  %50 = load float, ptr %49, align 4
+  %51 = alloca float, align 4
+  store float %50, ptr %51, align 4
+  %52 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %40, i32 0, i32 0, ptr %51)
+  %53 = load i64, ptr %40, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %54 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %52, ptr %54, align 8
+  %55 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %53, ptr %55, align 4
+  %56 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %57 = load ptr, ptr %56, align 8
+  %58 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %59 = load i64, ptr %58, align 4
+  %60 = trunc i64 %59 to i32
+  call void @_lfortran_printf(ptr @9, ptr %57, i32 %60, ptr @6, i32 1)
+  %61 = icmp eq ptr %52, null
+  br i1 %61, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont10
+  call void @_lfortran_free(ptr %52)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont10
+  %62 = load ptr, ptr %s1, align 8
+  %63 = ptrtoint ptr %62 to i64
+  %64 = icmp eq i64 %63, 0
+  br i1 %64, label %then11, label %ifcont12
+
+then11:                                           ; preds = %free_done
+  call void (ptr, ...) @_lcompilers_print_error(ptr @11, ptr @10)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont12:                                         ; preds = %free_done
+  %65 = load ptr, ptr %s1, align 8
+  %66 = load %shape_class, ptr %65, align 1
+  %67 = load ptr, ptr %s1, align 8
+  %68 = getelementptr %circle_class, ptr %67, i32 0, i32 1
+  %69 = load ptr, ptr %68, align 8
+  %70 = getelementptr %circle, ptr %69, i32 0, i32 1
+  %71 = load float, ptr %70, align 4
+  %72 = fcmp une float %71, 1.000000e+01
+  br i1 %72, label %then13, label %else14
+
+then13:                                           ; preds = %ifcont12
+  call void @exit(i32 1)
+  br label %ifcont15
+
+else14:                                           ; preds = %ifcont12
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %else14, %then13
+  br label %"~select_type_block_1.end"
+
+"~select_type_block_1.end":                       ; preds = %ifcont15
+  br label %"FINALIZE_SYMTABLE_~select_type_block_1"
+
+"FINALIZE_SYMTABLE_~select_type_block_1":         ; preds = %"~select_type_block_1.end"
+  br label %ifcont17
+
+else16:                                           ; preds = %ifcont6
+  br label %"~select_type_block_2.start"
+
+"~select_type_block_2.start":                     ; preds = %else16
+  %73 = load ptr, ptr @string_const.4, align 8
+  call void @_lfortran_printf(ptr @15, ptr %73, i32 16, ptr @14, i32 1)
+  br label %"~select_type_block_2.end"
+
+"~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_2"
+
+"FINALIZE_SYMTABLE_~select_type_block_2":         ; preds = %"~select_type_block_2.end"
+  br label %ifcont17
+
+ifcont17:                                         ; preds = %"FINALIZE_SYMTABLE_~select_type_block_2", %"FINALIZE_SYMTABLE_~select_type_block_1", %"FINALIZE_SYMTABLE_~select_type_block_"
+  %74 = call ptr @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0.i32(ptr %74, i8 0, i32 8, i1 false)
+  %75 = call ptr @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0.i32(ptr %75, i8 0, i32 16, i1 false)
+  store ptr %75, ptr %s2, align 8
+  %76 = load ptr, ptr %s2, align 8
+  %77 = getelementptr %shape_class, ptr %76, i32 0, i32 1
+  store ptr %74, ptr %77, align 8
+  %78 = load ptr, ptr %77, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_rectangle, i32 0, i32 0, i32 2), ptr %75, align 8
+  %79 = getelementptr %rectangle, ptr %78, i32 0, i32 1
+  %80 = getelementptr %rectangle, ptr %78, i32 0, i32 2
+  %81 = getelementptr %rectangle, ptr %78, i32 0, i32 0
+  %82 = alloca i1, align 1
+  %83 = load ptr, ptr %s2, align 8
+  %84 = ptrtoint ptr %83 to i64
+  %85 = icmp eq i64 %84, 0
+  br i1 %85, label %then19, label %else20
+
+then18:                                           ; preds = %ifcont21
+  br label %"~select_type_block_3.start"
+
+then19:                                           ; preds = %ifcont17
+  %86 = alloca ptr, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_shape, i32 0, i32 0, i32 2), ptr %86, align 8
+  %87 = call ptr @__lfortran_dynamic_cast(ptr %86, ptr @_Type_Info_circle, i1 false)
+  %88 = icmp ne ptr %87, null
+  store i1 %88, ptr %82, align 1
+  br label %ifcont21
+
+else20:                                           ; preds = %ifcont17
+  %89 = call ptr @__lfortran_dynamic_cast(ptr %83, ptr @_Type_Info_circle, i1 false)
+  %90 = icmp ne ptr %89, null
+  store i1 %90, ptr %82, align 1
+  br label %ifcont21
+
+ifcont21:                                         ; preds = %else20, %then19
+  %91 = load i1, ptr %82, align 1
+  br i1 %91, label %then18, label %else22
+
+"~select_type_block_3.start":                     ; preds = %then18
+  %92 = load ptr, ptr @string_const.6, align 8
+  call void @_lfortran_printf(ptr @17, ptr %92, i32 17, ptr @16, i32 1)
+  br label %"~select_type_block_3.end"
+
+"~select_type_block_3.end":                       ; preds = %"~select_type_block_3.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_3"
+
+"FINALIZE_SYMTABLE_~select_type_block_3":         ; preds = %"~select_type_block_3.end"
+  br label %ifcont49
+
+else22:                                           ; preds = %ifcont21
+  %93 = alloca i1, align 1
+  %94 = load ptr, ptr %s2, align 8
+  %95 = ptrtoint ptr %94 to i64
+  %96 = icmp eq i64 %95, 0
+  br i1 %96, label %then24, label %else25
+
+then23:                                           ; preds = %ifcont26
+  br label %"~select_type_block_4.start"
+
+then24:                                           ; preds = %else22
+  %97 = alloca ptr, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_shape, i32 0, i32 0, i32 2), ptr %97, align 8
+  %98 = call ptr @__lfortran_dynamic_cast(ptr %97, ptr @_Type_Info_rectangle, i1 false)
+  %99 = icmp ne ptr %98, null
+  store i1 %99, ptr %93, align 1
+  br label %ifcont26
+
+else25:                                           ; preds = %else22
+  %100 = call ptr @__lfortran_dynamic_cast(ptr %94, ptr @_Type_Info_rectangle, i1 false)
+  %101 = icmp ne ptr %100, null
+  store i1 %101, ptr %93, align 1
+  br label %ifcont26
+
+ifcont26:                                         ; preds = %else25, %then24
+  %102 = load i1, ptr %93, align 1
+  br i1 %102, label %then23, label %else48
+
+"~select_type_block_4.start":                     ; preds = %then23
+  %103 = load ptr, ptr @string_const.8, align 8
+  call void @_lfortran_printf(ptr @19, ptr %103, i32 20, ptr @18, i32 1)
+  %104 = load ptr, ptr %s2, align 8
+  %105 = ptrtoint ptr %104 to i64
+  %106 = icmp eq i64 %105, 0
+  br i1 %106, label %then27, label %ifcont28
+
+then27:                                           ; preds = %"~select_type_block_4.start"
+  call void (ptr, ...) @_lcompilers_print_error(ptr @21, ptr @20)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont28:                                         ; preds = %"~select_type_block_4.start"
+  %107 = load ptr, ptr %s2, align 8
+  %108 = load %shape_class, ptr %107, align 1
+  %109 = load ptr, ptr %s2, align 8
+  %110 = getelementptr %rectangle_class, ptr %109, i32 0, i32 1
+  %111 = load ptr, ptr %110, align 8
+  %112 = getelementptr %rectangle, ptr %111, i32 0, i32 1
+  store float 5.000000e+00, ptr %112, align 4
+  %113 = load ptr, ptr %s2, align 8
+  %114 = ptrtoint ptr %113 to i64
+  %115 = icmp eq i64 %114, 0
+  br i1 %115, label %then29, label %ifcont30
+
+then29:                                           ; preds = %ifcont28
+  call void (ptr, ...) @_lcompilers_print_error(ptr @23, ptr @22)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont30:                                         ; preds = %ifcont28
+  %116 = load ptr, ptr %s2, align 8
+  %117 = load %shape_class, ptr %116, align 1
+  %118 = load ptr, ptr %s2, align 8
+  %119 = getelementptr %rectangle_class, ptr %118, i32 0, i32 1
+  %120 = load ptr, ptr %119, align 8
+  %121 = getelementptr %rectangle, ptr %120, i32 0, i32 2
+  store float 4.000000e+00, ptr %121, align 4
+  %122 = alloca i64, align 8
+  %123 = load ptr, ptr %s2, align 8
+  %124 = ptrtoint ptr %123 to i64
+  %125 = icmp eq i64 %124, 0
+  br i1 %125, label %then31, label %ifcont32
+
+then31:                                           ; preds = %ifcont30
+  call void (ptr, ...) @_lcompilers_print_error(ptr @26, ptr @25)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont32:                                         ; preds = %ifcont30
+  %126 = load ptr, ptr %s2, align 8
+  %127 = load %shape_class, ptr %126, align 1
+  %128 = load ptr, ptr %s2, align 8
+  %129 = getelementptr %rectangle_class, ptr %128, i32 0, i32 1
+  %130 = load ptr, ptr %129, align 8
+  %131 = getelementptr %rectangle, ptr %130, i32 0, i32 1
+  %132 = load float, ptr %131, align 4
+  %133 = alloca float, align 4
+  store float %132, ptr %133, align 4
+  %134 = load ptr, ptr %s2, align 8
+  %135 = ptrtoint ptr %134 to i64
+  %136 = icmp eq i64 %135, 0
+  br i1 %136, label %then33, label %ifcont34
+
+then33:                                           ; preds = %ifcont32
+  call void (ptr, ...) @_lcompilers_print_error(ptr @28, ptr @27)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont34:                                         ; preds = %ifcont32
+  %137 = load ptr, ptr %s2, align 8
+  %138 = load %shape_class, ptr %137, align 1
+  %139 = load ptr, ptr %s2, align 8
+  %140 = getelementptr %rectangle_class, ptr %139, i32 0, i32 1
+  %141 = load ptr, ptr %140, align 8
+  %142 = getelementptr %rectangle, ptr %141, i32 0, i32 2
+  %143 = load float, ptr %142, align 4
+  %144 = alloca float, align 4
+  store float %143, ptr %144, align 4
+  %145 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.9, ptr %122, i32 0, i32 0, ptr %133, ptr %144)
+  %146 = load i64, ptr %122, align 4
+  %stringFormat_desc35 = alloca %string_descriptor, align 8
+  %147 = getelementptr %string_descriptor, ptr %stringFormat_desc35, i32 0, i32 0
+  store ptr %145, ptr %147, align 8
+  %148 = getelementptr %string_descriptor, ptr %stringFormat_desc35, i32 0, i32 1
+  store i64 %146, ptr %148, align 4
+  %149 = getelementptr %string_descriptor, ptr %stringFormat_desc35, i32 0, i32 0
+  %150 = load ptr, ptr %149, align 8
+  %151 = getelementptr %string_descriptor, ptr %stringFormat_desc35, i32 0, i32 1
+  %152 = load i64, ptr %151, align 4
+  %153 = trunc i64 %152 to i32
+  call void @_lfortran_printf(ptr @29, ptr %150, i32 %153, ptr @24, i32 1)
+  %154 = icmp eq ptr %145, null
+  br i1 %154, label %free_done37, label %free_nonnull36
+
+free_nonnull36:                                   ; preds = %ifcont34
+  call void @_lfortran_free(ptr %145)
+  br label %free_done37
+
+free_done37:                                      ; preds = %free_nonnull36, %ifcont34
+  %155 = load ptr, ptr %s2, align 8
+  %156 = ptrtoint ptr %155 to i64
+  %157 = icmp eq i64 %156, 0
+  br i1 %157, label %then38, label %ifcont39
+
+then38:                                           ; preds = %free_done37
+  call void (ptr, ...) @_lcompilers_print_error(ptr @31, ptr @30)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont39:                                         ; preds = %free_done37
+  %158 = load ptr, ptr %s2, align 8
+  %159 = load %shape_class, ptr %158, align 1
+  %160 = load ptr, ptr %s2, align 8
+  %161 = getelementptr %rectangle_class, ptr %160, i32 0, i32 1
+  %162 = load ptr, ptr %161, align 8
+  %163 = getelementptr %rectangle, ptr %162, i32 0, i32 1
+  %164 = load float, ptr %163, align 4
+  %165 = fcmp une float %164, 5.000000e+00
+  br i1 %165, label %then40, label %else41
+
+then40:                                           ; preds = %ifcont39
+  call void @exit(i32 1)
+  br label %ifcont42
+
+else41:                                           ; preds = %ifcont39
+  br label %ifcont42
+
+ifcont42:                                         ; preds = %else41, %then40
+  %166 = load ptr, ptr %s2, align 8
+  %167 = ptrtoint ptr %166 to i64
+  %168 = icmp eq i64 %167, 0
+  br i1 %168, label %then43, label %ifcont44
+
+then43:                                           ; preds = %ifcont42
+  call void (ptr, ...) @_lcompilers_print_error(ptr @35, ptr @34)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont44:                                         ; preds = %ifcont42
+  %169 = load ptr, ptr %s2, align 8
+  %170 = load %shape_class, ptr %169, align 1
+  %171 = load ptr, ptr %s2, align 8
+  %172 = getelementptr %rectangle_class, ptr %171, i32 0, i32 1
+  %173 = load ptr, ptr %172, align 8
+  %174 = getelementptr %rectangle, ptr %173, i32 0, i32 2
+  %175 = load float, ptr %174, align 4
+  %176 = fcmp une float %175, 4.000000e+00
+  br i1 %176, label %then45, label %else46
+
+then45:                                           ; preds = %ifcont44
+  call void @exit(i32 1)
+  br label %ifcont47
+
+else46:                                           ; preds = %ifcont44
+  br label %ifcont47
+
+ifcont47:                                         ; preds = %else46, %then45
+  br label %"~select_type_block_4.end"
+
+"~select_type_block_4.end":                       ; preds = %ifcont47
+  br label %"FINALIZE_SYMTABLE_~select_type_block_4"
+
+"FINALIZE_SYMTABLE_~select_type_block_4":         ; preds = %"~select_type_block_4.end"
+  br label %ifcont49
+
+else48:                                           ; preds = %ifcont26
+  br label %"~select_type_block_5.start"
+
+"~select_type_block_5.start":                     ; preds = %else48
+  %177 = load ptr, ptr @string_const.11, align 8
+  call void @_lfortran_printf(ptr @39, ptr %177, i32 16, ptr @38, i32 1)
+  br label %"~select_type_block_5.end"
+
+"~select_type_block_5.end":                       ; preds = %"~select_type_block_5.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_5"
+
+"FINALIZE_SYMTABLE_~select_type_block_5":         ; preds = %"~select_type_block_5.end"
+  br label %ifcont49
+
+ifcont49:                                         ; preds = %"FINALIZE_SYMTABLE_~select_type_block_5", %"FINALIZE_SYMTABLE_~select_type_block_4", %"FINALIZE_SYMTABLE_~select_type_block_3"
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %ifcont49
+  br label %FINALIZE_SYMTABLE_select_type_13
+
+FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
+  br label %Finalize_Variable_s1
+
+Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
+  %178 = load ptr, ptr %s1, align 8
+  %179 = icmp ne ptr %178, null
+  br i1 %179, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %Finalize_Variable_s1
+  %180 = getelementptr %shape_class, ptr %178, i32 0, i32 1
+  %181 = load ptr, ptr %180, align 8
+  %182 = icmp eq ptr %178, null
+  br i1 %182, label %free_done51, label %free_nonnull50
+
+free_nonnull50:                                   ; preds = %is_allocated.then
+  call void @_lfortran_free(ptr %178)
+  br label %free_done51
+
+free_done51:                                      ; preds = %free_nonnull50, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable_s1
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done51
+  br label %Finalize_Variable_s2
+
+Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
+  %183 = load ptr, ptr %s2, align 8
+  %184 = icmp ne ptr %183, null
+  br i1 %184, label %is_allocated.then52, label %is_allocated.else55
+
+is_allocated.then52:                              ; preds = %Finalize_Variable_s2
+  %185 = getelementptr %shape_class, ptr %183, i32 0, i32 1
+  %186 = load ptr, ptr %185, align 8
+  %187 = icmp eq ptr %183, null
+  br i1 %187, label %free_done54, label %free_nonnull53
+
+free_nonnull53:                                   ; preds = %is_allocated.then52
+  call void @_lfortran_free(ptr %183)
+  br label %free_done54
+
+free_done54:                                      ; preds = %free_nonnull53, %is_allocated.then52
+  br label %is_allocated.ifcont56
+
+is_allocated.else55:                              ; preds = %Finalize_Variable_s2
+  br label %is_allocated.ifcont56
+
+is_allocated.ifcont56:                            ; preds = %is_allocated.else55, %free_done54
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare ptr @_lfortran_malloc(i64)
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset.p0.i32(ptr nocapture writeonly, i8, i32, i1 immarg) #0
+
+define linkonce_odr void @_copy_select_type_13_module_shape(ptr %0, ptr %1) {
+entry:
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_shape(ptr %0) {
+entry:
+  %1 = call ptr @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0.i32(ptr %1, i8 0, i32 16, i1 false)
+  store ptr %1, ptr %0, align 8
+  %2 = load ptr, ptr %0, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_shape, i32 0, i32 0, i32 2), ptr %2, align 8
+  %3 = getelementptr %shape_class, ptr %2, i32 0, i32 1
+  %4 = call ptr @_lfortran_malloc(i64 0)
+  call void @llvm.memset.p0.i32(ptr %4, i8 0, i32 0, i1 false)
+  store ptr %4, ptr %3, align 8
+  ret void
+}
+
+define linkonce_odr void @_copy_select_type_13_module_circle(ptr %0, ptr %1) {
+entry:
+  %2 = getelementptr %circle, ptr %0, i32 0, i32 1
+  %3 = load float, ptr %2, align 4
+  %4 = getelementptr %circle, ptr %1, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store float %3, ptr %4, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %5 = getelementptr %circle, ptr %0, i32 0, i32 0
+  %6 = getelementptr %circle, ptr %1, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_circle(ptr %0) {
+entry:
+  %1 = call ptr @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0.i32(ptr %1, i8 0, i32 16, i1 false)
+  store ptr %1, ptr %0, align 8
+  %2 = load ptr, ptr %0, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_circle, i32 0, i32 0, i32 2), ptr %2, align 8
+  %3 = getelementptr %circle_class, ptr %2, i32 0, i32 1
+  %4 = call ptr @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0.i32(ptr %4, i8 0, i32 4, i1 false)
+  store ptr %4, ptr %3, align 8
+  %5 = getelementptr %circle, ptr %4, i32 0, i32 1
+  %6 = getelementptr %circle, ptr %4, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_copy_select_type_13_module_rectangle(ptr %0, ptr %1) {
+entry:
+  %2 = getelementptr %rectangle, ptr %0, i32 0, i32 1
+  %3 = load float, ptr %2, align 4
+  %4 = getelementptr %rectangle, ptr %1, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store float %3, ptr %4, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %5 = getelementptr %rectangle, ptr %0, i32 0, i32 2
+  %6 = load float, ptr %5, align 4
+  %7 = getelementptr %rectangle, ptr %1, i32 0, i32 2
+  br i1 true, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store float %6, ptr %7, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %8 = getelementptr %rectangle, ptr %0, i32 0, i32 0
+  %9 = getelementptr %rectangle, ptr %1, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_rectangle(ptr %0) {
+entry:
+  %1 = call ptr @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0.i32(ptr %1, i8 0, i32 16, i1 false)
+  store ptr %1, ptr %0, align 8
+  %2 = load ptr, ptr %0, align 8
+  store ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_VTable_rectangle, i32 0, i32 0, i32 2), ptr %2, align 8
+  %3 = getelementptr %rectangle_class, ptr %2, i32 0, i32 1
+  %4 = call ptr @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0.i32(ptr %4, i8 0, i32 8, i1 false)
+  store ptr %4, ptr %3, align 8
+  %5 = getelementptr %rectangle, ptr %4, i32 0, i32 1
+  %6 = getelementptr %rectangle, ptr %4, i32 0, i32 2
+  %7 = getelementptr %rectangle, ptr %4, i32 0, i32 0
+  ret void
+}
+
+declare ptr @__lfortran_dynamic_cast(ptr, ptr, i1)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare void @_lcompilers_print_error(ptr, ...)
+
+declare void @exit(i32)
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_free(ptr)
+
+declare void @_lpython_free_argv()
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

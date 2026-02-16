@@ -1,0 +1,13 @@
+{
+    "basename": "asr-intrinsic_implicit-b5b124f",
+    "cmd": "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/intrinsic_implicit.f90",
+    "infile_hash": "ed6e88f0a941ebc8981bfc8f0218c8633c52270b3d5c8f94028eb980",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-intrinsic_implicit-b5b124f.stdout",
+    "stdout_hash": "5751c179d3f478b2e345fd1d4e14b15cdde2fbd71dafeadaa850ee4c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

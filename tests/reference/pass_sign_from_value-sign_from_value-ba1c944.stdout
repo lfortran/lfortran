@@ -1,0 +1,936 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            flip_sign:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            arr:
+                                (Variable
+                                    2
+                                    arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -3 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant -3 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            epsidp:
+                                (Variable
+                                    2
+                                    epsidp
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 16 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 16 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (IntegerConstant 16 (Integer 8) Decimal)
+                                    Save
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            epsisp:
+                                (Variable
+                                    2
+                                    epsisp
+                                    []
+                                    Local
+                                    (IntegerConstant 16 (Integer 4) Decimal)
+                                    (IntegerConstant 16 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            epsrdp:
+                                (Variable
+                                    2
+                                    epsrdp
+                                    []
+                                    Local
+                                    (Cast
+                                        (RealConstant
+                                            0.000001
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            0.000001
+                                            (Real 8)
+                                        )
+                                        ()
+                                    )
+                                    (RealConstant
+                                        0.000001
+                                        (Real 8)
+                                    )
+                                    Save
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            epsrsp:
+                                (Variable
+                                    2
+                                    epsrsp
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.000001
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.000001
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            ixdp:
+                                (Variable
+                                    2
+                                    ixdp
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 5 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (IntegerConstant 5 (Integer 8) Decimal)
+                                    Save
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            ixsp:
+                                (Variable
+                                    2
+                                    ixsp
+                                    []
+                                    Local
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            rxdp:
+                                (Variable
+                                    2
+                                    rxdp
+                                    []
+                                    Local
+                                    (Cast
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 8)
+                                        )
+                                        ()
+                                    )
+                                    (RealConstant
+                                        5.500000
+                                        (Real 8)
+                                    )
+                                    Save
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            rxsp:
+                                (Variable
+                                    2
+                                    rxsp
+                                    []
+                                    Local
+                                    (RealConstant
+                                        5.500000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        5.500000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            -2.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (RealConstant
+                                        -2.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -3 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            -3.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (RealConstant
+                                        -3.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    flip_sign
+                    []
+                    [(Assignment
+                        (Var 2 rxsp)
+                        (RealBinOp
+                            (Var 2 rxsp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (Var 2 epsrsp)]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 rxsp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 rxsp)
+                                    Sub
+                                    (RealConstant
+                                        5.500000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Var 2 epsrsp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 rxsp)
+                        (RealBinOp
+                            (Var 2 rxsp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (RealUnaryMinus
+                                    (Var 2 epsrsp)
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 rxsp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 rxsp)
+                                    Add
+                                    (RealConstant
+                                        5.500000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Var 2 epsrsp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 rxdp)
+                        (RealBinOp
+                            (Var 2 rxdp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                (Var 2 epsrdp)]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 rxdp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 rxdp)
+                                    Sub
+                                    (Cast
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 8)
+                                        )
+                                        ()
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Var 2 epsrdp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 ixsp)
+                        (IntegerBinOp
+                            (Var 2 ixsp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 epsisp)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 ixsp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 ixsp)
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 rxdp)
+                        (RealBinOp
+                            (Var 2 rxdp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                (RealUnaryMinus
+                                    (Var 2 epsrdp)
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 rxdp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 rxdp)
+                                    Add
+                                    (Cast
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 8)
+                                        )
+                                        ()
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Var 2 epsrdp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 ixdp)
+                        (IntegerBinOp
+                            (Var 2 ixdp)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 8) Decimal)
+                                (Var 2 epsidp)]
+                                0
+                                (Integer 8)
+                                ()
+                            )
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 ixdp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 ixdp)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 5 (Integer 8) Decimal)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Mul
+                            (IntrinsicElementalFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 b)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 c)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerUnaryMinus
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -2 (Integer 4) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 arr)
+                        (ArrayConstant
+                            20
+                            [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, 4.00000000e+00, 5.00000000e+00]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (ArrayItem
+                            (Var 2 arr)
+                            [(()
+                            (IntrinsicElementalFunction
+                                Int
+                                [(RealBinOp
+                                    (Var 2 x)
+                                    Mul
+                                    (IntrinsicElementalFunction
+                                        Sign
+                                        [(RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        (Var 2 y)]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 z)
+                            NotEq
+                            (ArrayItem
+                                (Var 2 arr)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

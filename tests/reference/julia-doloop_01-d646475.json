@@ -1,0 +1,13 @@
+{
+    "basename": "julia-doloop_01-d646475",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/doloop_01.f90",
+    "infile_hash": "14818f8f39c32bf890cf7906fe8a9692b270ad81a49bcdf0486f8e84",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-doloop_01-d646475.stdout",
+    "stdout_hash": "4463f4b217ca66cb02b92e602bbc6c93123245c65bf6f976c0fdc52f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

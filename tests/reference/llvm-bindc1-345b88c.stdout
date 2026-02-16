@@ -1,0 +1,25 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %p = alloca ptr, align 8
+  %x = alloca ptr, align 8
+  store ptr null, ptr %x, align 8
+  %2 = load ptr, ptr %x, align 8
+  %3 = load ptr, ptr %2, align 8
+  store ptr %3, ptr %p, align 8
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_bindc1
+
+FINALIZE_SYMTABLE_bindc1:                         ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lpython_free_argv()

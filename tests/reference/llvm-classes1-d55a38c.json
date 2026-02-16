@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-classes1-d55a38c",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/classes1.f90",
+    "infile_hash": "2854104a42f1abb2d3573afedab08ac340e19b7d5151166ce3291182",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-classes1-d55a38c.stdout",
+    "stdout_hash": "53a6a5028ee0f67f2304eec5f0c73d71a2d0ead7122c9c46c08206a3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
