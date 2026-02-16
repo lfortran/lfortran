@@ -12965,6 +12965,46 @@ public:
                 }
                 break;
             }
+            case (ASR::cast_kindType::ClassToIntrinsic): {
+                // Cast from class(*) to an intrinsic type (integer, real, complex, etc.)
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_arg);
+                ASR::ttype_t* target_type = x.m_type;
+
+                if (ASRUtils::is_array(arg_type) &&
+                        ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
+                    // Array case: delegate to convert_class_to_type
+                    this->visit_expr_load_wrapper(x.m_arg, 0);
+                    ASR::expr_t* dest_arg = const_cast<ASR::expr_t*>(&x.base);
+                    tmp = convert_class_to_type(x.m_arg, dest_arg, target_type, tmp);
+                } else {
+                    // Scalar case: extract intrinsic value from polymorphic wrapper
+                    this->visit_expr_load_wrapper(x.m_arg, 0);
+                    llvm::Value* poly_ptr = tmp;
+                    llvm::Type* poly_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_arg, ASRUtils::extract_type(arg_type), module.get());
+                    llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        const_cast<ASR::expr_t*>(&x.base),
+                        ASRUtils::extract_type(target_type), module.get());
+                    // Handle pointer/allocatable types (extra indirection level)
+                    if (LLVM::is_llvm_pointer(*arg_type)) {
+                        poly_ptr = llvm_utils->CreateLoad2(poly_llvm_type->getPointerTo(), poly_ptr);
+                    }
+                    // GEP to data pointer field (index 1 in polymorphic struct)
+                    poly_ptr = llvm_utils->create_gep2(poly_llvm_type, poly_ptr, 1);
+                    // Load the i8* data pointer
+                    poly_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, poly_ptr);
+                    // BitCast to target type pointer
+                    poly_ptr = builder->CreateBitCast(poly_ptr, target_llvm_type->getPointerTo());
+                    // Load the value if ptr_loads > 0 (caller wants value, not pointer)
+                    // For ptr_loads == 0 (e.g., character passed to function), return pointer
+                    if (ptr_loads > 0) {
+                        tmp = llvm_utils->CreateLoad2(target_llvm_type, poly_ptr);
+                    } else {
+                        tmp = poly_ptr;
+                    }
+                }
+                break;
+            }
             case ASR::StringToArray :
                 cast_string_to_array(&x);
             break;
@@ -16489,6 +16529,13 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+            } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
+                        ASR::down_cast<ASR::Cast_t>(x.m_args[i].m_value)->m_kind ==
+                            ASR::cast_kindType::ClassToIntrinsic) {
+                // ClassToIntrinsic cast: visit with ptr_loads=0 to get pointer
+                // to the intrinsic data inside the polymorphic wrapper.
+                // This ensures write-through for intent(out)/(inout) arguments.
+                this->visit_expr_load_wrapper(x.m_args[i].m_value, 0);
             } else if((ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) && 
                         ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value))) && 
                         !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)))) {
@@ -16663,7 +16710,15 @@ public:
                         tmp = value;
                     }
                 } else if(ASR::is_a<ASR::String_t>(*arg_type)){
-                    tmp = value;
+                    if (!value->getType()->isPointerTy()) {
+                        // String value was loaded (e.g., from ClassToIntrinsic cast);
+                        // store to temp to pass by reference
+                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                        builder->CreateStore(value, target);
+                        tmp = target;
+                    } else {
+                        tmp = value;
+                    }
                 }else {
                     bool use_value = false;
                     ASR::Variable_t *orig_arg = nullptr;

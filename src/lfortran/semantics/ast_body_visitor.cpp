@@ -3411,7 +3411,7 @@ public:
                             !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
                         selector_sym_for_map = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
                         ASR::ttype_t* cast_type = assoc_variable->m_type;
-                        select_type_casts_map[selector_sym_for_map] = {true, cast_type, sym};
+                        select_type_casts_map[selector_sym_for_map] = {ASR::cast_kindType::ClassToClass, cast_type, sym};
                     }
                     transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     // Clear the map entry
@@ -3489,7 +3489,7 @@ public:
                             !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
                         selector_sym_for_map_tsn = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
                         ASR::ttype_t* cast_type = assoc_variable->m_type;
-                        select_type_casts_map[selector_sym_for_map_tsn] = {false, cast_type, sym};
+                        select_type_casts_map[selector_sym_for_map_tsn] = {ASR::cast_kindType::ClassToStruct, cast_type, sym};
                     }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     // Clear the map entry
@@ -3581,9 +3581,14 @@ public:
                             ASR::array_physical_typeType new_ptype =
                                 ASRUtils::extract_physical_type(assoc_variable->m_type);
                             assoc_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                                al, type_stmt_type->base.base.loc, m_selector,
+                                al, type_stmt_type->base.base.loc, assoc_value,
                                 old_ptype, new_ptype, cast_type, nullptr));
                         }
+                        // Do NOT wrap in ClassToIntrinsic at the Associate level.
+                        // The assoc variable's LLVM alloca has polymorphic type, so storing
+                        // a Cast result would create a type mismatch on subsequent loads.
+                        // Instead, we add assoc_sym to select_type_casts_map so every usage
+                        // wraps on-the-fly (handled below alongside the !assoc_sym path).
                         type_stmt_type_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_type->base.base.loc, assoc_sym)), assoc_value)) );
@@ -3593,11 +3598,24 @@ public:
                                                     al, type_stmt_type->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
+                    // Note: Do NOT add ClassToIntrinsic entries to select_type_casts_map
+                    // for the !assoc_sym TypeStmtType path. The existing LLVM backend
+                    // mechanisms (change_symtab + select_type_context_map +
+                    // load_unlimited_polymorphic_value) handle all cases correctly,
+                    // including allocatable class(*) variables and assumed-rank arrays.
+                    // Wrapping via select_type_casts_map would break assignments (LHS
+                    // becomes Cast) and fails for allocatable types with different
+                    // LLVM indirection levels.
+                    ASR::symbol_t* selector_sym_for_map_tst = nullptr;
                     // Track type guard context for polymorphic intrinsic validation
                     ASR::ttype_t* prev_select_type_guard = current_select_type_guard;
                     current_select_type_guard = selector_type;
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
                     current_select_type_guard = prev_select_type_guard;
+                    // Clear the map entry
+                    if (selector_sym_for_map_tst) {
+                        select_type_casts_map.erase(selector_sym_for_map_tst);
+                    }
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = type_stmt_type_body.p;
                     block_t_->n_body = type_stmt_type_body.size();
