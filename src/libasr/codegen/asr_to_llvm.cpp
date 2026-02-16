@@ -8847,10 +8847,13 @@ public:
                 llvm_utils->deepcopy(x.m_value, value, target,
                     asr_target_type, asr_value_type, module.get());
             } else {
-                struct_api->store_intrinsic_type_vptr(asr_value_type,
-                    ASRUtils::extract_kind_from_ttype_t(asr_value_type), target, module.get());
                 llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
+                if (ASRUtils::is_allocatable(asr_target_type)) {
+                    target = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), target);
+                }
+                struct_api->store_intrinsic_type_vptr(asr_value_type,
+                    ASRUtils::extract_kind_from_ttype_t(asr_value_type), target, module.get());
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
                 target = llvm_utils->create_gep2(target_llvm_type, target, 1);
