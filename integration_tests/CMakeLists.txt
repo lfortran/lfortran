@@ -1433,6 +1433,7 @@ RUN(NAME intrinsics_410 LABELS gfortran llvm
 RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
 RUN(NAME intrinsics_412 LABELS gfortran llvm) # max_loc FAST
 RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar(char(0))
+RUN(NAME intrinsics_414 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # logical(8) = logical(...) with 8-byte logicals
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
