@@ -347,7 +347,7 @@
                                     (IntrinsicElementalFunction
                                         Real
                                         [(Var 2 z)]
-                                        0
+                                        2
                                         (Real 8)
                                         ()
                                     )
@@ -411,7 +411,7 @@
                                                     (Complex 4)
                                                 )
                                             )]
-                                            0
+                                            2
                                             (Real 4)
                                             (RealConstant
                                                 0.000258

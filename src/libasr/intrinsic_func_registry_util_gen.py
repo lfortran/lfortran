@@ -653,7 +653,8 @@ intrinsic_funcs_args = {
         {
             "args": [("complex",)],
             "return": "real32",
-            "kind_arg": True
+            "kind_arg": True,
+            "allow_polymorphic_arg": [0]
         },
     ],
     "Dreal": [
@@ -856,7 +857,9 @@ intrinsic_funcs_args = {
             "args": [("int",), ("real",), ("complex",)],
             "return": "real32",
             "kind_arg": True,
-            "real_32_except_complex": True
+            "real_32_except_complex": True,
+            "allow_polymorphic_arg": [0],
+            "encode_arg_type_as_overload_id": True
         },
     ],
     "Int": [
@@ -973,8 +976,14 @@ def add_verify_arg_type_src(func_name):
         no_of_args_msg += " or " if i > 0 else ""
         no_of_args_msg += f"{no_of_args}"
         else_if = "else if" if i > 0 else "if"
+        encode_type_overload = arg_info.get("encode_arg_type_as_overload_id", False)
         src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
-        src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
+        if encode_type_overload:
+            max_id = len(args_lists) - 1
+            id_list = ", ".join(str(j) for j in range(max_id + 1))
+            src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id >= 0 && x.m_overload_id <= {max_id}, "Overload Id for {func_name} expected to be {id_list}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
+        else:
+            src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
         allow_polymorphic_arg = arg_info.get("allow_polymorphic_arg", None)
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, "x.m_args")
@@ -1154,10 +1163,26 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         f"return nullptr;\n"
         src += indent * 3 +     "}\n"
         src += indent * 2 + "}\n"
-        if "null" in intrinsic_funcs_ret_type.get(func_name, []):
-            src += indent * 2 + f"return ASR::make_Expr_t(al, loc, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value)));\n"
+
+        encode_type_overload = arg_infos[0].get("encode_arg_type_as_overload_id", False)
+        if encode_type_overload:
+            args_lists = arg_infos[0]["args"]
+            src += indent * 2 + "int64_t overload_id = 0;\n"
+            src += indent * 2 + "ASR::ttype_t *arg_type_for_id = ASRUtils::expr_type(args[0]);\n"
+            for j, arg_list in enumerate(args_lists):
+                arg_type = arg_list[0]
+                else_if = "} else if" if j > 0 else "if"
+                src += indent * 2 + f"{else_if} ({type_to_asr_type_check[arg_type]}(*arg_type_for_id)) " + "{\n"
+                src += indent * 3 + f"overload_id = {j};\n"
+            src += indent * 2 + "}\n"
+            overload_id_expr = "overload_id"
         else:
-            src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+            overload_id_expr = "0"
+
+        if "null" in intrinsic_funcs_ret_type.get(func_name, []):
+            src += indent * 2 + f"return ASR::make_Expr_t(al, loc, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, {overload_id_expr}, return_type, m_value)));\n"
+        else:
+            src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, {overload_id_expr}, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src

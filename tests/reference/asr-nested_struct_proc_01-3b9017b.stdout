@@ -758,7 +758,7 @@
                                                         (IntrinsicElementalFunction
                                                             Real
                                                             [(Var 11 tmp)]
-                                                            0
+                                                            2
                                                             (Real 4)
                                                             ()
                                                         )
@@ -766,7 +766,7 @@
                                                         (IntrinsicElementalFunction
                                                             Real
                                                             [(Var 11 value)]
-                                                            0
+                                                            2
                                                             (Real 4)
                                                             ()
                                                         )

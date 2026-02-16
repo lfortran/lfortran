@@ -744,6 +744,12 @@ namespace Aimag {
             const Location &loc, SymbolTable* scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/, int /*index_kind*/)  {
+        // For unlimited polymorphic args (class(*) in select type blocks),
+        // emit a direct ComplexIm instead of creating a function.
+        if (ASRUtils::is_unlimited_polymorphic_type(arg_types[0])) {
+            return ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
+                new_args[0].m_value, return_type, nullptr));
+        }
         declare_basic_variables("_lcompilers_aimag_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4281,7 +4287,24 @@ namespace Real {
 
     static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int /*index_kind*/) {
+        // For unlimited polymorphic args (class(*) in select type blocks),
+        // emit a direct Cast instead of creating a function, because the
+        // codegen already handles extracting the value from class(*)
+        // via load_unlimited_polymorpic_value in visit_Cast.
+        if (ASRUtils::is_unlimited_polymorphic_type(arg_types[0])) {
+            ASR::cast_kindType cast_kind;
+            if (overload_id == 2) {
+                cast_kind = ASR::cast_kindType::ComplexToReal;
+            } else if (overload_id == 1) {
+                cast_kind = ASR::cast_kindType::RealToReal;
+            } else {
+                cast_kind = ASR::cast_kindType::IntegerToReal;
+            }
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc,
+                new_args[0].m_value, cast_kind, return_type,
+                nullptr, nullptr));
+        }
         declare_basic_variables("_lcompilers_real_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);

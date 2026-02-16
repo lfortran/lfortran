@@ -12337,7 +12337,12 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
+        load_unlimited_polymorpic_value(x.m_arg, tmp);
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
+            ASR::ttype_t* ctx_type = get_select_type_block_type_asr(x.m_arg);
+            if (ctx_type) curr_type = ctx_type;
+        }
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
         llvm::Value *im;
         if (arg_kind == 4) {
