@@ -8686,7 +8686,6 @@ public:
                         ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
                         int lhs_ele = 1;
                         int rhs_ele = 1;
-                        bool rhs_size_known = true;
                         for (size_t i = 0; i < arr_rhs->n_dims; i++) {
                             std::int64_t rhs_dim = ASRUtils::extract_dim_value_int(arr_rhs->m_dims[i].m_length);
                             rhs_ele *= rhs_dim;
