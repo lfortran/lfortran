@@ -8700,7 +8700,7 @@ public:
                                 break;
                             }
                         }
-                        if( arr_rhs->n_dims == 0 && rhs_ele < 0 && lhs_ele < rhs_ele ){
+                        if( !(arr_rhs->n_dims == 0 || rhs_ele < 0) && lhs_ele < rhs_ele ){
                             diag.add(Diagnostic("Array passed into function has `" + std::to_string(lhs_ele) +
                                 "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
