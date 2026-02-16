@@ -378,12 +378,13 @@ class ASRToLLVMVisitor;
                             llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
 
                             llvm::Value *label_i = LLVMUtils::CreateInBoundsGEP2(label_arr_type, labels_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx});
+                            llvm::Value *span_arr = LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0);
+                            llvm::Value *label_spans = LLVMUtils::CreateGEP2(label_type, label_i, 2);
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, labels[i].primary)),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 0));
                             builder->CreateStore(formatted_message,
                                     LLVMUtils::CreateGEP2(label_type, label_i, 1));
-                            builder->CreateStore(LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 2));
+                            builder->CreateStore(span_arr, label_spans);
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, labels[i].spans.size())),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 3));
                         }
