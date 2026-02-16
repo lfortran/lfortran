@@ -417,11 +417,6 @@ public:
         llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value); \
     } \
 
-    // Macro is now a no-op: ClassToIntrinsic Cast nodes handle value extraction
-    // for unlimited-polymorphic variables inside select type blocks.
-    // Kept temporarily to verify no code path still depends on it.
-    #define load_unlimited_polymorpic_value(expr, llvm_value) /* no-op */
-
     // Inserts a new block `bb` using the current builder
     // and terminates the previous block if it is not already terminated
     void start_new_block(llvm::BasicBlock *bb) {
@@ -9133,7 +9128,6 @@ public:
             llvm::Type* union_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
             tmp = llvm_utils->CreateLoad2(union_type, tmp);
         }
-        load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
         if (x.m_target->type == ASR::exprType::ArrayItem)
             value = logical_store_val(value);
@@ -10525,8 +10519,6 @@ public:
         llvm::Value *right = tmp;
         load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10568,8 +10560,6 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10654,8 +10644,6 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateFCmpOEQ(left, right);
@@ -11007,8 +10995,6 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         llvm::Value *zero, *cond;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
@@ -11100,16 +11086,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        // Handle polymorphic string inside select type block
-        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg) &&
-                get_select_type_block_type_asr(x.m_arg) != nullptr) {
-            this->visit_expr_wrapper(x.m_arg, true);
-            llvm::Value *str_val = tmp;
-            load_unlimited_polymorpic_value(x.m_arg, str_val);
-            tmp = builder->CreateExtractValue(str_val, 1);
-        } else {
-            tmp = get_string_length(x.m_arg); // `int64` value.
-        }
+        tmp = get_string_length(x.m_arg); // `int64` value.
         tmp = llvm_utils->convert_kind(tmp,
             llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
     }
@@ -11349,8 +11326,6 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
@@ -11478,8 +11453,6 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
             llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
@@ -12504,7 +12477,6 @@ public:
         } else {
             this->visit_expr_load_wrapper(x.m_arg, ptr_loads, true);
         }
-        load_unlimited_polymorpic_value(x.m_arg, tmp);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
