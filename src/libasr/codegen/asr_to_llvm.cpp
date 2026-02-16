@@ -417,24 +417,10 @@ public:
         llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value); \
     } \
 
-    #define load_unlimited_polymorpic_value(expr, llvm_value) if(ASR::is_a<ASR::Var_t>(*expr) &&                    \
-        ASRUtils::is_unlimited_polymorphic_type(expr) &&                                                            \
-        !ASRUtils::is_array(ASRUtils::expr_type(expr))) {                                                           \
-        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);             \
-        ASR::ttype_t* _ctx_type_asr = get_select_type_block_type_asr(expr);                                         \
-        if (ASR::is_a<ASR::Variable_t>(*sym) && _ctx_type_asr != nullptr) {                                         \
-            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                                    \
-                ASRUtils::extract_type(_ctx_type_asr), module.get());                                               \
-            if (compiler_options.new_classes) {                                                                     \
-                llvm::Type *generic_llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                        \
-                    ASRUtils::extract_type(ASRUtils::expr_type(expr)), module.get());                               \
-                llvm_value = llvm_utils->create_gep2(generic_llvm_type, llvm_value, 1);                             \
-                llvm_value = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, llvm_value);                               \
-                llvm_value = builder->CreateBitCast(llvm_value, llvm_type->getPointerTo());                         \
-            }                                                                                                       \
-            llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);                                            \
-        }                                                                                                           \
-    }                                                                                                               \
+    // Macro is now a no-op: ClassToIntrinsic Cast nodes handle value extraction
+    // for unlimited-polymorphic variables inside select type blocks.
+    // Kept temporarily to verify no code path still depends on it.
+    #define load_unlimited_polymorpic_value(expr, llvm_value) /* no-op */
 
     // Inserts a new block `bb` using the current builder
     // and terminates the previous block if it is not already terminated
