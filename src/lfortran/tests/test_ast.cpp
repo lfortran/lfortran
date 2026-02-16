@@ -105,6 +105,51 @@ end program
     CHECK(!asr_verify(*asr, true, diagnostics));
 }
 
+TEST_CASE("ASR Verify INTENT(OUT) actual argument") {
+    Allocator al(4*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+integer :: x
+call s(x)
+contains
+subroutine s(y)
+    integer, intent(out) :: y
+end subroutine
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    CHECK(asr_verify(*asr, true, diagnostics)); // Valid ASR
+
+    // Mutate a valid call so that INTENT(OUT) receives a constant expression.
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("p"));
+    ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
+    ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(call_stmt->m_args[0].m_value);
+    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(arg_var->m_v);
+    call_stmt->m_args[0].m_value = ASR::down_cast<ASR::expr_t>(
+        ASR::make_IntegerConstant_t(al, call_stmt->m_args[0].m_value->base.loc, 1, variable->m_type));
+
+    CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
 TEST_CASE("Variable Location") {
     Allocator al(4*1024);
 
