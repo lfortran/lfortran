@@ -12368,6 +12368,54 @@ public:
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+
+            // Fix for transfer with empty string or partial string
+            // We need to buffer the source into a zero-initialized memory of the target size
+            // only if the source is not an array (scalar transfer from string)
+            if (!ASRUtils::is_array(expr_type(x.m_source))) {
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+                    const_cast<ASR::expr_t*>(&x.base),
+                    ASRUtils::type_get_past_array(x.m_type),
+                    module.get());
+                uint64_t element_bytes = module->getDataLayout().getTypeAllocSize(target_type);
+
+                if (element_bytes > 0) {
+                     llvm::Value* target_bytes_val = llvm::ConstantInt::get(context, llvm::APInt(64, element_bytes));
+
+                     if (ASRUtils::is_array(x.m_type)) {
+                         ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+                         for (size_t i = 0; i < arr_type->n_dims; i++) {
+                             visit_expr(*(arr_type->m_dims[i].m_length));
+                             llvm::Value* len_val = tmp;
+                             len_val = builder->CreateIntCast(len_val, builder->getInt64Ty(), false);
+                             target_bytes_val = builder->CreateMul(target_bytes_val, len_val);
+                         }
+                     }
+
+                     // Define the source length
+                     llvm::Value* source_len = get_string_length(x.m_source);
+
+                     // Allocate buffer
+                     llvm::Value* buffer = llvm_utils->CreateAlloca(builder->getInt8Ty(),
+                         target_bytes_val, "transfer_buff");
+
+                     // Zero-init
+                     builder->CreateMemSet(buffer, builder->getInt8(0), target_bytes_val, llvm::MaybeAlign(1));
+
+                     // Copy min(source_len, target_bytes_val)
+                     llvm::Value* copy_len = builder->CreateSelect(
+                         builder->CreateICmpULT(source_len, target_bytes_val),
+                         source_len,
+                         target_bytes_val
+                     );
+
+                     builder->CreateMemCpy(buffer, llvm::MaybeAlign(1),
+                         source_ptr, llvm::MaybeAlign(1),
+                         copy_len);
+
+                     source_ptr = buffer;
+                }
+            }
         } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
         } else if (is_array) {
