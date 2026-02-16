@@ -264,7 +264,7 @@ program continue_compilation_1
     type(Base) :: base_var
     type(Derived) :: derived_var
     class(type_t) :: inst_tt
-
+    real(8), parameter :: erfc_param = erfc(40.12_8)
 
 
 

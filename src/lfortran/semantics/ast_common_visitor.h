@@ -13910,10 +13910,18 @@ public:
         if (first_struct != nullptr && operator_sym == nullptr) {
             operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
             if (operator_sym == nullptr) {
-                diag.add(Diagnostic("`" + op
-                    + "` is not defined in the Struct: `" + first_struct->m_name
-                    + "`", Level::Error, Stage::Semantic, {Label("", {loc})}));
-                throw SemanticAbort();
+                // The operator is not type-bound; try resolving as a regular
+                // custom operator (with the "~~" prefix) in the current scope.
+                std::string prefixed_op = update_custom_op_name(op);
+                op_sym = current_scope->resolve_symbol(to_lower(prefixed_op));
+                operator_sym = ASRUtils::symbol_get_past_external(op_sym);
+                if (operator_sym == nullptr) {
+                    diag.add(Diagnostic("`" + op
+                        + "` is not defined in the Struct: `" + first_struct->m_name
+                        + "` or in the current scope",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
             }
         }
 

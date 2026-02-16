@@ -1571,7 +1571,8 @@
                                 )
                         })
                     modules_29
-                    [fpm_manifest_executable]
+                    [fpm_manifest_executable
+                    fpm_manifest_dependency1]
                     [(Print
                         (StringConstant
                             "running modules_29 program"

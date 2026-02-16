@@ -1551,6 +1551,8 @@ RUN(NAME modules_65 LABELS gfortran llvm
         EXTRAFILES modules_65_base.f90 modules_65_child.f90 modules_65_worker.f90)
 RUN(NAME modules_66 LABELS gfortran llvm
         EXTRAFILES modules_66_base.f90 modules_66_worker.f90)
+RUN(NAME modules_67 LABELS gfortran llvm
+        EXTRAFILES modules_67_origin.f90 modules_67_reexport.f90 modules_67_consumer.f90)
 
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
@@ -1729,6 +1731,7 @@ RUN(NAME operator_overloading_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME operator_overloading_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -1743,6 +1746,7 @@ RUN(NAME custom_operator_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME custom_operator_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -2672,6 +2676,7 @@ RUN(NAME write_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_18 LABELS gfortran llvm)
+RUN(NAME write_19 LABELS gfortran llvm EXTRAFILES write_19_module.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -3250,6 +3255,8 @@ RUN(NAME separate_compilation_12 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_13 LABELS gfortran llvm EXTRAFILES separate_compilation_13a.f90)
 RUN(NAME separate_compilation_class_star_01 LABELS gfortran llvm
     EXTRAFILES separate_compilation_class_star_01a.f90)
+RUN(NAME separate_compilation_class_star_02 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_class_star_02a.f90)
 
 RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
 RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compilation_15a.f90)

@@ -2012,7 +2012,7 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
     ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
     ASR::expr_t* expr_dt = nullptr;
     if( sym == nullptr ) {
-        if( ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type) ) {
+        if( ASR::is_a<ASR::StructType_t>(*arg_type) ) {
             ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[0])));
             sym = arg_struct->m_symtab->resolve_symbol(read_write);
             expr_dt = args[0];
@@ -2077,12 +2077,23 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         right_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(right)));
     }
     bool found = false;
-    if (is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
+    // Try left_struct first; if not found, try right_struct (for pass(rhs) operators)
+    ASR::Struct_t* active_struct = left_struct;
+    bool pass_right = false;
+    bool op_overloaded_found = is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct);
+    if (!op_overloaded_found && right_struct != nullptr) {
+        op_overloaded_found = is_op_overloaded(op, intrinsic_op_name, curr_scope, right_struct);
+        if (op_overloaded_found) {
+            active_struct = right_struct;
+            pass_right = true;
+        }
+    }
+    if (op_overloaded_found) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::symbol_t* orig_sym2 = nullptr;
-        if ( left_struct != nullptr) {
-            ASR::Struct_t* temp_struct = left_struct;
+        if ( active_struct != nullptr) {
+            ASR::Struct_t* temp_struct = active_struct;
             while (temp_struct) {
                 if (temp_struct->m_symtab->get_symbol(intrinsic_op_name) != nullptr) {
                     orig_sym2 = temp_struct->m_symtab->get_symbol(intrinsic_op_name);
@@ -2117,9 +2128,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
                 ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
-                if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
+                if (cp->m_parent_symtab->get_counter() != active_struct->m_symtab->get_counter()) {
                     // It may be overided in the derived class
-                    ASR::Struct_t* temp_struct = left_struct;
+                    ASR::Struct_t* temp_struct = active_struct;
                     while (temp_struct->m_parent) {
                         if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
                             cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
@@ -2188,14 +2199,20 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.reserve(al, 1);
                             ASR::call_arg_t left_call_arg, right_call_arg;
                             ASR::expr_t* self_arg = nullptr;
-                            if (i < n_interface_proc) {
+                            if (i < n_interface_proc || pass_right) {
+                                // For interface procs or pass(rhs) class procs,
+                                // both args go in a_args in proper order
                                 left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
                                 a_args.push_back(al, left_call_arg);
+                                right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
+                                a_args.push_back(al, right_call_arg);
+                            } else {
+                                // pass(lhs) or default: self_arg is left, right is the regular argument
+                                right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
+                                a_args.push_back(al, right_call_arg);
                             }
-                            right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
-                            a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
-                            if (i >= n_interface_proc) {
+                            if (i >= n_interface_proc && !pass_right) {
                                 ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
                                 matched_func_name = ASRUtils::symbol_name(mem_ext);
                                 self_arg = left;
@@ -2207,7 +2224,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
                             if( a_name == nullptr ) {
-                                if (i >= n_interface_proc) {
+                                if (i >= n_interface_proc && !pass_right) {
                                     err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                                 } else {
                                     a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
