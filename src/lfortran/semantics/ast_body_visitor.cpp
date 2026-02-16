@@ -3542,11 +3542,20 @@ public:
                             // Design (C): Do NOT rewrite assoc_variable->m_type to the guard type.
                             // The variable stays as class(*) in the ASR. Every use is
                             // wrapped in a ClassToIntrinsic Cast node via select_type_casts_map.
-                            // For the assoc_sym path, set the type to the selector's polymorphic type.
+                            // For the assoc_sym path, set the type to the selector's polymorphic type,
+                            // but strip Allocatable and wrap in Pointer since the assoc variable
+                            // is an alias (not the owner of the allocation). This prevents the
+                            // LLVM backend from deallocating it when the block goes out of scope.
                             // For the !assoc_sym path, assoc_variable IS selector_variable -- don't touch it.
                             if (assoc_sym) {
-                                assoc_variable->m_type = selector_ttype ? selector_ttype
+                                ASR::ttype_t* assoc_type = selector_ttype ? selector_ttype
                                     : ASRUtils::expr_type(m_selector);
+                                assoc_type = ASRUtils::type_get_past_allocatable(assoc_type);
+                                if (!ASR::is_a<ASR::Pointer_t>(*assoc_type)) {
+                                    assoc_type = ASRUtils::make_Pointer_t_util(al,
+                                        type_stmt_type->base.base.loc, assoc_type);
+                                }
+                                assoc_variable->m_type = assoc_type;
                             }
                         }
                         // Dependencies are still computed from the guard type.
@@ -3562,8 +3571,13 @@ public:
                         } else {
                             // For scalars, the variable keeps class(*) type (StructType).
                             // The verifier requires StructType variables to have a type
-                            // declaration, so use the selector's type declaration.
-                            assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                            // declaration, so use the selector's type declaration,
+                            // imported into the current scope for modfile compatibility.
+                            ASR::symbol_t* type_decl = select_variable_m_type_declaration;
+                            if (type_decl) {
+                                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+                            }
+                            assoc_variable->m_type_declaration = type_decl;
                         }
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
