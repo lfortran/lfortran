@@ -1014,7 +1014,9 @@ public:
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
             if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
                 func = ASR::down_cast<ASR::Function_t>(method->m_proc);
-                if (!method->m_is_nopass && x.m_dt != nullptr) {
+                if (!method->m_is_nopass) {
+                    require(x.m_dt != nullptr,
+                        "Pass method call must provide m_dt (the passed object).");
                     formal_offset = 1;
                 }
             }

@@ -1554,22 +1554,6 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
-        case ASR::exprType::IntrinsicArrayFunction:
-        case ASR::exprType::ListItem:
-            // These return modifiable references.
-            return true;
-        case ASR::exprType::FunctionCall: {
-            // Allow specific runtime helper that returns modifiable references.
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-            if (!func_call->m_name) {
-                return false;
-            }
-            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
-            if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
-                return false;
-            }
-            return std::string(ASR::down_cast<ASR::Function_t>(func_sym)->m_name) == "_lfortran_get_item";
-        }
         default:
             return false;
     }

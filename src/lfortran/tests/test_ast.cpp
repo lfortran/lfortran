@@ -150,6 +150,166 @@ end program
     CHECK(!asr_verify(*asr, true, diagnostics));
 }
 
+TEST_CASE("ASR Verify INTENT(INOUT) ArrayPhysicalCast argument path") {
+    Allocator al(4*1024);
+
+    std::string src = R"""(
+program arraywrite
+implicit none
+integer, allocatable :: arr(:,:)
+call ss(arr(1:2,2:3))
+contains
+subroutine ss(s)
+    integer, intent(inout) :: s(2)
+end subroutine
+end program arraywrite
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    CHECK(asr_verify(*asr, true, diagnostics)); // Valid ASR
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("arraywrite"));
+    ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
+    CHECK(call_stmt->n_args == 1);
+    CHECK(ASR::is_a<ASR::ArrayPhysicalCast_t>(*call_stmt->m_args[0].m_value));
+
+    // Mutate cast payload to a non-variable expression.
+    ASR::ArrayPhysicalCast_t* cast_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    ASR::ttype_t* int_type = ASR::down_cast<ASR::ttype_t>(
+        ASR::make_Integer_t(al, cast_arg->m_arg->base.loc, 4));
+    cast_arg->m_arg = ASR::down_cast<ASR::expr_t>(
+        ASR::make_IntegerConstant_t(al, cast_arg->m_arg->base.loc, 1, int_type));
+
+    CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
+TEST_CASE("ASR Verify INTENT(OUT) StringPhysicalCast argument path") {
+    Allocator al(4*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+character(2), allocatable :: str
+call ss(str)
+contains
+subroutine ss(s)
+    character(2), intent(out) :: s
+end subroutine
+end program p
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    CHECK(asr_verify(*asr, true, diagnostics)); // Valid ASR
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("p"));
+    ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
+    ASR::expr_t* original_arg = call_stmt->m_args[0].m_value;
+
+    ASR::ttype_t* cast_type = ASR::down_cast<ASR::ttype_t>(
+        ASR::make_String_t(al, original_arg->base.loc, 1, nullptr,
+            ASR::string_length_kindType::ImplicitLength,
+            ASR::string_physical_typeType::DescriptorString));
+    call_stmt->m_args[0].m_value = ASR::down_cast<ASR::expr_t>(
+        ASR::make_StringPhysicalCast_t(al, original_arg->base.loc, original_arg,
+            ASR::string_physical_typeType::DescriptorString,
+            ASR::string_physical_typeType::CChar, cast_type, nullptr));
+
+    CHECK(asr_verify(*asr, true, diagnostics));
+
+    // Mutate cast payload to a non-variable expression.
+    ASR::StringPhysicalCast_t* cast_arg =
+        ASR::down_cast<ASR::StringPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    ASR::ttype_t* int_type = ASR::down_cast<ASR::ttype_t>(
+        ASR::make_Integer_t(al, original_arg->base.loc, 4));
+    cast_arg->m_arg = ASR::down_cast<ASR::expr_t>(
+        ASR::make_IntegerConstant_t(al, original_arg->base.loc, 1, int_type));
+
+    CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
+TEST_CASE("ASR Verify pass method call requires m_dt") {
+    Allocator al(16*1024);
+
+    std::string src = R"""(
+module m
+  type :: t
+  contains
+    procedure :: set_value_pass
+    generic :: set_value => set_value_pass
+  end type
+contains
+  subroutine set_value_pass(this, value)
+    class(t), intent(inout) :: this
+    integer, intent(in) :: value
+  end subroutine
+end module
+
+program p
+  use m
+  type(t) :: obj
+  call obj%set_value(1)
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    CHECK(asr_verify(*asr, true, diagnostics)); // Valid ASR
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("p"));
+    ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
+    CHECK(call_stmt->m_dt != nullptr);
+
+    call_stmt->m_dt = nullptr;
+    CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
 TEST_CASE("Variable Location") {
     Allocator al(4*1024);
 
