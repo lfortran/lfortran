@@ -8482,6 +8482,52 @@ public:
             return ;
         }
 
+        // ClassToIntrinsic store-through: when the LHS is a Cast(Var, ClassToIntrinsic, ...),
+        // we extract the data pointer from the polymorphic wrapper and store the RHS into it.
+        if (ASR::is_a<ASR::Cast_t>(*x.m_target) &&
+            ASR::down_cast<ASR::Cast_t>(x.m_target)->m_kind ==
+                ASR::cast_kindType::ClassToIntrinsic) {
+            ASR::Cast_t* target_cast = ASR::down_cast<ASR::Cast_t>(x.m_target);
+            ASR::ttype_t* target_type = target_cast->m_type;   // e.g., integer(4)
+            ASR::ttype_t* poly_type = ASRUtils::expr_type(target_cast->m_arg); // class(*)
+
+            // 1. Evaluate RHS
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;  // load to value
+            this->visit_expr_wrapper(x.m_value, true);
+            llvm::Value* rhs_value = tmp;
+
+            // 2. Evaluate LHS (the class(*) variable — NOT the Cast)
+            ptr_loads = 0;  // get pointer to polymorphic wrapper
+            this->visit_expr(*target_cast->m_arg);
+            llvm::Value* poly_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            // 3. Handle allocatable/pointer extra indirection
+            llvm::Type* poly_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                target_cast->m_arg, ASRUtils::extract_type(poly_type), module.get());
+            if (LLVM::is_llvm_pointer(*poly_type)) {
+                poly_ptr = llvm_utils->CreateLoad2(poly_llvm_type->getPointerTo(), poly_ptr);
+            }
+
+            // 4. GEP to data field (index 1), load i8*, bitcast, store
+            llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                const_cast<ASR::expr_t*>(&target_cast->base),
+                ASRUtils::extract_type(target_type), module.get());
+            llvm::Value* data_ptr = llvm_utils->create_gep2(poly_llvm_type, poly_ptr, 1);
+            data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+            data_ptr = builder->CreateBitCast(data_ptr, target_llvm_type->getPointerTo());
+
+            if (ASRUtils::is_character(*target_type)) {
+                // String assignment needs lfortran_str_copy
+                llvm_utils->deepcopy(x.m_value, rhs_value, data_ptr,
+                    target_type, target_type, module.get());
+            } else {
+                builder->CreateStore(rhs_value, data_ptr);
+            }
+            return;
+        }
+
         ASR::ttype_t* asr_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* asr_value_type = ASRUtils::expr_type(x.m_value);
         bool is_target_list = ASR::is_a<ASR::List_t>(*asr_target_type);
