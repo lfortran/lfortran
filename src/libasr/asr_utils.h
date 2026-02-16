@@ -1530,6 +1530,51 @@ static inline bool is_variable(ASR::expr_t* a_value) {
     }
 }
 
+// Returns true if expression can be safely used as an actual argument for
+// INTENT(OUT/INOUT) dummy arguments.
+static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
+    if (a_value == nullptr) {
+        return false;
+    }
+
+    if (ASRUtils::is_variable(a_value)) {
+        return true;
+    }
+
+    switch (a_value->type) {
+        case ASR::exprType::Cast: {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::ArrayPhysicalCast: {
+            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::StringPhysicalCast: {
+            ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::IntrinsicArrayFunction:
+        case ASR::exprType::ListItem:
+            // These return modifiable references.
+            return true;
+        case ASR::exprType::FunctionCall: {
+            // Allow specific runtime helper that returns modifiable references.
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            if (!func_call->m_name) {
+                return false;
+            }
+            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
+            if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
+                return false;
+            }
+            return std::string(ASR::down_cast<ASR::Function_t>(func_sym)->m_name) == "_lfortran_get_item";
+        }
+        default:
+            return false;
+    }
+}
+
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
@@ -6869,43 +6914,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                         if (callee_param->m_intent == ASR::intentType::Out ||
                             callee_param->m_intent == ASR::intentType::InOut) {
                             
-                            // For intent(out) and intent(inout), the actual argument must be a variable
-                            bool is_valid_variable = false;
-                            switch (passed_arg_expr->type) {
-                                case ASR::exprType::Var:
-                                case ASR::exprType::ArrayItem:
-                                case ASR::exprType::ArraySection:
-                                case ASR::exprType::StringItem:
-                                case ASR::exprType::StringSection:
-                                case ASR::exprType::StructInstanceMember:
-                                case ASR::exprType::IntrinsicArrayFunction:
-                                case ASR::exprType::ListItem:
-                                case ASR::exprType::Cast:
-                                    // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
-                                    is_valid_variable = true;
-                                    break;
-                                case ASR::exprType::FunctionCall: {
-                                    // Only allow specific intrinsic functions that return modifiable references
-                                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(passed_arg_expr);
-                                    if (func_call->m_name) {
-                                        ASR::symbol_t* func_sym = func_call->m_name;
-                                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
-                                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-                                            std::string func_name = func->m_name;
-                                            // Allow list access functions that return modifiable references
-                                            if (func_name == "_lfortran_get_item") {
-                                                is_valid_variable = true;
-                                            }
-                                        }
-                                    }
-                                    break;
-                                }
-                                default:
-                                    is_valid_variable = false;
-                                    break;
-                            }
-                            
-                            if (!is_valid_variable) {
+                            if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
                                     "(actual argument to INTENT = OUT/INOUT)",
