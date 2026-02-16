@@ -133,15 +133,18 @@ def test_backend(backend, std, test_pattern=None):
 def check_module_names():
     from glob import glob
     import re
-    mod = re.compile(r"(module|MODULE)[ ]+(.*)", re.IGNORECASE)
+    mod = re.compile(
+        r'(?im)^\s*(?:module|submodule)\b\s*(?:\([^)]+\))?\s*(?!\bprocedure\b)(\w+)'
+    )
     files = glob("*.f90")
     module_names = []
     file_names = []
     for file in files:
-        f = open(file).read()
-        s = mod.search(f)
+        with open(file) as f:
+            content = f.read()
+        s = mod.search(content)
         if s:
-            module_names.append(s.group(2).lower())
+            module_names.append(s.group(1).lower())
             file_names.append(file)
     for i in range(len(module_names)):
         name = module_names[i]
