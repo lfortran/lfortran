@@ -3249,6 +3249,8 @@ RUN(NAME separate_compilation_12 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_13 LABELS gfortran llvm EXTRAFILES separate_compilation_13a.f90)
 RUN(NAME separate_compilation_class_star_01 LABELS gfortran llvm
     EXTRAFILES separate_compilation_class_star_01a.f90)
+RUN(NAME separate_compilation_class_star_02 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_class_star_02a.f90)
 
 RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
 RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compilation_15a.f90)

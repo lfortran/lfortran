@@ -3211,6 +3211,27 @@ public:
             ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
             std::string tmp_name = current_scope->get_unique_name("~select_type_selector_tmp_");
             ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
+            // The type_declaration obtained above may reference a symbol
+            // in a sibling scope (e.g. the called function's scope). We must
+            // resolve it to a symbol accessible from current_scope so that
+            // serialization (modfile) does not produce cross-scope references.
+            if (type_decl != nullptr) {
+                std::string decl_name = ASRUtils::symbol_name(type_decl);
+                ASR::symbol_t* local_decl = current_scope->get_symbol(decl_name);
+                if (local_decl != nullptr) {
+                    type_decl = local_decl;
+                } else {
+                    // Symbol not found in current scope; add an ExternalSymbol
+                    // referencing the original struct from its owner scope.
+                    type_decl = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, x.base.base.loc, current_scope,
+                        s2c(al, decl_name), type_decl,
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(type_decl)),
+                        nullptr, 0, s2c(al, decl_name),
+                        ASR::accessType::Public));
+                    current_scope->add_symbol(decl_name, type_decl);
+                }
+            }
             ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, tmp_name),
                 nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
