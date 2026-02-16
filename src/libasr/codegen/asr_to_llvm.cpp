@@ -9990,13 +9990,14 @@ public:
     }
     
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
-        // Check if *x is nullptr.
         if( x == nullptr ) {
             throw CodeGenError("Internal error: x is nullptr");
         }
 
         this->visit_expr(*x);
 
+        // 1. Specialized Logic for New Classes / Struct Members
+        // If this block handles the load, we MUST return to avoid double-loading.
         if (compiler_options.new_classes && load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
@@ -10036,6 +10037,8 @@ public:
             return;
         }
 
+        // 2. Specialized Logic for Arrays and Struct Instance Members
+        // If this block handles the load, we MUST return.
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
