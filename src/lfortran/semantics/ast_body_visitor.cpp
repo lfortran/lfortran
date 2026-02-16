@@ -2419,12 +2419,14 @@ public:
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
                     ASRUtils::type_get_past_allocatable(tmp_type)));
-            } else if ( !create_associate_stmt && ASRUtils::is_array(tmp_type) &&
-                        ASRUtils::is_dimension_empty(tmp_type) &&
-                        !ASR::is_a<ASR::Allocatable_t>(*tmp_type) ) {
-                // For non-lvalue array expressions (e.g., array constructors
-                // with runtime-determined sizes), wrap in Allocatable so that
-                // the subsequent assignment can allocate memory for the target.
+            } else if ( !create_associate_stmt && !ASR::is_a<ASR::Allocatable_t>(*tmp_type) &&
+                        ((ASRUtils::is_array(tmp_type) && ASRUtils::is_dimension_empty(tmp_type)) ||
+                         ASRUtils::is_deferredLength_string(tmp_type)) ) {
+                // For non-lvalue expressions that need runtime-determined
+                // storage (e.g., array constructors with runtime-determined
+                // sizes, or deferred-length string expressions like
+                // concatenation), wrap in Allocatable so that the subsequent
+                // assignment can allocate memory for the target.
                 tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
                     tmp_type->base.loc, tmp_type));
             }
