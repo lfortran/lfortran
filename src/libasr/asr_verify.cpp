@@ -1049,7 +1049,7 @@ public:
                     continue;
                 }
 
-                if (enforce_modifiable_check &&
+                if (check_external && enforce_modifiable_check &&
                     !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
                     (callee_param->m_intent == ASR::intentType::Out ||
                      callee_param->m_intent == ASR::intentType::InOut)) {
