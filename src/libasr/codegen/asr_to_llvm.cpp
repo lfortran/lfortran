@@ -692,7 +692,8 @@ public:
                                           ASR::dimension_t* m_dims, int n_dims,
                                           ASR::expr_t* string_len_to_allocate,
                                           ASR::symbol_t* allocated_subclass=nullptr,
-                                          bool realloc=false) {
+                                          bool realloc=false,
+                                          ASR::ttype_t* alloc_type=nullptr) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         int ptr_loads_copy = ptr_loads;
         ptr_loads = 2;
@@ -713,7 +714,7 @@ public:
         ptr_loads = ptr_loads_copy;
         arr_descr->fill_malloc_array_details(arr, arr_type, llvm_data_type,
             asr_type, n_dims, llvm_dims, string_len, variable_declaration, module.get(), 
-            allocated_subclass, realloc);
+            allocated_subclass, realloc, alloc_type);
     }
 
 
@@ -2010,9 +2011,9 @@ public:
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                         curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
-                                        curr_arg.m_sym_subclass, realloc);
+                                        curr_arg.m_sym_subclass, realloc, curr_arg.m_type);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
-                    && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
+                    && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
                         ASRUtils::expr_type(tmp_expr));
@@ -3283,6 +3284,170 @@ public:
             }
             case ASRUtils::IntrinsicElementalFunctions::Min: {
                 generate_MinMax(x.m_args, x.n_args, false);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::SameTypeAs: {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                    break;
+                }
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_args[0]);
+                llvm::Value* arg0 = tmp;
+                this->visit_expr(*x.m_args[1]);
+                llvm::Value* arg1 = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::symbol_t* struct_sym0 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[0]));
+                ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
+                llvm::Type* class_type0 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym0), false);
+                llvm::Type* class_type1 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym1), false);
+
+                // For allocatable/pointer class(*), the alloca holds a pointer
+                // to the polymorphic struct. Load the pointer first.
+                ASR::ttype_t* arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+                ASR::ttype_t* arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+                if (ASRUtils::is_allocatable(arg_type0) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type0)) {
+                    arg0 = llvm_utils->CreateLoad2(class_type0->getPointerTo(), arg0);
+                }
+                if (ASRUtils::is_allocatable(arg_type1) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type1)) {
+                    arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
+                }
+
+                // Extract field 0 (type hash or vtable pointer) from both args
+                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
+                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
+                // Load and compare
+                llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
+                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
+                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+                if (field0_type->isPointerTy()) {
+                    // new_classes: compare vtable pointers
+                    tmp = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(id0, llvm::Type::getInt64Ty(context)),
+                        builder->CreatePtrToInt(id1, llvm::Type::getInt64Ty(context)));
+                } else {
+                    // old classes: compare integer type hashes
+                    tmp = builder->CreateICmpEQ(id0, id1);
+                }
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::ExtendsTypeOf: {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                    break;
+                }
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_args[0]);
+                llvm::Value* arg0 = tmp;
+                this->visit_expr(*x.m_args[1]);
+                llvm::Value* arg1 = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::symbol_t* struct_sym0 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[0]));
+                ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
+                llvm::Type* class_type0 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym0), false);
+                llvm::Type* class_type1 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym1), false);
+
+                // For allocatable/pointer class(*), load the pointer first.
+                ASR::ttype_t* arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+                ASR::ttype_t* arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+                if (ASRUtils::is_allocatable(arg_type0) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type0)) {
+                    arg0 = llvm_utils->CreateLoad2(class_type0->getPointerTo(), arg0);
+                }
+                if (ASRUtils::is_allocatable(arg_type1) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type1)) {
+                    arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
+                }
+
+                // Extract field 0 (type hash or vtable pointer)
+                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
+                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
+                llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
+                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
+                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+
+                if (field0_type->isPointerTy()) {
+                    // new_classes: walk parent chain via TypeInfo
+                    // TypeInfo layout: { i8* name, i8* size, i8* parent_typeinfo }
+                    // vptr[-1] = TypeInfo pointer
+                    llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                    llvm::StructType* type_info_type = llvm::StructType::get(
+                        context, {i8_ptr, i8_ptr, i8_ptr}, false);
+
+                    // Get TypeInfo for MOLD (arg1)
+                    llvm::Value* vptr1_i8 = builder->CreateBitCast(id1, i8_ptr->getPointerTo());
+                    llvm::Value* ti1_ptr_ptr = llvm_utils->create_ptr_gep2(
+                        i8_ptr, vptr1_i8, llvm::ConstantInt::get(i64_type, -1, true));
+                    llvm::Value* ti_mold = llvm_utils->CreateLoad2(i8_ptr, ti1_ptr_ptr);
+
+                    // Get TypeInfo for A (arg0)
+                    llvm::Value* vptr0_i8 = builder->CreateBitCast(id0, i8_ptr->getPointerTo());
+                    llvm::Value* ti0_ptr_ptr = llvm_utils->create_ptr_gep2(
+                        i8_ptr, vptr0_i8, llvm::ConstantInt::get(i64_type, -1, true));
+                    llvm::Value* ti_a_init = llvm_utils->CreateLoad2(i8_ptr, ti0_ptr_ptr);
+
+                    // Create loop to walk A's parent chain
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(context, "eto.loop", fn);
+                    llvm::BasicBlock* found_bb = llvm::BasicBlock::Create(context, "eto.found", fn);
+                    llvm::BasicBlock* not_found_bb = llvm::BasicBlock::Create(context, "eto.notfound", fn);
+                    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "eto.merge", fn);
+
+                    builder->CreateBr(loop_bb);
+                    builder->SetInsertPoint(loop_bb);
+                    llvm::PHINode* ti_current = builder->CreatePHI(i8_ptr, 2, "eto.ti");
+                    ti_current->addIncoming(ti_a_init, loop_bb->getSinglePredecessor());
+
+                    // Compare current TypeInfo with MOLD's TypeInfo
+                    llvm::Value* eq = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(ti_current, i64_type),
+                        builder->CreatePtrToInt(ti_mold, i64_type));
+                    builder->CreateCondBr(eq, found_bb, not_found_bb);
+
+                    // Not equal: check parent
+                    builder->SetInsertPoint(not_found_bb);
+                    llvm::Value* ti_cast = builder->CreateBitCast(
+                        ti_current, type_info_type->getPointerTo());
+                    llvm::Value* parent_ptr = llvm_utils->create_gep2(type_info_type, ti_cast, 2);
+                    llvm::Value* parent_ti = llvm_utils->CreateLoad2(i8_ptr, parent_ptr);
+                    llvm::Value* parent_null = builder->CreateICmpEQ(
+                        parent_ti, llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(i8_ptr)));
+                    // If parent is null, no more ancestors -> false
+                    // Otherwise, continue loop with parent
+                    builder->CreateCondBr(parent_null, merge_bb, loop_bb);
+                    ti_current->addIncoming(parent_ti, not_found_bb);
+
+                    // Found: result = true
+                    builder->SetInsertPoint(found_bb);
+                    builder->CreateBr(merge_bb);
+
+                    // Merge
+                    builder->SetInsertPoint(merge_bb);
+                    llvm::PHINode* result = builder->CreatePHI(
+                        llvm::Type::getInt1Ty(context), 2, "eto.result");
+                    result->addIncoming(llvm::ConstantInt::getTrue(context), found_bb);
+                    result->addIncoming(llvm::ConstantInt::getFalse(context), not_found_bb);
+                    tmp = result;
+                } else {
+                    // old classes: compare integer type hashes
+                    tmp = builder->CreateICmpEQ(id0, id1);
+                }
                 break;
             }
             default: {
@@ -8899,8 +9064,23 @@ public:
                 target = llvm_utils->create_gep2(target_llvm_type, target, 1);
                 target = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target);
                 target = builder->CreateBitCast(target, value_llvm_type->getPointerTo());
+                // With ptr_loads=0, variables produce a pointer while
+                // constants produce a value directly.  deepcopy for scalar
+                // intrinsic types expects a loaded value, so load only when
+                // the LLVM value is actually a pointer.
+                if (!ASRUtils::is_array(asr_value_type) &&
+                        !ASRUtils::is_character(*asr_value_type) &&
+                        value->getType()->isPointerTy()) {
+                    value = llvm_utils->CreateLoad2(value_llvm_type, value);
+                }
+                // The target pointer has been reinterpreted as value type,
+                // so pass value type wrapped in Allocatable as dest type
+                // (retains the allocatable flag needed for string data
+                // allocation inside the unlimited polymorphic container).
+                ASR::ttype_t* dest_type_for_copy = ASRUtils::TYPE(
+                    ASR::make_Allocatable_t(al, asr_value_type->base.loc, asr_value_type));
                 llvm_utils->deepcopy(x.m_value, value, target,
-                    asr_target_type, asr_value_type, module.get());
+                    dest_type_for_copy, asr_value_type, module.get());
             }
             return;
         } else if (is_target_class && is_value_class) {
@@ -10425,10 +10605,10 @@ public:
                         }
                         llvm::Value* static_ptr = llvm_selector;
                         llvm::Type* static_ptr_type = llvm_selector_type_;
-                        // If selector is a pointer type, load it first
+                        // If selector is a pointer/allocatable type, load it first
                         if (LLVM::is_llvm_pointer(*selector_var_type)) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
-                            selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
+                            selector_var_type = ASRUtils::type_get_past_allocatable_pointer(selector_var_type);
                             static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                         }
                         if (ASRUtils::is_array(selector_var_type)) {
@@ -18168,6 +18348,15 @@ public:
             llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
             tmp = llvm_utils->create_gep2(class_type, tmp, 1);
             tmp = llvm_utils->CreateLoad2(class_type->getPointerTo(), tmp);
+        }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type)) && compiler_options.new_classes &&
+                ASRUtils::is_unlimited_polymorphic_type(arg) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*arg)) {
+            // For unlimited polymorphic Var with new_classes, fetch_var returns
+            // the raw alloca; load once to get the actual pointer value.
+            // StructInstanceMember is already loaded via ref=true above.
+            llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
+            tmp = llvm_utils->CreateLoad2(class_type, tmp);
         }
         if( n_dims > 0 ) {
             visit_expr_load_wrapper(arg, 1, true);

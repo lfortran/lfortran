@@ -74,6 +74,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(SameTypeAs)
+        INTRINSIC_NAME_CASE(ExtendsTypeOf)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
@@ -315,6 +316,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
             {nullptr, &SameTypeAs::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ExtendsTypeOf),
+            {nullptr, &ExtendsTypeOf::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
@@ -598,6 +601,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
                 {"same_type_as", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
+                {"extends_type_of", {&ExtendsTypeOf::create_ExtendsTypeOf, &ExtendsTypeOf::eval_ExtendsTypeOf}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},

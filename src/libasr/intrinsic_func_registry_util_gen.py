@@ -303,6 +303,12 @@ intrinsic_funcs_args = {
             "return": "logical"
         }
     ],
+    "ExtendsTypeOf": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
+        }
+    ],
     "Nint": [
         {
             "args": [("real",)],
@@ -900,6 +906,7 @@ compile_time_only_fn = [
     "MaxExponent",
     "MinExponent",
     "SameTypeAs",
+    "ExtendsTypeOf",
     "Digits",
 ]
 
@@ -1128,9 +1135,14 @@ def add_create_func_return_src(func_name):
         src += indent * 3 +     "if (diag.has_error()) {\n"
         src += indent * 4 +         f"return nullptr;\n"
         src += indent * 3 +     "}\n"
-        src += indent * 2 + "return ASR::make_TypeInquiry_t(al, loc, "\
+        src += indent * 2 + "if (m_value) {\n"
+        src += indent * 3 + "return ASR::make_TypeInquiry_t(al, loc, "\
             f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
             "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
+        src += indent * 2 + "}\n"
+        src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, "\
+            f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
+            "m_args.p, m_args.n, 0, return_type, m_value);\n"
 
     else:
         src += indent * 2 +     f"for( size_t i = 0; i < {no_of_args}; i++ ) " + "{\n"
@@ -1163,7 +1175,8 @@ def gen_verify_args(func_name):
     global src
     src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
-    if func_name in compile_time_only_fn:
+    runtime_fallback_fns = ["SameTypeAs", "ExtendsTypeOf"]
+    if func_name in compile_time_only_fn and func_name not in runtime_fallback_fns:
         src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
             f'"Missing compile time value, `{func_name}` intrinsic output must '\
             'be computed during compile time", x.base.base.loc, diagnostics);\n'

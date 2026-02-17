@@ -1985,6 +1985,8 @@ RUN(NAME allocate_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME allocate_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME realloc_lhs_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays
@@ -2404,6 +2406,13 @@ RUN(NAME class_108 LABELS gfortran llvm)
 RUN(NAME class_109 LABELS gfortran llvm)
 RUN(NAME class_110 LABELS gfortran llvm EXTRAFILES class_110_module.f90)
 RUN(NAME class_111 LABELS gfortran llvm)
+RUN(NAME class_112 LABELS gfortran llvm)
+RUN(NAME class_113 LABELS gfortran llvm)
+RUN(NAME class_114 LABELS gfortran llvm)
+RUN(NAME class_115 LABELS gfortran llvm)
+RUN(NAME class_116 LABELS gfortran llvm)
+RUN(NAME class_117 LABELS gfortran llvm)
+RUN(NAME class_118 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2412,6 +2421,7 @@ RUN(NAME derived_type_member_procedure_call_01 LABELS gfortran llvm)
 RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_03 LABELS gfortran llvm)
+RUN(NAME class_allocate_04 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

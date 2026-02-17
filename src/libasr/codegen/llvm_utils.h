@@ -1703,6 +1703,10 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
 
             void fill_intrinsic_type_copy_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
+            llvm::Function* define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module);
+
+            void fill_intrinsic_type_allocate_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
+
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
             
@@ -1725,6 +1729,11 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void allocate_array_of_classes(ASR::Struct_t* class_symbol, 
                 [[maybe_unused]] ASR::StructType_t* struct_type, llvm::Value* array_data_ptr,
                 llvm::Value* size, ASR::symbol_t* allocated_subclass = nullptr, bool realloc = false);
+
+            void allocate_array_of_unlimited_polymorphic_type(
+                ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
+                llvm::Value* array_data_ptr, llvm::Value* size,
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
     };
 
     class LLVMTuple {
