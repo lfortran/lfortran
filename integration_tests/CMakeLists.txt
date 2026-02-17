@@ -1985,6 +1985,7 @@ RUN(NAME allocate_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME allocate_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME realloc_lhs_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays
