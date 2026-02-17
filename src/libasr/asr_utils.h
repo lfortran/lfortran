@@ -1582,6 +1582,17 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
 }
 
+static inline bool enforce_modifiable_actual_argument_check(const ASR::Function_t* f) {
+    if (f == nullptr) {
+        return false;
+    }
+    std::string fn_name = f->m_name;
+    if (fn_name.rfind("_lfortran_", 0) == 0 || fn_name.rfind("_lcompilers_", 0) == 0) {
+        return false;
+    }
+    return true;
+}
+
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
@@ -6903,6 +6914,7 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
 
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
+    bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(f);
     
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
@@ -6918,8 +6930,9 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                     ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
                     // Check if it's not a procedure (procedures don't have regular intent)
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
-                        if (callee_param->m_intent == ASR::intentType::Out ||
-                            callee_param->m_intent == ASR::intentType::InOut) {
+                        if (enforce_modifiable_check &&
+                            (callee_param->m_intent == ASR::intentType::Out ||
+                             callee_param->m_intent == ASR::intentType::InOut)) {
                             
                             if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
