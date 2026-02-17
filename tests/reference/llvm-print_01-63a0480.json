@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-print_01-63a0480.stdout",
-    "stdout_hash": "bbd25d967629f3729637968df5939d7b0088ad2ac91d5ad4a4f0a317",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout_hash": "933a8799e0dc74750f07105bc071b6b33b323e4f6ffc1b1db18cead8",
+    "stderr": "llvm-print_01-63a0480.stderr",
+    "stderr_hash": "e5854d87cd7735d7d143612387a13f4741e1a4f5ff86821a21f007d2",
+    "returncode": 1
 }

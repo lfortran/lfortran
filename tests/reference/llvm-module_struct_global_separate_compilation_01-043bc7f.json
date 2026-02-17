@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-module_struct_global_separate_compilation_01-043bc7f.stdout",
-    "stdout_hash": "fcbd403421436a3fa4b7dc768708592cff659691b525b47eceb46fa8",
+    "stdout_hash": "d2d322eced1f12605eea2fa9f8911960c98fde710606ba9585f2839d",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

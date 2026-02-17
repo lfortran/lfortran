@@ -1,19 +1,19 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type <{ ptr, i64 }>
 
 @__Wrong_allocation = private unnamed_addr constant [51 x i8] c"Attempting to allocate already allocated variable!\00", align 1
 @string_const_data = private constant [8 x i8] c"learned "
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data, i32 0, i32 0), i64 8 }>
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 8 }>
 @string_const_data.1 = private constant [5 x i8] c"from "
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.1, i32 0, i32 0), i64 5 }>
+@string_const.2 = private global %string_descriptor <{ ptr @string_const_data.1, i64 5 }>
 @string_const_data.3 = private constant [4 x i8] c"the "
-@string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.3, i32 0, i32 0), i64 4 }>
+@string_const.4 = private global %string_descriptor <{ ptr @string_const_data.3, i64 4 }>
 @string_const_data.5 = private constant [4 x i8] c"best"
-@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.5, i32 0, i32 0), i64 4 }>
+@string_const.6 = private global %string_descriptor <{ ptr @string_const_data.5, i64 4 }>
 @string_const_data.7 = private constant [5 x i8] c"I've "
-@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.7, i32 0, i32 0), i64 5 }>
+@string_const.8 = private global %string_descriptor <{ ptr @string_const_data.7, i64 5 }>
 @0 = private unnamed_addr constant [25 x i8] c"_lcompilers_stringconcat\00", align 1
 @1 = private unnamed_addr constant [103 x i8] c"At 21:12 of file tests/../integration_tests/string_03.f90\0AArgument %d of subroutine %s is unallocated.\00", align 1
 @2 = private unnamed_addr constant [25 x i8] c"_lcompilers_stringconcat\00", align 1
@@ -23,22 +23,22 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [25 x i8] c"_lcompilers_stringconcat\00", align 1
 @7 = private unnamed_addr constant [103 x i8] c"At 21:12 of file tests/../integration_tests/string_03.f90\0AArgument %d of subroutine %s is unallocated.\00", align 1
 @string_const_data.9 = private constant [1 x i8] c"."
-@string_const.10 = private global %string_descriptor <{ i8* getelementptr inbounds ([1 x i8], [1 x i8]* @string_const_data.9, i32 0, i32 0), i64 1 }>
+@string_const.10 = private global %string_descriptor <{ ptr @string_const_data.9, i64 1 }>
 @8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @_lcompilers_stringconcat(%string_descriptor* %s1, %string_descriptor* %s2, i32* %s1_len, i32* %s2_len, %string_descriptor* %concat_result) {
+define void @_lcompilers_stringconcat(ptr %s1, ptr %s2, ptr %s1_len, ptr %s2_len, ptr %concat_result) {
 .entry:
-  %0 = load i32, i32* %s1_len, align 4
-  %1 = load i32, i32* %s2_len, align 4
+  %0 = load i32, ptr %s1_len, align 4
+  %1 = load i32, ptr %s2_len, align 4
   %2 = add i32 %0, %1
-  %3 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %4 = load i8*, i8** %3, align 8
-  %5 = icmp ne i8* %4, null
+  %3 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 0
+  %4 = load ptr, ptr %3, align 8
+  %5 = icmp ne ptr %4, null
   br i1 %5, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @__Wrong_allocation, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @__Wrong_allocation)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -46,58 +46,60 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %6 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
+  %6 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 0
   %7 = sext i32 %2 to i64
-  %8 = call i8* @_lfortran_string_malloc(i64 %7)
-  store i8* %8, i8** %6, align 8
-  %9 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
+  %8 = call ptr @_lfortran_string_malloc(i64 %7)
+  store ptr %8, ptr %6, align 8
+  %9 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 1
   %10 = sext i32 %2 to i64
-  store i64 %10, i64* %9, align 4
-  %11 = load i32, i32* %s1_len, align 4
+  store i64 %10, ptr %9, align 4
+  %11 = load i32, ptr %s1_len, align 4
   %12 = sext i32 %11 to i64
   %13 = sub i64 %12, 1
   %14 = add i64 %13, 1
-  %15 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %16 = load i8*, i8** %15, align 8
-  %StrSliceGEP = getelementptr i8, i8* %16, i64 0
+  %15 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 0
+  %16 = load ptr, ptr %15, align 8
+  %StrSliceGEP = getelementptr i8, ptr %16, i64 0
   %StrSlice_StrView = alloca %string_descriptor, align 8
-  %17 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  store i8* %StrSliceGEP, i8** %17, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  store i64 %14, i64* %18, align 4
-  %19 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  %20 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  %21 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 0
-  %22 = load i8*, i8** %21, align 8
-  %23 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
-  %24 = load i64, i64* %23, align 4
-  call void @_lfortran_strcpy(i8** %19, i64* %20, i8 0, i8 0, i8* %22, i64 %24)
-  %25 = load i32, i32* %s1_len, align 4
-  %26 = add i32 %25, 1
-  %27 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %28 = load i64, i64* %27, align 4
-  %29 = trunc i64 %28 to i32
-  %30 = sext i32 %26 to i64
-  %31 = sext i32 %29 to i64
-  %32 = sub i64 %31, %30
-  %33 = add i64 %32, 1
-  %34 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %35 = load i8*, i8** %34, align 8
-  %36 = sext i32 %26 to i64
-  %37 = sub i64 %36, 1
-  %StrSliceGEP1 = getelementptr i8, i8* %35, i64 %37
+  %17 = getelementptr %string_descriptor, ptr %StrSlice_StrView, i32 0, i32 0
+  store ptr %StrSliceGEP, ptr %17, align 8
+  %18 = getelementptr %string_descriptor, ptr %StrSlice_StrView, i32 0, i32 1
+  store i64 %14, ptr %18, align 4
+  %19 = load %string_descriptor, ptr %s1, align 1
+  %20 = getelementptr %string_descriptor, ptr %StrSlice_StrView, i32 0, i32 0
+  %21 = getelementptr %string_descriptor, ptr %StrSlice_StrView, i32 0, i32 1
+  %22 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 0
+  %23 = load ptr, %string_descriptor %22, align 8
+  %24 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 1
+  %25 = load i64, %string_descriptor %24, align 4
+  call void @_lfortran_strcpy(ptr %20, ptr %21, i8 0, i8 0, ptr %23, i64 %25)
+  %26 = load i32, ptr %s1_len, align 4
+  %27 = add i32 %26, 1
+  %28 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 1
+  %29 = load i64, ptr %28, align 4
+  %30 = trunc i64 %29 to i32
+  %31 = sext i32 %27 to i64
+  %32 = sext i32 %30 to i64
+  %33 = sub i64 %32, %31
+  %34 = add i64 %33, 1
+  %35 = getelementptr %string_descriptor, ptr %concat_result, i32 0, i32 0
+  %36 = load ptr, ptr %35, align 8
+  %37 = sext i32 %27 to i64
+  %38 = sub i64 %37, 1
+  %StrSliceGEP1 = getelementptr i8, ptr %36, i64 %38
   %StrSlice_StrView2 = alloca %string_descriptor, align 8
-  %38 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 0
-  store i8* %StrSliceGEP1, i8** %38, align 8
-  %39 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 1
-  store i64 %33, i64* %39, align 4
-  %40 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 0
-  %41 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 1
-  %42 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 0
-  %43 = load i8*, i8** %42, align 8
-  %44 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 1
-  %45 = load i64, i64* %44, align 4
-  call void @_lfortran_strcpy(i8** %40, i64* %41, i8 0, i8 0, i8* %43, i64 %45)
+  %39 = getelementptr %string_descriptor, ptr %StrSlice_StrView2, i32 0, i32 0
+  store ptr %StrSliceGEP1, ptr %39, align 8
+  %40 = getelementptr %string_descriptor, ptr %StrSlice_StrView2, i32 0, i32 1
+  store i64 %34, ptr %40, align 4
+  %41 = load %string_descriptor, ptr %s2, align 1
+  %42 = getelementptr %string_descriptor, ptr %StrSlice_StrView2, i32 0, i32 0
+  %43 = getelementptr %string_descriptor, ptr %StrSlice_StrView2, i32 0, i32 1
+  %44 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 0
+  %45 = load ptr, %string_descriptor %44, align 8
+  %46 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 1
+  %47 = load i64, %string_descriptor %46, align 4
+  call void @_lfortran_strcpy(ptr %42, ptr %43, i8 0, i8 0, ptr %45, i64 %47)
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -107,183 +109,188 @@ FINALIZE_SYMTABLE__lcompilers_stringconcat:       ; preds = %return
   ret void
 }
 
-declare void @_lcompilers_print_error(i8*, ...)
+declare void @_lcompilers_print_error(ptr, ...)
 
 declare void @exit(i32)
 
-declare i8* @_lfortran_string_malloc(i64)
+declare ptr @_lfortran_string_malloc(i64)
 
-declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
+declare void @_lfortran_strcpy(ptr, ptr, i8, i8, ptr, i64)
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %__libasr__created__var__0_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
+  store %string_descriptor zeroinitializer, ptr %__libasr__created__var__0_return_slot, align 1
   %__libasr__created__var__1_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__1_return_slot, align 1
+  store %string_descriptor zeroinitializer, ptr %__libasr__created__var__1_return_slot, align 1
   %__libasr__created__var__2_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 1
+  store %string_descriptor zeroinitializer, ptr %__libasr__created__var__2_return_slot, align 1
   %__libasr__created__var__3_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__3_return_slot, align 1
+  store %string_descriptor zeroinitializer, ptr %__libasr__created__var__3_return_slot, align 1
   %__libasr__created__var__4_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__4_return_slot, align 1
+  store %string_descriptor zeroinitializer, ptr %__libasr__created__var__4_return_slot, align 1
   %combined = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %combined, align 1
-  %2 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 1
-  store i64 29, i64* %2, align 4
-  %3 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
-  %4 = call i8* @_lfortran_malloc(i64 29)
-  store i8* %4, i8** %3, align 8
+  store %string_descriptor zeroinitializer, ptr %combined, align 1
+  %2 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 1
+  store i64 29, ptr %2, align 4
+  %3 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 0
+  %4 = call ptr @_lfortran_malloc(i64 29)
+  store ptr %4, ptr %3, align 8
   %last_name = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %last_name, align 1
-  %5 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 1
-  store i64 7, i64* %5, align 4
-  %6 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 0
-  %7 = call i8* @_lfortran_malloc(i64 7)
-  store i8* %7, i8** %6, align 8
+  store %string_descriptor zeroinitializer, ptr %last_name, align 1
+  %5 = getelementptr %string_descriptor, ptr %last_name, i32 0, i32 1
+  store i64 7, ptr %5, align 4
+  %6 = getelementptr %string_descriptor, ptr %last_name, i32 0, i32 0
+  %7 = call ptr @_lfortran_malloc(i64 7)
+  store ptr %7, ptr %6, align 8
   %posit = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %posit, align 1
-  %8 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 1
-  store i64 5, i64* %8, align 4
-  %9 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 0
-  %10 = call i8* @_lfortran_malloc(i64 5)
-  store i8* %10, i8** %9, align 8
+  store %string_descriptor zeroinitializer, ptr %posit, align 1
+  %8 = getelementptr %string_descriptor, ptr %posit, i32 0, i32 1
+  store i64 5, ptr %8, align 4
+  %9 = getelementptr %string_descriptor, ptr %posit, i32 0, i32 0
+  %10 = call ptr @_lfortran_malloc(i64 5)
+  store ptr %10, ptr %9, align 8
   %title = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %title, align 1
-  %11 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 1
-  store i64 4, i64* %11, align 4
-  %12 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
-  %13 = call i8* @_lfortran_malloc(i64 4)
-  store i8* %13, i8** %12, align 8
+  store %string_descriptor zeroinitializer, ptr %title, align 1
+  %11 = getelementptr %string_descriptor, ptr %title, i32 0, i32 1
+  store i64 4, ptr %11, align 4
+  %12 = getelementptr %string_descriptor, ptr %title, i32 0, i32 0
+  %13 = call ptr @_lfortran_malloc(i64 4)
+  store ptr %13, ptr %12, align 8
   %verb = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %verb, align 1
-  %14 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 1
-  store i64 8, i64* %14, align 4
-  %15 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 0
-  %16 = call i8* @_lfortran_malloc(i64 8)
-  store i8* %16, i8** %15, align 8
-  %17 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 0
-  %18 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 1
-  %19 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy(i8** %17, i64* %18, i8 0, i8 0, i8* %19, i64 8)
-  %20 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 0
-  %21 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 1
-  %22 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy(i8** %20, i64* %21, i8 0, i8 0, i8* %22, i64 5)
-  %23 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
-  %24 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 1
-  %25 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy(i8** %23, i64* %24, i8 0, i8 0, i8* %25, i64 4)
-  %26 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 0
-  %27 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 1
-  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy(i8** %26, i64* %27, i8 0, i8 0, i8* %28, i64 4)
-  %29 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 0
-  %30 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 1
-  %31 = load i8*, i8** %29, align 8
-  call void @_lfortran_free(i8* %31)
-  store i8* null, i8** %29, align 8
-  store i64 0, i64* %30, align 4
-  store i32 5, i32* %call_arg_value, align 4
-  store i32 8, i32* %call_arg_value1, align 4
-  call void @_lcompilers_stringconcat(%string_descriptor* @string_const.8, %string_descriptor* %verb, i32* %call_arg_value, i32* %call_arg_value1, %string_descriptor* %__libasr__created__var__0_return_slot)
-  %32 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 0
-  %33 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 1
-  %34 = load i8*, i8** %32, align 8
-  call void @_lfortran_free(i8* %34)
-  store i8* null, i8** %32, align 8
-  store i64 0, i64* %33, align 4
-  %35 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 0
-  %36 = load i8*, i8** %35, align 8
-  %37 = ptrtoint i8* %36 to i64
-  %38 = icmp eq i64 %37, 0
-  br i1 %38, label %then, label %ifcont
+  store %string_descriptor zeroinitializer, ptr %verb, align 1
+  %14 = getelementptr %string_descriptor, ptr %verb, i32 0, i32 1
+  store i64 8, ptr %14, align 4
+  %15 = getelementptr %string_descriptor, ptr %verb, i32 0, i32 0
+  %16 = call ptr @_lfortran_malloc(i64 8)
+  store ptr %16, ptr %15, align 8
+  %17 = getelementptr %string_descriptor, ptr %verb, i32 0, i32 0
+  %18 = getelementptr %string_descriptor, ptr %verb, i32 0, i32 1
+  %19 = load ptr, ptr @string_const, align 8
+  call void @_lfortran_strcpy(ptr %17, ptr %18, i8 0, i8 0, ptr %19, i64 8)
+  %20 = getelementptr %string_descriptor, ptr %posit, i32 0, i32 0
+  %21 = getelementptr %string_descriptor, ptr %posit, i32 0, i32 1
+  %22 = load ptr, ptr @string_const.2, align 8
+  call void @_lfortran_strcpy(ptr %20, ptr %21, i8 0, i8 0, ptr %22, i64 5)
+  %23 = getelementptr %string_descriptor, ptr %title, i32 0, i32 0
+  %24 = getelementptr %string_descriptor, ptr %title, i32 0, i32 1
+  %25 = load ptr, ptr @string_const.4, align 8
+  call void @_lfortran_strcpy(ptr %23, ptr %24, i8 0, i8 0, ptr %25, i64 4)
+  %26 = getelementptr %string_descriptor, ptr %last_name, i32 0, i32 0
+  %27 = getelementptr %string_descriptor, ptr %last_name, i32 0, i32 1
+  %28 = load ptr, ptr @string_const.6, align 8
+  call void @_lfortran_strcpy(ptr %26, ptr %27, i8 0, i8 0, ptr %28, i64 4)
+  %29 = getelementptr %string_descriptor, ptr %__libasr__created__var__0_return_slot, i32 0, i32 0
+  %30 = getelementptr %string_descriptor, ptr %__libasr__created__var__0_return_slot, i32 0, i32 1
+  %31 = load ptr, ptr %29, align 8
+  call void @_lfortran_free(ptr %31)
+  store ptr null, ptr %29, align 8
+  store i64 0, ptr %30, align 4
+  store i32 5, ptr %call_arg_value, align 4
+  store i32 8, ptr %call_arg_value1, align 4
+  call void @_lcompilers_stringconcat(ptr @string_const.8, ptr %verb, ptr %call_arg_value, ptr %call_arg_value1, ptr %__libasr__created__var__0_return_slot)
+  %32 = getelementptr %string_descriptor, ptr %__libasr__created__var__1_return_slot, i32 0, i32 0
+  %33 = getelementptr %string_descriptor, ptr %__libasr__created__var__1_return_slot, i32 0, i32 1
+  %34 = load ptr, ptr %32, align 8
+  call void @_lfortran_free(ptr %34)
+  store ptr null, ptr %32, align 8
+  store i64 0, ptr %33, align 4
+  %35 = load %string_descriptor, ptr %__libasr__created__var__0_return_slot, align 1
+  %36 = getelementptr %string_descriptor, %string_descriptor %35, i32 0, i32 0
+  %37 = load ptr, %string_descriptor %36, align 8
+  %38 = ptrtoint ptr %37 to i64
+  %39 = icmp eq i64 %38, 0
+  br i1 %39, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([103 x i8], [103 x i8]* @1, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @0, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @1, i32 1, ptr @0)
   call void @exit(i32 1)
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  store i32 13, i32* %call_arg_value, align 4
-  store i32 5, i32* %call_arg_value1, align 4
-  call void @_lcompilers_stringconcat(%string_descriptor* %__libasr__created__var__0_return_slot, %string_descriptor* %posit, i32* %call_arg_value, i32* %call_arg_value1, %string_descriptor* %__libasr__created__var__1_return_slot)
-  %39 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__2_return_slot, i32 0, i32 0
-  %40 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__2_return_slot, i32 0, i32 1
-  %41 = load i8*, i8** %39, align 8
-  call void @_lfortran_free(i8* %41)
-  store i8* null, i8** %39, align 8
-  store i64 0, i64* %40, align 4
-  %42 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 0
-  %43 = load i8*, i8** %42, align 8
-  %44 = ptrtoint i8* %43 to i64
-  %45 = icmp eq i64 %44, 0
-  br i1 %45, label %then2, label %ifcont3
+  store i32 13, ptr %call_arg_value, align 4
+  store i32 5, ptr %call_arg_value1, align 4
+  call void @_lcompilers_stringconcat(ptr %__libasr__created__var__0_return_slot, ptr %posit, ptr %call_arg_value, ptr %call_arg_value1, ptr %__libasr__created__var__1_return_slot)
+  %40 = getelementptr %string_descriptor, ptr %__libasr__created__var__2_return_slot, i32 0, i32 0
+  %41 = getelementptr %string_descriptor, ptr %__libasr__created__var__2_return_slot, i32 0, i32 1
+  %42 = load ptr, ptr %40, align 8
+  call void @_lfortran_free(ptr %42)
+  store ptr null, ptr %40, align 8
+  store i64 0, ptr %41, align 4
+  %43 = load %string_descriptor, ptr %__libasr__created__var__1_return_slot, align 1
+  %44 = getelementptr %string_descriptor, %string_descriptor %43, i32 0, i32 0
+  %45 = load ptr, %string_descriptor %44, align 8
+  %46 = ptrtoint ptr %45 to i64
+  %47 = icmp eq i64 %46, 0
+  br i1 %47, label %then2, label %ifcont3
 
 then2:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([103 x i8], [103 x i8]* @3, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @2, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @3, i32 1, ptr @2)
   call void @exit(i32 1)
   unreachable
 
 ifcont3:                                          ; preds = %ifcont
-  store i32 18, i32* %call_arg_value, align 4
-  store i32 4, i32* %call_arg_value1, align 4
-  call void @_lcompilers_stringconcat(%string_descriptor* %__libasr__created__var__1_return_slot, %string_descriptor* %title, i32* %call_arg_value, i32* %call_arg_value1, %string_descriptor* %__libasr__created__var__2_return_slot)
-  %46 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__3_return_slot, i32 0, i32 0
-  %47 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__3_return_slot, i32 0, i32 1
-  %48 = load i8*, i8** %46, align 8
-  call void @_lfortran_free(i8* %48)
-  store i8* null, i8** %46, align 8
-  store i64 0, i64* %47, align 4
-  %49 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__2_return_slot, i32 0, i32 0
-  %50 = load i8*, i8** %49, align 8
-  %51 = ptrtoint i8* %50 to i64
-  %52 = icmp eq i64 %51, 0
-  br i1 %52, label %then4, label %ifcont5
+  store i32 18, ptr %call_arg_value, align 4
+  store i32 4, ptr %call_arg_value1, align 4
+  call void @_lcompilers_stringconcat(ptr %__libasr__created__var__1_return_slot, ptr %title, ptr %call_arg_value, ptr %call_arg_value1, ptr %__libasr__created__var__2_return_slot)
+  %48 = getelementptr %string_descriptor, ptr %__libasr__created__var__3_return_slot, i32 0, i32 0
+  %49 = getelementptr %string_descriptor, ptr %__libasr__created__var__3_return_slot, i32 0, i32 1
+  %50 = load ptr, ptr %48, align 8
+  call void @_lfortran_free(ptr %50)
+  store ptr null, ptr %48, align 8
+  store i64 0, ptr %49, align 4
+  %51 = load %string_descriptor, ptr %__libasr__created__var__2_return_slot, align 1
+  %52 = getelementptr %string_descriptor, %string_descriptor %51, i32 0, i32 0
+  %53 = load ptr, %string_descriptor %52, align 8
+  %54 = ptrtoint ptr %53 to i64
+  %55 = icmp eq i64 %54, 0
+  br i1 %55, label %then4, label %ifcont5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([103 x i8], [103 x i8]* @5, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @5, i32 1, ptr @4)
   call void @exit(i32 1)
   unreachable
 
 ifcont5:                                          ; preds = %ifcont3
-  store i32 22, i32* %call_arg_value, align 4
-  store i32 7, i32* %call_arg_value1, align 4
-  call void @_lcompilers_stringconcat(%string_descriptor* %__libasr__created__var__2_return_slot, %string_descriptor* %last_name, i32* %call_arg_value, i32* %call_arg_value1, %string_descriptor* %__libasr__created__var__3_return_slot)
-  %53 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__4_return_slot, i32 0, i32 0
-  %54 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__4_return_slot, i32 0, i32 1
-  %55 = load i8*, i8** %53, align 8
-  call void @_lfortran_free(i8* %55)
-  store i8* null, i8** %53, align 8
-  store i64 0, i64* %54, align 4
-  %56 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__3_return_slot, i32 0, i32 0
-  %57 = load i8*, i8** %56, align 8
-  %58 = ptrtoint i8* %57 to i64
-  %59 = icmp eq i64 %58, 0
-  br i1 %59, label %then6, label %ifcont7
+  store i32 22, ptr %call_arg_value, align 4
+  store i32 7, ptr %call_arg_value1, align 4
+  call void @_lcompilers_stringconcat(ptr %__libasr__created__var__2_return_slot, ptr %last_name, ptr %call_arg_value, ptr %call_arg_value1, ptr %__libasr__created__var__3_return_slot)
+  %56 = getelementptr %string_descriptor, ptr %__libasr__created__var__4_return_slot, i32 0, i32 0
+  %57 = getelementptr %string_descriptor, ptr %__libasr__created__var__4_return_slot, i32 0, i32 1
+  %58 = load ptr, ptr %56, align 8
+  call void @_lfortran_free(ptr %58)
+  store ptr null, ptr %56, align 8
+  store i64 0, ptr %57, align 4
+  %59 = load %string_descriptor, ptr %__libasr__created__var__3_return_slot, align 1
+  %60 = getelementptr %string_descriptor, %string_descriptor %59, i32 0, i32 0
+  %61 = load ptr, %string_descriptor %60, align 8
+  %62 = ptrtoint ptr %61 to i64
+  %63 = icmp eq i64 %62, 0
+  br i1 %63, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont5
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([103 x i8], [103 x i8]* @7, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @6, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @7, i32 1, ptr @6)
   call void @exit(i32 1)
   unreachable
 
 ifcont7:                                          ; preds = %ifcont5
-  store i32 29, i32* %call_arg_value, align 4
-  store i32 1, i32* %call_arg_value1, align 4
-  call void @_lcompilers_stringconcat(%string_descriptor* %__libasr__created__var__3_return_slot, %string_descriptor* @string_const.10, i32* %call_arg_value, i32* %call_arg_value1, %string_descriptor* %__libasr__created__var__4_return_slot)
-  %60 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
-  %61 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 1
-  %62 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__4_return_slot, i32 0, i32 0
-  %63 = load i8*, i8** %62, align 8
-  %64 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__4_return_slot, i32 0, i32 1
-  %65 = load i64, i64* %64, align 4
-  call void @_lfortran_strcpy(i8** %60, i64* %61, i8 0, i8 0, i8* %63, i64 %65)
-  %66 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
-  %67 = load i8*, i8** %66, align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %67, i32 29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  store i32 29, ptr %call_arg_value, align 4
+  store i32 1, ptr %call_arg_value1, align 4
+  call void @_lcompilers_stringconcat(ptr %__libasr__created__var__3_return_slot, ptr @string_const.10, ptr %call_arg_value, ptr %call_arg_value1, ptr %__libasr__created__var__4_return_slot)
+  %64 = load %string_descriptor, ptr %__libasr__created__var__4_return_slot, align 1
+  %65 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 0
+  %66 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 1
+  %67 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 0
+  %68 = load ptr, %string_descriptor %67, align 8
+  %69 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 1
+  %70 = load i64, %string_descriptor %69, align 4
+  call void @_lfortran_strcpy(ptr %65, ptr %66, i8 0, i8 0, ptr %68, i64 %70)
+  %71 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 0
+  %72 = load ptr, ptr %71, align 8
+  call void @_lfortran_printf(ptr @9, ptr %72, i32 29, ptr @8, i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -294,142 +301,184 @@ FINALIZE_SYMTABLE_string_03:                      ; preds = %return
   br label %Finalize_Variable___libasr__created__var__0_return_slot
 
 Finalize_Variable___libasr__created__var__0_return_slot: ; preds = %FINALIZE_SYMTABLE_string_03
-  %68 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 0
-  %69 = load i8*, i8** %68, align 8
-  %70 = icmp eq i8* %69, null
-  br i1 %70, label %free_done, label %free_nonnull
+  %73 = getelementptr %string_descriptor, ptr %__libasr__created__var__0_return_slot, i32 0, i32 0
+  %74 = load ptr, ptr %73, align 8
+  %75 = icmp eq ptr %74, null
+  br i1 %75, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable___libasr__created__var__0_return_slot
-  call void @_lfortran_free(i8* %69)
+  call void @_lfortran_free(ptr %74)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable___libasr__created__var__0_return_slot
   br label %Finalize_Variable___libasr__created__var__1_return_slot
 
 Finalize_Variable___libasr__created__var__1_return_slot: ; preds = %free_done
-  %71 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 0
-  %72 = load i8*, i8** %71, align 8
-  %73 = icmp eq i8* %72, null
-  br i1 %73, label %free_done9, label %free_nonnull8
+  %76 = getelementptr %string_descriptor, ptr %__libasr__created__var__1_return_slot, i32 0, i32 0
+  %77 = load ptr, ptr %76, align 8
+  %78 = icmp eq ptr %77, null
+  br i1 %78, label %free_done9, label %free_nonnull8
 
 free_nonnull8:                                    ; preds = %Finalize_Variable___libasr__created__var__1_return_slot
-  call void @_lfortran_free(i8* %72)
+  call void @_lfortran_free(ptr %77)
   br label %free_done9
 
 free_done9:                                       ; preds = %free_nonnull8, %Finalize_Variable___libasr__created__var__1_return_slot
   br label %Finalize_Variable___libasr__created__var__2_return_slot
 
 Finalize_Variable___libasr__created__var__2_return_slot: ; preds = %free_done9
-  %74 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__2_return_slot, i32 0, i32 0
-  %75 = load i8*, i8** %74, align 8
-  %76 = icmp eq i8* %75, null
-  br i1 %76, label %free_done11, label %free_nonnull10
+  %79 = getelementptr %string_descriptor, ptr %__libasr__created__var__2_return_slot, i32 0, i32 0
+  %80 = load ptr, ptr %79, align 8
+  %81 = icmp eq ptr %80, null
+  br i1 %81, label %free_done11, label %free_nonnull10
 
 free_nonnull10:                                   ; preds = %Finalize_Variable___libasr__created__var__2_return_slot
-  call void @_lfortran_free(i8* %75)
+  call void @_lfortran_free(ptr %80)
   br label %free_done11
 
 free_done11:                                      ; preds = %free_nonnull10, %Finalize_Variable___libasr__created__var__2_return_slot
   br label %Finalize_Variable___libasr__created__var__3_return_slot
 
 Finalize_Variable___libasr__created__var__3_return_slot: ; preds = %free_done11
-  %77 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__3_return_slot, i32 0, i32 0
-  %78 = load i8*, i8** %77, align 8
-  %79 = icmp eq i8* %78, null
-  br i1 %79, label %free_done13, label %free_nonnull12
+  %82 = getelementptr %string_descriptor, ptr %__libasr__created__var__3_return_slot, i32 0, i32 0
+  %83 = load ptr, ptr %82, align 8
+  %84 = icmp eq ptr %83, null
+  br i1 %84, label %free_done13, label %free_nonnull12
 
 free_nonnull12:                                   ; preds = %Finalize_Variable___libasr__created__var__3_return_slot
-  call void @_lfortran_free(i8* %78)
+  call void @_lfortran_free(ptr %83)
   br label %free_done13
 
 free_done13:                                      ; preds = %free_nonnull12, %Finalize_Variable___libasr__created__var__3_return_slot
   br label %Finalize_Variable___libasr__created__var__4_return_slot
 
 Finalize_Variable___libasr__created__var__4_return_slot: ; preds = %free_done13
-  %80 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__4_return_slot, i32 0, i32 0
-  %81 = load i8*, i8** %80, align 8
-  %82 = icmp eq i8* %81, null
-  br i1 %82, label %free_done15, label %free_nonnull14
+  %85 = getelementptr %string_descriptor, ptr %__libasr__created__var__4_return_slot, i32 0, i32 0
+  %86 = load ptr, ptr %85, align 8
+  %87 = icmp eq ptr %86, null
+  br i1 %87, label %free_done15, label %free_nonnull14
 
 free_nonnull14:                                   ; preds = %Finalize_Variable___libasr__created__var__4_return_slot
-  call void @_lfortran_free(i8* %81)
+  call void @_lfortran_free(ptr %86)
   br label %free_done15
 
 free_done15:                                      ; preds = %free_nonnull14, %Finalize_Variable___libasr__created__var__4_return_slot
   br label %Finalize_Variable_combined
 
 Finalize_Variable_combined:                       ; preds = %free_done15
-  %83 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
-  %84 = load i8*, i8** %83, align 8
-  %85 = icmp eq i8* %84, null
-  br i1 %85, label %free_done17, label %free_nonnull16
+  %88 = getelementptr %string_descriptor, ptr %combined, i32 0, i32 0
+  %89 = load ptr, ptr %88, align 8
+  %90 = icmp eq ptr %89, null
+  br i1 %90, label %free_done17, label %free_nonnull16
 
 free_nonnull16:                                   ; preds = %Finalize_Variable_combined
-  call void @_lfortran_free(i8* %84)
+  call void @_lfortran_free(ptr %89)
   br label %free_done17
 
 free_done17:                                      ; preds = %free_nonnull16, %Finalize_Variable_combined
   br label %Finalize_Variable_last_name
 
 Finalize_Variable_last_name:                      ; preds = %free_done17
-  %86 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 0
-  %87 = load i8*, i8** %86, align 8
-  %88 = icmp eq i8* %87, null
-  br i1 %88, label %free_done19, label %free_nonnull18
+  %91 = getelementptr %string_descriptor, ptr %last_name, i32 0, i32 0
+  %92 = load ptr, ptr %91, align 8
+  %93 = icmp eq ptr %92, null
+  br i1 %93, label %free_done19, label %free_nonnull18
 
 free_nonnull18:                                   ; preds = %Finalize_Variable_last_name
-  call void @_lfortran_free(i8* %87)
+  call void @_lfortran_free(ptr %92)
   br label %free_done19
 
 free_done19:                                      ; preds = %free_nonnull18, %Finalize_Variable_last_name
   br label %Finalize_Variable_posit
 
 Finalize_Variable_posit:                          ; preds = %free_done19
-  %89 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 0
-  %90 = load i8*, i8** %89, align 8
-  %91 = icmp eq i8* %90, null
-  br i1 %91, label %free_done21, label %free_nonnull20
+  %94 = getelementptr %string_descriptor, ptr %posit, i32 0, i32 0
+  %95 = load ptr, ptr %94, align 8
+  %96 = icmp eq ptr %95, null
+  br i1 %96, label %free_done21, label %free_nonnull20
 
 free_nonnull20:                                   ; preds = %Finalize_Variable_posit
-  call void @_lfortran_free(i8* %90)
+  call void @_lfortran_free(ptr %95)
   br label %free_done21
 
 free_done21:                                      ; preds = %free_nonnull20, %Finalize_Variable_posit
   br label %Finalize_Variable_title
 
 Finalize_Variable_title:                          ; preds = %free_done21
-  %92 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
-  %93 = load i8*, i8** %92, align 8
-  %94 = icmp eq i8* %93, null
-  br i1 %94, label %free_done23, label %free_nonnull22
+  %97 = getelementptr %string_descriptor, ptr %title, i32 0, i32 0
+  %98 = load ptr, ptr %97, align 8
+  %99 = icmp eq ptr %98, null
+  br i1 %99, label %free_done23, label %free_nonnull22
 
 free_nonnull22:                                   ; preds = %Finalize_Variable_title
-  call void @_lfortran_free(i8* %93)
+  call void @_lfortran_free(ptr %98)
   br label %free_done23
 
 free_done23:                                      ; preds = %free_nonnull22, %Finalize_Variable_title
   br label %Finalize_Variable_verb
 
 Finalize_Variable_verb:                           ; preds = %free_done23
-  %95 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 0
-  %96 = load i8*, i8** %95, align 8
-  %97 = icmp eq i8* %96, null
-  br i1 %97, label %free_done25, label %free_nonnull24
+  %100 = getelementptr %string_descriptor, ptr %verb, i32 0, i32 0
+  %101 = load ptr, ptr %100, align 8
+  %102 = icmp eq ptr %101, null
+  br i1 %102, label %free_done25, label %free_nonnull24
 
 free_nonnull24:                                   ; preds = %Finalize_Variable_verb
-  call void @_lfortran_free(i8* %96)
+  call void @_lfortran_free(ptr %101)
   br label %free_done25
 
 free_done25:                                      ; preds = %free_nonnull24, %Finalize_Variable_verb
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
-declare i8* @_lfortran_malloc(i64)
+declare ptr @_lfortran_malloc(i64)
 
-declare void @_lfortran_free(i8*)
+declare void @_lfortran_free(ptr)
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
 
 declare void @_lpython_free_argv()
+asr_to_llvm: module failed verification. Error:
+GEP base pointer is not a vector or a vector of pointers
+  %22 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 0
+Load operand must be a pointer.
+  %23 = load ptr, %string_descriptor %22, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %24 = getelementptr %string_descriptor, %string_descriptor %19, i32 0, i32 1
+Load operand must be a pointer.
+  %25 = load i64, %string_descriptor %24, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %44 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 0
+Load operand must be a pointer.
+  %45 = load ptr, %string_descriptor %44, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %46 = getelementptr %string_descriptor, %string_descriptor %41, i32 0, i32 1
+Load operand must be a pointer.
+  %47 = load i64, %string_descriptor %46, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %36 = getelementptr %string_descriptor, %string_descriptor %35, i32 0, i32 0
+Load operand must be a pointer.
+  %37 = load ptr, %string_descriptor %36, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %44 = getelementptr %string_descriptor, %string_descriptor %43, i32 0, i32 0
+Load operand must be a pointer.
+  %45 = load ptr, %string_descriptor %44, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %52 = getelementptr %string_descriptor, %string_descriptor %51, i32 0, i32 0
+Load operand must be a pointer.
+  %53 = load ptr, %string_descriptor %52, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %60 = getelementptr %string_descriptor, %string_descriptor %59, i32 0, i32 0
+Load operand must be a pointer.
+  %61 = load ptr, %string_descriptor %60, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %67 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 0
+Load operand must be a pointer.
+  %68 = load ptr, %string_descriptor %67, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %69 = getelementptr %string_descriptor, %string_descriptor %64, i32 0, i32 1
+Load operand must be a pointer.
+  %70 = load i64, %string_descriptor %69, align 4
+

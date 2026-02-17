@@ -1,0 +1,6 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+GEP base pointer is not a vector or a vector of pointers
+  %6 = getelementptr %string_descriptor, %string_descriptor %5, i32 0, i32 0
+Load operand must be a pointer.
+  %7 = load ptr, %string_descriptor %6, align 8
+
