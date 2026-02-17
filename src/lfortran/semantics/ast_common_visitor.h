@@ -15110,13 +15110,17 @@ public:
                 ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(tmp2->m_v);
 
                 Vec<ASR::dimension_t> dims;
-                dims.reserve(al, 1);
+                dims.reserve(al, array_section->n_args);
 
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                dim.m_length = ASRUtils::compute_length_from_start_end(al, array_section->m_args->m_left, array_section->m_args->m_right);
-                dims.push_back(al, dim);
+                for (size_t idx = 0; idx < array_section->n_args; idx++) {
+                    if (array_section->m_args[idx].m_step != nullptr) {
+                        ASR::dimension_t dim;
+                        dim.loc = loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                        dim.m_length = ASRUtils::compute_length_from_start_end(al, array_section->m_args[idx].m_left, array_section->m_args[idx].m_right);
+                        dims.push_back(al, dim);
+                    }
+                }
 
                 array_found = true;
                 array_type = ASRUtils::TYPE(ASR::make_Array_t(
