@@ -3285,6 +3285,10 @@ public:
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::SameTypeAs: {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                    break;
+                }
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_args[0]);
@@ -3334,6 +3338,10 @@ public:
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::ExtendsTypeOf: {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                    break;
+                }
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_args[0]);
