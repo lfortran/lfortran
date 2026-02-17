@@ -3313,18 +3313,6 @@ public:
             return result;
         };
 
-        auto element_types_differ = [&](ASR::ttype_t* from, ASR::ttype_t* to) -> bool {
-            ASR::ttype_t* from_el = ASRUtils::extract_type(from);
-            ASR::ttype_t* to_el = ASRUtils::extract_type(to);
-            if (from_el->type != to_el->type) return true;
-            if (ASR::is_a<ASR::StructType_t>(*from_el)) {
-                return ASR::down_cast<ASR::StructType_t>(from_el)->m_is_unlimited_polymorphic !=
-                       ASR::down_cast<ASR::StructType_t>(to_el)->m_is_unlimited_polymorphic;
-            }
-            return ASRUtils::extract_kind_from_ttype_t(from_el) !=
-                   ASRUtils::extract_kind_from_ttype_t(to_el);
-        };
-
         for( size_t i = 0; i < x.n_body; i++ ) {
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3413,7 +3401,7 @@ public:
                             !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
                         selector_sym_for_map = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
                         ASR::ttype_t* cast_type = assoc_variable->m_type;
-                        select_type_casts_map[selector_sym_for_map] = {true, cast_type, sym};
+                        select_type_casts_map[selector_sym_for_map] = {ASR::cast_kindType::ClassToClass, cast_type, sym};
                     }
                     transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     // Clear the map entry
@@ -3491,7 +3479,7 @@ public:
                             !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
                         selector_sym_for_map_tsn = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
                         ASR::ttype_t* cast_type = assoc_variable->m_type;
-                        select_type_casts_map[selector_sym_for_map_tsn] = {false, cast_type, sym};
+                        select_type_casts_map[selector_sym_for_map_tsn] = {ASR::cast_kindType::ClassToStruct, cast_type, sym};
                     }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     // Clear the map entry
@@ -3513,6 +3501,11 @@ public:
                     AST::TypeStmtType_t* type_stmt_type = AST::down_cast<AST::TypeStmtType_t>(x.m_body[i]);
                     ASR::ttype_t* selector_type = nullptr;
                     ASR::ttype_t* selector_ttype = nullptr;
+                    // view_type is the guard type wrapped with array/pointer/allocatable
+                    // from the selector. Used as the Cast target type.
+                    ASR::ttype_t* view_type = nullptr;
+                    // Whether the selector is an array — determines which path we use
+                    bool is_selector_array = false;
                     if( assoc_variable ) {
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
@@ -3533,59 +3526,104 @@ public:
                         }
                         selector_ttype = selector_variable ? selector_variable->m_type : nullptr;
                         if (selector_ttype) {
-                            ASR::ttype_t* view_type = make_typed_selector_view_type(
+                            view_type = make_typed_selector_view_type(
                                 type_stmt_type->base.base.loc, selector_ttype, selector_type);
+                            is_selector_array = ASRUtils::is_array(
+                                ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(selector_ttype)));
+                        } else {
+                            view_type = selector_type;
+                        }
+                        if (is_selector_array) {
+                            // For arrays, use old mechanism: rewrite the type to the guard type.
+                            // Array indexing in semantic analysis requires the variable to have
+                            // the correct element type; ClassToIntrinsic wrapping would break
+                            // ArrayItem creation because the Cast obscures the array nature.
                             assoc_variable->m_type = view_type;
                         } else {
-                            assoc_variable->m_type = selector_type;
+                            // Design (C): Do NOT rewrite assoc_variable->m_type to the guard type.
+                            // The variable stays as class(*) in the ASR. Every use is
+                            // wrapped in a ClassToIntrinsic Cast node via select_type_casts_map.
+                            // For the assoc_sym path, set the type to the selector's polymorphic type,
+                            // but strip Allocatable and wrap in Pointer since the assoc variable
+                            // is an alias (not the owner of the allocation). This prevents the
+                            // LLVM backend from deallocating it when the block goes out of scope.
+                            // For the !assoc_sym path, assoc_variable IS selector_variable -- don't touch it.
+                            if (assoc_sym) {
+                                ASR::ttype_t* assoc_type = selector_ttype ? selector_ttype
+                                    : ASRUtils::expr_type(m_selector);
+                                assoc_type = ASRUtils::type_get_past_allocatable(assoc_type);
+                                if (!ASR::is_a<ASR::Pointer_t>(*assoc_type)) {
+                                    assoc_type = ASRUtils::make_Pointer_t_util(al,
+                                        type_stmt_type->base.base.loc, assoc_type);
+                                }
+                                assoc_variable->m_type = assoc_type;
+                            }
                         }
+                        // Dependencies are still computed from the guard type.
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, assoc_variable->m_type, nullptr, nullptr, assoc_variable_name);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, view_type, nullptr, nullptr, assoc_variable_name);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type_declaration = type_declaration;
+                        if (is_selector_array) {
+                            // For arrays, we rewrote m_type to the guard type, so use
+                            // the type_declaration from determine_type().
+                            assoc_variable->m_type_declaration = type_declaration;
+                        } else {
+                            // For scalars, the variable keeps class(*) type (StructType).
+                            // The verifier requires StructType variables to have a type
+                            // declaration, so use the selector's type declaration,
+                            // imported into the current scope for modfile compatibility.
+                            ASR::symbol_t* type_decl = select_variable_m_type_declaration;
+                            if (type_decl) {
+                                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+                            }
+                            assoc_variable->m_type_declaration = type_decl;
+                        }
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
                     if( assoc_sym ) {
                         ASR::expr_t* assoc_value = m_selector;
-                        bool is_array_selector = selector_variable && selector_ttype &&
-                            ASRUtils::is_array(ASRUtils::type_get_past_allocatable(
-                                ASRUtils::type_get_past_pointer(selector_ttype)));
-                        bool needs_cast = is_array_selector &&
-                            element_types_differ(ASRUtils::expr_type(m_selector), assoc_variable->m_type);
-                        if (needs_cast) {
-                            ASR::ttype_t* assoc_base = ASRUtils::type_get_past_allocatable(
-                                ASRUtils::type_get_past_pointer(assoc_variable->m_type));
-                            ASR::ttype_t* cast_type = assoc_variable->m_type;
-                            if (ASR::is_a<ASR::Array_t>(*assoc_base) &&
-                                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(m_selector))) {
-                                ASR::Array_t* assoc_arr = ASR::down_cast<ASR::Array_t>(assoc_base);
-                                Vec<ASR::dimension_t> dims;
-                                dims.reserve(al, assoc_arr->n_dims);
-                                for (size_t d = 0; d < assoc_arr->n_dims; d++) {
-                                    ASR::dimension_t dim;
-                                    dim.loc = type_stmt_type->base.base.loc;
-                                    dim.m_start = ASRUtils::get_bound<SemanticAbort>(
-                                        m_selector, (int)d + 1, "lbound", al, diag);
-                                    dim.m_length = ASRUtils::get_size(
-                                        m_selector, (int)d + 1, al);
-                                    dims.push_back(al, dim);
+                        if (is_selector_array) {
+                            // For arrays, apply ArrayPhysicalCast if element types differ
+                            bool needs_cast = selector_ttype &&
+                                ASRUtils::extract_type(ASRUtils::expr_type(m_selector))->type !=
+                                ASRUtils::extract_type(assoc_variable->m_type)->type;
+                            if (needs_cast) {
+                                ASR::ttype_t* assoc_base = ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(assoc_variable->m_type));
+                                ASR::ttype_t* cast_type = assoc_variable->m_type;
+                                if (ASR::is_a<ASR::Array_t>(*assoc_base) &&
+                                    !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(m_selector))) {
+                                    ASR::Array_t* assoc_arr = ASR::down_cast<ASR::Array_t>(assoc_base);
+                                    Vec<ASR::dimension_t> dims;
+                                    dims.reserve(al, assoc_arr->n_dims);
+                                    for (size_t d = 0; d < assoc_arr->n_dims; d++) {
+                                        ASR::dimension_t dim;
+                                        dim.loc = type_stmt_type->base.base.loc;
+                                        dim.m_start = ASRUtils::get_bound<SemanticAbort>(
+                                            m_selector, (int)d + 1, "lbound", al, diag);
+                                        dim.m_length = ASRUtils::get_size(
+                                            m_selector, (int)d + 1, al);
+                                        dims.push_back(al, dim);
+                                    }
+                                    cast_type = ASRUtils::make_Array_t_util(
+                                        al, type_stmt_type->base.base.loc,
+                                        assoc_arr->m_type, dims.p, dims.size(),
+                                        ASR::abiType::Source, false, assoc_arr->m_physical_type, true);
                                 }
-                                cast_type = ASRUtils::make_Array_t_util(
-                                    al, type_stmt_type->base.base.loc,
-                                    assoc_arr->m_type, dims.p, dims.size(),
-                                    ASR::abiType::Source, false, assoc_arr->m_physical_type, true);
+                                ASR::array_physical_typeType old_ptype =
+                                    ASRUtils::extract_physical_type(ASRUtils::expr_type(m_selector));
+                                ASR::array_physical_typeType new_ptype =
+                                    ASRUtils::extract_physical_type(assoc_variable->m_type);
+                                assoc_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                                    al, type_stmt_type->base.base.loc, assoc_value,
+                                    old_ptype, new_ptype, cast_type, nullptr));
                             }
-                            ASR::array_physical_typeType old_ptype =
-                                ASRUtils::extract_physical_type(ASRUtils::expr_type(m_selector));
-                            ASR::array_physical_typeType new_ptype =
-                                ASRUtils::extract_physical_type(assoc_variable->m_type);
-                            assoc_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                                al, type_stmt_type->base.base.loc, m_selector,
-                                old_ptype, new_ptype, cast_type, nullptr));
                         }
+                        // Do NOT wrap in ClassToIntrinsic at the Associate level.
                         type_stmt_type_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_type->base.base.loc, assoc_sym)), assoc_value)) );
@@ -3595,11 +3633,32 @@ public:
                                                     al, type_stmt_type->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
-                    // Track type guard context for polymorphic intrinsic validation
-                    ASR::ttype_t* prev_select_type_guard = current_select_type_guard;
-                    current_select_type_guard = selector_type;
+                    // Emit ClassToIntrinsic entries in select_type_casts_map for scalars only.
+                    // For arrays, the old mechanism (change_symtab + select_type_context_map +
+                    // load_unlimited_polymorphic_value) handles value extraction because
+                    // ClassToIntrinsic wrapping would break ArrayItem creation.
+                    // Use selector_type (raw guard type, e.g., integer(4)) as the Cast target,
+                    // NOT view_type (which includes Allocatable/Pointer wrappers from the
+                    // selector). The Cast handler manages allocatable/pointer indirection
+                    // internally via LLVM::is_llvm_pointer on the source arg.
+                    ASR::symbol_t* selector_sym_for_map_tst = nullptr;
+                    if (!is_selector_array) {
+                        if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector)) {
+                            selector_sym_for_map_tst = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+                            select_type_casts_map[selector_sym_for_map_tst] = {
+                                ASR::cast_kindType::ClassToIntrinsic, selector_type, nullptr};
+                        }
+                        if (assoc_sym) {
+                            selector_sym_for_map_tst = assoc_sym;
+                            select_type_casts_map[assoc_sym] = {
+                                ASR::cast_kindType::ClassToIntrinsic, selector_type, nullptr};
+                        }
+                    }
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
-                    current_select_type_guard = prev_select_type_guard;
+                    // Clear the map entry
+                    if (selector_sym_for_map_tst) {
+                        select_type_casts_map.erase(selector_sym_for_map_tst);
+                    }
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = type_stmt_type_body.p;
                     block_t_->n_body = type_stmt_type_body.size();
@@ -4875,7 +4934,8 @@ public:
         );
 
         is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
-            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))));
+            (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))) ||
+             ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic));
 
         // Allow function calls on LHS if they return a POINTER
         if (!is_valid_lhs && target->type == ASR::exprType::FunctionCall) {
@@ -6626,7 +6686,7 @@ public:
         } else if (!fmt && body.size() == 1
                         && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
                         && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])
-                        && !(current_select_type_guard && ASR::is_a<ASR::String_t>(*current_select_type_guard))) {
+                        ) {
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,

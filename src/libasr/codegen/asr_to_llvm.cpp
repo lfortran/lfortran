@@ -417,25 +417,6 @@ public:
         llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value); \
     } \
 
-    #define load_unlimited_polymorpic_value(expr, llvm_value) if(ASR::is_a<ASR::Var_t>(*expr) &&                    \
-        ASRUtils::is_unlimited_polymorphic_type(expr) &&                                                            \
-        !ASRUtils::is_array(ASRUtils::expr_type(expr))) {                                                           \
-        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);             \
-        ASR::ttype_t* _ctx_type_asr = get_select_type_block_type_asr(expr);                                         \
-        if (ASR::is_a<ASR::Variable_t>(*sym) && _ctx_type_asr != nullptr) {                                         \
-            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                                    \
-                ASRUtils::extract_type(_ctx_type_asr), module.get());                                               \
-            if (compiler_options.new_classes) {                                                                     \
-                llvm::Type *generic_llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                        \
-                    ASRUtils::extract_type(ASRUtils::expr_type(expr)), module.get());                               \
-                llvm_value = llvm_utils->create_gep2(generic_llvm_type, llvm_value, 1);                             \
-                llvm_value = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, llvm_value);                               \
-                llvm_value = builder->CreateBitCast(llvm_value, llvm_type->getPointerTo());                         \
-            }                                                                                                       \
-            llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);                                            \
-        }                                                                                                           \
-    }                                                                                                               \
-
     // Inserts a new block `bb` using the current builder
     // and terminates the previous block if it is not already terminated
     void start_new_block(llvm::BasicBlock *bb) {
@@ -3631,7 +3612,10 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            // Look up select type context by expression
+            // Look up select type context by expression.
+            // Note: Under new_classes, is_polymorphic is always false because
+            // select type variables are Cast-wrapped or type-rewritten.
+            // Kept for the !new_classes legacy path.
             llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
             bool is_polymorphic = (ctx_block_type != nullptr) &&
                     ASR::is_a<ASR::Var_t>(*x.m_v) &&
@@ -4031,6 +4015,10 @@ public:
                 x.m_v, ASRUtils::type_get_past_allocatable_pointer(x_m_v_type), module.get());
             tmp = llvm_utils->CreateLoad2(type->getPointerTo(), tmp);
         }
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // (x.m_v is Cast_t, not Var_t) or type-rewritten (expr_type is struct type,
+        // not unlimited polymorphic). So this branch is dead under new_classes.
+        // Kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -8057,7 +8045,10 @@ public:
                                 break;
                             }
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
-                                // Check if this is polymorphic array pointer association in select type
+// Check if this is polymorphic array pointer association in select type.
+                // Note: Under new_classes, select type variables are either Cast-wrapped
+                // or type-rewritten, so is_unlimited_polymorphic_type is false and this
+                // branch is never reached. Kept for the !new_classes legacy path.
                                 if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) &&
                                         get_select_type_block_type_asr(x.m_value) != nullptr) {
 
@@ -8482,6 +8473,52 @@ public:
             return ;
         }
 
+        // ClassToIntrinsic store-through: when the LHS is a Cast(Var, ClassToIntrinsic, ...),
+        // we extract the data pointer from the polymorphic wrapper and store the RHS into it.
+        if (ASR::is_a<ASR::Cast_t>(*x.m_target) &&
+            ASR::down_cast<ASR::Cast_t>(x.m_target)->m_kind ==
+                ASR::cast_kindType::ClassToIntrinsic) {
+            ASR::Cast_t* target_cast = ASR::down_cast<ASR::Cast_t>(x.m_target);
+            ASR::ttype_t* target_type = target_cast->m_type;   // e.g., integer(4)
+            ASR::ttype_t* poly_type = ASRUtils::expr_type(target_cast->m_arg); // class(*)
+
+            // 1. Evaluate RHS
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;  // load to value
+            this->visit_expr_wrapper(x.m_value, true);
+            llvm::Value* rhs_value = tmp;
+
+            // 2. Evaluate LHS (the class(*) variable — NOT the Cast)
+            ptr_loads = 0;  // get pointer to polymorphic wrapper
+            this->visit_expr(*target_cast->m_arg);
+            llvm::Value* poly_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            // 3. Handle allocatable/pointer extra indirection
+            llvm::Type* poly_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                target_cast->m_arg, ASRUtils::extract_type(poly_type), module.get());
+            if (LLVM::is_llvm_pointer(*poly_type)) {
+                poly_ptr = llvm_utils->CreateLoad2(poly_llvm_type->getPointerTo(), poly_ptr);
+            }
+
+            // 4. GEP to data field (index 1), load i8*, bitcast, store
+            llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                const_cast<ASR::expr_t*>(&target_cast->base),
+                ASRUtils::extract_type(target_type), module.get());
+            llvm::Value* data_ptr = llvm_utils->create_gep2(poly_llvm_type, poly_ptr, 1);
+            data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+            data_ptr = builder->CreateBitCast(data_ptr, target_llvm_type->getPointerTo());
+
+            if (ASRUtils::is_character(*target_type)) {
+                // String assignment needs lfortran_str_copy
+                llvm_utils->deepcopy(x.m_value, rhs_value, data_ptr,
+                    target_type, target_type, module.get());
+            } else {
+                builder->CreateStore(rhs_value, data_ptr);
+            }
+            return;
+        }
+
         ASR::ttype_t* asr_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* asr_value_type = ASRUtils::expr_type(x.m_value);
         bool is_target_list = ASR::is_a<ASR::List_t>(*asr_target_type);
@@ -8838,7 +8875,7 @@ public:
             ptr_loads = LLVM::is_llvm_pointer(*asr_target_type);
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
-            this->visit_expr(*x.m_target);
+            this->visit_expr_wrapper(x.m_target, true);
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target = tmp;
             ptr_loads = ptr_loads_copy;
@@ -9101,7 +9138,6 @@ public:
             llvm::Type* union_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
             tmp = llvm_utils->CreateLoad2(union_type, tmp);
         }
-        load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
         if (x.m_target->type == ASR::exprType::ArrayItem)
             value = logical_store_val(value);
@@ -10360,7 +10396,12 @@ public:
                     ASR::TypeStmtType_t* type_stmt_type_t = ASR::down_cast<ASR::TypeStmtType_t>(select_type_stmts[i]);
                     ASR::ttype_t* type_stmt_type = type_stmt_type_t->m_type;
                     ctx.block_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, type_stmt_type, module.get());
-                    ctx.block_type_asr = type_stmt_type;
+                    // block_type_asr is no longer consumed by any code path for new_classes
+                    // (the macro load_unlimited_polymorpic_value was removed).
+                    // Keep it set for the !new_classes path.
+                    if (!compiler_options.new_classes) {
+                        ctx.block_type_asr = type_stmt_type;
+                    }
                     ctx.der_type.clear();
                     int kind = ASRUtils::extract_kind_from_ttype_t(type_stmt_type);
                     if (compiler_options.new_classes) {
@@ -10445,7 +10486,11 @@ public:
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
                     // Look up association symbol in block's symtab and add to map
                     ASR::symbol_t* block_assoc_sym = block->m_symtab->resolve_symbol(assoc_name);
-                    if (block_assoc_sym && block_assoc_sym != selector_sym) {
+                    // For TypeStmtType under new_classes, ClassToIntrinsic Cast nodes
+                    // handle value extraction, so don't add to select_type_context_map.
+                    bool skip_context = compiler_options.new_classes &&
+                        select_type_stmts[i]->type == ASR::type_stmtType::TypeStmtType;
+                    if (block_assoc_sym && block_assoc_sym != selector_sym && !skip_context) {
                         assoc_sym = ASRUtils::symbol_get_past_external(block_assoc_sym);
                         select_type_context_map[assoc_sym] = ctx;
                     }
@@ -10493,8 +10538,6 @@ public:
         llvm::Value *right = tmp;
         load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10536,8 +10579,6 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10622,8 +10663,6 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left);
-        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateFCmpOEQ(left, right);
@@ -10975,8 +11014,6 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         llvm::Value *zero, *cond;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
@@ -11068,16 +11105,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        // Handle polymorphic string inside select type block
-        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg) &&
-                get_select_type_block_type_asr(x.m_arg) != nullptr) {
-            this->visit_expr_wrapper(x.m_arg, true);
-            llvm::Value *str_val = tmp;
-            load_unlimited_polymorpic_value(x.m_arg, str_val);
-            tmp = builder->CreateExtractValue(str_val, 1);
-        } else {
-            tmp = get_string_length(x.m_arg); // `int64` value.
-        }
+        tmp = get_string_length(x.m_arg); // `int64` value.
         tmp = llvm_utils->convert_kind(tmp,
             llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
     }
@@ -11317,8 +11345,6 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
@@ -11455,8 +11481,6 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
-        load_unlimited_polymorpic_value(x.m_left, left_val);
-        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
             llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
@@ -12249,6 +12273,10 @@ public:
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* curr_type = nullptr;
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // (ClassToIntrinsic/ClassToStruct) or type-rewritten, so
+        // is_unlimited_polymorphic_type is false and the else branch is used.
+        // The context map lookup is kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
             curr_type = get_select_type_block_type_asr(x.m_arg);
         } else {
@@ -12481,7 +12509,6 @@ public:
         } else {
             this->visit_expr_load_wrapper(x.m_arg, ptr_loads, true);
         }
-        load_unlimited_polymorpic_value(x.m_arg, tmp);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -12974,6 +13001,46 @@ public:
                 }
                 break;
             }
+            case (ASR::cast_kindType::ClassToIntrinsic): {
+                // Cast from class(*) to an intrinsic type (integer, real, complex, etc.)
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_arg);
+                ASR::ttype_t* target_type = x.m_type;
+
+                if (ASRUtils::is_array(arg_type) &&
+                        ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
+                    // Array case: delegate to convert_class_to_type
+                    this->visit_expr_load_wrapper(x.m_arg, 0);
+                    ASR::expr_t* dest_arg = const_cast<ASR::expr_t*>(&x.base);
+                    tmp = convert_class_to_type(x.m_arg, dest_arg, target_type, tmp);
+                } else {
+                    // Scalar case: extract intrinsic value from polymorphic wrapper
+                    this->visit_expr_load_wrapper(x.m_arg, 0);
+                    llvm::Value* poly_ptr = tmp;
+                    llvm::Type* poly_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_arg, ASRUtils::extract_type(arg_type), module.get());
+                    llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        const_cast<ASR::expr_t*>(&x.base),
+                        ASRUtils::extract_type(target_type), module.get());
+                    // Handle pointer/allocatable types (extra indirection level)
+                    if (LLVM::is_llvm_pointer(*arg_type)) {
+                        poly_ptr = llvm_utils->CreateLoad2(poly_llvm_type->getPointerTo(), poly_ptr);
+                    }
+                    // GEP to data pointer field (index 1 in polymorphic struct)
+                    poly_ptr = llvm_utils->create_gep2(poly_llvm_type, poly_ptr, 1);
+                    // Load the i8* data pointer
+                    poly_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, poly_ptr);
+                    // BitCast to target type pointer
+                    poly_ptr = builder->CreateBitCast(poly_ptr, target_llvm_type->getPointerTo());
+                    // Load the value if ptr_loads > 0 (caller wants value, not pointer)
+                    // For ptr_loads == 0 (e.g., character passed to function), return pointer
+                    if (ptr_loads > 0) {
+                        tmp = llvm_utils->CreateLoad2(target_llvm_type, poly_ptr);
+                    } else {
+                        tmp = poly_ptr;
+                    }
+                }
+                break;
+            }
             case ASR::StringToArray :
                 cast_string_to_array(&x);
             break;
@@ -12998,22 +13065,15 @@ public:
             break;
             case ASR::UnboundedPointerArray:
             case ASR::PointerArray:
+                // Note: Under new_classes, unlimited polymorphic variables inside
+                // select type blocks are either Cast-wrapped (ClassToIntrinsic) or
+                // type-rewritten, so is_unlimited_polymorphic_type is always false.
+                // The else branch is kept for the !new_classes legacy path.
                 if (!ASRUtils::is_unlimited_polymorphic_type(cast->m_arg)) {
                     LCOMPILERS_ASSERT(ASRUtils::is_character_phsyical_types_matched(
                               ASRUtils::extract_type(expr_type(cast->m_arg))
                             , ASRUtils::extract_type(cast->m_type)))
                     tmp = string_llvm;
-                } else if (get_select_type_block_type_asr(cast->m_arg) && compiler_options.new_classes) {
-                    llvm::Type* polymorphic_array_desc_type = llvm_utils->get_type_from_ttype_t_util(
-                        cast->m_arg, ASRUtils::expr_type(cast->m_arg), module.get());
-                    llvm::Value* polymorphic_data_ptr = arr_descr->get_pointer_to_data(
-                        polymorphic_array_desc_type, string_llvm);
-                    llvm::Type* polymorphic_elem_type = llvm_utils->get_type_from_ttype_t_util(
-                        cast->m_arg, ASRUtils::extract_type(ASRUtils::expr_type(cast->m_arg)), module.get());
-                    polymorphic_data_ptr = llvm_utils->CreateLoad2(polymorphic_elem_type->getPointerTo(), polymorphic_data_ptr);
-                    llvm::Value* actual_data = llvm_utils->create_gep2(polymorphic_elem_type, polymorphic_data_ptr, 1);
-                    actual_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, actual_data);
-                    tmp = builder->CreateBitCast(actual_data, array_llvm_ty->getPointerTo());
                 } else {
                     tmp = string_llvm;
                 }
@@ -15744,6 +15804,9 @@ public:
         std::string res {};
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // or type-rewritten, so is_unlimited_polymorphic_type is false and this
+        // branch is never reached. Kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
             ASR::ttype_t* ctx_type_asr = get_select_type_block_type_asr(expr);
             const std::string& ctx_der_type = get_select_type_block_der_type(expr);
@@ -16498,6 +16561,13 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+            } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
+                        ASR::down_cast<ASR::Cast_t>(x.m_args[i].m_value)->m_kind ==
+                            ASR::cast_kindType::ClassToIntrinsic) {
+                // ClassToIntrinsic cast: visit with ptr_loads=0 to get pointer
+                // to the intrinsic data inside the polymorphic wrapper.
+                // This ensures write-through for intent(out)/(inout) arguments.
+                this->visit_expr_load_wrapper(x.m_args[i].m_value, 0);
             } else if((ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) && 
                         ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value))) && 
                         !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)))) {
@@ -16672,7 +16742,15 @@ public:
                         tmp = value;
                     }
                 } else if(ASR::is_a<ASR::String_t>(*arg_type)){
-                    tmp = value;
+                    if (!value->getType()->isPointerTy()) {
+                        // String value was loaded (e.g., from ClassToIntrinsic cast);
+                        // store to temp to pass by reference
+                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                        builder->CreateStore(value, target);
+                        tmp = target;
+                    } else {
+                        tmp = value;
+                    }
                 }else {
                     bool use_value = false;
                     ASR::Variable_t *orig_arg = nullptr;
