@@ -18181,6 +18181,15 @@ public:
             tmp = llvm_utils->create_gep2(class_type, tmp, 1);
             tmp = llvm_utils->CreateLoad2(class_type->getPointerTo(), tmp);
         }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type)) && compiler_options.new_classes &&
+                ASRUtils::is_unlimited_polymorphic_type(arg) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*arg)) {
+            // For unlimited polymorphic Var with new_classes, fetch_var returns
+            // the raw alloca; load once to get the actual pointer value.
+            // StructInstanceMember is already loaded via ref=true above.
+            llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
+            tmp = llvm_utils->CreateLoad2(class_type, tmp);
+        }
         if( n_dims > 0 ) {
             visit_expr_load_wrapper(arg, 1, true);
             tmp = arr_descr->get_is_allocated_flag(tmp, arg);
