@@ -10007,37 +10007,29 @@ public:
         }
 
         // INTERNAL READ SUPPORT:
-        // 3. General Load Handling
-        // INTERNAL READ SUPPORT:
-        // 3. General Load Handling
         if (load_ref && !ASRUtils::is_value_constant(x)) {
-            // ===== INTERNAL FILE FIX =====
-            bool is_internal_unit =
-                ASRUtils::is_character(*ASRUtils::expr_type(x)) &&
-                ASRUtils::is_descriptorString(ASRUtils::expr_type(x));
+            ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+            bool is_descriptor = x_type && 
+                                 ASRUtils::is_character(*x_type) &&
+                                 ASRUtils::is_descriptorString(x_type);
 
-            // Only load HERE if it is a character descriptor (internal unit)
-            // AND it's not a standard variable or array member (to avoid GEP errors)
-            if (is_internal_unit && 
-                x->type != ASR::exprType::Var && 
-                x->type != ASR::exprType::ArrayItem &&
-                x->type != ASR::exprType::StructInstanceMember) {
-                
-                llvm::Type* x_llvm_type =
-                    llvm_utils->get_type_from_ttype_t_util(
-                        x,
-                        ASRUtils::expr_type(x),
-                        module.get());
-
-                tmp = llvm_utils->CreateLoad2(
-                    x_llvm_type,
-                    tmp,
-                    is_volatile);
-                
-                return; 
+            if (is_descriptor) {
+                //These nodes must remain POINTERS for LLVM verification.
+                // 3=Var, 4=ArrayItem, 13=Cast, 28=Member, 60=StringFormat
+                if (x->type == ASR::exprType::Var || 
+                    x->type == ASR::exprType::ArrayItem ||
+                    x->type == ASR::exprType::Cast ||
+                    x->type == ASR::exprType::StructInstanceMember ||
+                    x->type == ASR::exprType::StringFormat) {
+                } else {
+                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, x_type, module.get());
+                    if (tmp->getType()->isPointerTy()) {
+                        tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
+                        return; 
+                    }
+                }
             }
-        } 
-        // Standard variables (like 'i' in do7) skip the block above 
+        }
         // and fall through to the upstream logic below.
 
         if (compiler_options.new_classes && load_ref && 
@@ -10048,7 +10040,7 @@ public:
             return;
         }
 
-        // 2. Specialized Logic for Arrays and Struct Instance Members
+        // Specialized Logic for Arrays and Struct Instance Members
         // If this block handles the load, we MUST return.
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
@@ -10059,7 +10051,7 @@ public:
                 tmp = logical_load_val(tmp, x, is_volatile);
             }
         }
-        // 3. General Load Handling
+        //General Load Handling
         if (load_ref) {
             ASR::ttype_t* t = ASRUtils::expr_type(x);
             if (!t) return;
