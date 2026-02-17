@@ -2690,7 +2690,12 @@ public:
                                     new_arg.n_dims = mold_dims_vec.size();
                                     new_alloc_args_vec.push_back(al, new_arg);
                                 }
-                            } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ) {
+                            } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ||
+                                        ASRUtils::is_unlimited_polymorphic_type(a_type) ) {
+                                // For StructType mold or when allocatee is
+                                // unlimited polymorphic (class(*)), record the
+                                // mold type so the runtime allocates the
+                                // correct concrete type.
                                 ASR::alloc_arg_t new_arg;
                                 new_arg.loc = alloc_args_vec[i].loc;
                                 new_arg.m_a = alloc_args_vec[i].m_a;
