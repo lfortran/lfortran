@@ -60,7 +60,7 @@ program derived_types_105
 
     open(10, file="derived_types_105_file.txt", form="formatted")
     read(10, '(a)') tmp
-    close(10)
+    close(10, status="delete")
 
     if (trim(tmp) /= "42") error stop
     print *, "PASS"
