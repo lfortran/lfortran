@@ -507,12 +507,16 @@ With ClassToIntrinsic, the value extraction is handled by the Cast node, so:
     target type from `select_type_casts_map`. Intrinsic types only
     support `%kind` (all types) and `%re`/`%im` (complex), handled by
     separate code paths that work correctly with the overridden type.
-17. Remove remaining dead code paths that check context map for
-    unlimited-polymorphic types (e.g., `extract_kinds`, `visit_Assignment`
-    polymorphic array branch, `SerializeType` context lookup, StringToArray
-    polymorphic branch). These are unreachable under `new_classes` since
-    all select type variables are now Cast-wrapped or type-rewritten, but
-    kept for the legacy `!new_classes` path.
+17. ✅ Remove remaining dead code paths that check context map for
+    unlimited-polymorphic types. Under `new_classes`, all select type
+    variables are Cast-wrapped or type-rewritten, making
+    `is_unlimited_polymorphic_type()` false. Removed the dead
+    `StringToArray` branch that checked `get_select_type_block_type_asr
+    && compiler_options.new_classes`. Added documentation comments to
+    `extract_kinds`, `visit_Assignment` polymorphic array branch,
+    `SerializeType` context lookup, `visit_StructInstanceMember` and
+    `visit_ArrayItem` context lookups, marking them as dead under
+    `new_classes` but kept for the `!new_classes` legacy path.
 
 ---
 
