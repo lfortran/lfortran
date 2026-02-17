@@ -3612,7 +3612,10 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            // Look up select type context by expression
+            // Look up select type context by expression.
+            // Note: Under new_classes, is_polymorphic is always false because
+            // select type variables are Cast-wrapped or type-rewritten.
+            // Kept for the !new_classes legacy path.
             llvm::Type* ctx_block_type = get_select_type_block_type(x.m_v);
             bool is_polymorphic = (ctx_block_type != nullptr) &&
                     ASR::is_a<ASR::Var_t>(*x.m_v) &&
@@ -4012,6 +4015,10 @@ public:
                 x.m_v, ASRUtils::type_get_past_allocatable_pointer(x_m_v_type), module.get());
             tmp = llvm_utils->CreateLoad2(type->getPointerTo(), tmp);
         }
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // (x.m_v is Cast_t, not Var_t) or type-rewritten (expr_type is struct type,
+        // not unlimited polymorphic). So this branch is dead under new_classes.
+        // Kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( compiler_options.new_classes && ctx_block_type) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -8038,7 +8045,10 @@ public:
                                 break;
                             }
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
-                                // Check if this is polymorphic array pointer association in select type
+// Check if this is polymorphic array pointer association in select type.
+                // Note: Under new_classes, select type variables are either Cast-wrapped
+                // or type-rewritten, so is_unlimited_polymorphic_type is false and this
+                // branch is never reached. Kept for the !new_classes legacy path.
                                 if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) &&
                                         get_select_type_block_type_asr(x.m_value) != nullptr) {
 
@@ -12254,6 +12264,10 @@ public:
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* curr_type = nullptr;
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // (ClassToIntrinsic/ClassToStruct) or type-rewritten, so
+        // is_unlimited_polymorphic_type is false and the else branch is used.
+        // The context map lookup is kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
             curr_type = get_select_type_block_type_asr(x.m_arg);
         } else {
@@ -13042,22 +13056,15 @@ public:
             break;
             case ASR::UnboundedPointerArray:
             case ASR::PointerArray:
+                // Note: Under new_classes, unlimited polymorphic variables inside
+                // select type blocks are either Cast-wrapped (ClassToIntrinsic) or
+                // type-rewritten, so is_unlimited_polymorphic_type is always false.
+                // The else branch is kept for the !new_classes legacy path.
                 if (!ASRUtils::is_unlimited_polymorphic_type(cast->m_arg)) {
                     LCOMPILERS_ASSERT(ASRUtils::is_character_phsyical_types_matched(
                               ASRUtils::extract_type(expr_type(cast->m_arg))
                             , ASRUtils::extract_type(cast->m_type)))
                     tmp = string_llvm;
-                } else if (get_select_type_block_type_asr(cast->m_arg) && compiler_options.new_classes) {
-                    llvm::Type* polymorphic_array_desc_type = llvm_utils->get_type_from_ttype_t_util(
-                        cast->m_arg, ASRUtils::expr_type(cast->m_arg), module.get());
-                    llvm::Value* polymorphic_data_ptr = arr_descr->get_pointer_to_data(
-                        polymorphic_array_desc_type, string_llvm);
-                    llvm::Type* polymorphic_elem_type = llvm_utils->get_type_from_ttype_t_util(
-                        cast->m_arg, ASRUtils::extract_type(ASRUtils::expr_type(cast->m_arg)), module.get());
-                    polymorphic_data_ptr = llvm_utils->CreateLoad2(polymorphic_elem_type->getPointerTo(), polymorphic_data_ptr);
-                    llvm::Value* actual_data = llvm_utils->create_gep2(polymorphic_elem_type, polymorphic_data_ptr, 1);
-                    actual_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, actual_data);
-                    tmp = builder->CreateBitCast(actual_data, array_llvm_ty->getPointerTo());
                 } else {
                     tmp = string_llvm;
                 }
@@ -15788,6 +15795,9 @@ public:
         std::string res {};
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
+        // Note: Under new_classes, select type variables are either Cast-wrapped
+        // or type-rewritten, so is_unlimited_polymorphic_type is false and this
+        // branch is never reached. Kept for the !new_classes legacy path.
         if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
             ASR::ttype_t* ctx_type_asr = get_select_type_block_type_asr(expr);
             const std::string& ctx_der_type = get_select_type_block_der_type(expr);
