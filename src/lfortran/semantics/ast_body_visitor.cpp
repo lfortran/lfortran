@@ -3652,11 +3652,7 @@ public:
                                 ASR::cast_kindType::ClassToIntrinsic, selector_type, nullptr};
                         }
                     }
-                    // Track type guard context for polymorphic intrinsic validation
-                    ASR::ttype_t* prev_select_type_guard = current_select_type_guard;
-                    current_select_type_guard = selector_type;
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
-                    current_select_type_guard = prev_select_type_guard;
                     // Clear the map entry
                     if (selector_sym_for_map_tst) {
                         select_type_casts_map.erase(selector_sym_for_map_tst);
@@ -6688,7 +6684,7 @@ public:
         } else if (!fmt && body.size() == 1
                         && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
                         && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])
-                        && !(current_select_type_guard && ASR::is_a<ASR::String_t>(*current_select_type_guard))) {
+                        ) {
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
