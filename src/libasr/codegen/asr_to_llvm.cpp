@@ -9805,6 +9805,9 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, tmp);
+            }
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
