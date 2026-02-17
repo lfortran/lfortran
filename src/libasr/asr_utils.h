@@ -1536,12 +1536,23 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     if (a_value == nullptr) {
         return false;
     }
-
-    if (ASRUtils::is_variable(a_value)) {
-        return true;
-    }
-
     switch (a_value->type) {
+        case ASR::exprType::Var: {
+            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            return variable_t->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* a_item = ASR::down_cast<ASR::ArrayItem_t>(a_value);
+            return is_modifiable_actual_argument_expr(a_item->m_v);
+        }
+        case ASR::exprType::StringItem:
+        case ASR::exprType::StringSection:
+        case ASR::exprType::ArraySection:
+        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::IntrinsicArrayFunction:
+        case ASR::exprType::ListItem: {
+            return true;
+        }
         case ASR::exprType::Cast: {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
@@ -1553,6 +1564,18 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::StringPhysicalCast: {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            if (func_call->m_name == nullptr) {
+                return false;
+            }
+            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
+            if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                return std::string(func->m_name) == "_lfortran_get_item";
+            }
+            return false;
         }
         default:
             return false;
