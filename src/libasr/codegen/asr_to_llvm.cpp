@@ -8893,6 +8893,15 @@ public:
                 target = llvm_utils->create_gep2(target_llvm_type, target, 1);
                 target = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target);
                 target = builder->CreateBitCast(target, value_llvm_type->getPointerTo());
+                // With ptr_loads=0, variables produce a pointer while
+                // constants produce a value directly.  deepcopy for scalar
+                // intrinsic types expects a loaded value, so load only when
+                // the LLVM value is actually a pointer.
+                if (!ASRUtils::is_array(asr_value_type) &&
+                        !ASRUtils::is_character(*asr_value_type) &&
+                        value->getType()->isPointerTy()) {
+                    value = llvm_utils->CreateLoad2(value_llvm_type, value);
+                }
                 llvm_utils->deepcopy(x.m_value, value, target,
                     asr_target_type, asr_value_type, module.get());
             }
