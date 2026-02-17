@@ -2302,10 +2302,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             SetChar& current_function_dependencies,
                             SetChar& current_module_dependencies,
                             const std::function<void(const std::string&, const Location&)> err) {
-    ASR::ttype_t* left_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(left));
-    ASR::ttype_t* right_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(right));
+    ASR::ttype_t* left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t* right_type = ASRUtils::expr_type(right);
     ASR::Struct_t* left_struct = nullptr;
-    if (ASR::is_a<ASR::StructType_t>(*left_type)) {
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(left_type))) {
         left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
     }
     bool found = false;
@@ -2327,24 +2327,38 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             switch (proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                    bool is_elemental = ASRUtils::is_elemental(proc);
                     std::string matched_func_name = "";
                     if (func->n_args == 2) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if ((left_arg_type->type == left_type->type
-                             && right_arg_type->type == right_type->type)
-                            || (ASRUtils::is_class_type(left_arg_type)
-                                && ASR::is_a<ASR::StructType_t>(*left_type))
-                            || (ASRUtils::is_class_type(right_arg_type)
-                                && ASR::is_a<ASR::StructType_t>(*right_type))
-                            || (ASR::is_a<ASR::StructType_t>(*left_arg_type)
-                                && ASRUtils::is_class_type(left_type))
-                            || (ASR::is_a<ASR::StructType_t>(*right_arg_type)
-                                && ASRUtils::is_class_type(right_type))) {
-                            if (ASR::is_a<ASR::StructType_t>(*left_type)
-                                && ASR::is_a<ASR::StructType_t>(*right_type)
-                                && ASR::is_a<ASR::StructType_t>(*left_arg_type)
-                                && ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                        bool not_matching = (!ASRUtils::is_allocatable(left_type) && ASRUtils::is_allocatable(left_arg_type)) ||
+                                            (!ASRUtils::is_allocatable(right_type) && ASRUtils::is_allocatable(right_arg_type)) ||
+                                            (!ASRUtils::is_pointer(left_type) && ASRUtils::is_pointer(left_arg_type)) ||
+                                            (!ASRUtils::is_pointer(right_type) && ASRUtils::is_pointer(right_arg_type));
+
+                        ASR::ttype_t* left_type2 = ASRUtils::type_get_past_allocatable_pointer(left_type);
+                        ASR::ttype_t* left_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(left_arg_type);
+                        ASR::ttype_t* right_type2 = ASRUtils::type_get_past_allocatable_pointer(right_type);
+                        ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
+
+                        // Check for array type
+                        not_matching = not_matching || (!is_elemental &&
+                                       ((left_arg_type2->type != left_type2->type) ||
+                                       (right_arg_type2->type != right_type2->type)));
+
+                        // Get element type and compare
+                        left_type2 = ASRUtils::type_get_past_array(left_type2);
+                        left_arg_type2 = ASRUtils::type_get_past_array(left_arg_type2);
+                        right_type2 = ASRUtils::type_get_past_array(right_type2);
+                        right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
+
+                        if ( !not_matching && (left_arg_type2->type == left_type2->type &&
+                                                right_arg_type2->type == right_type2->type) ) {
+                            if (ASR::is_a<ASR::StructType_t>(*left_type2)
+                                && ASR::is_a<ASR::StructType_t>(*right_type2)
+                                && ASR::is_a<ASR::StructType_t>(*left_arg_type2)
+                                && ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                 ASR::Struct_t* left_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(
                                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
