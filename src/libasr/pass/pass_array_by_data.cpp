@@ -245,6 +245,77 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         }
 
 
+        /*
+         * Check whether `func_name` is bound to a Struct via
+         * StructMethodDeclaration in `scope` or, when `scope` belongs
+         * to a submodule, in the parent module's scope.
+         *
+         * When a type-bound procedure call goes through a
+         * StructMethodDeclaration the call site is intentionally NOT
+         * rewritten by this pass (see visit_Call).  Therefore the
+         * *definition* must also keep its original descriptor-based
+         * calling convention; otherwise the linker will see a mangled
+         * name on the definition side but an un-mangled reference on
+         * the call side, producing an "undefined reference" error.
+         */
+        bool is_struct_bound_procedure(const std::string& func_name,
+                                       SymbolTable* scope) {
+            auto has_struct_method_decl = [&](SymbolTable* s) -> bool {
+                for (auto& item : s->get_scope()) {
+                    if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                        ASR::Struct_t* struct_t =
+                            ASR::down_cast<ASR::Struct_t>(item.second);
+                        for (auto& member : struct_t->m_symtab->get_scope()) {
+                            if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                    *member.second)) {
+                                ASR::StructMethodDeclaration_t* smd =
+                                    ASR::down_cast<
+                                        ASR::StructMethodDeclaration_t>(
+                                            member.second);
+                                ASR::symbol_t* proc =
+                                    ASRUtils::symbol_get_past_external(
+                                        smd->m_proc);
+                                if (std::string(ASRUtils::symbol_name(proc))
+                                        == func_name) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            };
+
+            // Check the current (module) scope
+            if (has_struct_method_decl(scope)) return true;
+
+            // If in a submodule, also check the parent module
+            if (scope->asr_owner
+                    && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                ASR::symbol_t* owner_sym =
+                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner_sym)) {
+                    ASR::Module_t* mod =
+                        ASR::down_cast<ASR::Module_t>(owner_sym);
+                    if (mod->m_parent_module && scope->parent) {
+                        ASR::symbol_t* parent_sym =
+                            scope->parent->get_symbol(
+                                mod->m_parent_module);
+                        if (parent_sym
+                                && ASR::is_a<ASR::Module_t>(*parent_sym)) {
+                            SymbolTable* parent_scope =
+                                ASR::down_cast<ASR::Module_t>(
+                                    parent_sym)->m_symtab;
+                            if (has_struct_method_decl(parent_scope))
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         template <typename T>
         bool visit_SymbolContainingFunctions(const T& x,
             std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
@@ -255,7 +326,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
                     pass_array_by_data_functions.push_back(subrout);
                     std::vector<size_t> arg_indices;
-                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) &&
+                        !is_struct_bound_procedure(std::string(subrout->m_name),
+                                                   current_scope) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
