@@ -2517,7 +2517,8 @@ public:
                 if( AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i].m_start) ) {
                     AST::FuncCallOrArray_t* func_call_t =
                         AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
-                    if( to_lower(std::string(func_call_t->m_func)) == "character" ) {
+                    std::string type_name = to_lower(std::string(func_call_t->m_func));
+                    if( type_name == "character" ) {
                         if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
                             && func_call_t->m_args[0].m_end) {
                             visit_expr(*func_call_t->m_args[0].m_end);
@@ -2531,6 +2532,40 @@ public:
                                 }
                             }
                         }
+                    } else if( type_name == "integer" || type_name == "real"
+                            || type_name == "complex" || type_name == "logical" ) {
+                        int kind = 4;
+                        if( type_name == "integer" ) {
+                            kind = compiler_options.po.default_integer_kind;
+                        }
+                        if (func_call_t->n_args == 1 && func_call_t->m_args[0].m_end) {
+                            AST::expr_t* kind_expr = func_call_t->m_args[0].m_end;
+                            if( AST::is_a<AST::Num_t>(*kind_expr) ) {
+                                kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
+                            }
+                        } else {
+                            for( size_t j = 0; j < func_call_t->n_keywords; j++ ) {
+                                if( to_lower(std::string(func_call_t->m_keywords[j].m_arg)) == "kind" ) {
+                                    AST::expr_t* kind_expr = func_call_t->m_keywords[j].m_value;
+                                    if( AST::is_a<AST::Num_t>(*kind_expr) ) {
+                                        kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
+                                    }
+                                }
+                            }
+                        }
+                        if( type_name == "integer" ) {
+                            new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                x.base.base.loc, kind));
+                        } else if( type_name == "real" ) {
+                            new_arg.m_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                                x.base.base.loc, kind));
+                        } else if( type_name == "complex" ) {
+                            new_arg.m_type = ASRUtils::TYPE(ASR::make_Complex_t(al,
+                                x.base.base.loc, kind));
+                        } else if( type_name == "logical" ) {
+                            new_arg.m_type = ASRUtils::TYPE(ASR::make_Logical_t(al,
+                                x.base.base.loc, kind));
+                        }
                     } else {
                         diag.add(Diagnostic(
                             "The type-spec: `" + std::string(func_call_t->m_func)
@@ -2542,19 +2577,34 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(name_t->m_id));
-                    if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
-                        new_arg.m_type = struct_t;
-                        new_arg.m_sym_subclass = v;
+                    std::string name_lower = to_lower(name_t->m_id);
+                    if( name_lower == "integer" ) {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                            x.base.base.loc, compiler_options.po.default_integer_kind));
+                    } else if( name_lower == "real" ) {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                            x.base.base.loc, 4));
+                    } else if( name_lower == "complex" ) {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Complex_t(al,
+                            x.base.base.loc, 4));
+                    } else if( name_lower == "logical" ) {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Logical_t(al,
+                            x.base.base.loc, 4));
                     } else {
-                        diag.add(Diagnostic(
-                            "`The type-spec: " + std::string(name_t->m_id)
-                            + "` is not supported yet",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.m_args[i].m_start->base.loc})
-                            }));
-                        throw SemanticAbort();
+                        ASR::symbol_t *v = current_scope->resolve_symbol(name_lower);
+                        if (v) {
+                            ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
+                            new_arg.m_type = struct_t;
+                            new_arg.m_sym_subclass = v;
+                        } else {
+                            diag.add(Diagnostic(
+                                "The type-spec: `" + std::string(name_t->m_id)
+                                + "` is not supported yet",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.m_args[i].m_start->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                     }
                 } else {
                     LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));

@@ -403,7 +403,8 @@ namespace LCompilers {
             llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
             ASR::symbol_t* const variable_declaration, llvm::Module* module, 
-            ASR::symbol_t* allocated_subclass, bool realloc) {
+            ASR::symbol_t* allocated_subclass, bool realloc,
+            ASR::ttype_t* alloc_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
@@ -434,13 +435,24 @@ namespace LCompilers {
                     prod,
                     realloc);
             } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
-                llvm_utils->struct_api->allocate_array_of_classes(
-                    ASR::down_cast<ASR::Struct_t>(variable_declaration)
-                    , ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type))
-                    , ptr2firstptr
-                    , prod
-                    , allocated_subclass
-                    , realloc);
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(
+                    ASRUtils::extract_type(asr_type));
+                if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
+                        && !ASR::is_a<ASR::StructType_t>(*alloc_type)) {
+                    // Unlimited polymorphic array with intrinsic type spec
+                    // (e.g., allocate(integer :: arr(5)))
+                    llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
+                        ASR::down_cast<ASR::Struct_t>(variable_declaration),
+                        struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
+                } else {
+                    llvm_utils->struct_api->allocate_array_of_classes(
+                        ASR::down_cast<ASR::Struct_t>(variable_declaration)
+                        , struct_type
+                        , ptr2firstptr
+                        , prod
+                        , allocated_subclass
+                        , realloc);
+                }
             } else {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 llvm::Type* ptr_type = llvm_data_type->getPointerTo();

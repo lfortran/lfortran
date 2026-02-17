@@ -8711,6 +8711,81 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
     }
 
+    void LLVMStruct::allocate_array_of_unlimited_polymorphic_type(
+            ASR::Struct_t* class_symbol, ASR::StructType_t* /*struct_type*/,
+            llvm::Value* array_data_ptr, llvm::Value* size,
+            ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module) {
+        LCOMPILERS_ASSERT(class_symbol && array_data_ptr && size && alloc_type);
+
+        llvm::Type* const llvm_class_type = llvm_utils->getClassType(class_symbol);
+
+        // Get the LLVM type for the intrinsic element type
+        int kind = ASRUtils::extract_kind_from_ttype_t(alloc_type);
+        llvm::Type* llvm_element_type = nullptr;
+        if (ASR::is_a<ASR::Integer_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getIntType(kind);
+        } else if (ASR::is_a<ASR::Real_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getFPType(kind);
+        } else if (ASR::is_a<ASR::Complex_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getComplexType(kind);
+        } else if (ASR::is_a<ASR::Logical_t>(*alloc_type)) {
+            llvm_element_type = llvm::Type::getInt8Ty(context);
+        } else {
+            throw LCompilers::CodeGenError("Unsupported type-spec for unlimited polymorphic array allocation");
+        }
+
+        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr
+        int64_t class_wrapper_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_class_type);
+        llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *module, *builder,
+            llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
+        builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            class_wrapper_size, llvm::MaybeAlign());
+        llvm::Value* class_wrapper = builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
+        builder->CreateStore(class_wrapper, array_data_ptr);
+
+        // Step 2: Allocate the data array with the intrinsic element type
+        uint64_t element_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_element_type);
+        llvm::Value* total_bytes = builder->CreateMul(
+            llvm_utils->convert_kind(size, llvm::Type::getInt64Ty(context)),
+            llvm::ConstantInt::get(context, llvm::APInt(64, element_size)));
+        llvm::Value* data_mem = nullptr;
+        if (realloc) {
+            // For realloc, load existing data pointer from wrapper's data field
+            if (llvm_utils->compiler_options.new_classes) {
+                llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+                llvm::Value* existing_data = builder->CreateLoad(llvm_utils->i8_ptr, existing_data_ptr);
+                data_mem = LLVM::lfortran_realloc(context, *module, *builder, existing_data, total_bytes);
+            } else {
+                llvm::Value* existing_data_ptr = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 1);
+                llvm::Value* existing_data = builder->CreateLoad(
+                    llvm::Type::getVoidTy(context)->getPointerTo(), existing_data_ptr);
+                data_mem = LLVM::lfortran_realloc(context, *module, *builder, existing_data, total_bytes);
+            }
+        } else {
+            data_mem = LLVM::lfortran_malloc(context, *module, *builder, total_bytes);
+        }
+        builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            total_bytes, llvm::MaybeAlign());
+
+        // Step 3: Store data pointer in wrapper
+        if (llvm_utils->compiler_options.new_classes) {
+            // new_classes: wrapper is {vptr_type, i8*}, data goes in field 1
+            llvm::Value* data_field = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+            builder->CreateStore(data_mem, data_field);
+            // Store vptr for intrinsic type
+            store_intrinsic_type_vptr(alloc_type, kind, class_wrapper, module);
+        } else {
+            // old classes: wrapper is {i64, void*}, type hash goes in field 0, data in field 1
+            llvm::Value* type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                llvm::APInt(64, -((int) alloc_type->type) - kind, true));
+            llvm::Value* hash_field = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 0);
+            builder->CreateStore(type_hash, hash_field);
+            llvm::Value* data_field = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 1);
+            builder->CreateStore(builder->CreateBitCast(data_mem,
+                llvm::Type::getVoidTy(context)->getPointerTo()), data_field);
+        }
+    }
+
     void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)
     {
         if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
