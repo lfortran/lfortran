@@ -2300,6 +2300,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_OverloadedOperator(x);
     }
 
+    void replace_OverloadedBoolOp(ASR::OverloadedBoolOp_t* x) {
+        replace_OverloadedOperator(x);
+    }
+
     void replace_OverloadedStringConcat(ASR::OverloadedStringConcat_t* x) {
         replace_OverloadedOperator(x);
     }
