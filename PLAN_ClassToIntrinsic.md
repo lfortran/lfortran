@@ -452,23 +452,21 @@ With ClassToIntrinsic, the value extraction is handled by the Cast node, so:
     `class(*)` complex values.
 11. ✅ **All integration tests pass.**
 
-### Phase 2b: Clean Up Old Mechanisms — TODO
+### Phase 2b: Clean Up Old Mechanisms
 
-6. Make `load_unlimited_polymorpic_value` macro a **no-op** (keep call
-   sites). The macro is still fully live with 15 call sites. For scalar
-   `type is` blocks, the Cast wrapping now handles extraction, making the
-   macro redundant for those cases. Arrays still use the old mechanism.
-   Add `LCOMPILERS_ASSERT` at call sites to verify that scalar
-   unlimited-polymorphic `Var_t` nodes no longer reach them.
-7. Test — any failures reveal cases where the Cast wrapping is missing.
-8. Delete macro call sites.
-9. Stop populating `select_type_context_map` for `TypeStmtType` under
-   `new_classes` (scalars). The map is still populated and used; arrays
-   still depend on it.
-10. Remove `SelectTypeContext` struct and helper methods
-    (`get_select_type_block_type()`, `get_select_type_block_type_asr()`)
-    once the macro and map are no longer needed.
-11. Test again.
+6. ✅ Make `load_unlimited_polymorpic_value` macro a **no-op** — confirmed
+   dead code: all 15 call sites are never reached because expressions are
+   Cast_t nodes (not bare Var_t) or variable types are rewritten.
+7. ✅ Test — zero new failures with macro as no-op.
+8. ✅ Delete macro definition and all 15 call sites. Also removed the dead
+   polymorphic string special case in `visit_StringLen`.
+9. ✅ Stop populating `select_type_context_map` for `TypeStmtType` under
+   `new_classes`: skip setting `ctx.block_type_asr` and skip adding
+   assoc_sym to the map. TypeStmtName/ClassStmt entries preserved.
+10. `SelectTypeContext` struct and helper methods kept — still needed for
+    TypeStmtName/ClassStmt context map entries and the `!new_classes`
+    legacy path. Can be removed when those are also migrated.
+11. ✅ All integration tests pass.
 
 ### Phase 2b (Investigate)
 
@@ -489,6 +487,12 @@ With ClassToIntrinsic, the value extraction is handled by the Cast node, so:
 16. Verify `resolve_variable2` and struct member access: no test should do
     `x%something` inside a `type is (integer)` block (ClassToIntrinsic
     variables are not structs).
+17. Remove remaining dead code paths that check context map for
+    unlimited-polymorphic types (e.g., `extract_kinds`, `visit_Assignment`
+    polymorphic array branch, `SerializeType` context lookup, StringToArray
+    polymorphic branch). These are unreachable under `new_classes` since
+    all select type variables are now Cast-wrapped or type-rewritten, but
+    kept for the legacy `!new_classes` path.
 
 ---
 
