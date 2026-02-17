@@ -8902,8 +8902,14 @@ public:
                         value->getType()->isPointerTy()) {
                     value = llvm_utils->CreateLoad2(value_llvm_type, value);
                 }
+                // The target pointer has been reinterpreted as value type,
+                // so pass value type wrapped in Allocatable as dest type
+                // (retains the allocatable flag needed for string data
+                // allocation inside the unlimited polymorphic container).
+                ASR::ttype_t* dest_type_for_copy = ASRUtils::TYPE(
+                    ASR::make_Allocatable_t(al, asr_value_type->base.loc, asr_value_type));
                 llvm_utils->deepcopy(x.m_value, value, target,
-                    asr_target_type, asr_value_type, module.get());
+                    dest_type_for_copy, asr_value_type, module.get());
             }
             return;
         } else if (is_target_class && is_value_class) {
