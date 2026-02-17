@@ -21,6 +21,20 @@ Now the `lf` environment has the `lfortran` compiler available, you can start th
 interactive prompt by executing `lfortran`, or see the command line options using
 `lfortran -h`.
 
+### Note about Conda Installation
+
+When installing LFortran using Conda, multiple copies of the `lfortran`
+executable may be present in different locations (for example, in the package
+cache). Only the executable inside the active Conda environment should be used.
+
+After activating a conda environment, the correct executable is typically located at:
+`$CONDA_PREFIX/bin/lfortran`
+
+To verify which executable is being used, activate a conda environment and run:
+`which lfortran`
+
+Other copies located in package directories may not run correctly and can be ignored.
+
 The Jupyter kernel is automatically installed by the above command, so after installing Jupyter itself:
 ```bash
 conda install jupyter -c conda-forge

@@ -222,7 +222,7 @@ before printing.  This is obsolete and LFortran omits this unless
 There is currently no way to specify detailed compiler options to
 Clang such as `-O3` or `-flto` (optimization and link-time optimization).
 
-GNU extension declarations `real*8 xvalue` are accepted but deprecated.  This
-is valid Fortran-77 but not Fortran-2018.
+GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
+was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.
 
 
