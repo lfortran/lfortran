@@ -2404,6 +2404,9 @@ RUN(NAME class_108 LABELS gfortran llvm)
 RUN(NAME class_109 LABELS gfortran llvm)
 RUN(NAME class_110 LABELS gfortran llvm EXTRAFILES class_110_module.f90)
 RUN(NAME class_111 LABELS gfortran llvm)
+RUN(NAME class_112 LABELS gfortran llvm)
+RUN(NAME class_113 LABELS gfortran llvm)
+RUN(NAME class_114 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
