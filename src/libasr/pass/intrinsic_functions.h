@@ -71,6 +71,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     BesselY1,
     BesselYN,
     SameTypeAs,
+    ExtendsTypeOf,
     Merge,
     Mergebits,
     Shiftr,
@@ -1097,6 +1098,48 @@ namespace SameTypeAs {
     }
 
 } // namespace SameTypeAs
+
+namespace ExtendsTypeOf {
+
+    static ASR::expr_t *eval_ExtendsTypeOf(Allocator &al, const Location &loc,
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+        // If either argument is polymorphic (class(*) or class(T)),
+        // we cannot evaluate at compile time
+        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+            return nullptr;
+        }
+        // Both types are known at compile time
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+        // Same type => extends_type_of is true
+        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
+            return b.bool_t(true, return_type);
+        }
+        // Check if A's type extends MOLD's type via parent chain
+        if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
+            ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[0]));
+            ASR::symbol_t *sym1 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[1]));
+            if (sym0 && sym1 &&
+                ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
+                // is_parent(a, b) checks if a is in b's parent chain
+                // extends_type_of(A, MOLD) means A extends MOLD,
+                // so MOLD must be in A's parent chain
+                bool extends = ASRUtils::is_parent(
+                    ASR::down_cast<ASR::Struct_t>(sym1),
+                    ASR::down_cast<ASR::Struct_t>(sym0));
+                return b.bool_t(extends, return_type);
+            }
+        }
+        return b.bool_t(false, return_type);
+    }
+
+} // namespace ExtendsTypeOf
 
 namespace Range {
 

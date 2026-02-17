@@ -1661,6 +1661,7 @@ public:
         {"spread", IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)},
         {"out_of_range", IntrinsicSignature({"value", "mold", "round"}, 2, 3)},
         {"same_type_as", IntrinsicSignature({"a", "b"}, 2, 2)},
+        {"extends_type_of", IntrinsicSignature({"a", "mold"}, 2, 2)},
         {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
         {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
         {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},

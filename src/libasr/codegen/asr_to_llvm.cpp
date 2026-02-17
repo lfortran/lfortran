@@ -3335,6 +3335,113 @@ public:
                 }
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::ExtendsTypeOf: {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_args[0]);
+                llvm::Value* arg0 = tmp;
+                this->visit_expr(*x.m_args[1]);
+                llvm::Value* arg1 = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::symbol_t* struct_sym0 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[0]));
+                ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
+                llvm::Type* class_type0 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym0), false);
+                llvm::Type* class_type1 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym1), false);
+
+                // For allocatable/pointer class(*), load the pointer first.
+                ASR::ttype_t* arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+                ASR::ttype_t* arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+                if (ASRUtils::is_allocatable(arg_type0) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type0)) {
+                    arg0 = llvm_utils->CreateLoad2(class_type0->getPointerTo(), arg0);
+                }
+                if (ASRUtils::is_allocatable(arg_type1) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type1)) {
+                    arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
+                }
+
+                // Extract field 0 (type hash or vtable pointer)
+                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
+                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
+                llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
+                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
+                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+
+                if (field0_type->isPointerTy()) {
+                    // new_classes: walk parent chain via TypeInfo
+                    // TypeInfo layout: { i8* name, i8* size, i8* parent_typeinfo }
+                    // vptr[-1] = TypeInfo pointer
+                    llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                    llvm::StructType* type_info_type = llvm::StructType::get(
+                        context, {i8_ptr, i8_ptr, i8_ptr}, false);
+
+                    // Get TypeInfo for MOLD (arg1)
+                    llvm::Value* vptr1_i8 = builder->CreateBitCast(id1, i8_ptr->getPointerTo());
+                    llvm::Value* ti1_ptr_ptr = llvm_utils->create_ptr_gep2(
+                        i8_ptr, vptr1_i8, llvm::ConstantInt::get(i64_type, -1, true));
+                    llvm::Value* ti_mold = llvm_utils->CreateLoad2(i8_ptr, ti1_ptr_ptr);
+
+                    // Get TypeInfo for A (arg0)
+                    llvm::Value* vptr0_i8 = builder->CreateBitCast(id0, i8_ptr->getPointerTo());
+                    llvm::Value* ti0_ptr_ptr = llvm_utils->create_ptr_gep2(
+                        i8_ptr, vptr0_i8, llvm::ConstantInt::get(i64_type, -1, true));
+                    llvm::Value* ti_a_init = llvm_utils->CreateLoad2(i8_ptr, ti0_ptr_ptr);
+
+                    // Create loop to walk A's parent chain
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(context, "eto.loop", fn);
+                    llvm::BasicBlock* found_bb = llvm::BasicBlock::Create(context, "eto.found", fn);
+                    llvm::BasicBlock* not_found_bb = llvm::BasicBlock::Create(context, "eto.notfound", fn);
+                    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "eto.merge", fn);
+
+                    builder->CreateBr(loop_bb);
+                    builder->SetInsertPoint(loop_bb);
+                    llvm::PHINode* ti_current = builder->CreatePHI(i8_ptr, 2, "eto.ti");
+                    ti_current->addIncoming(ti_a_init, loop_bb->getSinglePredecessor());
+
+                    // Compare current TypeInfo with MOLD's TypeInfo
+                    llvm::Value* eq = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(ti_current, i64_type),
+                        builder->CreatePtrToInt(ti_mold, i64_type));
+                    builder->CreateCondBr(eq, found_bb, not_found_bb);
+
+                    // Not equal: check parent
+                    builder->SetInsertPoint(not_found_bb);
+                    llvm::Value* ti_cast = builder->CreateBitCast(
+                        ti_current, type_info_type->getPointerTo());
+                    llvm::Value* parent_ptr = llvm_utils->create_gep2(type_info_type, ti_cast, 2);
+                    llvm::Value* parent_ti = llvm_utils->CreateLoad2(i8_ptr, parent_ptr);
+                    llvm::Value* parent_null = builder->CreateICmpEQ(
+                        parent_ti, llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(i8_ptr)));
+                    // If parent is null, no more ancestors -> false
+                    // Otherwise, continue loop with parent
+                    builder->CreateCondBr(parent_null, merge_bb, loop_bb);
+                    ti_current->addIncoming(parent_ti, not_found_bb);
+
+                    // Found: result = true
+                    builder->SetInsertPoint(found_bb);
+                    builder->CreateBr(merge_bb);
+
+                    // Merge
+                    builder->SetInsertPoint(merge_bb);
+                    llvm::PHINode* result = builder->CreatePHI(
+                        llvm::Type::getInt1Ty(context), 2, "eto.result");
+                    result->addIncoming(llvm::ConstantInt::getTrue(context), found_bb);
+                    result->addIncoming(llvm::ConstantInt::getFalse(context), not_found_bb);
+                    tmp = result;
+                } else {
+                    // old classes: compare integer type hashes
+                    tmp = builder->CreateICmpEQ(id0, id1);
+                }
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
