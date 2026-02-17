@@ -8066,6 +8066,36 @@ LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
+// Replace Fortran 'd'/'D' exponent with 'e'/'E' so that C's sscanf can parse it
+static void _lfortran_replace_d_exponent(char *buf) {
+    for (int i = 0; buf[i]; i++) {
+        if ((buf[i] == 'd' || buf[i] == 'D') && i > 0
+            && (buf[i-1] == '.' || (buf[i-1] >= '0' && buf[i-1] <= '9'))) {
+            buf[i] = 'e';
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c) {
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    _lfortran_replace_d_exponent(buf);
+    sscanf(buf, format, &c->re, &c->im);
+    free(buf);
+}
+
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c) {
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    _lfortran_replace_d_exponent(buf);
+    sscanf(buf, format, &c->re, &c->im);
+    free(buf);
+}
+
 void lfortran_error(const char *message) {
     fprintf(stderr, "LFORTRAN ERROR: %s\n", message);
     exit(EXIT_FAILURE);
