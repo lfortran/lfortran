@@ -1077,10 +1077,23 @@ namespace Dprod {
 
 namespace SameTypeAs {
 
-    static ASR::expr_t *eval_SameTypeAs(Allocator &/*al*/, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
-        append_error(diag, "same_type_as is not implemented yet", loc);
-        return nullptr;
+    static ASR::expr_t *eval_SameTypeAs(Allocator &al, const Location &loc,
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+        // If either argument is polymorphic (class(*) or class(T)),
+        // we cannot evaluate at compile time
+        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+            return nullptr;
+        }
+        // Both types are known at compile time, compare them
+        ASRUtils::ASRBuilder b(al, loc);
+        bool same = ASRUtils::types_equal(
+            ASRUtils::type_get_past_allocatable_pointer(arg_type0),
+            ASRUtils::type_get_past_allocatable_pointer(arg_type1),
+            nullptr, nullptr);
+        return b.bool_t(same, return_type);
     }
 
 } // namespace SameTypeAs

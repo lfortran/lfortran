@@ -3286,6 +3286,55 @@ public:
                 generate_MinMax(x.m_args, x.n_args, false);
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::SameTypeAs: {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_args[0]);
+                llvm::Value* arg0 = tmp;
+                this->visit_expr(*x.m_args[1]);
+                llvm::Value* arg1 = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::symbol_t* struct_sym0 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[0]));
+                ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
+                llvm::Type* class_type0 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym0), false);
+                llvm::Type* class_type1 = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym1), false);
+
+                // For allocatable/pointer class(*), the alloca holds a pointer
+                // to the polymorphic struct. Load the pointer first.
+                ASR::ttype_t* arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+                ASR::ttype_t* arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+                if (ASRUtils::is_allocatable(arg_type0) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type0)) {
+                    arg0 = llvm_utils->CreateLoad2(class_type0->getPointerTo(), arg0);
+                }
+                if (ASRUtils::is_allocatable(arg_type1) ||
+                    ASR::is_a<ASR::Pointer_t>(*arg_type1)) {
+                    arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
+                }
+
+                // Extract field 0 (type hash or vtable pointer) from both args
+                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
+                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
+                // Load and compare
+                llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
+                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
+                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+                if (field0_type->isPointerTy()) {
+                    // new_classes: compare vtable pointers
+                    tmp = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(id0, llvm::Type::getInt64Ty(context)),
+                        builder->CreatePtrToInt(id1, llvm::Type::getInt64Ty(context)));
+                } else {
+                    // old classes: compare integer type hashes
+                    tmp = builder->CreateICmpEQ(id0, id1);
+                }
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +

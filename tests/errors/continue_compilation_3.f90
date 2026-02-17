@@ -132,8 +132,8 @@ program continue_compilation_3
     i = foo
     !rewind_invalid_kwarg1
     rewind(end="world")
-    !Same_type
-    print *, same_type_as(1.0, 1.0)
+
+
     !sign_01
     print *, sign(1, 1_8)
     !specific_type_intrinsic
