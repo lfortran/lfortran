@@ -1,4 +1,5 @@
 #include <libasr/asr.h>
+#include <iostream>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
@@ -1551,17 +1552,30 @@ namespace LCompilers {
         void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
-            bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
+            bool /*perform_cast*/, ASR::cast_kindType /*cast_kind*/, ASR::ttype_t* /*casted_type*/) {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder builder(al, loc);
             for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); k++ ) {
                 ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, x, k);
                 ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
                     al, current_scope);
-                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
-                    curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
+                
+                ASR::ttype_t* target_type = ASRUtils::expr_type(res);
+                ASR::ttype_t* source_type = ASRUtils::expr_type(curr_init);
+
+                if (ASR::is_a<ASR::Logical_t>(*target_type) && ASR::is_a<ASR::Logical_t>(*source_type) &&
+                    ASR::is_a<ASR::LogicalConstant_t>(*curr_init)) {
+                    ASR::LogicalConstant_t *lc = ASR::down_cast<ASR::LogicalConstant_t>(curr_init);
+                    if (ASRUtils::extract_kind_from_ttype_t(target_type) != ASRUtils::extract_kind_from_ttype_t(source_type)) {
+                        curr_init = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, lc->base.base.loc, lc->m_value, target_type));
+                        source_type = ASRUtils::expr_type(curr_init);
+                    }
                 }
+
+                if( !ASRUtils::check_equal_type(target_type, source_type, res, curr_init) ) {
+                    curr_init = LCompilers::CastingUtil::perform_casting(curr_init, target_type, al, curr_init->base.loc);
+                }
+                
                 ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
                 increment_by_one(idx_var, result_vec)
@@ -1571,7 +1585,7 @@ namespace LCompilers {
         void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             Vec<ASR::expr_t*>& idx_vars, SymbolTable* current_scope,
-            bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
+            bool /*perform_cast*/, ASR::cast_kindType /*cast_kind*/, ASR::ttype_t* /*casted_type*/) {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t* m_dims;
@@ -1608,10 +1622,23 @@ namespace LCompilers {
                 ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, x, k);
                 ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_vars,
                     al, current_scope);
-                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
-                    curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
+
+                ASR::ttype_t* target_type = ASRUtils::expr_type(res);
+                ASR::ttype_t* source_type = ASRUtils::expr_type(curr_init);
+
+                if (ASR::is_a<ASR::Logical_t>(*target_type) && ASR::is_a<ASR::Logical_t>(*source_type) &&
+                    ASR::is_a<ASR::LogicalConstant_t>(*curr_init)) {
+                    ASR::LogicalConstant_t *lc = ASR::down_cast<ASR::LogicalConstant_t>(curr_init);
+                    if (ASRUtils::extract_kind_from_ttype_t(target_type) != ASRUtils::extract_kind_from_ttype_t(source_type)) {
+                        curr_init = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, lc->base.base.loc, lc->m_value, target_type));
+                        source_type = ASRUtils::expr_type(curr_init);
+                    }
                 }
+
+                if( !ASRUtils::check_equal_type(target_type, source_type, res, curr_init) ) {
+                    curr_init = LCompilers::CastingUtil::perform_casting(curr_init, target_type, al, curr_init->base.loc);
+                }
+
                 ASR::stmt_t* assign = b.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
             }
