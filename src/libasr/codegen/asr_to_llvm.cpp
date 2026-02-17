@@ -692,7 +692,8 @@ public:
                                           ASR::dimension_t* m_dims, int n_dims,
                                           ASR::expr_t* string_len_to_allocate,
                                           ASR::symbol_t* allocated_subclass=nullptr,
-                                          bool realloc=false) {
+                                          bool realloc=false,
+                                          ASR::ttype_t* alloc_type=nullptr) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         int ptr_loads_copy = ptr_loads;
         ptr_loads = 2;
@@ -713,7 +714,7 @@ public:
         ptr_loads = ptr_loads_copy;
         arr_descr->fill_malloc_array_details(arr, arr_type, llvm_data_type,
             asr_type, n_dims, llvm_dims, string_len, variable_declaration, module.get(), 
-            allocated_subclass, realloc);
+            allocated_subclass, realloc, alloc_type);
     }
 
 
@@ -2010,9 +2011,9 @@ public:
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                         curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
-                                        curr_arg.m_sym_subclass, realloc);
+                                        curr_arg.m_sym_subclass, realloc, curr_arg.m_type);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
-                    && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
+                    && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
                         ASRUtils::expr_type(tmp_expr));
@@ -10440,10 +10441,10 @@ public:
                         }
                         llvm::Value* static_ptr = llvm_selector;
                         llvm::Type* static_ptr_type = llvm_selector_type_;
-                        // If selector is a pointer type, load it first
+                        // If selector is a pointer/allocatable type, load it first
                         if (LLVM::is_llvm_pointer(*selector_var_type)) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
-                            selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
+                            selector_var_type = ASRUtils::type_get_past_allocatable_pointer(selector_var_type);
                             static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                         }
                         if (ASRUtils::is_array(selector_var_type)) {
