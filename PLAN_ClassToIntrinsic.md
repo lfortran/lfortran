@@ -470,23 +470,43 @@ With ClassToIntrinsic, the value extraction is handled by the Cast node, so:
 
 ### Phase 2b (Investigate)
 
-12. **`current_select_type_guard`** — still used at line ~3656-3659
-    (set/restore around `transform_stmts`) and consumed at line ~6691
-    for string validation. Investigate whether it can be removed or if
-    it's still needed for that check.
+12. ✅ **`current_select_type_guard`** — removed. With ClassToIntrinsic,
+    Cast wrapping makes expr_type return the guard type, so:
+    - Print check no longer needs the guard (simplified path works with Cast).
+    - Character intrinsics check no longer needs it (has_polymorphic_arg is
+      false inside guards because Cast makes expr_type = String).
+    The check is now simpler and stricter.
 
 ### Phase 2c: Unification (Optional) — TODO
 
 13. Extend `ClassToIntrinsic` to **arrays**, eliminating the fallback to
-    the old mechanism (rewriting `assoc_variable->m_type` +
-    `select_type_context_map` + `load_unlimited_polymorpic_value`).
-    This is the main blocker for fully removing the old path.
+    the old mechanism (rewriting `assoc_variable->m_type`).
+    **Investigation result:** This is hard because `create_ArrayRef` in
+    `ast_common_visitor.h` creates bare `Var_t` nodes directly (bypassing
+    `resolve_variable()` and `select_type_casts_map`), so array element
+    accesses like `x(i)` wouldn't get ClassToIntrinsic wrapping. Also,
+    `symbol_type(v)` is checked for array nature in `visit_FuncCallOrArray`,
+    and keeping the type as class(*) would break this check. The current
+    approach (rewriting `assoc_variable->m_type` for arrays) works correctly
+    and the old mechanisms (`select_type_context_map`, `load_unlimited_
+    polymorphic_value`) are already removed/disabled for TypeStmtType under
+    `new_classes`. Deferring to a future cleanup pass.
 14. Consider converting `TypeStmtName` to also use `select_type_casts_map`
     for all value extraction (it already does for `!assoc_sym`).
+    **Deferred:** Would require not rewriting `assoc_variable->m_type`
+    for TypeStmtName, handling ClassToStruct on LHS (store-through for
+    struct fields), and modifying the Associate statement. Complex and
+    low-priority since the current approach works correctly.
 15. Consider removing `select_type_context_map` entirely (for `new_classes`).
-16. Verify `resolve_variable2` and struct member access: no test should do
-    `x%something` inside a `type is (integer)` block (ClassToIntrinsic
-    variables are not structs).
+    **Deferred:** Depends on step 14 — TypeStmtName and ClassStmt still
+    populate and use the context map. Can only be removed when those are
+    also migrated to use `select_type_casts_map` for all value extraction.
+16. ✅ Verify `resolve_variable2` and struct member access: confirmed that
+    no test does `x%something` inside a `type is (integer)` block.
+    `resolve_variable2` correctly handles ClassToIntrinsic by using the
+    target type from `select_type_casts_map`. Intrinsic types only
+    support `%kind` (all types) and `%re`/`%im` (complex), handled by
+    separate code paths that work correctly with the overridden type.
 17. Remove remaining dead code paths that check context map for
     unlimited-polymorphic types (e.g., `extract_kinds`, `visit_Assignment`
     polymorphic array branch, `SerializeType` context lookup, StringToArray
