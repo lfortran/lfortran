@@ -541,6 +541,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::OverloadedStringConcat_t* overloaded_string_concat = ASR::down_cast<ASR::OverloadedStringConcat_t>(expression);
             return ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_overloaded);
         }
+        case ASR::exprType::OverloadedBoolOp: {
+            ASR::OverloadedBoolOp_t* overloaded_bool_op = ASR::down_cast<ASR::OverloadedBoolOp_t>(expression);
+            return ASRUtils::get_struct_sym_from_struct_expr(overloaded_bool_op->m_overloaded);
+        }
         case ASR::exprType::StringItem: {
             ASR::StringItem_t* string_item = ASR::down_cast<ASR::StringItem_t>(expression);
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(string_item->m_arg));
