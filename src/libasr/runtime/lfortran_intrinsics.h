@@ -292,6 +292,10 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
         int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...);
+LFORTRAN_API void _lfortran_string_list_directed_read(
+    char* src_data, int64_t src_len,
+    int32_t* iostat,
+    int32_t no_of_args, ...);
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i);
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr);
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i);

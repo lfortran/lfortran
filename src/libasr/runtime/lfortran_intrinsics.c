@@ -7861,6 +7861,124 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
+// Type codes for _lfortran_string_list_directed_read:
+// 0 = character (followed by char**, int64_t str_len)
+// 1 = logical (followed by int32_t*)
+// 2 = int32 (followed by void*)
+// 3 = int64 (followed by void*)
+// 4 = float (followed by void*)
+// 5 = double (followed by void*)
+LFORTRAN_API void _lfortran_string_list_directed_read(
+    char* src_data, int64_t src_len,
+    int32_t* iostat,
+    int32_t no_of_args, ...)
+{
+    if (iostat) *iostat = 0;
+    char* buf = (char*)malloc(src_len + 1);
+    if (!buf) return;
+    memcpy(buf, src_data, src_len);
+    buf[src_len] = '\0';
+    va_list args;
+    va_start(args, no_of_args);
+    int64_t pos = 0;
+    for (int32_t i = 0; i < no_of_args; i++) {
+        // Skip leading whitespace
+        while (pos < src_len && (buf[pos] == ' ' || buf[pos] == '\t')) {
+            pos++;
+        }
+        // Skip comma separator
+        if (pos < src_len && buf[pos] == ',') {
+            pos++;
+            while (pos < src_len && (buf[pos] == ' ' || buf[pos] == '\t')) {
+                pos++;
+            }
+        }
+        int32_t type_code = va_arg(args, int32_t);
+        if (pos >= src_len) {
+            // No more data - consume remaining va_args
+            switch (type_code) {
+                case 0: {
+                    char** p = va_arg(args, char**);
+                    int64_t l = va_arg(args, int64_t);
+                    char* dest = p ? *p : NULL;
+                    if (dest) memset(dest, ' ', l);
+                    break;
+                }
+                default:
+                    va_arg(args, void*);
+                    break;
+            }
+            continue;
+        }
+
+        switch (type_code) {
+            case 0: { // character
+                char** str_data_ptr = va_arg(args, char**);
+                int64_t dest_len = va_arg(args, int64_t);
+                char* dest = str_data_ptr ? *str_data_ptr : NULL;
+                if (!dest) break;
+
+                // Read until comma or end of string
+                int64_t token_start = pos;
+                while (pos < src_len && buf[pos] != ',') {
+                    pos++;
+                }
+                int64_t token_len = pos - token_start;
+                // Trim trailing spaces from token
+                while (token_len > 0 && buf[token_start + token_len - 1] == ' ') {
+                    token_len--;
+                }
+                int64_t copy_len = token_len < dest_len ? token_len : dest_len;
+                memcpy(dest, buf + token_start, copy_len);
+                for (int64_t j = copy_len; j < dest_len; j++) {
+                    dest[j] = ' ';
+                }
+                break;
+            }
+            case 1: { // logical
+                int32_t* ptr = va_arg(args, int32_t*);
+                *ptr = 0;
+                while (pos < src_len && buf[pos] != ',' && buf[pos] != ' ' && buf[pos] != '\t') {
+                    if (buf[pos] == 'T' || buf[pos] == 't') *ptr = 1;
+                    pos++;
+                }
+                break;
+            }
+            case 2: { // int32
+                void* ptr = va_arg(args, void*);
+                char* endptr;
+                *(int32_t*)ptr = (int32_t)strtol(buf + pos, &endptr, 10);
+                pos = endptr - buf;
+                break;
+            }
+            case 3: { // int64
+                void* ptr = va_arg(args, void*);
+                char* endptr;
+                *(int64_t*)ptr = strtoll(buf + pos, &endptr, 10);
+                pos = endptr - buf;
+                break;
+            }
+            case 4: { // float
+                void* ptr = va_arg(args, void*);
+                char* endptr;
+                *(float*)ptr = strtof(buf + pos, &endptr);
+                pos = endptr - buf;
+                break;
+            }
+            case 5: { // double
+                void* ptr = va_arg(args, void*);
+                char* endptr;
+                *(double*)ptr = strtod(buf + pos, &endptr);
+                pos = endptr - buf;
+                break;
+            }
+        }
+    }
+
+    va_end(args);
+    free(buf);
+}
+
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
     char *buf = (char*)malloc(len + 1);
     if (!buf) return;
