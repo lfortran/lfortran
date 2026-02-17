@@ -303,6 +303,12 @@ intrinsic_funcs_args = {
             "return": "logical"
         }
     ],
+    "ExtendsTypeOf": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
+        }
+    ],
     "Nint": [
         {
             "args": [("real",)],
@@ -900,6 +906,7 @@ compile_time_only_fn = [
     "MaxExponent",
     "MinExponent",
     "SameTypeAs",
+    "ExtendsTypeOf",
     "Digits",
 ]
 

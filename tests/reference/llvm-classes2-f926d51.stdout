@@ -7,10 +7,10 @@ source_filename = "LFortran"
 %point2d = type { %point, float, float }
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
-@_Type_Info_point = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0), i8* null }, align 8
-@_VTable_point = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point to i8*), i8* null] }, align 8
+@_Type_Info_point = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0), i8* null, i8* null }, align 8
+@_VTable_point = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point to i8*), i8* null] }, align 8
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
-@_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* bitcast ({ i8*, i8* }* @_Type_Info_point to i8*) }, align 8
+@_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_point to i8*) }, align 8
 @_VTable_point2d = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point2d to i8*), i8* bitcast (float (%point2d_class*)* @__module_defs_r2d to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

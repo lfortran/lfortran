@@ -8877,10 +8877,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
+        type_info_member_values.reserve(3); // A type-info object has 3 members.
 
         // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
@@ -8893,6 +8894,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::ConstantExpr::getIntToPtr(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
                 llvm_utils->i8_ptr));
+        // No parent for intrinsic types
+        type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
         
@@ -9011,10 +9014,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
+        type_info_member_values.reserve(3); // A type-info object has 3 members.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -9033,9 +9037,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm_utils->i8_ptr));
         if (struct_t->m_parent) {
             // Pointer to parent struct's type-info
-            type_info_member_types.push_back(llvm_utils->i8_ptr);
             type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
                 newclass2typeinfo.at(ASRUtils::symbol_get_past_external(struct_t->m_parent)), llvm_utils->i8_ptr));
+        } else {
+            // No parent — null pointer
+            type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
         }
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);

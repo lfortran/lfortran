@@ -15,8 +15,8 @@ source_filename = "LFortran"
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
-@_Type_Info_mytype = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*) }, align 8
-@_VTable_mytype = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (%mytype_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_Type_Info_mytype = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
+@_VTable_mytype = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (%mytype_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [131 x i8] c"At 27:5 of file tests/../integration_tests/call_subroutine_without_type_01.f90\0ATried to access member of unallocated variable '%s'\00", align 1
 
