@@ -10007,6 +10007,7 @@ public:
         }
 
         // INTERNAL READ SUPPORT:
+        // INTERNAL READ SUPPORT:
         if (load_ref && !ASRUtils::is_value_constant(x)) {
             ASR::ttype_t* x_type = ASRUtils::expr_type(x);
             bool is_descriptor = x_type && 
@@ -10014,18 +10015,22 @@ public:
                                  ASRUtils::is_descriptorString(x_type);
 
             if (is_descriptor) {
-                //These nodes must remain POINTERS for LLVM verification.
-                // 3=Var, 4=ArrayItem, 13=Cast, 28=Member, 60=StringFormat
+                // EXCLUSION LIST: These nodes represent memory locations or structural
+                // wrappers (like Cast or StringFormat) that must remain POINTERS. 
+                // Loading them into a value register causes LLVM GEP verification failures.
                 if (x->type == ASR::exprType::Var || 
                     x->type == ASR::exprType::ArrayItem ||
+                    x->type == ASR::exprType::ArraySection ||
                     x->type == ASR::exprType::Cast ||
                     x->type == ASR::exprType::StructInstanceMember ||
                     x->type == ASR::exprType::StringFormat) {
+                    // Safety Exit: Let the default pointer-based logic handle it.
                 } else {
                     llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, x_type, module.get());
+                    // Only load if the current LLVM value is a valid pointer.
                     if (tmp->getType()->isPointerTy()) {
                         tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                        return; 
+                        return; // Successfully handled the internal read unit load.
                     }
                 }
             }
