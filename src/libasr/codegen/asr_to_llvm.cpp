@@ -10008,6 +10008,8 @@ public:
 
         // INTERNAL READ SUPPORT:
         // 3. General Load Handling
+        // INTERNAL READ SUPPORT:
+        // 3. General Load Handling
         if (load_ref && !ASRUtils::is_value_constant(x)) {
             // ===== INTERNAL FILE FIX =====
             bool is_internal_unit =
@@ -10015,7 +10017,12 @@ public:
                 ASRUtils::is_descriptorString(ASRUtils::expr_type(x));
 
             // Only load HERE if it is a character descriptor (internal unit)
-            if (is_internal_unit) {
+            // AND it's not a standard variable or array member (to avoid GEP errors)
+            if (is_internal_unit && 
+                x->type != ASR::exprType::Var && 
+                x->type != ASR::exprType::ArrayItem &&
+                x->type != ASR::exprType::StructInstanceMember) {
+                
                 llvm::Type* x_llvm_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         x,
@@ -10027,7 +10034,7 @@ public:
                     tmp,
                     is_volatile);
                 
-                return; // 👈 CRITICAL: Exit so the upstream logic below doesn't load it again
+                return; 
             }
         } 
         // Standard variables (like 'i' in do7) skip the block above 
