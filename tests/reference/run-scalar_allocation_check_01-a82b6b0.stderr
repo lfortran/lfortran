@@ -1,1 +1,5 @@
 runtime error: Variable 'x' is not allocated.
+ --> tests/errors/scalar_allocation_check_01.f90:4:29
+  |
+4 |     integer, allocatable :: x
+  |                             ^

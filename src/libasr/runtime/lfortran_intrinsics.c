@@ -2656,157 +2656,6 @@ static char* runtime_read_line(const char *filename, unsigned int line_no) {
     return NULL;
 }
 
-static size_t runtime_squiggle_len(const char *line, unsigned int column) {
-    size_t len = strlen(line);
-    if (len == 0) {
-        return 1;
-    }
-    if (column == 0) {
-        column = 1;
-    }
-    size_t start = column - 1;
-    if (start >= len) {
-        return 1;
-    }
-    if (isspace((unsigned char)line[start])) {
-        return 1;
-    }
-    size_t i = start;
-    while (i < len && !isspace((unsigned char)line[i])) {
-        i++;
-    }
-    if (i == start) {
-        return 1;
-    }
-    return i - start;
-}
-
-
-static void runtime_render_error(const char *formatted) {
-    const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
-    const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
-    const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
-    const char *color_bold_blue = _lfortran_use_runtime_colors ? "\033[0;34;1m" : "";
-
-    // Check if this is a STOP statement (not an error)
-    if (strncmp(formatted, "STOP", 4) == 0 || strncmp(formatted, "ERROR STOP", 10) == 0) {
-        fprintf(stderr, "%s", formatted);
-        fflush(stderr);
-        return;
-    }
-
-    // Try to parse "At line:col of file filename\nmessage" format
-    const char *prefix = "At ";
-    const char *file_marker = " of file ";
-
-    // If the message doesn't have location info, just print it with the runtime error prefix
-    if (strncmp(formatted, prefix, strlen(prefix)) != 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse line number
-    const char *p = formatted + strlen(prefix);
-    char *endptr = NULL;
-    unsigned long line = strtoul(p, &endptr, 10);
-    if (!endptr || *endptr != ':') {
-        // Parsing failed, just print the message
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse column number
-    p = endptr + 1;
-    unsigned long column = strtoul(p, &endptr, 10);
-    if (!endptr) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse filename
-    const char *file_pos = strstr(endptr, file_marker);
-    if (!file_pos) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    const char *filename_start = file_pos + strlen(file_marker);
-    const char *filename_end = strchr(filename_start, '\n');
-    if (!filename_end) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    size_t filename_len = (size_t)(filename_end - filename_start);
-    char *filename = (char*)malloc(filename_len + 1);
-    if (!filename) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-    memcpy(filename, filename_start, filename_len);
-    filename[filename_len] = '\0';
-
-    const char *message = filename_end + 1;
-    if (*message == '\0') {
-        message = "Unknown error";
-    }
-
-    // Always print the error message
-    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-            color_bold_red, color_reset, color_bold, message, color_reset);
-
-    // If line is 0, we don't have a specific location - just show the message
-    if (line == 0) {
-        free(filename);
-        fflush(stderr);
-        return;
-    }
-
-    // Try to read the source line - if it fails, still show location without source
-    char *line_text = runtime_read_line(filename, (unsigned int)line);
-
-    int width = runtime_line_num_width((unsigned int)line);
-
-    // Show location info
-    fprintf(stderr, "%*s%s-->%s %s:%lu:%lu\n",
-            width, "", color_bold_blue, color_reset, filename, line, column);
-
-    // If we have the source line, show it with the squiggle
-    if (line_text) {
-        size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
-
-        fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
-        fprintf(stderr, "%s%*lu |%s %s\n",
-                color_bold_blue, width, line, color_reset, line_text);
-        fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
-        if (column > 1) {
-            fprintf(stderr, "%*s", (int)(column - 1), "");
-        }
-        fprintf(stderr, "%s", color_bold_red);
-        for (size_t i = 0; i < squiggle_len; i++) {
-            fputc('^', stderr);
-        }
-        fprintf(stderr, " %s\n", color_reset);
-
-        free(line_text);
-    }
-
-    fflush(stderr);
-    free(filename);
-}
-
 static void print_label_span(const Span *span, bool is_primary, 
                               const char *label_msg, bool use_colors) {
     const char *color_reset = use_colors ? "\033[0;0m" : "";
@@ -2921,7 +2770,9 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
         for (uint32_t j = 0; j < label->n_spans; j++) {
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
-            free(label->message);
+            if (label->message != NULL)
+                free(label->message);
+            label->message = NULL;
         }
     }
 
@@ -2954,32 +2805,13 @@ LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {
     return formatted;
 }
 
-// TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
-    va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
-    }
-    char *formatted = (char*)malloc((size_t)needed + 1);
-    if (!formatted) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
-    }
-    vsnprintf(formatted, (size_t)needed + 1, format, args);
+    vfprintf(stderr, format, args);
+    fflush(stderr);
     va_end(args);
-    runtime_render_error(formatted);
-    free(formatted);
 }
 
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,

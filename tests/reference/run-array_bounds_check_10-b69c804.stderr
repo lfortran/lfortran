@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in binary operation with operands 'a' and 'b
  --> tests/errors/array_bounds_check_10.f90:9:9
   |
 9 |     e = a + b
-  |         ^ 
+  |         ^ LHS size is 2
+  |
+9 |     e = a + b
+  |             ^ RHS size is 3

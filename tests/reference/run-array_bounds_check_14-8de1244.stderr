@@ -2,4 +2,4 @@ runtime error: Argument 1 of subroutine f_integer____0 is unallocated.
   --> tests/errors/array_bounds_check_14.f90:16:12
    |
 16 |     call f(x)
-   |            ^^ 
+   |            ^ This is unallocated
