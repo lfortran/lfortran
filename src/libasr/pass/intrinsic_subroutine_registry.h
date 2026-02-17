@@ -33,6 +33,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(MoveAlloc)
         INTRINSIC_SUBROUTINE_NAME_CASE(Mvbits)
         INTRINSIC_SUBROUTINE_NAME_CASE(Abort)
+        INTRINSIC_SUBROUTINE_NAME_CASE(System)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -77,6 +78,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&Abort::instantiate_Abort, &Abort::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::System),
+            {&System::instantiate_System, &System::verify_args}},
         };
         return intrinsic_subroutine_by_id_db;
     }
@@ -99,6 +102,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"move_alloc", &MoveAlloc::create_MoveAlloc},
                 {"mvbits", &Mvbits::create_Mvbits},
                 {"abort", &Abort::create_Abort},
+                {"system", &System::create_System},
         };
         return intrinsic_subroutine_by_name_db;
     }
