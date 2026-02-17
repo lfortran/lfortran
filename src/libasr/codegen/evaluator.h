@@ -21,9 +21,11 @@ namespace llvm {
     class GlobalVariable;
     class TargetMachine;
     class DataLayout;
+#ifndef WITH_LIRIC
     namespace orc {
         class KaleidoscopeJIT;
     }
+#endif
 }
 
 namespace mlir {
@@ -63,7 +65,9 @@ public:
 class LLVMEvaluator
 {
 private:
+#ifndef WITH_LIRIC
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
+#endif
     std::unique_ptr<llvm::LLVMContext> context;
     std::string target_triple;
     llvm::TargetMachine *TM;

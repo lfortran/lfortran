@@ -65,7 +65,11 @@
 #    include <llvm/Support/Host.h>
 #endif
 
+#ifndef WITH_LIRIC
 #include <libasr/codegen/KaleidoscopeJIT.h>
+#else
+#define RM_OPTIONAL_TYPE std::optional
+#endif
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -201,6 +205,9 @@ float _lfortran_stan(float x);
 
 LLVMEvaluator::LLVMEvaluator(const std::string &t)
 {
+#ifdef WITH_LIRIC
+    setenv("LIRIC_POLICY", "ir", 0);
+#endif
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -257,15 +264,19 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     }
 #endif
 
+#ifndef WITH_LIRIC
     // For some reason the JIT requires a different TargetMachine
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+#endif
 
     _lfortran_stan(0.5);
 }
 
 LLVMEvaluator::~LLVMEvaluator()
 {
+#ifndef WITH_LIRIC
     jit.reset();
+#endif
     context.reset();
 }
 
@@ -291,7 +302,11 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
 #else
     module->setTargetTriple(target_triple);
 #endif
+#ifdef WITH_LIRIC
+    module->setDataLayout(TM->createDataLayout());
+#else
     module->setDataLayout(jit->getDataLayout());
+#endif
     return module;
 }
 
@@ -313,6 +328,9 @@ void LLVMEvaluator::add_module(const std::string &source) {
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
+#ifdef WITH_LIRIC
+    throw LCompilersException("add_module() is not supported with liric backend");
+#else
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
 #if LLVM_VERSION_MAJOR >= 21
@@ -330,7 +348,7 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
         throw LCompilersException("addModule() returned an error: " + msg);
     }
-
+#endif
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
@@ -338,6 +356,9 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+#ifdef WITH_LIRIC
+    throw LCompilersException("get_symbol_address() is not supported with liric backend");
+#else
 #if LLVM_VERSION_MAJOR < 8
     // LLVM 7: Use findSymbol which returns JITSymbol
     llvm::JITSymbol s = jit->findSymbol(name);
@@ -388,6 +409,7 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         throw LCompilersException("JITSymbol::getAddress() returned an error: " + msg);
     }
     return (intptr_t)cantFail(std::move(addr0));
+#endif
 #endif
 }
 
@@ -530,7 +552,12 @@ llvm::LLVMContext &LLVMEvaluator::get_context()
 }
 
 const llvm::DataLayout &LLVMEvaluator::get_jit_data_layout() {
+#ifdef WITH_LIRIC
+    static llvm::DataLayout DL = TM->createDataLayout();
+    return DL;
+#else
     return jit->getDataLayout();
+#endif
 }
 
 void LLVMEvaluator::print_targets()

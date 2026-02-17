@@ -1213,9 +1213,9 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
             if(is_class_type){
                 auto const class_type_llvm = llvm_utils_->getClassType(struct_sym);
-                auto const struct_type_llvm = llvm_utils_->getStructType(struct_sym, llvm_utils_->module);
-                auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
-                                                             llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1));
+                auto const consecutive_field_ptr = llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1);
+                auto const consecutive_field_type = consecutive_field_ptr->getType()->getPointerElementType();
+                auto const allocated_cosecutive_structs = builder_->CreateLoad(consecutive_field_type, consecutive_field_ptr);
                 llvm_utils_->lfortran_free(allocated_cosecutive_structs);
                 // deallocate class wrapper 
                 llvm_utils_->lfortran_free(data_ptr);
