@@ -1,0 +1,13 @@
+{
+    "basename": "pass_global_stmts-interactive_end_identifier_01-3495ead",
+    "cmd": "lfortran --pass=global_stmts --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/interactive_end_identifier_01.f90",
+    "infile_hash": "b01d5b750c7359f0326598cedfb25a1a528b13fe3b65397ae73699cd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_global_stmts-interactive_end_identifier_01-3495ead.stdout",
+    "stdout_hash": "9f88722ff23efe0af6b80554b720628110229a3902665ad5e886d00f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

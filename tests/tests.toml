@@ -3408,6 +3408,13 @@ llvm = true
 pass = "global_stmts"
 
 [[test]]
+filename = "interactive_end_identifier_01.f90"
+interactive = true
+asr = true
+llvm = true
+pass = "global_stmts"
+
+[[test]]
 filename = "errors/interactive_std_f23_foobar_01.f90"
 interactive = true
 asr = true
@@ -5069,6 +5076,11 @@ options = "--infer"
 [[test]]
 filename = "infer_global_scope_file_01.f90"
 ast = true
+options = "--infer"
+
+[[test]]
+filename = "infer_end_identifier_01.f90"
+asr = true
 options = "--infer"
 
 [[test]]

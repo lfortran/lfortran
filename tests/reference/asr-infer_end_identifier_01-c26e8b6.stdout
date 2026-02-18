@@ -1,0 +1,45 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            end:
+                (Variable
+                    1
+                    end
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Integer 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                )
+        })
+    [(Assignment
+        (Var 1 end)
+        (IntegerConstant 5 (Integer 4) Decimal)
+        ()
+        .false.
+        .false.
+    )
+    (Print
+        (StringFormat
+            ()
+            [(Var 1 end)]
+            FormatFortran
+            (Allocatable
+                (String 1 () DeferredLength DescriptorString)
+            )
+            ()
+        )
+    )]
+)

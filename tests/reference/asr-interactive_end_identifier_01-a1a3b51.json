@@ -1,0 +1,13 @@
+{
+    "basename": "asr-interactive_end_identifier_01-a1a3b51",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/interactive_end_identifier_01.f90",
+    "infile_hash": "b01d5b750c7359f0326598cedfb25a1a528b13fe3b65397ae73699cd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-interactive_end_identifier_01-a1a3b51.stdout",
+    "stdout_hash": "0e66dfb4dfc3064d71ecc2765f034d7e3cc5712b5fb6a685140ad1ad",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

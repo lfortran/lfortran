@@ -1,0 +1,13 @@
+{
+    "basename": "asr-infer_end_identifier_01-c26e8b6",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/infer_end_identifier_01.f90",
+    "infile_hash": "bc0d8d6124eb2832d5966ae3a3c4f15713f2ae8ff15a55e7c701699a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-infer_end_identifier_01-c26e8b6.stdout",
+    "stdout_hash": "72ba7e16bcbe0ca19763681e6c93f1c59265ab56db46456107d991f4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
