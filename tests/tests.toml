@@ -3399,6 +3399,11 @@ run = true
 options = "--infer"
 
 [[test]]
+filename = "infer_global_scope_file_01.f90"
+ast = true
+options = "--infer"
+
+[[test]]
 filename = "errors/infer_mode_conflict_01.f90"
 run = true
 options = "--infer --std=f23"
