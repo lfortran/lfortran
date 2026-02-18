@@ -7862,38 +7862,26 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     sscanf(buf, format, i);
     free(buf);
 }
 
 
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return; // allocation failure
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     sscanf(buf, format, i);
     free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     sscanf(buf, format, f);
     free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     sscanf(buf, format, f);
     free(buf);
 }
@@ -7948,20 +7936,14 @@ static void _lfortran_replace_d_exponent(char *buf) {
 }
 
 LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     _lfortran_replace_d_exponent(buf);
     sscanf(buf, format, &c->re, &c->im);
     free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    char *buf = to_c_string((const fchar*)str, len);
     _lfortran_replace_d_exponent(buf);
     sscanf(buf, format, &c->re, &c->im);
     free(buf);
