@@ -34,6 +34,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     MoveAlloc,
     Mvbits,
     Abort,
+    System,
     // ...
 };
 
@@ -1532,6 +1533,73 @@ namespace Abort {
         return b.SubroutineCall(fn_sym, new_args);
     }
 } // namespace Abort
+
+namespace System {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1, "Unexpected number of args, system takes 1 argument, found ", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of character type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_System(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`system` is a non-standard extension for legacy codes", { loc }, "Use `execute_command_line` instead");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::System), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_System(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        std::string c_func_name = "_lfortran_exec_command";
+        std::string new_name = "_lcompilers_system_";
+        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString));
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("command", str_type, InOut);
+
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 2);
+
+        {
+            ASR::expr_t *str_arg = b.Variable(fn_symtab_1, "m",
+                b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+            args_1.push_back(al, str_arg);
+
+            ASR::expr_t *len_arg = b.Variable(fn_symtab_1, "n", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+            args_1.push_back(al, len_arg);
+        }
+
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+            ret_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 2);
+
+        {
+            call_args.push_back(al, create_string_physical_cast(al, args[0], ASR::CChar));
+            call_args.push_back(al, b.StringLen(args[0]));
+        }
+
+        body.push_back(al, b.Assignment(declare("_lcompilers_exit_status", ret_type, Local), b.Call(s, call_args, ret_type)));
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+
+} // namespace System
 
 } // namespace LCompilers::ASRUtils
 
