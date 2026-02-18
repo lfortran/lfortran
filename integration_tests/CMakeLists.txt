@@ -1623,11 +1623,6 @@ RUN(NAME select_type_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 
-
-RUN(NAME program_02 LABELS gfortran llvm)
-RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME program_04 LABELS gfortran llvm)
-
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1949,6 +1944,9 @@ RUN(NAME line_continuation_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
 RUN(NAME line_continuation_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME program_01 LABELS gfortran)
+RUN(NAME program_02 LABELS gfortran llvm)
+RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME program_04 LABELS gfortran llvm)
 RUN(NAME init_values LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME param_pass_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
