@@ -440,8 +440,8 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
-        // Interactive mode defaults to infer mode (`lfortran` with no input file),
-        // unless an explicit mode is selected.
+        // REPL invocation (`lfortran` with no input files) defaults to infer mode,
+        // unless a language mode was explicitly selected via `--std`.
         if (!opts.arg_infer && opts.arg_standard.empty() && opts.arg_files.empty()) {
             opts.arg_infer = true;
         }

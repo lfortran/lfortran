@@ -4462,35 +4462,12 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
     }
 
-    /* Returns true if `x` is a statement function, false otherwise.
-    Example of statement functions:
-    integer :: A
-    A(i,j) = i*j
-    // implicit typing on
-    A(i,j) = i*j
-    Examples of non statement functions:
-    integer :: A(3, 5)
-    A(i,j) = i*j
-    */
-    // Returns true if a variable was declared via type inference.
-    // Called from visit_Assignment when compiler_options.infer_mode is true
-    // and LHS is an undeclared bare name.
-    bool try_infer_and_declare(const AST::Assignment_t &x) {
-        if (!compiler_options.infer_mode) {
-            return false;
-        }
-
-        if (!AST::is_a<AST::Name_t>(*x.m_target)) {
-            return false;
-        }
-
+    // Infers type from the RHS expression and declares an implicit local.
+    // Preconditions are checked in visit_Assignment:
+    // infer mode is enabled, target is a bare name, and symbol is new.
+    void infer_type_and_declare(const AST::Assignment_t &x) {
         AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
         std::string var_name = to_lower(target_name->m_id);
-
-        ASR::symbol_t* existing = current_scope->resolve_symbol(var_name);
-        if (existing != nullptr) {
-            return false;
-        }
 
         this->visit_expr(*x.m_value);
         ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
@@ -4522,7 +4499,7 @@ public:
                     str_type->m_len_kind, str_type->m_physical_type));
         } else {
             diag.add(Diagnostic(
-                "Type inference only supports intrinsic types "
+                "For now, type inference only supports intrinsic types "
                 "(integer, real, complex, logical, character)",
                 Level::Error, Stage::Semantic, {
                     Label("non-intrinsic type", {x.m_value->base.loc})
@@ -4533,9 +4510,18 @@ public:
 
         declare_implicit_variable2(target_name->base.base.loc, var_name,
             ASRUtils::intent_local, declared_type);
-        return true;
     }
 
+    /* Returns true if `x` is a statement function, false otherwise.
+    Example of statement functions:
+    integer :: A
+    A(i,j) = i*j
+    // implicit typing on
+    A(i,j) = i*j
+    Examples of non statement functions:
+    integer :: A(3, 5)
+    A(i,j) = i*j
+    */
     bool is_statement_function( const AST::Assignment_t &x ) {
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer, real, logical, or nullptr then it is a statement function
@@ -4864,7 +4850,13 @@ public:
             tmp = nullptr;
             return;
         }
-        try_infer_and_declare(x);
+        if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
+            AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+            std::string var_name = to_lower(target_name->m_id);
+            if (current_scope->resolve_symbol(var_name) == nullptr) {
+                infer_type_and_declare(x);
+            }
+        }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {
