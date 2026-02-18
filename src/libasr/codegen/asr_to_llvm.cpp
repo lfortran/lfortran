@@ -17188,9 +17188,9 @@ public:
                     llvm::DataLayout data_layout(module->getDataLayout());
                     int dim_des_size = (int)data_layout.getTypeAllocSize(arr_descr->get_dimension_descriptor_type());
                     builder->CreateMemCpy(
-                        builder->CreateBitCast(target_dim_des_ptr, llvm::Type::getInt8PtrTy(context)),
+                        builder->CreateBitCast(target_dim_des_ptr, llvm_utils->i8_ptr),
                         llvm::MaybeAlign(8),
-                        builder->CreateBitCast(actual_dim_des, llvm::Type::getInt8PtrTy(context)),
+                        builder->CreateBitCast(actual_dim_des, llvm_utils->i8_ptr),
                         llvm::MaybeAlign(8),
                         dim_des_size * n_dims_copy);
                     
