@@ -385,18 +385,33 @@ public :
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
-        if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the array_struct_temporary. No need to check for them here.
+        // Also traverse m_dt which may contain a FunctionCall (e.g., arr%bracket())
+        if (x->m_dt) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(x->m_dt);
+            replace_expr(x->m_dt);
+            current_expr = current_expr_copy;
+        }
+        // Check if this function was converted to a subroutine by this pass
+        ASR::Function_t* func = ASRUtils::get_function(x->m_name);
+        bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
+        if(PassUtils::is_non_primitive_return_type(x->m_type) || was_converted){
 
             // Create variable in current_scope to be holding the return.
+            // For converted functions (structs/arrays), pass the last arg as
+            // the sibling so create_var can extract the type_decl symbol.
+            ASR::expr_t* sibling_var = (was_converted && func->n_args > 0)
+                ? func->m_args[func->n_args - 1] : nullptr;
             ASR::expr_t* result_var = PassUtils::create_var(
                                             result_counter++,
                                             "return_slot", x->base.base.loc,
-                                            create_type_for_return_slot_var(x->m_type) , al, current_scope);
+                                            create_type_for_return_slot_var(x->m_type) , al, current_scope, sibling_var);
 
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
             if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
-            
-            if(allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))){
+
+            if(PassUtils::is_non_primitive_return_type(x->m_type)
+                && allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))){
 
                 ASR::ttype_t* func_return_type {};
                 if(!ASRUtils::get_function(x->m_name)->m_return_var){ // FunctionCall to Modified Function (Currently Subroutine)
@@ -404,7 +419,7 @@ public :
                 } else {
                     func_return_type = nullptr; // Doesn't matter to provide or not.
                 }
-                
+
                 AllocateVarBasedOnFuncCall::Allocate(
                     al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, func_return_type);
             }

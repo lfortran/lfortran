@@ -18649,8 +18649,7 @@ public:
                 } else {
                     pass_arg = dt_polymorphic;
                 }
-            } else if(ASR::is_a<ASR::ArrayItem_t>(*dt_expr) ||
-                      ASR::is_a<ASR::FunctionCall_t>(*dt_expr)) {
+            } else if(ASR::is_a<ASR::ArrayItem_t>(*dt_expr)) {
                 this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
@@ -18736,18 +18735,6 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
-            if (s->m_return_var == nullptr) {
-                // Function was converted by subroutine_from_function pass:
-                // the result is passed via the last output argument.
-                llvm::Type* result_type = llvm_utils->get_type_from_ttype_t_util(
-                    ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                        ASR::down_cast<ASR::Var_t>(s->m_args[s->n_args - 1])->m_v)),
-                    x.m_type, module.get());
-                tmp = llvm_utils->CreateAlloca(result_type, nullptr, "struct_ret_tmp");
-                builder->CreateStore(llvm::Constant::getNullValue(result_type), tmp);
-                args.push_back(tmp);
-                builder->CreateCall(fn, args);
-            } else {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
@@ -18783,10 +18770,9 @@ public:
                 builder->CreateStore(tmp, string_ptr);
                 tmp = string_ptr;
             }
-            }
         }
         // Convert complex return value from platform ABI to internal representation
-        if (s->m_return_var) {
+        {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (is_a<ASR::Complex_t>(*return_var_type0)) {
                 int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
