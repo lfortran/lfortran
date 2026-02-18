@@ -10044,6 +10044,22 @@ public:
             tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             return;
         }
+        if (load_ref) {
+            ASR::ttype_t* t = ASRUtils::expr_type(x);
+            if (!t) return;
+
+            // --- THE PRECISION GUARD ---
+            bool is_desc = (ASRUtils::is_character(*t) && ASRUtils::is_descriptorString(t)) || ASRUtils::is_array(t);
+            bool is_alloc_ptr = ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t);
+
+            if (is_desc || is_alloc_ptr) {
+                // NEW: If it's a specific element (ArrayItem), do NOT return. 
+                // We need to fall through and actually perform the load.
+                if (!ASR::is_a<ASR::ArrayItem_t>(*x)) {
+                    return; 
+                }
+            }
+        }
 
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
@@ -10052,6 +10068,20 @@ public:
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 tmp = logical_load_val(tmp, x, is_volatile);
+            }
+        }
+        if (load_ref && !ASRUtils::is_value_constant(x)) {
+            ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+            if (x_type) {
+                bool is_desc = (ASRUtils::is_character(*x_type) && ASRUtils::is_descriptorString(x_type)) || ASRUtils::is_array(x_type);
+                bool is_alloc_ptr = ASRUtils::is_allocatable(x_type) || ASRUtils::is_pointer(x_type);
+
+                if (is_desc || is_alloc_ptr) {
+                    // If ASR says it's a descriptor/pointer, LLVM 'tmp' is already the address we need.
+                    // Performing a load here would turn that address into a raw integer (i32/i64),
+                    // which causes the PtrToInt error later.
+                    return; 
+                }
             }
         }
     }
@@ -14018,7 +14048,37 @@ public:
                     }
                     // Unsupported ImpliedDoLoop pattern - fall through to default handling
                 }
+                if (ASRUtils::is_logical(*ASRUtils::expr_type(x.m_values[i]))) {
+                    // Get pointer to variable without performing a load
+                    int ptr_loads_copy = ptr_loads;
+                    ptr_loads = 0;
+                    this->visit_expr(*x.m_values[i]);
+                    llvm::Value* logical_var_ptr = tmp;
+                    ptr_loads = ptr_loads_copy;
 
+                    // Runtime expects i32 for logical ABI
+                    llvm::Value* logical_tmp = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt32Ty(context));
+
+                    // Call the runtime read function
+                    llvm::Function* fn = get_read_function(
+                        ASRUtils::expr_type(x.m_values[i])
+                    );
+
+                    builder->CreateCall(fn, {logical_tmp, unit_val, iostat});
+
+                    // Load and convert to actual logical type (usually i1)
+                    llvm::Value* loaded_val = builder->CreateLoad(
+                        llvm::Type::getInt32Ty(context), logical_tmp);
+
+                    llvm::Value* final_val = builder->CreateICmpNE(
+                        loaded_val,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+
+                    builder->CreateStore(final_val, logical_var_ptr);
+
+                    continue; 
+                }
                 int ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_values[i]);
