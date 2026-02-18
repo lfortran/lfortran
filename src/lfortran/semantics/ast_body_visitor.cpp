@@ -4800,6 +4800,45 @@ public:
             tmp = nullptr;
             return;
         }
+        if (compiler_options.infer_mode && current_scope && current_scope->parent == nullptr &&
+                AST::is_a<AST::Name_t>(*x.m_target)) {
+            AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+            std::string var_name = to_lower(target_name->m_id);
+            if (current_scope->resolve_symbol(var_name) == nullptr) {
+                this->visit_expr(*x.m_value);
+                ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::expr_type(inferred_value));
+                ASR::ttype_t* declared_type = nullptr;
+                if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
+                    int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+                    declared_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target_name->base.base.loc, kind));
+                } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
+                    int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+                    declared_type = ASRUtils::TYPE(ASR::make_Real_t(al, target_name->base.base.loc, kind));
+                } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
+                    int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+                    declared_type = ASRUtils::TYPE(ASR::make_Complex_t(al, target_name->base.base.loc, kind));
+                } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
+                    int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+                    declared_type = ASRUtils::TYPE(ASR::make_Logical_t(al, target_name->base.base.loc, kind));
+                } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
+                    ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(inferred_type);
+                    declared_type = ASRUtils::TYPE(ASR::make_String_t(al, target_name->base.base.loc,
+                        string_type->m_kind, string_type->m_len, string_type->m_len_kind,
+                        string_type->m_physical_type));
+                } else {
+                    diag.semantic_error_label(
+                        "Infer mode only supports first-assignment inference for intrinsic types",
+                        {target_name->base.base.loc},
+                        "explicit declaration required for non-intrinsic type of `" + var_name + "`"
+                    );
+                    throw SemanticAbort();
+                }
+                declare_implicit_variable2(target_name->base.base.loc, var_name,
+                    ASRUtils::intent_local, declared_type);
+            }
+        }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {

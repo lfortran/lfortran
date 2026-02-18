@@ -1,0 +1,5 @@
+semantic error: Infer mode only supports first-assignment inference for intrinsic types
+ --> tests/errors/infer_first_assignment_derived_01.f90:4:1
+  |
+4 | a = t(1)
+  | ^ explicit declaration required for non-intrinsic type of `a`
