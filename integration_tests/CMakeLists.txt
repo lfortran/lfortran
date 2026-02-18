@@ -3384,6 +3384,11 @@ RUN(NAME infer_walrus_01 LABELS llvm)
 RUN(NAME infer_walrus_02 LABELS llvm)
 RUN(NAME infer_walrus_03 LABELS llvm)
 
+# Type inference with := syntax (arrays)
+RUN(NAME infer_walrus_array_01 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME infer_walrus_array_02 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME infer_walrus_array_03 LABELS llvm EXTRA_ARGS --infer --realloc-lhs-arrays)
+
 # Type inference scope shadowing
 RUN(NAME infer_walrus_shadow_01 LABELS llvm)
 RUN(NAME infer_walrus_shadow_02 LABELS llvm)

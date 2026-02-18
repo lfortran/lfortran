@@ -4474,48 +4474,71 @@ public:
     */
     // Declares a variable with type inferred from the RHS value expression.
     // Used by both --infer mode (visit_Assignment) and := syntax (visit_InferAssignment).
+    ASR::ttype_t* infer_scalar_type(const Location& loc, ASR::ttype_t* inferred_type,
+            ASR::expr_t* inferred_value, AST::expr_t* value) {
+        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
+            return ASRUtils::TYPE(
+                ASR::make_String_t(al, loc,
+                    str_type->m_kind, str_type->m_len,
+                    str_type->m_len_kind, str_type->m_physical_type));
+        }
+        diag.add(Diagnostic(
+            "Type inference only supports intrinsic types "
+            "(integer, real, complex, logical, character)",
+            Level::Error, Stage::Semantic, {
+                Label("non-intrinsic type", {value->base.loc})
+            }
+        ));
+        throw SemanticAbort();
+    }
+
     void infer_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
         this->visit_expr(*value);
         ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::expr_type(inferred_value));
 
+        Location loc = target_name->base.base.loc;
         ASR::ttype_t* declared_type = nullptr;
-        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+        if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
+            ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(inferred_type)->m_type;
+            ASR::ttype_t* scalar_type = infer_scalar_type(loc, elem_type,
+                inferred_value, value);
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(inferred_type);
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, n_dims);
+            for (size_t i = 0; i < n_dims; i++) {
+                ASR::dimension_t d;
+                d.loc = loc;
+                d.m_start = nullptr;
+                d.m_length = nullptr;
+                empty_dims.push_back(al, d);
+            }
+            ASR::ttype_t* array_type = ASRUtils::make_Array_t_util(
+                al, loc, scalar_type, empty_dims.p, n_dims);
             declared_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Real_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Complex_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
-            declared_type = ASRUtils::TYPE(
-                ASR::make_String_t(al, target_name->base.base.loc,
-                    str_type->m_kind, str_type->m_len,
-                    str_type->m_len_kind, str_type->m_physical_type));
+                ASR::make_Allocatable_t(al, loc, array_type));
         } else {
-            diag.add(Diagnostic(
-                "Type inference only supports intrinsic types "
-                "(integer, real, complex, logical, character)",
-                Level::Error, Stage::Semantic, {
-                    Label("non-intrinsic type", {value->base.loc})
-                }
-            ));
-            throw SemanticAbort();
+            declared_type = infer_scalar_type(loc, inferred_type,
+                inferred_value, value);
         }
 
-        declare_implicit_variable2(target_name->base.base.loc,
-            to_lower(target_name->m_id), ASRUtils::intent_local, declared_type);
+        declare_implicit_variable2(loc,
+            to_lower(target_name->m_id), ASRUtils::intent_local,
+            declared_type);
     }
 
     // Try infer mode: declare undeclared bare-name targets via --infer flag.
