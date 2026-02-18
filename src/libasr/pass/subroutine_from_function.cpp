@@ -140,8 +140,7 @@ private :
 
         /* Set `m_dims` + `n_dims`` (if found) */
         if(ASRUtils::is_array(funcCall_ret_type)){
-            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-                ASRUtils::type_get_past_allocatable_pointer(funcCall_ret_type));
+            ASR::Array_t* array_type = down_cast<ASR::Array_t>(ASRUtils::extract_type(funcCall_ret_type));
             array_n_dims = array_type->n_dims;
             array_m_dims = array_type->m_dims;
         }
@@ -399,8 +398,7 @@ public :
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
         if(PassUtils::is_non_primitive_return_type(x->m_type)
-            || PassUtils::is_aggregate_or_array_type(x->m_type)
-            || was_converted){
+            || PassUtils::is_aggregate_or_array_type(x->m_type)){
 
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as
@@ -415,16 +413,18 @@ public :
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
             if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
 
-            if(ASRUtils::is_array(x->m_type) &&
-                allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))) {
+            bool alloc_needed = false;
+            if (ASRUtils::is_array(x->m_type) || PassUtils::is_non_primitive_return_type(x->m_type)) {
+                alloc_needed = allocate_stmt_needed_for_return_slot(
+                    x->m_type, ASRUtils::expr_type(result_var));
+            }
+            if(ASRUtils::is_array(x->m_type) && alloc_needed) {
                 insert_allocate_stmt_for_array(al, result_var, ASRUtils::EXPR((ASR::asr_t*)x), &pass_result);
             } else if(PassUtils::is_non_primitive_return_type(x->m_type)
-                && allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))){
+                && alloc_needed){
 
-                ASR::ttype_t* alloc_type = nullptr;
-                if(!ASRUtils::get_function(x->m_name)->m_return_var){ // FunctionCall to Modified Function (Currently Subroutine)
-                    alloc_type = Function__TO__ReturnType_MAP_[ASRUtils::get_function(x->m_name)];
-                }
+                // FunctionCall to modified function (currently subroutine)
+                ASR::ttype_t* alloc_type = was_converted ? Function__TO__ReturnType_MAP_[func] : nullptr;
 
                 AllocateVarBasedOnFuncCall::Allocate(
                     al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, alloc_type);
