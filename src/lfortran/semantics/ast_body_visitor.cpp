@@ -4514,23 +4514,11 @@ public:
         Location loc = target_name->base.base.loc;
         ASR::ttype_t* declared_type = nullptr;
         if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
-            ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(inferred_type)->m_type;
-            ASR::ttype_t* scalar_type = infer_scalar_type(loc, elem_type,
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inferred_type);
+            ASR::ttype_t* scalar_type = infer_scalar_type(loc, arr->m_type,
                 inferred_value, value);
-            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(inferred_type);
-            Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, n_dims);
-            for (size_t i = 0; i < n_dims; i++) {
-                ASR::dimension_t d;
-                d.loc = loc;
-                d.m_start = nullptr;
-                d.m_length = nullptr;
-                empty_dims.push_back(al, d);
-            }
-            ASR::ttype_t* array_type = ASRUtils::make_Array_t_util(
-                al, loc, scalar_type, empty_dims.p, n_dims);
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Allocatable_t(al, loc, array_type));
+            declared_type = ASRUtils::make_Array_t_util(
+                al, loc, scalar_type, arr->m_dims, arr->n_dims);
         } else {
             declared_type = infer_scalar_type(loc, inferred_type,
                 inferred_value, value);
