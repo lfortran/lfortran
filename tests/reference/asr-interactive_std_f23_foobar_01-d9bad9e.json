@@ -1,0 +1,13 @@
+{
+    "basename": "asr-interactive_std_f23_foobar_01-d9bad9e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/interactive_std_f23_foobar_01.f90",
+    "infile_hash": "90a81bdaa85b5d9dfc4c0cd89d9edaf93255d5f4160cd67bead46a91",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-interactive_std_f23_foobar_01-d9bad9e.stderr",
+    "stderr_hash": "a6496648c7ea564b32d2aa709603ff39edeb0c099e8bf4a000296ac8",
+    "returncode": 2
+}

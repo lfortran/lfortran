@@ -3394,6 +3394,26 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "interactive_allocate_01.f90"
+interactive = true
+asr = true
+llvm = true
+pass = "global_stmts"
+
+[[test]]
+filename = "interactive_arrays_01.f90"
+interactive = true
+asr = true
+llvm = true
+pass = "global_stmts"
+
+[[test]]
+filename = "errors/interactive_std_f23_foobar_01.f90"
+interactive = true
+asr = true
+options = "--std=f23"
+
+[[test]]
 filename = "allow_implicit_interface.f90"
 asr_implicit_interface = true
 

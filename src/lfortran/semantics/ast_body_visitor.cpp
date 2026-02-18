@@ -185,6 +185,86 @@ public:
         current_body = current_body_copy;
     }
 
+    bool handle_global_expression_statement(AST::expr_t* expr) {
+        if (AST::is_a<AST::Name_t>(*expr)) {
+            AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
+            std::string lowered_name = to_lower(name->m_id);
+            AST::stmt_t* stmt = nullptr;
+            if (lowered_name == "stop") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr));
+            } else if (lowered_name == "return") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr));
+            } else if (lowered_name == "exit") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr));
+            } else if (lowered_name == "cycle") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr));
+            } else if (lowered_name == "continue") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Continue_t(al, name->base.base.loc, 0, nullptr));
+            } else {
+                if (current_scope->resolve_symbol(lowered_name) == nullptr) {
+                    diag.semantic_error_label("Variable '" + lowered_name + "' is not declared",
+                        {name->base.base.loc},
+                        "'" + lowered_name + "' is undeclared");
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*expr);
+                return true;
+            }
+            this->visit_stmt(*stmt);
+            return true;
+        }
+
+        if (AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
+            AST::FuncCallOrArray_t* call = AST::down_cast<AST::FuncCallOrArray_t>(expr);
+            std::string lowered_func = to_lower(call->m_func);
+            AST::stmt_t* stmt = nullptr;
+            if (lowered_func == "allocate") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Allocate_t(al, call->base.base.loc, 0, call->m_args,
+                        call->n_args, call->m_keywords, call->n_keywords, nullptr));
+            } else if (lowered_func == "deallocate") {
+                stmt = AST::down_cast<AST::stmt_t>(
+                    AST::make_Deallocate_t(al, call->base.base.loc, 0, call->m_args,
+                        call->n_args, call->m_keywords, call->n_keywords, nullptr));
+            } else if (lowered_func == "open" || lowered_func == "close"
+                    || lowered_func == "nullify" || lowered_func == "flush") {
+                Vec<AST::expr_t*> args;
+                args.reserve(al, call->n_args);
+                for (size_t j = 0; j < call->n_args; j++) {
+                    args.push_back(al, call->m_args[j].m_end);
+                }
+                if (lowered_func == "open") {
+                    stmt = AST::down_cast<AST::stmt_t>(
+                        AST::make_Open_t(al, call->base.base.loc, 0, args.p, args.n,
+                            call->m_keywords, call->n_keywords, nullptr));
+                } else if (lowered_func == "close") {
+                    stmt = AST::down_cast<AST::stmt_t>(
+                        AST::make_Close_t(al, call->base.base.loc, 0, args.p, args.n,
+                            call->m_keywords, call->n_keywords, nullptr));
+                } else if (lowered_func == "nullify") {
+                    stmt = AST::down_cast<AST::stmt_t>(
+                        AST::make_Nullify_t(al, call->base.base.loc, 0, args.p, args.n,
+                            call->m_keywords, call->n_keywords, nullptr));
+                } else {
+                    stmt = AST::down_cast<AST::stmt_t>(
+                        AST::make_Flush_t(al, call->base.base.loc, 0, args.p, args.n,
+                            call->m_keywords, call->n_keywords, nullptr));
+                }
+            } else {
+                return false;
+            }
+            this->visit_stmt(*stmt);
+            return true;
+        }
+
+        return false;
+    }
+
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         program_count = 0;
         ASR::TranslationUnit_t *unit = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
@@ -193,14 +273,22 @@ public:
         items.reserve(al, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             tmp = nullptr;
-            try {
-                visit_ast(*x.m_items[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    throw a;
-                } else {
-                    tmp = nullptr;
-                    tmp_vec.clear();
+            bool handled_expr_stmt = false;
+            if ((compiler_options.interactive || compiler_options.infer_mode) &&
+                    AST::is_a<AST::expr_t>(*x.m_items[i])) {
+                AST::expr_t* expr = AST::down_cast<AST::expr_t>(x.m_items[i]);
+                handled_expr_stmt = handle_global_expression_statement(expr);
+            }
+            if (!handled_expr_stmt) {
+                try {
+                    visit_ast(*x.m_items[i]);
+                } catch (const SemanticAbort &a) {
+                    if (!compiler_options.continue_compilation) {
+                        throw a;
+                    } else {
+                        tmp = nullptr;
+                        tmp_vec.clear();
+                    }
                 }
             }
             if (tmp) {

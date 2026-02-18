@@ -1,0 +1,13 @@
+{
+    "basename": "pass_global_stmts-interactive_arrays_01-f011fc0",
+    "cmd": "lfortran --pass=global_stmts --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/interactive_arrays_01.f90",
+    "infile_hash": "b33b6f1ec4a60316d241e8134f17ccfb579ce281a74dd1589672de0f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_global_stmts-interactive_arrays_01-f011fc0.stdout",
+    "stdout_hash": "7f1745a1971d30d4f57285522e83f06eb7deebd1c61217f9c19210a0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,5 @@
+semantic error: Variable 'foobar' is not declared
+ --> tests/errors/interactive_std_f23_foobar_01.f90:1:1
+  |
+1 | foobar
+  | ^^^^^^ 'foobar' is undeclared

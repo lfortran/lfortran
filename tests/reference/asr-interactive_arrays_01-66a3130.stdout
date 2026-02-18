@@ -1,0 +1,91 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            xt:
+                (Variable
+                    1
+                    xt
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Array
+                        (Real 4)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))]
+                        FixedSizeArray
+                    )
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                )
+        })
+    [(Assignment
+        (ArrayItem
+            (Var 1 xt)
+            [(()
+            (IntegerConstant 1 (Integer 4) Decimal)
+            ())]
+            (Real 4)
+            ColMajor
+            ()
+        )
+        (RealConstant
+            1.200000
+            (Real 4)
+        )
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (ArrayItem
+            (Var 1 xt)
+            [(()
+            (IntegerConstant 2 (Integer 4) Decimal)
+            ())]
+            (Real 4)
+            ColMajor
+            ()
+        )
+        (RealConstant
+            2.400000
+            (Real 4)
+        )
+        ()
+        .false.
+        .false.
+    )
+    (RealBinOp
+        (ArrayItem
+            (Var 1 xt)
+            [(()
+            (IntegerConstant 1 (Integer 4) Decimal)
+            ())]
+            (Real 4)
+            ColMajor
+            ()
+        )
+        Add
+        (ArrayItem
+            (Var 1 xt)
+            [(()
+            (IntegerConstant 2 (Integer 4) Decimal)
+            ())]
+            (Real 4)
+            ColMajor
+            ()
+        )
+        (Real 4)
+        ()
+    )]
+)

@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-interactive_arrays_01-e41e5b6",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/interactive_arrays_01.f90",
+    "infile_hash": "b33b6f1ec4a60316d241e8134f17ccfb579ce281a74dd1589672de0f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-interactive_arrays_01-e41e5b6.stdout",
+    "stdout_hash": "7f8d9fc07cfada5c9f67a8ccbe300b9aa624f9e4fed9b2cfba06ad13",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
