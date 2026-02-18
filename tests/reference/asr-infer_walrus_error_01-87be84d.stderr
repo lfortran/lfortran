@@ -1,0 +1,5 @@
+semantic error: Variable 'x' is already declared; use `=` for assignment to existing variables
+ --> tests/errors/infer_walrus_error_01.f90:4:5
+  |
+4 |     x := 5
+  |     ^ already declared

@@ -3379,5 +3379,10 @@ RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME ilp64_kind_arg_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
+# Type inference with := syntax
+RUN(NAME infer_walrus_01 LABELS llvm)
+RUN(NAME infer_walrus_02 LABELS llvm)
+RUN(NAME infer_walrus_03 LABELS llvm)
+
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)

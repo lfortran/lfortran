@@ -4472,27 +4472,10 @@ public:
     integer :: A(3, 5)
     A(i,j) = i*j
     */
-    // Returns true if a variable was declared via type inference.
-    // Called from visit_Assignment when compiler_options.infer_mode is true
-    // and LHS is an undeclared bare name.
-    bool try_infer_and_declare(const AST::Assignment_t &x) {
-        if (!compiler_options.infer_mode) {
-            return false;
-        }
-
-        if (!AST::is_a<AST::Name_t>(*x.m_target)) {
-            return false;
-        }
-
-        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
-        std::string var_name = to_lower(target_name->m_id);
-
-        ASR::symbol_t* existing = current_scope->resolve_symbol(var_name);
-        if (existing != nullptr) {
-            return false;
-        }
-
-        this->visit_expr(*x.m_value);
+    // Declares a variable with type inferred from the RHS value expression.
+    // Used by both --infer mode (visit_Assignment) and := syntax (visit_InferAssignment).
+    void infer_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
+        this->visit_expr(*value);
         ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::expr_type(inferred_value));
@@ -4525,14 +4508,30 @@ public:
                 "Type inference only supports intrinsic types "
                 "(integer, real, complex, logical, character)",
                 Level::Error, Stage::Semantic, {
-                    Label("non-intrinsic type", {x.m_value->base.loc})
+                    Label("non-intrinsic type", {value->base.loc})
                 }
             ));
             throw SemanticAbort();
         }
 
-        declare_implicit_variable2(target_name->base.base.loc, var_name,
-            ASRUtils::intent_local, declared_type);
+        declare_implicit_variable2(target_name->base.base.loc,
+            to_lower(target_name->m_id), ASRUtils::intent_local, declared_type);
+    }
+
+    // Try infer mode: declare undeclared bare-name targets via --infer flag.
+    // Returns true if a variable was declared.
+    bool try_infer_and_declare(const AST::Assignment_t &x) {
+        if (!compiler_options.infer_mode) {
+            return false;
+        }
+        if (!AST::is_a<AST::Name_t>(*x.m_target)) {
+            return false;
+        }
+        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+        if (current_scope->resolve_symbol(to_lower(target_name->m_id)) != nullptr) {
+            return false;
+        }
+        infer_and_declare(target_name, x.m_value);
         return true;
     }
 
@@ -5820,6 +5819,42 @@ public:
             }
             nopass = is_nopass;
         }
+    }
+
+    void visit_InferAssignment(const AST::InferAssignment_t &x) {
+        if (!AST::is_a<AST::Name_t>(*x.m_target)) {
+            diag.add(Diagnostic(
+                "`:=` can only be used with a simple variable name",
+                Level::Error, Stage::Semantic, {
+                    Label("expected a bare name", {x.m_target->base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+        std::string var_name = to_lower(target_name->m_id);
+        ASR::symbol_t* existing = current_scope->resolve_symbol(var_name);
+        if (existing != nullptr) {
+            diag.add(Diagnostic(
+                "Variable '" + var_name + "' is already declared; "
+                "use `=` for assignment to existing variables",
+                Level::Error, Stage::Semantic, {
+                    Label("already declared", {target_name->base.base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+        infer_and_declare(target_name, x.m_value);
+        // Delegate to visit_Assignment for the actual assignment lowering
+        AST::Assignment_t assignment;
+        assignment.base.type = AST::stmtType::Assignment;
+        assignment.base.base.type = AST::astType::stmt;
+        assignment.base.base.loc = x.base.base.loc;
+        assignment.m_label = x.m_label;
+        assignment.m_target = x.m_target;
+        assignment.m_value = x.m_value;
+        assignment.m_trivia = x.m_trivia;
+        visit_Assignment(assignment);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
