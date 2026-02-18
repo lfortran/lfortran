@@ -856,6 +856,11 @@ asr = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "fortplot_mre_unbounded_pointer_associate_01.f90"
+asr = true
+pass = "nested_vars"
+
+[[test]]
 filename = "../integration_tests/struct_allocate.f90"
 asr = true
 
