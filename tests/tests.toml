@@ -5078,3 +5078,7 @@ asr = true
 [[test]]
 filename = "errors/infer_walrus_error_02.f90"
 asr = true
+
+[[test]]
+filename = "errors/infer_walrus_redecl_01.f90"
+asr = true

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-infer_walrus_redecl_01-9910c17",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/infer_walrus_redecl_01.f90",
+    "infile_hash": "faa79b2cefcf09e06fedfd553ab5f74cc27c02bb157190a4f820000f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-infer_walrus_redecl_01-9910c17.stderr",
+    "stderr_hash": "57f21e57acfc7d542fc48ef43e6f0434628bfcf9f3990116d45aeb9a",
+    "returncode": 2
+}

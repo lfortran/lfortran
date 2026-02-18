@@ -4528,7 +4528,7 @@ public:
             return false;
         }
         AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
-        if (current_scope->resolve_symbol(to_lower(target_name->m_id)) != nullptr) {
+        if (current_scope->get_symbol(to_lower(target_name->m_id)) != nullptr) {
             return false;
         }
         infer_and_declare(target_name, x.m_value);
@@ -5833,7 +5833,7 @@ public:
         }
         AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
         std::string var_name = to_lower(target_name->m_id);
-        ASR::symbol_t* existing = current_scope->resolve_symbol(var_name);
+        ASR::symbol_t* existing = current_scope->get_symbol(var_name);
         if (existing != nullptr) {
             diag.add(Diagnostic(
                 "Variable '" + var_name + "' is already declared; "

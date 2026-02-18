@@ -3384,5 +3384,10 @@ RUN(NAME infer_walrus_01 LABELS llvm)
 RUN(NAME infer_walrus_02 LABELS llvm)
 RUN(NAME infer_walrus_03 LABELS llvm)
 
+# Type inference scope shadowing
+RUN(NAME infer_walrus_shadow_01 LABELS llvm)
+RUN(NAME infer_walrus_shadow_02 LABELS llvm)
+RUN(NAME infer_walrus_shadow_03 LABELS llvm EXTRA_ARGS --infer)
+
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
