@@ -140,7 +140,8 @@ private :
 
         /* Set `m_dims` + `n_dims`` (if found) */
         if(ASRUtils::is_array(funcCall_ret_type)){
-            ASR::Array_t* array_type = down_cast<ASR::Array_t>(ASRUtils::extract_type(funcCall_ret_type));
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(funcCall_ret_type));
             array_n_dims = array_type->n_dims;
             array_m_dims = array_type->m_dims;
         }
@@ -335,6 +336,9 @@ private :
                 && !ASRUtils::is_allocatable(function_return_t) 
                 &&  ASRUtils::get_string_type(function_return_t)->m_len_kind == ASR::ExpressionLength;
 
+        } else if (ASRUtils::is_array(function_return_t)) {
+            return ASRUtils::is_allocatable(return_slot_t)
+                && !ASRUtils::is_pointer(return_slot_t);
         } else if (   ASR::is_a<ASR::List_t> (*function_return_t)
                    || ASR::is_a<ASR::Dict_t> (*function_return_t)
                    || ASR::is_a<ASR::Set_t>  (*function_return_t)
@@ -385,17 +389,18 @@ public :
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
-        // Also traverse m_dt which may contain a FunctionCall (e.g., arr%bracket())
         if (x->m_dt) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = &(x->m_dt);
             replace_expr(x->m_dt);
             current_expr = current_expr_copy;
         }
-        // Check if this function was converted to a subroutine by this pass
+
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
-        if(PassUtils::is_non_primitive_return_type(x->m_type) || was_converted){
+        if(PassUtils::is_non_primitive_return_type(x->m_type)
+            || PassUtils::is_aggregate_or_array_type(x->m_type)
+            || was_converted){
 
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as
@@ -410,18 +415,19 @@ public :
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
             if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
 
-            if(PassUtils::is_non_primitive_return_type(x->m_type)
+            if(ASRUtils::is_array(x->m_type) &&
+                allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))) {
+                insert_allocate_stmt_for_array(al, result_var, ASRUtils::EXPR((ASR::asr_t*)x), &pass_result);
+            } else if(PassUtils::is_non_primitive_return_type(x->m_type)
                 && allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))){
 
-                ASR::ttype_t* func_return_type {};
+                ASR::ttype_t* alloc_type = nullptr;
                 if(!ASRUtils::get_function(x->m_name)->m_return_var){ // FunctionCall to Modified Function (Currently Subroutine)
-                    func_return_type = Function__TO__ReturnType_MAP_[ASRUtils::get_function(x->m_name)];
-                } else {
-                    func_return_type = nullptr; // Doesn't matter to provide or not.
+                    alloc_type = Function__TO__ReturnType_MAP_[ASRUtils::get_function(x->m_name)];
                 }
 
                 AllocateVarBasedOnFuncCall::Allocate(
-                    al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, func_return_type);
+                    al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, alloc_type);
             }
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
@@ -544,7 +550,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return PassUtils::is_aggregate_or_array_type(m_value);
         }
 
-        void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
+        bool subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
             bool is_pointer_return = false;
@@ -565,6 +571,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(value);
 
+            // We skip the generic expression visitor on this statement, so
+            // ensure nested calls inside the function call arguments are still replaced.
+            for (size_t i = 0; i < fc->n_args; i++) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &fc->m_args[i].m_value;
+                call_replacer();
+                current_expr = current_expr_copy;
+            }
+            if (fc->m_dt) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &fc->m_dt;
+                call_replacer();
+                current_expr = current_expr_copy;
+            }
+
             ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
             if(ASR::is_a<ASR::Function_t>(*func_sym)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
@@ -572,7 +593,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 if(ASR::is_a<ASR::FunctionType_t>(*func_type)){
                     ASR::FunctionType_t* func_type_type = ASR::down_cast<ASR::FunctionType_t>(func_type);
                     if (func_type_type->m_abi == ASR::abiType::BindC) {
-                        return; // Skip transformation for bind(C) functions
+                        return false; // Skip transformation for bind(C) functions
                     }
                 }
             }
@@ -652,25 +673,30 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             } else {
                 remove_original_statement = true;
             }
+            return true;
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
-            ASR::CallReplacerOnExpressionsVisitor \
-            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
-                subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
+                if (subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx)) {
+                    return;
+                }
             }
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
         }
 
         void visit_Associate(const ASR::Associate_t &x) {
-            ASR::CallReplacerOnExpressionsVisitor \
-            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Associate(x);
             ASR::ttype_t* t = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
             if(is_function_call_returning_aggregate_type(x.m_value) && ASR::is_a<ASR::StructType_t>(*t)) {
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
-                subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
+                if (subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx)) {
+                    return;
+                }
             }
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Associate(x);
         }
 
     /**

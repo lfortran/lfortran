@@ -18649,7 +18649,8 @@ public:
                 } else {
                     pass_arg = dt_polymorphic;
                 }
-            } else if(ASR::is_a<ASR::ArrayItem_t>(*dt_expr)) {
+            } else if(ASR::is_a<ASR::ArrayItem_t>(*dt_expr) ||
+                      ASR::is_a<ASR::FunctionCall_t>(*dt_expr)) {
                 this->visit_expr(*dt_expr);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
@@ -18735,6 +18736,7 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
+            LCOMPILERS_ASSERT(s->m_return_var != nullptr);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
