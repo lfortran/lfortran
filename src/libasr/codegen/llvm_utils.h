@@ -1045,13 +1045,6 @@ class ASRToLLVMVisitor;
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
 
-                    // (struct(array())) -- Need to finalize dimension descriptor in this case
-                    if(in_struct) {
-                        auto const dim_desc_ptr = builder_->CreateLoad(llvm_utils_->dim_descr_type_->getPointerTo(),
-                                                                    llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
-                        llvm_utils_->lfortran_free(dim_desc_ptr);
-                    }
-
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                 break;
                 }
