@@ -126,6 +126,7 @@ struct CompilerOptions {
     bool bounds_checking = true;
     std::string error_format = "human";
     bool new_parser = false;
+    bool infer_mode = false;
     bool implicit_typing = false;
     bool implicit_interface = false;
     bool implicit_argument_casting = false;

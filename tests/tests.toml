@@ -3394,6 +3394,16 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "infer_mode_smoke_01.f90"
+run = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_mode_conflict_01.f90"
+run = true
+options = "--infer --std=f23"
+
+[[test]]
 filename = "allow_implicit_interface.f90"
 asr_implicit_interface = true
 

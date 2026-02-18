@@ -164,6 +164,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing")->group(group_language_options);
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
+        app.add_flag("--infer", opts.arg_infer, "Enable infer mode")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
@@ -337,6 +338,10 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
+        if (opts.arg_infer && !opts.arg_standard.empty()) {
+            throw lc::LCompilersException("Cannot use --infer and --std at the same time");
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -434,6 +439,13 @@ namespace LCompilers::CommandLineInterface {
                 }
             }
         }
+
+        // Interactive mode defaults to infer mode (`lfortran` with no input file),
+        // unless an explicit mode is selected.
+        if (!opts.arg_infer && opts.arg_standard.empty() && opts.arg_files.empty()) {
+            opts.arg_infer = true;
+        }
+        compiler_options.infer_mode = opts.arg_infer;
 
         if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");
