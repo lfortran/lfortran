@@ -244,78 +244,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             x->n_args = new_args.size();
         }
 
-
-        /*
-         * Check whether `func_name` is bound to a Struct via
-         * StructMethodDeclaration in `scope` or, when `scope` belongs
-         * to a submodule, in the parent module's scope.
-         *
-         * When a type-bound procedure call goes through a
-         * StructMethodDeclaration the call site is intentionally NOT
-         * rewritten by this pass (see visit_Call).  Therefore the
-         * *definition* must also keep its original descriptor-based
-         * calling convention; otherwise the linker will see a mangled
-         * name on the definition side but an un-mangled reference on
-         * the call side, producing an "undefined reference" error.
-         */
-        bool is_struct_bound_procedure(const std::string& func_name,
-                                       SymbolTable* scope) {
-            auto has_struct_method_decl = [&](SymbolTable* s) -> bool {
-                for (auto& item : s->get_scope()) {
-                    if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                        ASR::Struct_t* struct_t =
-                            ASR::down_cast<ASR::Struct_t>(item.second);
-                        for (auto& member : struct_t->m_symtab->get_scope()) {
-                            if (ASR::is_a<ASR::StructMethodDeclaration_t>(
-                                    *member.second)) {
-                                ASR::StructMethodDeclaration_t* smd =
-                                    ASR::down_cast<
-                                        ASR::StructMethodDeclaration_t>(
-                                            member.second);
-                                ASR::symbol_t* proc =
-                                    ASRUtils::symbol_get_past_external(
-                                        smd->m_proc);
-                                if (std::string(ASRUtils::symbol_name(proc))
-                                        == func_name) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
-            };
-
-            // Check the current (module) scope
-            if (has_struct_method_decl(scope)) return true;
-
-            // If in a submodule, also check the parent module
-            if (scope->asr_owner
-                    && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                ASR::symbol_t* owner_sym =
-                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                if (ASR::is_a<ASR::Module_t>(*owner_sym)) {
-                    ASR::Module_t* mod =
-                        ASR::down_cast<ASR::Module_t>(owner_sym);
-                    if (mod->m_parent_module && scope->parent) {
-                        ASR::symbol_t* parent_sym =
-                            scope->parent->get_symbol(
-                                mod->m_parent_module);
-                        if (parent_sym
-                                && ASR::is_a<ASR::Module_t>(*parent_sym)) {
-                            SymbolTable* parent_scope =
-                                ASR::down_cast<ASR::Module_t>(
-                                    parent_sym)->m_symtab;
-                            if (has_struct_method_decl(parent_scope))
-                                return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
         template <typename T>
         bool visit_SymbolContainingFunctions(const T& x,
             std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
@@ -326,9 +254,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
                     pass_array_by_data_functions.push_back(subrout);
                     std::vector<size_t> arg_indices;
-                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) &&
-                        !is_struct_bound_procedure(std::string(subrout->m_name),
-                                                   current_scope) ) {
+                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
@@ -709,33 +635,35 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
         }
 
-        static inline int64_t get_expected_n_dims(ASR::symbol_t* subrout_sym, size_t arg_idx) {
+        static inline int64_t get_expected_n_dims(ASR::symbol_t* subrout_sym,
+            size_t arg_idx, size_t formal_arg_offset=0) {
             if( !ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
                 return -1;
             }
             ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-            if( arg_idx >= subrout->n_args ) {
+            if( arg_idx + formal_arg_offset >= subrout->n_args ) {
                 return -1;
             }
-            if( !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx]) ) {
+            if( !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx + formal_arg_offset]) ) {
                 return -1;
             }
-            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(subrout->m_args[arg_idx]);
+            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(subrout->m_args[arg_idx + formal_arg_offset]);
             ASR::dimension_t* dims = nullptr;
             return ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
         }
 
         ASR::expr_t* maybe_cast_class_arg_to_struct(ASR::symbol_t* subrout_sym,
-            size_t arg_idx, ASR::expr_t* arg_expr) {
+            size_t arg_idx, ASR::expr_t* arg_expr, size_t formal_arg_offset=0) {
             if( arg_expr == nullptr || !ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
                 return arg_expr;
             }
             ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-            if( arg_idx >= subrout->n_args || !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx]) ) {
+            if( arg_idx + formal_arg_offset >= subrout->n_args ||
+                !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx + formal_arg_offset]) ) {
                 return arg_expr;
             }
 
-            ASR::expr_t* formal_arg = subrout->m_args[arg_idx];
+            ASR::expr_t* formal_arg = subrout->m_args[arg_idx + formal_arg_offset];
             ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
             if (ASRUtils::is_allocatable(formal_arg_full_type) ||
                 ASRUtils::is_pointer(formal_arg_full_type)) {
@@ -779,7 +707,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
-            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
+            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices,
+            size_t formal_arg_offset=0) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
@@ -798,7 +727,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         }
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
-                        subrout_sym, i, orig_args[i].m_value);
+                        subrout_sym, i, orig_args[i].m_value, formal_arg_offset);
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
@@ -828,7 +757,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 actual_dim_vars.reserve(al, 2);
                 get_dimensions(orig_arg_i, actual_dim_vars, al);
 
-                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i);
+                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i, formal_arg_offset);
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, actual_dim_vars.size());
 
@@ -931,13 +860,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
 
-            // Currently we don't transform class procedure functions
+            bool is_struct_method_call = false;
+            bool is_struct_method_nopass = true;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*subrout_sym)) {
+                ASR::StructMethodDeclaration_t* struct_method
+                    = ASR::down_cast<ASR::StructMethodDeclaration_t>(subrout_sym);
+                is_struct_method_call = true;
+                is_struct_method_nopass = struct_method->m_is_nopass;
                 subrout_sym = ASRUtils::symbol_get_past_external(
                     ASRUtils::symbol_get_past_StructMethodDeclaration(subrout_sym));
-                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
-                not_to_be_erased.insert(subrout_sym);
-                return;
             }
             if( !can_edit_call(x.m_args, x.n_args) && !ASRUtils::get_FunctionType(subrout_sym)->m_module ) {
                 not_to_be_erased.insert(subrout_sym);
@@ -950,14 +881,28 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
 
             ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
-            std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+            std::vector<size_t> indices = v.proc2newproc[subrout_sym].second;
+            size_t formal_arg_offset = 0;
+            if( is_struct_method_call && !is_struct_method_nopass ) {
+                formal_arg_offset = 1;
+                std::vector<size_t> shifted_indices;
+                shifted_indices.reserve(indices.size());
+                for( size_t idx: indices ) {
+                    if( idx >= formal_arg_offset ) {
+                        shifted_indices.push_back(idx - formal_arg_offset);
+                    }
+                }
+                indices = std::move(shifted_indices);
+            }
 
-            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args,
+                indices, formal_arg_offset);
 
             {
                 ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);
                 size_t min_args = 0, max_args = 0;
-                for( size_t i = 0; i < new_func_->n_args; i++ ) {
+                size_t first_formal_arg = (is_struct_method_call && !is_struct_method_nopass) ? 1 : 0;
+                for( size_t i = first_formal_arg; i < new_func_->n_args; i++ ) {
                     ASR::Var_t* arg = ASR::down_cast<ASR::Var_t>(new_func_->m_args[i]);
                     if( ASR::is_a<ASR::Variable_t>(*arg->m_v) &&
                         ASR::down_cast<ASR::Variable_t>(arg->m_v)->m_presence
@@ -977,7 +922,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             ASR::symbol_t* new_func_sym_ = new_func_sym;
-            if( is_external ) {
+            if( is_external && !is_struct_method_call ) {
                 ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
                 std::string new_func_sym_name = std::string(ASRUtils::symbol_name(new_func_sym));
                 ASR::symbol_t* existing_sym = current_scope->resolve_symbol(new_func_sym_name);
@@ -1020,12 +965,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     func_ext_sym->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
                 }
             }
-            if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){
-                xx.m_name = new_func_sym_;
-                xx.m_original_name = new_func_sym_;
-            } else if(v.proc2newproc.find(x.m_name) != v.proc2newproc.end()){
-                xx.m_name = resolve_new_proc(x.m_name);
-                xx.m_original_name = resolve_new_proc(x.m_name);
+            if( !is_struct_method_call ) {
+                if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){
+                    xx.m_name = new_func_sym_;
+                    xx.m_original_name = new_func_sym_;
+                } else if(v.proc2newproc.find(x.m_name) != v.proc2newproc.end()){
+                    xx.m_name = resolve_new_proc(x.m_name);
+                    xx.m_original_name = resolve_new_proc(x.m_name);
+                }
             }
             xx.m_args = new_args.p;
             xx.n_args = new_args.size();
@@ -1206,6 +1153,49 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 };
 
+class UpdateStructMethodDeclarationsVisitor:
+    public ASR::ASRPassBaseWalkVisitor<UpdateStructMethodDeclarationsVisitor> {
+
+    private:
+
+        PassArrayByDataProcedureVisitor& v;
+
+    public:
+
+        UpdateStructMethodDeclarationsVisitor(PassArrayByDataProcedureVisitor& v_):
+            v(v_) {}
+
+        ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
+            ASR::symbol_t* ext_sym = ASRUtils::symbol_get_past_external(old_sym);
+            if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
+                ASR::symbol_t* new_sym = v.proc2newproc[ext_sym].first;
+                ASR::asr_t* new_sym_parent = ASRUtils::symbol_parent_symtab(new_sym)->asr_owner;
+                if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) &&
+                        current_scope->get_counter() != ASRUtils::symbol_parent_symtab(new_sym)->get_counter() ) {
+                    ASR::symbol_t* resolved_parent_sym = resolve_new_proc(ASR::down_cast<ASR::symbol_t>(new_sym_parent));
+                    if ( resolved_parent_sym != nullptr ) {
+                        ASR::symbol_t* sym_to_return = ASRUtils::symbol_symtab(resolved_parent_sym)->get_symbol(ASRUtils::symbol_name(new_sym));
+                        return sym_to_return ? sym_to_return : new_sym;
+                    }
+                }
+                return new_sym;
+            }
+            return nullptr;
+        }
+
+        void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t& x) {
+            ASR::StructMethodDeclaration_t& xx = const_cast<ASR::StructMethodDeclaration_t&>(x);
+            ASR::symbol_t* old_proc = ASRUtils::symbol_get_past_external(x.m_proc);
+            if( v.proc2newproc.find(old_proc) == v.proc2newproc.end() ) {
+                return;
+            }
+            ASR::symbol_t* new_proc = resolve_new_proc(x.m_proc);
+            if( new_proc != nullptr ) {
+                xx.m_proc = new_proc;
+            }
+        }
+};
+
 /*
 Since the above visitors have replaced procedure and calls to those procedures
 with arrays as arguments, we don't need the original ones anymore. So we remove
@@ -1322,6 +1312,8 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     std::set<ASR::symbol_t*> not_to_be_erased;
     EditProcedureCallsVisitor u(al, v, not_to_be_erased, pass_options);
     u.visit_TranslationUnit(unit);
+    UpdateStructMethodDeclarationsVisitor w(v);
+    w.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
     if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
         /*
