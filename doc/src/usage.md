@@ -18,7 +18,7 @@ The LFortran compiler consists of the following components:
 * Interactive usage via LLVM JIT
 * Source file formatting (`lfortran fmt`).
 
-## Standards
+## Standards and Modes
 
 The LFortran compiler is currently in the alpha stage and is actively under development. It is designed to support the following Fortran standards and modes:
 
@@ -27,6 +27,13 @@ Supported Standards:
 * ISO Fortran 2023 (`--std=f23`): Partial support for the latest Fortran 2023 features. Use this option to enable conformance to Fortran 2023 where supported.
 * Legacy Mode (`--std=legacy`): Allows compilation of older Fortran codebases that use non-standard or deprecated syntax.
 * LFortran Mode (`--std=lf`): Default mode focusing on modern Fortran features, including experimental extensions beyond the current standards.
+* Infer Mode (`--infer`): Enables script-style global-scope workflows with infer semantics (for example first-assignment inference at global scope).
+
+Mode selection rules:
+
+* `--infer` and `--std=...` are mutually exclusive.
+* Running `lfortran` with no input files defaults to infer mode (interactive REPL default).
+* File-based compilation stays in standard mode unless `--infer` is explicitly selected.
 
 ## Extensions
 
@@ -40,7 +47,21 @@ The extensions are currently in development and are planned to include:
 ## Interactive Compiler
 
 LFortran supports an interactive mode; just run the `lfortran` command
-to start it.
+to start it. In this no-file invocation mode, infer mode is enabled by default.
+
+## Strict vs Infer
+
+Use strict standard mode when you want explicit declarations and standard-conformance diagnostics:
+
+```
+lfortran --std=f23 my_code.f90
+```
+
+Use infer mode for script-like exploratory workflows:
+
+```
+lfortran --infer script_like_input.f90
+```
 
 ## Invoking LFortran
 
@@ -224,5 +245,4 @@ Clang such as `-O3` or `-flto` (optimization and link-time optimization).
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.
-
 

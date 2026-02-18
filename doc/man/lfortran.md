@@ -30,6 +30,8 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--cpp`: Enable C preprocessing
 - `--fixed-form`: Use fixed form Fortran source parsing
 - `--fixed-form-infer`: Use heuristics to infer if a file is in fixed form
+- `--std TEXT`: Select standard conformance (`lf`, `f23`, `legacy`)
+- `--infer`: Enable infer mode (default when no input file is provided)
 - `--no-prescan`: Turn off prescan
 - `--show-prescan`: Show tokens for the given file and exit
 - `--show-tokens`: Show tokens for the given file and exit
@@ -91,6 +93,12 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--legacy-array-sections`: Enables passing array items as sections if required
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate memory for arrays on stack
+
+# MODE SELECTION NOTES
+
+- `--infer` and `--std=...` cannot be used together.
+- Running `lfortran` without input files starts interactive mode with infer mode enabled by default.
+- File-based compilation uses standard mode unless `--infer` is explicitly passed.
 
 # SUBCOMMANDS
 
