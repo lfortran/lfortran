@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            fortplot_mre_unbounded_pointer_associate_01:
+            associate2:
                 (Program
                     (SymbolTable
                         2
@@ -167,7 +167,7 @@
                                     .false.
                                 )
                         })
-                    fortplot_mre_unbounded_pointer_associate_01
+                    associate2
                     []
                     [(Assignment
                         (Var 2 x)

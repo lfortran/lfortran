@@ -1,4 +1,4 @@
-program fortplot_mre_unbounded_pointer_associate_01
+program associate2
     implicit none
     real :: x(3)
     x = [1.0, 2.0, 3.0]
@@ -10,4 +10,4 @@ contains
             print *, a(1)
         end associate
     end subroutine s
-end program fortplot_mre_unbounded_pointer_associate_01
+end program associate2

@@ -856,11 +856,6 @@ asr = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
-filename = "fortplot_mre_unbounded_pointer_associate_01.f90"
-asr = true
-pass = "nested_vars"
-
-[[test]]
 filename = "../integration_tests/struct_allocate.f90"
 asr = true
 
@@ -2056,6 +2051,11 @@ filename = "associate1.f90"
 interactive = true
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "associate2.f90"
+asr = true
+pass = "nested_vars"
 
 [[test]]
 filename = "fn_call1.f90"

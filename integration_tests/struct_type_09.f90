@@ -1,4 +1,4 @@
-module fortplot_mre_struct_default_ptrnull_mod
+module struct_type_09_mod
     use iso_c_binding, only: c_ptr, c_null_ptr
     implicit none
 
@@ -7,12 +7,12 @@ module fortplot_mre_struct_default_ptrnull_mod
     end type boxed_ptr
 
     type(boxed_ptr), save :: x
-end module fortplot_mre_struct_default_ptrnull_mod
+end module struct_type_09_mod
 
-program fortplot_mre_struct_default_ptrnull_01
+program struct_type_09
     use iso_c_binding, only: c_associated
-    use fortplot_mre_struct_default_ptrnull_mod, only: x
+    use struct_type_09_mod, only: x
     implicit none
 
     write(*, '(L1)') c_associated(x%p)
-end program fortplot_mre_struct_default_ptrnull_01
+end program struct_type_09

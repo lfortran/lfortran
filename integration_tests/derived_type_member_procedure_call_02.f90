@@ -1,4 +1,4 @@
-module fortplot_mre_struct_member_print_mod
+module derived_type_member_procedure_call_02_mod
     implicit none
 contains
 
@@ -17,10 +17,10 @@ contains
         pattern_distance = 0.0
     end subroutine set_raster_line_style
 
-end module fortplot_mre_struct_member_print_mod
+end module derived_type_member_procedure_call_02_mod
 
-module fortplot_mre_struct_member_print_type
-    use fortplot_mre_struct_member_print_mod, only: set_raster_line_style
+module derived_type_member_procedure_call_02_type
+    use derived_type_member_procedure_call_02_mod, only: set_raster_line_style
     implicit none
 
     type :: raster_image_t
@@ -43,13 +43,13 @@ contains
                                    this%pattern_size, this%pattern_length, this%pattern_distance)
     end subroutine raster_set_line_style
 
-end module fortplot_mre_struct_member_print_type
+end module derived_type_member_procedure_call_02_type
 
-program fortplot_mre_struct_member_print_01
-    use fortplot_mre_struct_member_print_type, only: raster_image_t
+program derived_type_member_procedure_call_02
+    use derived_type_member_procedure_call_02_type, only: raster_image_t
     implicit none
 
     type(raster_image_t) :: img
     call img%set_line_style('--')
     write(*, '(I0)') img%pattern_size
-end program fortplot_mre_struct_member_print_01
+end program derived_type_member_procedure_call_02
