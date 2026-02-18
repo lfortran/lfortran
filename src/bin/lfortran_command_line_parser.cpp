@@ -446,6 +446,12 @@ namespace LCompilers::CommandLineInterface {
             opts.arg_infer = true;
         }
         compiler_options.infer_mode = opts.arg_infer;
+        if (compiler_options.infer_mode) {
+            compiler_options.po.realloc_lhs_arrays = true;
+        }
+        if (disable_realloc_lhs) {
+            compiler_options.po.realloc_lhs_arrays = false;
+        }
 
         if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");
