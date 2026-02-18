@@ -3389,6 +3389,11 @@ RUN(NAME infer_walrus_array_01 LABELS llvm)
 RUN(NAME infer_walrus_array_02 LABELS llvm)
 RUN(NAME infer_walrus_array_03 LABELS llvm EXTRA_ARGS --infer)
 
+# Type inference with := syntax (derived types)
+RUN(NAME infer_walrus_struct_01 LABELS llvm)
+RUN(NAME infer_walrus_struct_02 LABELS llvm)
+RUN(NAME infer_walrus_struct_03 LABELS llvm EXTRA_ARGS --infer)
+
 # Type inference scope shadowing
 RUN(NAME infer_walrus_shadow_01 LABELS llvm)
 RUN(NAME infer_walrus_shadow_02 LABELS llvm)

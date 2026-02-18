@@ -5,9 +5,9 @@
     "infile_hash": "e36c11ec227147b9587f929aa367f3b65c554add47a4d4ec71fedc17",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-infer_walrus_error_02-3990bfd.stderr",
-    "stderr_hash": "d4c532fda9fd7c84a5a195a9d7729cc546184fa30abfad66c8973df7",
-    "returncode": 2
+    "stdout": "asr-infer_walrus_error_02-3990bfd.stdout",
+    "stdout_hash": "d0cd45078e5fbc78336c95b9c2f0c870f3fe4c9764f3b00136f7895a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

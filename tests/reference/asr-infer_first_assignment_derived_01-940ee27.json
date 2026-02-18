@@ -5,9 +5,9 @@
     "infile_hash": "6ff96fb116d6d6ac7233ccc63bf4332b87a0702a39d6e0d8b6d0e64a",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-infer_first_assignment_derived_01-940ee27.stderr",
-    "stderr_hash": "8d81190053b99a632425a9b4d61bcfb7b9aec40c7597981fc44b17cd",
-    "returncode": 2
+    "stdout": "asr-infer_first_assignment_derived_01-940ee27.stdout",
+    "stdout_hash": "467be17746059945890cd8cfc1625d57cae35e482758afde1d785eea",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

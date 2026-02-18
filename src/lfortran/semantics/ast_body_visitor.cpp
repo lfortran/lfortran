@@ -4494,12 +4494,13 @@ public:
                 ASR::make_String_t(al, loc,
                     str_type->m_kind, str_type->m_len,
                     str_type->m_len_kind, str_type->m_physical_type));
+        } else if (ASR::is_a<ASR::StructType_t>(*inferred_type)) {
+            return inferred_type;
         }
         diag.add(Diagnostic(
-            "Type inference only supports intrinsic types "
-            "(integer, real, complex, logical, character)",
+            "Type inference does not support this type",
             Level::Error, Stage::Semantic, {
-                Label("non-intrinsic type", {value->base.loc})
+                Label("unsupported type", {value->base.loc})
             }
         ));
         throw SemanticAbort();
@@ -4513,6 +4514,7 @@ public:
 
         Location loc = target_name->base.base.loc;
         ASR::ttype_t* declared_type = nullptr;
+        bool is_struct = false;
         if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inferred_type);
             ASR::ttype_t* scalar_type = infer_scalar_type(loc, arr->m_type,
@@ -4522,11 +4524,32 @@ public:
         } else {
             declared_type = infer_scalar_type(loc, inferred_type,
                 inferred_value, value);
+            is_struct = ASR::is_a<ASR::StructType_t>(*inferred_type);
         }
 
-        declare_implicit_variable2(loc,
-            to_lower(target_name->m_id), ASRUtils::intent_local,
+        ASR::symbol_t* type_decl = nullptr;
+        if (is_struct) {
+            if (ASR::is_a<ASR::StructConstructor_t>(*inferred_value)) {
+                type_decl = ASR::down_cast<ASR::StructConstructor_t>(
+                    inferred_value)->m_dt_sym;
+            } else {
+                type_decl = ASRUtils::get_struct_sym_from_struct_expr(
+                    inferred_value);
+            }
+        }
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
             declared_type);
+        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, to_lower(target_name->m_id)),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                ASRUtils::intent_local, nullptr, nullptr,
+                ASR::storage_typeType::Default, declared_type, type_decl,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(to_lower(target_name->m_id), v);
     }
 
     // Try infer mode: declare undeclared bare-name targets via --infer flag.
