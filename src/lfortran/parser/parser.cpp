@@ -257,7 +257,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
     }
     AST::TranslationUnit_t* ast = (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
         p.result.p, p.result.size());
-    if (!co.interactive && !co.fixed_form && is_program_needed(*ast)) {
+    if (!co.interactive && !co.infer_mode && !co.fixed_form && is_program_needed(*ast)) {
         try {
             fix_program_without_program_line(al, *ast, diagnostics);
         }  catch (const parser_local::ParserAbort &) {
