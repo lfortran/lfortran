@@ -2198,6 +2198,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         rounding_mode = 'z';
                     }
                 }
+            } else if (tolower(value[0]) == 'b' && strlen(value) == 2 &&
+                       (tolower(value[1]) == 'n' || tolower(value[1]) == 'z')) {
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier - move position left
