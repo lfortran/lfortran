@@ -44,6 +44,7 @@
             0
             callf
             5
+            .false.
             ()
         )
         (SubroutineCall
@@ -80,6 +81,7 @@
                 []
             )
             5
+            .false.
             ()
         )
         (SubroutineCall
@@ -144,6 +146,7 @@
                 []
             )
             5
+            .false.
             ()
         )]
         []

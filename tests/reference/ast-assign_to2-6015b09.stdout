@@ -46,12 +46,14 @@
             0
             sum
             ZERO
+            .false.
             ()
         )
         (Assignment
             0
             i
             1
+            .false.
             ()
         )
         (GoTo

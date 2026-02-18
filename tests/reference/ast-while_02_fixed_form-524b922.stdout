@@ -36,12 +36,14 @@
             0
             i
             0
+            .false.
             ()
         )
         (Assignment
             0
             j
             0
+            .false.
             ()
         )
         (WhileLoop
@@ -52,12 +54,14 @@
                 0
                 i
                 (+ i 1)
+                .false.
                 ()
             )
             (Assignment
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )]
             ()
@@ -97,12 +101,14 @@
             0
             i
             0
+            .false.
             ()
         )
         (Assignment
             0
             j
             0
+            .false.
             ()
         )
         (WhileLoop
@@ -113,6 +119,7 @@
                 0
                 i
                 (+ i 1)
+                .false.
                 ()
             )
             (If
@@ -133,6 +140,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )]
             ()
@@ -172,12 +180,14 @@
             0
             i
             0
+            .false.
             ()
         )
         (Assignment
             0
             j
             0
+            .false.
             ()
         )
         (WhileLoop
@@ -188,6 +198,7 @@
                 0
                 i
                 (+ i 1)
+                .false.
                 ()
             )
             (If
@@ -208,6 +219,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )]
             ()

@@ -27,6 +27,7 @@
                 nn
                 ()
                 0)])]
+                .false.
                 ()
             )
             (Allocate
@@ -85,6 +86,7 @@
                     []
                     []
                 ))
+                .false.
                 ()
             )]
             ()
@@ -122,6 +124,7 @@
                         0
                         nn
                         (- (+ (+ i j) k) 2)
+                        .false.
                         ()
                     )
                     (Assignment
@@ -148,6 +151,7 @@
                             []
                             []
                         ) 1)
+                        .false.
                         ()
                     )
                     (Assignment
@@ -164,6 +168,7 @@
                             []
                             []
                         )
+                        .false.
                         ()
                     )
                     (Assignment
@@ -178,6 +183,7 @@
                         ()
                         0)])]
                         i
+                        .false.
                         ()
                     )
                     (Assignment
@@ -192,6 +198,7 @@
                         ()
                         0)])]
                         j
+                        .false.
                         ()
                     )
                     (Assignment
@@ -206,6 +213,7 @@
                         ()
                         0)])]
                         k
+                        .false.
                         ()
                     )]
                     ()

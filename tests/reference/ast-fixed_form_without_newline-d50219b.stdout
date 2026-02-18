@@ -28,6 +28,7 @@
             0
             x
             (String "Hi" ())
+            .false.
             ()
         )
         (Print

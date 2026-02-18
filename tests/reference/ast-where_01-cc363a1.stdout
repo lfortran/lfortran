@@ -47,6 +47,7 @@
             0
             a
             (u- 2)
+            .false.
             ()
         )
         (Assignment
@@ -63,6 +64,7 @@
                 []
             )
             1
+            .false.
             ()
         )
         (Assignment
@@ -79,12 +81,14 @@
                 []
             )
             8
+            .false.
             ()
         )
         (Assignment
             0
             b
             (u- 3)
+            .false.
             ()
         )
         (Where
@@ -95,12 +99,14 @@
                 0
                 b
                 1
+                .false.
                 ()
             )]
             [(Assignment
                 0
                 b
                 0
+                .false.
                 ()
             )]
             ()
@@ -118,12 +124,14 @@
                 0
                 b
                 1
+                .false.
                 ()
             )]
             [(Assignment
                 0
                 b
                 0
+                .false.
                 ()
             )]
             ()
@@ -141,12 +149,14 @@
                 0
                 b
                 1
+                .false.
                 ()
             )]
             [(Assignment
                 0
                 b
                 0
+                .false.
                 ()
             )]
             ()

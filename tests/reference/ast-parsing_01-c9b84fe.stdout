@@ -122,6 +122,7 @@
                 0
                 real
                 (* 2 integer)
+                .false.
                 ()
             )]
             []
@@ -185,6 +186,7 @@
             0
             integer
             character
+            .false.
             ()
         )
         (AssociateBlock

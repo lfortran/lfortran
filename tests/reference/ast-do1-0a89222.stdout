@@ -11,6 +11,7 @@
             0
             a
             (+ a i)
+            .false.
             ()
         )]
         ()
@@ -48,6 +49,7 @@
             0
             a
             (+ a i)
+            .false.
             ()
         )]
         ()
@@ -69,12 +71,14 @@
             0
             a
             (+ a i)
+            .false.
             ()
         )
         (Assignment
             0
             b
             3
+            .false.
             ()
         )]
         ()
@@ -106,12 +110,14 @@
                 0
                 a
                 (+ a i)
+                .false.
                 ()
             )
             (Assignment
                 0
                 b
                 3
+                .false.
                 ()
             )]
             ()
@@ -133,6 +139,7 @@
                 0
                 a
                 (+ a i)
+                .false.
                 ()
             )]
             ()
@@ -146,6 +153,7 @@
             0
             n
             0
+            .false.
             ()
         )
         (DoLoop
@@ -160,6 +168,7 @@
                 0
                 j
                 i
+                .false.
                 ()
             )
             (DoLoop
@@ -174,12 +183,14 @@
                     0
                     l
                     k
+                    .false.
                     ()
                 )
                 (Assignment
                     0
                     n
                     (+ n 1)
+                    .false.
                     (TriviaNode
                         []
                         [(EOLComment

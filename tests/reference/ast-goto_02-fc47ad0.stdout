@@ -29,6 +29,7 @@
             0
             A
             0
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -51,6 +52,7 @@
             0
             A
             (+ A 1)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

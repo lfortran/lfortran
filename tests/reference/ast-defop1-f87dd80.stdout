@@ -19,6 +19,7 @@
                 "in"
                 b
             )
+            .false.
             ()
         )
         (Assignment
@@ -29,6 +30,7 @@
                 "IN"
                 B
             )
+            .false.
             ()
         )
         (Assignment
@@ -40,6 +42,7 @@
                 "op"
                 (** 3 4)
             )
+            .false.
             ()
         )
         (Assignment
@@ -51,6 +54,7 @@
                 "OP"
                 (** 3 4)
             )
+            .false.
             ()
         )
         (Assignment
@@ -61,6 +65,7 @@
                 "x"
                 (** y x)
             )
+            .false.
             ()
         )
         (Assignment
@@ -71,6 +76,7 @@
                 "x"
                 (** x x)
             )
+            .false.
             ()
         )
         (Assignment
@@ -81,6 +87,7 @@
                 "X"
                 (** X X)
             )
+            .false.
             ()
         )
         (Assignment
@@ -95,6 +102,7 @@
                 "in"
                 3
             ) 4)
+            .false.
             ()
         )]
         []

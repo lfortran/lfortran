@@ -54,6 +54,7 @@
                 2
                 3]
             )
+            .false.
             ()
         )
         (Assignment
@@ -66,6 +67,7 @@
                 2
                 3]
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

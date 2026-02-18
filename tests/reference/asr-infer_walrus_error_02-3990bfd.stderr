@@ -1,0 +1,5 @@
+semantic error: Type inference only supports intrinsic types (integer, real, complex, logical, character)
+ --> tests/errors/infer_walrus_error_02.f90:7:10
+  |
+7 |     a := obj
+  |          ^^^ non-intrinsic type

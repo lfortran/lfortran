@@ -21,12 +21,14 @@
         0
         x
         6
+        .false.
         ()
     )
     (Assignment
         0
         x
         (+ x 1)
+        .false.
         ()
     )]
 )

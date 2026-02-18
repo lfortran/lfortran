@@ -147,12 +147,14 @@
             0
             a_1
             0
+            .false.
             ()
         )
         (Assignment
             0
             n
             10
+            .false.
             ()
         )
         (Allocate
@@ -275,6 +277,7 @@
                     []
                 )
                 (+ a_1 5)
+                .false.
                 ()
             )
             (Assignment
@@ -299,6 +302,7 @@
                     []
                 )
                 3
+                .false.
                 ()
             )
             (Assignment
@@ -319,6 +323,7 @@
                     []
                 )
                 17
+                .false.
                 ()
             )
             (If
@@ -363,6 +368,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (If
@@ -413,6 +419,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Assignment
@@ -437,6 +444,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (If

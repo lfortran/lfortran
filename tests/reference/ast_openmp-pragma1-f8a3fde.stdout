@@ -146,6 +146,7 @@
                     []
                     []
                 )) 2)
+                .false.
                 ()
             )]
             ()
@@ -250,12 +251,14 @@
             0
             partial_sum
             0
+            .false.
             ()
         )
         (Assignment
             0
             total_sum
             0
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -301,6 +304,7 @@
                     []
                     []
                 ))
+                .false.
                 ()
             )]
             ()

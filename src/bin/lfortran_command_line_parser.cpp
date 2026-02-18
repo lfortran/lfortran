@@ -168,6 +168,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
+        app.add_flag("--infer", compiler_options.infer_mode, "Enable type inference for undeclared variables")->group(group_language_options);
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);

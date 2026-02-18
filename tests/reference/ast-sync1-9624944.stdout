@@ -56,6 +56,7 @@
                 []
                 []
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -70,6 +71,7 @@
                 0
                 x
                 (Real "1.0")
+                .false.
                 ()
             )]
             []

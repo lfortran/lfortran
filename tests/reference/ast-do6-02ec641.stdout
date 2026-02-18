@@ -65,12 +65,14 @@
             0
             correct
             0
+            .false.
             ()
         )
         (Assignment
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -93,6 +95,7 @@
                     30
                     k
                     (+ k 1)
+                    .false.
                     ()
                 )]
                 ()
@@ -113,6 +116,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -123,6 +127,7 @@
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -145,6 +150,7 @@
                     0
                     k
                     (+ k 1)
+                    .false.
                     ()
                 )
                 (Continue
@@ -169,6 +175,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -179,6 +186,7 @@
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -193,6 +201,7 @@
                 0
                 k
                 (+ k 1)
+                .false.
                 ()
             )
             (Continue
@@ -214,6 +223,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -224,6 +234,7 @@
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -238,6 +249,7 @@
                 0
                 k
                 (+ k 1)
+                .false.
                 ()
             )
             (Continue
@@ -259,6 +271,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -269,6 +282,7 @@
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -291,12 +305,14 @@
                     0
                     k
                     (+ k 0)
+                    .false.
                     ()
                 )
                 (Assignment
                     50
                     k
                     (+ k 1)
+                    .false.
                     ()
                 )]
                 ()
@@ -317,6 +333,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -327,6 +344,7 @@
             0
             k
             0
+            .false.
             ()
         )
         (DoLoop
@@ -341,12 +359,14 @@
                 0
                 k
                 (+ k 0)
+                .false.
                 ()
             )
             (Assignment
                 60
                 k
                 (+ k 1)
+                .false.
                 ()
             )]
             ()
@@ -364,6 +384,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -374,6 +395,7 @@
             0
             k
             (u- 30)
+            .false.
             ()
         )
         (DoLoop
@@ -388,6 +410,7 @@
                 0
                 k
                 (+ k 1)
+                .false.
                 ()
             )
             (DoLoop
@@ -418,6 +441,7 @@
                     0
                     k
                     (+ k 2)
+                    .false.
                     ()
                 )
                 (Continue
@@ -442,6 +466,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -456,6 +481,7 @@
                 0
                 j
                 0
+                .false.
                 ()
             )
             (GoTo
@@ -490,6 +516,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -500,6 +527,7 @@
             0
             k
             (u- 30)
+            .false.
             ()
         )
         (DoLoop
@@ -514,6 +542,7 @@
                 0
                 k
                 (+ k 1)
+                .false.
                 ()
             )
             (DoLoop
@@ -544,6 +573,7 @@
                     0
                     k
                     (+ k 2)
+                    .false.
                     ()
                 )
                 (Continue
@@ -568,6 +598,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -582,6 +613,7 @@
                 0
                 j
                 0
+                .false.
                 ()
             )
             (GoTo
@@ -616,6 +648,7 @@
             0
             correct
             (+ correct k)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

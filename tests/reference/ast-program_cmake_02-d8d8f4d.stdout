@@ -29,6 +29,7 @@
             0
             stop
             1
+            .false.
             (TriviaNode
                 []
                 [(Semicolon)]

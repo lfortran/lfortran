@@ -25,12 +25,14 @@
                 0
                 a
                 (+ a i)
+                .false.
                 ()
             )
             (Assignment
                 0
                 b
                 3
+                .false.
                 ()
             )]
             ()
@@ -52,12 +54,14 @@
                 0
                 do
                 (+ a i)
+                .false.
                 ()
             )
             (Assignment
                 0
                 enddo
                 3
+                .false.
                 ()
             )]
             ()
@@ -79,6 +83,7 @@
                 0
                 a
                 (+ a i)
+                .false.
                 (TriviaNode
                     []
                     [(Semicolon)]
@@ -88,6 +93,7 @@
                 0
                 b
                 3
+                .false.
                 (TriviaNode
                     []
                     [(Semicolon)]
@@ -128,6 +134,7 @@
                 0
                 x
                 1
+                .false.
                 ()
             )]
             ()
@@ -162,6 +169,7 @@
                 0
                 x
                 (+ x i)
+                .false.
                 ()
             )]
             ()
@@ -192,6 +200,7 @@
                 0
                 x
                 i
+                .false.
                 ()
             )]
             ()

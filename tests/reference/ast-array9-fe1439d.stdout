@@ -163,6 +163,7 @@
                 varying_string
                 []
             )
+            .false.
             ()
         )
         (Assignment
@@ -179,6 +180,7 @@
                 ()
                 []
             )
+            .false.
             ()
         )
         (Assignment
@@ -195,6 +197,7 @@
                 ()
                 []
             )
+            .false.
             ()
         )
         (Assignment
@@ -213,6 +216,7 @@
                 ()
                 []
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -228,6 +232,7 @@
                 [x
                 x]
             )
+            .false.
             ()
         )
         (Assignment
@@ -245,6 +250,7 @@
                 [(Real "1.0")
                 (Real "2.0")]
             )
+            .false.
             ()
         )
         (Assignment
@@ -262,6 +268,7 @@
                 [1
                 2]
             )
+            .false.
             ()
         )
         (Assignment
@@ -281,6 +288,7 @@
                 [(Real "1.0")
                 (Real "2.0")]
             )
+            .false.
             ()
         )]
         []

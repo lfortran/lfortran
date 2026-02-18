@@ -36,12 +36,14 @@
             0
             n
             2
+            .false.
             ()
         )
         (Assignment
             0
             a
             10
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -65,18 +67,21 @@
             1
             a
             (+ a 10)
+            .false.
             ()
         )
         (Assignment
             2
             a
             (+ a 20)
+            .false.
             ()
         )
         (Assignment
             3
             a
             (+ a 30)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -125,18 +130,21 @@
             10
             a
             (* a a)
+            .false.
             ()
         )
         (Assignment
             20
             a
             (+ a a)
+            .false.
             ()
         )
         (Assignment
             30
             a
             (- a a)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

@@ -148,6 +148,7 @@
                 i [(a
                 [])]
                 1
+                .false.
                 ()
             )
             (Assignment
@@ -155,6 +156,7 @@
                 r [(a
                 [])]
                 (Real "1.5")
+                .false.
                 ()
             )]
             []
@@ -308,6 +310,7 @@
             i [(b
             [])]
             5
+            .false.
             ()
         )
         (Assignment
@@ -315,6 +318,7 @@
             r [(b
             [])]
             (Real "3.5")
+            .false.
             ()
         )
         (Print
@@ -354,6 +358,7 @@
             []) (d
             [])]
             (Real "2.0")
+            .false.
             ()
         )
         (Assignment
@@ -363,6 +368,7 @@
             []) (d
             [])]
             2
+            .false.
             ()
         )
         (Assignment
@@ -370,6 +376,7 @@
             k [(c
             [])]
             (Complex (Real "2.0") (Real "2.0"))
+            .false.
             ()
         )
         (Print

@@ -186,12 +186,14 @@
             0
             A
             10
+            .false.
             ()
         )
         (Assignment
             0
             B
             20
+            .false.
             ()
         )
         (SubroutineCall

@@ -40,12 +40,14 @@
             0
             x
             (Real "1.0")
+            .false.
             ()
         )
         (Assignment
             0
             y
             (Real "2.0")
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -70,6 +72,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -101,6 +104,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -132,6 +136,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -163,6 +168,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -256,12 +262,14 @@
                 0
                 saved
                 (+ saved (Real "1.0"))
+                .false.
                 ()
             )
             (Assignment
                 0
                 c
                 (+ (+ (+ c a) b) saved)
+                .false.
                 ()
             )]
             []
@@ -383,24 +391,28 @@
                 0
                 saved1
                 (+ saved1 (Real "1.0"))
+                .false.
                 ()
             )
             (Assignment
                 0
                 c
                 (+ (+ (+ (+ (+ d c) a) b) saved1) saved2)
+                .false.
                 ()
             )
             (Assignment
                 0
                 saved2
                 (+ saved2 (Real "1.0"))
+                .false.
                 ()
             )
             (Assignment
                 0
                 d
                 (+ d (Real "3.0"))
+                .false.
                 ()
             )]
             []

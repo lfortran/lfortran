@@ -129,6 +129,7 @@ struct CompilerOptions {
     bool implicit_typing = false;
     bool implicit_interface = false;
     bool implicit_argument_casting = false;
+    bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
     bool use_loop_variable_after_loop = false;

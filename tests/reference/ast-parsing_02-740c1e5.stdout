@@ -195,6 +195,7 @@
                 0
                 real
                 (* 2 integer)
+                .false.
                 ()
             )]
             []
@@ -292,6 +293,7 @@
             0
             integer
             character
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -360,6 +362,7 @@
                 []
                 []
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -397,6 +400,7 @@
                     0
                     if
                     then
+                    .false.
                     ()
                 )]
                 [(If
@@ -407,6 +411,7 @@
                         0
                         if
                         else
+                        .false.
                         ()
                     )]
                     [(Assignment
@@ -421,6 +426,7 @@
                                 if
                             ))
                         )
+                        .false.
                         ()
                     )]
                     ()

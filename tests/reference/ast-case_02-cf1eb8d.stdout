@@ -43,6 +43,7 @@
             0
             marks
             81
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -63,6 +64,7 @@
                     0
                     out
                     0
+                    .false.
                     ()
                 )
                 (Print
@@ -86,6 +88,7 @@
                     0
                     out
                     1
+                    .false.
                     ()
                 )
                 (Print
@@ -109,6 +112,7 @@
                     0
                     out
                     2
+                    .false.
                     ()
                 )
                 (Print
@@ -132,6 +136,7 @@
                     0
                     out
                     3
+                    .false.
                     ()
                 )
                 (Print
@@ -155,6 +160,7 @@
                     0
                     out
                     4
+                    .false.
                     ()
                 )
                 (Print
@@ -178,6 +184,7 @@
                     0
                     out
                     5
+                    .false.
                     ()
                 )
                 (Print
@@ -197,6 +204,7 @@
                     0
                     out
                     6
+                    .false.
                     ()
                 )
                 (Print

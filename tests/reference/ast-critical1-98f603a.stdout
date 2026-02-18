@@ -153,6 +153,7 @@
                         CodimensionExpr)]
                         []
                     )
+                    .false.
                     ()
                 )
                 (Assignment
@@ -169,6 +170,7 @@
                         []
                     )
                     (- job 1)
+                    .false.
                     ()
                 )]
                 ()
@@ -189,6 +191,7 @@
                     0
                     IntegerSample
                     0
+                    .false.
                     ()
                 )]
                 ()
@@ -204,6 +207,7 @@
                     0
                     Sample
                     (String "Error message" ())
+                    .false.
                     ()
                 )]
                 ()
@@ -219,6 +223,7 @@
                     0
                     Sample
                     (String "Error message" ())
+                    .false.
                     ()
                 )]
                 ()
@@ -239,6 +244,7 @@
                     0
                     b
                     (+ (** a 2) (** b 2))
+                    .false.
                     ()
                 )]
                 [(Exit

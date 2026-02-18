@@ -47,12 +47,14 @@
             0
             j
             0
+            .false.
             ()
         )
         (Assignment
             0
             k
             2
+            .false.
             ()
         )
         (DoLoop
@@ -67,6 +69,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )]
             ()
@@ -101,12 +104,14 @@
             0
             j
             0
+            .false.
             ()
         )
         (Assignment
             0
             k
             (u- 2)
+            .false.
             ()
         )
         (DoLoop
@@ -121,6 +126,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )]
             ()
@@ -155,6 +161,7 @@
             0
             j
             0
+            .false.
             ()
         )
         (DoLoop
@@ -169,6 +176,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )
             (If
@@ -211,6 +219,7 @@
             0
             j
             0
+            .false.
             ()
         )
         (DoLoop
@@ -225,6 +234,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )
             (If
@@ -267,12 +277,14 @@
             0
             j
             0
+            .false.
             ()
         )
         (Assignment
             0
             i
             1
+            .false.
             ()
         )
         (DoLoop
@@ -287,6 +299,7 @@
                 0
                 j
                 (+ j i)
+                .false.
                 ()
             )
             (If
@@ -307,6 +320,7 @@
                 0
                 i
                 (+ i 1)
+                .false.
                 ()
             )]
             ()
@@ -339,6 +353,7 @@
             0
             k
             2
+            .false.
             ()
         )
         (DoLoop

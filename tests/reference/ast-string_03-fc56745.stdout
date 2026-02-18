@@ -165,24 +165,28 @@
             0
             verb
             (String "learned " ())
+            .false.
             ()
         )
         (Assignment
             0
             posit
             (String "from " ())
+            .false.
             ()
         )
         (Assignment
             0
             title
             (String "the " ())
+            .false.
             ()
         )
         (Assignment
             0
             last_name
             (String "best" ())
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -213,6 +217,7 @@
                 Concat
                 (String "." ())
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

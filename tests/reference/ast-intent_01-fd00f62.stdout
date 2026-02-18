@@ -78,6 +78,7 @@
                     []
                     []
                 )
+                .false.
                 ()
             )
             (Assignment
@@ -94,6 +95,7 @@
                     []
                     []
                 )
+                .false.
                 (TriviaNode
                     []
                     [(EndOfLine)
@@ -144,6 +146,7 @@
                     0
                     f
                     (* 2 x)
+                    .false.
                     ()
                 )
                 (Print

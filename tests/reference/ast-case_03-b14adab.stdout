@@ -63,6 +63,7 @@
             0
             marks
             94
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -142,6 +143,7 @@
             0
             marks
             (u- 1)
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

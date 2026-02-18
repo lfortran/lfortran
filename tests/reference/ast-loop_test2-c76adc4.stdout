@@ -222,6 +222,7 @@
                         []
                         []
                     )
+                    .false.
                     ()
                 )
                 (Continue
@@ -271,6 +272,7 @@
                         []
                         []
                     )
+                    .false.
                     ()
                 )
                 (Continue
@@ -291,12 +293,14 @@
             0
             indx
             1
+            .false.
             ()
         )
         (Assignment
             0
             zero
             (Real "0.0d00")
+            .false.
             ()
         )
         (DoLoop
@@ -333,6 +337,7 @@
                         []
                     )
                     zero
+                    .false.
                     ()
                 )
                 (DoLoop
@@ -411,6 +416,7 @@
                             []
                             []
                         )))
+                        .false.
                         ()
                     )
                     (Continue
@@ -452,6 +458,7 @@
                         []
                         []
                     )
+                    .false.
                     ()
                 )
                 (Continue

@@ -200,6 +200,7 @@
                     r
                     fst [(p
                     [])]
+                    .false.
                     ()
                 )]
                 []
@@ -262,6 +263,7 @@
                     r
                     snd [(p
                     [])]
+                    .false.
                     ()
                 )]
                 []
@@ -367,6 +369,7 @@
                 fst [(ti
                 [])]
                 1
+                .false.
                 ()
             )
             (Print
@@ -391,6 +394,7 @@
                 snd [(ti
                 [])]
                 2
+                .false.
                 ()
             )
             (Print
@@ -415,6 +419,7 @@
                 fst [(tr
                 [])]
                 (Real "1.")
+                .false.
                 ()
             )
             (Print
@@ -439,6 +444,7 @@
                 snd [(tr
                 [])]
                 (Real "2.")
+                .false.
                 ()
             )
             (Print

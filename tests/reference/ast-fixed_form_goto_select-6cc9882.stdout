@@ -51,6 +51,7 @@
             0
             k
             1
+            .false.
             ()
         )
         (Print
@@ -63,18 +64,21 @@
             200
             k
             (+ k 1)
+            .false.
             ()
         )
         (Assignment
             0
             m
             1
+            .false.
             ()
         )
         (Assignment
             0
             n
             2
+            .false.
             ()
         )
         (GoTo

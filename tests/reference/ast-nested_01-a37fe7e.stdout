@@ -72,12 +72,14 @@
                     []
                     []
                 )
+                .false.
                 ()
             )
             (Assignment
                 0
                 b
                 0
+                .false.
                 ()
             )]
             [(Function
@@ -107,6 +109,7 @@
                     0
                     d
                     1
+                    .false.
                     ()
                 )]
                 []
@@ -161,6 +164,7 @@
                 []
                 []
             )
+            .false.
             (TriviaNode
                 []
                 [(EndOfLine)

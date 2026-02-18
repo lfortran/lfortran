@@ -44,18 +44,21 @@
             0
             x
             (Real "5.0")
+            .false.
             ()
         )
         (Assignment
             0
             y
             (Real "2.0")
+            .false.
             ()
         )
         (Assignment
             0
             z
             (* x y)
+            .false.
             ()
         )
         (Print
@@ -87,6 +90,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -118,6 +122,7 @@
                 []
                 []
             )
+            .false.
             ()
         )
         (Print
@@ -195,6 +200,7 @@
                 0
                 c
                 (+ a b)
+                .false.
                 ()
             )
             (Assignment
@@ -215,6 +221,7 @@
                     []
                     []
                 )
+                .false.
                 ()
             )]
             []
@@ -284,6 +291,7 @@
                 0
                 c
                 (* a b)
+                .false.
                 (TriviaNode
                     []
                     [(EndOfLine)
