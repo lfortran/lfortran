@@ -1,0 +1,2 @@
+program infer_mode_conflict_01
+end program infer_mode_conflict_01

@@ -168,7 +168,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
-        app.add_flag("--infer", compiler_options.infer_mode, "Enable type inference for undeclared variables")->group(group_language_options);
+        app.add_flag("--infer", opts.arg_infer, "Enable infer mode")->group(group_language_options);
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
@@ -338,6 +338,10 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
+        if (opts.arg_infer && !opts.arg_standard.empty()) {
+            throw lc::LCompilersException("Cannot use --infer and --std at the same time");
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -435,6 +439,13 @@ namespace LCompilers::CommandLineInterface {
                 }
             }
         }
+
+        // Interactive mode defaults to infer mode (`lfortran` with no input file),
+        // unless an explicit mode is selected.
+        if (!opts.arg_infer && opts.arg_standard.empty() && opts.arg_files.empty()) {
+            opts.arg_infer = true;
+        }
+        compiler_options.infer_mode = opts.arg_infer;
 
         if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");

@@ -1,0 +1,183 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            flag:
+                (Variable
+                    1
+                    flag
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Logical 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                ),
+            s:
+                (Variable
+                    1
+                    s
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                ),
+            x:
+                (Variable
+                    1
+                    x
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Integer 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                ),
+            y:
+                (Variable
+                    1
+                    y
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Real 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                ),
+            z:
+                (Variable
+                    1
+                    z
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Complex 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                )
+        })
+    [(Assignment
+        (Var 1 x)
+        (IntegerConstant 42 (Integer 4) Decimal)
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (Var 1 y)
+        (RealConstant
+            3.140000
+            (Real 4)
+        )
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (Var 1 z)
+        (ComplexConstructor
+            (RealConstant
+                1.000000
+                (Real 4)
+            )
+            (RealConstant
+                2.000000
+                (Real 4)
+            )
+            (Complex 4)
+            (ComplexConstant
+                1.000000
+                2.000000
+                (Complex 4)
+            )
+        )
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (Var 1 flag)
+        (LogicalConstant
+            .true.
+            (Logical 4)
+        )
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (Var 1 s)
+        (StringConstant
+            "hello"
+            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+        )
+        ()
+        .false.
+        .false.
+    )
+    (Assignment
+        (Var 1 x)
+        (IntegerBinOp
+            (Var 1 x)
+            Add
+            (IntegerConstant 1 (Integer 4) Decimal)
+            (Integer 4)
+            ()
+        )
+        ()
+        .false.
+        .false.
+    )]
+)
