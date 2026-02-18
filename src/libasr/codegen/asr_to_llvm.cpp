@@ -7007,8 +7007,12 @@ public:
                     ptr_loads = 2;
                     this->visit_expr_wrapper(x.m_lower_bounds, true);
                     ptr_loads = ptr_loads_copy;
-                    tmp = llvm_utils->create_ptr_gep2(idx_type, tmp,  i);
-                    new_lb = llvm_utils->CreateLoad2(idx_type, tmp);
+                    llvm::Type* lower_bound_type = llvm_utils->get_type_from_ttype_t_util(
+                        nullptr, ASRUtils::extract_type(ASRUtils::expr_type(x.m_lower_bounds)),
+                        module.get());
+                    tmp = llvm_utils->create_ptr_gep2(lower_bound_type, tmp, i);
+                    new_lb = builder->CreateSExtOrTrunc(
+                        llvm_utils->CreateLoad2(lower_bound_type, tmp), idx_type);
                 }
                 llvm::Value* new_size = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
