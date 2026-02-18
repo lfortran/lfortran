@@ -1435,7 +1435,7 @@ RUN(NAME intrinsics_410 LABELS gfortran llvm
 RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
 RUN(NAME intrinsics_412 LABELS gfortran llvm) # max_loc FAST
 RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar(char(0))
-RUN(NAME intrinsics_414 LABELS gfortran llvm) # system 
+RUN(NAME intrinsics_414 LABELS gfortran llvm) # system
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1995,6 +1995,7 @@ RUN(NAME allocate_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME allocate_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME realloc_lhs_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays

@@ -2751,8 +2751,11 @@ public:
                                     for(int i=0; i<n_dims; i++) {
                                         ASR::dimension_t dim;
                                         dim.loc = x.base.base.loc;
-                                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                            al, x.base.base.loc, 1, integer_type));
+                                        dim.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(
+                                            al, x.base.base.loc, mold,
+                                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                al, x.base.base.loc, i+1, integer_type)),
+                                            integer_type, ASR::arrayboundType::LBound, nullptr));
                                         dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                 al, x.base.base.loc, mold, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
                                         mold_dims_vec.push_back(al, dim);
@@ -2827,8 +2830,11 @@ public:
                             for(int i=0; i<n_dims; i++) {
                                 ASR::dimension_t dim;
                                 dim.loc = x.base.base.loc;
-                                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, x.base.base.loc, 1, integer_type));
+                                dim.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(
+                                    al, x.base.base.loc, source,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                        al, x.base.base.loc, i+1, integer_type)),
+                                    integer_type, ASR::arrayboundType::LBound, nullptr));
                                 dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                     al, x.base.base.loc, source, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                         al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
