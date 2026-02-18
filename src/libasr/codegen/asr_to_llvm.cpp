@@ -10370,6 +10370,15 @@ public:
         // Determine the name for looking up association symbol in type blocks
         std::string assoc_name = x.m_assoc_name ? x.m_assoc_name : selector_var_name;
         
+        // Save previous context if one exists for this selector_sym (handles
+        // nested select type on the same member, e.g. self%obj / other%obj
+        // both resolve to the same symbol for `obj`).
+        bool had_previous_ctx = select_type_context_map.find(selector_sym) != select_type_context_map.end();
+        SelectTypeContext previous_ctx;
+        if (had_previous_ctx) {
+            previous_ctx = select_type_context_map[selector_sym];
+        }
+
         // Create context entry for this selector (will be updated in each type case)
         SelectTypeContext& ctx = select_type_context_map[selector_sym];
         ctx.selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_selector);
@@ -10711,8 +10720,12 @@ public:
             }
         }
         start_new_block(mergeBB);
-        // Remove this selector's context from the map
-        select_type_context_map.erase(selector_sym);
+        // Restore previous context or remove this selector's context from the map
+        if (had_previous_ctx) {
+            select_type_context_map[selector_sym] = previous_ctx;
+        } else {
+            select_type_context_map.erase(selector_sym);
+        }
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
