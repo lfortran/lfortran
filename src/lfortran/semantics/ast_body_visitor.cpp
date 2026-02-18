@@ -124,6 +124,33 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
         }
 
+        // Resolve postponed type-bound procedure calls in dimension
+        // specifications (e.g., dimension(self%obj%nelements())).
+        // In the body visitor all symbols are already resolved, so
+        // we can evaluate them now.
+        for (auto &[expr_holder, symtable, funcCall, var_name, CheckFunc]
+                : postponed_genericProcedure_calls_vec) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = symtable;
+            this->visit_expr(*funcCall);
+            *expr_holder = ASRUtils::EXPR(tmp); tmp = nullptr;
+            if (CheckFunc) CheckFunc(*expr_holder);
+
+            ASR::symbol_t* sym = current_scope->get_symbol(
+                to_lower(std::string(var_name)));
+            if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
+                SetChar var_dep;
+                var_dep.reserve(al, 0);
+                ASRUtils::collect_variable_dependencies(
+                    al, var_dep, variable->m_type, nullptr, variable->m_value);
+                variable->m_dependencies = var_dep.p;
+                variable->n_dependencies = var_dep.n;
+            }
+            current_scope = current_scope_copy;
+        }
+        postponed_genericProcedure_calls_vec.clear();
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
