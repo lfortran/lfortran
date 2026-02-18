@@ -89,7 +89,7 @@ time_section "🧪 Testing assert" '
   git clone https://github.com/pranavchiku/assert.git
   cd assert
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
+  micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
   which fpm
