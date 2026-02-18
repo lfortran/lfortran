@@ -24,6 +24,13 @@ src/lfortran/tests/subroutines_args32
 src/lfortran/tests/print32
 src/lfortran/tests/print_integer
 src/lfortran/tests/cmp32
+cmp32
+print32
+print_integer
+subroutines32
+subroutines_args32
+write32
+write32.asm
 src/lfortran/tests/x
 src/lfortran/tests/ref_pickle.txt.new
 src/server/lsp_language_server.cpp
