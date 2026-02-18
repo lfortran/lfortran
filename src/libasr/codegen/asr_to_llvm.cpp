@@ -5150,6 +5150,22 @@ public:
             }
             builder->CreateCall(fn, args);
         }
+        // Enable floating point exception trapping if requested
+        if (compiler_options.fpe_traps != 0) {
+            if (compiler_options.emit_debug_info) debug_emit_loc(x);
+            llvm::Function *fpe_fn = module->getFunction("_lfortran_enable_fpe_traps");
+            if(!fpe_fn) {
+                llvm::FunctionType *fpe_function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+                fpe_fn = llvm::Function::Create(fpe_function_type,
+                    llvm::Function::ExternalLinkage, "_lfortran_enable_fpe_traps", module.get());
+            }
+            llvm::Value *mask_val = llvm::ConstantInt::get(context,
+                llvm::APInt(32, compiler_options.fpe_traps));
+            builder->CreateCall(fpe_fn, {mask_val});
+        }
         // Set runtime color preference based on compiler option (only when enabled)
         if (compiler_options.use_runtime_colors) {
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
