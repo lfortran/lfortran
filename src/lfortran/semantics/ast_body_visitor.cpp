@@ -3252,6 +3252,9 @@ public:
                         if (ASR::is_a<ASR::StructType_t>(*variable_type)) {
                             type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
                         }
+                        // Add shadow variable with the original name so that
+                        // references in the block body resolve to it during
+                        // transform_stmts.
                         ASR::symbol_t* shadow_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                             current_scope, s2c(al, array_var_name), nullptr, 0, ASR::intentType::Local,
                             nullptr, nullptr, ASR::storage_typeType::Default, ptr_type, type_decl,
@@ -3260,8 +3263,25 @@ public:
                         ASR::expr_t* shadow_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, shadow_sym));
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, shadow_var, m_selector));
                         rank_body.push_back(al, assoc_stmt);
+                        // Mark the parent (selector) variable as a target,
+                        // so that the pointer association is valid.
+                        ASR::Var_t* selector_var = ASR::down_cast<ASR::Var_t>(m_selector);
+                        ASR::Variable_t* selector_variable = ASR::down_cast<ASR::Variable_t>(selector_var->m_v);
+                        selector_variable->m_target_attr = true;
                     }
                     transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
+                    // After transform_stmts, rename the rank(0) shadow variable
+                    // to a unique name so it doesn't shadow the parent variable
+                    // in the generated output (avoids invalid "x => x").
+                    if (rank == 0 && array_var_name != "" && !x.m_assoc_name
+                            && current_scope->get_symbol(array_var_name) != nullptr) {
+                        std::string unique_name = current_scope->get_unique_name("__select_rank_" + array_var_name);
+                        ASR::symbol_t* shadow_sym = current_scope->get_symbol(array_var_name);
+                        current_scope->erase_symbol(array_var_name);
+                        ASR::Variable_t* shadow_var = ASR::down_cast<ASR::Variable_t>(shadow_sym);
+                        shadow_var->m_name = s2c(al, unique_name);
+                        current_scope->add_symbol(unique_name, shadow_sym);
+                    }
                     std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al, 
                         rank_expr->base.base.loc, current_scope, s2c(al, block_name),

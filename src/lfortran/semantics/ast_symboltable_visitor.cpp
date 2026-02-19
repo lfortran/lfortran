@@ -942,20 +942,7 @@ public:
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
                     if (var->m_type_declaration != nullptr) {
                         std::string type_decl_name = ASRUtils::symbol_name(var->m_type_declaration);
-                        ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
-                        if (local_sym == nullptr) {
-                            // Create ExternalSymbol in the submodule for the type declaration
-                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(type_decl_name));
-                            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(ASRUtils::symbol_parent_symtab(orig_sym)->asr_owner);
-                            if (orig_sym && ASR::is_a<ASR::Module_t>(*owner)) {
-                               ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
-                                   al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
-                                   orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
-                                       s2c(al, type_decl_name), dflt_access));
-                               current_scope->add_symbol(type_decl_name, external_sym);
-                               local_sym = external_sym;
-                            }
-                        }
+                        ASR::symbol_t *local_sym = parent_scope->get_symbol(type_decl_name);
                         if (local_sym != nullptr && local_sym != var->m_type_declaration) {
                             var->m_type_declaration = local_sym;
                         }
@@ -1990,7 +1977,6 @@ public:
     void process_simd_variables() {
         for (auto &var : simd_variables) {
             ASR::symbol_t *s = current_scope->get_symbol(var.first);
-            Location var_loc = s->base.loc;
             if (s) {
                 ASR::ttype_t *t = ASRUtils::symbol_type(s);
                 // allocatable
@@ -1998,7 +1984,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be allocatable: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2007,7 +1993,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be pointers: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2016,7 +2002,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "The SIMD variable `" + var.first + "` must be an array",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2027,7 +2013,7 @@ public:
                         "SIMD arrays must be 1 dimensional, but `" + var.first +
                         "` has " + std::to_string(a->n_dims) + " dimensions",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2037,7 +2023,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD array `" + var.first + "` must have an explicit size",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2048,7 +2034,7 @@ public:
                         "` must have a compile-time constant size "
                         "(integer literal or parameter)",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2060,7 +2046,7 @@ public:
                         "SIMD arrays must have Real or Integer element type, but `" +
                         var.first + "` has an incompatible type",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {var_loc})}));
+                            diag::Label("", {t->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2071,7 +2057,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "The SIMD variable `" + var.first + "` is not declared",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {var_loc})}));
+                        diag::Label("", {var.second})}));
                 if ( !compiler_options.continue_compilation ) throw SemanticAbort();
             }
 
@@ -2519,23 +2505,6 @@ public:
                         Label("'" + std::string(x.m_name) + "' defined here again", {x.base.base.loc}),
                     }));
                 throw SemanticAbort();
-            }
-        }
-
-        // Set up implicit typing for block data unit (similar to Program)
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
-            for (size_t i = 0; i < x.n_implicit; i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
             }
         }
 
@@ -3264,17 +3233,6 @@ public:
                     dflt_access
                     );
                 current_scope->add_or_overwrite_symbol(item.first, ASR::down_cast<ASR::symbol_t>(es));
-                // If the symbol originates from a different module than the one
-                // we are directly importing from, add the origin module as a
-                // transitive dependency so that the verify pass does not fail.
-                // Only do this for top-level modules (whose parent is the
-                // TranslationUnit), not for nested modules like enums.
-                if (std::string(es0->m_module_name) != std::string(m->m_name)) {
-                    ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(es0->m_module_name);
-                    if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
-                        current_module_dependencies.push_back(al, es0->m_module_name);
-                    }
-                }
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -3681,17 +3639,6 @@ public:
                 nullptr, 0, ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
-            // If the symbol originates from a different module than the one
-            // we are directly importing from, add the origin module as a
-            // transitive dependency so that the verify pass does not fail.
-            // Only do this for top-level modules (whose parent is the
-            // TranslationUnit), not for nested modules like enums.
-            if (std::string(ext_sym->m_module_name) != std::string(m->m_name)) {
-                ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(ext_sym->m_module_name);
-                if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
-                    current_module_dependencies.push_back(al, ext_sym->m_module_name);
-                }
-            }
             ASR::symbol_t *ext = ASRUtils::symbol_get_past_external(ext_sym->m_external);
             if (remote_sym.size() > 0 && remote_sym[0] != '~' &&
                     ASR::is_a<ASR::Struct_t>(*ext)) {
