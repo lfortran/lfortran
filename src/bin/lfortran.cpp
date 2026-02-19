@@ -513,13 +513,17 @@ int prompt(bool verbose, CompilerOptions &cu)
             case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
                 if (verbose) std::cout << "Return type: complex" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
+                std::cout << std::showpoint << std::setprecision(8)
+                          << "(" << r.c32.re << ", " << r.c32.im << ")"
+                          << std::noshowpoint << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
                 if (verbose) std::cout << "Return type: complex(8)" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
+                std::cout << std::showpoint << std::setprecision(17)
+                          << "(" << r.c64.re << ", " << r.c64.im << ")"
+                          << std::noshowpoint << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
