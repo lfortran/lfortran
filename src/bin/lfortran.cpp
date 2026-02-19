@@ -525,7 +525,7 @@ int prompt(bool verbose, CompilerOptions &cu)
             case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
                 if (verbose) std::cout << "Return type: logical" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << (r.b ? "True" : "False") << std::endl;
+                std::cout << (r.b ? ".true." : ".false.") << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {
