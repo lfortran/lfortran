@@ -3472,9 +3472,15 @@ public:
                     al, t->base.loc, current_scope, s2c(al, local_sym),
                     gp_procs.p, gp_procs.size(), dflt_access);
             } else {
+                std::string module_name = std::string(m->m_name);
+                if (module_name == "lfortran_intrinsic_ieee_arithmetic" ||
+                    module_name == "lfortran_intrinsic_iso_fortran_env" ||
+                    module_name == "lfortran_intrinsic_iso_c_binding") {
+                    module_name = module_name.substr(19);
+                }
                 ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
                     current_scope, s2c(al, local_sym), t,
-                    m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
+                    s2c(al, module_name), nullptr, 0, gp_ext->m_name, dflt_access);
             }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         }
@@ -3486,6 +3492,12 @@ public:
                              const Location& loc) {
         remote_sym = to_lower(remote_sym);
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
+        std::string module_name = std::string(m->m_name);
+        if (module_name == "lfortran_intrinsic_ieee_arithmetic" ||
+            module_name == "lfortran_intrinsic_iso_fortran_env" ||
+            module_name == "lfortran_intrinsic_iso_c_binding") {
+            module_name = module_name.substr(19);
+        }
         if (!t) {
             diag.add(diag::Diagnostic(
                 "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
@@ -3517,7 +3529,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ name.c_str(al),
                 (ASR::symbol_t*)msub,
-                m->m_name, nullptr, 0, msub->m_name,
+                s2c(al, module_name), nullptr, 0, msub->m_name,
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
@@ -3558,7 +3570,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mfn,
-                m->m_name, nullptr, 0, mfn->m_name,
+                s2c(al, module_name), nullptr, 0, mfn->m_name,
                 dflt_access
                 );
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
@@ -3592,7 +3604,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
-                m->m_name, nullptr, 0, mv->m_name,
+                s2c(al, module_name), nullptr, 0, mv->m_name,
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
@@ -3629,7 +3641,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
-                m->m_name, nullptr, 0, mv->m_name,
+                s2c(al, module_name), nullptr, 0, mv->m_name,
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
@@ -3640,7 +3652,7 @@ public:
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mreq,
-                m->m_name, nullptr, 0, mreq->m_name,
+                s2c(al, module_name), nullptr, 0, mreq->m_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(req));
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
@@ -3650,17 +3662,23 @@ public:
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mtemp,
-                m->m_name, nullptr, 0, mtemp->m_name,
+                s2c(al, module_name), nullptr, 0, mtemp->m_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
+            std::string ext_sym_module_name = std::string(ext_sym->m_module_name);
+            if (ext_sym_module_name == "lfortran_intrinsic_ieee_arithmetic" ||
+                ext_sym_module_name == "lfortran_intrinsic_iso_fortran_env" ||
+                ext_sym_module_name == "lfortran_intrinsic_iso_c_binding") {
+                ext_sym_module_name = ext_sym_module_name.substr(19);
+            }
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
                 al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 ext_sym->m_external,
-                ext_sym->m_module_name,
+                s2c(al,ext_sym_module_name),
                 nullptr, 0, ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
