@@ -4303,6 +4303,7 @@ public:
         }
 
         LCOMPILERS_ASSERT(x.n_args == n_members);
+        (void) n_members;
         for (size_t i = 0; i < x.n_args; ++i) {
             ASR::expr_t *value = x.m_args[i].m_value;
             llvm::Constant* initializer = nullptr;
