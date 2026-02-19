@@ -915,11 +915,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             ASR::symbol_t* new_func_sym_ = new_func_sym;
-            if(is_struct_method_declaration(x.m_name)){ // Redirect StructMethodDeclaration to new fn symbol.
-                auto const struct_method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(x.m_name));
-                struct_method_decl->m_proc = new_func_sym_;
-                struct_method_decl->m_proc_name = ASRUtils::symbol_name(new_func_sym_);
-            } else if( is_external ) { // Redirect ExternalSymbol to new fn symbol.
+            // Note: smd.m_proc is updated by RemoveArrayByDescriptorProceduresVisitor::visit_StructMethodDeclaration
+            // after all call sites are processed. Updating it here would cause the second copy of the
+            // caller (e.g. method1_integer____1) to see the new proc via symbol_get_past_StructMethodDeclaration,
+            // fail the proc2newproc lookup, and return early without expanding array args.
+            if( is_external && !is_struct_method_declaration(x.m_name) ) { // Redirect ExternalSymbol to new fn symbol.
                 ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
                 std::string new_func_sym_name = std::string(ASRUtils::symbol_name(new_func_sym));
                 ASR::symbol_t* existing_sym = current_scope->resolve_symbol(new_func_sym_name);
@@ -1162,12 +1162,14 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
         PassArrayByDataProcedureVisitor& v;
         std::set<ASR::symbol_t*>& not_to_be_erased;
+        bool skip_removal;
 
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
-            std::set<ASR::symbol_t*>& not_to_be_erased_):
-            PassVisitor(al_, nullptr), v(v_), not_to_be_erased(not_to_be_erased_) {}
+            std::set<ASR::symbol_t*>& not_to_be_erased_, bool skip_removal_=false):
+            PassVisitor(al_, nullptr), v(v_), not_to_be_erased(not_to_be_erased_),
+            skip_removal(skip_removal_) {}
 
         // Shouldn't be done because allocatable arrays when
         // assigned to array constants work fine in gfortran
@@ -1208,8 +1210,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 }
             }
 
-            for (auto &item: to_be_erased) {
-                current_scope->erase_symbol(item);
+            if (!skip_removal) {
+                for (auto &item: to_be_erased) {
+                    current_scope->erase_symbol(item);
+                }
             }
         }
 
@@ -1266,24 +1270,29 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     std::set<ASR::symbol_t*> not_to_be_erased;
     EditProcedureCallsVisitor u(al, v, not_to_be_erased, pass_options);
     u.visit_TranslationUnit(unit);
-    RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
-    if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
-        /*
-            If separate compilation is enabled using `--separate-compilation`, then we don't
-            drop the original ( unused ) procedures. This is for the module procedures where when
-            loaded from other file transformation may or maynot take place and then while linking
-            it shows missing symbol. There can be multiple reasons:
+    /*
+        Always run RemoveArrayByDescriptorProceduresVisitor so that smd.m_proc is updated
+        to point to the new (array-by-data) function. The skip_removal flag prevents
+        deletion of the original procedures in separate-compilation mode (where other
+        compilation units may still reference them), but the smd.m_proc update must
+        always happen so the LLVM backend sees the correct function signature.
 
-            1. Module procedure is transformed in current file but not in the other file. -- this approach fixes it.
-                a. Function `get_midpoints(A, B)` where A(:) and B(:) are arrays, get transformed in current file, but
-                   in other file, it got called as `print *, get_midpoints(A(1:3), b(1:3))`, LFortran treats these as
-                   pointers and hence doesn't transform it.
-            2. Module procedure is not transformed in current file but is done in other file -- very less prone to happen.
-                a. For the functions where reshape is used over Function arguments, it is not transformed in current file but
-                   in other file it is transformed as these routines are marked as external ( meaning n_body = 0 ).
-        */
-        x.visit_TranslationUnit(unit);
-    }
+        If separate compilation is enabled using `--separate-compilation`, then we don't
+        drop the original ( unused ) procedures. This is for the module procedures where when
+        loaded from other file transformation may or maynot take place and then while linking
+        it shows missing symbol. There can be multiple reasons:
+
+        1. Module procedure is transformed in current file but not in the other file. -- this approach fixes it.
+            a. Function `get_midpoints(A, B)` where A(:) and B(:) are arrays, get transformed in current file, but
+               in other file, it got called as `print *, get_midpoints(A(1:3), b(1:3))`, LFortran treats these as
+               pointers and hence doesn't transform it.
+        2. Module procedure is not transformed in current file but is done in other file -- very less prone to happen.
+            a. For the functions where reshape is used over Function arguments, it is not transformed in current file but
+               in other file it is transformed as these routines are marked as external ( meaning n_body = 0 ).
+    */
+    RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased,
+        pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data);
+    x.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }
