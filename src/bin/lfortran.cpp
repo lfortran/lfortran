@@ -409,6 +409,20 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
+static std::string trim_copy(const std::string &s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
+}
+
+static bool is_exit_command(const std::string &input) {
+    std::string normalized = LCompilers::to_lower(trim_copy(input));
+    return normalized == "exit" || normalized == "exit()"
+        || normalized == "quit" || normalized == "quit()"
+        || normalized == ":q" || normalized == ":quit";
+}
+
 int prompt(bool verbose, CompilerOptions &cu)
 {
     Terminal term(true, false);
@@ -431,6 +445,10 @@ int prompt(bool verbose, CompilerOptions &cu)
         std::string input = prompt0(term, ">>> ", history, iscomplete);
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
+            std::cout << "Exiting." << std::endl;
+            return 0;
+        }
+        if (is_exit_command(input)) {
             std::cout << "Exiting." << std::endl;
             return 0;
         }
