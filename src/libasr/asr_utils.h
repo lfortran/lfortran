@@ -6745,7 +6745,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, a_loc, n_args, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-            al, a_loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+            al, a_loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
         a_type = ASRUtils::make_Array_t_util(al, dim.loc,
             a_type, dims.p, dims.size(), ASR::abiType::Source,
