@@ -501,13 +501,15 @@ int prompt(bool verbose, CompilerOptions &cu)
             case (LCompilers::FortranEvaluator::EvalResult::real4) : {
                 if (verbose) std::cout << "Return type: real" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << r.f32 << std::endl;
+                std::cout << std::showpoint << std::setprecision(8)
+                          << r.f32 << std::noshowpoint << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::real8) : {
                 if (verbose) std::cout << "Return type: real(8)" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << r.f64 << std::endl;
+                std::cout << std::showpoint << std::setprecision(17)
+                          << r.f64 << std::noshowpoint << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
