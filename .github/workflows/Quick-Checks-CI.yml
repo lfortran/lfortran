@@ -7,6 +7,7 @@ on:
     tags:
       - 'v*'
   pull_request:
+    types: [labeled, unlabeled, synchronize, opened, reopened]
     branches:
       - main
 
@@ -28,6 +29,9 @@ env:
 jobs:
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
+    if: >-
+      ${{ github.event_name == 'push' ||
+          !contains(github.event.pull_request.labels.*.name, 'Tests::Run-When-Idle') }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -322,6 +326,9 @@ jobs:
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
+    if: >-
+      ${{ github.event_name == 'push' ||
+          !contains(github.event.pull_request.labels.*.name, 'Tests::Run-When-Idle') }}
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v6
