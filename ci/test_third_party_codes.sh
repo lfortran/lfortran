@@ -137,6 +137,20 @@ time_section "🧪 Testing splpak" '
   rm -rf splpak
 '
 
+time_section "🧪 Testing Julienne" '
+  git clone https://github.com/certik/julienne.git
+  cd julienne
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf2
+  git checkout 04dffa762ab0f5259d41ac6071c7395c6c404c98
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays idiomatic_assertion_failure_test
+
+  print_success "Done with Julienne"
+  cd ..
+'
+
 time_section "🧪 Testing fortran-regex" '
   git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
