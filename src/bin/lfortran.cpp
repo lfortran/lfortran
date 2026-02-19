@@ -2452,7 +2452,7 @@ int main_app(int argc, char *argv[]) {
             opts.arg_fmt_indent, opts.arg_fmt_indent_unit, compiler_options);
     }
 
-    if (kernel) {
+    if (kernel || !opts.arg_kernel_f.empty()) {
 #ifdef HAVE_LFORTRAN_XEUS
         return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
 #else

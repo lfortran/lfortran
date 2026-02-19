@@ -128,6 +128,8 @@ namespace LCompilers::CommandLineInterface {
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
         bool old_classes = false;
+        CLI::Option *legacy_kernel_opt = nullptr;
+        CLI::Option *legacy_interactive_opt = nullptr;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -255,6 +257,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors")->group(group_miscellaneous_options);
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified")->group(group_miscellaneous_options);
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
+        legacy_interactive_opt = app.add_flag("--interactive", opts.arg_interactive_legacy,
+            "DEPRECATED: legacy alias for interactive mode")->group(group_miscellaneous_options);
+        legacy_kernel_opt = app.add_option("--kernel", opts.arg_kernel_legacy_f,
+            "DEPRECATED: legacy alias for `kernel -f <connection_file>`")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
         app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
@@ -285,6 +291,7 @@ namespace LCompilers::CommandLineInterface {
         // kernel
         kernel = app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
         kernel->add_option("-f", opts.arg_kernel_f, "The kernel connection file")->required();
+        kernel->fallthrough();
 
         // mod
         mod = app.add_subcommand("mod", "Fortran mod file utilities.");
@@ -317,6 +324,14 @@ namespace LCompilers::CommandLineInterface {
             app.parse(args);
         }
 
+        if (!opts.arg_kernel_legacy_f.empty()) {
+            if (!opts.arg_kernel_f.empty()) {
+                throw lc::LCompilersException(
+                    "Cannot use both `--kernel` and `kernel -f`; use one kernel invocation style");
+            }
+            opts.arg_kernel_f = opts.arg_kernel_legacy_f;
+        }
+
         if (opts.disable_style_suggestions) {
             compiler_options.show_style_suggestions = false;
         }
@@ -334,6 +349,17 @@ namespace LCompilers::CommandLineInterface {
             if (!disable_warnings) {
                 std::cerr << "warning: `--generate-object-code` is deprecated and will be "
                           << "removed in a future release; use `--separate-compilation` instead.\n";
+            }
+        }
+        if (legacy_interactive_opt && legacy_interactive_opt->count() > 0) {
+            if (!disable_warnings) {
+                std::cerr << "warning: `--interactive` is deprecated; launch REPL with `lfortran`"
+                          << " or use `--interactive-parse` for parser mode.\n";
+            }
+        }
+        if (legacy_kernel_opt && legacy_kernel_opt->count() > 0) {
+            if (!disable_warnings) {
+                std::cerr << "warning: `--kernel` is deprecated; use `kernel -f <connection_file>`.\n";
             }
         }
 
