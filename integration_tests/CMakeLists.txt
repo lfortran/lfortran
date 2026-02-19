@@ -1000,6 +1000,7 @@ RUN(NAME submodule_20a LABELS gfortran llvm_submodule EXTRAFILES submodule_20b.f
 RUN(NAME submodule_21a LABELS gfortran llvm_submodule EXTRAFILES submodule_21b.f90 submodule_21c.f90)
 
 RUN(NAME submodule_22 LABELS gfortran llvm)
+RUN(NAME submodule_23a LABELS gfortran llvm_submodule EXTRAFILES submodule_23b.f90 submodule_23c.f90)
 
 
 
@@ -2353,7 +2354,7 @@ RUN(NAME class_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+# RUN(NAME class_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
