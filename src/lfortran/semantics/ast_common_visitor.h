@@ -14244,9 +14244,9 @@ public:
         ASR::ttype_t *left_type_ = ASRUtils::expr_type(left);
         ASR::ttype_t *right_type_ = ASRUtils::expr_type(right);
         ASR::ttype_t *left_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(left_type_));
+            ASRUtils::type_get_past_allocatable_pointer(left_type_));
         ASR::ttype_t *right_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(right_type_));
+            ASRUtils::type_get_past_allocatable_pointer(right_type_));
 
         if( ASR::is_a<ASR::String_t>(*left_type) &&
             ASR::is_a<ASR::String_t>(*right_type) ) { // CreateIntrinisc `stringConcat`
