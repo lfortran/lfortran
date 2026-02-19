@@ -409,6 +409,41 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
+static std::string trim_copy(const std::string &s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
+}
+
+enum class ReplEndAction {
+    none,
+    exit_immediately,
+    exit_after_eval
+};
+
+static ReplEndAction normalize_end_terminator(std::string &input) {
+    std::string trimmed = trim_copy(input);
+    std::string normalized = LCompilers::to_lower(trimmed);
+
+    if (normalized == "end") {
+        return ReplEndAction::exit_immediately;
+    }
+
+    static const std::regex suffix_end(R"(;\s*end\s*$)", std::regex_constants::icase);
+    std::smatch match;
+    if (std::regex_search(trimmed, match, suffix_end)) {
+        std::string prefix = trim_copy(trimmed.substr(0, match.position()));
+        if (prefix.empty()) {
+            return ReplEndAction::exit_immediately;
+        }
+        input = prefix;
+        return ReplEndAction::exit_after_eval;
+    }
+
+    return ReplEndAction::none;
+}
+
 int prompt(bool verbose, CompilerOptions &cu)
 {
     Terminal term(true, false);
@@ -429,10 +464,19 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::function<bool(std::string)> iscomplete = determine_completeness;
     while (true) {
         std::string input = prompt0(term, ">>> ", history, iscomplete);
+        bool exit_after_eval = false;
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
             std::cout << "Exiting." << std::endl;
             return 0;
+        }
+
+        ReplEndAction end_action = normalize_end_terminator(input);
+        if (end_action == ReplEndAction::exit_immediately) {
+            std::cout << "Exiting." << std::endl;
+            return 0;
+        } else if (end_action == ReplEndAction::exit_after_eval) {
+            exit_after_eval = true;
         }
 
         if (verbose) {
@@ -545,6 +589,11 @@ int prompt(bool verbose, CompilerOptions &cu)
                 break;
             }
             default : throw LCompilers::LCompilersException("Return type not supported");
+        }
+
+        if (exit_after_eval) {
+            std::cout << "Exiting." << std::endl;
+            return 0;
         }
     }
     return 0;
