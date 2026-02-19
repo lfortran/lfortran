@@ -1,3 +1,6 @@
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +16,9 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#if !defined(COMPILE_TO_WASM)
+#include <fenv.h>
+#endif
 
 #define PI 3.14159265358979323846
 // Enum for float format types to avoid string comparison
@@ -100,6 +106,7 @@ static int _lfortran_use_runtime_colors = 0;  // disabled by default
 #ifdef HAVE_LFORTRAN_LINK
 // For dl_iterate_phdr() functionality
 #  include <link.h>
+#ifndef _GNU_SOURCE
 struct dl_phdr_info {
     ElfW(Addr) dlpi_addr;
     const char *dlpi_name;
@@ -108,6 +115,7 @@ struct dl_phdr_info {
 };
 extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
     size_t, void *), void *__data);
+#endif
 #endif
 
 #ifdef HAVE_LFORTRAN_UNWIND
@@ -8213,6 +8221,97 @@ LFORTRAN_API int32_t _lfortran_get_command_status() {
 }
 
 // << Command line arguments << ------------------------------------------------
+
+// >> Floating point exception trapping >> -------------------------------------
+// These constants must match the LCOMPILERS_FE_* values in utils.h
+#define LCOMPILERS_FE_INVALID   1
+#define LCOMPILERS_FE_ZERO      2
+#define LCOMPILERS_FE_OVERFLOW  4
+#define LCOMPILERS_FE_UNDERFLOW 8
+#define LCOMPILERS_FE_INEXACT   16
+#define LCOMPILERS_FE_DENORMAL  32
+
+LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask) {
+#if defined(COMPILE_TO_WASM)
+    fprintf(stderr, "Warning: --fpe-trap is not supported on WASM\n");
+    (void)trap_mask;
+#elif defined(__linux__)
+    int excepts = 0;
+    if (trap_mask & LCOMPILERS_FE_INVALID)   excepts |= FE_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      excepts |= FE_DIVBYZERO;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  excepts |= FE_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) excepts |= FE_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   excepts |= FE_INEXACT;
+    // denormal: Linux feenableexcept doesn't have a separate flag;
+    // on x86, we handle it via MXCSR below
+    if (excepts) {
+        feenableexcept(excepts);
+    }
+#if defined(__x86_64__) || defined(__i386__)
+    if (trap_mask & LCOMPILERS_FE_DENORMAL) {
+        // Enable denormal-operand exception in SSE MXCSR (bit 8)
+        unsigned int mxcsr;
+        __asm__ __volatile__("stmxcsr %0" : "=m"(mxcsr));
+        mxcsr &= ~(1u << 8);  // Clear DM (Denormals-Are-Zeros mask) to unmask
+        __asm__ __volatile__("ldmxcsr %0" : : "m"(mxcsr));
+    }
+#endif
+#elif defined(__APPLE__)
+#if defined(__x86_64__) || defined(__i386__)
+    // macOS x86_64: manipulate x87 control word and SSE MXCSR
+    fenv_t env;
+    fegetenv(&env);
+    // x87 control word: bits 0-5 are exception masks (1=masked, 0=unmasked)
+    if (trap_mask & LCOMPILERS_FE_INVALID)   env.__control &= ~FE_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      env.__control &= ~FE_DIVBYZERO;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  env.__control &= ~FE_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) env.__control &= ~FE_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   env.__control &= ~FE_INEXACT;
+    // SSE MXCSR: bits 7-12 are exception masks
+    if (trap_mask & LCOMPILERS_FE_INVALID)   env.__mxcsr &= ~(1u << 7);   // Invalid
+    if (trap_mask & LCOMPILERS_FE_ZERO)      env.__mxcsr &= ~(1u << 9);   // Divide-by-zero
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  env.__mxcsr &= ~(1u << 10);  // Overflow
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) env.__mxcsr &= ~(1u << 11);  // Underflow
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   env.__mxcsr &= ~(1u << 12);  // Inexact (Precision)
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  env.__mxcsr &= ~(1u << 8);   // Denormal
+    fesetenv(&env);
+#elif defined(__aarch64__)
+    // macOS ARM64: manipulate FPCR register
+    // FPCR trap enable bits: 8=IOE(invalid), 9=DZE(divbyzero), 10=OFE(overflow),
+    //                        11=UFE(underflow), 12=IXE(inexact), 15=IDE(input denormal)
+    uint64_t fpcr;
+    __asm__ __volatile__("mrs %0, fpcr" : "=r"(fpcr));
+    if (trap_mask & LCOMPILERS_FE_INVALID)   fpcr |= (1ULL << 8);   // IOE - Invalid Operation
+    if (trap_mask & LCOMPILERS_FE_ZERO)      fpcr |= (1ULL << 9);   // DZE - Division by Zero
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  fpcr |= (1ULL << 10);  // OFE - Overflow
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) fpcr |= (1ULL << 11);  // UFE - Underflow
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   fpcr |= (1ULL << 12);  // IXE - Inexact
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  fpcr |= (1ULL << 15);  // IDE - Input Denormal
+    __asm__ __volatile__("msr fpcr, %0" : : "r"(fpcr));
+#else
+    fprintf(stderr, "Warning: --fpe-trap is not supported on this Apple architecture\n");
+    (void)trap_mask;
+#endif
+#elif defined(_WIN32)
+    unsigned int cw = 0;
+    // _controlfp: second arg = mask of bits to change
+    // Clearing a bit in the control word UNMASKS (enables) that exception
+    unsigned int disable_mask = 0;
+    if (trap_mask & LCOMPILERS_FE_INVALID)   disable_mask |= _EM_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      disable_mask |= _EM_ZERODIVIDE;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  disable_mask |= _EM_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) disable_mask |= _EM_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   disable_mask |= _EM_INEXACT;
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  disable_mask |= _EM_DENORMAL;
+    if (disable_mask) {
+        _controlfp_s(&cw, ~disable_mask & _MCW_EM, disable_mask);
+    }
+#else
+    fprintf(stderr, "Warning: --fpe-trap is not supported on this platform\n");
+    (void)trap_mask;
+#endif
+}
+// << Floating point exception trapping << -------------------------------------
 
 // Initial setup
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]) {

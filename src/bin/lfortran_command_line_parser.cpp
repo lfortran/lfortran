@@ -5,6 +5,7 @@
 #include <cctype>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include <lfortran/utils.h>
 
@@ -128,6 +129,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
         bool old_classes = false;
+        std::string fpe_traps_str;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -151,6 +153,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
         app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
+        app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
         // LFortran specific options
         // Warning-related flags
@@ -417,6 +420,29 @@ namespace LCompilers::CommandLineInterface {
                 throw lc::LCompilersException(
                     "The flag `-f" + f_flag + "` is not supported"
                 );
+            }
+        }
+
+        // Parse and validate --fpe-trap values, build bitmask
+        if (!fpe_traps_str.empty()) {
+            std::string token;
+            std::istringstream stream(fpe_traps_str);
+            while (std::getline(stream, token, ',')) {
+                // Trim whitespace
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                if (token == "invalid")        compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INVALID;
+                else if (token == "zero")      compiler_options.fpe_traps |= lc::LCOMPILERS_FE_ZERO;
+                else if (token == "overflow")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_OVERFLOW;
+                else if (token == "underflow") compiler_options.fpe_traps |= lc::LCOMPILERS_FE_UNDERFLOW;
+                else if (token == "inexact")   compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INEXACT;
+                else if (token == "denormal")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_DENORMAL;
+                else {
+                    throw lc::LCompilersException(
+                        "Invalid --fpe-trap value '" + token + "'. "
+                        "Valid values are: invalid, zero, overflow, underflow, inexact, denormal"
+                    );
+                }
             }
         }
 
