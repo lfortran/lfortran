@@ -2522,6 +2522,23 @@ public:
             }
         }
 
+        // Set up implicit typing for block data unit (similar to Program)
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i = 0; i < x.n_implicit; i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+
         for (size_t i = 0; i < x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
         }
