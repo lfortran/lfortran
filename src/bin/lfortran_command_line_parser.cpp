@@ -284,7 +284,8 @@ namespace LCompilers::CommandLineInterface {
 
         // kernel
         kernel = app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-        kernel->add_option("-f", opts.arg_kernel_f, "The kernel connection file")->required();
+        kernel->add_option("-f,--connection-file", opts.arg_kernel_f,
+            "The kernel connection file")->required();
 
         // mod
         mod = app.add_subcommand("mod", "Fortran mod file utilities.");
