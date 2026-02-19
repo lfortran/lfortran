@@ -1171,12 +1171,20 @@ namespace LCompilers {
 
         // Shallow copies source array descriptor to destination descriptor
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::ttype_t* asr_data_type, bool reserve_memory) {
+            llvm::Module* module, ASR::ttype_t* asr_data_type, bool reserve_memory, ASR::expr_t* target_expr) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
-            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(
-                ASRUtils::type_get_past_allocatable(asr_data_type)), false, false)].second;
+            ASR::ttype_t* past_ptr_alloc = ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(asr_data_type));
+            llvm::Type* llvm_data_type = nullptr;
+            if (target_expr) {
+                llvm_data_type = llvm_utils->get_el_type(target_expr,
+                    ASRUtils::extract_type(past_ptr_alloc), module);
+            } else {
+                llvm_data_type = tkr2array[ASRUtils::get_type_code(
+                    past_ptr_alloc, false, false)].second;
+            }
             if( reserve_memory ) {
                 llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);

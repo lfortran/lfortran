@@ -9337,7 +9337,7 @@ public:
                 if (x.m_move_allocation) {
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
                 } else {
-                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
+                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false, x.m_target);
                 }
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
