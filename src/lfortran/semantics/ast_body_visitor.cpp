@@ -3234,13 +3234,31 @@ public:
                         current_scope->add_symbol(x.m_assoc_name, assoc_sym);
                         ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
                         ASR::expr_t* cast_expr = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*variable_type) && rank == 0) {
+                        if (rank == 0) {
                             cast_expr = m_selector;
                         } else {
                             cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
                                 ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
                         }
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
+                        rank_body.push_back(al, assoc_stmt);
+                    } else if (rank == 0 && array_var_name != "") {
+                        // For rank(0) without association name, create a shadow
+                        // variable with scalar Pointer type so that the assumed-rank
+                        // variable is treated as a scalar inside this block.
+                        ASR::ttype_t* variable_type = ASRUtils::extract_type(selector_type);
+                        ASR::ttype_t* ptr_type = ASRUtils::make_Pointer_t_util(al, m_selector->base.loc, variable_type);
+                        ASR::symbol_t* type_decl = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*variable_type)) {
+                            type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
+                        }
+                        ASR::symbol_t* shadow_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+                            current_scope, s2c(al, array_var_name), nullptr, 0, ASR::intentType::Local,
+                            nullptr, nullptr, ASR::storage_typeType::Default, ptr_type, type_decl,
+                            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                        current_scope->add_symbol(array_var_name, shadow_sym);
+                        ASR::expr_t* shadow_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, shadow_sym));
+                        ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, shadow_var, m_selector));
                         rank_body.push_back(al, assoc_stmt);
                     }
                     transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);

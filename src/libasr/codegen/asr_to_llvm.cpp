@@ -7823,14 +7823,12 @@ public:
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
-            } else if (compiler_options.new_classes &&
-                       is_target_class &&
-                       !ASRUtils::is_array(target_type) &&
+            } else if (!ASRUtils::is_array(target_type) &&
                        ASRUtils::is_array(value_type) &&
                        ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray) {
-                // select rank (assoc => arg) rank(0) case:
-                // `arg` is represented as an assumed-rank array descriptor even when rank==0,
-                // but `assoc` is a scalar class pointer. Associate the scalar wrapper pointer
+                // select rank rank(0) case:
+                // The value is represented as an assumed-rank array descriptor even when rank==0,
+                // but the target is a scalar pointer. Associate the data pointer
                 // (descriptor.data) rather than bitcasting the whole descriptor.
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
