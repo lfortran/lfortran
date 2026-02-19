@@ -2855,7 +2855,7 @@ class VerifySimplifierASROutput:
 
     void check_for_var_if_array(ASR::expr_t* expr) {
         if ( is_temporary_needed(expr) ) {
-            ASR::expr_t* stripped_expr = ASRUtils::get_past_array_physical_cast(expr);
+            [[maybe_unused]] ASR::expr_t* stripped_expr = ASRUtils::get_past_array_physical_cast(expr);
             LCOMPILERS_ASSERT(
                 ASR::is_a<ASR::Var_t>(*stripped_expr) ||
                 ASR::is_a<ASR::StructInstanceMember_t>(*stripped_expr) ||
