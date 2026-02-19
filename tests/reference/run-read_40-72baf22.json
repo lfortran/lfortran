@@ -1,0 +1,13 @@
+{
+    "basename": "run-read_40-72baf22",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/read_40.f90",
+    "infile_hash": "7e90dbd67eed6f847bc0f1bf39c5843a10df9b0dad28ea30c4119148",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-read_40-72baf22.stdout",
+    "stdout_hash": "cdde590c8ded40f768566f8fefa15e60f9573b153ea0fe4374d26240",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
