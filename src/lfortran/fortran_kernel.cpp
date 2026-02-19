@@ -120,8 +120,36 @@ namespace LCompilers::LFortran {
         std::string code0;
         CompilerOptions cu;
         try {
-            if (startswith(code, "%%showast")) {
-                code0 = code.substr(code.find("\n")+1);
+            std::string code_eval = code;
+            if (startswith(code_eval, "%%fixed_form")) {
+                e.compiler_options.fixed_form = true;
+                size_t newline_pos = code_eval.find("\n");
+                if (newline_pos == std::string::npos) {
+                    publish_stream("stdout", "Fixed-form mode enabled.");
+                    nl::json result;
+                    result["status"] = "ok";
+                    result["payload"] = nl::json::array();
+                    result["user_expressions"] = nl::json::object();
+                    cb(result);
+                    return;
+                }
+                code_eval = code_eval.substr(newline_pos + 1);
+            } else if (startswith(code_eval, "%%free_form")) {
+                e.compiler_options.fixed_form = false;
+                size_t newline_pos = code_eval.find("\n");
+                if (newline_pos == std::string::npos) {
+                    publish_stream("stdout", "Free-form mode enabled.");
+                    nl::json result;
+                    result["status"] = "ok";
+                    result["payload"] = nl::json::array();
+                    result["user_expressions"] = nl::json::object();
+                    cb(result);
+                    return;
+                }
+                code_eval = code_eval.substr(newline_pos + 1);
+            }
+            if (startswith(code_eval, "%%showast")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -150,8 +178,8 @@ namespace LCompilers::LFortran {
                 cb(result);
                 return;
             }
-            if (startswith(code, "%%showasr")) {
-                code0 = code.substr(code.find("\n")+1);
+            if (startswith(code_eval, "%%showasr")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -180,8 +208,8 @@ namespace LCompilers::LFortran {
                 cb(result);
                 return;
             }
-            if (startswith(code, "%%showllvm")) {
-                code0 = code.substr(code.find("\n")+1);
+            if (startswith(code_eval, "%%showllvm")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -212,8 +240,8 @@ namespace LCompilers::LFortran {
                 cb(result);
                 return;
             }
-            if (startswith(code, "%%showasm")) {
-                code0 = code.substr(code.find("\n")+1);
+            if (startswith(code_eval, "%%showasm")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -244,8 +272,8 @@ namespace LCompilers::LFortran {
                 cb(result);
                 return;
             }
-            if (startswith(code, "%%showcpp")) {
-                code0 = code.substr(code.find("\n")+1);
+            if (startswith(code_eval, "%%showcpp")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -274,8 +302,8 @@ namespace LCompilers::LFortran {
                 cb(result);
                 return;
             }
-            if (startswith(code, "%%showfmt")) {
-                code0 = code.substr(code.find("\n")+1);
+            if (startswith(code_eval, "%%showfmt")) {
+                code0 = code_eval.substr(code_eval.find("\n")+1);
                 LocationManager lm;
                 {
                     LocationManager::FileLocations fl;
@@ -306,7 +334,7 @@ namespace LCompilers::LFortran {
             }
 
             RedirectStdout s(std_out);
-            code0 = code;
+            code0 = code_eval;
             LocationManager lm;
             {
                 LocationManager::FileLocations fl;
