@@ -2055,7 +2055,6 @@ ast_f90 = true
 [[test]]
 filename = "associate2.f90"
 asr = true
-pass = "nested_vars"
 
 [[test]]
 filename = "fn_call1.f90"
