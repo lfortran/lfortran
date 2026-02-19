@@ -129,6 +129,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
@@ -159,6 +160,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
@@ -189,6 +191,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
@@ -221,6 +224,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
@@ -253,6 +257,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
@@ -283,6 +288,7 @@ namespace LCompilers::LFortran {
                     std::ofstream out("input");
                     out << code0;
                     lm.files.push_back(fl);
+                    lm.file_ends.push_back(code0.size());
                 }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
@@ -314,6 +320,7 @@ namespace LCompilers::LFortran {
                 std::ofstream out("input");
                 out << code0;
                 lm.files.push_back(fl);
+                lm.file_ends.push_back(code0.size());
             }
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
