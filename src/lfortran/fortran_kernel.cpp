@@ -513,16 +513,9 @@ namespace LCompilers::LFortran {
                              std::move(interpreter),
                              xeus::make_xserver_shell_main,
                              std::move(hist),
-                             xeus::make_console_logger(xeus::xlogger::msg_type,
-                                                       xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
+                             xeus::make_file_logger(xeus::xlogger::content, "xeus.log"),
                              xeus::make_null_debugger,
                              debugger_config);
-
-        std::cout <<
-            "Starting xeus-fortran kernel...\n\n"
-            "If you want to connect to this kernel from an other client, you can use"
-            " the " + connection_filename + " file."
-            << std::endl;
 
         kernel.start();
 
