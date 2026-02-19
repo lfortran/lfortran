@@ -4868,7 +4868,19 @@ _lfortran_open(int32_t unit_num,
     } else if (streql(delim_c, "quote")) {
         delim_value = 2;
     } else {
-        // TODO: Throw error
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
+                char* temp = "DELIM specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+            }
+        } else {
+            printf("Runtime error: DELIM specifier in OPEN statement has "
+                   "invalid value '%s'\n",
+                   delim_c);
+            exit(1);
+        }
     }
 
     if (streql(blank_c, "zero")) {

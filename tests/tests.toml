@@ -5040,3 +5040,7 @@ options = "--mangle-underscore-external"
 [[test]]
 filename = "../integration_tests/file_open_06.f90"
 run = true
+
+[[test]]
+filename = "errors/file_01.f90"
+run = true
