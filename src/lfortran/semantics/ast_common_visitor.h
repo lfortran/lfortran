@@ -4492,7 +4492,8 @@ public:
                                     ASR::expr_t *init_expr = ASRUtils::EXPR(
                                         ASR::make_IntegerConstant_t(al, x.m_syms[i].loc,
                                         enum_init_val, init_type));
-                                    if (x.m_syms[i].m_sym == AST::symbolType::Equal) {
+                                    if (x.m_syms[i].m_sym == AST::symbolType::Equal
+                                            || x.m_syms[i].m_sym == AST::symbolType::SlashInit) {
                                         this->visit_expr(*x.m_syms[i].m_initializer);
                                         init_expr = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
                                         if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(init_expr))) {
