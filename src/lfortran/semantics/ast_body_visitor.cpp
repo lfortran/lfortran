@@ -4519,6 +4519,56 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
     }
 
+    // Infers type from the RHS expression and declares an implicit local.
+    // Preconditions are checked in visit_Assignment:
+    // infer mode is enabled, target is a bare name, and symbol is new.
+    void infer_type_and_declare(const AST::Assignment_t &x) {
+        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+        std::string var_name = to_lower(target_name->m_id);
+
+        this->visit_expr(*x.m_value);
+        ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(inferred_value));
+
+        ASR::ttype_t* declared_type = nullptr;
+        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+            declared_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, target_name->base.base.loc, kind));
+        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+            declared_type = ASRUtils::TYPE(
+                ASR::make_Real_t(al, target_name->base.base.loc, kind));
+        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+            declared_type = ASRUtils::TYPE(
+                ASR::make_Complex_t(al, target_name->base.base.loc, kind));
+        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+            declared_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, target_name->base.base.loc, kind));
+        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
+            declared_type = ASRUtils::TYPE(
+                ASR::make_String_t(al, target_name->base.base.loc,
+                    str_type->m_kind, str_type->m_len,
+                    str_type->m_len_kind, str_type->m_physical_type));
+        } else {
+            diag.add(Diagnostic(
+                "For now, type inference only supports intrinsic types "
+                "(integer, real, complex, logical, character)",
+                Level::Error, Stage::Semantic, {
+                    Label("non-intrinsic type", {x.m_value->base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+
+        declare_implicit_variable2(target_name->base.base.loc, var_name,
+            ASRUtils::intent_local, declared_type);
+    }
+
     /* Returns true if `x` is a statement function, false otherwise.
     Example of statement functions:
     integer :: A
@@ -4856,6 +4906,13 @@ public:
             create_statement_function(x);
             tmp = nullptr;
             return;
+        }
+        if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
+            AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+            std::string var_name = to_lower(target_name->m_id);
+            if (current_scope->resolve_symbol(var_name) == nullptr) {
+                infer_type_and_declare(x);
+            }
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);

@@ -5044,3 +5044,38 @@ options = "--mangle-underscore-external"
 [[test]]
 filename = "../integration_tests/file_open_06.f90"
 run = true
+
+[[test]]
+filename = "infer_mode_smoke_01.f90"
+run = true
+options = "--infer"
+
+[[test]]
+filename = "infer_global_scope_file_01.f90"
+ast = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_realloc_disabled_01.f90"
+run = true
+options = "--infer"
+
+[[test]]
+filename = "infer_first_assignment_01.f90"
+asr = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_first_assignment_conflict_01.f90"
+asr = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_first_assignment_derived_01.f90"
+asr = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_mode_conflict_01.f90"
+run = true
+options = "--infer --std=f23"

@@ -1,0 +1,5 @@
+semantic error: For now, type inference only supports intrinsic types (integer, real, complex, logical, character)
+ --> tests/errors/infer_first_assignment_derived_01.f90:4:5
+  |
+4 | a = t(1)
+  |     ^^^^ non-intrinsic type
