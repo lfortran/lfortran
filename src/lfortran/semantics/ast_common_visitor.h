@@ -1708,6 +1708,7 @@ public:
         {"present", IntrinsicSignature({"a"}, 1, 1)},
         {"leadz", IntrinsicSignature({"i"}, 1, 1)},
         {"trailz", IntrinsicSignature({"i"}, 1, 1)},
+        {"type_name", IntrinsicSignature({"x"}, 1, 1)},
 
 
         // LFortran-specific intrinsics
@@ -11789,12 +11790,18 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    if (var_name == "type_name" && !compiler_options.infer_mode) {
+                        diag.semantic_warning_label(
+                            "`type_name` is an experimental LFortran extension (subject to change); "
+                            "use `--infer` to suppress this warning",
+                            {x.base.base.loc}, "LFortran extension");
+                    }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
-                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "loc"};
+                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "loc", "type_name"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
                         !array_indices_in_args.empty())

@@ -101,6 +101,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Or)
         INTRINSIC_NAME_CASE(Ieor)
         INTRINSIC_NAME_CASE(Xor)
+        INTRINSIC_NAME_CASE(TypeName)
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
@@ -388,6 +389,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
             {&Xor::instantiate_Xor, &Xor::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::TypeName),
+            {nullptr, &TypeName::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
@@ -666,6 +669,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"or", {&Or::create_Or, &Or::eval_Or}},
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
                 {"xor", {&Xor::create_Xor, &Xor::eval_Xor}},
+                {"type_name", {&TypeName::create_TypeName, &TypeName::eval_TypeName}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},

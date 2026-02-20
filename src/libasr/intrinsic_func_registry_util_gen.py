@@ -887,9 +887,15 @@ intrinsic_funcs_args = {
             "allow_polymorphic_arg": [0]
         }
     ],
+    "TypeName": [
+        {
+            "args": [("any",)],
+            "return": "character(1)"
+        }
+    ],
 }
 
-skip_create_func = ["Partition"]
+skip_create_func = ["Partition", "TypeName"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
@@ -908,6 +914,7 @@ compile_time_only_fn = [
     "SameTypeAs",
     "ExtendsTypeOf",
     "Digits",
+    "TypeName",
 ]
 
 type_to_asr_type_check = {
