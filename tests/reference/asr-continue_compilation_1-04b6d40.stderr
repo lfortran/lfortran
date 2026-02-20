@@ -618,11 +618,11 @@ semantic error: Expected logical expression in if statement, but recieved real(4
 380 |     if (r1) r1 = 1.0
     |         ^^ real(4) expression, expected logical
 
-semantic error: Expected logical expression in if statement, but recieved string instead
+semantic error: Expected logical expression in if statement, but recieved character instead
    --> tests/errors/continue_compilation_1.f90:381:9
     |
 381 |     if (c1) c1 = 'a'
-    |         ^^ string expression, expected logical
+    |         ^^ character expression, expected logical
 
 semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:386:18

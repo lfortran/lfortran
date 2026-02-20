@@ -1026,6 +1026,10 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
             ASR::Integer_t* int_t = ASR::down_cast<ASR::Integer_t>(t);
             return "integer(" + std::to_string(int_t->m_kind) + ")";
         }
+        case ASR::ttypeType::UnsignedInteger: {
+            ASR::UnsignedInteger_t* uint_t = ASR::down_cast<ASR::UnsignedInteger_t>(t);
+            return "unsigned(" + std::to_string(uint_t->m_kind) + ")";
+        }
         case ASR::ttypeType::Real: {
             ASR::Real_t* real_t = ASR::down_cast<ASR::Real_t>(t);
             return "real(" + std::to_string(real_t->m_kind) + ")";
@@ -1033,6 +1037,13 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
         case ASR::ttypeType::Complex: {
             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
             return "complex(" + std::to_string(complex_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::Logical_t* logical_t = ASR::down_cast<ASR::Logical_t>(t);
+            return "logical(" + std::to_string(logical_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::String: {
+            return "character";
         }
         case ASR::ttypeType::Pointer: {
             return type_to_str_with_kind(ASRUtils::type_get_past_pointer(

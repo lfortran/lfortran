@@ -5141,36 +5141,10 @@ namespace NewLine {
 
 namespace TypeName {
 
-    static std::string type_to_str_for_type_name(ASR::ttype_t* t, ASR::expr_t* expr) {
-        t = ASRUtils::extract_type(t);
-        switch (t->type) {
-            case ASR::ttypeType::Integer: {
-                return "integer(" + std::to_string(ASR::down_cast<ASR::Integer_t>(t)->m_kind) + ")";
-            }
-            case ASR::ttypeType::UnsignedInteger: {
-                return "unsigned(" + std::to_string(ASR::down_cast<ASR::UnsignedInteger_t>(t)->m_kind) + ")";
-            }
-            case ASR::ttypeType::Real: {
-                return "real(" + std::to_string(ASR::down_cast<ASR::Real_t>(t)->m_kind) + ")";
-            }
-            case ASR::ttypeType::Complex: {
-                return "complex(" + std::to_string(ASR::down_cast<ASR::Complex_t>(t)->m_kind) + ")";
-            }
-            case ASR::ttypeType::Logical: {
-                return "logical(" + std::to_string(ASR::down_cast<ASR::Logical_t>(t)->m_kind) + ")";
-            }
-            case ASR::ttypeType::String: {
-                return "character";
-            }
-            default:
-                return ASRUtils::type_to_str_with_kind(t, expr);
-        }
-    }
-
     static ASR::expr_t *eval_TypeName(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
-        std::string type_str = type_to_str_for_type_name(arg_type, args[0]);
+        ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
+        std::string type_str = ASRUtils::type_to_str_with_kind(arg_type, args[0]);
         int len = type_str.size();
         return make_ConstantWithType(make_StringConstant_t, s2c(al, type_str),
             ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
