@@ -1,35 +1,11 @@
-warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
- --> tests/errors/continue_compilation_walrus.f90:8:5
-  |
-8 |     x := 5
-  |     ^^^^^^ LFortran extension
-
 semantic error: Variable 'x' is already declared; use `=` for assignment to existing variables
- --> tests/errors/continue_compilation_walrus.f90:8:5
+ --> tests/errors/continue_compilation_walrus.f90:4:5
   |
-8 |     x := 5
+4 |     x := 5
   |     ^ already declared
 
-warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
- --> tests/errors/continue_compilation_walrus.f90:9:5
-  |
-9 |     a := obj
-  |     ^^^^^^^^ LFortran extension
-
-warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-  --> tests/errors/continue_compilation_walrus.f90:10:5
-   |
-10 |     y := 5
-   |     ^^^^^^ LFortran extension
-
-warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-  --> tests/errors/continue_compilation_walrus.f90:11:5
-   |
-11 |     y := 10
-   |     ^^^^^^^ LFortran extension
-
 semantic error: Variable 'y' is already declared; use `=` for assignment to existing variables
-  --> tests/errors/continue_compilation_walrus.f90:11:5
-   |
-11 |     y := 10
-   |     ^ already declared
+ --> tests/errors/continue_compilation_walrus.f90:6:5
+  |
+6 |     y := 10
+  |     ^ already declared
