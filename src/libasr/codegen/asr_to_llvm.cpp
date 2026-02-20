@@ -14396,6 +14396,18 @@ public:
                                     llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
                                 },
                                 false);
+                        } else {
+                            function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context),
+                                {   character_type /*src_data*/,
+                                    llvm::Type::getInt64Ty(context)/*src_length*/,
+                                    character_type,
+                                    llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_values[i], type, module.get()
+                                    )->getPointerTo(),
+                                    llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
+                                },
+                                false);
                         }
                         fn = llvm::Function::Create(function_type,
                                 llvm::Function::ExternalLinkage, runtime_func_name, module.get());

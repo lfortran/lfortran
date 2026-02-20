@@ -8082,8 +8082,14 @@ LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format
     memcpy(buf, str, len);
     buf[len] = '\0';
     _lfortran_replace_d_exponent(buf);
-    sscanf(buf, format, &c->re, &c->im);
+    int rc = sscanf(buf, format, &c->re, &c->im);
     free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c) {
@@ -8092,8 +8098,14 @@ LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format
     memcpy(buf, str, len);
     buf[len] = '\0';
     _lfortran_replace_d_exponent(buf);
-    sscanf(buf, format, &c->re, &c->im);
+    int rc = sscanf(buf, format, &c->re, &c->im);
     free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 void lfortran_error(const char *message) {
