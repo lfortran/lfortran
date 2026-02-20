@@ -3401,5 +3401,8 @@ RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME ilp64_kind_arg_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
+RUN(NAME verify_intent_external_01 LABELS gfortran llvm EXTRAFILES
+        verify_intent_external_01_mod1.f90 verify_intent_external_01_mod2.f90)
+
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
