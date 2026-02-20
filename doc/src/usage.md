@@ -88,8 +88,8 @@ end block
 ```
 
 Supported right-hand sides: integer, real, complex, logical, character
-scalars; fixed-size arrays when dimensions are compile-time constants,
-allocatable arrays otherwise; derived types via structure constructors.
+scalars; fixed-size arrays when dimensions are compile-time constants;
+derived types via structure constructors or typed expressions.
 The inferred kind matches the expression (`3.14d0` produces `real(8)`).
 
 #### Guidance
