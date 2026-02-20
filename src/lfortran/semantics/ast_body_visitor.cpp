@@ -3879,8 +3879,32 @@ public:
         visit_SubmoduleModuleCommon(x);
     }
 
-    void visit_Use(const AST::Use_t& /* x */) {
-        // handled in symbol table visitor
+    void visit_Use(const AST::Use_t &x) {
+        std::string msym = to_lower(x.m_module);
+        if (msym == "ieee_arithmetic") {
+            msym = "lfortran_intrinsic_" + msym;
+        }
+        Str msym_c; msym_c.from_str_view(msym);
+        char *msym_cc = msym_c.c_str(al);
+        current_module_dependencies.push_back(al, msym_cc);
+
+        ASR::symbol_t *t = current_scope->resolve_symbol(msym);
+        if (!t) {
+            diag.add(diag::Diagnostic(
+                "Module '" + msym + "' not found",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASR::is_a<ASR::Module_t>(*t)) {
+            diag.add(diag::Diagnostic(
+                "The symbol '" + msym + "' must be a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        this->import_use_symbols(m, x);
     }
     void remove_common_variable_declarations(SymbolTable* current_scope) {
         // iterate over all symbols in symbol table and check if any of them is present in common_variables_hash
