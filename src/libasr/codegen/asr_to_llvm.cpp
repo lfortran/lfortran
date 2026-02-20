@@ -9921,12 +9921,16 @@ public:
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
 
             if (!ASRUtils::is_array(m_type)) {
-                // rank(0): extract scalar value by loading the data pointer from the
-                // assumed-rank descriptor and dereferencing it.
+                // rank(0): extract scalar value from the assumed-rank descriptor.
                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(
                     data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(arr_type, arg));
-                tmp = llvm_utils->CreateLoad2(data_type, data_ptr);
+                if (ASRUtils::is_struct(*m_type)) {
+                    // For struct types, return the pointer (deepcopy needs a pointer)
+                    tmp = data_ptr;
+                } else {
+                    tmp = llvm_utils->CreateLoad2(data_type, data_ptr);
+                }
             } else {
 
             llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
