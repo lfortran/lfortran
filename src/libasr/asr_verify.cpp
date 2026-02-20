@@ -1040,8 +1040,13 @@ public:
                 "the old physical type and new physical type must be different.");
         }
         if(check_external){
-            require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
-                "Destination physical type conflicts with the physical type of target");
+            // For rank(0): AssumedRankArray → scalar, m_type is scalar so skip physical type check
+            bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
+                                    && !ASRUtils::is_array(x.m_type));
+            if (!is_rank0_scalar) {
+                require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
+                    "Destination physical type conflicts with the physical type of target");
+            }
             require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
                 "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));

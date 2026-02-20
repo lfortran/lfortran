@@ -4895,6 +4895,20 @@ public:
         }
         current_variable_type_ = temp_current_variable_type_;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value)) &&
+                ASR::is_a<ASR::Var_t>(*value)) {
+            std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(value)->m_v);
+            if (assumed_rank_arrays.find(var_name) != assumed_rank_arrays.end()) {
+                size_t rank = assumed_rank_arrays[var_name];
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(value));
+                // For rank 0, new_type is the scalar elem_type (create_array_type_with_empty_dims
+                // returns elem_type directly when rank == 0); for rank >= 1 it is a DescriptorArray.
+                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, rank, elem_type);
+                value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, value->base.loc,
+                    value, ASR::array_physical_typeType::AssumedRankArray,
+                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+            }
+        }
         ASR::stmt_t *overloaded_stmt = nullptr;
         if (ASR::is_a<ASR::Var_t>(*target)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
