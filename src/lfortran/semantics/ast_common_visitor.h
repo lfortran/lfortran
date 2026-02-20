@@ -9401,7 +9401,19 @@ public:
                 throw SemanticAbort();
             }
 
-            if (ASRUtils::is_array(v_variable->m_type)) {
+            if (ASRUtils::is_array(v_variable->m_type) && dt_struct_n_args > 0) {
+                ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                make_ArrayItem_from_struct_m_args(
+                    dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
+                ASR::expr_t *val = ASRUtils::EXPR(v_var);
+                int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+                if (var_name == "re") {
+                    return ASR::make_ComplexRe_t(al, loc, val, real_type, nullptr);
+                } else {
+                    return ASR::make_ComplexIm_t(al, loc, val, real_type, nullptr);
+                }
+            } else if (ASRUtils::is_array(v_variable->m_type)) {
                 ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, v)));
                 ASR::ttype_t* v_variable_arr_type = ASRUtils::type_get_past_allocatable(

@@ -5062,6 +5062,8 @@ public:
 
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+                ImplicitCastRules::set_converted_value(al, loc, &y,
+                    ASRUtils::expr_type(y), real_type, diag);
                 ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                     val, real_type, nullptr));
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -5082,6 +5084,8 @@ public:
 
             ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+            ImplicitCastRules::set_converted_value(al, loc, &y,
+                ASRUtils::expr_type(y), real_type, diag);
             ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                 val, real_type, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -5097,8 +5101,12 @@ public:
             target = im->m_arg;
             ASR::expr_t* y = value;
             const Location& loc = x.base.base.loc;
+            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target))));
+            ImplicitCastRules::set_converted_value(al, loc, &y,
+                ASRUtils::expr_type(y), real_type, diag);
             ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
-                ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr, nullptr));
+                ASR::cast_kindType::ComplexToReal, real_type, nullptr, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
