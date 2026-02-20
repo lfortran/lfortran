@@ -228,7 +228,7 @@ static inline ASR::Function_t* get_function(ASR::symbol_t* x)
     } else {
         LCOMPILERS_ASSERT(false);
     }
-    
+
     return nullptr;
 }
 
@@ -3358,7 +3358,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 len_expr = nullptr;
             }
             t_ = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
-                    tnew->m_kind, len_expr, 
+                    tnew->m_kind, len_expr,
                     tnew->m_len_kind,
                     tnew->m_physical_type));
             break;
@@ -3388,8 +3388,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                (physical_type == ASR::array_physical_typeType::PointerArray && 
-                dims != nullptr) || 
+                (physical_type == ASR::array_physical_typeType::PointerArray &&
+                dims != nullptr) ||
                 (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
                 return dup_type;
@@ -3480,7 +3480,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     * - If used frequently, You can create a static instance in `replace` and reuse it instaed.
     --------------------------------------------------------------------------
     * EXAMPLE - Length Of String Type:
-    
+
     (String ( FunctionParam 0 (Integer 4) ) ExpressionLength DescriptorString )
         |
         INTO
@@ -3494,7 +3494,7 @@ class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplac
     Allocator &al_;
     FuncParamToArgReplacer(Allocator& al, ASR::FunctionCall_t* f_call): f_call_(f_call), al_(al) {}
     void replace_(){
-        /* 
+        /*
             Duplicate, As we assume passed type is Function's node;
             If not duplicated, Changes will reflect on original node.
         */
@@ -3503,7 +3503,7 @@ class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplac
         replace_ttype(f_call_->m_type);
 
     }
-    public : 
+    public :
     void replace_FunctionParam(ASR::FunctionParam_t* x){
         /* Replace FuncParam With Correspondent Arg */
         LCOMPILERS_ASSERT(x->m_param_number < (int64_t)f_call_->n_args)
@@ -3603,7 +3603,7 @@ static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_
         ASR::make_String_t(al, string->base.loc,
             1, nullptr,
             ASR::ImplicitLength, to));
-            
+
     return ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         str_type->m_physical_type, to, cast_expr_type, nullptr));
@@ -3660,7 +3660,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::String: {
             ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
             return ASRUtils::TYPE(ASR::make_String_t(al, loc,
-                        tnew->m_kind, tnew->m_len, 
+                        tnew->m_kind, tnew->m_len,
                         tnew->m_len_kind,
                         ASR::string_physical_typeType::DescriptorString));
         }
@@ -4228,7 +4228,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                     ASRUtils::get_union_sym_from_union_expr(a_expr)));
                 ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_union_sym_from_union_expr(b_expr)));
-                
+
                 if (x_union == y_union) return true;
 
                 return false;
@@ -4370,7 +4370,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
             }
-            case (ASR::ttypeType::StructType) : {          
+            case (ASR::ttypeType::StructType) : {
                 ASR::Struct_t* x_struct = nullptr;
                 if (a_struct) {
                     x_struct = a_struct;
@@ -4392,7 +4392,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                     ASRUtils::get_union_sym_from_union_expr(a_expr)));
                 ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_union_sym_from_union_expr(b_expr)));
-                
+
                 if (x_union == y_union) return true;
 
                 return false;
@@ -5088,8 +5088,8 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         if( idx_found ) {
             LCOMPILERS_ASSERT(current_expr);
             *current_expr = orig_args[arg_idx].m_value;
-        }  else if (ASRUtils::expr_value((ASR::expr_t*)x)){ //  Replace Constant args 
-            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
+        }  else if (ASRUtils::expr_value((ASR::expr_t*)x)){ //  Replace Constant args
+            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x);
         }
     }
 
@@ -5171,7 +5171,7 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
                                 al, m_args[arg_idx]->base.loc, arg_idx,
                                 t_, nullptr));
         } else if (ASRUtils::expr_value((ASR::expr_t*)x)){//  Replace Constant args
-            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
+            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x);
         }
     }
 
@@ -6803,7 +6803,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
             // For struct types, n_data represents the number of struct constant pointers
             n_data = curr_idx * sizeof(ASR::expr_t*);
-        }   
+        }
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
@@ -6835,10 +6835,10 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
 
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
-    
+
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
-        
+
         // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
         if (passed_arg_expr && i < f->n_args) {
             // Check for INTENT(OUT/INOUT) - but safely
@@ -6852,7 +6852,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
                         if (callee_param->m_intent == ASR::intentType::Out ||
                             callee_param->m_intent == ASR::intentType::InOut) {
-                            
+
                             // For intent(out) and intent(inout), the actual argument must be a variable
                             bool is_valid_variable = false;
                             switch (passed_arg_expr->type) {
@@ -6888,7 +6888,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                     is_valid_variable = false;
                                     break;
                             }
-                            
+
                             if (!is_valid_variable) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
@@ -6903,7 +6903,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                 }
             }
         }
-        
+
         // Now handle the original intent(in) -> intent(out/inout) mismatch check
         // This only applies when passed_arg_expr is a Var_t
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
@@ -6911,7 +6911,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                 ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                 if (passed_var->m_intent == ASR::intentType::In) {
-                   
+
                     if (i < f->n_args) {
                         ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
                         if (callee_param->m_intent == ASR::intentType::Out ||
@@ -6969,8 +6969,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         if( ASRUtils::is_string_only(orig_arg_type) &&
             ASRUtils::is_string_only(arg_type) &&
             !is_character_phsyical_types_matched(orig_arg_type, arg_type)){
-            arg = a_args[i].m_value = 
-                create_string_physical_cast(al, arg, 
+            arg = a_args[i].m_value =
+                create_string_physical_cast(al, arg,
                     get_string_type(orig_arg_type)->m_physical_type);
         }
 
@@ -6979,27 +6979,27 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             ASRUtils::is_string_only(arg_type) ) {
             ASR::String_t* arg_str_type = get_string_type(arg_type);
             ASR::String_t* orig_arg_str_type = get_string_type(orig_arg_type);
-            
+
             if (arg_str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
                 orig_arg_str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
                 arg_str_type->m_len && orig_arg_str_type->m_len &&
                 ASRUtils::is_value_constant(arg_str_type->m_len) &&
                 ASRUtils::is_value_constant(orig_arg_str_type->m_len)) {
-                
+
                 int64_t arg_len = ASRUtils::extract_dim_value_int(arg_str_type->m_len);
                 int64_t orig_arg_len = ASRUtils::extract_dim_value_int(orig_arg_str_type->m_len);
-                
+
                 if (arg_len > orig_arg_len) {
                     ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, arg->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
                     ASR::expr_t* end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, arg->base.loc, orig_arg_len, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
-                    
+
                     ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(
                         al, arg->base.loc, orig_arg_str_type->m_kind,
                         orig_arg_str_type->m_len, orig_arg_str_type->m_len_kind,
                         arg_str_type->m_physical_type));
-                    
+
                     arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_StringSection_t(
                         al, arg->base.loc, arg, one, end, one, section_type, nullptr));
                 }
@@ -7007,17 +7007,17 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                      orig_arg_str_type->m_len &&
                      ASRUtils::is_value_constant(orig_arg_str_type->m_len)) {
                 int64_t orig_arg_len = ASRUtils::extract_dim_value_int(orig_arg_str_type->m_len);
-                
+
                 ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, arg->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
                 ASR::expr_t* end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, arg->base.loc, orig_arg_len, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
-                
+
                 ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, arg->base.loc, orig_arg_str_type->m_kind,
                     orig_arg_str_type->m_len, orig_arg_str_type->m_len_kind,
                     arg_str_type->m_physical_type));
-                
+
                 arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_StringSection_t(
                     al, arg->base.loc, arg, one, end, one, section_type, nullptr));
             }
@@ -7035,7 +7035,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
                     arg_expr = func->m_args[func_param->m_param_number];
-                } 
+                }
                 if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr)) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr);
                     orig_arg_expr = func->m_args[func_param->m_param_number];

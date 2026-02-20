@@ -961,7 +961,7 @@ public:
         std::string t = std::move(src);
         visit_expr(*x.m_value);
         std::string v = std::move(src);
-        src = t + " => " + v + "\n";
+        src = indent + t + " => " + v + "\n";
     }
 
     void visit_Cycle(const ASR::Cycle_t &x) {
@@ -1449,9 +1449,35 @@ public:
                             ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_expr->m_body[j]);
                             LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
                             ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                            // Check if there are variable declarations in the block
+                            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(block->m_symtab);
+                            bool has_vars = false;
+                            for (auto &item : var_order) {
+                                ASR::symbol_t* var_sym = block->m_symtab->get_symbol(item);
+                                if (is_a<ASR::Variable_t>(*var_sym)) {
+                                    has_vars = true;
+                                    break;
+                                }
+                            }
+                            // If there are declarations, wrap in block...end block
+                            if (has_vars) {
+                                r += indent + "block\n";
+                                inc_indent();
+                                for (auto &item : var_order) {
+                                    ASR::symbol_t* var_sym = block->m_symtab->get_symbol(item);
+                                    if (is_a<ASR::Variable_t>(*var_sym)) {
+                                        visit_symbol(*var_sym);
+                                        r += src;
+                                    }
+                                }
+                            }
                             for(size_t k=0; k < block->n_body; k++) {
                                 visit_stmt(*block->m_body[k]);
                                 r += src;
+                            }
+                            if (has_vars) {
+                                dec_indent();
+                                r += indent + "end block\n";
                             }
                         }
                     }
