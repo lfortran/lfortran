@@ -1,5 +1,0 @@
-warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
- --> tests/errors/infer_walrus_error_02.f90:7:5
-  |
-7 |     a := obj
-  |     ^^^^^^^^ LFortran extension

@@ -5081,13 +5081,5 @@ run = true
 options = "--infer --std=f23"
 
 [[test]]
-filename = "errors/infer_walrus_error_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/infer_walrus_error_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/infer_walrus_redecl_01.f90"
-asr = true
+filename = "errors/continue_compilation_walrus.f90"
+semantics_only_cc = true
