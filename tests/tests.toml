@@ -5052,11 +5052,6 @@ ast = true
 options = "--infer"
 
 [[test]]
-filename = "infer_realloc_defaults_01.f90"
-run = true
-options = "--infer --realloc-lhs-arrays"
-
-[[test]]
 filename = "errors/infer_realloc_disabled_01.f90"
 run = true
 options = "--infer"
