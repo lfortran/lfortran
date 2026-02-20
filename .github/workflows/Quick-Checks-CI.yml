@@ -7,6 +7,7 @@ on:
     tags:
       - 'v*'
   pull_request:
+    types: [labeled, unlabeled, synchronize, opened, reopened]
     branches:
       - main
 
@@ -26,8 +27,102 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 15.0
 
 jobs:
+  # Tier 1: Default checks for all PRs (no label needed).
+  # Runs Ubuntu LLVM 11 + 21 with basic build, unit tests, and integration tests.
+  # Skipped when Tests::Quick is present (the full Build job covers Ubuntu too).
+  Build_Ubuntu:
+    name: LFortran CI (ubuntu-latest, LLVM ${{ matrix.llvm-version }})
+    if: >-
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.labels.*.name, 'Tests::Quick')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm-version: ["11", "21"]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            llvmdev=${{ matrix.llvm-version }}
+
+      - name: Install Linux Packages
+        shell: bash -e -l {0}
+        run: |
+          micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4  zlib=1.3.1 llvmdev=${{ matrix.llvm-version }}
+          micromamba install openmpi=5.0.6=hb85ec53_102
+          if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
+            micromamba install zstd-static=1.5.6 nodejs=18.20.4 kokkos=4.4.01
+          elif [[ "${{ matrix.llvm-version }}" == "21" ]]; then
+            micromamba install zstd-static=1.5.7
+          fi
+          if [[ "${{ matrix.llvm-version }}" != "11" ]]; then
+            micromamba install libunwind=1.7.2
+          fi
+          if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
+            micromamba install pandoc=3.1.13
+          fi
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          key: ${{ github.job }}-ubuntu-latest-${{ matrix.llvm-version }}
+
+      - name: Setup Platform
+        shell: bash -e -l {0}
+        run: |
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+
+      - name: Build
+        shell: bash -e -l {0}
+        run: |
+            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+            export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+            export WIN=0
+            shell ci/build.sh
+
+      - name: Test
+        shell: bash -e -l {0}
+        run: |
+            export MACOS=0
+            export LFORTRAN_LLVM_VERSION=${{ matrix.llvm-version }}
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
+            shell ci/test.sh
+
+      - name: Test LFortran's Command Line Interface
+        shell: bash -e -l {0}
+        run: |
+            ./test_lfortran_cmdline
+
+      - name: Check Bison Grammar for Essential Conflicts
+        if: contains(matrix.llvm-version, '21')
+        shell: bash -e -l {0}
+        run: |
+          ./ci/grammar_conflicts.sh
+
+      # Run last. Script checks out to first commit in PR history
+      - name: Check for Added Binary Files
+        shell: bash -e -l {0}
+        if: contains(matrix.llvm-version, '21')
+        run: |
+          python3 check_binary_file_in_git_history.py
+
+  # Tier 2: Full quick checks, gated by Tests::Quick label.
+  # Runs all platforms (Ubuntu, macOS, Windows) with all test steps.
+  # Also runs on push to main / tags.
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
+    if: >-
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'Tests::Quick')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -248,7 +343,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
-      
+
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Target Offload
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
@@ -322,6 +417,9 @@ jobs:
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
+    if: >-
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'Tests::Quick')
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v6
