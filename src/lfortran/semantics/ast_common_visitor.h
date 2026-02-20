@@ -9406,36 +9406,39 @@ public:
                 throw SemanticAbort();
             }
 
-            if (ASRUtils::is_array(v_variable->m_type) && dt_struct_n_args > 0) {
+            if (ASRUtils::is_array(v_variable->m_type)) {
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                ASR::expr_t* val = ASRUtils::EXPR(v_var);
                 make_ArrayItem_from_struct_m_args(
-                    dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
-                ASR::expr_t *val = ASRUtils::EXPR(v_var);
-                int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
-                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
-                if (var_name == "re") {
-                    return ASR::make_ComplexRe_t(al, loc, val, real_type, nullptr);
+                    dt_struct_m_args, dt_struct_n_args, val, v_var, loc);
+                val = ASRUtils::EXPR(v_var);
+
+                if (ASRUtils::is_array(ASRUtils::expr_type(val))) {
+                    ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, val);
+                    ASR::ttype_t* v_variable_arr_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(val)));
+                    int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_arr_type);
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(v_variable_arr_type, m_dims);
+                    Vec<ASR::dimension_t> dim_vec;
+                    dim_vec.from_pointer_n_copy(al, m_dims, n_dims);
+                    ASR::ttype_t *real_type = ASR::down_cast<ASR::ttype_t>(
+                        ASR::make_Real_t(al, loc, kind));
+                    ASR::ttype_t* complex_arr_ret_type = ASRUtils::duplicate_type(al, real_type, &dim_vec,
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    if (var_name == "re") {
+                        return ASR::make_ComplexRe_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
+                    } else {
+                        return ASR::make_ComplexIm_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
+                    }
                 } else {
-                    return ASR::make_ComplexIm_t(al, loc, val, real_type, nullptr);
-                }
-            } else if (ASRUtils::is_array(v_variable->m_type)) {
-                ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, ASRUtils::EXPR(
-                        ASR::make_Var_t(al, loc, v)));
-                ASR::ttype_t* v_variable_arr_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(v_variable->m_type));
-                int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_arr_type);
-                ASR::dimension_t* m_dims = nullptr;
-                int n_dims = ASRUtils::extract_dimensions_from_ttype(v_variable_arr_type, m_dims);
-                Vec<ASR::dimension_t> dim_vec;
-                dim_vec.from_pointer_n_copy(al, m_dims, n_dims);
-                ASR::ttype_t *real_type = ASR::down_cast<ASR::ttype_t>(
-                    ASR::make_Real_t(al, loc, kind));
-                ASR::ttype_t* complex_arr_ret_type = ASRUtils::duplicate_type(al, real_type, &dim_vec,
-                    ASR::array_physical_typeType::DescriptorArray, true);
-                if (var_name == "re") {
-                    return ASR::make_ComplexRe_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
-                } else {
-                    return ASR::make_ComplexIm_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val));
+                    ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+                    if (var_name == "re") {
+                        return ASR::make_ComplexRe_t(al, loc, val, real_type, nullptr);
+                    } else {
+                        return ASR::make_ComplexIm_t(al, loc, val, real_type, nullptr);
+                    }
                 }
             } else {
                 ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
