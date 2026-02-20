@@ -384,14 +384,15 @@ static void format_float_fortran(char* result, float val);
 static void format_double_fortran(char* result, double val);
 
 void handle_float(FloatFormatType format_type, char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
-    val = val * pow(10, scale); // scale the value
     if (format_type == FLOAT_FORMAT_F64) {
+        val = val * pow(10, scale);
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     } else if (format_type == FLOAT_FORMAT_F32) {
+        val = val * pow(10, scale);
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
@@ -399,6 +400,41 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         return;
     }
     // FLOAT_FORMAT_CUSTOM: parse the format string
+
+    if (isnan(val) || isinf(val)) {
+        int width = 0;
+        char* dot_pos = strchr(format, '.');
+        if (dot_pos != NULL) {
+            width = atoi(format + 1);
+        }
+        const char* special_str;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+        } else if (use_sign_plus) {
+            special_str = "+Infinity";
+        } else {
+            special_str = "Infinity";
+        }
+        int special_len = strlen(special_str);
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
+    }
+
+    val = val * pow(10, scale);
+
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
@@ -1846,6 +1882,14 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
 }
 
 static void format_float_fortran(char* result, float val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
     float abs_val = fabsf(val);
     
     if (abs_val == 0.0f) {
@@ -1867,6 +1911,14 @@ static void format_float_fortran(char* result, float val) {
 }
 
 static void format_double_fortran(char* result, double val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
     double abs_val = fabs(val);
     
     if (abs_val == 0.0) {
