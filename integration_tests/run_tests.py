@@ -5,7 +5,7 @@ import subprocess as sp
 import os
 
 # Initialization
-NO_OF_THREADS = 8 # default no of threads is 8
+NO_OF_THREADS = os.cpu_count() or 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'llvm_integer_8',
                       'llvm_infer', 'fortran', 'c_nopragma', 'llvm_nopragma',
