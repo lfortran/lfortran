@@ -123,14 +123,6 @@ namespace LCompilers {
                     bool get_pointer=false) = 0;
 
                 /*
-                * Creates an array of dimension descriptors
-                * whose each element describes structure
-                * of a dimension's information.
-                */
-                virtual
-                llvm::Type* create_dimension_descriptor_array_type() = 0;
-
-                /*
                 * Fills the elements of the input array descriptor
                 * for arrays on stack memory.
                 */
@@ -368,7 +360,18 @@ namespace LCompilers {
                 LLVMUtils* llvm_utils;
                 llvm::IRBuilder<>* builder;
 
-                llvm::Type* index_type;  // i32 or i64 for descriptor indices
+                // CFI_cdesc_t-compatible field indices
+                static constexpr int FIELD_BASE_ADDR   = 0;  // element_type*
+                static constexpr int FIELD_ELEM_LEN    = 1;  // i64
+                static constexpr int FIELD_VERSION     = 2;  // i32
+                static constexpr int FIELD_RANK        = 3;  // i8
+                static constexpr int FIELD_TYPE        = 4;  // i16
+                static constexpr int FIELD_ATTRIBUTE   = 5;  // i8
+                static constexpr int FIELD_OFFSET      = 6;  // i64
+                static constexpr int FIELD_IS_ALLOC    = 7;  // i1
+                static constexpr int FIELD_DIMS        = 8;  // [rank x {i64,i64,i64}]
+
+                llvm::Type* index_type;  // always i64 for descriptor indices
                 llvm::StructType* dim_des;
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
@@ -415,9 +418,6 @@ namespace LCompilers {
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
                     bool get_pointer=false);
-
-                virtual
-                llvm::Type* create_dimension_descriptor_array_type();
 
                 virtual
                 void fill_array_details(
@@ -476,13 +476,14 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Type* type, llvm::Value* arr);
-                
+
                 /*
                  * Return pointer to data in array descriptor,
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
+
 
                 virtual
                 llvm::Value* get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer=false);
