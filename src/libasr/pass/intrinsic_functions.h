@@ -5145,6 +5145,9 @@ namespace TypeName {
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
         std::string type_str = ASRUtils::type_to_str_with_kind(arg_type, args[0]);
+        if (ASR::is_a<ASR::String_t>(*arg_type)) {
+            type_str = "character";
+        }
         int len = type_str.size();
         return make_ConstantWithType(make_StringConstant_t, s2c(al, type_str),
             ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,

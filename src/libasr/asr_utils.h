@@ -1042,9 +1042,6 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
             ASR::Logical_t* logical_t = ASR::down_cast<ASR::Logical_t>(t);
             return "logical(" + std::to_string(logical_t->m_kind) + ")";
         }
-        case ASR::ttypeType::String: {
-            return "character";
-        }
         case ASR::ttypeType::Pointer: {
             return type_to_str_with_kind(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), expr) + " pointer";
