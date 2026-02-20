@@ -7,7 +7,6 @@ program complex_33
     integer :: i
     character(len=9) :: buf
 
-    ! --- Test from a.f90: Infinity formatting with %im on allocatable array ---
     allocate(z(3))
     z = cmplx(1.0/zero, 1.0/zero)
     do i = 1, 3
@@ -15,7 +14,6 @@ program complex_33
         if (adjustl(buf) /= "Infinity") error stop
     end do
 
-    ! --- Test from b.f90: whole-array %re on fixed-size array ---
     w = (1.0, 2.0)
     re_vals = w%re
     im_vals = w%im
@@ -24,7 +22,6 @@ program complex_33
         if (abs(im_vals(i) - 2.0) > 1e-6) error stop
     end do
 
-    ! Whole-array %re/%im on allocatable array
     z(1) = cmplx(1.0, 4.0)
     z(2) = cmplx(2.0, 5.0)
     z(3) = cmplx(3.0, 6.0)
@@ -37,7 +34,6 @@ program complex_33
         if (abs(im_vals(i) - real(i + 3)) > 1e-6) error stop
     end do
 
-    ! --- Test from c.f90: scalar indexing z(i)%re and z(i)%im ---
     do i = 1, 3
         if (abs(z(i)%re - real(i)) > 1e-6) error stop
         if (abs(z(i)%im - real(i + 3)) > 1e-6) error stop
