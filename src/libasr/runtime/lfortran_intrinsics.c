@@ -7871,29 +7871,53 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
-    sscanf(buf, format, i);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 
-LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
-    sscanf(buf, format, i);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
-    sscanf(buf, format, f);
+    int rc = sscanf(buf, format, f);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
-    sscanf(buf, format, f);
+    int rc = sscanf(buf, format, f);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 char* remove_whitespace(char* str, int64_t* len) {
@@ -7925,14 +7949,19 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
         src_data, src_len);
 }
 
-LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i) {
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
     char *buf = (char*)malloc(len + 1);
     if (!buf) return;
     memcpy(buf, str, len);
     buf[len] = '\0';
-    sscanf(buf, format, i);
-    printf("%s\n", buf);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad logical for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 // Replace Fortran 'd'/'D' exponent with 'e'/'E' so that C's sscanf can parse it
@@ -7945,18 +7974,30 @@ static void _lfortran_replace_d_exponent(char *buf) {
     }
 }
 
-LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c) {
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
     _lfortran_replace_d_exponent(buf);
-    sscanf(buf, format, &c->re, &c->im);
+    int rc = sscanf(buf, format, &c->re, &c->im);
     free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c) {
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
     _lfortran_replace_d_exponent(buf);
-    sscanf(buf, format, &c->re, &c->im);
+    int rc = sscanf(buf, format, &c->re, &c->im);
     free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 void lfortran_error(const char *message) {

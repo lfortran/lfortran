@@ -14098,7 +14098,7 @@ public:
                                     llvm::Type::getInt64Ty(context) /*dest_length*/
                                 },
                                 false);
-                        } else {
+                        } else if (ASRUtils::is_array(type)) {
                             function_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context),
                                 {   character_type /*src_data*/,
@@ -14107,6 +14107,18 @@ public:
                                     llvm_utils->get_type_from_ttype_t_util(
                                         x.m_values[i], type, module.get()
                                     )->getPointerTo()
+                                },
+                                false);
+                        } else {
+                            function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context),
+                                {   character_type /*src_data*/,
+                                    llvm::Type::getInt64Ty(context)/*src_length*/,
+                                    character_type,
+                                    llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_values[i], type, module.get()
+                                    )->getPointerTo(),
+                                    llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
                                 },
                                 false);
                         }
@@ -14148,13 +14160,10 @@ public:
                         std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
                             ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
                         builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
-                    } else {
+                    } else if (ASRUtils::is_array(type)) {
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
-                    }
-                    if (x.m_iostat) {
-                        builder->CreateStore(
-                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                            iostat);
+                    } else {
+                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
                     }
                     return;
                 } else {
