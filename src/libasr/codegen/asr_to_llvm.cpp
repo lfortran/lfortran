@@ -9234,15 +9234,133 @@ public:
                 }
                 llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
-                llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
-                target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                    ASRUtils::type_get_past_allocatable_pointer(target_type),
-                    module.get()), target));
+                // Compute total element count from value's known fixed dimensions
+                ASR::dimension_t* value_dims = nullptr;
+                int value_ndims = ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
+                int64_t total_elements = ASRUtils::get_fixed_size_of_array(value_dims, value_ndims);
+                // If the ASR dimensions are not compile-time known (e.g., reshape
+                // with runtime-determined shape), get total elements from the
+                // underlying LLVM fixed-size array type [N x elem_type].
+                bool runtime_dims = (total_elements <= 0);
+                if (runtime_dims) {
+                    llvm::Type* value_llvm_pointed = value->getType()->getPointerElementType();
+                    if (value_llvm_pointed->isArrayTy()) {
+                        total_elements = static_cast<int64_t>(
+                            llvm::cast<llvm::ArrayType>(value_llvm_pointed)->getNumElements());
+                    }
+                }
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
-                llvm_size = builder->CreateMul(llvm_size,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+                if( ASRUtils::is_allocatable(target_type) ) {
+                    // Set offset to 0
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                        llvm_utils->create_gep2(llvm_array_type, target, 1));
+                    // Allocate memory for the target descriptor's data section
+                    llvm::Value* ptr2firstptr = arr_descr->get_pointer_to_data(llvm_array_type, target);
+                    llvm::Value* malloc_size = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context),
+                        llvm::APInt(64, total_elements * data_size));
+                    llvm::Value* heap_ptr = LCompilers::LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, malloc_size);
+                    llvm::Value* typed_ptr = builder->CreateBitCast(
+                        heap_ptr, value_el_type->getPointerTo());
+                    builder->CreateStore(typed_ptr, ptr2firstptr);
+                    // Set up dimension descriptors for the target
+                    llvm::Value* dim_des_ptr = llvm_utils->CreateLoad2(
+                        arr_descr->get_dimension_descriptor_type()->getPointerTo(),
+                        llvm_utils->create_gep2(llvm_array_type, target, 2));
+                    if (runtime_dims && ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
+                        // Dimensions not compile-time known; obtain them at
+                        // runtime from the reshape's shape argument.
+                        ASR::ArrayReshape_t* reshape_t =
+                            ASR::down_cast<ASR::ArrayReshape_t>(x.m_value);
+                        ASR::expr_t* shape_expr = reshape_t->m_shape;
+                        // Strip ArrayPhysicalCast to get the underlying
+                        // FixedSizeArray shape expression.
+                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*shape_expr)) {
+                            shape_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                                shape_expr)->m_arg;
+                        }
+                        ASR::ttype_t* shape_asr_type = ASRUtils::expr_type(shape_expr);
+                        int64_t ptr_loads_copy = ptr_loads;
+                        ptr_loads = 1;
+                        this->visit_expr(*shape_expr);
+                        llvm::Value* shape_llvm = tmp;
+                        ptr_loads = ptr_loads_copy;
+                        llvm::Type* shape_llvm_type =
+                            llvm_utils->get_type_from_ttype_t_util(
+                                shape_expr, shape_asr_type, module.get());
+                        llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+                        llvm::Value* stride_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(32, 1));
+                        for (int r = 0; r < value_ndims; r++) {
+                            llvm::Value* dim_length_val = llvm_utils->CreateLoad2(
+                                i32_type,
+                                llvm_utils->create_gep2(shape_llvm_type,
+                                    shape_llvm, r));
+                            llvm::Value* dim_val = llvm_utils->create_ptr_gep2(
+                                arr_descr->get_dimension_descriptor_type(),
+                                dim_des_ptr, r);
+                            // stride
+                            builder->CreateStore(stride_val,
+                                llvm_utils->create_gep2(
+                                    arr_descr->get_dimension_descriptor_type(),
+                                    dim_val, 0));
+                            // lower bound
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 1)),
+                                llvm_utils->create_gep2(
+                                    arr_descr->get_dimension_descriptor_type(),
+                                    dim_val, 1));
+                            // length (size of this dimension)
+                            builder->CreateStore(dim_length_val,
+                                llvm_utils->create_gep2(
+                                    arr_descr->get_dimension_descriptor_type(),
+                                    dim_val, 2));
+                            // Update stride for next dimension
+                            stride_val = builder->CreateMul(
+                                stride_val, dim_length_val);
+                        }
+                    } else {
+                        int64_t start_idx = 1;
+                        for( int r = 0; r < value_ndims; r++ ) {
+                            int64_t dim_length = 1;
+                            if( value_dims[r].m_length ) {
+                                ASRUtils::extract_value(value_dims[r].m_length, dim_length);
+                            }
+                            // Compute stride as product of all previous dimension sizes
+                            int64_t stride = 1;
+                            for( int s = 0; s < r; s++ ) {
+                                int64_t prev_len = 1;
+                                if( value_dims[s].m_length ) {
+                                    ASRUtils::extract_value(value_dims[s].m_length, prev_len);
+                                }
+                                stride *= prev_len;
+                            }
+                            llvm::Value* dim_val = llvm_utils->create_ptr_gep2(
+                                arr_descr->get_dimension_descriptor_type(), dim_des_ptr, r);
+                            // stride
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(context, llvm::APInt(32, stride)),
+                                llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), dim_val, 0));
+                            // lower bound
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(context, llvm::APInt(32, start_idx)),
+                                llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), dim_val, 1));
+                            // length (size of this dimension)
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(context, llvm::APInt(32, dim_length)),
+                                llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), dim_val, 2));
+                        }
+                    }
+                }
+                llvm::Value* target_data = llvm_utils->CreateLoad2(
+                    value_el_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(llvm_array_type, target));
+                llvm::Value* llvm_size = llvm::ConstantInt::get(context,
+                    llvm::APInt(32, total_elements * data_size));
+                builder->CreateMemCpy(target_data, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_target_data_only_array || is_value_data_only_array ) {
                 if( is_value_fixed_sized_array ) {
                     is_value_data_only_array = true;
@@ -9354,7 +9472,7 @@ public:
                 if (x.m_move_allocation) {
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
                 } else {
-                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
+                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false, x.m_target);
                 }
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {

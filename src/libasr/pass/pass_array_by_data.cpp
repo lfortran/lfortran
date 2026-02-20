@@ -112,6 +112,14 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     symbol_duplicator.duplicate_symbol(item.second, new_symtab);
                 }
             }
+            // Verify all symbols were successfully duplicated.
+            // Some symbols (e.g., Blocks containing reshape) may fail
+            // to duplicate silently. If any symbol is missing, abort.
+            for( auto& item: x->m_symtab->get_scope() ) {
+                if( !new_symtab->get_symbol(item.first) ) {
+                    return nullptr;
+                }
+            }
           Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
             new_args.reserve(al, x->n_args);

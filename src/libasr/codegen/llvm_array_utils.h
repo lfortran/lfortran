@@ -324,7 +324,7 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
-                                bool reserve_memory) = 0;
+                                bool reserve_memory, ASR::expr_t* target_expr = nullptr) = 0;
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -541,7 +541,7 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
-                                bool reserve_memory);
+                                bool reserve_memory, ASR::expr_t* target_expr = nullptr);
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,

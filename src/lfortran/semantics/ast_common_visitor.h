@@ -6816,8 +6816,12 @@ public:
             // 'default_integer_kind'. GFortran support's logical's of
             // different kind's, we need to think about this
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -6975,7 +6979,7 @@ public:
             if (sym_type->m_attr) {
                 return determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
-                    is_argument);
+                    is_argument, is_dimension_star, is_assumed_rank);
             }
             if (!sym_type->m_name) {
                 diag.add(Diagnostic(
@@ -6989,23 +6993,23 @@ public:
             if (derived_type_name == "integer") {
                 sym_type->m_type = AST::decl_typeType::TypeInteger;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
-                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument, is_dimension_star, is_assumed_rank);
             } else if (derived_type_name == "real") {
                 sym_type->m_type = AST::decl_typeType::TypeReal;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
-                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument, is_dimension_star, is_assumed_rank);
             } else if (derived_type_name == "complex") {
                 sym_type->m_type = AST::decl_typeType::TypeComplex;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
-                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument, is_dimension_star, is_assumed_rank);
             } else if (derived_type_name == "logical") {
                 sym_type->m_type = AST::decl_typeType::TypeLogical;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
-                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument, is_dimension_star, is_assumed_rank);
             } else if (derived_type_name == "character") {
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
-                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    is_allocatable, dims, var_sym, type_declaration, abi, is_argument, is_dimension_star, is_assumed_rank);
             } else if (derived_type_name == "unsigned") {
                 return ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
             }
@@ -7083,8 +7087,12 @@ public:
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 }
-                type = ASRUtils::make_Array_t_util(
-                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                if (is_assumed_rank) {
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                } else {
+                    type = ASRUtils::make_Array_t_util(
+                        al, loc, type, dims.p, dims.size(), abi, is_argument);
+                }
                 if (is_pointer) {
                     type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                         type));
