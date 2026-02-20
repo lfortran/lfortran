@@ -433,6 +433,9 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
              ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))))) {
             *current_expr = x->m_arg;
+        } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                   !ASRUtils::is_array(x->m_type)) {
+            // rank(0): AssumedRankArray → scalar, nothing to update
         } else {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
