@@ -5728,11 +5728,20 @@ public:
 
     llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
             ASR::symbol_t* orig_struct_sym = nullptr) {
+        ASR::expr_t* expr_value = ASRUtils::expr_value(expr);
+        if (expr_value != nullptr && expr_value != expr) {
+            return create_llvm_constant_from_asr_expr(expr_value, orig_struct_sym);
+        }
         switch (expr->type) {
             case ASR::exprType::IntegerConstant: {
                 ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
                 llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, ic->m_type, module.get());
                 return llvm::ConstantInt::get(llvm_type, ic->m_n, true);
+            }
+            case ASR::exprType::UnsignedIntegerConstant: {
+                ASR::UnsignedIntegerConstant_t* uic = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, uic->m_type, module.get());
+                return llvm::ConstantInt::get(llvm_type, uic->m_n, false);
             }
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t* lc = ASR::down_cast<ASR::LogicalConstant_t>(expr);
@@ -5759,6 +5768,14 @@ public:
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
                     llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get()));
                 return llvm::ConstantStruct::get(llvm_struct_type, field_values);
+            }
+            case ASR::exprType::PointerNullConstant: {
+                ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
+                llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
+                    ? llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr,
+                        ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
+                    : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
+                return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
             }
             default:
                 throw LCompilersException( "Unsupported constant expression in struct default initializer.");

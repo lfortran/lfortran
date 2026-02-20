@@ -1,0 +1,210 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            associate2:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            s:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            associate_block:
+                                                (AssociateBlock
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    4
+                                                                    a
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Pointer
+                                                                        (Array
+                                                                            (Real 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    associate_block
+                                                    [(Associate
+                                                        (Var 4 a)
+                                                        (ArrayPhysicalCast
+                                                            (Var 3 input_data)
+                                                            UnboundedPointerArray
+                                                            DescriptorArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                            ()
+                                                        )
+                                                    )
+                                                    (Print
+                                                        (StringFormat
+                                                            ()
+                                                            [(ArrayItem
+                                                                (Var 4 a)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            )]
+                                                            FormatFortran
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                    )]
+                                                ),
+                                            input_data:
+                                                (Variable
+                                                    3
+                                                    input_data
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        UnboundedPointerArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    s
+                                    (FunctionType
+                                        [(Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            UnboundedPointerArray
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 input_data)]
+                                    [(AssociateBlockCall
+                                        3 associate_block
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    associate2
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (ArrayConstant
+                            12
+                            [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 s
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 2 x)
+                            FixedSizeArray
+                            UnboundedPointerArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                UnboundedPointerArray
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )]
+                )
+        })
+    []
+)
