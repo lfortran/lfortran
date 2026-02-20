@@ -1123,12 +1123,31 @@ namespace LCompilers {
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                 this->get_offset(arr_type, reshaped, false));
 
-            if( this->is_array(asr_shape_type) ) {
+            if( ASRUtils::is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
                 builder->CreateStore(llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(arr_type, array, 1)),
                             llvm_utils->create_gep2(arr_type, reshaped, 1));
-                llvm::Value* n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
-                llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape_type, shape));
+
+                // Determine n_dims and a pointer to the shape data.
+                // When the shape argument is a FixedSizeArray ([N x i32]) we
+                // must not access descriptor fields that do not exist.
+                llvm::Value* n_dims = nullptr;
+                llvm::Value* shape_data = nullptr;
+                ASR::array_physical_typeType shape_physical =
+                    ASRUtils::extract_physical_type(asr_shape_type);
+                if( shape_physical == ASR::array_physical_typeType::FixedSizeArray ) {
+                    int64_t compile_time_n_dims =
+                        ASRUtils::get_fixed_size_of_array(asr_shape_type);
+                    n_dims = llvm::ConstantInt::get(context,
+                        llvm::APInt(32, compile_time_n_dims));
+                    shape_data = llvm_utils->create_gep2(shape_type, shape, 0);
+                } else {
+                    n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
+                    shape_data = llvm_utils->CreateLoad2(
+                        i32->getPointerTo(),
+                        this->get_pointer_to_data(shape_type, shape));
+                }
+
                 llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_type, reshaped, 2);
                 llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(arr_type, reshaped, true));
