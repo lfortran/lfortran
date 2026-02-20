@@ -4553,7 +4553,7 @@ public:
         throw SemanticAbort();
     }
 
-    void infer_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
+    void infer_type_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
         this->visit_expr(*value);
         ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
@@ -4941,7 +4941,7 @@ public:
             AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
             std::string var_name = to_lower(target_name->m_id);
             if (current_scope->get_symbol(var_name) == nullptr) {
-                infer_and_declare(target_name, x.m_value);
+                infer_type_and_declare(target_name, x.m_value);
             }
         }
         this->visit_expr(*x.m_target);
@@ -5944,7 +5944,7 @@ public:
             ));
             throw SemanticAbort();
         }
-        infer_and_declare(target_name, x.m_value);
+        infer_type_and_declare(target_name, x.m_value);
         // Delegate to visit_Assignment for the actual assignment lowering
         AST::Assignment_t assignment;
         assignment.base.type = AST::stmtType::Assignment;
