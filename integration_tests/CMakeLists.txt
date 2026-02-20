@@ -3397,5 +3397,25 @@ RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME ilp64_kind_arg_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
+# Type inference with := syntax
+RUN(NAME infer_walrus_01 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_02 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_03 LABELS llvm NO_STD_F23)
+
+# Type inference with := syntax (arrays)
+RUN(NAME infer_walrus_array_01 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_array_02 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_array_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --infer)
+
+# Type inference with := syntax (derived types)
+RUN(NAME infer_walrus_struct_01 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_struct_02 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_struct_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --infer)
+
+# Type inference scope shadowing
+RUN(NAME infer_walrus_shadow_01 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_shadow_02 LABELS llvm NO_STD_F23)
+RUN(NAME infer_walrus_shadow_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --infer)
+
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)

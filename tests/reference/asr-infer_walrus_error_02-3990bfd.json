@@ -1,0 +1,13 @@
+{
+    "basename": "asr-infer_walrus_error_02-3990bfd",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/infer_walrus_error_02.f90",
+    "infile_hash": "e36c11ec227147b9587f929aa367f3b65c554add47a4d4ec71fedc17",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-infer_walrus_error_02-3990bfd.stdout",
+    "stdout_hash": "d0cd45078e5fbc78336c95b9c2f0c870f3fe4c9764f3b00136f7895a",
+    "stderr": "asr-infer_walrus_error_02-3990bfd.stderr",
+    "stderr_hash": "db0127ce90d22ada9e0da8c64f90e279d2fb12baa2c75cbe4bb54b88",
+    "returncode": 0
+}
