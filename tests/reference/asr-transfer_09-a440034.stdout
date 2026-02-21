@@ -167,6 +167,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -186,6 +187,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -209,6 +211,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 c)
@@ -230,6 +233,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArraySection
@@ -260,6 +264,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArraySection
@@ -288,6 +293,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

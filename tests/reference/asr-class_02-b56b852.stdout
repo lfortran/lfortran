@@ -208,6 +208,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 circle_area)
                                     Private
@@ -321,6 +322,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -443,6 +445,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -456,6 +459,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )

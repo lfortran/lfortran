@@ -225,6 +225,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -237,6 +238,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
@@ -247,6 +249,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -296,6 +299,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -319,6 +323,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -349,6 +354,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

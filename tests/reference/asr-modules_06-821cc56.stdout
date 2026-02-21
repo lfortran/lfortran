@@ -70,6 +70,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 5 a)
                                     Public
@@ -148,6 +149,7 @@
                                         (Var 3 b)
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

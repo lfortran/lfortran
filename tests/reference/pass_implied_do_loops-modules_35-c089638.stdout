@@ -283,6 +283,7 @@
                                                 ()
                                                 .false.
                                                 .false.
+                                                .false.
                                             )]
                                             [(ExplicitDeallocate
                                                 [(Var 3 __libasr__created__var__0__array_constructor_)]
@@ -328,11 +329,13 @@
                                                 ()
                                                 .false.
                                                 .false.
+                                                .false.
                                             )
                                             (Assignment
                                                 (Var 3 strings)
                                                 (Var 3 __libasr__created__var__0__array_constructor_)
                                                 ()
+                                                .false.
                                                 .false.
                                                 .false.
                                             )]
@@ -392,11 +395,13 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 3 strings)
                                             (Var 3 __libasr__created__var__1__array_constructor_)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                         )]

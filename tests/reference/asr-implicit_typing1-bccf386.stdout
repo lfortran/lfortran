@@ -121,6 +121,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -137,11 +138,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 integerx)
                         (IntegerConstant 12 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -154,6 +157,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 realr)
@@ -162,6 +166,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
