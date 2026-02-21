@@ -2894,7 +2894,7 @@ class ParallelRegionVisitor :
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc, while_condition, 
                     ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                         current_scope->get_symbol(gomp_start_func), nullptr, start_args.p, start_args.n,
-                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr,  nullptr)), nullptr, 0, false)));
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr,  nullptr)), nullptr, 0, false, false)));
                 
                 // Create the scheduled loop using GOMP_loop_*_next
                 Vec<ASR::stmt_t*> while_body;

@@ -1774,7 +1774,11 @@ public:
         r += print_label(x);
         this->visit_expr(*x.m_target);
         r.append(s);
-        r.append(" = ");
+        if (x.m_arrow) {
+            r.append(" => ");
+        } else {
+            r.append(" = ");
+        }
         this->visit_expr(*x.m_value);
         r.append(s);
         if (x.m_trivia) {

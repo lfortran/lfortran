@@ -12,6 +12,7 @@
             a
             (+ a i)
             ()
+            .false.
         )]
         ()
         (TriviaNode
@@ -49,6 +50,7 @@
             a
             (+ a i)
             ()
+            .false.
         )]
         ()
         (TriviaNode
@@ -70,12 +72,14 @@
             a
             (+ a i)
             ()
+            .false.
         )
         (Assignment
             0
             b
             3
             ()
+            .false.
         )]
         ()
         (TriviaNode
@@ -107,12 +111,14 @@
                 a
                 (+ a i)
                 ()
+                .false.
             )
             (Assignment
                 0
                 b
                 3
                 ()
+                .false.
             )]
             ()
             (TriviaNode
@@ -134,6 +140,7 @@
                 a
                 (+ a i)
                 ()
+                .false.
             )]
             ()
             (TriviaNode
@@ -147,6 +154,7 @@
             n
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -161,6 +169,7 @@
                 j
                 i
                 ()
+                .false.
             )
             (DoLoop
                 0
@@ -175,6 +184,7 @@
                     l
                     k
                     ()
+                    .false.
                 )
                 (Assignment
                     0
@@ -186,6 +196,7 @@
                             "! this statement executes 50 times"
                         )]
                     )
+                    .false.
                 )]
                 ()
                 (TriviaNode

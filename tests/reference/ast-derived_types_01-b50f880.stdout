@@ -149,6 +149,7 @@
                 [])]
                 1
                 ()
+                .false.
             )
             (Assignment
                 0
@@ -156,6 +157,7 @@
                 [])]
                 (Real "1.5")
                 ()
+                .false.
             )]
             []
             []
@@ -309,6 +311,7 @@
             [])]
             5
             ()
+            .false.
         )
         (Assignment
             0
@@ -316,6 +319,7 @@
             [])]
             (Real "3.5")
             ()
+            .false.
         )
         (Print
             0
@@ -355,6 +359,7 @@
             [])]
             (Real "2.0")
             ()
+            .false.
         )
         (Assignment
             0
@@ -364,6 +369,7 @@
             [])]
             2
             ()
+            .false.
         )
         (Assignment
             0
@@ -371,6 +377,7 @@
             [])]
             (Complex (Real "2.0") (Real "2.0"))
             ()
+            .false.
         )
         (Print
             0

@@ -31,6 +31,7 @@
             A
             10
             ()
+            .false.
         )
         (Block
             1
@@ -60,6 +61,7 @@
                 A
                 (+ A 5)
                 ()
+                .false.
             )
             (If
                 0
@@ -82,6 +84,7 @@
                 B
                 (/ A 2)
                 ()
+                .false.
             )
             (SubroutineCall
                 0
@@ -139,6 +142,7 @@
             Result
             (* B B)
             ()
+            .false.
         )
         (Print
             0

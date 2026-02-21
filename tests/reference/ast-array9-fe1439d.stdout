@@ -164,6 +164,7 @@
                 []
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -180,6 +181,7 @@
                 []
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -196,6 +198,7 @@
                 []
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -218,6 +221,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -229,6 +233,7 @@
                 x]
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -246,6 +251,7 @@
                 (Real "2.0")]
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -263,6 +269,7 @@
                 2]
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -282,6 +289,7 @@
                 (Real "2.0")]
             )
             ()
+            .false.
         )]
         []
     )]

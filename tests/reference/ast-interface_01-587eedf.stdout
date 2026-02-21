@@ -78,6 +78,7 @@
                 a
                 (+ a 1)
                 ()
+                .false.
             )]
             []
             []
@@ -120,6 +121,7 @@
                 a
                 (+ a 1)
                 ()
+                .false.
             )]
             []
             []
@@ -191,6 +193,7 @@
             i
             5
             ()
+            .false.
         )
         (SubroutineCall
             0
@@ -228,6 +231,7 @@
             r
             6
             ()
+            .false.
         )
         (SubroutineCall
             0
@@ -265,6 +269,7 @@
             i
             7
             ()
+            .false.
         )
         (SubroutineCall
             0

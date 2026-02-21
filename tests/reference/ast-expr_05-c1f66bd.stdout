@@ -75,12 +75,14 @@
             a
             3
             ()
+            .false.
         )
         (Assignment
             0
             b
             4
             ()
+            .false.
         )
         (Assignment
             0
@@ -91,54 +93,63 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (* 2 3)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (u- 2) 3)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* 2 (u- 3))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (u- 2) (u- 3))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (u- 2) (u- 3))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (u- (** 2 3))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (u- (** 2 3))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (u- (* 2 3))
             ()
+            .false.
         )
         (Assignment
             0
@@ -149,12 +160,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             a
             ()
+            .false.
         )
         (Assignment
             0
@@ -163,30 +176,35 @@
                 a
             )
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* a b)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (u- a) b)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (u- (* a b))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* a (u- b))
             ()
+            .false.
         )
         (Assignment
             0
@@ -197,30 +215,35 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (* (* a b) c)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (* (u- a) b) c)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (* a (u- b)) c)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (* a b) (u- c))
             ()
+            .false.
         )
         (Assignment
             0
@@ -231,78 +254,91 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (+ 3 (* 4 5))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ 3 4) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* a (+ b (* 5 (- c b))))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (- 3 (* (* 2 a) b)) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ (* (* (u- 2) a) b) 3) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ (* (* (u- 2) a) b) (* (* 3 b) a)) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ (* (u- 2) (/ a b)) (** (+ a (u- b)) 2)) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ (* (* (u+ 2) a) b) 3) 5)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (+ (+ (** a 2) (* (* 2 a) b)) (** b 2))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ a b) (- a b))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (** (+ a b) 2)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (+ a b) (+ (- (** a 2) (* a b)) (** b 2)))
             ()
+            .false.
         )
         (Assignment
             0
@@ -313,18 +349,21 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (/ 1 (* a b))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* (/ 1 a) b)
             ()
+            .false.
         )
         (Assignment
             0
@@ -335,18 +374,21 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (/ 1 (+ (* a b) 1))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (+ (* (/ 1 a) b) 1)
             ()
+            .false.
         )
         (Assignment
             0
@@ -357,72 +399,84 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (- 2 (u- 2))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a (- (u- b) c))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a (* (u- 2) b))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- c (/ (u- 2) b))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a (+ (+ 2 3) 4))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (+ a (+ (+ 2 3) 4))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- (+ (* 2 a) (* a b)) (+ (* a b) (* 2 a)))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- (+ (* 2 a) (* a b)) (- (* a b) (* 2 a)))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a (- b (- c 1)))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a b)
             ()
+            .false.
         )
         (Assignment
             0
             x
             (- a (- b c))
             ()
+            .false.
         )
         (Assignment
             0
@@ -433,18 +487,21 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (u- (- a (+ (u- b) (- (u- b) (* (u- b) b)))))
             ()
+            .false.
         )
         (Assignment
             0
             x
             (u- (+ 3 5))
             ()
+            .false.
         )
         (Assignment
             0
@@ -455,6 +512,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -481,6 +539,7 @@
                 )
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -495,6 +554,7 @@
                 )
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -509,6 +569,7 @@
                 l
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -523,6 +584,7 @@
                 l
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -537,6 +599,7 @@
                 )
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -551,6 +614,7 @@
                 )
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -565,6 +629,7 @@
                 )
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -579,6 +644,7 @@
                 (not l)
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -593,6 +659,7 @@
                 l
             )
             ()
+            .false.
         )
         (Assignment
             0
@@ -607,6 +674,7 @@
                 ))
             )
             ()
+            .false.
         )]
         []
     )]

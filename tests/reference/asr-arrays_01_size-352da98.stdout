@@ -136,6 +136,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b)
@@ -146,6 +147,7 @@
                             (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -201,6 +203,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                         )]
@@ -302,6 +305,7 @@
                             )
                             (Var 2 i)
                             ()
+                            .false.
                             .false.
                             .false.
                         )]
@@ -427,6 +431,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                         )]
@@ -562,6 +567,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (If
                         ()
@@ -605,6 +611,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

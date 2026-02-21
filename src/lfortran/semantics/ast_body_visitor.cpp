@@ -1376,7 +1376,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString));
                 ASR::expr_t* empty_str = b.StringConstant("", empty_str_type);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false));
+                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false, false));
                 tmp_vec.push_back((ASR::asr_t*)assign_stmt);
 
                 std::string loop_var = current_scope->get_unique_name("i");
@@ -1412,7 +1412,7 @@ public:
 
                 ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
                 ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false));
+                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false, false));
                 
                 Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                 body.push_back(al, body_assign);

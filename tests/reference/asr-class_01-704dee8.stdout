@@ -85,6 +85,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         6 1_circle_circle_print
@@ -105,6 +106,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -296,6 +298,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 area)
                                     Private
@@ -409,6 +412,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )

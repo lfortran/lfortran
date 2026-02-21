@@ -54,6 +54,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )]
                 ),
             nested_04_a:
@@ -191,6 +192,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 4 c)
                                                     Public
@@ -288,11 +290,13 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -313,6 +317,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

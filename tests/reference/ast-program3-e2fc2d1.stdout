@@ -45,18 +45,21 @@
             x
             (Real "5.0")
             ()
+            .false.
         )
         (Assignment
             0
             y
             (Real "2.0")
             ()
+            .false.
         )
         (Assignment
             0
             z
             (* x y)
             ()
+            .false.
         )
         (Print
             0
@@ -88,6 +91,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -119,6 +123,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -196,6 +201,7 @@
                 c
                 (+ a b)
                 ()
+                .false.
             )
             (Assignment
                 0
@@ -216,6 +222,7 @@
                     []
                 )
                 ()
+                .false.
             )]
             []
             []
@@ -291,6 +298,7 @@
                         "! c = func1(c, c)"
                     )]
                 )
+                .false.
             )]
             []
             []

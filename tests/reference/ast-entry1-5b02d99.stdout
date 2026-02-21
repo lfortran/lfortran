@@ -31,6 +31,7 @@
             dummy
             10
             ()
+            .false.
         )
         (SubroutineCall
             0
@@ -97,6 +98,7 @@
             dummy
             (Real "5.0")
             ()
+            .false.
         )
         (Return
             0

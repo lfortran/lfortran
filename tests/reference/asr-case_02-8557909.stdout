@@ -58,6 +58,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Select
                         ()
@@ -69,6 +70,7 @@
                                 (Var 2 out)
                                 (IntegerConstant 0 (Integer 4) Decimal)
                                 ()
+                                .false.
                                 .false.
                                 .false.
                             )
@@ -88,6 +90,7 @@
                                 ()
                                 .false.
                                 .false.
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -103,6 +106,7 @@
                                 (Var 2 out)
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ()
+                                .false.
                                 .false.
                                 .false.
                             )
@@ -122,6 +126,7 @@
                                 ()
                                 .false.
                                 .false.
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -137,6 +142,7 @@
                                 (Var 2 out)
                                 (IntegerConstant 4 (Integer 4) Decimal)
                                 ()
+                                .false.
                                 .false.
                                 .false.
                             )
@@ -156,6 +162,7 @@
                                 ()
                                 .false.
                                 .false.
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -168,6 +175,7 @@
                             (Var 2 out)
                             (IntegerConstant 6 (Integer 4) Decimal)
                             ()
+                            .false.
                             .false.
                             .false.
                         )

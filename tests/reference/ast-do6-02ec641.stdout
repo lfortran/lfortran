@@ -66,12 +66,14 @@
             correct
             0
             ()
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -94,6 +96,7 @@
                     k
                     (+ k 1)
                     ()
+                    .false.
                 )]
                 ()
                 ()
@@ -118,12 +121,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -146,6 +151,7 @@
                     k
                     (+ k 1)
                     ()
+                    .false.
                 )
                 (Continue
                     35
@@ -174,12 +180,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -194,6 +202,7 @@
                 k
                 (+ k 1)
                 ()
+                .false.
             )
             (Continue
                 40
@@ -219,12 +228,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -239,6 +250,7 @@
                 k
                 (+ k 1)
                 ()
+                .false.
             )
             (Continue
                 45
@@ -264,12 +276,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -292,12 +306,14 @@
                     k
                     (+ k 0)
                     ()
+                    .false.
                 )
                 (Assignment
                     50
                     k
                     (+ k 1)
                     ()
+                    .false.
                 )]
                 ()
                 ()
@@ -322,12 +338,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             0
             ()
+            .false.
         )
         (DoLoop
             0
@@ -342,12 +360,14 @@
                 k
                 (+ k 0)
                 ()
+                .false.
             )
             (Assignment
                 60
                 k
                 (+ k 1)
                 ()
+                .false.
             )]
             ()
             ()
@@ -369,12 +389,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             (u- 30)
             ()
+            .false.
         )
         (DoLoop
             0
@@ -389,6 +411,7 @@
                 k
                 (+ k 1)
                 ()
+                .false.
             )
             (DoLoop
                 0
@@ -419,6 +442,7 @@
                     k
                     (+ k 2)
                     ()
+                    .false.
                 )
                 (Continue
                     65
@@ -447,6 +471,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (If
             0
@@ -457,6 +482,7 @@
                 j
                 0
                 ()
+                .false.
             )
             (GoTo
                 0
@@ -495,12 +521,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             k
             (u- 30)
             ()
+            .false.
         )
         (DoLoop
             0
@@ -515,6 +543,7 @@
                 k
                 (+ k 1)
                 ()
+                .false.
             )
             (DoLoop
                 0
@@ -545,6 +574,7 @@
                     k
                     (+ k 2)
                     ()
+                    .false.
                 )
                 (Continue
                     75
@@ -573,6 +603,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (If
             0
@@ -583,6 +614,7 @@
                 j
                 0
                 ()
+                .false.
             )
             (GoTo
                 0
@@ -621,6 +653,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Write
             0

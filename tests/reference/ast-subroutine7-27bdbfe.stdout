@@ -54,12 +54,14 @@
             a
             (+ b 1)
             ()
+            .false.
         )
         (Assignment
             0
             b
             (+ a 1)
             ()
+            .false.
         )]
         []
         []

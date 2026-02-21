@@ -29,6 +29,7 @@
             x
             (String "Hi" ())
             ()
+            .false.
         )
         (Print
             0

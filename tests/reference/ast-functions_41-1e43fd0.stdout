@@ -94,6 +94,7 @@
                 notrecursive_fun
                 1
                 ()
+                .false.
             )]
             []
             []

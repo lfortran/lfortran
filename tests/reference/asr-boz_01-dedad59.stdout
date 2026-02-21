@@ -148,6 +148,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 boz_2)
@@ -159,6 +160,7 @@
                             (IntegerConstant 1255 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -174,6 +176,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 boz_4)
@@ -187,6 +190,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 boz_5)
@@ -198,6 +202,7 @@
                             (IntegerConstant 2541551403008843505 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -217,6 +222,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

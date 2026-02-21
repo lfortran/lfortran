@@ -1254,7 +1254,7 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     }
     a_realloc_lhs = a_realloc_lhs && is_allocatable;
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-        a_overloaded, a_realloc_lhs, a_move);
+        a_overloaded, a_realloc_lhs, a_move, false);
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {
