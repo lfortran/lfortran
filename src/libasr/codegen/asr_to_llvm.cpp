@@ -7138,7 +7138,14 @@ public:
                 llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
         } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
-            ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            bool load_cptr = true;
+            if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
+                ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
+                load_cptr = !is_cptr_dummy_passed_by_value(p_var);
+            }
+            if (load_cptr) {
+                ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            }
         }
         if( ASRUtils::is_array(p_type) &&
             !ASRUtils::is_array_of_strings(p_type) &&
@@ -12087,6 +12094,14 @@ public:
         }
     }
 
+    inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t* x) const {
+        return ASR::is_a<ASR::CPtr_t>(*x->m_type) &&
+            ASRUtils::is_arg_dummy(x->m_intent) &&
+            !(x->m_intent == ASR::intentType::Out ||
+              x->m_intent == ASR::intentType::InOut ||
+              (x->m_intent == ASR::intentType::Unspecified && !x->m_value_attr));
+    }
+
     inline void fetch_val(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         llvm::Value* x_v;
@@ -12094,6 +12109,12 @@ public:
         x_v = llvm_symtab[x_h];
         if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
             // Already a value, such as value argument to bind(c)
+            tmp = x_v;
+            return;
+        }
+        if (is_cptr_dummy_passed_by_value(x)) {
+            // type(c_ptr) dummy arguments that are passed by value
+            // are already the pointer value and must not be loaded.
             tmp = x_v;
             return;
         }
