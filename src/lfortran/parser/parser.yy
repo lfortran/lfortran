@@ -130,6 +130,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_POW "**"
 %token TK_CONCAT "//"
 %token TK_ARROW "=>"
+%token TK_COLON_EQUAL ":="
 
 %token TK_EQ "=="
 %token TK_NE "/="
@@ -1792,6 +1793,7 @@ assign_statement
 
 assignment_statement
     : expr "=" expr { $$ = ASSIGNMENT($1, $3, @$); }
+    | expr ":=" expr { $$ = INFER_ASSIGNMENT($1, $3, @$); }
     ;
 
 goto_statement

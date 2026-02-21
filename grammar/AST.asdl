@@ -117,6 +117,7 @@ stmt
     = Allocate(int label, fnarg* args, keyword* keywords, trivia? trivia)
     | Assign(int label, int assign_label, identifier variable, trivia? trivia)
     | Assignment(int label, expr target, expr value, trivia? trivia)
+    | InferAssignment(int label, expr target, expr value, trivia? trivia)
     | Associate(int label, expr target, expr value, trivia? trivia)
     | Backspace(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Close(int label, expr* args, keyword* kwargs, trivia? trivia)

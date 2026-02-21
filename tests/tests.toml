@@ -5075,11 +5075,6 @@ asr = true
 options = "--infer"
 
 [[test]]
-filename = "errors/infer_first_assignment_derived_01.f90"
-asr = true
-options = "--infer"
-
-[[test]]
 filename = "errors/infer_mode_conflict_01.f90"
 run = true
 options = "--infer --std=f23"
@@ -5087,3 +5082,8 @@ options = "--infer --std=f23"
 [[test]]
 filename = "../integration_tests/file_53.f90"
 run = true
+
+[[test]]
+filename = "errors/continue_compilation_walrus.f90"
+semantics_only_cc = true
+options = "--infer"

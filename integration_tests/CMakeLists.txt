@@ -133,6 +133,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
                 ${extra_args} -fdefault-integer-8 -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm_infer")
+            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+                ${extra_args} --infer -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_nopragma")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --ignore-pragma ${extra_args})
@@ -260,7 +264,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|llvm_integer_8|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -818,6 +822,7 @@ RUN(NAME select_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_rank_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3401,6 +3406,26 @@ RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME ilp64_kind_arg_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+
+# Type inference with := syntax
+RUN(NAME infer_walrus_01 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_02 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_03 LABELS llvm_infer NO_STD_F23)
+
+# Type inference with := syntax (arrays)
+RUN(NAME infer_walrus_array_01 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_array_02 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_array_03 LABELS llvm_infer NO_STD_F23)
+
+# Type inference with := syntax (derived types)
+RUN(NAME infer_walrus_struct_01 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_struct_02 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_struct_03 LABELS llvm_infer NO_STD_F23)
+
+# Type inference scope shadowing
+RUN(NAME infer_walrus_shadow_01 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_shadow_02 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_shadow_03 LABELS llvm_infer NO_STD_F23)
 
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
