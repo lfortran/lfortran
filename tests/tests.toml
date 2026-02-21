@@ -5087,3 +5087,7 @@ run = true
 filename = "errors/continue_compilation_walrus.f90"
 semantics_only_cc = true
 options = "--infer"
+
+[[test]]
+filename = "tests/wasm_complex_index_drift.f90"
+backends = ["wasm"]
