@@ -200,7 +200,9 @@ enum class IntrinsicElementalFunctions : int64_t {
     Present,
     And,
     Or,
-    Xor
+    Xor,
+    TypeOf,
+    Repr
     // ...
 };
 
@@ -5137,6 +5139,83 @@ namespace NewLine {
     }
 
 } // namespace NewLine
+
+namespace TypeOf {
+
+    static ASR::expr_t *eval_TypeOf(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
+        std::string type_str = ASRUtils::type_to_str_with_kind(arg_type, args[0]);
+        int len = type_str.size();
+        return make_ConstantWithType(make_StringConstant_t, s2c(al, type_str),
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, len,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString)), loc);
+    }
+
+    static inline ASR::asr_t* create_TypeOf(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            append_error(diag, "typeof takes exactly 1 argument, found "
+                + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+        ASR::ttype_t *dummy_type = nullptr;
+        ASR::expr_t *m_value = eval_TypeOf(al, loc, dummy_type, args, diag);
+        if (diag.has_error()) return nullptr;
+        return (ASR::asr_t*) m_value;
+    }
+
+} // namespace TypeOf
+
+namespace Repr {
+
+    static inline bool is_var_like_name(ASR::expr_t* arg, std::string &name) {
+        if (ASR::is_a<ASR::Var_t>(*arg)) {
+            ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(arg);
+            name = ASRUtils::symbol_name(v->m_v);
+            return true;
+        }
+        return false;
+    }
+
+    static inline ASR::expr_t* make_string_constant_expr(Allocator &al, const Location &loc,
+            const std::string &s) {
+        int len = s.size();
+        ASR::ttype_t* string_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, len,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        return ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), string_type));
+    }
+
+    static inline ASR::asr_t* create_Repr(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            append_error(diag, "repr takes exactly 1 argument, found "
+                + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+
+        ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
+
+        // `type(type_info)` is represented as a string internally; repr(type_info)
+        // should return the type text itself rather than re-wrapping it.
+        if (ASR::is_a<ASR::String_t>(*arg_type)) {
+            return (ASR::asr_t*) args[0];
+        }
+
+        std::string var_name = "it";
+        (void) is_var_like_name(args[0], var_name);
+        std::string type_str = ASRUtils::type_to_str_with_kind(arg_type, args[0]);
+        std::string repr_str = type_str + " :: " + var_name;
+        return (ASR::asr_t*) make_string_constant_expr(al, loc, repr_str);
+    }
+
+} // namespace Repr
 
 namespace Adjustl {
 

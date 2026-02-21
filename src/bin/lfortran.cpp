@@ -429,6 +429,18 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::function<bool(std::string)> iscomplete = determine_completeness;
     while (true) {
         std::string input = prompt0(term, ">>> ", history, iscomplete);
+        std::string repr_name = "it";
+        std::string trimmed_input = input;
+        size_t first_non_space = trimmed_input.find_first_not_of(" \t\n\r\f\v");
+        if (first_non_space == std::string::npos) {
+            trimmed_input.clear();
+        } else {
+            trimmed_input.erase(0, first_non_space);
+            LCompilers::rtrim(trimmed_input);
+        }
+        if (std::regex_match(trimmed_input, std::regex("^[A-Za-z_][A-Za-z0-9_]*$"))) {
+            repr_name = trimmed_input;
+        }
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
             std::cout << "Exiting." << std::endl;
@@ -489,43 +501,48 @@ int prompt(bool verbose, CompilerOptions &cu)
             case (LCompilers::FortranEvaluator::EvalResult::integer4) : {
                 if (verbose) std::cout << "Return type: integer" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << r.i32 << std::endl;
+                std::cout << "integer(4) :: " << repr_name << " = " << r.i32 << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::integer8) : {
                 if (verbose) std::cout << "Return type: integer(8)" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << r.i64 << std::endl;
+                std::cout << "integer(8) :: " << repr_name << " = " << r.i64 << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::real4) : {
                 if (verbose) std::cout << "Return type: real" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << r.f32 << std::endl;
+                std::cout << "real(4) :: " << repr_name << " = "
+                          << std::setprecision(8) << r.f32 << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::real8) : {
                 if (verbose) std::cout << "Return type: real(8)" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << r.f64 << std::endl;
+                std::cout << "real(8) :: " << repr_name << " = "
+                          << std::setprecision(17) << r.f64 << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
                 if (verbose) std::cout << "Return type: complex" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
+                std::cout << "complex(4) :: " << repr_name << " = "
+                          << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
                 if (verbose) std::cout << "Return type: complex(8)" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
+                std::cout << "complex(8) :: " << repr_name << " = "
+                          << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
                 if (verbose) std::cout << "Return type: logical" << std::endl;
                 if (verbose) section("Result:");
-                std::cout << (r.b ? "True" : "False") << std::endl;
+                std::cout << "logical(4) :: " << repr_name << " = "
+                          << (r.b ? ".true." : ".false.") << std::endl;
                 break;
             }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {

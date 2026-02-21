@@ -887,9 +887,21 @@ intrinsic_funcs_args = {
             "allow_polymorphic_arg": [0]
         }
     ],
+    "TypeOf": [
+        {
+            "args": [("any",)],
+            "return" : "allocatable_deferred_string()"
+        }
+    ],
+    "Repr": [
+        {
+            "args": [("any",)],
+            "return" : "allocatable_deferred_string()"
+        }
+    ],
 }
 
-skip_create_func = ["Partition"]
+skip_create_func = ["Partition", "TypeOf", "Repr"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
@@ -908,6 +920,7 @@ compile_time_only_fn = [
     "SameTypeAs",
     "ExtendsTypeOf",
     "Digits",
+    "TypeOf",
 ]
 
 type_to_asr_type_check = {
