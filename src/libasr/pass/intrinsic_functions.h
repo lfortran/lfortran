@@ -5213,6 +5213,13 @@ namespace Repr {
             return nullptr;
         }
 
+        // class(*) value rendering needs runtime dispatch in backend.
+        if (ASRUtils::is_unlimited_polymorphic_type(args[0])) {
+            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Repr),
+                args.p, args.n, 0, allocatable_deferred_string(), nullptr);
+        }
+
         // `type(type_info)` is currently represented as a deferred allocatable
         // descriptor string, so repr(type_info) should return raw type text.
         if (is_type_info_like_string(args[0])) {

@@ -10,6 +10,7 @@ program typeof_repr_poly_01
 
     s = repr(u)
     if (index(s, "integer(4) :: u =") /= 1) error stop 2
+    if (index(s, "= 42") == 0) error stop 3
 
     print *, typeof(u)
     print *, repr(u)
