@@ -7901,6 +7901,7 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
     int rc = sscanf(buf, format, f);
     free(buf);
     if (rc != 1) {
@@ -7913,6 +7914,7 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
     int rc = sscanf(buf, format, f);
     free(buf);
     if (rc != 1) {
@@ -8053,8 +8055,10 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
 
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr) {
     (void)format; 
-    const char *pos = str;
-    const char *end = str + len;
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
     char *next = NULL;
     int64_t count = 0;
     while (pos < end) {
@@ -8069,12 +8073,15 @@ LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *
         arr[count++] = value;
         pos = next;
     }
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr) {
     (void)format; 
-    const char *pos = str;
-    const char *end = str + len;
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
     char *next = NULL;
     int64_t count = 0;
     while (pos < end) {
@@ -8089,6 +8096,7 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
         arr[count++] = value;
         pos = next;
     }
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
