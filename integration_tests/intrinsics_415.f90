@@ -15,26 +15,26 @@ program intrinsics_415
 
   ! 1. Check str1 (Array)
   str6 = ''
-  print "*(A)", '"'//str1(:)//str5//'"'
-  write(str6, "*(A)") '"'//str1(:)//str5//'"'
+  print "(*(A))", '"'//str1(:)//str5//'"'
+  write(str6, "(*(A))") '"'//str1(:)//str5//'"'
   if ((str6) /= ('"abc xy""de  xy"')) error stop
 
   ! 2. Check str2 (Scalar)
   str6 = ''
-  print "*(A)", '"'//str2//str5//'"'
-  write(str6, "*(A)") '"'//str2//str5//'"'
+  print "(*(A))", '"'//str2//str5//'"'
+  write(str6, "(*(A))") '"'//str2//str5//'"'
   if (str6 /= '"abc xy"') error stop
 
   ! 3. Check str3 (Fixed Array)
   str6 = ''
-  print "*(A)", '"'//str3//str5//'"'
-  write(str6, "*(A)") '"'//str3(:)//str5//'"'
+  print "(*(A))", '"'//str3//str5//'"'
+  write(str6, "(*(A))") '"'//str3(:)//str5//'"'
   if (str6 /= '"abc xy""de  xy"') error stop
   
   ! Check str4 (Parameter Arrays)
   str6 = ''
   print "(A)",'"'//str4//str5//'"'
-  write(str6, "*(A)") '"'//str4(:)//str5//'"'
+  write(str6, "(*(A))") '"'//str4(:)//str5//'"'
   if (str6 /= '"abc xy""de  xy"') error stop
 
 end program intrinsics_415
