@@ -932,6 +932,33 @@ bool set_allocation_size(
                                 add_allocated_check, len_allocte_expr);
             break;
         }
+        case ASR::exprType::ComplexRe:
+        case ASR::exprType::ComplexIm: {
+            ASR::expr_t* arg;
+            if (value->type == ASR::exprType::ComplexRe) {
+                arg = ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg;
+            } else {
+                arg = ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg;
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(arg));
+                allocate_dims.reserve(al, rank);
+                for (size_t i = 0; i < rank; i++) {
+                    ASR::dimension_t allocate_dim;
+                    allocate_dim.loc = loc;
+                    allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                        al, loc, ASRUtils::get_past_array_physical_cast(arg),
+                        dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                    allocate_dims.push_back(al, allocate_dim);
+                }
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
