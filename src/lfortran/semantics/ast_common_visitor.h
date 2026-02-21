@@ -16,6 +16,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <string>
+#include <sstream>
 #include <set>
 #include <map>
 #include <queue>
@@ -4493,7 +4494,42 @@ public:
                                     ASR::expr_t *init_expr = ASRUtils::EXPR(
                                         ASR::make_IntegerConstant_t(al, x.m_syms[i].loc,
                                         enum_init_val, init_type));
-                                    if (x.m_syms[i].m_sym == AST::symbolType::Equal) {
+                                    if (x.m_syms[i].m_sym == AST::symbolType::Equal
+                                            || x.m_syms[i].m_sym == AST::symbolType::SlashInit) {
+                                        if (x.m_syms[i].m_sym == AST::symbolType::SlashInit) {
+                                              std::string var_name = s.m_name;
+                        std::string init_str = "<expr>";
+                        uint32_t fl, fc, ll, lc;
+                        std::string f1, f2;
+
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.first, false),
+                            fl, fc, f1
+                        );
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.last, true),
+                            ll, lc, f2
+                        );
+
+                        if (f1 == f2) {
+                            std::string src;
+                            if (read_file(f1, src)) {
+                                std::stringstream ss(src);
+                                std::string line;
+                                for (uint32_t i = 1; i <= fl && std::getline(ss, line); i++) {}
+                                if (fl == ll && fc >= 1 && lc >= fc && lc <= line.size()) {
+                                    init_str = line.substr(fc - 1, lc - fc + 1);
+                                }
+                            }
+                        }
+                        std::string hint = "Use modern syntax instead: integer :: "
+                           + var_name + " = " + init_str;
+
+                        diag.semantic_warning_label(
+                                              "non-standard Fortran 77-style initialization (extension)",
+                            {s.loc},
+                            hint);
+                                        }
                                         this->visit_expr(*x.m_syms[i].m_initializer);
                                         init_expr = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
                                         if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(init_expr))) {
@@ -5863,6 +5899,41 @@ public:
 
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
+                    if (s.m_sym == AST::symbolType::SlashInit) {
+                         std::string var_name = s.m_name;
+                        std::string init_str = "<expr>";
+                        uint32_t fl, fc, ll, lc;
+                        std::string f1, f2;
+
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.first, false),
+                            fl, fc, f1
+                        );
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.last, true),
+                            ll, lc, f2
+                        );
+
+                        if (f1 == f2) {
+                            std::string src;
+                            if (read_file(f1, src)) {
+                                std::stringstream ss(src);
+                                std::string line;
+                                for (uint32_t i = 1; i <= fl && std::getline(ss, line); i++) {}
+                                if (fl == ll && fc >= 1 && lc >= fc && lc <= line.size()) {
+                                    init_str = line.substr(fc - 1, lc - fc + 1);
+                                }
+                            }
+                        }
+                        std::string hint = "Use modern syntax instead: integer :: "
+                           + var_name + " = " + init_str;
+
+                        diag.semantic_warning_label(
+                            "non-standard Fortran 77-style initialization (extension)",
+                            {s.loc},
+                            hint
+                        );
+                    }
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
@@ -6081,6 +6152,41 @@ public:
                             init_expr, value, type, x.base.base.loc, al, diag);
                     }
                 } else if (s.m_initializer != nullptr) {
+                    if (s.m_sym == AST::symbolType::SlashInit) {
+                          std::string var_name = s.m_name;
+                        std::string init_str = "<expr>";
+                        uint32_t fl, fc, ll, lc;
+                        std::string f1, f2;
+
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.first, false),
+                            fl, fc, f1
+                        );
+                        lm.pos_to_linecol(
+                            lm.output_to_input_pos(s.m_initializer->base.loc.last, true),
+                            ll, lc, f2
+                        );
+
+                        if (f1 == f2) {
+                            std::string src;
+                            if (read_file(f1, src)) {
+                                std::stringstream ss(src);
+                                std::string line;
+                                for (uint32_t i = 1; i <= fl && std::getline(ss, line); i++) {}
+                                if (fl == ll && fc >= 1 && lc >= fc && lc <= line.size()) {
+                                    init_str = line.substr(fc - 1, lc - fc + 1);
+                                }
+                            }
+                        }
+                        std::string hint = "Use modern syntax instead: integer :: "
+                           + var_name + " = " + init_str;
+
+                        diag.semantic_warning_label(
+                            "non-standard Fortran 77-style initialization (extension)",
+                            {s.loc},
+                            hint
+                        );
+                    }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
                         // This branch is to handle cases of BOZ Declarations inside Real Array 
