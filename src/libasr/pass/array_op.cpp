@@ -1115,14 +1115,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         ASR::expr_t* realloc_str_len {};
         if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
-            ASR::expr_t* len_value{}; // Compile-Time Length
-            int64_t len {};
-            if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
-                ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
-                len_value = builder.i32(len);
+            if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat)) {
+                realloc_str_len = ASRUtils::StringConcat::get_safe_string_len(
+                    al, loc, value, ASRUtils::expr_type(value), builder);
+            } else {
+                ASR::expr_t* len_value{}; // Compile-Time Length
+                int64_t len {};
+                if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                    len_value = builder.i32(len);
+                }
+                realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                    al, loc, realloc_var, int32, len_value));
             }
-            realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
-                al, loc, realloc_var, int32, len_value));
         }
 
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);

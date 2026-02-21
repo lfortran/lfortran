@@ -5374,15 +5374,62 @@ namespace StringConcat {
         if(all_args_evaluated(m_args)){
             // When args have compile-time values, evaluate and get length from value types
             ASRBuilder b(al, loc);
-            ASR::expr_t* s0_value = expr_value(args[0]);
-            ASR::expr_t* s1_value = expr_value(args[1]);
-            ASR::String_t* s0_type = get_string_type(s0_value);
-            ASR::String_t* s1_type = get_string_type(s1_value);
-            int64_t s0_len, s1_len;
-            extract_value(expr_value(s0_type->m_len), s0_len);
-            extract_value(expr_value(s1_type->m_len), s1_len);
-            return_type = b.String(b.i64(s0_len + s1_len), ASR::ExpressionLength);
-            value = eval_StringConcat(al, loc, return_type, args, diag);
+            bool arg0_is_array = ASRUtils::is_array(ASRUtils::expr_type(m_args[0]));
+            bool arg1_is_array = ASRUtils::is_array(ASRUtils::expr_type(m_args[1]));
+            if (!arg0_is_array && !arg1_is_array) {
+                // Scalar compile-time evaluation
+                ASR::expr_t* s0_value = expr_value(args[0]);
+                ASR::expr_t* s1_value = expr_value(args[1]);
+                ASR::String_t* s0_type = get_string_type(s0_value);
+                ASR::String_t* s1_type = get_string_type(s1_value);
+                int64_t s0_len, s1_len;
+                extract_value(expr_value(s0_type->m_len), s0_len);
+                extract_value(expr_value(s1_type->m_len), s1_len);
+                return_type = b.String(b.i64(s0_len + s1_len), ASR::ExpressionLength);
+                value = eval_StringConcat(al, loc, return_type, args, diag);
+            } else {
+                // Array parameter: evaluate element-by-element into an ArrayConstant
+                ASR::expr_t* arr_arg  = arg0_is_array ? m_args[0] : m_args[1];
+                ASR::expr_t* scl_arg  = arg0_is_array ? m_args[1] : m_args[0];
+
+                ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                    ASRUtils::expr_value(arr_arg));
+                ASR::ttype_t* arr_elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(arr_arg));
+                ASR::String_t* arr_str_t = ASR::down_cast<ASR::String_t>(arr_elem_type);
+                int64_t arr_elem_len;
+                ASRUtils::extract_value(arr_str_t->m_len, arr_elem_len);
+                char* arr_data = (char*)arr_const->m_data;
+
+                ASR::expr_t* scl_val = ASRUtils::expr_value(scl_arg);
+                int64_t scl_len;
+                extract_value(ASRUtils::expr_value(get_string_type(scl_val)->m_len), scl_len);
+
+                int64_t result_elem_len = arr_elem_len + scl_len;
+                size_t n = ASRUtils::get_constant_ArrayConstant_size(arr_const);
+                char* result_buf = al.allocate<char>(n * result_elem_len);
+                for (size_t i = 0; i < n; i++) {
+                    char* elem_buf = al.allocate<char>(arr_elem_len + 1);
+                    memcpy(elem_buf, arr_data + i * arr_elem_len, arr_elem_len);
+                    elem_buf[arr_elem_len] = '\0';
+                    ASR::expr_t* arr_elem_const = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, loc, elem_buf, arr_elem_type));
+                    Vec<ASR::expr_t*> elem_args; elem_args.reserve(al, 2);
+                    elem_args.push_back(al, arg0_is_array ? arr_elem_const : scl_val);
+                    elem_args.push_back(al, arg0_is_array ? scl_val : arr_elem_const);
+                    ASR::ttype_t* res_type = b.String(b.i64(result_elem_len), ASR::ExpressionLength);
+                    ASR::StringConstant_t* res_i = ASR::down_cast<ASR::StringConstant_t>(
+                        eval_StringConcat(al, loc, res_type, elem_args, diag));
+                    memcpy(result_buf + i * result_elem_len, res_i->m_s, result_elem_len);
+                }
+                return_type = b.String(b.i64(result_elem_len), ASR::ExpressionLength);
+                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arr_arg)));
+                ASR::ttype_t* result_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
+                    al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type));
+                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                    al, loc, n * result_elem_len, (void*)result_buf,
+                    result_arr_type, ASR::arraystorageType::ColMajor));
+            }
         } else {
             // Fall back to computing return type from argument types
             ASRBuilder b(al, loc);
