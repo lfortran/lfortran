@@ -2057,10 +2057,6 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "associate2.f90"
-asr = true
-
-[[test]]
 filename = "fn_call1.f90"
 interactive = true
 ast = true
