@@ -14152,8 +14152,8 @@ public:
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = complex_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, "(%f, %f)")
-                                                       : LCompilers::create_global_string_ptr(context, *module, *builder, "(%lf, %lf)");
+                        fmt = complex_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, " (%f,%f)")
+                                                       : LCompilers::create_global_string_ptr(context, *module, *builder, " (%lf,%lf)");
                     }
                     llvm::Value *src_data, *src_len;
                     std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
