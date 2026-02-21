@@ -142,6 +142,16 @@ public:
         }
         s.append(")");
     }
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Assignment(x);
+        if (!x.m_arrow) {
+            const std::string suffix = " .false.";
+            if (s.size() >= suffix.size() &&
+                s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                s.erase(s.size() - suffix.size());
+            }
+        }
+    }
 
     std::string convert_intrinsic_id(int x) {
         std::string s;
