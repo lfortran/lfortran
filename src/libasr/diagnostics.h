@@ -188,6 +188,12 @@ struct Diagnostics {
             Level::Style, Stage::Parser);
     }
 
+    void semantic_style_label(const std::string &message,
+            const std::vector<Location> &locations, const std::string &error_label) {
+        message_label(message, locations, error_label,
+            Level::Style, Stage::Semantic);
+    }
+
     void clear() {
         diagnostics.clear();
     }

@@ -4494,6 +4494,12 @@ public:
                                         enum_init_val, init_type));
                                     if (x.m_syms[i].m_sym == AST::symbolType::Equal
                                             || x.m_syms[i].m_sym == AST::symbolType::SlashInit) {
+                                        if (x.m_syms[i].m_sym == AST::symbolType::SlashInit) {
+                                            diag.semantic_style_label(
+                                                "Non-standard Fortran 77-style initialization (extension)",
+                                                {x.m_syms[i].loc},
+                                                "help: use modern syntax instead, e.g.: integer :: j = -20");
+                                        }
                                         this->visit_expr(*x.m_syms[i].m_initializer);
                                         init_expr = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
                                         if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(init_expr))) {
@@ -5863,6 +5869,12 @@ public:
 
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
+                    if (s.m_sym == AST::symbolType::SlashInit) {
+                        diag.semantic_style_label(
+                            "Non-standard Fortran 77-style initialization (extension)",
+                            {s.loc},
+                            "help: use modern syntax instead, e.g.: integer :: j = -20");
+                    }
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
@@ -6081,6 +6093,12 @@ public:
                             init_expr, value, type, x.base.base.loc, al, diag);
                     }
                 } else if (s.m_initializer != nullptr) {
+                    if (s.m_sym == AST::symbolType::SlashInit) {
+                        diag.semantic_style_label(
+                            "Non-standard Fortran 77-style initialization (extension)",
+                            {s.loc},
+                            "help: use modern syntax instead, e.g.: integer :: j = -20");
+                    }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
                         // This branch is to handle cases of BOZ Declarations inside Real Array 
