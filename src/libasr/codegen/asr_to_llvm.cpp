@@ -14109,7 +14109,9 @@ public:
                                     llvm::Type::getInt64Ty(context)/*src_length*/,
                                     character_type,
                                     llvm_utils->get_type_from_ttype_t_util(
-                                        x.m_values[i], type, module.get()
+                                        x.m_values[i],
+                                        ASRUtils::type_get_past_allocatable_pointer(type),
+                                        module.get()
                                     )->getPointerTo()
                                 },
                                 false);
@@ -14120,7 +14122,9 @@ public:
                                     llvm::Type::getInt64Ty(context)/*src_length*/,
                                     character_type,
                                     llvm_utils->get_type_from_ttype_t_util(
-                                        x.m_values[i], type, module.get()
+                                        x.m_values[i],
+                                        ASRUtils::type_get_past_allocatable_pointer(type),
+                                        module.get()
                                     )->getPointerTo(),
                                     llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
                                 },
@@ -14165,8 +14169,43 @@ public:
                             ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
                         builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
                     } else if (ASRUtils::is_array(type)) {
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
+                        llvm::Value* arr_data = var_to_read_into;
+                        if (ASR::is_a<ASR::Allocatable_t>(*type) ||
+                                ASR::is_a<ASR::Pointer_t>(*type)) {
+                            llvm::Type *el_type = llvm_utils->get_el_type(
+                                x.m_values[i], ASRUtils::extract_type(type), module.get());
+                            llvm::Type* desc_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_values[i],
+                                ASRUtils::type_get_past_allocatable_pointer(type),
+                                module.get())->getPointerTo();
+                            arr_data = llvm_utils->CreateLoad2(desc_ptr_type, var_to_read_into);
+                            ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable_pointer(type));
+                            if (arr_tp->m_physical_type !=
+                                    ASR::array_physical_typeType::PointerArray) {
+                                arr_data = arr_descr->get_pointer_to_data(
+                                    llvm_utils->get_type_from_ttype_t_util(x.m_values[i],
+                                        ASRUtils::type_get_past_allocatable_pointer(type),
+                                        module.get()),
+                                    arr_data);
+                                arr_data = llvm_utils->CreateLoad2(
+                                    el_type->getPointerTo(), arr_data);
+                            }
+                            llvm::Type* fn_param_type = fn->getFunctionType()->getParamType(3);
+                            if (arr_data->getType() != fn_param_type) {
+                                arr_data = builder->CreateBitCast(arr_data, fn_param_type);
+                            }
+                        }
+                        builder->CreateCall(fn, { src_data, src_len, fmt, arr_data });
                     } else {
+                        if (ASR::is_a<ASR::Allocatable_t>(*type) ||
+                                ASR::is_a<ASR::Pointer_t>(*type)) {
+                            llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_values[i],
+                                ASRUtils::type_get_past_allocatable_pointer(type),
+                                module.get())->getPointerTo();
+                            var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
+                        }
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
                     }
                     return;
