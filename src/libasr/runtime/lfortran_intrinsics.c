@@ -1212,8 +1212,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
             case '(' :
                 start = index;
                 index = find_matching_parentheses(format, format_len, index);
-                format_values_2[format_values_count++] = substring(cformat, start, index);
                 *item_start = format_values_count;
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
@@ -1275,7 +1275,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     if (cformat[index] == '(') {
                         start = index;
                         index = find_matching_parentheses(format, format_len, index);
-                        *item_start = format_values_count+1;
+                        *item_start = format_values_count;
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
@@ -2157,6 +2157,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 format_values_count = format_values_count + new_fmt_val_count;
                 free(format_values[i]);
                 format_values[i] = NULL;
+                if (i < item_start_idx) {
+                    item_start_idx += new_fmt_val_count;
+                }
                 free(new_fmt_val);
                 continue;
             }
