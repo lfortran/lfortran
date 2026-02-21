@@ -722,7 +722,18 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 mask->base.loc);
             return nullptr;
         }
-        overload_id = id_array_mask;
+        if (!ASRUtils::is_array(ASRUtils::expr_type(mask))) {
+            ASR::expr_t* mask_val = ASRUtils::expr_value(mask);
+            if (mask_val && ASR::is_a<ASR::LogicalConstant_t>(*mask_val)) {
+                bool mask_bool = ASR::down_cast<ASR::LogicalConstant_t>(mask_val)->m_value;
+                if (mask_bool) {
+                    mask = nullptr;
+                }
+            }
+        }
+        if (mask) {
+            overload_id = id_array_mask;
+        }
     }
     if (dim && mask) {
         overload_id = id_array_dim_mask;
