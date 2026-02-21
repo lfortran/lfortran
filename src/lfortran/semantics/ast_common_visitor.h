@@ -5660,6 +5660,19 @@ public:
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
                 }
+                if (!is_argument && !is_allocatable && !is_pointer
+                        && !is_dimension_star && dims.size() > 0) {
+                    for (size_t j = 0; j < dims.size(); j++) {
+                        if (dims[j].m_start == nullptr && dims[j].m_length == nullptr) {
+                            diag.semantic_error_label(
+                                "Array '" + std::string(s.m_name) +
+                                "' with a deferred shape cannot be a local variable; "
+                                "it must be a dummy argument, allocatable, or pointer",
+                                {s.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
+                }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
                 if (is_assumed_rank && dims.n > 1) {
