@@ -2831,6 +2831,55 @@ public:
         llvm::Value *item = tmp;
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
+void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    // Extract struct symbol
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(x.m_type);
+    ASR::symbol_t* dt_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+
+    // Prepare args for type generation
+    bool is_array_type_local = false;
+    bool is_malloc_array_type_local = false;
+    bool is_list_local = false;
+    ASR::dimension_t* m_dims_local = nullptr;
+    int n_dims_local = 0;
+    int a_kind_local = 0;
+
+    // Get LLVM type
+    llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t(
+        x.m_type,
+        nullptr,
+        ASR::storage_typeType::Default,
+        is_array_type_local,
+        is_malloc_array_type_local,
+        is_list_local,
+        m_dims_local,
+        n_dims_local,
+        a_kind_local,
+        module.get()
+    );
+
+    // Allocate space
+    llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
+
+    // Populate fields
+    for (size_t i = 0; i < x.n_args; i++) {
+        this->visit_expr(*x.m_args[i].m_value);
+        llvm::Value *val = tmp;
+
+        llvm::Value *field_ptr = builder->CreateGEP(
+            llvm_type, struct_val,
+            {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, i))
+            });
+
+        builder->CreateStore(val, field_ptr);
+    }
+
+    tmp = builder->CreateLoad(llvm_type, struct_val);
+}
+
+
 
     void generate_ListIndex(ASR::expr_t* m_arg, ASR::expr_t* m_ele,
             ASR::expr_t* m_start=nullptr, ASR::expr_t* m_end=nullptr) {
@@ -3010,7 +3059,7 @@ public:
     void generate_DictElems(ASR::expr_t* m_arg, bool key_or_value) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(m_arg));
-        ASR::ttype_t* el_type = key_or_value == 0 ?
+        ASR::ttype_t* el_type = key_or_value == 0 
                                     dict_type->m_key_type : dict_type->m_value_type;
 
         int64_t ptr_loads_copy = ptr_loads;
