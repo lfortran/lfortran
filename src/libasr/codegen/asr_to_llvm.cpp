@@ -3406,6 +3406,120 @@ public:
                 }
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::TypeOf: {
+                ASR::expr_t* arg = x.m_args[0];
+                auto make_const_typeof_desc = [&](const std::string &type_name) -> llvm::Value* {
+                    llvm::Value* data = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, type_name);
+                    llvm::Value* len = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context),
+                        llvm::APInt(64, static_cast<uint64_t>(type_name.size())));
+                    return llvm_utils->create_string_descriptor(data, len, "typeof_desc");
+                };
+
+                if (!ASRUtils::is_unlimited_polymorphic_type(arg)) {
+                    ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(arg));
+                    tmp = make_const_typeof_desc(ASRUtils::type_to_str_with_kind(arg_type, arg));
+                    break;
+                }
+
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*arg);
+                llvm::Value* arg_ptr = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(arg));
+                llvm::Type* class_type = llvm_utils->getClassType(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym), false);
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+                if (ASRUtils::is_allocatable(arg_type) || ASR::is_a<ASR::Pointer_t>(*arg_type)) {
+                    arg_ptr = llvm_utils->CreateLoad2(class_type->getPointerTo(), arg_ptr);
+                }
+
+                llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg_ptr, 0);
+                llvm::Type* id_type = llvm::cast<llvm::StructType>(class_type)->getElementType(0);
+                bool uses_new_classes_tag = false;
+                llvm::Value* type_id = nullptr;
+                if (id_type->isPointerTy()) {
+                    uses_new_classes_tag = true;
+                    llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                    llvm::StructType* type_info_type = llvm::StructType::get(
+                        context, {i8_ptr, i8_ptr, i8_ptr}, false);
+
+                    // vptr[-1] stores TypeInfo pointer.
+                    llvm::Value* vptr = llvm_utils->CreateLoad2(id_type, id_ptr);
+                    llvm::Value* vptr_i8 = builder->CreateBitCast(vptr, i8_ptr->getPointerTo());
+                    llvm::Value* type_info_ptr_ptr = llvm_utils->create_ptr_gep2(
+                        i8_ptr, vptr_i8, llvm::ConstantInt::get(i64_type, -1, true));
+                    llvm::Value* type_info_ptr = llvm_utils->CreateLoad2(i8_ptr, type_info_ptr_ptr);
+
+                    // TypeInfo first field is intrinsic type tag encoded as pointer.
+                    llvm::Value* ti_cast = builder->CreateBitCast(
+                        type_info_ptr, type_info_type->getPointerTo());
+                    llvm::Value* tag_ptr_ptr = llvm_utils->create_gep2(type_info_type, ti_cast, 0);
+                    llvm::Value* tag_ptr = llvm_utils->CreateLoad2(i8_ptr, tag_ptr_ptr);
+                    type_id = builder->CreatePtrToInt(tag_ptr, i64_type);
+                } else {
+                    type_id = llvm_utils->CreateLoad2(id_type, id_ptr);
+                    if (type_id->getType() != llvm::Type::getInt64Ty(context)) {
+                        type_id = builder->CreateSExtOrTrunc(type_id, llvm::Type::getInt64Ty(context));
+                    }
+                }
+
+                llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(context, "typeof.merge", fn);
+                std::vector<std::pair<llvm::BasicBlock*, llvm::Value*>> incoming;
+                llvm::BasicBlock* currentBB = builder->GetInsertBlock();
+
+                auto add_type_case = [&](int64_t id_value, const std::string& type_name) {
+                    llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "typeof.then", fn);
+                    llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(context, "typeof.else", fn);
+                    builder->SetInsertPoint(currentBB);
+                    llvm::Value* cond = builder->CreateICmpEQ(
+                        type_id, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                            llvm::APInt(64, id_value, true)));
+                    builder->CreateCondBr(cond, thenBB, elseBB);
+
+                    builder->SetInsertPoint(thenBB);
+                    llvm::Value* value = make_const_typeof_desc(type_name);
+                    builder->CreateBr(mergeBB);
+                    incoming.push_back({thenBB, value});
+                    currentBB = elseBB;
+                };
+
+                if (uses_new_classes_tag) {
+                    add_type_case(((int)ASR::ttypeType::Integer) + 4, "integer(4)");
+                    add_type_case(((int)ASR::ttypeType::Integer) + 8, "integer(8)");
+                    add_type_case(((int)ASR::ttypeType::Real) + 4, "real(4)");
+                    add_type_case(((int)ASR::ttypeType::Real) + 8, "real(8)");
+                    add_type_case(((int)ASR::ttypeType::Logical) + 4, "logical(4)");
+                    add_type_case(((int)ASR::ttypeType::String) + 1, "character");
+                } else {
+                    add_type_case(-((int)ASR::ttypeType::Integer) - 4, "integer(4)");
+                    add_type_case(-((int)ASR::ttypeType::Integer) - 8, "integer(8)");
+                    add_type_case(-((int)ASR::ttypeType::Real) - 4, "real(4)");
+                    add_type_case(-((int)ASR::ttypeType::Real) - 8, "real(8)");
+                    add_type_case(-((int)ASR::ttypeType::Logical) - 4, "logical(4)");
+                    add_type_case(-((int)ASR::ttypeType::String) - 1, "character");
+                }
+
+                builder->SetInsertPoint(currentBB);
+                llvm::Value* fallback = make_const_typeof_desc("~dynamic_polymorphic_type");
+                builder->CreateBr(mergeBB);
+                incoming.push_back({currentBB, fallback});
+
+                builder->SetInsertPoint(mergeBB);
+                llvm::PHINode* phi = builder->CreatePHI(string_descriptor->getPointerTo(),
+                    incoming.size(), "typeof.result");
+                for (auto &entry : incoming) {
+                    phi->addIncoming(entry.second, entry.first);
+                }
+                tmp = phi;
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -11064,11 +11178,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        bool left_is_string_format = ASR::is_a<ASR::StringFormat_t>(*x.m_left);
+        bool right_is_string_format = ASR::is_a<ASR::StringFormat_t>(*x.m_right);
         llvm::Value* left_val {}, *left_len {};
         llvm::Value* right_val {}, *right_len {};
         std::tie(left_val, left_len) = get_string_data_and_length(x.m_left);
         std::tie(right_val, right_len) = get_string_data_and_length(x.m_right);
         tmp = lfortran_strConcat(left_val, left_len, right_val, right_len);
+        if (left_is_string_format || right_is_string_format) {
+            llvm_utils->stringFormat_return.free();
+        }
         tmp = llvm_utils->create_string_descriptor(tmp,
             builder->CreateAdd(left_len, right_len), "strConcat_desc");
     }

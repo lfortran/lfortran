@@ -5162,6 +5162,14 @@ namespace TypeOf {
                 + std::to_string(args.size()), loc);
             return nullptr;
         }
+
+        // class(*) requires runtime type dispatch; defer to backend lowering.
+        if (ASRUtils::is_unlimited_polymorphic_type(args[0])) {
+            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::TypeOf),
+                args.p, args.n, 0, allocatable_deferred_string(), nullptr);
+        }
+
         ASR::ttype_t *dummy_type = nullptr;
         ASR::expr_t *m_value = eval_TypeOf(al, loc, dummy_type, args, diag);
         if (diag.has_error()) return nullptr;
@@ -5192,6 +5200,11 @@ namespace Repr {
         return ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), string_type));
     }
 
+    static inline bool is_type_info_like_string(ASR::expr_t* arg) {
+        ASR::ttype_t* t = ASRUtils::expr_type(arg);
+        return ASRUtils::is_allocatable(t) && ASRUtils::is_deferredLength_string(t);
+    }
+
     static inline ASR::asr_t* create_Repr(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         if (args.size() != 1) {
@@ -5200,19 +5213,36 @@ namespace Repr {
             return nullptr;
         }
 
-        ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
-
-        // `type(type_info)` is represented as a string internally; repr(type_info)
-        // should return the type text itself rather than re-wrapping it.
-        if (ASR::is_a<ASR::String_t>(*arg_type)) {
+        // `type(type_info)` is currently represented as a deferred allocatable
+        // descriptor string, so repr(type_info) should return raw type text.
+        if (is_type_info_like_string(args[0])) {
             return (ASR::asr_t*) args[0];
         }
 
         std::string var_name = "it";
         (void) is_var_like_name(args[0], var_name);
-        std::string type_str = ASRUtils::type_to_str_with_kind(arg_type, args[0]);
-        std::string repr_str = type_str + " :: " + var_name;
-        return (ASR::asr_t*) make_string_constant_expr(al, loc, repr_str);
+        ASR::ttype_t* repr_type = allocatable_deferred_string();
+
+        std::string suffix = " :: " + var_name + " = ";
+        ASR::expr_t* suffix_expr = make_string_constant_expr(al, loc, suffix);
+
+        ASR::expr_t* type_expr = ASRUtils::EXPR(TypeOf::create_TypeOf(al, loc, args, diag));
+        if (diag.has_error() || type_expr == nullptr) {
+            return nullptr;
+        }
+
+        ASR::expr_t* prefix_expr = ASRUtils::EXPR(ASR::make_StringConcat_t(
+            al, loc, type_expr, suffix_expr, repr_type, nullptr));
+
+        Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
+        fmt_args.push_back(al, args[0]);
+        ASR::expr_t* value_expr = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
+            al, loc, nullptr, fmt_args.p, fmt_args.size(),
+            ASR::string_format_kindType::FormatFortran, repr_type, nullptr));
+
+        ASR::expr_t* repr_expr = ASRUtils::EXPR(ASR::make_StringConcat_t(
+            al, loc, prefix_expr, value_expr, repr_type, nullptr));
+        return (ASR::asr_t*) repr_expr;
     }
 
 } // namespace Repr

@@ -13,10 +13,10 @@ program typeof_repr_01
     if (repr(t) /= "real(8)") error stop 1
 
     s = repr(x)
-    if (index(s, "real(8) :: x") /= 1) error stop 2
+    if (index(s, "real(8) :: x =") /= 1) error stop 2
 
     s = repr(a)
-    if (index(s, "integer(4)") == 0) error stop 3
+    if (index(s, "integer(4) :: a =") /= 1) error stop 3
 
     print *, typeof(x)
     print *, repr(x)

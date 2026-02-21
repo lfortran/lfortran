@@ -7011,27 +7011,6 @@ public:
                     is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
             } else if (derived_type_name == "unsigned") {
                 return ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
-            } else if (derived_type_name == "type_info") {
-                if (is_pointer) {
-                    diag.add(Diagnostic(
-                        "`type(type_info)` does not support POINTER attribute",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (dims.size() > 0) {
-                    diag.add(Diagnostic(
-                        "Array declaration for `type(type_info)` is not supported yet",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                    ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
-                        ASR::string_length_kindType::DeferredLength,
-                        ASR::string_physical_typeType::DescriptorString))));
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
@@ -7061,6 +7040,30 @@ public:
                 type = ASRUtils::get_union_type(al, loc, v);
             } else {
                 if (!v) {
+                    // Builtin reflection type. Respect normal Fortran name resolution:
+                    // use this only when no user symbol named `type_info` is found.
+                    if (derived_type_name == "type_info") {
+                        if (is_pointer) {
+                            diag.add(Diagnostic(
+                                "`type(type_info)` does not support POINTER attribute",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        if (dims.size() > 0) {
+                            diag.add(Diagnostic(
+                                "Array declaration for `type(type_info)` is not supported yet",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                                ASR::string_length_kindType::DeferredLength,
+                                ASR::string_physical_typeType::DescriptorString))));
+                    }
                     if (is_template) { 
                         diag.add(Diagnostic(
                             "Type parameter '" + derived_type_name + "' is not specified "
