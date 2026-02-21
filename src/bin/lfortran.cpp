@@ -1156,7 +1156,8 @@ int compile_src_to_object_file(const std::string &infile,
         bool assembly,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm,
-        bool arg_c = false)
+        bool arg_c = false,
+        bool *has_main = nullptr)
 {
     int time_file_read=0;
     int time_src_to_asr=0;
@@ -1215,8 +1216,13 @@ int compile_src_to_object_file(const std::string &infile,
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
+    bool main_present = LCompilers::ASRUtils::main_program_present(*asr);
+    if (has_main && main_present) {
+        *has_main = true;
+    }
+
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
-        && !LCompilers::ASRUtils::main_program_present(*asr)
+        && !main_present
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
@@ -1226,7 +1232,7 @@ int compile_src_to_object_file(const std::string &infile,
 
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
     // so that they are not compiled again
-    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.generate_code_for_global_procedures && !compiler_options.separate_compilation) {
+    if (!main_present && arg_c && compiler_options.generate_code_for_global_procedures && !compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
@@ -1565,7 +1571,8 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool *has_main = nullptr)
 {
     std::string input = read_file_ok(infile);
 
@@ -1595,6 +1602,10 @@ int compile_to_object_file_cpp(const std::string &infile,
     {
         int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
+    }
+
+    if (has_main && LCompilers::ASRUtils::main_program_present(*asr)) {
+        *has_main = true;
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
@@ -1678,7 +1689,8 @@ int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, const std::string &rtlib_header_dir,
         LCompilers::PassManager pass_manager,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool *has_main = nullptr)
 {
     std::string input = read_file_ok(infile);
 
@@ -1706,6 +1718,10 @@ int compile_to_object_file_c(const std::string &infile,
     {
         int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
+    }
+
+    if (has_main && LCompilers::ASRUtils::main_program_present(*asr)) {
+        *has_main = true;
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
@@ -2716,6 +2732,8 @@ int main_app(int argc, char *argv[]) {
     // we need this separate vector to store temporary object files as some object files passed as arguments
     // are considered as it is and we do not want to delete them
     std::vector<std::string> temp_object_files;
+    bool found_main = false;
+    bool has_non_fortran_input = false;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
@@ -2730,17 +2748,17 @@ int main_app(int argc, char *argv[]) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
-                    compiler_options, lfortran_pass_manager);
+                    compiler_options, lfortran_pass_manager, false, &found_main);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
 #endif
             } else if (backend == Backend::cpp) {
                 err = compile_to_object_file_cpp(arg_file, tmp_o, opts.arg_v, false,
-                        true, rtlib_header_dir, compiler_options);
+                        true, rtlib_header_dir, compiler_options, &found_main);
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o, opts.arg_v,
-                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options, &found_main);
             } else if (backend == Backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else if (backend == Backend::wasm) {
@@ -2759,6 +2777,7 @@ int main_app(int argc, char *argv[]) {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
         } else if (endswith(arg_file, ".ll")) {
+            has_non_fortran_input = true;
             // this way we can execute LLVM IR files directly
 #ifdef HAVE_LFORTRAN_LLVM
             err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
@@ -2768,6 +2787,7 @@ int main_app(int argc, char *argv[]) {
             return 1;
 #endif
         } else {
+            has_non_fortran_input = true;
             // assume it's an object file
             tmp_o = arg_file;
         }
@@ -2777,7 +2797,20 @@ int main_app(int argc, char *argv[]) {
     }
     if (object_files.size() == 0) {
         return err_;
-    } else {
+    }
+
+    if (!found_main && !has_non_fortran_input) {
+        std::cerr << "Note: The Fortran source files do not contain a `program` "
+            "(main program), so the executable cannot be created." << std::endl;
+        std::cerr << "Hint: Add a `program` to one of the source files, "
+            "or use the `-c` flag to only compile to an object file." << std::endl;
+        for (const std::string &filename : temp_object_files) {
+            std::remove(filename.c_str());
+        }
+        return 1;
+    }
+
+    {
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
