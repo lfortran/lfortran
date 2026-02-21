@@ -1613,27 +1613,28 @@ var_sym_decl_list
     ;
 
 var_sym_decl
-    : id { $$ = VAR_SYM_NAME($1, None, @$); }
-    | "/" id "/" { $$ = VAR_SYM_NAME($2, Slash, @$); }
-    | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
-    | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
-    | id "*" expr { $$ = VAR_SYM_DIM_LEN($1, nullptr, 0, $3, Asterisk, @$); }
-    | id "*" expr "=" expr { $$ = VAR_SYM_DIM_LEN_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
-    | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
-    | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
-    | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
+        : id { $$ = VAR_SYM_NAME($1, None, @$); }
+        | "/" id "/" { $$ = VAR_SYM_NAME($2, Slash, @$); }
+        | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
+        | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
+        | id "*" expr { $$ = VAR_SYM_DIM_LEN($1, nullptr, 0, $3, Asterisk, @$); }
+        | id "*" expr "=" expr { $$ = VAR_SYM_DIM_LEN_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
+        | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
+        | id "*" "(" "*" ")" "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $7, DoubleAsterisk, @$); }
+        | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
+        | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
             $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
-    | id "(" array_comp_decl_list ")" "=" expr {
+        | id "(" array_comp_decl_list ")" "=" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
-    | id "(" array_comp_decl_list ")" "*" expr "=" expr {
+        | id "(" array_comp_decl_list ")" "*" expr "=" expr {
             $$ = VAR_SYM_DIM_LEN_INIT($1, $3.p, $3.n, $6, $8, Equal, @$); }
-    | id "(" array_comp_decl_list ")" "=>" expr {
+        | id "(" array_comp_decl_list ")" "=>" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
-    | id "[" coarray_comp_decl_list "]" {
+        | id "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_CODIM($1, $3.p, $3.n, None, @$); }
-    | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
+        | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
-    | decl_spec %dprec 2 { $$ = VAR_SYM_SPEC($1, None, @$); }
+        | decl_spec %dprec 2 { $$ = VAR_SYM_SPEC($1, None, @$); }
     ;
 
 decl_spec
