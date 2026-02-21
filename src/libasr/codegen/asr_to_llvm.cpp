@@ -6124,7 +6124,13 @@ public:
                 && !ASRUtils::is_class_type(
                     ASRUtils::type_get_past_array(v->m_type))) {
                 if( ASRUtils::is_array(v->m_type) ) {
-                    allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
+                    // For DescriptorArray, the array descriptor (ndim, dim_desc, data
+                    // ptr) is not initialized yet at this point. Defer the member
+                    // initialization until after fill_array_details_ sets it up.
+                    if (ASRUtils::extract_physical_type(v->m_type) !=
+                            ASR::array_physical_typeType::DescriptorArray) {
+                        allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
+                    }
                 } else {
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type);
@@ -6176,6 +6182,17 @@ public:
                 fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
                     is_malloc_array_type, is_array_type, is_list, v->m_type);
+                // Now that the descriptor is initialized, initialize allocatable
+                // members of each element for DescriptorArray struct arrays.
+                if( ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(v->m_type))
+                    && !ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_array(v->m_type))
+                    && ASRUtils::extract_physical_type(v->m_type) ==
+                        ASR::array_physical_typeType::DescriptorArray
+                    && !is_malloc_array_type ) {
+                    allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
+                }
             }
             ASR::expr_t* init_expr = v->m_symbolic_value;
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
