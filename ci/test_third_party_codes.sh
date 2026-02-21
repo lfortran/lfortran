@@ -138,7 +138,7 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing Julienne" '
-  git clone https://github.com/certik/julienne.git
+  git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
