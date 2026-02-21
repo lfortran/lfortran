@@ -13435,8 +13435,9 @@ public:
                 if (!fn) {
                     std::vector<llvm::Type*> args{
                         character_type->getPointerTo(), // Str_data
-                        llvm::Type::getInt64Ty(context), // Str_len
+                        llvm::Type::getInt64Ty(context), // 2. Str_len (i64)
                         llvm::Type::getInt32Ty(context), // Unit_num
+                        llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo() // iostat
                     };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -13525,11 +13526,12 @@ public:
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
+
                 if (ASR::is_a<ASR::Integer_t>(*type)) {
                     if (a_kind == 1) {
                         runtime_func_name = "_lfortran_read_array_int8";
                         type_arg = llvm::Type::getInt8Ty(context);
-                    } else if ( a_kind == 2) {
+                    } else if (a_kind == 2) {
                         runtime_func_name = "_lfortran_read_array_int16";
                         type_arg = llvm::Type::getInt16Ty(context);
                     } else if (a_kind == 4) {
@@ -13539,7 +13541,7 @@ public:
                         runtime_func_name = "_lfortran_read_array_int64";
                         type_arg = llvm::Type::getInt64Ty(context);
                     } else {
-                        throw CodeGenError("Integer arrays of kind 1 or 4 only supported for now. Found kind: "
+                        throw CodeGenError("Integer arrays of kind 1, 2, 4, or 8 supported. Found kind: "
                                             + std::to_string(a_kind));
                     }
                 } else if (ASR::is_a<ASR::Real_t>(*type)) {
@@ -13554,10 +13556,10 @@ public:
                                             + std::to_string(a_kind));
                     }
                 } else if (ASR::is_a<ASR::Complex_t>(*type)) {
-                    if ( a_kind == 4 ) {
+                    if (a_kind == 4) {
                         runtime_func_name = "_lfortran_read_array_complex_float";
                         type_arg = complex_type_4;
-                    } else if ( a_kind == 8 ) {
+                    } else if (a_kind == 8) {
                         runtime_func_name = "_lfortran_read_array_complex_double";
                         type_arg = complex_type_8;
                     } else {
@@ -13573,18 +13575,31 @@ public:
                 } else {
                     throw CodeGenError("Type not supported.");
                 }
+
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
-                    std::vector<llvm::Type*> types {
-                        type_arg->getPointerTo(),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()};
-                    if(runtime_func_name == "_lfortran_read_array_char"){
-                        types.insert(types.begin()+1, llvm::Type::getInt64Ty(context));
+                    std::vector<llvm::Type*> types;
+                    
+                    // Arg 0: Data Pointer (RDI)
+                    types.push_back(type_arg->getPointerTo()); 
+
+                    // Arg 1: Character arrays need 'length' (RSI)
+                    if (runtime_func_name == "_lfortran_read_array_char") {
+                        types.push_back(llvm::Type::getInt64Ty(context)); 
                     }
+
+                    // Arg 2: Array Size (RDX) - This was missing!
+                    types.push_back(llvm::Type::getInt32Ty(context));
+
+                    // Arg 3: Unit Number (RCX)
+                    types.push_back(llvm::Type::getInt32Ty(context)); 
+
+                    // Arg 4: Iostat Pointer (R8)
+                    types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); 
+
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), types, false);
+                    
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
@@ -13709,7 +13724,8 @@ public:
                 ptr_loads = ptr_copy;
                 iostat = tmp;
             } else {
-                iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
+                iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "dummy_iostat");
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
             }
 
             // Build namelist descriptor and call _lfortran_namelist_read
@@ -13784,43 +13800,76 @@ public:
                     elem_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
                         llvm::APInt(64, len_const->m_n));
                 } else {
-                    // Dynamic length - need to evaluate the expression
                     this->visit_expr_wrapper(str_type->m_len, true);
                     elem_len = tmp;
                     tmp = nullptr;
                 }
 
-                // Calculate total number of elements
-                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
-                llvm::Value* n_elems = llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val));
-
                 // Get data pointer from array
                 llvm::Value* data_ptr;
                 ASR::array_physical_typeType storage_type = ASRUtils::extract_physical_type(unit_type);
                 if (storage_type == ASR::PointerArray && ASRUtils::is_array_of_strings(unit_type)) {
-                    // For pointer arrays of strings, use get_stringArray_data
                     data_ptr = llvm_utils->get_stringArray_data(unit_type, unit_val);
                 } else if (storage_type == ASR::PointerArray) {
-                    // For pointer arrays of other types
                     data_ptr = arr_descr->get_pointer_to_data(x.m_unit, unit_type, unit_val, module.get());
                 } else {
-                    // For fixed arrays, unit_val is already the data pointer
                     data_ptr = unit_val;
                 }
                 data_ptr = builder->CreateBitCast(data_ptr,
                     llvm::Type::getInt8Ty(context)->getPointerTo());
 
-                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+                // --- COMPILER-TIME DEBUG ---
+                std::cout << "COMPILER_DEBUG: In is_string_array block" << std::endl;
+
+                // --- SAFETY CHECKS ---
+                llvm::Value* unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 11);
+
+                if (!iostat || llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                    std::cout << "COMPILER_DEBUG: iostat was NULL, creating alloca" << std::endl;
+                    iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "iostat_dummy");
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
+                }
+
+                // --- RUNTIME DEBUG TRAP ---
+                // Attempts to call printf in the generated code
+                llvm::Function* printf_fn = module->getFunction("printf");
+                if (printf_fn) {
+                    llvm::Value* format_str = builder->CreateGlobalStringPtr("RUNTIME_DEBUG: unit=%d, iostat_ptr=%p\n");
+                    builder->CreateCall(printf_fn, {format_str, unit_num_val, iostat});
+                }
+
+                if (ASRUtils::is_array_of_strings(unit_type)) {
+                    builder->CreateCall(fn, {data_ptr, elem_len, unit_num_val, iostat});
+                } else {
+                    builder->CreateCall(fn, {data_ptr, unit_num_val, iostat});
+                }
+
             } else if (is_string) {
+                std::cout << "COMPILER_DEBUG: In is_string block" << std::endl;
+                llvm::Value* unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 11);
+                
+                if (!iostat || llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                    iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "iostat_dummy");
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
+                }
+
                 llvm::Value *data_ptr, *data_len;
                 std::tie(data_ptr, data_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(x.m_unit), unit_val);
-                builder->CreateCall(fn, {data_ptr, data_len, iostat, nml_group});
+                
+                builder->CreateCall(fn, {data_ptr, data_len, unit_num_val, iostat});
+
             } else {
-                builder->CreateCall(fn, {unit_val, iostat, nml_group});
+                std::cout << "COMPILER_DEBUG: In numeric branch" << std::endl;
+                llvm::Value* unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 11);
+                
+                if (!iostat || llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                    iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "iostat_dummy");
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
+                }
+
+                builder->CreateCall(fn, {unit_val, unit_num_val, iostat});
             }
-            return;
         }
 
         llvm::Value *unit_val, *iostat, *iostat_for_empty_read, *read_size;
@@ -14049,35 +14098,50 @@ public:
                     // Unsupported ImpliedDoLoop pattern - fall through to default handling
                 }
                 if (ASRUtils::is_logical(*ASRUtils::expr_type(x.m_values[i]))) {
-                    // Get pointer to variable without performing a load
+                    ASR::ttype_t *type = ASRUtils::expr_type(x.m_values[i]);
+                    int n_elems = 1;
+                    if (ASRUtils::is_array(type)) {
+                        ASR::dimension_t* m_dims = nullptr;
+                        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                        if (m_dims) {
+                            for (size_t j = 0; j < n_dims; j++) {
+                                uint64_t dim_len;
+                                if (m_dims[j].m_length && ASRUtils::extract_value(m_dims[j].m_length, dim_len)) {
+                                    n_elems *= dim_len;
+                                }
+                            }
+                        }
+                    }
+
                     int ptr_loads_copy = ptr_loads;
                     ptr_loads = 0;
                     this->visit_expr(*x.m_values[i]);
                     llvm::Value* logical_var_ptr = tmp;
                     ptr_loads = ptr_loads_copy;
 
-                    // Runtime expects i32 for logical ABI
-                    llvm::Value* logical_tmp = llvm_utils->CreateAlloca(
-                        *builder, llvm::Type::getInt32Ty(context));
+                    llvm::Function* fn = get_read_function(type);
 
-                    // Call the runtime read function
-                    llvm::Function* fn = get_read_function(
-                        ASRUtils::expr_type(x.m_values[i])
-                    );
+                    if (n_elems > 1) {
+                        builder->CreateCall(fn, {
+                            logical_var_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_elems),
+                            unit_val,
+                            iostat
+                        });
+                    } else {
+                        llvm::Value* logical_tmp = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
+                        builder->CreateCall(fn, {
+                            logical_tmp,
+                            unit_val,
+                            iostat
+                        });
 
-                    builder->CreateCall(fn, {logical_tmp, unit_val, iostat});
-
-                    // Load and convert to actual logical type (usually i1)
-                    llvm::Value* loaded_val = builder->CreateLoad(
-                        llvm::Type::getInt32Ty(context), logical_tmp);
-
-                    llvm::Value* final_val = builder->CreateICmpNE(
-                        loaded_val,
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
-
-                    builder->CreateStore(final_val, logical_var_ptr);
-
-                    continue; 
+                        llvm::Value* loaded_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), logical_tmp);
+                        llvm::Value* final_val = builder->CreateICmpNE(loaded_val,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+                        builder->CreateStore(final_val, logical_var_ptr);
+                    }
+                    continue;
                 }
                 int ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -14200,21 +14264,26 @@ public:
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
                         x.m_values[i], nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);
+                    llvm::Value* num_elements = tmp;
                     if(ASRUtils::is_array_of_strings(type)){
                         builder->CreateCall(fn, {
                             llvm_utils->get_stringArray_data(type, original_array_representation),
                             llvm_utils->get_stringArray_length(type, original_array_representation),
-                            tmp, unit_val, iostat});
+                            unit_val,
+                            iostat
+                            });
                         tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {arr, tmp, unit_val, iostat});
+                        builder->CreateCall(fn, {arr, num_elements, unit_val, iostat});
                         tmp = nullptr;
                     }
                 } else {
                     if(ASRUtils::is_string_only(type)){
                         llvm::Value* str_data, *str_len;
                         std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(type), var_to_read_into, true);
-                        builder->CreateCall(fn, {str_data, str_len, unit_val, iostat});
+                        builder->CreateCall(fn, {str_data, str_len, unit_val,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                            iostat});
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type)
                             || ASR::is_a<ASR::Pointer_t>(*type)) {
@@ -14434,12 +14503,14 @@ public:
             param_types.push_back(character_type);
             param_types.push_back(llvm::Type::getInt64Ty(context));
             param_types.push_back(llvm::Type::getInt32Ty(context));
+            param_types.push_back(llvm::Type::getInt32Ty(context));
 
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), param_types, true);
             fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage,
                                         runtime_func_name, module.get());
         }
+        single_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         builder->CreateCall(fn, single_args);
     }
 
@@ -14645,20 +14716,31 @@ public:
         }
 
         std::vector<llvm::Value*> args;
-        args.reserve(8 + 3 * total_scalar_values);
+        // Make sure we reserve enough slots
+        args.reserve(15 + 3 * total_scalar_values);
+
         if (is_string) {
-            llvm::Value *src_data, *src_len;
-            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+            // INTERNAL: [ptr, len, array_size, unit(-1), iostat_ptr]
+            auto [src_data, src_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(x.m_unit), unit_val);
-            args.push_back(src_data);
-            args.push_back(src_len);
+            args.push_back(src_data);  // Arg 0 (RDI)
+            args.push_back(src_len);   // Arg 1 (RSI)
+            args.push_back(read_size); // Arg 2 (RDX) - This was missing!
+            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1)); // Arg 3 (RCX)
+            args.push_back(iostat);    // Arg 4 (R8)
         } else {
-            args.push_back(unit_val);
+            // EXTERNAL: [NULL, 0, array_size, unit_num, iostat_ptr]
+            args.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0))); // Arg 0
+            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0)); // Arg 1
+            args.push_back(read_size); // Arg 2 (The Total elements to read)
+            args.push_back(unit_val);  // Arg 3 (Unit ID, e.g., 10)
+            args.push_back(iostat);    // Arg 4 (iostat pointer)
         }
-        args.push_back(iostat);
-        args.push_back(read_size);
+
+        // Now push formatting flags...
         args.push_back(advance);
         args.push_back(advance_length);
+        
         llvm::Value* fmt_data;
         llvm::Value* fmt_len;
         std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
@@ -15344,6 +15426,7 @@ public:
                 this->visit_expr_wrapper(x.m_iostat, false);
                 ptr_loads = ptr_copy;
                 iostat = tmp;
+                iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "iostat_temp");
                 builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
             }
             return;
@@ -15411,7 +15494,8 @@ public:
                 ptr_loads = ptr_copy;
                 iostat = tmp;
             } else {
-                iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
+                iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "iostat_temp");
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
             }
 
             // Build namelist descriptor and call _lfortran_namelist_write
