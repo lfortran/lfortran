@@ -218,8 +218,8 @@ program continue_compilation_2
     character(*), parameter :: badfmt_p = '(a i0)'
     character(8) :: badfmt_s = '(a i0)'
     character(:), allocatable :: ax
-
-
+    integer :: a_deferred(:)
+    
 
 
 
