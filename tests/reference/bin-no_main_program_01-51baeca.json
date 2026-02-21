@@ -1,0 +1,13 @@
+{
+    "basename": "bin-no_main_program_01-51baeca",
+    "cmd": "lfortran --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/no_main_program_01.f90",
+    "infile_hash": "abf113e23da5a4cf36c7a421cc994849fee48bb2c39dc664b3a25c71",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "bin-no_main_program_01-51baeca.stderr",
+    "stderr_hash": "4931e4caf6c0daa9baf8c8524fd1606076c506481b8ac492c37cb735",
+    "returncode": 1
+}

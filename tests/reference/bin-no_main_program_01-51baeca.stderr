@@ -1,0 +1,2 @@
+Note: The Fortran source files do not contain a `program` (main program), so the executable cannot be created.
+Hint: Add a `program` to one of the source files, or use the `-c` flag to only compile to an object file.
