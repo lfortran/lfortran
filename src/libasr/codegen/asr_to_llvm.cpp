@@ -7136,7 +7136,7 @@ public:
             ptr = ASRUtils::is_array_of_strings(p_type) ?
                 llvm_utils->get_stringArray_data(p_type, ptr) :
                 llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
-        } else {
+        } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
             ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
         }
