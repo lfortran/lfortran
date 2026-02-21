@@ -597,7 +597,7 @@ namespace LCompilers {
             }
             a_realloc_lhs = a_realloc_lhs && is_allocatable;
             return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-                a_overloaded, a_realloc_lhs, false);
+                a_overloaded, a_realloc_lhs, false, false);
         }
 
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx) {

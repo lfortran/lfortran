@@ -208,7 +208,7 @@ public :
             }
 
             /* Create Assignment ---> `funcCall_temp_var = f()` --- Push Assignment Statement */
-            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false));
+            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false, false));
             pass_result_.push_back(al_, assignment_stmt);                            
 
             /* Replace Current FuncParam With `temp_var` */
