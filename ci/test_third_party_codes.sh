@@ -143,8 +143,7 @@ time_section "🧪 Testing Julienne" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout -t origin/lf2
-  git checkout 04dffa762ab0f5259d41ac6071c7395c6c404c98
+  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays idiomatic_assertion_failure_test
 
   print_success "Done with Julienne"
