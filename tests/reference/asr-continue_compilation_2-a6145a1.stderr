@@ -276,6 +276,12 @@ semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
 215 |     integer :: aRank1(..)
     |                ^^^^^^^^^^ 
 
+semantic error: Array 'a_deferred' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
+   --> tests/errors/continue_compilation_2.f90:221:16
+    |
+221 |     integer :: a_deferred(:)
+    |                ^^^^^^^^^^^^^ 
+
 semantic error: More than one main program found
    --> tests/errors/continue_compilation_2.f90:92:1 - 481:11
     |
