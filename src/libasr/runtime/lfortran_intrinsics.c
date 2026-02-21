@@ -82,6 +82,7 @@ static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
 #endif
 
 #include <libasr/runtime/lfortran_intrinsics.h>
+#include <libasr/runtime/debug_map_paths.h>
 #include <libasr/config.h>
 
 #if defined (WITH_LFORTRAN_ASSERT)
@@ -95,6 +96,69 @@ static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
 
 // Global flag to control runtime error colors
 static int _lfortran_use_runtime_colors = 0;  // disabled by default
+
+static int get_path_stem_parts(const char *path, const char **base_start, const char **dot_idx_ptr) {
+    if (path == NULL || base_start == NULL || dot_idx_ptr == NULL) {
+        return 1;
+    }
+    if (path[0] == '\0') {
+        return 1;
+    }
+    const char *slash_idx_ptr = strrchr(path, '/');
+    const char *backslash_idx_ptr = strrchr(path, '\\');
+    *base_start = path;
+    if (slash_idx_ptr != NULL && backslash_idx_ptr != NULL) {
+        *base_start = (slash_idx_ptr > backslash_idx_ptr) ? (slash_idx_ptr + 1) : (backslash_idx_ptr + 1);
+    } else if (slash_idx_ptr != NULL) {
+        *base_start = slash_idx_ptr + 1;
+    } else if (backslash_idx_ptr != NULL) {
+        *base_start = backslash_idx_ptr + 1;
+    }
+    if ((*base_start)[0] == '\0') {
+        return 1;
+    }
+
+    *dot_idx_ptr = strrchr(*base_start, '.');
+    return 0;
+}
+
+int _lfortran_debug_map_path_from_exe(
+        const char *exe_path, const char *suffix,
+        char *out_path, size_t out_path_size) {
+    if (exe_path == NULL || suffix == NULL || out_path == NULL || out_path_size == 0) {
+        return 1;
+    }
+    if (exe_path[0] == '\0') {
+        return 1;
+    }
+
+    char resolved_exe_path[LFORTRAN_DEBUG_MAP_PATH_MAX];
+    const char *path = exe_path;
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    if (realpath(exe_path, resolved_exe_path) != NULL) {
+        path = resolved_exe_path;
+    }
+#endif
+
+    const char *base_start = NULL;
+    const char *dot_idx_ptr = NULL;
+    if (get_path_stem_parts(path, &base_start, &dot_idx_ptr) != 0) {
+        return 1;
+    }
+
+    size_t stem_len = 0;
+    if (dot_idx_ptr == NULL || dot_idx_ptr == base_start) {
+        stem_len = strlen(path);
+    } else {
+        stem_len = (size_t)(dot_idx_ptr - path);
+    }
+
+    int written = snprintf(out_path, out_path_size, "%.*s%s", (int)stem_len, path, suffix);
+    if (written < 0 || (size_t)written >= out_path_size) {
+        return 2;
+    }
+    return 0;
+}
 
 #ifdef HAVE_RUNTIME_STACKTRACE
 
@@ -8398,20 +8462,18 @@ struct Stacktrace get_stacktrace_addresses() {
     return d;
 }
 
-char *get_base_name(char *filename) {
-    if (filename == NULL) {
+char *get_base_name(const char *filename) {
+    const char *base_start = NULL;
+    const char *dot_idx_ptr = NULL;
+    if (get_path_stem_parts(filename, &base_start, &dot_idx_ptr) != 0) {
         return NULL;
     }
-
-    char *slash_idx_ptr = strrchr(filename, '/');
-    const char *base_start = slash_idx_ptr ? (slash_idx_ptr + 1) : filename;
-    const char *dot_idx_ptr = strrchr(base_start, '.');
-
+    size_t base_len = 0;
     if (dot_idx_ptr == NULL || dot_idx_ptr == base_start) {
-        return NULL;
+        base_len = strlen(base_start);
+    } else {
+        base_len = (size_t)(dot_idx_ptr - base_start);
     }
-
-    size_t base_len = (size_t)(dot_idx_ptr - base_start);
     char *base_name = malloc(base_len + 1);
     if (base_name == NULL) {
         return NULL;
@@ -8420,6 +8482,35 @@ char *get_base_name(char *filename) {
     base_name[base_len] = '\0';
     return base_name;
 }
+
+#ifdef HAVE_LFORTRAN_MACHO
+static bool maybe_capture_macho_main_frame(
+        struct Stacktrace *d, const char *image_name,
+        uintptr_t vmaddr, uintptr_t vmsize, intptr_t offset,
+        const char *main_base_name) {
+    if (!((d->current_pc >= (vmaddr + offset)) &&
+            (d->current_pc < (vmaddr + offset + vmsize)))) {
+        return false;
+    }
+    char *image_base_name = get_base_name(image_name);
+    if (image_base_name == NULL) {
+        // The current PC is in this image segment; do not abort stacktrace
+        // resolution for this frame even if basename extraction fails.
+        return true;
+    }
+    bool is_main_image = strcmp(image_base_name, main_base_name) == 0;
+    free(image_base_name);
+    if (!is_main_image) {
+        // This frame belongs to a non-main image. Keep old behavior of
+        // skipping it without aborting the whole stacktrace resolution.
+        return true;
+    }
+    d->local_pc[d->local_pc_size] = d->current_pc - offset;
+    d->binary_filename[d->local_pc_size] = (char *)image_name;
+    d->local_pc_size++;
+    return true;
+}
+#endif
 
 #ifdef HAVE_LFORTRAN_LINK
 int shared_lib_callback(struct dl_phdr_info *info,
@@ -8448,6 +8539,15 @@ int shared_lib_callback(struct dl_phdr_info *info,
 
 #ifdef HAVE_LFORTRAN_MACHO
 void get_local_address_mac(struct Stacktrace *d) {
+    char *main_base_name = NULL;
+    if (_dyld_image_count() > 0) {
+        main_base_name = get_base_name(_dyld_get_image_name(0));
+    }
+    if (main_base_name == NULL) {
+        printf("The executable name could not be resolved for stacktrace.\n"
+            "Aborting...\n");
+        abort();
+    }
     for (uint32_t i = 0; i < _dyld_image_count(); i++) {
         const struct mach_header *header = _dyld_get_image_header(i);
         intptr_t offset = _dyld_get_image_vmaddr_slide(i);
@@ -8458,45 +8558,24 @@ void get_local_address_mac(struct Stacktrace *d) {
         for (uint32_t j = 0; j < header->ncmds; j++) {
             if (cmd->cmd == LC_SEGMENT) {
                 struct segment_command* seg = (struct segment_command*)cmd;
-                if (((intptr_t)d->current_pc >= (seg->vmaddr+offset)) &&
-                    ((intptr_t)d->current_pc < (seg->vmaddr+offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
-                    d->local_pc[d->local_pc_size] = d->current_pc - offset;
-                    d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
-                    d->local_pc_size++;
+                if (maybe_capture_macho_main_frame(d, _dyld_get_image_name(i),
+                        seg->vmaddr, seg->vmsize, offset, main_base_name)) {
+                    free(main_base_name);
                     return;
                 }
             }
             if (cmd->cmd == LC_SEGMENT_64) {
                 struct segment_command_64* seg = (struct segment_command_64*)cmd;
-                if ((d->current_pc >= (seg->vmaddr + offset)) &&
-                    (d->current_pc < (seg->vmaddr + offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
-                    d->local_pc[d->local_pc_size] = d->current_pc - offset;
-                    d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
-                    d->local_pc_size++;
+                if (maybe_capture_macho_main_frame(d, _dyld_get_image_name(i),
+                        seg->vmaddr, seg->vmsize, offset, main_base_name)) {
+                    free(main_base_name);
                     return;
                 }
             }
             cmd = (struct load_command*)((char*)cmd + cmd->cmdsize);
         }
     }
+    free(main_base_name);
     printf("The stack address was not found in any shared library or"
         " the main program, the stack is probably corrupted.\n"
         "Aborting...\n");
@@ -8548,21 +8627,23 @@ uint32_t get_file_size(int64_t fp) {
 void get_local_info_dwarfdump(struct Stacktrace *d) {
     // TODO: Read the contents of lines.dat from here itself.
     d->stack_size = 0;
-    char *base_name = get_base_name(source_filename);
-    if (base_name == NULL) {
+    const char *exe_path = binary_executable_path;
+    if (d != NULL) {
+        for (uint64_t i = 0; i < d->local_pc_size; i++) {
+            if (d->binary_filename[i] != NULL && d->binary_filename[i][0] != '\0') {
+                exe_path = d->binary_filename[i];
+                break;
+            }
+        }
+    }
+    char filename[LFORTRAN_DEBUG_MAP_PATH_MAX];
+    if (_lfortran_debug_map_path_from_exe(exe_path,
+            LFORTRAN_DEBUG_MAP_SUFFIX_LINES_DAT_TXT,
+            filename, LFORTRAN_DEBUG_MAP_PATH_MAX) != 0) {
         return;
     }
 
-    char *filename = malloc(strlen(base_name) + 15);
-    if (filename == NULL) {
-        free(base_name);
-        return;
-    }
-    strcpy(filename, base_name);
-    strcat(filename, "_lines.dat.txt");
     int64_t fd = _lpython_open(filename, "r");
-    free(base_name);
-    free(filename);
     if (fd < 0) {
         return;
     }

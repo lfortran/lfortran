@@ -47,6 +47,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
 #include <libasr/config.h>
+#include <libasr/runtime/debug_map_paths.h>
 #include <lfortran/fortran_kernel.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -1890,8 +1891,6 @@ int link_executable(const std::vector<std::string> &infiles,
 #endif
     std::vector<std::string> mlir_temp_object_files;
 
-    size_t dot_index = outfile.find_last_of(".");
-    std::string file_name = outfile.substr(0, dot_index);
     std::string extra_linker_flags;
     if (!linker_flags.empty()) {
         for (auto &s: linker_flags) {
@@ -2053,6 +2052,21 @@ int link_executable(const std::vector<std::string> &infiles,
         if (compiler_options.emit_debug_info) {
             // TODO: Replace the following hardcoded part
             std::string cmd = "";
+            char ldd_txt[LFORTRAN_DEBUG_MAP_PATH_MAX];
+            char lines_txt[LFORTRAN_DEBUG_MAP_PATH_MAX];
+            char lines_dat[LFORTRAN_DEBUG_MAP_PATH_MAX];
+            if (_lfortran_debug_map_path_from_exe(outfile.c_str(),
+                    LFORTRAN_DEBUG_MAP_SUFFIX_LDD_TXT,
+                    ldd_txt, LFORTRAN_DEBUG_MAP_PATH_MAX) != 0
+                    || _lfortran_debug_map_path_from_exe(outfile.c_str(),
+                    LFORTRAN_DEBUG_MAP_SUFFIX_LINES_TXT,
+                    lines_txt, LFORTRAN_DEBUG_MAP_PATH_MAX) != 0
+                    || _lfortran_debug_map_path_from_exe(outfile.c_str(),
+                    LFORTRAN_DEBUG_MAP_SUFFIX_LINES_DAT,
+                    lines_dat, LFORTRAN_DEBUG_MAP_PATH_MAX) != 0) {
+                std::cerr << "Error in constructing debug map file paths.\n";
+                return 12;
+            }
 #ifdef HAVE_LFORTRAN_MACHO
             cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
                 + outfile + ".dSYM > ";
@@ -2060,10 +2074,10 @@ int link_executable(const std::vector<std::string> &infiles,
             cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
 #endif
             std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                + file_name + "_lines.dat)";
+            cmd += std::string(ldd_txt) + " && (" + dwarf_scripts_path + "/dwarf_convert.py "
+                + std::string(ldd_txt) + " " + std::string(lines_txt) + " "
+                + std::string(lines_dat) + " && " + dwarf_scripts_path + "/dat_convert.py "
+                + std::string(lines_dat) + ")";
             int status = system(cmd.c_str());
             if ( status != 0 ) {
                 std::cerr << "Error in creating the files used to generate "
