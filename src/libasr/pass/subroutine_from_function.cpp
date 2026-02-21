@@ -678,6 +678,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         void visit_Assignment(const ASR::Assignment_t &x) {
             if(is_function_call_returning_aggregate_type(x.m_value)) {
+                if (x.m_overloaded) {
+                    // User-defined assignment(=) where the RHS is a function
+                    // call returning an aggregate type. The array_struct_temporary
+                    // pass has already created a temp for the function result
+                    // and wired the m_overloaded SubroutineCall to use it.
+                    // Just emit the overloaded call and drop this Assignment.
+                    pass_result.push_back(al, x.m_overloaded);
+                    remove_original_statement = true;
+                    return;
+                }
                 ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
                 if (subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx)) {
                     return;
