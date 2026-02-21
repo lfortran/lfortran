@@ -1,0 +1,5 @@
+semantic error: Array 'a' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
+ --> tests/errors/deferred_shape_01.f90:3:12
+  |
+3 | integer :: a(:)
+  |            ^^^^ 
