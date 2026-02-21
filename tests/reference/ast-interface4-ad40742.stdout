@@ -181,6 +181,7 @@
                     MATRIX_ERROR
                     (Logical .true.)
                     ()
+                    .false.
                 )
                 (Return
                     0
@@ -204,6 +205,7 @@
                 MULT
                 (Real "0.0")
                 ()
+                .false.
             )
             (DoLoop
                 0
@@ -248,6 +250,7 @@
                         []
                     )))
                     ()
+                    .false.
                 )]
                 ()
                 ()
@@ -277,6 +280,7 @@
                     MATRIX_ERROR
                     (Logical .true.)
                     ()
+                    .false.
                 )]
                 []
                 ()

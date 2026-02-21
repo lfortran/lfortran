@@ -147,6 +147,7 @@
                     []
                 )) 2)
                 ()
+                .false.
             )]
             ()
             ()
@@ -251,6 +252,7 @@
             partial_sum
             0
             ()
+            .false.
         )
         (Assignment
             0
@@ -261,6 +263,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Pragma
             0
@@ -302,6 +305,7 @@
                     []
                 ))
                 ()
+                .false.
             )]
             ()
             ()

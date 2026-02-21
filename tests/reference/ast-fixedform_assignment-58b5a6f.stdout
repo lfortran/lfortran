@@ -55,24 +55,28 @@
             a
             1
             ()
+            .false.
         )
         (Assignment
             0
             b
             2
             ()
+            .false.
         )
         (Assignment
             0
             c
             (/ (* a b) 2)
             ()
+            .false.
         )
         (Assignment
             0
             d
             (* c c)
             ()
+            .false.
         )
         (Print
             0
@@ -109,12 +113,14 @@
                 a
                 (* 2 b)
                 ()
+                .false.
             )]
             [(Assignment
                 0
                 b
                 (* 33 c)
                 ()
+                .false.
             )]
             ()
             ()

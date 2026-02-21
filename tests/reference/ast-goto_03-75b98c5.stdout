@@ -37,6 +37,7 @@
             n
             2
             ()
+            .false.
         )
         (Assignment
             0
@@ -47,6 +48,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (GoTo
             0
@@ -66,12 +68,14 @@
             a
             (+ a 10)
             ()
+            .false.
         )
         (Assignment
             2
             a
             (+ a 20)
             ()
+            .false.
         )
         (Assignment
             3
@@ -82,6 +86,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (If
             0
@@ -126,12 +131,14 @@
             a
             (* a a)
             ()
+            .false.
         )
         (Assignment
             20
             a
             (+ a a)
             ()
+            .false.
         )
         (Assignment
             30
@@ -142,6 +149,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (If
             0

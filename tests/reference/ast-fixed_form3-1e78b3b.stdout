@@ -96,6 +96,7 @@
             endfunctionf
             4
             ()
+            .false.
         )]
         []
         []
@@ -157,18 +158,21 @@
             integerx
             5
             ()
+            .false.
         )
         (Assignment
             0
             x
             5
             ()
+            .false.
         )
         (Assignment
             0
             integerx
             5
             ()
+            .false.
         )]
         []
         []
@@ -230,12 +234,14 @@
             x
             5
             ()
+            .false.
         )
         (Assignment
             0
             integerx
             5
             ()
+            .false.
         )]
         []
         []

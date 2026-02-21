@@ -166,18 +166,21 @@
             verb
             (String "learned " ())
             ()
+            .false.
         )
         (Assignment
             0
             posit
             (String "from " ())
             ()
+            .false.
         )
         (Assignment
             0
             title
             (String "the " ())
             ()
+            .false.
         )
         (Assignment
             0
@@ -188,6 +191,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -218,6 +222,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Print
             0

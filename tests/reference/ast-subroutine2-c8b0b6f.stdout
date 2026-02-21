@@ -18,12 +18,14 @@
             x
             y
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* 2 y)
             ()
+            .false.
         )]
         []
         []
@@ -51,12 +53,14 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (* 2 y)
             ()
+            .false.
         )]
         []
         []
@@ -86,6 +90,7 @@
                 (EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -98,6 +103,7 @@
                 (EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )]
         []
         []
@@ -134,12 +140,14 @@
                 (Semicolon)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
             x
             (* 2 y)
             ()
+            .false.
         )]
         []
         []
@@ -167,6 +175,7 @@
                 [(Semicolon)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -177,6 +186,7 @@
                 [(Semicolon)
                 (EndOfLine)]
             )
+            .false.
         )]
         []
         []
@@ -205,6 +215,7 @@
                 (Semicolon)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -217,6 +228,7 @@
                 (Semicolon)
                 (EndOfLine)]
             )
+            .false.
         )]
         []
         []
@@ -243,6 +255,7 @@
                 []
                 [(Semicolon)]
             )
+            .false.
         )
         (Assignment
             0
@@ -252,6 +265,7 @@
                 []
                 [(Semicolon)]
             )
+            .false.
         )]
         []
         []
@@ -275,12 +289,14 @@
             subroutine
             y
             ()
+            .false.
         )
         (Assignment
             0
             x
             (* 2 subroutine)
             ()
+            .false.
         )]
         []
         []
@@ -723,6 +739,7 @@
                     []
                 ))
                 ()
+                .false.
             )]
             ()
             ()

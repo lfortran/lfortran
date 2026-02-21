@@ -73,12 +73,14 @@
                     []
                 )
                 ()
+                .false.
             )
             (Assignment
                 0
                 b
                 0
                 ()
+                .false.
             )]
             [(Function
                 d
@@ -108,6 +110,7 @@
                     d
                     1
                     ()
+                    .false.
                 )]
                 []
                 []
@@ -166,6 +169,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )]
         []
     )]

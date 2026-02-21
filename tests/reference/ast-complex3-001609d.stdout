@@ -89,6 +89,7 @@
             x
             (Complex (Real "3.0_8") (Real "4.0_8"))
             ()
+            .false.
         )
         (Print
             0
@@ -101,6 +102,7 @@
             y
             (Complex (Real "3.0_8") (Real "4.0_8"))
             ()
+            .false.
         )
         (Print
             0
@@ -113,6 +115,7 @@
             z
             (Complex (Real "3.0_4") (Real "4.0_4"))
             ()
+            .false.
         )
         (Print
             0
@@ -125,6 +128,7 @@
             w
             (Complex (Real "3.0_4") (Real "4.0_4"))
             ()
+            .false.
         )
         (Print
             0

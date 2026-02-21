@@ -41,6 +41,7 @@
             x
             (Real "1.0")
             ()
+            .false.
         )
         (Assignment
             0
@@ -51,6 +52,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            .false.
         )
         (Assignment
             0
@@ -71,6 +73,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -102,6 +105,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -133,6 +137,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -164,6 +169,7 @@
                 []
             )
             ()
+            .false.
         )
         (Print
             0
@@ -257,12 +263,14 @@
                 saved
                 (+ saved (Real "1.0"))
                 ()
+                .false.
             )
             (Assignment
                 0
                 c
                 (+ (+ (+ c a) b) saved)
                 ()
+                .false.
             )]
             []
             []
@@ -384,24 +392,28 @@
                 saved1
                 (+ saved1 (Real "1.0"))
                 ()
+                .false.
             )
             (Assignment
                 0
                 c
                 (+ (+ (+ (+ (+ d c) a) b) saved1) saved2)
                 ()
+                .false.
             )
             (Assignment
                 0
                 saved2
                 (+ saved2 (Real "1.0"))
                 ()
+                .false.
             )
             (Assignment
                 0
                 d
                 (+ d (Real "3.0"))
                 ()
+                .false.
             )]
             []
             []

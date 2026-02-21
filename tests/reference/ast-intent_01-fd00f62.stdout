@@ -79,6 +79,7 @@
                     []
                 )
                 ()
+                .false.
             )
             (Assignment
                 0
@@ -99,6 +100,7 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
+                .false.
             )]
             [(Function
                 f
@@ -145,6 +147,7 @@
                     f
                     (* 2 x)
                     ()
+                    .false.
                 )
                 (Print
                     0
