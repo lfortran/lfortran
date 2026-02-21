@@ -583,6 +583,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             // Multiple character symbols
             ".." { RET(TK_DBL_DOT) }
             "::" { RET(TK_DBL_COLON) }
+            ":=" { RET(TK_COLON_EQUAL) }
             "**" { RET(TK_POW) }
             "//" { RET(TK_CONCAT) }
             "=>" { RET(TK_ARROW) }

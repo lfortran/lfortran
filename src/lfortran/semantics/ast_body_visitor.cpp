@@ -4519,54 +4519,84 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
     }
 
-    // Infers type from the RHS expression and declares an implicit local.
-    // Preconditions are checked in visit_Assignment:
-    // infer mode is enabled, target is a bare name, and symbol is new.
-    void infer_type_and_declare(const AST::Assignment_t &x) {
-        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
-        std::string var_name = to_lower(target_name->m_id);
+    // Declares a variable with type inferred from the RHS value expression.
+    // Used by both --infer mode (visit_Assignment) and := syntax (visit_InferAssignment).
+    ASR::ttype_t* infer_scalar_type(const Location& loc, ASR::ttype_t* inferred_type,
+            AST::expr_t* value) {
+        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
+            return ASRUtils::TYPE(
+                ASR::make_String_t(al, loc,
+                    str_type->m_kind, str_type->m_len,
+                    str_type->m_len_kind, str_type->m_physical_type));
+        } else if (ASR::is_a<ASR::StructType_t>(*inferred_type)) {
+            return inferred_type;
+        }
+        diag.add(Diagnostic(
+            "Type inference does not support this type",
+            Level::Error, Stage::Semantic, {
+                Label("unsupported type", {value->base.loc})
+            }
+        ));
+        throw SemanticAbort();
+    }
 
-        this->visit_expr(*x.m_value);
+    void infer_type_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
+        this->visit_expr(*value);
         ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::expr_type(inferred_value));
 
+        Location loc = target_name->base.base.loc;
         ASR::ttype_t* declared_type = nullptr;
-        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Real_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Complex_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
-            declared_type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, target_name->base.base.loc, kind));
-        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
-            declared_type = ASRUtils::TYPE(
-                ASR::make_String_t(al, target_name->base.base.loc,
-                    str_type->m_kind, str_type->m_len,
-                    str_type->m_len_kind, str_type->m_physical_type));
+        bool is_struct = false;
+        if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inferred_type);
+            ASR::ttype_t* scalar_type = infer_scalar_type(loc, arr->m_type,
+                value);
+            declared_type = ASRUtils::make_Array_t_util(
+                al, loc, scalar_type, arr->m_dims, arr->n_dims);
         } else {
-            diag.add(Diagnostic(
-                "For now, type inference only supports intrinsic types "
-                "(integer, real, complex, logical, character)",
-                Level::Error, Stage::Semantic, {
-                    Label("non-intrinsic type", {x.m_value->base.loc})
-                }
-            ));
-            throw SemanticAbort();
+            declared_type = infer_scalar_type(loc, inferred_type,
+                value);
+            is_struct = ASR::is_a<ASR::StructType_t>(*inferred_type);
         }
 
-        declare_implicit_variable2(target_name->base.base.loc, var_name,
-            ASRUtils::intent_local, declared_type);
+        ASR::symbol_t* type_decl = nullptr;
+        if (is_struct) {
+            if (ASR::is_a<ASR::StructConstructor_t>(*inferred_value)) {
+                type_decl = ASR::down_cast<ASR::StructConstructor_t>(
+                    inferred_value)->m_dt_sym;
+            } else {
+                type_decl = ASRUtils::get_struct_sym_from_struct_expr(
+                    inferred_value);
+            }
+        }
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
+            declared_type);
+        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, to_lower(target_name->m_id)),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                ASRUtils::intent_local, nullptr, nullptr,
+                ASR::storage_typeType::Default, declared_type, type_decl,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(to_lower(target_name->m_id), v);
     }
 
     /* Returns true if `x` is a statement function, false otherwise.
@@ -4910,8 +4940,8 @@ public:
         if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
             AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
             std::string var_name = to_lower(target_name->m_id);
-            if (current_scope->resolve_symbol(var_name) == nullptr) {
-                infer_type_and_declare(x);
+            if (current_scope->get_symbol(var_name) == nullptr) {
+                infer_type_and_declare(target_name, x.m_value);
             }
         }
         this->visit_expr(*x.m_target);
@@ -5891,6 +5921,48 @@ public:
             }
             nopass = is_nopass;
         }
+    }
+
+    void visit_InferAssignment(const AST::InferAssignment_t &x) {
+        if (!compiler_options.infer_mode) {
+            diag.semantic_warning_label(
+                "`:=` is an experimental LFortran extension (subject to change); "
+                "use `--infer` to suppress this warning",
+                { x.base.base.loc }, "LFortran extension");
+        }
+        if (!AST::is_a<AST::Name_t>(*x.m_target)) {
+            diag.add(Diagnostic(
+                "`:=` can only be used with a simple variable name",
+                Level::Error, Stage::Semantic, {
+                    Label("expected a bare name", {x.m_target->base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+        AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
+        std::string var_name = to_lower(target_name->m_id);
+        ASR::symbol_t* existing = current_scope->get_symbol(var_name);
+        if (existing != nullptr) {
+            diag.add(Diagnostic(
+                "Variable '" + var_name + "' is already declared; "
+                "use `=` for assignment to existing variables",
+                Level::Error, Stage::Semantic, {
+                    Label("already declared", {target_name->base.base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+        infer_type_and_declare(target_name, x.m_value);
+        // Delegate to visit_Assignment for the actual assignment lowering
+        AST::Assignment_t assignment;
+        assignment.base.type = AST::stmtType::Assignment;
+        assignment.base.base.type = AST::astType::stmt;
+        assignment.base.base.loc = x.base.base.loc;
+        assignment.m_label = x.m_label;
+        assignment.m_target = x.m_target;
+        assignment.m_value = x.m_value;
+        assignment.m_trivia = x.m_trivia;
+        visit_Assignment(assignment);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {

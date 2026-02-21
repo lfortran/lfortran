@@ -915,6 +915,7 @@ std::string token2text(const int token)
 
         T(TK_DBL_DOT, "..")
         T(TK_DBL_COLON, "::")
+        T(TK_COLON_EQUAL, ":=")
         T(TK_POW, "**")
         T(TK_CONCAT, "//")
         T(TK_ARROW, "=>")
