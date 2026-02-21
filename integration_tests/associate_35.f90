@@ -6,7 +6,7 @@ program associate_35
 contains
     subroutine s(input_data)
         real, intent(in) :: input_data(*)
-        ! TODO(#10218): Use `input_data` directly and enable llvm once codegen
+        ! TODO(#10218): Use `input_data` directly once codegen
         ! supports assumed-size ASSOCIATE targets without ICE.
         associate(a => input_data(:3))
             print *, a(1)

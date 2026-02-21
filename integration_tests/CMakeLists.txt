@@ -2068,8 +2068,7 @@ RUN(NAME associate_31 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME associate_32 LABELS llvm)
 RUN(NAME associate_33 LABELS gfortran llvm)
 RUN(NAME associate_34 LABELS gfortran llvm)
-# TODO: Switch to full assumed-size associate target and enable llvm once #10218 is fixed.
-RUN(NAME associate_35 LABELS gfortran)
+RUN(NAME associate_35 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
