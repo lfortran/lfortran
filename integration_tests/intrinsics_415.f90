@@ -30,7 +30,8 @@ program intrinsics_415
   print "*(A)", '"'//str3//str5//'"'
   write(str6, "*(A)") '"'//str3(:)//str5//'"'
   if (str6 /= '"abc xy""de  xy"') error stop
-
+  
+  ! Check str4 (Parameter Arrays)
   str6 = ''
   print "(A)",'"'//str4//str5//'"'
   write(str6, "*(A)") '"'//str4(:)//str5//'"'
