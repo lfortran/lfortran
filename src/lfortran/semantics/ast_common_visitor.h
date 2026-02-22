@@ -5543,6 +5543,9 @@ public:
                             if (ad->m_dim->m_end_star == AST::dimension_typeType::AssumedRank) {
                                 is_assumed_rank = true;
                             }
+                            if (ad->n_dim > 0 && ad->m_dim[ad->n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar) {
+                                is_dimension_star = true;
+                            }
                             if (dims.size() > 0) {
                                 diag.add(Diagnostic(
                                     "Dimensions specified twice",
