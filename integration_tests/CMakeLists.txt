@@ -1948,6 +1948,7 @@ RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_w
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
 RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
+RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2443,6 +2444,7 @@ RUN(NAME class_115 LABELS gfortran llvm)
 RUN(NAME class_116 LABELS gfortran llvm)
 RUN(NAME class_117 LABELS gfortran llvm)
 RUN(NAME class_118 LABELS gfortran llvm)
+RUN(NAME class_119 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -3337,6 +3339,7 @@ RUN(NAME separate_compilation_28 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_29 LABELS gfortran llvm EXTRAFILES separate_compilation_29a.f90 separate_compilation_29b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_30 LABELS gfortran llvm EXTRAFILES separate_compilation_30a.f90 separate_compilation_30b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_31 LABELS gfortran llvm EXTRAFILES separate_compilation_31a.f90 separate_compilation_31b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_32 LABELS gfortran llvm EXTRAFILES separate_compilation_32a.f90 separate_compilation_32b.f90 EXTRA_ARGS --separate-compilation)
 
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc

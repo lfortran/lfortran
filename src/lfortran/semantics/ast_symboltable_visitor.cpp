@@ -2342,7 +2342,8 @@ public:
                     case AST::decl_attributeType::AttrPass: {
                         AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
                         LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
-                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ? std::string(attr_pass->m_name) : "";
+                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ?
+                            to_lower(std::string(attr_pass->m_name)) : "";
                         class_procedures[dt_name][use_sym_name]["pass"].loc =  attr_pass->base.base.loc;
                         break ;
                     }
@@ -2924,6 +2925,25 @@ public:
         postponed_genericProcedure_calls_vec.clear();
     }
 
+    ASR::symbol_t* resolve_type_bound_proc_in_parent_chain(
+            ASR::Struct_t *clss, const std::string &proc_name) {
+        ASR::Struct_t *curr = clss;
+        while (curr != nullptr) {
+            ASR::symbol_t *proc_sym = curr->m_symtab->get_symbol(proc_name);
+            if (proc_sym != nullptr) {
+                return proc_sym;
+            }
+            if (curr->m_parent == nullptr) {
+                break;
+            }
+            ASR::symbol_t *parent_sym
+                = ASRUtils::symbol_get_past_external(curr->m_parent);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent_sym));
+            curr = ASR::down_cast<ASR::Struct_t>(parent_sym);
+        }
+        return nullptr;
+    }
+
     void add_generic_class_procedures() {
         for (auto &proc : generic_class_procedures) {
             Location loc;
@@ -2941,8 +2961,10 @@ public:
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    if( clss->m_symtab->get_symbol(cand_proc) != nullptr ) {
-                        cand_procs.push_back(al, clss->m_symtab->get_symbol(cand_proc));
+                    ASR::symbol_t *cand_proc_sym
+                        = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
+                    if (cand_proc_sym != nullptr) {
+                        cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
                             cand_proc + " doesn't exist inside " + proc.first + " type",
