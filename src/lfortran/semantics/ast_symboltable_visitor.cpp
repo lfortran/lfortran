@@ -944,15 +944,22 @@ public:
                         ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
                         if (local_sym == nullptr) {
                             // Create ExternalSymbol in the submodule for the type declaration
-                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(type_decl_name));
-                            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(ASRUtils::symbol_parent_symtab(orig_sym)->asr_owner);
-                            if (orig_sym && ASR::is_a<ASR::Module_t>(*owner)) {
-                               ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
-                                   al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
-                                   orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
-                                       s2c(al, type_decl_name), dflt_access));
-                               current_scope->add_symbol(type_decl_name, external_sym);
-                               local_sym = external_sym;
+                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(
+                                parent_scope->resolve_symbol(type_decl_name));
+                            if (orig_sym) {
+                                SymbolTable *orig_symtab = ASRUtils::symbol_parent_symtab(orig_sym);
+                                ASR::asr_t *owner_asr = orig_symtab ? orig_symtab->asr_owner : nullptr;
+                                if (owner_asr && ASR::is_a<ASR::symbol_t>(*owner_asr)) {
+                                    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(owner_asr);
+                                    if (ASR::is_a<ASR::Module_t>(*owner)) {
+                                        ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
+                                            al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
+                                            orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
+                                            s2c(al, type_decl_name), dflt_access));
+                                        current_scope->add_symbol(type_decl_name, external_sym);
+                                        local_sym = external_sym;
+                                    }
+                                }
                             }
                         }
                         if (local_sym != nullptr && local_sym != var->m_type_declaration) {
@@ -2964,6 +2971,30 @@ public:
                     ASR::symbol_t *cand_proc_sym
                         = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
+                        if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
+                            // Inherited bindings can point into a parent type
+                            // scope. Repack them into this type's scope via an
+                            // ExternalSymbol so modfile serialization keeps a
+                            // local indirection.
+                            std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
+                            ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
+                            if (local_proc_sym == nullptr ||
+                                ASRUtils::symbol_get_past_external(local_proc_sym) != cand_proc_sym) {
+                                std::string local_proc_name = cand_proc_name;
+                                if (local_proc_sym != nullptr) {
+                                    local_proc_name = clss->m_symtab->get_unique_name(cand_proc_name);
+                                }
+                                ASR::symbol_t *owner_sym = ASRUtils::get_asr_owner(cand_proc_sym);
+                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                                    al, cand_proc_sym->base.loc, clss->m_symtab,
+                                    s2c(al, local_proc_name), cand_proc_sym,
+                                    ASRUtils::symbol_name(owner_sym), nullptr, 0,
+                                    s2c(al, cand_proc_name), ASR::accessType::Public);
+                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(ext);
+                                clss->m_symtab->add_symbol(local_proc_name, local_proc_sym);
+                            }
+                            cand_proc_sym = local_proc_sym;
+                        }
                         cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
