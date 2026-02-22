@@ -8375,10 +8375,11 @@ public:
 
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
+            ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
-                    final_sym, current_scope);
-                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym)->m_proc;
+                    final_sym_past_ext, current_scope);
+                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
