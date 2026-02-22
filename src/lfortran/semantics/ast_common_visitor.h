@@ -2403,7 +2403,52 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
+    void check_intent_out_in_spec_expr(ASR::expr_t* expr) {
+        if (!expr) return;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (var->m_intent == ASRUtils::intent_out) {
+                    diag.add(Diagnostic(
+                        "Dummy argument '" + std::string(var->m_name) +
+                        "' with INTENT(OUT) cannot be used in a "
+                        "specification expression",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (var->m_presence == ASR::presenceType::Optional) {
+                    diag.add(Diagnostic(
+                        "OPTIONAL dummy argument '" +
+                        std::string(var->m_name) +
+                        "' cannot be used in a specification expression",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            check_intent_out_in_spec_expr(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        } else if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+            auto* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            check_intent_out_in_spec_expr(binop->m_left);
+            check_intent_out_in_spec_expr(binop->m_right);
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
+            check_intent_out_in_spec_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+        } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            check_intent_out_in_spec_expr(
+                ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        }
+    }
+
     void dimension_attribute_error_check(ASR::expr_t* dim_expr) {
+        check_intent_out_in_spec_expr(dim_expr);
         bool error = false;
         if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
             ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
