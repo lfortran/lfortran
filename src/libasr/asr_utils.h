@@ -6799,7 +6799,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
         if (is_character(*a_type_->m_type)) {
-            int len;
+            int len = 0;
             if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
             n_data = curr_idx * len;
         } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
