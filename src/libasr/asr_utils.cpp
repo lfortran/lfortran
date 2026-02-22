@@ -2830,8 +2830,13 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
-    if (original_sym) {
-        original_sym = ASRUtils::symbol_get_past_external(original_sym);
+    if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {
+        ASR::symbol_t* original_sym_past_ext = ASRUtils::symbol_get_past_external(original_sym);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym_past_ext) ||
+            (ASR::is_a<ASR::Variable_t>(*original_sym_past_ext) &&
+             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym_past_ext)))) {
+            original_sym = original_sym_past_ext;
+        }
     }
     if( original_sym && (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym) ||
         (ASR::is_a<ASR::Variable_t>(*original_sym) &&
