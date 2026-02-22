@@ -2964,6 +2964,30 @@ public:
                     ASR::symbol_t *cand_proc_sym
                         = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
+                        if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
+                            // Inherited bindings can point into a parent type
+                            // scope. Repack them into this type's scope via an
+                            // ExternalSymbol so modfile serialization keeps a
+                            // local indirection.
+                            std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
+                            ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
+                            if (local_proc_sym == nullptr ||
+                                ASRUtils::symbol_get_past_external(local_proc_sym) != cand_proc_sym) {
+                                std::string local_proc_name = cand_proc_name;
+                                if (local_proc_sym != nullptr) {
+                                    local_proc_name = clss->m_symtab->get_unique_name(cand_proc_name);
+                                }
+                                ASR::symbol_t *owner_sym = ASRUtils::get_asr_owner(cand_proc_sym);
+                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                                    al, cand_proc_sym->base.loc, clss->m_symtab,
+                                    s2c(al, local_proc_name), cand_proc_sym,
+                                    ASRUtils::symbol_name(owner_sym), nullptr, 0,
+                                    s2c(al, cand_proc_name), ASR::accessType::Public);
+                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(ext);
+                                clss->m_symtab->add_symbol(local_proc_name, local_proc_sym);
+                            }
+                            cand_proc_sym = local_proc_sym;
+                        }
                         cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
