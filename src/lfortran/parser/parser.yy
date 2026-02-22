@@ -1620,6 +1620,7 @@ var_sym_decl
     | id "*" expr { $$ = VAR_SYM_DIM_LEN($1, nullptr, 0, $3, Asterisk, @$); }
     | id "*" expr "=" expr { $$ = VAR_SYM_DIM_LEN_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
     | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
+    | id "*" "(" "*" ")" "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $7, DoubleAsterisk, @$); }
     | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
     | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
             $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
