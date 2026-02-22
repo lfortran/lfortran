@@ -3359,6 +3359,10 @@ ASR::asr_t* make_ArraySize_t_util(
                 }
                 return &(result->base);
             } else if( is_dimension_constant ) {
+                if( m_dims[dim - 1].m_length == nullptr ) {
+                    // For Deferred-shape allocatable return, calculate size at runtime
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
                 LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);
                 return &(m_dims[dim - 1].m_length->base);
             }
