@@ -56,6 +56,7 @@ stmt
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? advance, expr? size, expr? id, expr? pos, expr* values, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec)
     | FileBackspace(int label, expr? unit, expr? iostat, expr? err)
     | FileRewind(int label, expr? unit, expr? iostat, expr? err)
+    | FileEndfile(int label, expr? unit, expr? iostat, expr? err)
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err, expr? exist, expr? opened, expr? number, expr? named, expr? name, expr? access, expr? sequential, expr? direct, expr? form, expr? formatted, expr? unformatted, expr? recl, expr? nextrec, expr? blank, expr? position, expr? action, expr? read, expr? write, expr? readwrite, expr? delim, expr? pad, expr? flen, expr? blocksize, expr? convert, expr? carriagecontrol, expr? size, expr? pos, expr? iolength, expr* iolength_vars)
     | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec)
     | Return()
@@ -176,7 +177,7 @@ expr
     | OverloadedBoolOp(expr left, logicalbinop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedUnaryMinus(expr arg, ttype type, expr? value, expr overloaded)
     | OverloadedStringConcat(expr left, expr right, ttype type, expr? value, expr overloaded)
-    | Cast(expr arg, cast_kind kind, ttype type, expr? value)
+    | Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
     | ArrayPhysicalCast(expr arg, array_physical_type old, array_physical_type new, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
@@ -223,7 +224,7 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
 
-cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToString | IntegerToString | LogicalToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray |PointerToInteger
+cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToString | IntegerToString | LogicalToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified

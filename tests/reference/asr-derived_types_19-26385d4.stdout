@@ -90,14 +90,40 @@
                                                     [(If
                                                         ()
                                                         (StructInstanceMember
-                                                            (Var 7 ptr)
+                                                            (Cast
+                                                                (Var 7 ptr)
+                                                                ClassToStruct
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                ()
+                                                                (Var 4 child_value)
+                                                            )
                                                             8 1_child_value_ok
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Associate
                                                             (Var 7 array)
-                                                            (Var 7 ptr)
+                                                            (Cast
+                                                                (Var 7 ptr)
+                                                                ClassToStruct
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                ()
+                                                                (Var 4 child_value)
+                                                            )
                                                         )]
                                                         [(SubroutineCall
                                                             4 not_ok

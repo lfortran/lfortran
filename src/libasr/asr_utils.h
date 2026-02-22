@@ -28,14 +28,15 @@
         asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
     SymbolTable* temp_scope = current_scope; \
-    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
-            !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
-        if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) { \
-            temp_scope = temp_scope->parent; \
-            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
-                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+    if (asr_owner_sym && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
+        while (temp_scope->parent && temp_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
+            ASR::symbol_t* temp_owner_sym = ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner); \
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) && !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) { \
+                break; \
             } \
-        } else { \
+            temp_scope = temp_scope->parent; \
+        } \
+        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
         } \
     } \
@@ -45,14 +46,15 @@
         asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
     SymbolTable* temp_scope = current_scope; \
-    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
-            !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
-        if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) { \
-            temp_scope = temp_scope->parent; \
-            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
-                current_function_dependencies.push_back(al, dep_name); \
+    if (asr_owner_sym && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
+        while (temp_scope->parent && temp_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
+            ASR::symbol_t* temp_owner_sym = ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner); \
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) && !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) { \
+                break; \
             } \
-        } else { \
+            temp_scope = temp_scope->parent; \
+        } \
+        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
             current_function_dependencies.push_back(al, dep_name); \
         } \
     } \
@@ -391,8 +393,12 @@ static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
 }
 
 static inline ASR::Variable_t* expr_to_variable_or_null(ASR::expr_t* expr) {
-    if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) {
+    if (!expr || !(ASR::is_a<ASR::Var_t>(*expr) || ASR::is_a<ASR::Cast_t>(*expr))) {
         return nullptr;
+    }
+
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return expr_to_variable_or_null(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
     }
 
     ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
@@ -3926,9 +3932,13 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
 }
 
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
+    auto is_upoly = [](ASR::Struct_t* s) {
+        return s->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                s->m_struct_signature)->m_is_unlimited_polymorphic;
+    };
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (std::string(a->m_name) == "~unlimited_polymorphic_type" &&
-        std::string(b->m_name) == "~unlimited_polymorphic_type");
+        (is_upoly(a) && is_upoly(b));
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
@@ -4249,6 +4259,10 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    return types_equal(a, b, nullptr, nullptr, true);
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4392,6 +4406,10 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                if (left_func == nullptr || right_func == nullptr) {
+                    return types_equal(a, b, nullptr, nullptr, true);
+                }
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
@@ -4492,6 +4510,10 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
 
+        if (left_func == nullptr || right_func == nullptr) {
+            return types_equal(x, y, nullptr, nullptr, true);
+        }
+
         if (left_ft->n_arg_types != right_ft->n_arg_types) {
             return false;
         }
@@ -4539,8 +4561,12 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
     if (ASR::is_a<ASR::Struct_t>(*target) && ASR::is_a<ASR::Struct_t>(*value)) {
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(value);
-        is_class_same = (target == value) || (std::string(tar_struct->m_name) == "~unlimited_polymorphic_type" && std::string(tar_struct->m_name) == "~unlimited_polymorphic_type");
-        is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+        bool tar_is_upoly = tar_struct->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                tar_struct->m_struct_signature)->m_is_unlimited_polymorphic;
+        is_class_same = (target == value)
+            || tar_is_upoly
+            || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
 }
@@ -4812,6 +4838,31 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
         return struct_sym;
     }
     std::string struct_name = ASRUtils::symbol_name(struct_sym);
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+    if (struct_t->m_struct_signature != nullptr &&
+        ASR::down_cast<ASR::StructType_t>(
+            struct_t->m_struct_signature)->m_is_unlimited_polymorphic) {
+        // Unlimited polymorphic is a per-scope synthetic type that cannot
+        // be imported as an ExternalSymbol.  Find a local instance in the
+        // scope chain or create one so the modfile serializer never writes
+        // a dangling symtab reference from the foreign module.
+        ASR::symbol_t* local = scope->resolve_symbol(struct_name);
+        if (local != nullptr) {
+            return local;
+        }
+        SymbolTable* upt_symtab = al.make_new<SymbolTable>(scope);
+        ASR::asr_t* dtype = ASR::make_Struct_t(al, struct_sym->base.loc,
+            upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
+            nullptr, 0, nullptr, 0, ASR::abiType::Source,
+            ASR::accessType::Public, false, true, nullptr, 0,
+            nullptr, nullptr);
+        ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
+        ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, new_sym, false);
+        ASR::down_cast<ASR::Struct_t>(new_sym)->m_struct_signature = sig;
+        scope->add_symbol(struct_name, new_sym);
+        return new_sym;
+    }
 
     // Get the module that owns this struct
     ASR::symbol_t* struct_module = ASRUtils::get_asr_owner(struct_sym);
@@ -5789,6 +5840,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
             !ASRUtils::is_class_type(ASRUtils::type_get_past_array(argi->m_type)) &&
             !ASR::is_a<ASR::String_t>(*argi->m_type) &&
+            !argi->m_target_attr &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
@@ -5919,34 +5971,29 @@ static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
     return ASR::down_cast<ASR::Enum_t>(enum_type_cand);
 }
 
-static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
-{
-    ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-    if ( !ASR::is_a<ASR::StructType_t>(*type) ) {
-        return false;
-    }
-    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
-    
-    if (!ASRUtils::is_class_type(type)) {
-        return false;
-    }
-
-    return (st->n_data_member_types == 0 && st->n_member_function_types == 0
-            && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                   ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))))
-                   == std::string("~unlimited_polymorphic_type"));
+static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st) {
+    if (st->m_struct_signature == nullptr) return false;
+    return ASR::down_cast<ASR::StructType_t>(
+        st->m_struct_signature)->m_is_unlimited_polymorphic;
 }
 
 static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
 {
-    return (ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym))
-            == std::string("~unlimited_polymorphic_type"));
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) return false;
+    return is_unlimited_polymorphic_type(
+        ASR::down_cast<ASR::Struct_t>(sym));
 }
 
 inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t){
     if(!ASR::is_a<ASR::StructType_t>(*extract_type(t))) return false;
 
     return ASR::down_cast<ASR::StructType_t>(extract_type(t))->m_is_unlimited_polymorphic;
+}
+
+static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
+{
+    return is_unlimited_polymorphic_type(ASRUtils::expr_type(expr));
 }
 /// Check if type is a class + not unlimited-polymorphic one
 inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
@@ -6700,7 +6747,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, a_loc, n_args, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-            al, a_loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+            al, a_loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
         a_type = ASRUtils::make_Array_t_util(al, dim.loc,
             a_type, dims.p, dims.size(), ASR::abiType::Source,
@@ -6752,7 +6799,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
         if (is_character(*a_type_->m_type)) {
-            int len;
+            int len = 0;
             if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
             n_data = curr_idx * len;
         } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
@@ -6819,6 +6866,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                 case ASR::exprType::StructInstanceMember:
                                 case ASR::exprType::IntrinsicArrayFunction:
                                 case ASR::exprType::ListItem:
+                                case ASR::exprType::Cast:
                                     // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
                                     is_valid_variable = true;
                                     break;
@@ -7006,7 +7054,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
                             al, arg->base.loc, arg,
                             ASR::cast_kindType::IntegerToInteger,
-                            orig_arg_type, nullptr));
+                            orig_arg_type, nullptr, nullptr));
                         continue;
                     }
                 }
@@ -7148,7 +7196,25 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
+                    // When is_method is true, FunctionParam(0) refers to 'self' (a_dt),
+                    // but a_args doesn't include 'self'. We need to construct a full
+                    // args array with a_dt prepended so FunctionParam indices match.
+                    ASR::call_arg_t* full_args = a_args;
+                    size_t full_n_args = n_args;
+                    Vec<ASR::call_arg_t> full_args_vec;
+                    if (is_method && a_dt) {
+                        full_args_vec.reserve(al, n_args + 1);
+                        ASR::call_arg_t self_arg;
+                        self_arg.loc = a_dt->base.loc;
+                        self_arg.m_value = a_dt;
+                        full_args_vec.push_back(al, self_arg);
+                        for (size_t j = 0; j < n_args; j++) {
+                            full_args_vec.push_back(al, a_args[j]);
+                        }
+                        full_args = full_args_vec.p;
+                        full_n_args = full_args_vec.n;
+                    }
+                    ReplaceFunctionParamWithArg r(al, full_args, full_n_args, false);
                     SetChar temp_function_dependencies;
                     CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
                     bool valid_symbols = true;
@@ -7272,7 +7338,8 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
-        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) &&
+        !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
@@ -7629,7 +7696,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
@@ -7639,7 +7706,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr, nullptr));
             }
         } else {
             diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},

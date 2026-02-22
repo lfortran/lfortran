@@ -140,7 +140,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -212,7 +212,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -249,7 +249,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -279,7 +279,7 @@ namespace LCompilers {
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
-                    array_ref, cast_kind, casted_type, nullptr));
+                    array_ref, cast_kind, casted_type, nullptr, nullptr));
             }
             return array_ref;
         }
@@ -774,28 +774,45 @@ namespace LCompilers {
         }
 
         ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
-                    ASR::expr_t* array_var, ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx) {
+                    ASR::expr_t* array_var, ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, int shifting_dim) {
             ASRUtils::ASRBuilder b(al, loc);
             if ( do_loop_variables.size() == 0 ) {
                 return b.Assignment(b.ArrayItem_01(res, {res_var}), b.ArrayItem_01(array, {array_var}));
             }
+            if (shifting_dim == 0) shifting_dim = 1;
+            int rank = (int)do_loop_variables.size() + 1;
+            int actual_dim = -1;
+            int count = 0;
+            for(int i=1; i<=rank; i++) {
+                if(i == shifting_dim) continue;
+                if(count == curr_idx) {
+                    actual_dim = i;
+                    break;
+                }
+                count++;
+            }
+
             if (curr_idx == (int)do_loop_variables.size() - 1) {
-                std::vector<ASR::expr_t*> array_vars;
-                array_vars.push_back(array_var);
-                for (size_t i = 0; i < do_loop_variables.size(); i++) {
-                    array_vars.push_back(do_loop_variables[i]);
+                std::vector<ASR::expr_t*> array_vars(rank);
+                std::vector<ASR::expr_t*> res_vars(rank);
+                
+                array_vars[shifting_dim - 1] = array_var;
+                res_vars[shifting_dim - 1] = res_var;
+                
+                int k = 0;
+                for(int i=0; i<rank; i++) {
+                     if (i == shifting_dim - 1) continue;
+                     array_vars[i] = do_loop_variables[k];
+                     res_vars[i] = do_loop_variables[k];
+                     k++;
                 }
-                std::vector<ASR::expr_t*> res_vars;
-                res_vars.push_back(res_var);
-                for (size_t i = 0; i < do_loop_variables.size(); i++) {
-                    res_vars.push_back(do_loop_variables[i]);
-                }
-                return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), b.GetUBound(array, curr_idx + 2), {
+
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
                     b.Assignment(b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars)),
                 }, nullptr);
             }
-            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 2), b.GetUBound(array, curr_idx + 2), {
-                create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1)
+            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
+                create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1, shifting_dim)
             }, nullptr);
         }
 
@@ -919,11 +936,11 @@ namespace LCompilers {
                 ASR::expr_t* dim_start = m_dims[dim - 1].m_start;
                 if (dim_length && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_length)) != integer_kind) {
                     dim_length = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_length,
-                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr, nullptr));
                 }
                 if (dim_start && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_start)) != integer_kind) {
                     dim_start = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_start,
-                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr, nullptr));
                 }
                 if( bound == "ubound" ) {
                     return ASRUtils::EXPR(
@@ -1008,7 +1025,7 @@ namespace LCompilers {
                 }
             }
             if( cast_kind > 0 ) {
-                return ASRUtils::EXPR(ASR::make_Cast_t(al, x->base.loc, x, (ASR::cast_kindType)cast_kind, int64type, nullptr));
+                return ASRUtils::EXPR(ASR::make_Cast_t(al, x->base.loc, x, (ASR::cast_kindType)cast_kind, int64type, nullptr, nullptr));
             } else {
                 throw LCompilersException("Array indices can only be of type real or integer.");
             }
@@ -1332,7 +1349,8 @@ namespace LCompilers {
         }
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp, bool use_loop_variable_after_loop) {
+                                         int comp, bool use_loop_variable_after_loop,
+                                         SymbolTable* current_scope) {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
@@ -1341,6 +1359,8 @@ namespace LCompilers {
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
+            Vec<ASR::stmt_t*> pre_loop_stmts;
+            pre_loop_stmts.reserve(al, 2);
             if( loop.m_head.m_v ) {
                 ASR::expr_t* loop_head = loop.m_head.m_v;
                 cast_util(loop_head, a, al, true);
@@ -1365,6 +1385,31 @@ namespace LCompilers {
                     c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
                 }
                 LCOMPILERS_ASSERT(c);
+
+                // Per the Fortran standard, do loop bounds are evaluated once
+                // before the loop begins. Save non-constant upper bound and
+                // increment expressions to temporary variables so they are not
+                // re-evaluated each iteration.
+                if (current_scope && b &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*b)) {
+                    std::string name = current_scope->get_unique_name("__do_loop_end");
+                    ASR::stmt_t* assign;
+                    b = create_auxiliary_variable_for_expr(b, name, al,
+                            current_scope, assign);
+                    pre_loop_stmts.push_back(al, assign);
+                }
+                if (current_scope && c &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*c) &&
+                        !(ASR::is_a<ASR::IntegerUnaryMinus_t>(*c) &&
+                          ASR::is_a<ASR::IntegerConstant_t>(
+                            *ASR::down_cast<ASR::IntegerUnaryMinus_t>(c)->m_arg))) {
+                    std::string name = current_scope->get_unique_name("__do_loop_inc");
+                    ASR::stmt_t* assign;
+                    c = create_auxiliary_variable_for_expr(c, name, al,
+                            current_scope, assign);
+                    pre_loop_stmts.push_back(al, assign);
+                }
+
                 ASR::cmpopType cmp_op;
 
                 if( comp == -1 ) {
@@ -1481,7 +1526,10 @@ namespace LCompilers {
             ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size(), loop.m_orelse, loop.n_orelse));
             Vec<ASR::stmt_t*> result;
-            result.reserve(al, 2);
+            result.reserve(al, 2 + pre_loop_stmts.size());
+            for (size_t i = 0; i < pre_loop_stmts.size(); i++) {
+                result.push_back(al, pre_loop_stmts[i]);
+            }
             if( loop_init_stmt ) {
                 result.push_back(al, loop_init_stmt);
             }
@@ -1512,7 +1560,7 @@ namespace LCompilers {
                     al, current_scope);
                 if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                 }
                 ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
@@ -1562,7 +1610,7 @@ namespace LCompilers {
                     al, current_scope);
                 if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                 }
                 ASR::stmt_t* assign = b.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
@@ -1613,7 +1661,7 @@ namespace LCompilers {
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
                         if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
@@ -1660,7 +1708,7 @@ namespace LCompilers {
                             al, current_scope);
                         if( perform_cast ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
@@ -1730,7 +1778,7 @@ namespace LCompilers {
                             al, current_scope);
                         if( perform_cast ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr, nullptr));
                         }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);

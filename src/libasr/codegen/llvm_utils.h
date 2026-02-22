@@ -294,55 +294,6 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
 
-            template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, std::string infile, Location loc, LocationManager& lm, Args... args)
-            {
-                llvm::Function *fn = builder->GetInsertBlock()->getParent();
-
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                uint32_t line, column;
-                if (infile != "" && loc.first != 0 && loc.last != 0) {
-                    lm.pos_to_linecol(lm.output_to_input_pos(loc.first, false),
-                        line, column, infile);
-                    std::stringstream ss;
-                    ss << "At " << line << ":" << column << " of file " << infile << "\n" << message;
-                    message = ss.str();
-                }
-
-                builder->CreateCondBr(cond, thenBB, mergeBB);
-                builder->SetInsertPoint(thenBB); {
-                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
-                        llvm::Function* print_error_fn = module->getFunction("_lcompilers_print_error");
-                        if (!print_error_fn) {
-                            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            print_error_fn = llvm::Function::Create(error_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_print_error", module);
-                        }
-
-                        std::vector<llvm::Value*> vec = {formatted_msg, args...};
-                        builder->CreateCall(print_error_fn, vec);
-
-                        llvm::Function* exit_fn = module->getFunction("exit");
-                        if (!exit_fn) {
-                            llvm::FunctionType* exit_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt32Ty(context)},
-                                false);
-                            exit_fn = llvm::Function::Create(exit_fn_type,
-                                llvm::Function::ExternalLinkage, "exit", module);
-                        }
-
-                        builder->CreateCall(exit_fn, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
-                        builder->CreateUnreachable();
-                }
-                start_new_block(mergeBB);
-            }
-
             /*
             * A Label for runtime error messages
             */
@@ -361,7 +312,7 @@ class ASRToLLVMVisitor;
             };
 
             template<typename... Args>
-            void generate_runtime_error2(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -427,12 +378,13 @@ class ASRToLLVMVisitor;
                             llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
 
                             llvm::Value *label_i = LLVMUtils::CreateInBoundsGEP2(label_arr_type, labels_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx});
+                            llvm::Value *span_arr = LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0);
+                            llvm::Value *label_spans = LLVMUtils::CreateGEP2(label_type, label_i, 2);
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, labels[i].primary)),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 0));
                             builder->CreateStore(formatted_message,
                                     LLVMUtils::CreateGEP2(label_type, label_i, 1));
-                            builder->CreateStore(LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 2));
+                            builder->CreateStore(span_arr, label_spans);
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, labels[i].spans.size())),
                                     LLVMUtils::CreateGEP2(label_type, label_i, 3));
                         }
@@ -694,6 +646,8 @@ class ASRToLLVMVisitor;
              * @param array_data_ptr Plain pointer to array.
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
+            llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
+            llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
             
 
             void set_module(llvm::Module* module_);
@@ -1238,21 +1192,33 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 return builder_->CreateICmpSLT(loaded_iter_incr, array_size);
             };
 
+            bool is_class_type = ASRUtils::non_unlimited_polymorphic_class(&struct_t->base);
+            
             auto const body_fn = [&]() -> void {
                 auto const loaded_iter = builder_->CreateLoad(iter_llvm_type, iter);
-                auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
-                auto const struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
+                llvm::Value* struct_element = nullptr;
+                
+                if (is_class_type) {
+                    // For class arrays: ONE wrapper with data_ptr pointing to array of underlying structs
+                    struct_element = llvm_utils_->get_class_element_from_array(struct_sym, struct_t, data_ptr, loaded_iter);
+                } else {
+                    auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
+                    struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
+                }
                 finalize_struct(struct_element, &struct_t->base, struct_sym);
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
 
             // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
-            if(ASRUtils::non_unlimited_polymorphic_class(&struct_t->base)){
-                auto const struct_type_llvm = llvm_utils_->getClassType(struct_sym);
+            if(is_class_type){
+                auto const class_type_llvm = llvm_utils_->getClassType(struct_sym);
+                auto const struct_type_llvm = llvm_utils_->getStructType(struct_sym, llvm_utils_->module);
                 auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
-                                                             llvm_utils_->CreateGEP2(struct_type_llvm, data_ptr, 1));
+                                                             llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1));
                 llvm_utils_->lfortran_free(allocated_cosecutive_structs);
+                // deallocate class wrapper 
+                llvm_utils_->lfortran_free(data_ptr);
             }
         }
             
@@ -1737,6 +1703,10 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
 
             void fill_intrinsic_type_copy_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
+            llvm::Function* define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module);
+
+            void fill_intrinsic_type_allocate_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
+
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
             
@@ -1746,17 +1716,24 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
              *       to act as non-owner viewer variable.
              * Note : Corresponding VTable inserted.
              */
-            llvm::Value* create_class_view(ASR::Struct_t* class_symbol, llvm::Value* viewed_struct);
+            llvm::Value* create_class_view(ASR::Struct_t* class_symbol, llvm::Value* viewed_struct,
+                                           llvm::Value* vptr = nullptr);
             
             /**
              * Class Structure => `{VTable*, struct_t*}`
              * @brief Allocates memory for array of classes.
              *        Don't allocate consecutive class structures, instead allocate 1 class structure
              *        and insert consecutive allocated structs into the class structure along with single vtable.
+             * @param allocated_subclass If provided, use this type for sizing the underlying data array and setting vptr
              */
             void allocate_array_of_classes(ASR::Struct_t* class_symbol, 
                 [[maybe_unused]] ASR::StructType_t* struct_type, llvm::Value* array_data_ptr,
-                llvm::Value* size, bool realloc = false);
+                llvm::Value* size, ASR::symbol_t* allocated_subclass = nullptr, bool realloc = false);
+
+            void allocate_array_of_unlimited_polymorphic_type(
+                ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
+                llvm::Value* array_data_ptr, llvm::Value* size,
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
     };
 
     class LLVMTuple {

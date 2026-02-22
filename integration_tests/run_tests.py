@@ -8,10 +8,10 @@ import os
 NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'llvm_integer_8',
-                      'fortran', 'c_nopragma', 'llvm_nopragma', 'llvm_wasm',
-                      'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule', 'mlir',
-                      'mlir_omp', 'mlir_llvm_omp', 'llvm_goc', 'target_offload',
-                      'llvm_single_invocation']
+                      'llvm_infer', 'fortran', 'c_nopragma', 'llvm_nopragma',
+                      'llvm_wasm', 'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule',
+                      'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc',
+                      'target_offload', 'llvm_single_invocation']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
@@ -133,15 +133,18 @@ def test_backend(backend, std, test_pattern=None):
 def check_module_names():
     from glob import glob
     import re
-    mod = re.compile(r"(module|MODULE)[ ]+(.*)", re.IGNORECASE)
+    mod = re.compile(
+        r'(?im)^\s*(?:module|submodule)\b\s*(?:\([^)]+\))?\s*(?!\bprocedure\b)(\w+)'
+    )
     files = glob("*.f90")
     module_names = []
     file_names = []
     for file in files:
-        f = open(file).read()
-        s = mod.search(f)
+        with open(file) as f:
+            content = f.read()
+        s = mod.search(content)
         if s:
-            module_names.append(s.group(2).lower())
+            module_names.append(s.group(1).lower())
             file_names.append(file)
     for i in range(len(module_names)):
         name = module_names[i]

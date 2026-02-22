@@ -516,6 +516,7 @@
                                                 0.000000
                                                 (Complex 4)
                                             )
+                                            ()
                                         )
                                         ()
                                         .false.
@@ -1148,6 +1149,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 ()
+                                                                ()
                                                             )
                                                             Add
                                                             (ArrayItem
@@ -1167,6 +1169,7 @@
                                                         )
                                                         RealToComplex
                                                         (Complex 4)
+                                                        ()
                                                         ()
                                                     )
                                                     ()
@@ -1204,6 +1207,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 ()
+                                                                ()
                                                             )
                                                             Add
                                                             (ArrayItem
@@ -1223,6 +1227,7 @@
                                                         )
                                                         RealToComplex
                                                         (Complex 4)
+                                                        ()
                                                         ()
                                                     )
                                                     ()
@@ -1293,7 +1298,13 @@
                     )
                     (Allocate
                         [((Var 2 a)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        [((ArrayBound
+                            (Var 2 e)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 e)
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -1351,14 +1362,26 @@
                     )
                     (Allocate
                         [((Var 2 f)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        [((ArrayBound
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 b)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))
-                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        ((ArrayBound
+                            (Var 2 b)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 b)
                             (IntegerConstant 2 (Integer 4) Decimal)
@@ -1435,21 +1458,39 @@
                     )
                     (Allocate
                         [((Var 2 g)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        [((ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 c)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))
-                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        ((ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 c)
                             (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))
-                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        ((ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
                         (ArraySize
                             (Var 2 c)
                             (IntegerConstant 3 (Integer 4) Decimal)
@@ -1755,6 +1796,7 @@
                                     IntegerToReal
                                     (Real 4)
                                     ()
+                                    ()
                                 )
                                 ()
                                 .false.
@@ -1763,9 +1805,6 @@
                             []
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 c)]
                     )
                     (SubroutineCall
                         2 sum
@@ -2013,6 +2052,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         ()
+                                        ()
                                     )
                                     (Logical 4)
                                     ()
@@ -2115,6 +2155,7 @@
                                             )
                                             IntegerToComplex
                                             (Complex 4)
+                                            ()
                                             ()
                                         )
                                         (Logical 4)

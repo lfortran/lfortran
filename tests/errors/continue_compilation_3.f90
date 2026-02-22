@@ -34,10 +34,10 @@ contains
         print *, (x /= [1, 2])
     end subroutine assumed_rank
 
-
-
-
-
+    subroutine ss(x)
+    character(:), allocatable :: x
+    x = "AB"          ! allocates x with length 2
+    end subroutine ss
 
 
 
@@ -132,8 +132,8 @@ program continue_compilation_3
     i = foo
     !rewind_invalid_kwarg1
     rewind(end="world")
-    !Same_type
-    print *, same_type_as(1.0, 1.0)
+
+
     !sign_01
     print *, sign(1, 1_8)
     !specific_type_intrinsic
@@ -202,7 +202,7 @@ program continue_compilation_3
     print *, "8356" .eqv. 8356.00
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
-
+    call ss("hello")
     contains 
     subroutine bpe()
         print *, size(bpe)

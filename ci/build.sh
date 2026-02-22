@@ -23,7 +23,7 @@ python src/libasr/intrinsic_func_registry_util_gen.py
 echo $(pwd)
 cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && cd ../../..
 cd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && cd ../../..
-cd src/lfortran/parser && bison -Wall -d -r all parser.yy && cd ../../..
+cd src/lfortran/parser && bison -Wall -d parser.yy && cd ../../..
 
 # Generate the LSP sources
 python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server

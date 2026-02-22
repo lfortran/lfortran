@@ -1,63 +1,60 @@
 module class_104_mod
+    implicit none
 
-   type, abstract :: AbsType
-   contains
-      procedure(method), deferred :: method
-   end type AbsType
+    type, public, abstract :: AbsType
+    end type AbsType
 
-   abstract interface
-      subroutine method(self,arr)
-         import
-         class(AbsType),       intent(inout) :: self
-         real(8), allocatable, intent(inout) :: arr(:)
-      end subroutine method
-   end interface
+    type, extends(AbsType) :: MyType
+      integer :: key
+    end type MyType
 
-   type, extends(AbsType) :: MyType
-      class(AbsType), allocatable :: obj
-   contains
-      procedure :: method => implementation
-      procedure :: do_work
-   end type MyType
+    interface MyType
+        procedure :: init
+    end interface MyType
 
-   type :: Wrapper
-      real(8), allocatable :: arr(:)
-   end type Wrapper
+    type :: ClientType
+    contains
+        procedure :: client
+    end type ClientType
 
 contains
 
-   subroutine implementation(self,arr)
-      class(MyType),        intent(inout) :: self
-      real(8), allocatable, intent(inout) :: arr(:)
-      integer :: i
-      do i = 1, size(arr)
-         arr(i) = arr(i) * 2.0d0
-      end do
-   end subroutine implementation
+    function init() result(self)
+        type(MyType) :: self
+        self%key = 100
+    end function init
 
-   subroutine do_work(self,wrap)
-      class(MyType), intent(inout) :: self
-      type(Wrapper), intent(inout) :: wrap(:)
-      call self%obj%method(wrap(1)%arr)
-   end subroutine do_work
+    subroutine client(self, arr)
+        class(ClientType),           intent(in)  :: self
+        class(AbsType), allocatable, intent(out) :: arr(:)
+
+        allocate(MyType :: arr(2))
+        arr = MyType()
+    end subroutine client
 
 end module class_104_mod
 
+
 program class_104
-   use class_104_mod
-   implicit none
+    use class_104_mod
+    implicit none
 
-   type(MyType) :: obj
-   type(Wrapper) :: wrap(1)
+    type(ClientType) :: c
+    class(AbsType), allocatable :: arr(:)
 
-   allocate(MyType :: obj%obj)
-   allocate(wrap(1)%arr(3))
-   wrap(1)%arr = [1.0d0, 2.0d0, 3.0d0]
+    call c%client(arr)
 
-   call obj%do_work(wrap)
+    if (.not. allocated(arr)) error stop "arr not allocated"
 
-   if (abs(wrap(1)%arr(1) - 2.0d0) > 1.0d-10) error stop
-   if (abs(wrap(1)%arr(2) - 4.0d0) > 1.0d-10) error stop
-   if (abs(wrap(1)%arr(3) - 6.0d0) > 1.0d-10) error stop
-   print *, "PASS"
+    if (size(arr) /= 2) error stop "wrong array size"
+
+    select type (arr)
+    type is (MyType)
+        print *, "arr(1)%key = ", arr(1)%key
+        print *, "arr(2)%key = ", arr(2)%key
+        if (arr(1)%key /= 100 .or. arr(2)%key /= 100) error stop "wrong key value"
+    class default
+        error stop "wrong dynamic type"
+    end select
+
 end program class_104

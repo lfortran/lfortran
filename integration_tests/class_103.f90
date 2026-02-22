@@ -1,65 +1,33 @@
-module class_103_mod
+! Test for https://github.com/lfortran/lfortran/issues/2925
+! Typed allocation of polymorphic arrays with data members
+! MRE from issue comment by difference-scheme (the data member variant)
+module class_103_m
 
-   type, abstract :: AbsType
-   contains
-      procedure(method2), deferred :: method2
-   end type AbsType
+   type :: Base
+      real :: data = 2.0
+   end type Base
 
-   abstract interface
-      function method2(self,arr) result(a)
-         import
-         class(AbsType), intent(in) :: self
-         integer,        intent(in) :: arr(:)
-         integer                    :: a(size(arr))
-      end function method2
-   end interface
-
-   type :: SomeType
-      integer,        allocatable :: arr(:)
-      class(AbsType), allocatable :: obj
-   contains
-      procedure :: method1
-   end type SomeType
-
-   type, extends(AbsType) :: MyType
-   contains
-      procedure :: method2 => my_method2
-   end type MyType
+   type, extends(Base) :: Extended
+   end type Extended
 
 contains
 
-   subroutine method1(self)
-      class(SomeType), intent(inout) :: self
-      self%arr = self%obj%method2(self%arr)
-   end subroutine method1
+   subroutine allocator(array)
+      class(Base), allocatable, intent(out) :: array(:)
+      allocate( Extended :: array(1) )
+   end subroutine allocator
 
-   function my_method2(self, arr) result(a)
-      class(MyType), intent(in) :: self
-      integer, intent(in) :: arr(:)
-      integer :: a(size(arr))
-      integer :: i
-      do i = 1, size(arr)
-         a(i) = arr(i) * 2
-      end do
-   end function my_method2
-
-end module class_103_mod
+end module class_103_m
 
 program class_103
-   use class_103_mod
+   use class_103_m
    implicit none
+   class(Base), allocatable :: arr(:)
 
-   class(SomeType), allocatable :: s
+   call allocator(arr)
 
-   allocate(s)
-   allocate(s%arr(3))
-   allocate(MyType :: s%obj)
-   s%arr = [1, 2, 3]
-
-   call s%method1()
-
-   if (s%arr(1) /= 2) error stop
-   if (s%arr(2) /= 4) error stop
-   if (s%arr(3) /= 6) error stop
+   if (.not. allocated(arr)) error stop
+   if (size(arr) /= 1) error stop
+   if (abs(arr(1)%data - 2.0) > 1e-6) error stop
    print *, "PASS"
 end program class_103

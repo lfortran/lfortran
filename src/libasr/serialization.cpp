@@ -130,7 +130,14 @@ public:
         // it in write_symbol() above
         uint64_t symbol_type = read_int8();
         std::string symbol_name  = read_string();
-        LCOMPILERS_ASSERT(id_symtab_map.find(symtab_id) != id_symtab_map.end());
+        if (id_symtab_map.find(symtab_id) == id_symtab_map.end()) {
+            throw LCompilersException(
+                "Deserialization failed: symbol '" + symbol_name
+                + "' references symbol table with ID "
+                + std::to_string(symtab_id)
+                + " which has not been deserialized yet. "
+                + "This likely indicates a missing ExternalSymbol in the ASR.");
+        }
         SymbolTable *symtab = id_symtab_map[symtab_id];
         if (symtab->get_symbol(symbol_name) == nullptr) {
             // Symbol is not in the symbol table yet. We construct an empty

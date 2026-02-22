@@ -92,6 +92,7 @@
                                         IntegerToInteger
                                         (Integer 4)
                                         (IntegerConstant 64 (Integer 4) Decimal)
+                                        ()
                                     )
                                     (IntegerConstant 64 (Integer 4) Decimal)
                                     Parameter

@@ -4,6 +4,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
+#include <limits>
 
 namespace LCompilers::ASRUtils {
 
@@ -70,6 +71,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     BesselY1,
     BesselYN,
     SameTypeAs,
+    ExtendsTypeOf,
     Merge,
     Mergebits,
     Shiftr,
@@ -470,7 +472,36 @@ create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
-create_unary_function(Erfc, erfc, erfc)
+
+namespace Erfc {
+    static inline ASR::expr_t *eval_Erfc(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
+            diag::Diagnostics& diag) {
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double val = std::erfc(rv);
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);
+        double tiny = (kind == 4) ? std::numeric_limits<float>::min() : std::numeric_limits<double>::min();
+        if (std::abs(val) < tiny) {
+             diag.add(diag::Diagnostic(
+                "Result of `erfc` underflows its kind",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})
+                }));
+             return nullptr;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.f_t(val, t);
+    }
+    static inline ASR::expr_t* instantiate_Erfc (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id,
+            int index_kind) {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "erfc", arg_types[0], return_type, new_args, overload_id,
+            index_kind);
+    }
+}
 
 namespace Isnan{
     static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,
@@ -1047,13 +1078,68 @@ namespace Dprod {
 
 namespace SameTypeAs {
 
-    static ASR::expr_t *eval_SameTypeAs(Allocator &/*al*/, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
-        append_error(diag, "same_type_as is not implemented yet", loc);
-        return nullptr;
+    static ASR::expr_t *eval_SameTypeAs(Allocator &al, const Location &loc,
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+        // If either argument is polymorphic (class(*) or class(T)),
+        // we cannot evaluate at compile time
+        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+            return nullptr;
+        }
+        // Both types are known at compile time, compare them
+        ASRUtils::ASRBuilder b(al, loc);
+        bool same = ASRUtils::types_equal(
+            ASRUtils::type_get_past_allocatable_pointer(arg_type0),
+            ASRUtils::type_get_past_allocatable_pointer(arg_type1),
+            nullptr, nullptr);
+        return b.bool_t(same, return_type);
     }
 
 } // namespace SameTypeAs
+
+namespace ExtendsTypeOf {
+
+    static ASR::expr_t *eval_ExtendsTypeOf(Allocator &al, const Location &loc,
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+        // If either argument is polymorphic (class(*) or class(T)),
+        // we cannot evaluate at compile time
+        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+            return nullptr;
+        }
+        // Both types are known at compile time
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+        // Same type => extends_type_of is true
+        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
+            return b.bool_t(true, return_type);
+        }
+        // Check if A's type extends MOLD's type via parent chain
+        if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
+            ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[0]));
+            ASR::symbol_t *sym1 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[1]));
+            if (sym0 && sym1 &&
+                ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
+                // is_parent(a, b) checks if a is in b's parent chain
+                // extends_type_of(A, MOLD) means A extends MOLD,
+                // so MOLD must be in A's parent chain
+                bool extends = ASRUtils::is_parent(
+                    ASR::down_cast<ASR::Struct_t>(sym1),
+                    ASR::down_cast<ASR::Struct_t>(sym0));
+                return b.bool_t(extends, return_type);
+            }
+        }
+        return b.bool_t(false, return_type);
+    }
+
+} // namespace ExtendsTypeOf
 
 namespace Range {
 
@@ -4051,13 +4137,19 @@ namespace Modulo {
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
+                return nullptr;
             }
-            return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(std::real(a)/b), t1, loc);
+            int64_t r = a % b;
+            if (r != 0 && ((r < 0 && b > 0) || (r > 0 && b < 0))) {
+                r += b;
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, r, t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
+                return nullptr;
             }
             return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
         }
@@ -4077,9 +4169,24 @@ namespace Modulo {
         end function
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.r2r_t(args[1], arg_types[0]) , b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[1])))));
+            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(
+                b.r2r_t(args[1], arg_types[0]),
+                b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[0])))));
         } else {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.i2i_t(args[1], arg_types[0]), Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
+            ASR::expr_t* p = b.i2i_t(args[1], arg_types[0]);
+            body.push_back(al, b.Assignment(result, Mod::MOD(b, args[0], p, scope)));
+            body.push_back(al, b.If(
+                b.And(
+                    b.NotEq(result, b.i_t(0, arg_types[0])),
+                    b.Or(
+                        b.And(b.Lt(result, b.i_t(0, arg_types[0])), b.Gt(p, b.i_t(0, arg_types[0]))),
+                        b.And(b.Gt(result, b.i_t(0, arg_types[0])), b.Lt(p, b.i_t(0, arg_types[0])))
+                    )
+                ),
+                {
+                    b.Assignment(result, b.Add(result, p))
+                }, {}
+            ));
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -5503,11 +5610,12 @@ namespace Ichar {
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        LCOMPILERS_ASSERT((std::strlen(str)) == 1);
+        LCOMPILERS_ASSERT(str[0] == '\0' || std::strlen(str) == 1);
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
+
 
     static inline ASR::expr_t* instantiate_Ichar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
@@ -5622,11 +5730,12 @@ namespace Iachar {
     static ASR::expr_t *eval_Iachar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        LCOMPILERS_ASSERT((std::strlen(str)) == 1);
+        LCOMPILERS_ASSERT(str[0] == '\0' || std::strlen(str) == 1);
         unsigned char first_char = (unsigned char)str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
+
 
     static inline ASR::expr_t* instantiate_Iachar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
@@ -7308,10 +7417,10 @@ namespace Conjg {
         body.push_back(al, b.Assignment(result, b.Sub(
             EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_ComplexRe_t(al, loc,
             args[0], TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(arg_types[0]))), nullptr)),
-            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr)),
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)),
             b.Mul(EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_ComplexIm_t(al, loc,
             args[0], TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(arg_types[0]))), nullptr)),
-            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr)), EXPR(ASR::make_ComplexConstant_t(al, loc,
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)), EXPR(ASR::make_ComplexConstant_t(al, loc,
             0.0, 1.0, arg_types[0]))))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -7369,7 +7478,7 @@ namespace Loc {
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t* arg = args[0];
         ASR::ttype_t* int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, ASR::cast_kindType::PointerToInteger, int64_type, nullptr));
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, ASR::cast_kindType::PointerToInteger, int64_type, nullptr, nullptr));
     }
 
 }   // namespace Loc

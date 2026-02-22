@@ -1276,6 +1276,8 @@ public:
 
     // void visit_FileRewind(const ASR::FileRewind_t &x) {}
 
+    // void visit_FileEndfile(const ASR::FileEndfile_t &x) {}
+
     // void visit_FileInquire(const ASR::FileInquire_t &x) {}
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -1753,6 +1755,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(MoveAlloc, "move_alloc");
             SET_INTRINSIC_SUBROUTINE_NAME(Mvbits, "mvbits")
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
+            SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)

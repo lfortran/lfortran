@@ -1754,8 +1754,17 @@ namespace Cshift {
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
-        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, array); m_args.push_back(al, shift);
+        if (args.size() == 3 && args[2] != nullptr) {
+            ASR::expr_t *dim = args[2];
+            if( !is_integer(*ASRUtils::type_get_past_allocatable_pointer(expr_type(dim))) ) {
+                append_error(diag, "The argument `dim` in `cshift` must be of type Integer", dim->base.loc);
+                return nullptr;
+            }
+            m_args.push_back(al, dim);
+        }
+
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(m_args)) {
             value = eval_Cshift(al, loc, ret_type, m_args, diag);
@@ -1770,7 +1779,17 @@ namespace Cshift {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/,
             int index_kind) {
+        int shifting_dim = 1;
+        if (m_args.size() == 3) {
+            int64_t dim_val = -1;
+            if (ASRUtils::extract_value(m_args[2].m_value, dim_val)) {
+                shifting_dim = (int)dim_val;
+            }
+        }
         declare_basic_variables("_lcompilers_cshift");
+        if (shifting_dim != 1) {
+            fn_name += "_dim" + std::to_string(shifting_dim);
+        }
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("shift", arg_types[1]);
         ASR::ttype_t* return_type_ = return_type;
@@ -1817,7 +1836,7 @@ namespace Cshift {
         ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.If(b.Lt(args[1], b.i_idx(0, index_kind)), {
-            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], 1, index_kind)))
+            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], shifting_dim, index_kind)))
         }, {
             b.Assignment(shift_val, shift_val)
         }
@@ -1827,15 +1846,22 @@ namespace Cshift {
             ASR::expr_t* var = declare("i_" + std::to_string(i), b.int_type(index_kind), Local);
             do_loop_variables.push_back(var);
         }
-        body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
-        ASR::stmt_t *do_loop = PassUtils::create_do_loop_helper_cshift(al, loc, do_loop_variables, j, i, args[0], result, 0);
-        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), b.GetUBound(args[0], 1, index_kind), {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
-        body.push_back(al, b.DoLoop(j, b.GetLBound(args[0], 1, index_kind), shift_val, {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
+        body.push_back(al, b.Assignment(i, b.GetLBound(args[0], shifting_dim, index_kind)));
+        ASR::stmt_t *do_loop = PassUtils::create_do_loop_helper_cshift(al, loc, do_loop_variables, j, i, args[0], result, 0, shifting_dim);
+        
+        ASR::expr_t* lbound = b.GetLBound(args[0], shifting_dim, index_kind);
+        ASR::expr_t* shift_start = b.Add(lbound, shift_val);
+
+        body.push_back(al, b.DoLoop(j, shift_start, b.GetUBound(args[0], shifting_dim, index_kind), {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
+        body.push_back(al, b.DoLoop(j, lbound, b.Sub(shift_start, b.i_idx(1, index_kind)), {do_loop, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, nullptr);
+        Vec<ASR::call_arg_t> new_args; new_args.reserve(al, 2);
+        new_args.push_back(al, m_args[0]);
+        new_args.push_back(al, m_args[1]);
+        return b.Call(fn_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Cshift
@@ -3581,7 +3607,7 @@ namespace FindLoc {
                 ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
                 value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal,
-                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr, nullptr ));
             }
         } else if (is_integer(*array_type) && is_real(*value_type)){
             if (ASR::is_a<ASR::RealConstant_t>(*value)){
@@ -3590,7 +3616,7 @@ namespace FindLoc {
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
                 value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger,
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr, nullptr ));
             }
         }
         if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {

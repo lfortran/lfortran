@@ -1368,6 +1368,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::Var_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                visit_call_arg(x_m_args[i]);
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
                     current_scope, exprs_with_target, realloc_lhs);
@@ -2299,6 +2300,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_OverloadedOperator(x);
     }
 
+    void replace_OverloadedBoolOp(ASR::OverloadedBoolOp_t* x) {
+        replace_OverloadedOperator(x);
+    }
+
     void replace_OverloadedStringConcat(ASR::OverloadedStringConcat_t* x) {
         replace_OverloadedOperator(x);
     }
@@ -2566,6 +2571,19 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Associate(const ASR::Associate_t& /*x*/) {
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        // Skip temporary creation inside FileWrite Nodes
+        // for char array units as array_op pass handles element-wise looping.
+        ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        ASR::expr_t* saved = xx.m_unit;
+        if (saved && ASRUtils::is_character(*ASRUtils::expr_type(saved))
+                && ASRUtils::is_array(ASRUtils::expr_type(saved))) {
+            xx.m_unit = nullptr;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_FileWrite(x);
+        xx.m_unit = saved;
     }
 
 };
@@ -2837,7 +2855,11 @@ class VerifySimplifierASROutput:
 
     void check_for_var_if_array(ASR::expr_t* expr) {
         if ( is_temporary_needed(expr) ) {
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr)));
+            [[maybe_unused]] ASR::expr_t* stripped_expr = ASRUtils::get_past_array_physical_cast(expr);
+            LCOMPILERS_ASSERT(
+                ASR::is_a<ASR::Var_t>(*stripped_expr) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*stripped_expr) ||
+                ASR::is_a<ASR::UnionInstanceMember_t>(*stripped_expr));
         }
     }
 

@@ -1,16 +1,18 @@
-! Test for https://github.com/lfortran/lfortran/issues/4768
-! Allocate array with scalar source from intent(in) argument
 program allocate_39
     implicit none
-    call test(n=100)
-    call test(n=200)
-contains
-    subroutine test(n)
-        integer, intent(in) :: n
-        integer, allocatable :: arr(:)
-        allocate(arr(2), source=n)
-        if (arr(1) /= n) error stop
-        if (arr(2) /= n) error stop
-        print *, 'subroutine result', arr(1), arr(2)
-    end subroutine test
-end program
+    class(*), allocatable :: obj
+    integer :: mold_var
+
+    mold_var = 0
+    allocate(obj, mold=mold_var)
+    select type(obj)
+        type is (integer)
+            obj = 55
+            print *, obj
+            if (obj /= 55) error stop
+        class default
+            error stop
+    end select
+
+    print *, "PASS"
+end program allocate_39

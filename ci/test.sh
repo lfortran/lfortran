@@ -67,9 +67,16 @@ if [[ $WIN != "1" ]]; then
     ctest -L llvm -j${NPROC}
     cd ..
 
-    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit
+    ./run_tests.py -b llvm -sc
     ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f
-    ./run_tests.py -b llvm -f -nf16
+    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
+        ./run_tests.py -b llvm llvmImplicit -f -nf16
+    else
+        ./run_tests.py -b llvm llvmImplicit -f
+    fi
+    ./run_tests.py -b llvm_submodule
+    ./run_tests.py -b llvm_submodule -sc
     cd ..
 
     pip install src/server/tests tests/server

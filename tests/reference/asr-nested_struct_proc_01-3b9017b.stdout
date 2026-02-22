@@ -7,6 +7,26 @@
                     (SymbolTable
                         2
                         {
+                            atomic_int_kind:
+                                (ExternalSymbol
+                                    2
+                                    atomic_int_kind
+                                    4 atomic_int_kind
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    atomic_int_kind
+                                    Public
+                                ),
+                            atomic_logical_kind:
+                                (ExternalSymbol
+                                    2
+                                    atomic_logical_kind
+                                    4 atomic_logical_kind
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    atomic_logical_kind
+                                    Public
+                                ),
                             character_kinds:
                                 (ExternalSymbol
                                     2
@@ -47,6 +67,16 @@
                                     compiler_version
                                     Public
                                 ),
+                            current_team:
+                                (ExternalSymbol
+                                    2
+                                    current_team
+                                    4 current_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    current_team
+                                    Public
+                                ),
                             error_unit:
                                 (ExternalSymbol
                                     2
@@ -55,6 +85,16 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     error_unit
+                                    Public
+                                ),
+                            file_storage_size:
+                                (ExternalSymbol
+                                    2
+                                    file_storage_size
+                                    4 file_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    file_storage_size
                                     Public
                                 ),
                             i32:
@@ -77,6 +117,16 @@
                                     ()
                                     .false.
                                     .false.
+                                ),
+                            initial_team:
+                                (ExternalSymbol
+                                    2
+                                    initial_team
+                                    4 initial_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    initial_team
+                                    Public
                                 ),
                             input_unit:
                                 (ExternalSymbol
@@ -241,6 +291,46 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     iostat_eor
+                                    Public
+                                ),
+                            iostat_inquire_internal_unit:
+                                (ExternalSymbol
+                                    2
+                                    iostat_inquire_internal_unit
+                                    4 iostat_inquire_internal_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_inquire_internal_unit
+                                    Public
+                                ),
+                            logical16:
+                                (ExternalSymbol
+                                    2
+                                    logical16
+                                    4 logical16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical16
+                                    Public
+                                ),
+                            logical32:
+                                (ExternalSymbol
+                                    2
+                                    logical32
+                                    4 logical32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical32
+                                    Public
+                                ),
+                            logical64:
+                                (ExternalSymbol
+                                    2
+                                    logical64
+                                    4 logical64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical64
                                     Public
                                 ),
                             logical8:
@@ -940,6 +1030,16 @@
                                     output_unit
                                     Public
                                 ),
+                            parent_team:
+                                (ExternalSymbol
+                                    2
+                                    parent_team
+                                    4 parent_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    parent_team
+                                    Public
+                                ),
                             r32:
                                 (Variable
                                     2
@@ -971,6 +1071,16 @@
                                     real128
                                     Public
                                 ),
+                            real16:
+                                (ExternalSymbol
+                                    2
+                                    real16
+                                    4 real16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real16
+                                    Public
+                                ),
                             real32:
                                 (ExternalSymbol
                                     2
@@ -999,6 +1109,66 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     real_kinds
+                                    Public
+                                ),
+                            stat_failed_image:
+                                (ExternalSymbol
+                                    2
+                                    stat_failed_image
+                                    4 stat_failed_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_failed_image
+                                    Public
+                                ),
+                            stat_locked:
+                                (ExternalSymbol
+                                    2
+                                    stat_locked
+                                    4 stat_locked
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_locked
+                                    Public
+                                ),
+                            stat_locked_other_image:
+                                (ExternalSymbol
+                                    2
+                                    stat_locked_other_image
+                                    4 stat_locked_other_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_locked_other_image
+                                    Public
+                                ),
+                            stat_stopped_image:
+                                (ExternalSymbol
+                                    2
+                                    stat_stopped_image
+                                    4 stat_stopped_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_stopped_image
+                                    Public
+                                ),
+                            stat_unlocked:
+                                (ExternalSymbol
+                                    2
+                                    stat_unlocked
+                                    4 stat_unlocked
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_unlocked
+                                    Public
+                                ),
+                            stat_unlocked_failed_image:
+                                (ExternalSymbol
+                                    2
+                                    stat_unlocked_failed_image
+                                    4 stat_unlocked_failed_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_unlocked_failed_image
                                     Public
                                 )
                         })
@@ -1035,6 +1205,26 @@
                                     integer32complex32orderedmap
                                     []
                                     insert_key_value
+                                    Public
+                                ),
+                            atomic_int_kind:
+                                (ExternalSymbol
+                                    12
+                                    atomic_int_kind
+                                    4 atomic_int_kind
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    atomic_int_kind
+                                    Public
+                                ),
+                            atomic_logical_kind:
+                                (ExternalSymbol
+                                    12
+                                    atomic_logical_kind
+                                    4 atomic_logical_kind
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    atomic_logical_kind
                                     Public
                                 ),
                             character_kinds:
@@ -1077,6 +1267,16 @@
                                     compiler_version
                                     Public
                                 ),
+                            current_team:
+                                (ExternalSymbol
+                                    12
+                                    current_team
+                                    4 current_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    current_team
+                                    Public
+                                ),
                             error_unit:
                                 (ExternalSymbol
                                     12
@@ -1087,6 +1287,16 @@
                                     error_unit
                                     Public
                                 ),
+                            file_storage_size:
+                                (ExternalSymbol
+                                    12
+                                    file_storage_size
+                                    4 file_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    file_storage_size
+                                    Public
+                                ),
                             i32:
                                 (ExternalSymbol
                                     12
@@ -1095,6 +1305,16 @@
                                     gftl2_integer32complex32orderedmap
                                     []
                                     i32
+                                    Public
+                                ),
+                            initial_team:
+                                (ExternalSymbol
+                                    12
+                                    initial_team
+                                    4 initial_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    initial_team
                                     Public
                                 ),
                             input_unit:
@@ -1187,6 +1407,16 @@
                                     iostat_eor
                                     Public
                                 ),
+                            iostat_inquire_internal_unit:
+                                (ExternalSymbol
+                                    12
+                                    iostat_inquire_internal_unit
+                                    4 iostat_inquire_internal_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_inquire_internal_unit
+                                    Public
+                                ),
                             key:
                                 (Variable
                                     12
@@ -1207,6 +1437,36 @@
                                     ()
                                     .false.
                                     .false.
+                                ),
+                            logical16:
+                                (ExternalSymbol
+                                    12
+                                    logical16
+                                    4 logical16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical16
+                                    Public
+                                ),
+                            logical32:
+                                (ExternalSymbol
+                                    12
+                                    logical32
+                                    4 logical32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical32
+                                    Public
+                                ),
+                            logical64:
+                                (ExternalSymbol
+                                    12
+                                    logical64
+                                    4 logical64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical64
+                                    Public
                                 ),
                             logical8:
                                 (ExternalSymbol
@@ -1325,6 +1585,16 @@
                                     output_unit
                                     Public
                                 ),
+                            parent_team:
+                                (ExternalSymbol
+                                    12
+                                    parent_team
+                                    4 parent_team
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    parent_team
+                                    Public
+                                ),
                             r32:
                                 (ExternalSymbol
                                     12
@@ -1343,6 +1613,16 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     real128
+                                    Public
+                                ),
+                            real16:
+                                (ExternalSymbol
+                                    12
+                                    real16
+                                    4 real16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real16
                                     Public
                                 ),
                             real32:
@@ -1373,6 +1653,66 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     real_kinds
+                                    Public
+                                ),
+                            stat_failed_image:
+                                (ExternalSymbol
+                                    12
+                                    stat_failed_image
+                                    4 stat_failed_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_failed_image
+                                    Public
+                                ),
+                            stat_locked:
+                                (ExternalSymbol
+                                    12
+                                    stat_locked
+                                    4 stat_locked
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_locked
+                                    Public
+                                ),
+                            stat_locked_other_image:
+                                (ExternalSymbol
+                                    12
+                                    stat_locked_other_image
+                                    4 stat_locked_other_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_locked_other_image
+                                    Public
+                                ),
+                            stat_stopped_image:
+                                (ExternalSymbol
+                                    12
+                                    stat_stopped_image
+                                    4 stat_stopped_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_stopped_image
+                                    Public
+                                ),
+                            stat_unlocked:
+                                (ExternalSymbol
+                                    12
+                                    stat_unlocked
+                                    4 stat_unlocked
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_unlocked
+                                    Public
+                                ),
+                            stat_unlocked_failed_image:
+                                (ExternalSymbol
+                                    12
+                                    stat_unlocked_failed_image
+                                    4 stat_unlocked_failed_image
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    stat_unlocked_failed_image
                                     Public
                                 ),
                             value:

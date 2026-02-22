@@ -1,12 +1,45 @@
-! Test array section assignment with different integer kind (issue #4501)
+module arrays_103_mod_1
+   implicit none
+   real(8), allocatable :: a(:,:)
+end module arrays_103_mod_1
+
+
+module arrays_103_mod_2
+   use arrays_103_mod_1
+   implicit none
+
+contains
+
+   subroutine automatic_array()
+      implicit none
+      real(8), dimension(size(a,1)) :: b
+      integer :: i
+
+      do i = 1, size(a,1)
+         b(i) = sum(a(i,:))
+      end do
+
+      if (any(b /= [10.0d0, 20.0d0, 30.0d0])) error stop
+
+   end subroutine automatic_array
+
+end module arrays_103_mod_2
+
+
 program arrays_103
-    implicit none
-    integer, parameter :: k = selected_int_kind(0)
-    integer :: iarray(3, 4)
+   use arrays_103_mod_1
+   use arrays_103_mod_2
+   implicit none
+   integer :: i, j
 
-    iarray = 0
-    iarray(1, 1:2) = [bit_size(1_k), huge(1_k)]
+   allocate(a(3,4))
 
-    if (iarray(1, 1) /= 8) error stop
-    if (iarray(1, 2) /= 127) error stop
+   do i = 1, 3
+      do j = 1, 4
+         a(i,j) = real(i*j, 8)
+      end do
+   end do
+
+   call automatic_array()
+
 end program arrays_103

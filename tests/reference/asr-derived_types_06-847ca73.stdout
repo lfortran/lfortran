@@ -42,6 +42,48 @@
                                                     year
                                                     Public
                                                 ),
+                                            lfortran_iomsg:
+                                                (Variable
+                                                    11
+                                                    lfortran_iomsg
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_tmp_iostat:
+                                                (Variable
+                                                    11
+                                                    lfortran_tmp_iostat
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             lhs:
                                                 (Variable
                                                     11
@@ -135,7 +177,7 @@
                                     (FileWrite
                                         0
                                         (Var 11 lhs)
-                                        ()
+                                        (Var 11 lfortran_iomsg)
                                         ()
                                         ()
                                         [(StringFormat
@@ -321,6 +363,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                ),
+                                            time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    time_to_string
+                                                    7 time_to_string
+                                                    tomlf_datetime
+                                                    []
+                                                    time_to_string
+                                                    Public
                                                 )
                                         })
                                     datetime_to_string
@@ -371,7 +423,7 @@
                                         []
                                         .false.
                                     )
-                                    [time_to_string]
+                                    []
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
                                     [(If
@@ -543,8 +595,8 @@
                                                     ()
                                                 )
                                                 (SubroutineCall
-                                                    7 time_to_string
-                                                    7 time_to_string
+                                                    12 time_to_string
+                                                    12 time_to_string
                                                     [((Var 12 lhs))
                                                     ((StructInstanceMember
                                                         (Var 12 rhs)
@@ -995,6 +1047,90 @@
                                                     zone
                                                     Public
                                                 ),
+                                            lfortran_iomsg:
+                                                (Variable
+                                                    14
+                                                    lfortran_iomsg
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_iomsg1:
+                                                (Variable
+                                                    14
+                                                    lfortran_iomsg1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_tmp_iostat:
+                                                (Variable
+                                                    14
+                                                    lfortran_tmp_iostat
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_tmp_iostat1:
+                                                (Variable
+                                                    14
+                                                    lfortran_tmp_iostat1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             lhs:
                                                 (Variable
                                                     14
@@ -1116,7 +1252,7 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            ()
+                                            (Var 14 lfortran_iomsg)
                                             ()
                                             ()
                                             [(StringFormat
@@ -1176,7 +1312,7 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            ()
+                                            (Var 14 lfortran_iomsg1)
                                             ()
                                             ()
                                             [(StringFormat
@@ -1768,7 +1904,8 @@
                         })
                     tomlf_utils
                     ()
-                    [tomlf_utils_convert]
+                    [tomlf_utils_convert
+                    tomlf_datetime]
                     .false.
                     .false.
                     .false.

@@ -209,6 +209,7 @@
                                 RealToComplex
                                 (Complex 4)
                                 ()
+                                ()
                             )
                             Add
                             (ComplexBinOp
@@ -218,6 +219,7 @@
                                     (Var 2 b)
                                     RealToComplex
                                     (Complex 4)
+                                    ()
                                     ()
                                 )
                                 (Complex 4)
@@ -244,6 +246,7 @@
                                 RealToComplex
                                 (Complex 4)
                                 ()
+                                ()
                             )
                             Add
                             (ComplexBinOp
@@ -259,6 +262,7 @@
                                     )
                                     RealToComplex
                                     (Complex 4)
+                                    ()
                                     ()
                                 )
                                 (Complex 4)

@@ -28,6 +28,8 @@ cast_kind
     | RealToCharacter
     | IntegerToCharacter
     | LogicalToCharacter
+    | ClassToStruct
+    | ClassToClass
 ```
 
 ### Arguments
@@ -659,4 +661,109 @@ ASR:
 )
 ```
 
+Example of `ClassToStruct/ClassToClass`:
+
+```fortran
+select type(var)
+    type is (base)
+        print *, var%x
+    class is (derived)
+        print *, var%y
+end select
+```
+
+ASR:
+
+```
+~select_type_block_:
+    (Block
+        (SymbolTable
+            5
+            {
+                1_base_x:
+                    (ExternalSymbol
+                        5
+                        1_base_x
+                        3 x
+                        base
+                        []
+                        x
+                        Public
+                    )
+            })
+        ~select_type_block_
+        [(Print
+            (StringFormat
+                ()
+                [(StructInstanceMember
+                    (Cast
+                        (Var 2 var)
+                        ClassToStruct
+                        (StructType
+                            [(Integer 4)]
+                            []
+                            .true.
+                            .false.
+                        )
+                        ()
+                        (Var 2 base)
+                    )
+                    5 1_base_x
+                    (Integer 4)
+                    ()
+                )]
+                FormatFortran
+                (Allocatable
+                    (String 1 () DeferredLength DescriptorString)
+                )
+                ()
+            )
+        )]
+    ),
+~select_type_block_1:
+    (Block
+        (SymbolTable
+            6
+            {
+                1_derived_y:
+                    (ExternalSymbol
+                        6
+                        1_derived_y
+                        4 y
+                        derived
+                        []
+                        y
+                        Public
+                    )
+            })
+        ~select_type_block_1
+        [(Print
+            (StringFormat
+                ()
+                [(StructInstanceMember
+                    (Cast
+                        (Var 2 var)
+                        ClassToClass
+                        (StructType
+                            [(Integer 4)]
+                            []
+                            .false.
+                            .false.
+                        )
+                        ()
+                        (Var 2 derived)
+                    )
+                    6 1_derived_y
+                    (Integer 4)
+                    ()
+                )]
+                FormatFortran
+                (Allocatable
+                    (String 1 () DeferredLength DescriptorString)
+                )
+                ()
+            )
+        )]
+    )
+```
 ## See Also

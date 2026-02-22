@@ -49,7 +49,8 @@
                                 )
                         })
                     module_25
-                    [tomlf_de_character]
+                    [tomlf_de_character
+                    tomlf_de_tokenizer_25]
                     [(Print
                         (StringConstant
                             "running module_25 program"

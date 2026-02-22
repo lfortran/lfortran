@@ -1,30 +1,42 @@
-! Test for https://github.com/lfortran/lfortran/issues/2925
-! Typed allocation of polymorphic arrays
-module class_105_m
+module class_105_mod
+    implicit none
 
-   type :: Base
-      real :: data = 2.0
-   end type Base
+    type :: AbsType
+        integer :: value
+    end type AbsType
 
-   type, extends(Base) :: Extended
-   end type Extended
+    type :: MyType
+        class(AbsType), allocatable :: arr(:)
+    end type MyType
 
 contains
 
-   subroutine allocator(array)
-      class(Base), allocatable, intent(out) :: array(:)
-      allocate( Extended :: array(1) )
-   end subroutine allocator
+    function tester() result(obj)
+        class(MyType), allocatable :: obj
+        obj = MyType()
+        allocate(obj%arr(1))
+        obj%arr(1)%value = 42
+    end function tester
 
-end module class_105_m
+end module class_105_mod
 
 program class_105
-   use class_105_m
-   implicit none
-   class(Base), allocatable :: arr(:)
-   call allocator(arr)
-   if (.not. allocated(arr)) error stop
-   if (size(arr) /= 1) error stop
-   if (abs(arr(1)%data - 2.0) > 1e-6) error stop
-   print *, "passed"
+    use class_105_mod
+    implicit none
+
+    class(MyType), allocatable :: result_obj
+
+    allocate(result_obj)
+    result_obj = tester()
+
+    if (.not. allocated(result_obj)) error stop "result_obj is not allocated"
+
+    select type (result_obj)
+    type is (MyType)
+        if (.not. allocated(result_obj%arr)) error stop "result_obj%arr is not allocated"
+        if (size(result_obj%arr) /= 1) error stop "result_obj%arr has wrong size"
+        if (result_obj%arr(1)%value /= 42) error stop "result_obj%arr(1)%value has wrong value"
+    class default
+        error stop "result_obj has wrong dynamic type"
+    end select
 end program class_105

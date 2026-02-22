@@ -889,6 +889,69 @@ public:
     }
 
     template <typename T>
+    void add_class_to_struct_casts(Vec<ASR::call_arg_t>& call_args, const T& x) {
+        ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        ASR::Function_t* func = nullptr;
+        size_t arg_offset = 0;
+        if (ASR::is_a<ASR::Function_t>(*call_sym)) {
+            func = ASR::down_cast<ASR::Function_t>(call_sym);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_sym)) {
+            ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(call_sym);
+            func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(method->m_proc));
+            if (x.m_dt && !method->m_is_nopass) {
+                arg_offset = 1;
+            }
+        } else {
+            return;
+        }
+
+        for (size_t i = 0; i < call_args.size(); i++) {
+            if (call_args.p[i].m_value == nullptr || i + arg_offset >= func->n_args) {
+                continue;
+            }
+            ASR::expr_t* actual_arg = call_args.p[i].m_value;
+            ASR::expr_t* formal_arg = func->m_args[i + arg_offset];
+            ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
+            if (ASRUtils::is_allocatable(formal_arg_full_type) ||
+                ASRUtils::is_pointer(formal_arg_full_type)) {
+                continue;
+            }
+            if (!ASR::is_a<ASR::ArrayItem_t>(*actual_arg)) {
+                continue;
+            }
+            ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(actual_arg));
+            ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(formal_arg));
+            if (!actual_type || !formal_type ||
+                !ASR::is_a<ASR::StructType_t>(*actual_type) ||
+                !ASR::is_a<ASR::StructType_t>(*formal_type) ||
+                !ASRUtils::is_class_type(actual_type) ||
+                ASRUtils::is_class_type(formal_type)) {
+                continue;
+            }
+
+            ASR::symbol_t* actual_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(actual_arg));
+            ASR::symbol_t* formal_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(formal_arg));
+            if (!actual_struct_sym || !formal_struct_sym ||
+                !ASR::is_a<ASR::Struct_t>(*actual_struct_sym) ||
+                !ASR::is_a<ASR::Struct_t>(*formal_struct_sym)) {
+                continue;
+            }
+
+            if (actual_struct_sym != formal_struct_sym) {
+                continue;
+            }
+
+            call_args.p[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(al, actual_arg->base.loc,
+                actual_arg, ASR::cast_kindType::ClassToStruct,
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(formal_arg)), nullptr, nullptr));
+        }
+    }
+
+    template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         std::vector<bool> is_arg_intent_out;
@@ -919,6 +982,7 @@ public:
             traverse_call_args(x_m_args, x.m_args, x.n_args,
                 name_hint + ASRUtils::symbol_name(x.m_name));
         }
+        add_class_to_struct_casts(x_m_args, x);
 
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;

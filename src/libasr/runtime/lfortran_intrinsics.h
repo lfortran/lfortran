@@ -67,6 +67,7 @@ typedef double _Complex double_complex_t;
     }
 #endif
 
+LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
@@ -75,6 +76,7 @@ LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len);
+LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
@@ -291,17 +293,19 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
         int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...);
-LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i);
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr);
-LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i);
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr);
-LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f);
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr);
-LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f);
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr);
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len);
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr);
-LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i);
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat);
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat);
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
@@ -416,6 +420,7 @@ void lfortran_error(const char *message);
 
 typedef struct type_info {
     char* name;  // Pointer to a null-terminated string representing the type name
+    uint8_t* size;   // Size of the dynamic type
 } type_info;
 
 typedef struct __si_class_type_info {

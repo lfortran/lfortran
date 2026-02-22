@@ -1,5 +1,6 @@
-! Test abstract type-bound operator
-! Related to issue #6787
+! Test for https://github.com/lfortran/lfortran/issues/6787
+! Abstract type-bound operator was rejected by semantic analysis
+! Error was: "add doesn't exist inside abstype type"
 module class_99_abstracted
    type, abstract :: abstype
    contains

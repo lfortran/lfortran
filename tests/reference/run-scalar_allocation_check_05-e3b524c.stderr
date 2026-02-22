@@ -2,4 +2,4 @@ runtime error: Argument 1 is unallocated.
   --> tests/errors/scalar_allocation_check_05.f90:10:14
    |
 10 |     print *, m1%x
-   |              ^^^^ 
+   |              ^^^^ This is unallocated

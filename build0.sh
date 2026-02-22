@@ -21,7 +21,9 @@ python src/libasr/intrinsic_func_registry_util_gen.py
 # Generate the tokenizer and parser
 (cd src/lfortran && ${RE2C} -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
 (cd src/lfortran && ${RE2C} -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
-(cd src/lfortran/parser && ${BISON} -Wall -d -r all parser.yy)
+# Use `-r all` in Bison for detailed report. Turned off by default to avoid a
+# Bison timeout issue with it.
+(cd src/lfortran/parser && ${BISON} -Wall -d parser.yy)
 
 # Generate the LSP sources
 python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server

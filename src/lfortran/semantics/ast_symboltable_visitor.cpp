@@ -3,7 +3,6 @@
 #include <map>
 #include <string>
 #include <cmath>
-#include <queue>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -348,10 +347,10 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &e) {
@@ -932,6 +931,37 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
         symbol_duplicator.duplicate_SymbolTable(proc_interface->m_symtab, current_scope);
+        // Fix m_type_declaration references that point to symbols in the
+        // parent module. After duplication, these still point to the original
+        // symbols which are not serialized into the submodule's .smod file.
+        // Redirect them to the corresponding ExternalSymbol in the submodule.
+        if (in_submodule) {
+            for (auto &item : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (var->m_type_declaration != nullptr) {
+                        std::string type_decl_name = ASRUtils::symbol_name(var->m_type_declaration);
+                        ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
+                        if (local_sym == nullptr) {
+                            // Create ExternalSymbol in the submodule for the type declaration
+                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(type_decl_name));
+                            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(ASRUtils::symbol_parent_symtab(orig_sym)->asr_owner);
+                            if (orig_sym && ASR::is_a<ASR::Module_t>(*owner)) {
+                               ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
+                                   al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
+                                   orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
+                                       s2c(al, type_decl_name), dflt_access));
+                               current_scope->add_symbol(type_decl_name, external_sym);
+                               local_sym = external_sym;
+                            }
+                        }
+                        if (local_sym != nullptr && local_sym != var->m_type_declaration) {
+                            var->m_type_declaration = local_sym;
+                        }
+                    }
+                }
+            }
+        }
         Vec<ASR::expr_t*> new_func_args;
         new_func_args.reserve(al, proc_interface->n_args);
         for (size_t i=0;i<proc_interface->n_args;i++) {
@@ -951,6 +981,14 @@ public:
             }
         }
         is_Function = false;
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+            visit_program_unit(*x.m_contains[i]);
+            implicit_dictionary = implicit_dictionary_copy;
+            default_storage_save = current_storage_save;
+        }
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
@@ -1951,6 +1989,7 @@ public:
     void process_simd_variables() {
         for (auto &var : simd_variables) {
             ASR::symbol_t *s = current_scope->get_symbol(var.first);
+            Location var_loc = s->base.loc;
             if (s) {
                 ASR::ttype_t *t = ASRUtils::symbol_type(s);
                 // allocatable
@@ -1958,7 +1997,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be allocatable: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -1967,7 +2006,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD arrays cannot be pointers: `" + var.first + "`",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -1976,7 +2015,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "The SIMD variable `" + var.first + "` must be an array",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -1987,7 +2026,7 @@ public:
                         "SIMD arrays must be 1 dimensional, but `" + var.first +
                         "` has " + std::to_string(a->n_dims) + " dimensions",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -1997,7 +2036,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "SIMD array `" + var.first + "` must have an explicit size",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2008,7 +2047,7 @@ public:
                         "` must have a compile-time constant size "
                         "(integer literal or parameter)",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2020,7 +2059,7 @@ public:
                         "SIMD arrays must have Real or Integer element type, but `" +
                         var.first + "` has an incompatible type",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {t->base.loc})}));
+                            diag::Label("", {var_loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                     continue;
                 }
@@ -2031,7 +2070,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "The SIMD variable `" + var.first + "` is not declared",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {var.second})}));
+                        diag::Label("", {var_loc})}));
                 if ( !compiler_options.continue_compilation ) throw SemanticAbort();
             }
 
@@ -2123,7 +2162,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~unlimited_polymorphic_type") {
+            if (!ASRUtils::is_unlimited_polymorphic_type(item.second)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
                 ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
@@ -2226,7 +2265,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~unlimited_polymorphic_type") {
+            if (!ASRUtils::is_unlimited_polymorphic_type(item.second)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
@@ -2303,7 +2342,8 @@ public:
                     case AST::decl_attributeType::AttrPass: {
                         AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
                         LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
-                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ? std::string(attr_pass->m_name) : "";
+                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ?
+                            to_lower(std::string(attr_pass->m_name)) : "";
                         class_procedures[dt_name][use_sym_name]["pass"].loc =  attr_pass->base.base.loc;
                         break ;
                     }
@@ -2479,6 +2519,23 @@ public:
                         Label("'" + std::string(x.m_name) + "' defined here again", {x.base.base.loc}),
                     }));
                 throw SemanticAbort();
+            }
+        }
+
+        // Set up implicit typing for block data unit (similar to Program)
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i = 0; i < x.n_implicit; i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
             }
         }
 
@@ -2851,17 +2908,40 @@ public:
             variable->n_dependencies = var_dep.n;
 
             // Add called function as dependency to the owning-function's scope
-            SetChar func_dep;
-            func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
-            func->m_dependencies = func_dep.p;
-            func->n_dependencies = func_dep.n;
+            // ExternalSymbol calls are not tracked as function dependencies
+            // (consistent with how the verify pass collects dependencies)
+            if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
+                SetChar func_dep;
+                func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+                func->m_dependencies = func_dep.p;
+                func->n_dependencies = func_dep.n;
+            }
 
             // Revert current scope
             current_scope = current_scope_copy;
         }
         // Clear the delayed generic procedure calls
         postponed_genericProcedure_calls_vec.clear();
+    }
+
+    ASR::symbol_t* resolve_type_bound_proc_in_parent_chain(
+            ASR::Struct_t *clss, const std::string &proc_name) {
+        ASR::Struct_t *curr = clss;
+        while (curr != nullptr) {
+            ASR::symbol_t *proc_sym = curr->m_symtab->get_symbol(proc_name);
+            if (proc_sym != nullptr) {
+                return proc_sym;
+            }
+            if (curr->m_parent == nullptr) {
+                break;
+            }
+            ASR::symbol_t *parent_sym
+                = ASRUtils::symbol_get_past_external(curr->m_parent);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent_sym));
+            curr = ASR::down_cast<ASR::Struct_t>(parent_sym);
+        }
+        return nullptr;
     }
 
     void add_generic_class_procedures() {
@@ -2881,8 +2961,10 @@ public:
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    if( clss->m_symtab->get_symbol(cand_proc) != nullptr ) {
-                        cand_procs.push_back(al, clss->m_symtab->get_symbol(cand_proc));
+                    ASR::symbol_t *cand_proc_sym
+                        = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
+                    if (cand_proc_sym != nullptr) {
+                        cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
                             cand_proc + " doesn't exist inside " + proc.first + " type",
@@ -3082,558 +3164,6 @@ public:
         }
     }
 
-    void get_indirect_public_symbols(const ASR::Module_t* m,
-                                    std::set<std::string> &indirect_public_symbols) {
-        // Get all public symbols from the module
-        for (auto &item : m->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
-                if (st->m_access != ASR::accessType::Private) {
-                    for (auto &x: st->m_symtab->get_scope()) {
-                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*x.second)) {
-                            indirect_public_symbols.insert(x.first);
-                        }
-                    }
-                }
-            } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
-                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
-                if (gp->m_access != ASR::accessType::Private) {
-                    for (size_t i = 0; i < gp->n_procs; i++ ) {
-                        indirect_public_symbols.insert(ASRUtils::symbol_name(gp->m_procs[i]));
-                    }
-                }
-            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
-                ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(item.second);
-                if (cop->m_access != ASR::accessType::Private) {
-                    for (size_t i = 0; i < cop->n_procs; i++ ) {
-                        indirect_public_symbols.insert(ASRUtils::symbol_name(cop->m_procs[i]));
-                    }
-                }
-            }
-        }
-    }
-
-    std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
-                           std::vector<std::string> symbols_already_imported_with_renaming = {}) {
-        // Import all symbols from the module, e.g.:
-        //     use a
-        std::set<std::string> indirect_public_symbols;
-        get_indirect_public_symbols(m, indirect_public_symbols);
-        for (auto &item : m->m_symtab->get_scope()) {
-            if ( symbols_already_imported_with_renaming.size() > 0 &&
-                 std::find(symbols_already_imported_with_renaming.begin(),
-                           symbols_already_imported_with_renaming.end(),
-                           item.first) != symbols_already_imported_with_renaming.end() ) {
-                continue;
-            }
-            if( current_scope->get_symbol(item.first) != nullptr) {
-                continue;
-            }
-            // TODO: only import "public" symbols from the module
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if ((mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) || 
-                    (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
-                     to_submodule)) {
-                    continue;
-                }
-                ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                    al, mfn->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ mfn->m_name,
-                    (ASR::symbol_t*)mfn,
-                    m->m_name, nullptr, 0, mfn->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(mfn->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
-            } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
-                ASR::GenericProcedure_t *gp = ASR::down_cast<
-                    ASR::GenericProcedure_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(gp->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
-            }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
-                ASR::CustomOperator_t *gp = ASR::down_cast<
-                    ASR::CustomOperator_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
-                std::string sym = gp->m_name;
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
-            } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
-                // check if m_access of mvar is public
-                if ( mvar->m_access == ASR::accessType::Public || to_submodule ) {
-                    ASR::asr_t *var = ASR::make_ExternalSymbol_t(
-                        al, mvar->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ mvar->m_name,
-                        (ASR::symbol_t*)mvar,
-                        m->m_name, nullptr, 0, mvar->m_name,
-                        dflt_access
-                        );
-                    std::string sym = to_lower(mvar->m_name);
-                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
-                }
-            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
-                // We have to "repack" the ExternalSymbol so that it lives in the
-                // local symbol table
-                ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
-                ASR::asr_t *es = ASR::make_ExternalSymbol_t(
-                    al, es0->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ s2c(al, item.first),
-                    es0->m_external,
-                    es0->m_module_name, nullptr, 0,
-                    es0->m_original_name,
-                    dflt_access
-                    );
-                current_scope->add_or_overwrite_symbol(item.first, ASR::down_cast<ASR::symbol_t>(es));
-            } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
-                ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
-                // `mv` is the Variable in a module. Now we construct
-                // an ExternalSymbol that points to it.
-                Str name;
-                name.from_str(al, item.first);
-                char *cname = name.c_str(al);
-                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                    al, mv->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ cname,
-                    (ASR::symbol_t*)mv,
-                    m->m_name, nullptr, 0, mv->m_name,
-                    dflt_access
-                    );
-                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
-            } else if (ASR::is_a<ASR::Requirement_t>(*item.second)) {
-                ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(item.second);
-                Str name;
-                name.from_str(al, item.first);
-                char *cname = name.c_str(al);
-                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                    al, req->base.base.loc,
-                    current_scope,
-                    cname,
-                    (ASR::symbol_t*)req,
-                    m->m_name, nullptr, 0, req->m_name,
-                    dflt_access
-                );
-                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
-            } else if (ASR::is_a<ASR::Template_t>(*item.second)) {
-                ASR::Template_t *temp = ASR::down_cast<ASR::Template_t>(item.second);
-                Str name;
-                name.from_str(al, item.first);
-                char *cname = name.c_str(al);
-                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                    al, temp->base.base.loc,
-                    current_scope,
-                    cname,
-                    (ASR::symbol_t*)temp,
-                    m->m_name, nullptr, 0, temp->m_name,
-                    dflt_access
-                );
-                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
-            }  else if( ASR::is_a<ASR::Union_t>(*item.second) ) {
-                ASR::Union_t *mv = ASR::down_cast<ASR::Union_t>(item.second);
-                // `mv` is the Variable in a module. Now we construct
-                // an ExternalSymbol that points to it.
-                Str name;
-                name.from_str(al, item.first);
-                char *cname = name.c_str(al);
-                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                    al, mv->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ cname,
-                    (ASR::symbol_t*)mv,
-                    m->m_name, nullptr, 0, mv->m_name,
-                    dflt_access
-                    );
-                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
-            } else if( ASR::is_a<ASR::Namelist_t>(*item.second) ) {
-                ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(item.second);
-                // `nml` is the Namelist in a module. Now we construct
-                // an ExternalSymbol that points to it.
-                Str name;
-                name.from_str(al, item.first);
-                char *cname = name.c_str(al);
-                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                    al, nml->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ cname,
-                    (ASR::symbol_t*)nml,
-                    m->m_name, nullptr, 0, nml->m_group_name,
-                    dflt_access
-                    );
-                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
-            } else if( ASR::is_a<ASR::Enum_t>(*item.second) ) {
-                // Do nothing as enum variables will already be present as
-                // External symbol in module from which we are importing
-            } else {
-                return item.first;
-            }
-        }
-        return "";
-    }
-
-    template <typename T>
-    void process_generic_proc_custom_op(std::string& local_sym, ASR::symbol_t *t,
-        std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
-        const Location& loc, ASR::Module_t *m,
-        ASR::asr_t* (*constructor) (Allocator&, const Location&, SymbolTable*,
-        char*, ASR::symbol_t**, size_t, ASR::accessType), T* /*ptr*/) {
-        if (current_scope->get_symbol(local_sym) != nullptr) {
-            ASR::symbol_t* gp_sym = current_scope->get_symbol(local_sym);
-            if( ASR::is_a<ASR::ExternalSymbol_t>(*gp_sym) ) {
-                gp_sym = ASRUtils::symbol_get_past_external(gp_sym);
-                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
-                T* gp = ASR::down_cast<T>(gp_sym);
-                T* gp_ext = ASR::down_cast<T>(t);
-                Vec<ASR::symbol_t*> gp_procs;
-                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                for( size_t i = 0; i < gp->n_procs; i++ ) {
-                    std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_proc_name);
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = gp_proc_name + "@" + local_sym;
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_proc_name, local_sym_,
-                                                to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                }
-                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_ext_proc_name);
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = gp_ext_proc_name + "@" + local_sym;
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                local_sym_, to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                }
-                ASR::asr_t *ep = constructor(
-                    al, t->base.loc, current_scope, s2c(al, local_sym),
-                    gp_procs.p, gp_procs.size(), dflt_access);
-                current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-            } else {
-                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
-                T* gp = ASR::down_cast<T>(gp_sym);
-                T* gp_ext = ASR::down_cast<T>(t);
-                Vec<ASR::symbol_t*> gp_procs;
-                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                for( size_t i = 0; i < gp->n_procs; i++ ) {
-                    gp_procs.push_back(al, gp->m_procs[i]);
-                }
-                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_ext_proc_name);
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = "@" + gp_ext_proc_name + "@";
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                local_sym_, to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                    gp_procs.push_back(al, m_proc);
-                }
-                gp->m_procs = gp_procs.p;
-                gp->n_procs = gp_procs.size();
-            }
-        } else {
-            T* gp_ext = ASR::down_cast<T>(t);
-            Vec<ASR::symbol_t*> gp_procs;
-            gp_procs.reserve(al, gp_ext->n_procs);
-            bool are_all_present = true;
-            for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                    ASRUtils::symbol_name(gp_ext->m_procs[i]));
-                if( m_proc == nullptr ) {
-                    are_all_present = false;
-                    std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    std::string suffix = "@" + local_sym;
-                    std::string extern_name;
-                    if (proc_name.length() >= suffix.length()) {
-                        if (proc_name.compare(proc_name.length() - suffix.length(), 
-                                            suffix.length(), 
-                                            suffix) == 0) {
-                            // If already suffix is added (see custom_operator_11.f90),
-                            // don't add again
-                            extern_name = proc_name;
-                        } else {
-                            extern_name = proc_name + suffix;
-                        }
-                    } else {
-                        extern_name = proc_name + suffix;
-                    }
-                    to_be_imported_later.push(std::make_pair(proc_name, extern_name));
-                }
-                gp_procs.push_back(al, m_proc);
-            }
-            ASR::asr_t *ep = nullptr;
-            if( are_all_present ) {
-                ep = constructor(
-                    al, t->base.loc, current_scope, s2c(al, local_sym),
-                    gp_procs.p, gp_procs.size(), dflt_access);
-            } else {
-                ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
-                    current_scope, s2c(al, local_sym), t,
-                    m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
-            }
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-        }
-    }
-
-    void import_symbols_util(ASR::Module_t *m, std::string& msym,
-                             std::string& remote_sym, std::string& local_sym,
-                             std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
-                             const Location& loc) {
-        remote_sym = to_lower(remote_sym);
-        ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
-        if (!t) {
-            diag.add(diag::Diagnostic(
-                "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {loc})}));
-            throw SemanticAbort();
-        }
-        if (ASR::is_a<ASR::Function_t>(*t) &&
-            ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
-                    }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
-            }
-            ASR::Function_t *msub = ASR::down_cast<ASR::Function_t>(t);
-            // `msub` is the Subroutine in a module. Now we construct
-            // an ExternalSymbol that points to
-            // `msub` via the `external` field.
-            Str name;
-            name.from_str(al, local_sym);
-            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ name.c_str(al),
-                (ASR::symbol_t*)msub,
-                m->m_name, nullptr, 0, msub->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
-        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
-            process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym, t,
-                to_be_imported_later, loc, m, &ASR::make_GenericProcedure_t, nullptr);
-        } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
-            process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym, t,
-                to_be_imported_later, loc, m, &ASR::make_CustomOperator_t, nullptr);
-        } else if (ASR::is_a<ASR::Function_t>(*t)) {
-            bool is_already_defined = false;
-            ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
-            if (imported_func_sym != nullptr) {
-                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(imported_func_sym);
-                if( ext_sym->m_external != t ) {
-                    is_already_defined = true;
-                }
-            }
-            if( is_already_defined ) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
-                    }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
-            }
-            ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
-            // `mfn` is the Function in a module. Now we construct
-            // an ExternalSymbol that points to it.
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ cname,
-                (ASR::symbol_t*)mfn,
-                m->m_name, nullptr, 0, mfn->m_name,
-                dflt_access
-                );
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
-        } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
-                    }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
-            }
-            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(t);
-            // `mv` is the Variable in a module. Now we construct
-            // an ExternalSymbol that points to it.
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            if (mv->m_access == ASR::accessType::Private) {
-                diag.add(diag::Diagnostic(
-                    "Private variable `" + local_sym + "` cannot be imported",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {loc})}));
-                throw SemanticAbort();
-            }
-            ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ cname,
-                (ASR::symbol_t*)mv,
-                m->m_name, nullptr, 0, mv->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-        } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
-            // Check for any interface overriding a constructor for the struct
-            ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
-            if (interface_override_s) {
-                to_be_imported_later.push(std::make_pair("~" + remote_sym, "~" + local_sym));
-            }
-            ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
-            ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(t);
-            if (imported_struct_type != nullptr) {
-                imported_struct_type = ASRUtils::symbol_get_past_external(imported_struct_type);
-                if( imported_struct_type == t ) {
-                    return ;
-                }
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
-                    }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
-            }
-            // `mv` is the Variable in a module. Now we construct
-            // an ExternalSymbol that points to it.
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ cname,
-                (ASR::symbol_t*)mv,
-                m->m_name, nullptr, 0, mv->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-        } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
-            ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
-            ASR::asr_t *req = ASR::make_ExternalSymbol_t(
-                al, loc,
-                current_scope,
-                s2c(al, local_sym),
-                (ASR::symbol_t*) mreq,
-                m->m_name, nullptr, 0, mreq->m_name,
-                dflt_access);
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(req));
-        } else if (ASR::is_a<ASR::Template_t>(*t)) {
-            ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
-            ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
-                al, loc,
-                current_scope,
-                s2c(al, local_sym),
-                (ASR::symbol_t*) mtemp,
-                m->m_name, nullptr, 0, mtemp->m_name,
-                dflt_access);
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
-        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
-            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
-            ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
-                al, loc,
-                current_scope,
-                s2c(al, local_sym),
-                ext_sym->m_external,
-                ext_sym->m_module_name,
-                nullptr, 0, ext_sym->m_original_name,
-                dflt_access);
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
-            ASR::symbol_t *ext = ASRUtils::symbol_get_past_external(ext_sym->m_external);
-            if (remote_sym.size() > 0 && remote_sym[0] != '~' &&
-                    ASR::is_a<ASR::Struct_t>(*ext)) {
-                ASR::symbol_t *interface_override_s =
-                    m->m_symtab->resolve_symbol("~" + remote_sym);
-                if (interface_override_s) {
-                    to_be_imported_later.push(
-                        std::make_pair("~" + remote_sym, "~" + local_sym));
-                }
-            }
-            if( ASR::is_a<ASR::GenericProcedure_t>(*ext_sym->m_external) ) {
-                process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym,
-                    ext_sym->m_external, to_be_imported_later, loc, m,
-                    &ASR::make_GenericProcedure_t, nullptr);
-            } else if( ASR::is_a<ASR::CustomOperator_t>(*ext_sym->m_external) ) {
-                process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym,
-                    ext_sym->m_external, to_be_imported_later, loc, m,
-                    &ASR::make_CustomOperator_t, nullptr);
-            }
-        } else {
-            throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use', found: " +
-                std::to_string(t->type) + ", name is: " + std::string(ASRUtils::symbol_name(t)));
-        }
-    }
-
     void visit_Use(const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
         if (msym == "ieee_arithmetic") {
@@ -3667,7 +3197,7 @@ public:
             if (load_submodules) {
                 ASRUtils::load_dependent_submodules(al, tu_symtab, mod, x.base.base.loc,
                                                     loaded_submodules, compiler_options.po, true,
-                                                    [&](const std::string &msg, const Location &loc) { 
+                                                    [&](const std::string &msg, const Location &loc) {
                                                         diag.add(diag::Diagnostic(
                                                             msg, diag::Level::Error, diag::Stage::Semantic, {
                                                                 diag::Label("", {loc})}));
@@ -3686,204 +3216,7 @@ public:
             }
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
-        if (x.n_symbols == 0) {
-            std::string unsupported_sym_name = import_all(m);
-            if( !unsupported_sym_name.empty() ) {
-                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
-            }
-        } else if ( !x.m_only_present ) {
-            // Import all symbols, but there exists some
-            // symbols which need to be imported with renaming e.g.:
-            // use a, x => y
-            std::vector<std::string> symbols_already_imported_with_renaming;
-            std::queue<std::pair<std::string, std::string>> to_be_imported_with_renaming;
-            for (size_t i = 0; i < x.n_symbols; i++) {
-                std::string remote_sym;
-                switch (x.m_symbols[i]->type)
-                {
-                    case AST::use_symbolType::UseSymbol: {
-                        remote_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_remote_sym);
-                        break;
-                    }
-                    case AST::use_symbolType::UseAssignment: {
-                        remote_sym = "~assign";
-                        break;
-                    }
-                    case AST::use_symbolType::IntrinsicOperator: {
-                        AST::intrinsicopType op_type = AST::down_cast<AST::IntrinsicOperator_t>(x.m_symbols[i])->m_op;
-                        remote_sym = intrinsic2str[op_type];
-                        break;
-                    }
-                    case AST::use_symbolType::DefinedOperator: {
-                        remote_sym = AST::down_cast<AST::DefinedOperator_t>(
-                            x.m_symbols[i])->m_opName;
-
-                        // Append "~~" to the begining of any custom defined operator
-                        remote_sym = update_custom_op_name(remote_sym);
-                        break;
-                    }
-                    case AST::use_symbolType::UseWrite: {
-                        remote_sym = AST::down_cast<AST::UseWrite_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~write_" + remote_sym;
-                        break;
-                    }
-                    case AST::use_symbolType::UseRead: {
-                        remote_sym = AST::down_cast<AST::UseRead_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~read_" + remote_sym;
-                        break;
-                    }
-                    default:
-                        diag.add(diag::Diagnostic(
-                            "Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type),
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
-                }
-                std::string local_sym;
-                if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&
-                    AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
-                    local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
-                } else {
-                    local_sym = remote_sym;
-                }
-                import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_with_renaming, x.m_symbols[i]->base.loc);
-                symbols_already_imported_with_renaming.push_back(remote_sym);
-            }
-            // Importing procedures defined for overloaded operators like assignment
-            // after all the user imports are complete. This avoids
-            // importing the same function twice i.e., if the user has already imported
-            // the required procedures manually then importing later avoids polluting the
-            // symbol table.
-            while( !to_be_imported_with_renaming.empty() ) {
-                std::string remote_sym = to_be_imported_with_renaming.front().first;
-                std::string local_sym = to_be_imported_with_renaming.front().second;
-                to_be_imported_with_renaming.pop();
-                if( current_scope->resolve_symbol(local_sym) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, local_sym,
-                                        to_be_imported_with_renaming, x.base.base.loc);
-                    symbols_already_imported_with_renaming.push_back(remote_sym);
-                }
-            }
-            std::string unsupported_sym_name = import_all(m, false, symbols_already_imported_with_renaming);
-            if( !unsupported_sym_name.empty() ) {
-                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
-            }
-        } else {
-            // Only import individual symbols from the module, e.g.:
-            //     use a, only: x, y, z
-            std::queue<std::pair<std::string, std::string>> to_be_imported_later;
-            for (size_t i = 0; i < x.n_symbols; i++) {
-                std::string remote_sym;
-                switch (x.m_symbols[i]->type)
-                {
-                    case AST::use_symbolType::UseSymbol: {
-                        remote_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_remote_sym);
-                        break;
-                    }
-                    case AST::use_symbolType::UseAssignment: {
-                        remote_sym = "~assign";
-                        break;
-                    }
-                    case AST::use_symbolType::IntrinsicOperator: {
-                        AST::intrinsicopType op_type = AST::down_cast<AST::IntrinsicOperator_t>(x.m_symbols[i])->m_op;
-                        remote_sym = intrinsic2str[op_type];
-                        break;
-                    }
-                    case AST::use_symbolType::DefinedOperator: {
-                        remote_sym = AST::down_cast<AST::DefinedOperator_t>(
-                            x.m_symbols[i])->m_opName;
-
-                        // Append "~~" to the begining of any custom defined operator
-                        remote_sym = update_custom_op_name(remote_sym);
-                        break;
-                    }
-                    case AST::use_symbolType::UseWrite: {
-                        remote_sym = AST::down_cast<AST::UseWrite_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~write_" + remote_sym;
-                        break;
-                    }
-                    case AST::use_symbolType::UseRead: {
-                        remote_sym = AST::down_cast<AST::UseRead_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~read_" + remote_sym;
-                        break;
-                    }
-                    default:
-                        diag.add(diag::Diagnostic(
-                            "Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type),
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
-                }
-                std::string local_sym;
-                if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&
-                    AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
-                    local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
-                    remote_sym = to_lower(remote_sym);
-                    if (remote_sym != local_sym) {
-                        ASR::symbol_t* existing = current_scope->resolve_symbol(remote_sym);
-                        if (existing && ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
-                            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(existing);
-                            if (std::string(ext_sym->m_module_name) == msym) {
-                                current_scope->erase_symbol(remote_sym);
-                            }
-                        }
-                    }
-                } else {
-                    remote_sym = to_lower(remote_sym);
-                    local_sym = remote_sym;
-                }
-                import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_later, x.m_symbols[i]->base.loc);
-            }
-
-            // Importing procedures defined for overloaded operators like assignment
-            // after all the user imports are complete. This avoids
-            // importing the same function twice i.e., if the user has already imported
-            // the required procedures manually then importing later avoids polluting the
-            // symbol table.
-            while( !to_be_imported_later.empty() ) {
-                std::string remote_sym = to_be_imported_later.front().first;
-                std::string local_sym = to_be_imported_later.front().second;
-                to_be_imported_later.pop();
-                if( current_scope->resolve_symbol(local_sym) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, local_sym,
-                                        to_be_imported_later, x.base.base.loc);
-                }
-            }
-        }
+        this->import_use_symbols(m, x);
     }
 
     void visit_GenericName(const AST::GenericName_t& x) {

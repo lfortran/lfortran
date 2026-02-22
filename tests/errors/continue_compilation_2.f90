@@ -214,10 +214,10 @@ program continue_compilation_2
     character(len=10) :: prefix
     integer :: aRank1(..)
     character(:), ALLOCATABLE :: str1
-
-
-
-
+    integer :: ierr
+    character(*), parameter :: badfmt_p = '(a i0)'
+    character(8) :: badfmt_s = '(a i0)'
+    character(:), allocatable :: ax
 
 
 
@@ -464,6 +464,14 @@ program continue_compilation_2
     lhs = rhs
     print *, index( substring = 'de', back = .true. )
     print *, compiler_options()
+    print "(AF9.6)", 'pi =', 4*atan(1.0)
+    write (*,"(ai0)", iostat=ierr) "hi", 3
+    if (ierr /= 0) print*,"could not write"
+    write (*,badfmt_p) "hi", 3
+    write (*,badfmt_s) "hi", 3
+    write (*, add_parens (badfmt_s)) "hi", 3
+    ax = "xx"
+    print "(aai6)", a,"hi",15
     contains
     logical function f(x)
         integer, intent(in), optional :: x

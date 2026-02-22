@@ -69,7 +69,9 @@
                                 )
                         })
                     template_travel_02
-                    [template_travel_02_m]
+                    [template_travel_02_m
+                    template_travel_02_math
+                    template_travel_02_travel]
                     [(SubroutineCall
                         26 test_template
                         ()

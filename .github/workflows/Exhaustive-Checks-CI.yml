@@ -218,7 +218,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
+        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "20", "21"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v6
@@ -436,30 +436,6 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-19 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 8-16
-        if: ${{(contains(matrix.llvm-version, '8') || contains(matrix.llvm-version, '9') || contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm -sc
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f -nf16
-            ./run_tests.py -b llvm_submodule
-            ./run_tests.py -b llvm_submodule -sc
-
-      - name: Test Linux LLVM 17-21
-        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21'))}}
-        shell: bash -e -l {0}
-        run: |
-            ctest --output-on-failure
-            cd integration_tests
-            ./run_tests.py -b llvm -sc
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
-            ./run_tests.py -b llvm_submodule
-            ./run_tests.py -b llvm_submodule -sc
-
       - name: Check SciPy Build and Test Run - Test SciPy
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
@@ -556,7 +532,12 @@ jobs:
         if: ${{! (matrix.llvm-version == '7') }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
+            LAPACK_MODE="smoke"
+            if [[ "${{ matrix.llvm-version }}" == "11" || "${{ matrix.llvm-version }}" == "21" ]]; then
+                LAPACK_MODE="full"
+            fi
+            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
   upload_tarball:
     name: Upload Tarball

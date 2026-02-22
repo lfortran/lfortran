@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in assignment to 'x'. Tried to match size 3 
   --> tests/errors/array_bounds_check_06.f90:10:5
    |
 10 |     x = y
-   |     ^ 
+   |     ^ LHS size is 3
+   |
+10 |     x = y
+   |         ^ RHS size is 4

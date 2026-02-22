@@ -35,7 +35,95 @@ The extensions are currently in development and are planned to include:
 * Global Scope (statements outside of a program block).
 * Interactive Fortran (in alpha).
 * Jupyter integration.
-* Support for GPUs and other accelerators
+* Support for GPUs and other accelerators.
+* Type inference (`:=` operator and `--infer` mode).
+
+### Type Inference with `:=`
+
+**Experimental, subject to change.**
+
+The `:=` operator declares a new variable whose type is inferred from the
+right-hand side. It is closely inspired by Go's short variable declaration
+(`:=`), where it is the dominant way to declare local variables. The
+rationale is the same: when the right-hand side already communicates the
+type, repeating it on the left is redundant noise. `:=` makes declarations
+visible at a glance without requiring the programmer to spell out types
+that the compiler can deduce.
+
+`:=` is not standard Fortran syntax. It is an LFortran-specific extension,
+and the compiler emits a warning on each use to make this clear. The
+`--infer` flag suppresses the warning.
+
+```fortran
+x := 42              ! integer
+y := 3.14d0          ! real(8)
+z := (1.0d0, 2.0d0)  ! complex(8)
+vals := [1, 2, 3]    ! integer, dimension(3)
+p := point_t(0.0, 0.0)  ! type(point_t)
+```
+
+#### Rules
+
+`:=` always declares a new variable. It never assigns to an existing one.
+
+```fortran
+x := 5
+x = 10     ! ok: plain assignment to existing variable
+x := 10    ! error: x is already declared in this scope
+```
+
+```fortran
+integer :: x
+x := 5     ! error: x is already declared
+```
+
+Inner blocks may shadow outer variables:
+
+```fortran
+x := 5
+block
+    x := "hello"   ! ok: new x in inner scope
+end block
+! outer x is still integer 5
+```
+
+Supported right-hand sides: integer, real, complex, logical, character
+scalars; fixed-size arrays when dimensions are compile-time constants;
+derived types via structure constructors or typed expressions.
+The inferred kind matches the expression (`3.14d0` produces `real(8)`).
+
+#### Guidance
+
+Use `:=` when the type is evident from the right-hand side:
+
+```fortran
+cfg := load_config("input.nml")
+origin := point_t(0.0, 0.0)
+coeffs := [1.0d0, 0.5d0, 0.25d0]
+```
+
+Use explicit declarations when the type matters for clarity or safety:
+
+```fortran
+real(dp) :: result
+result = compute(data)    ! reader sees the type; catches signature changes
+
+integer :: i, n           ! simple counters are clearer with explicit types
+```
+
+#### `--infer` mode
+
+`--infer` enables a second, more permissive form of inference: the first
+plain `=` to an undeclared name declares it, like a scripting language.
+This is intended for interactive and notebook use.
+
+| Feature | Syntax | Declares | Intended for |
+|---------|--------|----------|--------------|
+| `:=` | `x := expr` | Always | Production code |
+| `--infer` | `x = expr` | On first use | Interactive / notebooks |
+
+`:=` works independently of `--infer`. When both are active, either form
+declares, but `:=` makes the intent explicit.
 
 ## Interactive Compiler
 
@@ -222,7 +310,7 @@ before printing.  This is obsolete and LFortran omits this unless
 There is currently no way to specify detailed compiler options to
 Clang such as `-O3` or `-flto` (optimization and link-time optimization).
 
-GNU extension declarations `real*8 xvalue` are accepted but deprecated.  This
-is valid Fortran-77 but not Fortran-2018.
+GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
+was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.
 
 

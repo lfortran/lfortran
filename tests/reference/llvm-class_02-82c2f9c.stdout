@@ -7,8 +7,8 @@ source_filename = "LFortran"
 
 @__module_class_circle2_pi = global float 0x400921FB60000000
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
-@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0) }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (float (%circle_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%circle_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
+@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (float (%circle_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%circle_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [25 x i8] c"S-DESC-12,R4,S-DESC-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
@@ -86,18 +86,18 @@ FINALIZE_SYMTABLE_circle_print:                   ; preds = %return
 
 define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
+  %0 = alloca %circle_class, align 8
   %c = alloca %circle, align 8
-  %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
   %1 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.000000e+00, float* %1, align 4
   %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %2, align 4
-  %3 = alloca %circle_class, align 8
-  %4 = getelementptr %circle_class, %circle_class* %3, i32 0, i32 0
+  store float 1.000000e+00, float* %2, align 4
+  %3 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.500000e+00, float* %3, align 4
+  %4 = getelementptr %circle_class, %circle_class* %0, i32 0, i32 0
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
-  %5 = getelementptr %circle_class, %circle_class* %3, i32 0, i32 1
+  %5 = getelementptr %circle_class, %circle_class* %0, i32 0, i32 1
   store %circle* %c, %circle** %5, align 8
-  call void @__module_class_circle2_circle_print(%circle_class* %3)
+  call void @__module_class_circle2_circle_print(%circle_class* %0)
   br label %return
 
 return:                                           ; preds = %.entry

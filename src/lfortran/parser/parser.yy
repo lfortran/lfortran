@@ -130,6 +130,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_POW "**"
 %token TK_CONCAT "//"
 %token TK_ARROW "=>"
+%token TK_COLON_EQUAL ":="
 
 %token TK_EQ "=="
 %token TK_NE "/="
@@ -707,6 +708,8 @@ endinterface
     | endinterface0 KW_OPERATOR "(" operator_type ")"
     | endinterface0 KW_OPERATOR "(" "/)"
     | endinterface0 KW_OPERATOR "(" TK_DEF_OP ")"
+    | endinterface0 KW_WRITE "(" id ")"
+    | endinterface0 KW_READ  "(" id ")"
     ;
 
 endinterface0
@@ -1790,6 +1793,7 @@ assign_statement
 
 assignment_statement
     : expr "=" expr { $$ = ASSIGNMENT($1, $3, @$); }
+    | expr ":=" expr { $$ = INFER_ASSIGNMENT($1, $3, @$); }
     ;
 
 goto_statement
@@ -2437,6 +2441,9 @@ def_unary_operand
     | ".true."          { $$ = TRUE(@$); }
     | ".false."         { $$ = FALSE(@$); }
     | "(" expr ")"      { $$ = PAREN($2, @$); }
+    | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
+    | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
+    | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
     ;
 
 expr

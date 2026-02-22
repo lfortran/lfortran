@@ -211,12 +211,6 @@ semantic error: Invalid argument `end` supplied
 134 |     rewind(end="world")
     |     ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: same_type_as is not implemented yet
-   --> tests/errors/continue_compilation_3.f90:136:14
-    |
-136 |     print *, same_type_as(1.0, 1.0)
-    |              ^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Kind of all the arguments of Sign must be the same
    --> tests/errors/continue_compilation_3.f90:138:14
     |
@@ -438,6 +432,12 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
     |
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
+
+semantic error: cannot pass unallocatable string to allocatable argument
+   --> tests/errors/continue_compilation_3.f90:205:13
+    |
+205 |     call ss("hello")
+    |             ^^^^^^^ make this expression allocatable
 
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:208:23
