@@ -104,6 +104,7 @@ c     module above.
       J = .20E
       REAL*8 A = 1.23.45
       INTEGER*4 VAR/5/
+      INTEGER VAR2/6/
       INTEGER*4 VAR/5/
       EQUIVALENCE (X Y)
 
