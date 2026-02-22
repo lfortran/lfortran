@@ -2647,6 +2647,10 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
                          Location& loc, const std::function<void (const std::string &, const Location &)> err) {
     bool result = false;
     proc = ASRUtils::symbol_get_past_external(proc);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
+        proc = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
+    }
     if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);
@@ -2668,67 +2672,76 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
     ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
     int idx = select_generic_procedure(args, *g, loc, err);
-    ASR::symbol_t *final_sym;
-    final_sym = g->m_procs[idx];
-    LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
-    bool is_subroutine = ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var == nullptr;
-    ASR::ttype_t *return_type = nullptr;
-    ASR::Function_t* func = nullptr;
-    if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
-        func = ASR::down_cast<ASR::Function_t>(final_sym);
-        if (func->m_return_var) {
-            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args >= 1 &&
-                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-                ASR::dimension_t* array_dims;
-                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(args[0].m_value), array_dims);
-                Vec<ASR::dimension_t> new_dims;
-                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-                return_type = ASRUtils::duplicate_type(al,
-                                ASRUtils::get_FunctionType(func)->m_return_var_type,
-                                &new_dims);
-            } else {
-                return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            }
-        }
+    if (idx < 0) {
+        return nullptr;
     }
-    // Create ExternalSymbol for the final subroutine:
-    // We mangle the new ExternalSymbol's local name as:
-    //   generic_procedure_local_name @
-    //     specific_procedure_remote_name
-    std::string local_sym = std::string(p->m_name) + "@"
-        + ASRUtils::symbol_name(final_sym);
-    if (current_scope->get_symbol(local_sym)
-        == nullptr) {
-        Str name;
-        name.from_str(al, local_sym);
-        char *cname = name.c_str(al);
-        ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-            al, g->base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ cname,
-            final_sym,
-            p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
-            ASR::accessType::Private
+    ASR::symbol_t *final_sym = g->m_procs[idx];
+    ASR::symbol_t *final_sym_unwrapped = ASRUtils::symbol_get_past_external(final_sym);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_unwrapped)) {
+        // Import class procedures into the current scope so call symbols stay local.
+        final_sym = ASRUtils::import_class_procedure(al, loc, final_sym_unwrapped, current_scope);
+    }
+
+    if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+        // Create a local ExternalSymbol for non-local specific procedures.
+        ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+        std::string local_sym = std::string(p->m_name) + "@"
+            + ASRUtils::symbol_name(final_sym_past_ext);
+        if (current_scope->get_symbol(local_sym) == nullptr) {
+            ASR::symbol_t *owner_sym = ASRUtils::get_asr_owner(final_sym_past_ext);
+            Str name;
+            name.from_str(al, local_sym);
+            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
+                al, g->base.base.loc,
+                current_scope,
+                name.c_str(al),
+                final_sym_past_ext,
+                s2c(al, ASRUtils::symbol_name(owner_sym)), nullptr, 0,
+                s2c(al, ASRUtils::symbol_name(final_sym_past_ext)),
+                ASR::accessType::Private
             );
-        final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-        current_scope->add_symbol(local_sym, final_sym);
-    } else {
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
+        }
         final_sym = current_scope->get_symbol(local_sym);
+    }
+
+    ASR::symbol_t *called_proc = ASRUtils::symbol_get_past_external(final_sym);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*called_proc)) {
+        called_proc = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(called_proc)->m_proc);
+    }
+    if (!ASR::is_a<ASR::Function_t>(*called_proc)) {
+        err("Only Subroutine and Function supported in generic procedure", loc);
+        return nullptr;
+    }
+
+    ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(called_proc);
+    bool is_subroutine = func->m_return_var == nullptr;
+    ASR::ttype_t *return_type = nullptr;
+    if (func->m_return_var) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args >= 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(args[0].m_value), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            return_type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
+        } else {
+            return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+        }
     }
     // ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
     if( is_subroutine ) {
-        if( func ) {
-            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-        }
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_SubroutineCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         nullptr, nullptr, false);
     } else {
-        if( func ) {
-            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-        }
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         return_type,
@@ -2817,6 +2830,9 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
+    if (original_sym) {
+        original_sym = ASRUtils::symbol_get_past_external(original_sym);
+    }
     if( original_sym && (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym) ||
         (ASR::is_a<ASR::Variable_t>(*original_sym) &&
          ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
