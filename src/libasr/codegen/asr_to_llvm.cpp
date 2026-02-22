@@ -16738,7 +16738,11 @@ public:
                         break;
                     }
                     case (ASR::ttypeType::Logical) :
-                        target_type = llvm::Type::getInt1Ty(context);
+                        if (orig_arg && ASRUtils::is_array(orig_arg->m_type)) {
+                            target_type = llvm::Type::getInt8Ty(context);
+                        } else {
+                            target_type = llvm::Type::getInt1Ty(context);
+                        }
                         break;
                     case (ASR::ttypeType::EnumType) :
                         target_type = llvm::Type::getInt32Ty(context);
@@ -16889,6 +16893,10 @@ public:
                                 ASR::is_a<ASR::List_t>(*arg_type) ) {
                                     llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                             } else {
+                                if (value->getType() == llvm::Type::getInt1Ty(context)
+                                        && target_type == llvm::Type::getInt8Ty(context)) {
+                                    value = builder->CreateZExt(value, target_type);
+                                }
                                 builder->CreateStore(value, target);
                             }
                             tmp = target;
