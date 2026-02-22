@@ -1008,6 +1008,7 @@ RUN(NAME submodule_21a LABELS gfortran llvm_submodule EXTRAFILES submodule_21b.f
 
 RUN(NAME submodule_22 LABELS gfortran llvm)
 RUN(NAME submodule_23a LABELS gfortran llvm_submodule EXTRAFILES submodule_23b.f90 submodule_23c.f90)
+RUN(NAME submodule_24 LABELS gfortran llvm)
 
 
 
