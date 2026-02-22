@@ -2342,7 +2342,8 @@ public:
                     case AST::decl_attributeType::AttrPass: {
                         AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
                         LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
-                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ? std::string(attr_pass->m_name) : "";
+                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ?
+                            to_lower(std::string(attr_pass->m_name)) : "";
                         class_procedures[dt_name][use_sym_name]["pass"].loc =  attr_pass->base.base.loc;
                         break ;
                     }
