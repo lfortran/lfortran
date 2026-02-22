@@ -1,0 +1,7 @@
+{
+    "basename": "wat-wasm_complex_index_drift-0000000",
+    "infile": "tests/wasm_complex_index_drift.f90",
+    "stdout": "wat-wasm_complex_index_drift-0000000.stdout",
+    "stdout_hash": "d2a2d21508206d9d83833b5c879d2b2722b5e282",
+    "backend": "wasm"
+}
