@@ -4862,6 +4862,9 @@ public:
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr,
                 ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
+        if (ASRUtils::is_string_only(x.m_type)) {
+            value_type = llvm_utils->i8_ptr;
+        }
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
 
@@ -7799,6 +7802,10 @@ public:
                         x.m_target, target_type, module.get());
                     llvm_target = llvm_utils->CreateLoad2(target_type_llvm, llvm_target);
                     llvm_target = arr_descr->get_pointer_to_data(x.m_target, target_type, llvm_target, module.get());
+                }
+                if (ASRUtils::is_string_only(target_type)) {
+                    llvm_target = llvm_utils->get_string_data(
+                        ASRUtils::get_string_type(target_type), llvm_target, true);
                 }
                 builder->CreateStore(llvm_value, llvm_target);
             } else if ((ASRUtils::is_string_only(value_type)) && (ASRUtils::is_unlimited_polymorphic_type(target_type))){
