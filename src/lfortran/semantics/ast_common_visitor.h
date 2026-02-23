@@ -13933,7 +13933,18 @@ public:
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         if (first_struct != nullptr && operator_sym == nullptr) {
-            operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
+            // Walk up the inheritance chain to find the operator
+            ASR::Struct_t* cur_struct = first_struct;
+            while (cur_struct != nullptr) {
+                operator_sym = cur_struct->m_symtab->resolve_symbol("~def_op~" + op);
+                if (operator_sym != nullptr) break;
+                if (cur_struct->m_parent != nullptr) {
+                    cur_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(cur_struct->m_parent));
+                } else {
+                    break;
+                }
+            }
             if (operator_sym == nullptr) {
                 // The operator is not type-bound; try resolving as a regular
                 // custom operator (with the "~~" prefix) in the current scope.
