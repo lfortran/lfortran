@@ -18753,7 +18753,8 @@ public:
                 throw CodeGenError("Procedure variable '" + std::string(proc_var->m_name)
                     + "' has no interface. Add explicit interface or ensure it is called somewhere.");
             }
-            s = ASR::down_cast<ASR::Function_t>(type_decl);
+            s = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(type_decl));
         } else {
             throw CodeGenError("FunctionCall: Symbol type not supported");
         }
