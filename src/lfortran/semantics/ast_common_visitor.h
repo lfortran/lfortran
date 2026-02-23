@@ -13915,12 +13915,16 @@ public:
         bool is_binary = (second_operand != nullptr);
 
         ASR::Struct_t *first_struct = nullptr;
-        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(first_operand))) {
-            first_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(
-                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(first_operand))
-                )
-            );
+        ASR::ttype_t* first_operand_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(first_operand));
+        if (ASR::is_a<ASR::StructType_t>(*first_operand_type)) {
+            ASR::symbol_t* first_struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(first_operand));
+            if (first_struct_sym != nullptr &&
+                ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(first_struct_sym))) {
+                first_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(first_struct_sym));
+            }
         }
 
         std::string new_op = op;

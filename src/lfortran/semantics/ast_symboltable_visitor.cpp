@@ -944,8 +944,15 @@ public:
                         ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
                         if (local_sym == nullptr) {
                             // Create ExternalSymbol in the submodule for the type declaration
-                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(
-                                parent_scope->resolve_symbol(type_decl_name));
+                            ASR::symbol_t *resolved = parent_scope->resolve_symbol(type_decl_name);
+                            if (!resolved) {
+                                // Abstract interfaces are skipped by import_all when
+                                // importing into a submodule scope; fall back to
+                                // searching the parent module's symbol table directly.
+                                resolved = interface_module->m_symtab->get_symbol(type_decl_name);
+                            }
+                            ASR::symbol_t *orig_sym = resolved
+                                ? ASRUtils::symbol_get_past_external(resolved) : nullptr;
                             if (orig_sym) {
                                 SymbolTable *orig_symtab = ASRUtils::symbol_parent_symtab(orig_sym);
                                 ASR::asr_t *owner_asr = orig_symtab ? orig_symtab->asr_owner : nullptr;
