@@ -2356,13 +2356,19 @@ public:
                     }
                     case AST::decl_attributeType::SimpleAttribute: {
                         auto &cdf = class_deferred_procedures;
+                        std::string new_dt_name = dt_name;
+                        // Use module-qualified name
+                        if (current_module_sym) {
+                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(ASRUtils::symbol_get_past_external(current_module_sym));
+                            new_dt_name = std::string(mod->m_name) + "_" + dt_name;
+                        }
                         AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
                         if( attr->m_attr == AST::simple_attributeType::AttrDeferred ) {
-                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("deferred") == cdf[dt_name][use_sym_name].end());
-                            cdf[dt_name][use_sym_name]["deferred"] = attr->base.base.loc;
+                            LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("deferred") == cdf[new_dt_name][use_sym_name].end());
+                            cdf[new_dt_name][use_sym_name]["deferred"] = attr->base.base.loc;
                         } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
-                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("nopass") == cdf[dt_name][use_sym_name].end());
-                            cdf[dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
+                            LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("nopass") == cdf[new_dt_name][use_sym_name].end());
+                            cdf[new_dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
                         }
                         break;
                     }
@@ -3118,6 +3124,12 @@ public:
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
         std::string proc = clss->m_name;
+        // Use module-qualified name
+        ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
+        if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
+            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
+            proc = std::string(mod->m_name) + "_" + proc;
+        }
         if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
             return true;
         }
@@ -3135,12 +3147,19 @@ public:
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
-                bool is_nopass = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("nopass"));
+                std::string new_dt_name = proc.first;
+                // Use module-qualified name
+                ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
+                if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
+                    ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
+                    new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
+                } 
+                bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("pass specified here", { pname.second["pass"].loc} ),
-                            diag::Label("nopass specified here", { cdf[proc.first][pname.first]["nopass"] })
+                            diag::Label("nopass specified here", { cdf[new_dt_name][pname.first]["nopass"] })
                         }));
                     throw SemanticAbort();
                 }
@@ -3151,7 +3170,7 @@ public:
                         diag.add(diag::Diagnostic(
                             "Interface must be specified for DEFERRED binding",
                             diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {cdf[proc.first][pname.first]["deferred"]})}));
+                                diag::Label("", {cdf[new_dt_name][pname.first]["deferred"]})}));
                         throw SemanticAbort();
                     } else {
                         diag.add(diag::Diagnostic(
