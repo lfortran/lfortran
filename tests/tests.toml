@@ -4521,6 +4521,14 @@ filename = "errors/class_procedure_extra_args.f90"
 asr = true
 
 [[test]]
+filename = "errors/procedure_pointer_no_interface.f90"
+asr = true
+
+[[test]]
+filename = "errors/procedure_pointer_type_mismatch.f90"
+asr = true
+
+[[test]]
 filename = "errors/incorrect_number_args_function.f90"
 asr = true
 
