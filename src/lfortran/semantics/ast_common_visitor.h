@@ -14061,8 +14061,8 @@ public:
                 return_type = ASRUtils::duplicate_type(
                     al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
             } else {
-                return_type = ASRUtils::duplicate_type_without_dims(
-                    al, ASRUtils::expr_type(func->m_return_var), loc);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::expr_type(func->m_return_var));
             }
 
             std::string func_name = to_lower(func->m_name);
@@ -14171,8 +14171,8 @@ public:
                 return_type = ASRUtils::duplicate_type(
                     al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
             } else {
-                ASR::ttype_t* type = ASRUtils::expr_type(func->m_return_var);
-                return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::expr_type(func->m_return_var));
             }
             std::string func_name = to_lower(func->m_name);
             std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
