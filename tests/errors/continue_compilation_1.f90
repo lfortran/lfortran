@@ -128,10 +128,8 @@ contains
         integer, intent(out) :: lhs
         integer, intent(out) :: rhs
     end subroutine assign_bad_rhs
-
-
-
-
+    
+    
 
 
 
@@ -253,6 +251,14 @@ program continue_compilation_1
     type(MyClass) :: err_obj3 = non_parameter_var
     type(MyClass) :: err_obj4 = myclass_array
     type(MyClass) :: err_obj5 = uninitialized_param_local
+    enum, bind(c)
+        enumerator :: red/1/
+    end enum
+    type :: slash_t
+        integer :: i
+    end type slash_t
+    type(slash_t) :: slash_x/slash_t(1)/
+    integer :: slash_y/2/
 
     ! Unary defined operator with missing procedure
     interface operator(.bad.)
