@@ -287,9 +287,6 @@
                                         )]
                                         []
                                     )
-                                    (ImplicitDeallocate
-                                        [(Var 4 x)]
-                                    )
                                     (SubroutineCall
                                         2 f
                                         ()
@@ -463,9 +460,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 c)]
                                     )
                                     (SubroutineCall
                                         2 f
@@ -655,9 +649,6 @@
                         ()
                         .false.
                         .false.
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 c)]
                     )
                     (SubroutineCall
                         2 h

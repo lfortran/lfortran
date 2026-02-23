@@ -211,12 +211,6 @@ semantic error: Invalid argument `end` supplied
 134 |     rewind(end="world")
     |     ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: same_type_as is not implemented yet
-   --> tests/errors/continue_compilation_3.f90:136:14
-    |
-136 |     print *, same_type_as(1.0, 1.0)
-    |              ^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Kind of all the arguments of Sign must be the same
    --> tests/errors/continue_compilation_3.f90:138:14
     |

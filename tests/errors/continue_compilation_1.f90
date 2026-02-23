@@ -39,8 +39,8 @@ module continue_compilation_1_mod
         real :: r
     end type Derived
 
-
-
+    type :: type_t
+    end type type_t
 
 
 contains
@@ -263,8 +263,8 @@ program continue_compilation_1
     type(ieee_class_type) :: ieee_cls
     type(Base) :: base_var
     type(Derived) :: derived_var
-
-
+    class(type_t) :: inst_tt
+    real(8), parameter :: erfc_param = erfc(40.12_8)
 
 
 

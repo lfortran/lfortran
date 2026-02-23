@@ -1254,7 +1254,8 @@
                                 )
                         })
                     modules_31
-                    [fpm_cmd_update_modules_31]
+                    [fpm_cmd_update_modules_31
+                    fpm_dependency_modules_31]
                     [(Print
                         (StringConstant
                             "running modules_31 program"

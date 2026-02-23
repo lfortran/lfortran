@@ -1,0 +1,13 @@
+{
+    "basename": "run-infer_mode_smoke_01-f9a09d6",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/infer_mode_smoke_01.f90",
+    "infile_hash": "27f38709d506bc21c86a5e43a27e790423a9c88fe6f19eaaf8d6ebf4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

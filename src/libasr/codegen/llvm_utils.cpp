@@ -3073,7 +3073,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             }
                             llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, src_expr);
                             create_if_else(is_allocated, [=]() {            
-                                arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
+                                arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, src_expr, asr_src_type, false);
                             }, [=]() {
                             });
                             break;
@@ -8711,6 +8711,81 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
     }
 
+    void LLVMStruct::allocate_array_of_unlimited_polymorphic_type(
+            ASR::Struct_t* class_symbol, ASR::StructType_t* /*struct_type*/,
+            llvm::Value* array_data_ptr, llvm::Value* size,
+            ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module) {
+        LCOMPILERS_ASSERT(class_symbol && array_data_ptr && size && alloc_type);
+
+        llvm::Type* const llvm_class_type = llvm_utils->getClassType(class_symbol);
+
+        // Get the LLVM type for the intrinsic element type
+        int kind = ASRUtils::extract_kind_from_ttype_t(alloc_type);
+        llvm::Type* llvm_element_type = nullptr;
+        if (ASR::is_a<ASR::Integer_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getIntType(kind);
+        } else if (ASR::is_a<ASR::Real_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getFPType(kind);
+        } else if (ASR::is_a<ASR::Complex_t>(*alloc_type)) {
+            llvm_element_type = llvm_utils->getComplexType(kind);
+        } else if (ASR::is_a<ASR::Logical_t>(*alloc_type)) {
+            llvm_element_type = llvm::Type::getInt8Ty(context);
+        } else {
+            throw LCompilers::CodeGenError("Unsupported type-spec for unlimited polymorphic array allocation");
+        }
+
+        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr
+        int64_t class_wrapper_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_class_type);
+        llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *module, *builder,
+            llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
+        builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            class_wrapper_size, llvm::MaybeAlign());
+        llvm::Value* class_wrapper = builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
+        builder->CreateStore(class_wrapper, array_data_ptr);
+
+        // Step 2: Allocate the data array with the intrinsic element type
+        uint64_t element_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_element_type);
+        llvm::Value* total_bytes = builder->CreateMul(
+            llvm_utils->convert_kind(size, llvm::Type::getInt64Ty(context)),
+            llvm::ConstantInt::get(context, llvm::APInt(64, element_size)));
+        llvm::Value* data_mem = nullptr;
+        if (realloc) {
+            // For realloc, load existing data pointer from wrapper's data field
+            if (llvm_utils->compiler_options.new_classes) {
+                llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+                llvm::Value* existing_data = builder->CreateLoad(llvm_utils->i8_ptr, existing_data_ptr);
+                data_mem = LLVM::lfortran_realloc(context, *module, *builder, existing_data, total_bytes);
+            } else {
+                llvm::Value* existing_data_ptr = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 1);
+                llvm::Value* existing_data = builder->CreateLoad(
+                    llvm::Type::getVoidTy(context)->getPointerTo(), existing_data_ptr);
+                data_mem = LLVM::lfortran_realloc(context, *module, *builder, existing_data, total_bytes);
+            }
+        } else {
+            data_mem = LLVM::lfortran_malloc(context, *module, *builder, total_bytes);
+        }
+        builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            total_bytes, llvm::MaybeAlign());
+
+        // Step 3: Store data pointer in wrapper
+        if (llvm_utils->compiler_options.new_classes) {
+            // new_classes: wrapper is {vptr_type, i8*}, data goes in field 1
+            llvm::Value* data_field = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
+            builder->CreateStore(data_mem, data_field);
+            // Store vptr for intrinsic type
+            store_intrinsic_type_vptr(alloc_type, kind, class_wrapper, module);
+        } else {
+            // old classes: wrapper is {i64, void*}, type hash goes in field 0, data in field 1
+            llvm::Value* type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                llvm::APInt(64, -((int) alloc_type->type) - kind, true));
+            llvm::Value* hash_field = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 0);
+            builder->CreateStore(type_hash, hash_field);
+            llvm::Value* data_field = llvm_utils->create_gep2(llvm_class_type, class_wrapper, 1);
+            builder->CreateStore(builder->CreateBitCast(data_mem,
+                llvm::Type::getVoidTy(context)->getPointerTo()), data_field);
+        }
+    }
+
     void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)
     {
         if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
@@ -8802,10 +8877,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
+        type_info_member_values.reserve(3); // A type-info object has 3 members.
 
         // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
@@ -8818,6 +8894,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::ConstantExpr::getIntToPtr(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
                 llvm_utils->i8_ptr));
+        // No parent for intrinsic types
+        type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
         
@@ -8843,10 +8921,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Constant*> slots;
         llvm::Function* copy_function = define_intrinsic_type_copy_function(ttype, module);
+        llvm::Function* allocate_function = define_intrinsic_type_allocate_function(ttype, module);
         slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
         slots.push_back(llvm::ConstantExpr::getBitCast(intrinsic_type_info.at(
             ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)), llvm_utils->i8_ptr));  // Type Info
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
+        slots.push_back(llvm::ConstantExpr::getBitCast(allocate_function, llvm_utils->i8_ptr));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -8864,6 +8944,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         intrinsic_type_vtabtype.insert(
             std::make_pair(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind), outerStructTy));
         fill_intrinsic_type_copy_body(ttype, copy_function, module);
+        fill_intrinsic_type_allocate_body(ttype, allocate_function, module);
     }
 
     void LLVMStruct::create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym, llvm::Module* module)
@@ -8933,10 +9014,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
+        type_info_member_values.reserve(3); // A type-info object has 3 members.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -8955,9 +9037,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm_utils->i8_ptr));
         if (struct_t->m_parent) {
             // Pointer to parent struct's type-info
-            type_info_member_types.push_back(llvm_utils->i8_ptr);
             type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
                 newclass2typeinfo.at(ASRUtils::symbol_get_past_external(struct_t->m_parent)), llvm_utils->i8_ptr));
+        } else {
+            // No parent — null pointer
+            type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
         }
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
@@ -9144,6 +9228,80 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             src = llvm_utils->CreateLoad2(llvm_type, src);
         }
         llvm_utils->deepcopy(nullptr, src, dst, type, type, module);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+    }
+
+    llvm::Function* LLVMStruct::define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module)
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr->getPointerTo()},
+            false
+        );
+
+        // Create the function in the module
+        std::string func_name = "_allocate_" + ASRUtils::intrinsic_type_to_str_with_kind(
+            type, ASRUtils::extract_kind_from_ttype_t(type));
+        if (llvm::Function *existing = module->getFunction(func_name)) {
+            return existing;
+        }
+        llvm::Function *func = llvm::Function::Create(
+            funcType,
+            llvm::Function::LinkOnceODRLinkage,
+            func_name,
+            module
+        );
+        return func;
+    }
+
+    void LLVMStruct::fill_intrinsic_type_allocate_body(ASR::ttype_t* ttype, llvm::Function* func, llvm::Module* module)
+    {
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        // Get function argument (pointer to class(*) variable)
+        llvm::Value* target_ptr = &*func->arg_begin();
+
+        // The class wrapper type is {vptr_type, i8*}
+        llvm::Type* class_type = llvm::StructType::get(context,
+            { llvm_utils->vptr_type, llvm_utils->i8_ptr }, true);
+
+        // Allocate class wrapper
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t wrapper_size = data_layout.getTypeAllocSize(class_type);
+        llvm::Value* wrapper_malloc_size = llvm::ConstantInt::get(
+            llvm_utils->getIntType(4), llvm::APInt(32, wrapper_size));
+        llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, wrapper_malloc_size);
+        builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(
+            context, llvm::APInt(8, 0)), wrapper_malloc_size, llvm::MaybeAlign());
+        builder->CreateStore(wrapper_ptr, target_ptr);
+
+        // Store VPtr
+        llvm::Value* wrapper_typed = builder->CreateBitCast(wrapper_ptr, class_type->getPointerTo());
+        ttype = ASRUtils::extract_type(ttype);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        store_intrinsic_type_vptr(ttype, kind, wrapper_typed, module);
+
+        // Allocate data buffer for the intrinsic type
+        llvm::Type* data_type = llvm_utils->get_type_from_ttype_t_util(ttype, nullptr, module);
+        int64_t data_size = data_layout.getTypeAllocSize(data_type);
+        llvm::Value* data_malloc_size = llvm::ConstantInt::get(
+            llvm_utils->getIntType(4), llvm::APInt(32, data_size));
+        llvm::Value* data_ptr = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, data_malloc_size);
+        builder->CreateMemSet(data_ptr, llvm::ConstantInt::get(
+            context, llvm::APInt(8, 0)), data_malloc_size, llvm::MaybeAlign());
+
+        // Store data pointer in class wrapper's second field
+        llvm::Value* data_field = llvm_utils->create_gep2(class_type, wrapper_typed, 1);
+        builder->CreateStore(data_ptr, data_field);
+
         builder->CreateRetVoid();
 
         if (savedBB) {

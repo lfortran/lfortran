@@ -47,7 +47,8 @@
                                 )
                         })
                     interface_04
-                    [interface_04_mod2]
+                    [interface_04_mod2
+                    interface_04_mod1]
                     [(Assignment
                         (Var 5 i)
                         (IntegerConstant 5 (Integer 4) Decimal)

@@ -1,0 +1,2 @@
+program infer_mode_smoke_01
+end program infer_mode_smoke_01

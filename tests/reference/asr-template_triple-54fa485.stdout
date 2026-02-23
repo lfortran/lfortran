@@ -1416,7 +1416,10 @@
                                 )
                         })
                     template_triple
-                    [use_triple_m]
+                    [use_triple_m
+                    math_integer_m
+                    math_real_m
+                    triple_m]
                     [(SubroutineCall
                         34 test_add_triples
                         ()

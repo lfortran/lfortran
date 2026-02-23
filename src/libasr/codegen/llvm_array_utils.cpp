@@ -403,7 +403,8 @@ namespace LCompilers {
             llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
             ASR::symbol_t* const variable_declaration, llvm::Module* module, 
-            ASR::symbol_t* allocated_subclass, bool realloc) {
+            ASR::symbol_t* allocated_subclass, bool realloc,
+            ASR::ttype_t* alloc_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
@@ -434,13 +435,24 @@ namespace LCompilers {
                     prod,
                     realloc);
             } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
-                llvm_utils->struct_api->allocate_array_of_classes(
-                    ASR::down_cast<ASR::Struct_t>(variable_declaration)
-                    , ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type))
-                    , ptr2firstptr
-                    , prod
-                    , allocated_subclass
-                    , realloc);
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(
+                    ASRUtils::extract_type(asr_type));
+                if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
+                        && !ASR::is_a<ASR::StructType_t>(*alloc_type)) {
+                    // Unlimited polymorphic array with intrinsic type spec
+                    // (e.g., allocate(integer :: arr(5)))
+                    llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
+                        ASR::down_cast<ASR::Struct_t>(variable_declaration),
+                        struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
+                } else {
+                    llvm_utils->struct_api->allocate_array_of_classes(
+                        ASR::down_cast<ASR::Struct_t>(variable_declaration)
+                        , struct_type
+                        , ptr2firstptr
+                        , prod
+                        , allocated_subclass
+                        , realloc);
+                }
             } else {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 llvm::Type* ptr_type = llvm_data_type->getPointerTo();
@@ -798,8 +810,8 @@ namespace LCompilers {
                                                             lbound_check,
                                                             ubound_check),
                                                 "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                                                {LLVMUtils::RuntimeLabel("", {loc})},
                                                      infile,
-                                                     loc,
                                                      lm,
                                                      LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
@@ -850,10 +862,9 @@ namespace LCompilers {
                         llvm_utils->generate_runtime_error(builder->CreateOr(
                                                                 lbound_check,
                                                                 ubound_check),
-                                                "Runtime error: Array '%s' index out of bounds.\n\n"
-                                                        "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                "Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                                                        {LLVMUtils::RuntimeLabel("", {loc})},
                                                         infile,
-                                                        loc,
                                                         lm,
                                                         LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
@@ -1112,12 +1123,31 @@ namespace LCompilers {
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                 this->get_offset(arr_type, reshaped, false));
 
-            if( this->is_array(asr_shape_type) ) {
+            if( ASRUtils::is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
                 builder->CreateStore(llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(arr_type, array, 1)),
                             llvm_utils->create_gep2(arr_type, reshaped, 1));
-                llvm::Value* n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
-                llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape_type, shape));
+
+                // Determine n_dims and a pointer to the shape data.
+                // When the shape argument is a FixedSizeArray ([N x i32]) we
+                // must not access descriptor fields that do not exist.
+                llvm::Value* n_dims = nullptr;
+                llvm::Value* shape_data = nullptr;
+                ASR::array_physical_typeType shape_physical =
+                    ASRUtils::extract_physical_type(asr_shape_type);
+                if( shape_physical == ASR::array_physical_typeType::FixedSizeArray ) {
+                    int64_t compile_time_n_dims =
+                        ASRUtils::get_fixed_size_of_array(asr_shape_type);
+                    n_dims = llvm::ConstantInt::get(context,
+                        llvm::APInt(32, compile_time_n_dims));
+                    shape_data = llvm_utils->create_gep2(shape_type, shape, 0);
+                } else {
+                    n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
+                    shape_data = llvm_utils->CreateLoad2(
+                        i32->getPointerTo(),
+                        this->get_pointer_to_data(shape_type, shape));
+                }
+
                 llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_type, reshaped, 2);
                 llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(arr_type, reshaped, true));
@@ -1160,12 +1190,12 @@ namespace LCompilers {
 
         // Shallow copies source array descriptor to destination descriptor
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::ttype_t* asr_data_type, bool reserve_memory) {
+            llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
-            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(
-                ASRUtils::type_get_past_allocatable(asr_data_type)), false, false)].second;
+            llvm::Type* llvm_data_type = llvm_utils->get_el_type(
+                array_expr, ASRUtils::extract_type(asr_data_type), module);
             if( reserve_memory ) {
                 llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);

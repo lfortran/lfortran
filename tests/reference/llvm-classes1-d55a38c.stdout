@@ -6,8 +6,8 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 
 @_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
-@_Type_Info_base = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0), i8* inttoptr (i64 4 to i8*) }, align 8
-@_VTable_base = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_base to i8*), i8* bitcast (void (i8*, i8*)* @_copy_xx_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_xx_base to i8*), i8* bitcast (void (%base_class*)* @__module_xx_show_x to i8*)] }, align 8
+@_Type_Info_base = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
+@_VTable_base = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_base to i8*), i8* bitcast (void (i8*, i8*)* @_copy_xx_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_xx_base to i8*), i8* bitcast (void (%base_class*)* @__module_xx_show_x to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1

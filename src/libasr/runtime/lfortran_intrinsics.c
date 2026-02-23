@@ -1,3 +1,6 @@
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +16,9 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#if !defined(COMPILE_TO_WASM)
+#include <fenv.h>
+#endif
 
 #define PI 3.14159265358979323846
 // Enum for float format types to avoid string comparison
@@ -100,6 +106,7 @@ static int _lfortran_use_runtime_colors = 0;  // disabled by default
 #ifdef HAVE_LFORTRAN_LINK
 // For dl_iterate_phdr() functionality
 #  include <link.h>
+#ifndef _GNU_SOURCE
 struct dl_phdr_info {
     ElfW(Addr) dlpi_addr;
     const char *dlpi_name;
@@ -108,6 +115,7 @@ struct dl_phdr_info {
 };
 extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
     size_t, void *), void *__data);
+#endif
 #endif
 
 #ifdef HAVE_LFORTRAN_UNWIND
@@ -376,14 +384,15 @@ static void format_float_fortran(char* result, float val);
 static void format_double_fortran(char* result, double val);
 
 void handle_float(FloatFormatType format_type, char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
-    val = val * pow(10, scale); // scale the value
     if (format_type == FLOAT_FORMAT_F64) {
+        val = val * pow(10, scale);
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     } else if (format_type == FLOAT_FORMAT_F32) {
+        val = val * pow(10, scale);
         char* float_str = (char*)malloc(64 * sizeof(char));
         format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
@@ -391,6 +400,41 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         return;
     }
     // FLOAT_FORMAT_CUSTOM: parse the format string
+
+    if (isnan(val) || isinf(val)) {
+        int width = 0;
+        char* dot_pos = strchr(format, '.');
+        if (dot_pos != NULL) {
+            width = atoi(format + 1);
+        }
+        const char* special_str;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+        } else if (use_sign_plus) {
+            special_str = "+Infinity";
+        } else {
+            special_str = "Infinity";
+        }
+        int special_len = strlen(special_str);
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
+    }
+
+    val = val * pow(10, scale);
+
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
@@ -1204,8 +1248,8 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
             case '(' :
                 start = index;
                 index = find_matching_parentheses(format, format_len, index);
-                format_values_2[format_values_count++] = substring(cformat, start, index);
                 *item_start = format_values_count;
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
@@ -1267,7 +1311,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     if (cformat[index] == '(') {
                         start = index;
                         index = find_matching_parentheses(format, format_len, index);
-                        *item_start = format_values_count+1;
+                        *item_start = format_values_count;
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
@@ -1838,6 +1882,14 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
 }
 
 static void format_float_fortran(char* result, float val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
     float abs_val = fabsf(val);
     
     if (abs_val == 0.0f) {
@@ -1859,6 +1911,14 @@ static void format_float_fortran(char* result, float val) {
 }
 
 static void format_double_fortran(char* result, double val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
     double abs_val = fabs(val);
     
     if (abs_val == 0.0) {
@@ -2149,6 +2209,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 format_values_count = format_values_count + new_fmt_val_count;
                 free(format_values[i]);
                 format_values[i] = NULL;
+                if (i < item_start_idx) {
+                    item_start_idx += new_fmt_val_count;
+                }
                 free(new_fmt_val);
                 continue;
             }
@@ -2198,6 +2261,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         rounding_mode = 'z';
                     }
                 }
+            } else if (tolower(value[0]) == 'b' && strlen(value) == 2 &&
+                       (tolower(value[1]) == 'n' || tolower(value[1]) == 'z')) {
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier - move position left
@@ -2656,157 +2721,6 @@ static char* runtime_read_line(const char *filename, unsigned int line_no) {
     return NULL;
 }
 
-static size_t runtime_squiggle_len(const char *line, unsigned int column) {
-    size_t len = strlen(line);
-    if (len == 0) {
-        return 1;
-    }
-    if (column == 0) {
-        column = 1;
-    }
-    size_t start = column - 1;
-    if (start >= len) {
-        return 1;
-    }
-    if (isspace((unsigned char)line[start])) {
-        return 1;
-    }
-    size_t i = start;
-    while (i < len && !isspace((unsigned char)line[i])) {
-        i++;
-    }
-    if (i == start) {
-        return 1;
-    }
-    return i - start;
-}
-
-
-static void runtime_render_error(const char *formatted) {
-    const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
-    const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
-    const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
-    const char *color_bold_blue = _lfortran_use_runtime_colors ? "\033[0;34;1m" : "";
-
-    // Check if this is a STOP statement (not an error)
-    if (strncmp(formatted, "STOP", 4) == 0 || strncmp(formatted, "ERROR STOP", 10) == 0) {
-        fprintf(stderr, "%s", formatted);
-        fflush(stderr);
-        return;
-    }
-
-    // Try to parse "At line:col of file filename\nmessage" format
-    const char *prefix = "At ";
-    const char *file_marker = " of file ";
-
-    // If the message doesn't have location info, just print it with the runtime error prefix
-    if (strncmp(formatted, prefix, strlen(prefix)) != 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse line number
-    const char *p = formatted + strlen(prefix);
-    char *endptr = NULL;
-    unsigned long line = strtoul(p, &endptr, 10);
-    if (!endptr || *endptr != ':') {
-        // Parsing failed, just print the message
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse column number
-    p = endptr + 1;
-    unsigned long column = strtoul(p, &endptr, 10);
-    if (!endptr) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    // Parse filename
-    const char *file_pos = strstr(endptr, file_marker);
-    if (!file_pos) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    const char *filename_start = file_pos + strlen(file_marker);
-    const char *filename_end = strchr(filename_start, '\n');
-    if (!filename_end) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-
-    size_t filename_len = (size_t)(filename_end - filename_start);
-    char *filename = (char*)malloc(filename_len + 1);
-    if (!filename) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-        return;
-    }
-    memcpy(filename, filename_start, filename_len);
-    filename[filename_len] = '\0';
-
-    const char *message = filename_end + 1;
-    if (*message == '\0') {
-        message = "Unknown error";
-    }
-
-    // Always print the error message
-    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-            color_bold_red, color_reset, color_bold, message, color_reset);
-
-    // If line is 0, we don't have a specific location - just show the message
-    if (line == 0) {
-        free(filename);
-        fflush(stderr);
-        return;
-    }
-
-    // Try to read the source line - if it fails, still show location without source
-    char *line_text = runtime_read_line(filename, (unsigned int)line);
-
-    int width = runtime_line_num_width((unsigned int)line);
-
-    // Show location info
-    fprintf(stderr, "%*s%s-->%s %s:%lu:%lu\n",
-            width, "", color_bold_blue, color_reset, filename, line, column);
-
-    // If we have the source line, show it with the squiggle
-    if (line_text) {
-        size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
-
-        fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
-        fprintf(stderr, "%s%*lu |%s %s\n",
-                color_bold_blue, width, line, color_reset, line_text);
-        fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
-        if (column > 1) {
-            fprintf(stderr, "%*s", (int)(column - 1), "");
-        }
-        fprintf(stderr, "%s", color_bold_red);
-        for (size_t i = 0; i < squiggle_len; i++) {
-            fputc('^', stderr);
-        }
-        fprintf(stderr, " %s\n", color_reset);
-
-        free(line_text);
-    }
-
-    fflush(stderr);
-    free(filename);
-}
-
 static void print_label_span(const Span *span, bool is_primary, 
                               const char *label_msg, bool use_colors) {
     const char *color_reset = use_colors ? "\033[0;0m" : "";
@@ -2921,7 +2835,9 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
         for (uint32_t j = 0; j < label->n_spans; j++) {
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
-            free(label->message);
+            if (label->message != NULL)
+                free(label->message);
+            label->message = NULL;
         }
     }
 
@@ -2954,32 +2870,13 @@ LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {
     return formatted;
 }
 
-// TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
-    va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
-    }
-    char *formatted = (char*)malloc((size_t)needed + 1);
-    if (!formatted) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
-    }
-    vsnprintf(formatted, (size_t)needed + 1, format, args);
+    vfprintf(stderr, format, args);
+    fflush(stderr);
     va_end(args);
-    runtime_render_error(formatted);
-    free(formatted);
 }
 
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
@@ -8029,41 +7926,55 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 
-LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return; // allocation failure
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    sscanf(buf, format, f);
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    int rc = sscanf(buf, format, f);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
-    char *buf = (char*)malloc(len + 1);
-    if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    sscanf(buf, format, f);
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    int rc = sscanf(buf, format, f);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 char* remove_whitespace(char* str, int64_t* len) {
@@ -8095,14 +8006,55 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
         src_data, src_len);
 }
 
-LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i) {
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
     char *buf = (char*)malloc(len + 1);
     if (!buf) return;
     memcpy(buf, str, len);
     buf[len] = '\0';
-    sscanf(buf, format, i);
-    printf("%s\n", buf);
+    int rc = sscanf(buf, format, i);
     free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad logical for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
+// Replace Fortran 'd'/'D' exponent with 'e'/'E' so that C's sscanf can parse it
+static void _lfortran_replace_d_exponent(char *buf) {
+    for (int i = 0; buf[i]; i++) {
+        if ((buf[i] == 'd' || buf[i] == 'D') && i > 0
+            && (buf[i-1] == '.' || (buf[i-1] >= '0' && buf[i-1] <= '9'))) {
+            buf[i] = 'e';
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    _lfortran_replace_d_exponent(buf);
+    int rc = sscanf(buf, format, &c->re, &c->im);
+    free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat) {
+    char *buf = to_c_string((const fchar*)str, len);
+    _lfortran_replace_d_exponent(buf);
+    int rc = sscanf(buf, format, &c->re, &c->im);
+    free(buf);
+    if (rc != 2) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad complex for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
 }
 
 void lfortran_error(const char *message) {
@@ -8155,8 +8107,10 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
 
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr) {
     (void)format; 
-    const char *pos = str;
-    const char *end = str + len;
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
     char *next = NULL;
     int64_t count = 0;
     while (pos < end) {
@@ -8171,12 +8125,15 @@ LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *
         arr[count++] = value;
         pos = next;
     }
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr) {
     (void)format; 
-    const char *pos = str;
-    const char *end = str + len;
+    char *buf = to_c_string((const fchar*)str, len);
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
     char *next = NULL;
     int64_t count = 0;
     while (pos < end) {
@@ -8191,6 +8148,7 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
         arr[count++] = value;
         pos = next;
     }
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
@@ -8368,6 +8326,97 @@ LFORTRAN_API int32_t _lfortran_get_command_status() {
 
 // << Command line arguments << ------------------------------------------------
 
+// >> Floating point exception trapping >> -------------------------------------
+// These constants must match the LCOMPILERS_FE_* values in utils.h
+#define LCOMPILERS_FE_INVALID   1
+#define LCOMPILERS_FE_ZERO      2
+#define LCOMPILERS_FE_OVERFLOW  4
+#define LCOMPILERS_FE_UNDERFLOW 8
+#define LCOMPILERS_FE_INEXACT   16
+#define LCOMPILERS_FE_DENORMAL  32
+
+LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask) {
+#if defined(COMPILE_TO_WASM)
+    fprintf(stderr, "Warning: --fpe-trap is not supported on WASM\n");
+    (void)trap_mask;
+#elif defined(__linux__)
+    int excepts = 0;
+    if (trap_mask & LCOMPILERS_FE_INVALID)   excepts |= FE_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      excepts |= FE_DIVBYZERO;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  excepts |= FE_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) excepts |= FE_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   excepts |= FE_INEXACT;
+    // denormal: Linux feenableexcept doesn't have a separate flag;
+    // on x86, we handle it via MXCSR below
+    if (excepts) {
+        feenableexcept(excepts);
+    }
+#if defined(__x86_64__) || defined(__i386__)
+    if (trap_mask & LCOMPILERS_FE_DENORMAL) {
+        // Enable denormal-operand exception in SSE MXCSR (bit 8)
+        unsigned int mxcsr;
+        __asm__ __volatile__("stmxcsr %0" : "=m"(mxcsr));
+        mxcsr &= ~(1u << 8);  // Clear DM (Denormals-Are-Zeros mask) to unmask
+        __asm__ __volatile__("ldmxcsr %0" : : "m"(mxcsr));
+    }
+#endif
+#elif defined(__APPLE__)
+#if defined(__x86_64__) || defined(__i386__)
+    // macOS x86_64: manipulate x87 control word and SSE MXCSR
+    fenv_t env;
+    fegetenv(&env);
+    // x87 control word: bits 0-5 are exception masks (1=masked, 0=unmasked)
+    if (trap_mask & LCOMPILERS_FE_INVALID)   env.__control &= ~FE_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      env.__control &= ~FE_DIVBYZERO;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  env.__control &= ~FE_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) env.__control &= ~FE_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   env.__control &= ~FE_INEXACT;
+    // SSE MXCSR: bits 7-12 are exception masks
+    if (trap_mask & LCOMPILERS_FE_INVALID)   env.__mxcsr &= ~(1u << 7);   // Invalid
+    if (trap_mask & LCOMPILERS_FE_ZERO)      env.__mxcsr &= ~(1u << 9);   // Divide-by-zero
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  env.__mxcsr &= ~(1u << 10);  // Overflow
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) env.__mxcsr &= ~(1u << 11);  // Underflow
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   env.__mxcsr &= ~(1u << 12);  // Inexact (Precision)
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  env.__mxcsr &= ~(1u << 8);   // Denormal
+    fesetenv(&env);
+#elif defined(__aarch64__)
+    // macOS ARM64: manipulate FPCR register
+    // FPCR trap enable bits: 8=IOE(invalid), 9=DZE(divbyzero), 10=OFE(overflow),
+    //                        11=UFE(underflow), 12=IXE(inexact), 15=IDE(input denormal)
+    uint64_t fpcr;
+    __asm__ __volatile__("mrs %0, fpcr" : "=r"(fpcr));
+    if (trap_mask & LCOMPILERS_FE_INVALID)   fpcr |= (1ULL << 8);   // IOE - Invalid Operation
+    if (trap_mask & LCOMPILERS_FE_ZERO)      fpcr |= (1ULL << 9);   // DZE - Division by Zero
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  fpcr |= (1ULL << 10);  // OFE - Overflow
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) fpcr |= (1ULL << 11);  // UFE - Underflow
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   fpcr |= (1ULL << 12);  // IXE - Inexact
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  fpcr |= (1ULL << 15);  // IDE - Input Denormal
+    __asm__ __volatile__("msr fpcr, %0" : : "r"(fpcr));
+#else
+    fprintf(stderr, "Warning: --fpe-trap is not supported on this Apple architecture\n");
+    (void)trap_mask;
+#endif
+#elif defined(_WIN32)
+    unsigned int cw = 0;
+    // _controlfp: second arg = mask of bits to change
+    // Clearing a bit in the control word UNMASKS (enables) that exception
+    unsigned int disable_mask = 0;
+    if (trap_mask & LCOMPILERS_FE_INVALID)   disable_mask |= _EM_INVALID;
+    if (trap_mask & LCOMPILERS_FE_ZERO)      disable_mask |= _EM_ZERODIVIDE;
+    if (trap_mask & LCOMPILERS_FE_OVERFLOW)  disable_mask |= _EM_OVERFLOW;
+    if (trap_mask & LCOMPILERS_FE_UNDERFLOW) disable_mask |= _EM_UNDERFLOW;
+    if (trap_mask & LCOMPILERS_FE_INEXACT)   disable_mask |= _EM_INEXACT;
+    if (trap_mask & LCOMPILERS_FE_DENORMAL)  disable_mask |= _EM_DENORMAL;
+    if (disable_mask) {
+        _controlfp_s(&cw, ~disable_mask & _MCW_EM, disable_mask);
+    }
+#else
+    fprintf(stderr, "Warning: --fpe-trap is not supported on this platform\n");
+    (void)trap_mask;
+#endif
+}
+// << Floating point exception trapping << -------------------------------------
+
 // Initial setup
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]) {
     _lpython_set_argv(argc_1, argv_1);
@@ -8459,6 +8508,17 @@ int shared_lib_callback(struct dl_phdr_info *info,
 
 #ifdef HAVE_LFORTRAN_MACHO
 void get_local_address_mac(struct Stacktrace *d) {
+    // Use image 0 (always the main executable on macOS) instead of
+    // source_filename, which can diverge from the binary name.
+    char *main_base = NULL;
+    if (_dyld_image_count() > 0) {
+        main_base = get_base_name((char *)_dyld_get_image_name(0));
+    }
+    if (main_base == NULL) {
+        printf("The executable name could not be resolved for stacktrace.\n"
+            "Aborting...\n");
+        abort();
+    }
     for (uint32_t i = 0; i < _dyld_image_count(); i++) {
         const struct mach_header *header = _dyld_get_image_header(i);
         intptr_t offset = _dyld_get_image_vmaddr_slide(i);
@@ -8471,18 +8531,14 @@ void get_local_address_mac(struct Stacktrace *d) {
                 struct segment_command* seg = (struct segment_command*)cmd;
                 if (((intptr_t)d->current_pc >= (seg->vmaddr+offset)) &&
                     ((intptr_t)d->current_pc < (seg->vmaddr+offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
+                    char *img_base = get_base_name((char *)_dyld_get_image_name(i));
+                    int mismatch = (img_base == NULL || strcmp(img_base, main_base) != 0);
+                    free(img_base);
+                    if (mismatch) { free(main_base); return; }
                     d->local_pc[d->local_pc_size] = d->current_pc - offset;
                     d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
                     d->local_pc_size++;
+                    free(main_base);
                     return;
                 }
             }
@@ -8490,24 +8546,21 @@ void get_local_address_mac(struct Stacktrace *d) {
                 struct segment_command_64* seg = (struct segment_command_64*)cmd;
                 if ((d->current_pc >= (seg->vmaddr + offset)) &&
                     (d->current_pc < (seg->vmaddr + offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
+                    char *img_base = get_base_name((char *)_dyld_get_image_name(i));
+                    int mismatch = (img_base == NULL || strcmp(img_base, main_base) != 0);
+                    free(img_base);
+                    if (mismatch) { free(main_base); return; }
                     d->local_pc[d->local_pc_size] = d->current_pc - offset;
                     d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
                     d->local_pc_size++;
+                    free(main_base);
                     return;
                 }
             }
             cmd = (struct load_command*)((char*)cmd + cmd->cmdsize);
         }
     }
+    free(main_base);
     printf("The stack address was not found in any shared library or"
         " the main program, the stack is probably corrupted.\n"
         "Aborting...\n");
@@ -8559,21 +8612,31 @@ uint32_t get_file_size(int64_t fp) {
 void get_local_info_dwarfdump(struct Stacktrace *d) {
     // TODO: Read the contents of lines.dat from here itself.
     d->stack_size = 0;
-    char *base_name = get_base_name(source_filename);
-    if (base_name == NULL) {
+    // Use the binary executable path instead of source_filename to avoid
+    // Ninja preprocessed filename mismatches (e.g. *.f90-pp.f90).
+    const char *exe_path = binary_executable_path;
+    for (uint64_t i = 0; i < d->local_pc_size; i++) {
+        if (d->binary_filename[i] != NULL && d->binary_filename[i][0] != '\0') {
+            exe_path = d->binary_filename[i];
+            break;
+        }
+    }
+    char resolved[4096];
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    if (realpath(exe_path, resolved) != NULL) {
+        exe_path = resolved;
+    }
+#endif
+    const char *base = strrchr(exe_path, '/');
+    base = base ? (base + 1) : exe_path;
+    const char *dot = strrchr(base, '.');
+    size_t stem_len = dot ? (size_t)(dot - exe_path) : strlen(exe_path);
+    char filename[4096];
+    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat.txt",
+                 (int)stem_len, exe_path) >= (int)sizeof(filename)) {
         return;
     }
-
-    char *filename = malloc(strlen(base_name) + 15);
-    if (filename == NULL) {
-        free(base_name);
-        return;
-    }
-    strcpy(filename, base_name);
-    strcat(filename, "_lines.dat.txt");
     int64_t fd = _lpython_open(filename, "r");
-    free(base_name);
-    free(filename);
     if (fd < 0) {
         return;
     }

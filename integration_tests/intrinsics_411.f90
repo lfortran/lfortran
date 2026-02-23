@@ -1,4 +1,4 @@
-module asciimod
+module intrinsics_411_asciimod
   implicit none
   public iascii
 contains 
@@ -7,10 +7,10 @@ contains
     integer      iascii(len(string))
     iascii = iachar(transfer(string,(/'A'/))) 
   end function iascii
-end module asciimod
+end module
 
 program intrinsics_411
-  use asciimod, only: iascii
+  use intrinsics_411_asciimod, only: iascii
   implicit none
   integer :: result(1), expected(1)
   integer :: result3(3), expected3(3)

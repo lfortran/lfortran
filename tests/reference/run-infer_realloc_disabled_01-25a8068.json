@@ -1,0 +1,13 @@
+{
+    "basename": "run-infer_realloc_disabled_01-25a8068",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/infer_realloc_disabled_01.f90",
+    "infile_hash": "fe97c92f3a6b2f82c2bc6c67e08a1e1f7b9baec1974bf5f02afd0cbb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-infer_realloc_disabled_01-25a8068.stderr",
+    "stderr_hash": "7cb4727b3826d621ebf8f74a71e5feeef7bc824d04802b12202deef3",
+    "returncode": 1
+}

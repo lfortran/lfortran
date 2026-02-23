@@ -433,6 +433,9 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
              ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))))) {
             *current_expr = x->m_arg;
+        } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                   !ASRUtils::is_array(x->m_type)) {
+            // rank(0): AssumedRankArray → scalar, nothing to update
         } else {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
@@ -706,14 +709,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
-            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
+            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices,
+            bool dt_implicitPass = false /*NoPass*/) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
                 if (orig_args[i].m_value == nullptr) {
                     new_args.push_back(al, orig_args[i]);
                     continue;
-                } else if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
+                } else if (std::find(indices.begin(), indices.end(), (i + dt_implicitPass)) == indices.end()) {
                     ASR::expr_t* expr = orig_args[i].m_value;
                     if (ASR::is_a<ASR::Var_t>(*expr)) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
@@ -725,7 +729,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         }
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
-                        subrout_sym, i, orig_args[i].m_value);
+                        subrout_sym, (i + dt_implicitPass), orig_args[i].m_value);
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
@@ -755,7 +759,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 actual_dim_vars.reserve(al, 2);
                 get_dimensions(orig_arg_i, actual_dim_vars, al);
 
-                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i);
+                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i + dt_implicitPass);
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, actual_dim_vars.size());
 
@@ -807,14 +811,32 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             return true;
         }
+        /// Is StructMethodDeclaration with m_is_nopass = false (dt will be implicitly passed)
+        static bool is_structMethodDeclaration_with_pass(ASR::symbol_t* const sym){
+            ASR::symbol_t* const sym_past_ext = ASRUtils::symbol_get_past_external(sym);
+            if(!ASR::is_a<ASR::StructMethodDeclaration_t>(*sym_past_ext)) return false;
+            return !ASR::down_cast<ASR::StructMethodDeclaration_t>(sym_past_ext)->m_is_nopass;
+        }
+
+        static bool call_with_implicit_dt_passed(const ASR::SubroutineCall_t* const x){
+            return is_structMethodDeclaration_with_pass(x->m_name);
+        }
+
+        static bool call_with_implicit_dt_passed(const ASR::FunctionCall_t* const x){
+            return is_structMethodDeclaration_with_pass(x->m_name);
+        }
+        
+        static bool is_struct_method_declaration(ASR::symbol_t* const sym){
+            return ASR::is_a<ASR::StructMethodDeclaration_t>(*ASRUtils::symbol_get_past_external(sym));
+        }
 
         template <typename T>
         void visit_Call(const T& x) {
             T& xx = const_cast<T&>(x);
             ASR::symbol_t* subrout_sym = x.m_name;
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
-            subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
-
+            subrout_sym = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                            ASRUtils::symbol_get_past_external(subrout_sym));
             if(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))){
                 // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name));
@@ -858,19 +880,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
 
-            // Currently we don't transform class procedure functions
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*subrout_sym)) {
-                subrout_sym = ASRUtils::symbol_get_past_external(
-                    ASRUtils::symbol_get_past_StructMethodDeclaration(subrout_sym));
-                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
-                not_to_be_erased.insert(subrout_sym);
-                return;
-            }
             if( !can_edit_call(x.m_args, x.n_args) && !ASRUtils::get_FunctionType(subrout_sym)->m_module ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
             }
-
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
                 update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
                 return;
@@ -878,8 +891,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
             ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-
-            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, call_with_implicit_dt_passed(&x));
 
             {
                 ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);
@@ -889,6 +901,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if( ASR::is_a<ASR::Variable_t>(*arg->m_v) &&
                         ASR::down_cast<ASR::Variable_t>(arg->m_v)->m_presence
                             == ASR::presenceType::Optional ) {
+                        max_args += 1;
+                    } else if(call_with_implicit_dt_passed(&x)) {
                         max_args += 1;
                     } else {
                         min_args += 1;
@@ -904,7 +918,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             ASR::symbol_t* new_func_sym_ = new_func_sym;
-            if( is_external ) {
+            // Note: smd.m_proc is updated by RemoveArrayByDescriptorProceduresVisitor::visit_StructMethodDeclaration
+            // after all call sites are processed. Updating it here would cause the second copy of the
+            // caller (e.g. method1_integer____1) to see the new proc via symbol_get_past_StructMethodDeclaration,
+            // fail the proc2newproc lookup, and return early without expanding array args.
+            if( is_external && !is_struct_method_declaration(x.m_name) ) { // Redirect ExternalSymbol to new fn symbol.
                 ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
                 std::string new_func_sym_name = std::string(ASRUtils::symbol_name(new_func_sym));
                 ASR::symbol_t* existing_sym = current_scope->resolve_symbol(new_func_sym_name);
@@ -947,7 +965,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     func_ext_sym->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
                 }
             }
-            if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){
+            if(!ASR::is_a<ASR::Variable_t>(*x.m_name) && !is_struct_method_declaration(x.m_name)){
                 xx.m_name = new_func_sym_;
                 xx.m_original_name = new_func_sym_;
             } else if(v.proc2newproc.find(x.m_name) != v.proc2newproc.end()){
@@ -1147,12 +1165,14 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
         PassArrayByDataProcedureVisitor& v;
         std::set<ASR::symbol_t*>& not_to_be_erased;
+        bool skip_removal;
 
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
-            std::set<ASR::symbol_t*>& not_to_be_erased_):
-            PassVisitor(al_, nullptr), v(v_), not_to_be_erased(not_to_be_erased_) {}
+            std::set<ASR::symbol_t*>& not_to_be_erased_, bool skip_removal_=false):
+            PassVisitor(al_, nullptr), v(v_), not_to_be_erased(not_to_be_erased_),
+            skip_removal(skip_removal_) {}
 
         // Shouldn't be done because allocatable arrays when
         // assigned to array constants work fine in gfortran
@@ -1168,22 +1188,13 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
             for( auto& item: current_scope->get_scope() ) {
                 if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                    ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(item.second);
                     SymbolTable* current_scope_copy = current_scope;
                     visit_symbol(*item.second);
                     current_scope = current_scope_copy;
-                    if (func_type->n_arg_types >= 1 && ASRUtils::is_class_type(func_type->m_arg_types[0])) {
-                        continue;
-                    }
                 }
                 ASR::symbol_t* sym = item.second;
                 if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                     sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second)->m_external;
-                }
-                // Don't delete struct method declarations
-                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-                    ASR::StructMethodDeclaration_t* func_type = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-                    not_to_be_erased.insert(ASRUtils::symbol_get_past_external(func_type->m_proc));
                 }
                 if( v.proc2newproc.find(sym) != v.proc2newproc.end() &&
                     not_to_be_erased.find(sym) == not_to_be_erased.end() ) {
@@ -1202,8 +1213,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 }
             }
 
-            for (auto &item: to_be_erased) {
-                current_scope->erase_symbol(item);
+            if (!skip_removal) {
+                for (auto &item: to_be_erased) {
+                    current_scope->erase_symbol(item);
+                }
             }
         }
 
@@ -1228,6 +1241,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 
         void visit_Struct(const ASR::Struct_t& x) {
+            ASR::ASRPassBaseWalkVisitor<RemoveArrayByDescriptorProceduresVisitor>::visit_Struct(x);
             visit_Unit(x);
         }
 
@@ -1237,6 +1251,16 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
         void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
             visit_Unit(x);
+        }
+
+        // Update function symbol in case it's not updated. 
+        void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x){
+            ASR::ASRPassBaseWalkVisitor<RemoveArrayByDescriptorProceduresVisitor>::visit_StructMethodDeclaration(x);
+            auto &xx = const_cast<ASR::StructMethodDeclaration_t&>(x);
+            if(v.proc2newproc.find(xx.m_proc) != v.proc2newproc.end()){
+                xx.m_proc_name = ASRUtils::symbol_name(v.proc2newproc[xx.m_proc].first);
+                xx.m_proc = v.proc2newproc[xx.m_proc].first;
+            }
         }
 };
 
@@ -1249,24 +1273,29 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     std::set<ASR::symbol_t*> not_to_be_erased;
     EditProcedureCallsVisitor u(al, v, not_to_be_erased, pass_options);
     u.visit_TranslationUnit(unit);
-    RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
-    if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
-        /*
-            If separate compilation is enabled using `--separate-compilation`, then we don't
-            drop the original ( unused ) procedures. This is for the module procedures where when
-            loaded from other file transformation may or maynot take place and then while linking
-            it shows missing symbol. There can be multiple reasons:
+    /*
+        Always run RemoveArrayByDescriptorProceduresVisitor so that smd.m_proc is updated
+        to point to the new (array-by-data) function. The skip_removal flag prevents
+        deletion of the original procedures in separate-compilation mode (where other
+        compilation units may still reference them), but the smd.m_proc update must
+        always happen so the LLVM backend sees the correct function signature.
 
-            1. Module procedure is transformed in current file but not in the other file. -- this approach fixes it.
-                a. Function `get_midpoints(A, B)` where A(:) and B(:) are arrays, get transformed in current file, but
-                   in other file, it got called as `print *, get_midpoints(A(1:3), b(1:3))`, LFortran treats these as
-                   pointers and hence doesn't transform it.
-            2. Module procedure is not transformed in current file but is done in other file -- very less prone to happen.
-                a. For the functions where reshape is used over Function arguments, it is not transformed in current file but
-                   in other file it is transformed as these routines are marked as external ( meaning n_body = 0 ).
-        */
-        x.visit_TranslationUnit(unit);
-    }
+        If separate compilation is enabled using `--separate-compilation`, then we don't
+        drop the original ( unused ) procedures. This is for the module procedures where when
+        loaded from other file transformation may or maynot take place and then while linking
+        it shows missing symbol. There can be multiple reasons:
+
+        1. Module procedure is transformed in current file but not in the other file. -- this approach fixes it.
+            a. Function `get_midpoints(A, B)` where A(:) and B(:) are arrays, get transformed in current file, but
+               in other file, it got called as `print *, get_midpoints(A(1:3), b(1:3))`, LFortran treats these as
+               pointers and hence doesn't transform it.
+        2. Module procedure is not transformed in current file but is done in other file -- very less prone to happen.
+            a. For the functions where reshape is used over Function arguments, it is not transformed in current file but
+               in other file it is transformed as these routines are marked as external ( meaning n_body = 0 ).
+    */
+    RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased,
+        pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data);
+    x.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }

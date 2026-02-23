@@ -5,6 +5,7 @@
 #include <cctype>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include <lfortran/utils.h>
 
@@ -128,6 +129,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
         bool old_classes = false;
+        std::string fpe_traps_str;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -151,6 +153,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
         app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
+        app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
         // LFortran specific options
         // Warning-related flags
@@ -168,6 +171,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
+        app.add_flag("--infer", opts.arg_infer, "Enable infer mode")->group(group_language_options);
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
@@ -337,6 +341,10 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
+        if (opts.arg_infer && !opts.arg_standard.empty()) {
+            throw lc::LCompilersException("Cannot use --infer and --std at the same time");
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -420,6 +428,29 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
+        // Parse and validate --fpe-trap values, build bitmask
+        if (!fpe_traps_str.empty()) {
+            std::string token;
+            std::istringstream stream(fpe_traps_str);
+            while (std::getline(stream, token, ',')) {
+                // Trim whitespace
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                if (token == "invalid")        compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INVALID;
+                else if (token == "zero")      compiler_options.fpe_traps |= lc::LCOMPILERS_FE_ZERO;
+                else if (token == "overflow")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_OVERFLOW;
+                else if (token == "underflow") compiler_options.fpe_traps |= lc::LCOMPILERS_FE_UNDERFLOW;
+                else if (token == "inexact")   compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INEXACT;
+                else if (token == "denormal")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_DENORMAL;
+                else {
+                    throw lc::LCompilersException(
+                        "Invalid --fpe-trap value '" + token + "'. "
+                        "Valid values are: invalid, zero, overflow, underflow, inexact, denormal"
+                    );
+                }
+            }
+        }
+
         // if it's the only file, then we use that file
         // to set the compiler_options
         if (opts.arg_files.size() > 0) {
@@ -434,6 +465,8 @@ namespace LCompilers::CommandLineInterface {
                 }
             }
         }
+
+        compiler_options.infer_mode = opts.arg_infer;
 
         if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");

@@ -1785,6 +1785,22 @@ public:
         s = r;
     }
 
+    void visit_InferAssignment(const InferAssignment_t &x) {
+        std::string r = indent;
+        r += print_label(x);
+        this->visit_expr(*x.m_target);
+        r.append(s);
+        r.append(" := ");
+        this->visit_expr(*x.m_value);
+        r.append(s);
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r += "\n";
+        }
+        s = r;
+    }
+
     void visit_GoTo(const GoTo_t &x) {
         std::string r = indent;
         r += print_label(x);

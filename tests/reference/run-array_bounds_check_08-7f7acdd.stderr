@@ -8,4 +8,4 @@ runtime error: Array shape mismatch in subroutine 'ff'. Tried to match size 5 of
   |              ~~ Here
   |
 9 |         integer :: res(100000)
-  |                        ~~~~~~ Expected range 1:100000, got 5
+  |                        ~~~~~~ Parameter is size 100000, argument is size 5

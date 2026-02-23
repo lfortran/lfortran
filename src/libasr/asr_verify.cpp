@@ -61,6 +61,7 @@ private:
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
     bool _processing_assumed_rank_array = false;
+    bool _processing_unbounded_pointer_array = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -1040,19 +1041,29 @@ public:
                 "the old physical type and new physical type must be different.");
         }
         if(check_external){
-            require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
-                "Destination physical type conflicts with the physical type of target");
+            // For rank(0): AssumedRankArray → scalar, m_type is scalar so skip physical type check
+            bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
+                                    && !ASRUtils::is_array(x.m_type));
+            if (!is_rank0_scalar) {
+                require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
+                    "Destination physical type conflicts with the physical type of target");
+            }
             require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
                 "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
             bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
             _inside_array_physical_cast_type = true;
             bool _processing_assumed_rank_array_copy = _processing_assumed_rank_array;
+            bool _processing_unbounded_pointer_array_copy = _processing_unbounded_pointer_array;
             if (x.m_old == ASR::array_physical_typeType::AssumedRankArray) {
                 _processing_assumed_rank_array = true;
             }
+            if (x.m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+                _processing_unbounded_pointer_array = true;
+            }
             visit_ttype(*x.m_type);
             _processing_assumed_rank_array = _processing_assumed_rank_array_copy;
+            _processing_unbounded_pointer_array = _processing_unbounded_pointer_array_copy;
             _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
@@ -1082,14 +1093,20 @@ public:
 
         SymbolTable* temp_scope = current_symtab;
 
-        if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
-            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
-            if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) {
-                temp_scope = temp_scope->parent;
-                if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                    function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        if (asr_owner_sym &&
+            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+            !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+            while (temp_scope->parent && temp_scope->asr_owner &&
+                   ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
+                ASR::symbol_t* temp_owner_sym =
+                    ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner);
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) &&
+                    !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) {
+                    break;
                 }
-            } else {
+                temp_scope = temp_scope->parent;
+            }
+            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
                 function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
             }
         }
@@ -1199,14 +1216,20 @@ public:
 
         SymbolTable* temp_scope = current_symtab;
 
-        if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
-            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
-            if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) {
-                temp_scope = temp_scope->parent;
-                if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                    function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        if (asr_owner_sym &&
+            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+            !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+            while (temp_scope->parent && temp_scope->asr_owner &&
+                   ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
+                ASR::symbol_t* temp_owner_sym =
+                    ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner);
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) &&
+                    !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) {
+                    break;
                 }
-            } else {
+                temp_scope = temp_scope->parent;
+            }
+            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
                 function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
             }
         }
@@ -1282,7 +1305,9 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
-        if (_inside_array_physical_cast_type && !_inside_call && !_processing_assumed_rank_array) {
+        if (_inside_array_physical_cast_type && !_inside_call
+                && !_processing_assumed_rank_array
+                && !_processing_unbounded_pointer_array) {
             require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
                     "Dimensions in ArrayPhysicalCast must be present if not inside a call",
                     x.loc);

@@ -1,0 +1,11 @@
+semantic error: Variable 'x' is already declared; use `=` for assignment to existing variables
+ --> tests/errors/continue_compilation_walrus.f90:4:5
+  |
+4 |     x := 5
+  |     ^ already declared
+
+semantic error: Variable 'y' is already declared; use `=` for assignment to existing variables
+ --> tests/errors/continue_compilation_walrus.f90:6:5
+  |
+6 |     y := 10
+  |     ^ already declared

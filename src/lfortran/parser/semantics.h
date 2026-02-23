@@ -1069,6 +1069,7 @@ char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
 #define BOZ(x, l) make_BOZ_t(p.m_a, l, x.c_str(p.m_a))
 #define ASSIGN(label, variable, l) make_Assign_t(p.m_a, l, 0, label, name2char(variable), nullptr)
 #define ASSIGNMENT(x, y, l) make_Assignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
+#define INFER_ASSIGNMENT(x, y, l) make_InferAssignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
 #define ASSOCIATE(x, y, l) make_Associate_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
 #define GOTO(x, l) make_GoTo_t(p.m_a, l, 0, nullptr, \
         EXPR(INTEGER(x, l)), nullptr, 0, nullptr)

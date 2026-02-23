@@ -363,6 +363,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                ),
+                                            time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    time_to_string
+                                                    7 time_to_string
+                                                    tomlf_datetime
+                                                    []
+                                                    time_to_string
+                                                    Public
                                                 )
                                         })
                                     datetime_to_string
@@ -413,7 +423,7 @@
                                         []
                                         .false.
                                     )
-                                    [time_to_string]
+                                    []
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
                                     [(If
@@ -585,8 +595,8 @@
                                                     ()
                                                 )
                                                 (SubroutineCall
-                                                    7 time_to_string
-                                                    7 time_to_string
+                                                    12 time_to_string
+                                                    12 time_to_string
                                                     [((Var 12 lhs))
                                                     ((StructInstanceMember
                                                         (Var 12 rhs)
@@ -1894,7 +1904,8 @@
                         })
                     tomlf_utils
                     ()
-                    [tomlf_utils_convert]
+                    [tomlf_utils_convert
+                    tomlf_datetime]
                     .false.
                     .false.
                     .false.

@@ -441,6 +441,15 @@ public:
         r.append(s);
         s = r;
     }
+    void visit_InferAssignment(const InferAssignment_t &x) {
+        std::string r = "";
+        this->visit_expr(*x.m_target);
+        r.append(s);
+        r.append(" := ");
+        this->visit_expr(*x.m_value);
+        r.append(s);
+        s = r;
+    }
     void visit_Associate(const Associate_t &x) {
         std::string r = "";
         this->visit_expr(*x.m_target);

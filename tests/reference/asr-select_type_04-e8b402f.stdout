@@ -740,7 +740,8 @@
                         })
                     class_default_select_type_user1
                     ()
-                    [class_default_select_type_user]
+                    [class_default_select_type_user
+                    class_default_select_type]
                     .false.
                     .false.
                     .false.
