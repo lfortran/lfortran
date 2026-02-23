@@ -1,0 +1,13 @@
+{
+    "basename": "asr-slash_init_warning_paths-f474924",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/slash_init_warning_paths.f90",
+    "infile_hash": "25a3f359a07bf7d45d5bc54ef8c600fd0684d1c1cfa3038fd0595723",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-slash_init_warning_paths-f474924.stdout",
+    "stdout_hash": "be21572c95c99c32d54918b3bcb37de4ef54d87d86ae0a2b89f5a94d",
+    "stderr": "asr-slash_init_warning_paths-f474924.stderr",
+    "stderr_hash": "e15fdb932d20c601c2029eba5f71f1ff8e9b968f45a49fe284db3057",
+    "returncode": 0
+}

@@ -1,0 +1,165 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            slash_init_warning_paths:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            lcompilers__nameless_enum:
+                                (Enum
+                                    (SymbolTable
+                                        3
+                                        {
+                                            red:
+                                                (Variable
+                                                    3
+                                                    red
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    lcompilers__nameless_enum
+                                    []
+                                    [red]
+                                    BindC
+                                    Public
+                                    IntegerUnique
+                                    (Integer 4)
+                                    ()
+                                ),
+                            red:
+                                (ExternalSymbol
+                                    2
+                                    red
+                                    3 red
+                                    lcompilers__nameless_enum
+                                    []
+                                    red
+                                    Public
+                                ),
+                            t:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    t
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [i]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (StructConstructor
+                                        2 t
+                                        [((IntegerConstant 1 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    slash_init_warning_paths
+                    []
+                    []
+                )
+        })
+    []
+)
