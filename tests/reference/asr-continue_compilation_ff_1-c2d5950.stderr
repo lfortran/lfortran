@@ -65,15 +65,15 @@ syntax error: Token '.45' (of type 'real') is unexpected here
     |                      ^^^ 
 
 syntax error: Token 'thenprint' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_ff_1.f:119:20
+   --> tests/errors/continue_compilation_ff_1.f:118:20
     |
-119 |       IF I .EQ. 10 THEN PRINT *, "Ten"
+118 |       IF I .EQ. 10 THEN PRINT *, "Ten"
     |                    ^^^^^^^^^^ 
 
 syntax error: Newline is unexpected here
-   --> tests/errors/continue_compilation_ff_1.f:120:23
+   --> tests/errors/continue_compilation_ff_1.f:119:23
     |
-120 |       CALL FUNC( 5, 6,
+119 |       CALL FUNC( 5, 6,
     |                       ^ 
 
 warning: non-standard Fortran 77-style initialization (extension)
@@ -82,25 +82,19 @@ warning: non-standard Fortran 77-style initialization (extension)
 106 |       INTEGER*4 VAR/5/
     |                 ^^^^^^ Use modern syntax instead: integer :: var = 5
 
-warning: non-standard Fortran 77-style initialization (extension)
-   --> tests/errors/continue_compilation_ff_1.f:107:15
-    |
-107 |       INTEGER VAR2/6/
-    |               ^^^^^^^ Use modern syntax instead: integer :: var2 = 6
-
 semantic error: Symbol is already declared in the same scope
-   --> tests/errors/continue_compilation_ff_1.f:108:17
+   --> tests/errors/continue_compilation_ff_1.f:107:17
     |
-108 |       INTEGER*4 VAR/5/
+107 |       INTEGER*4 VAR/5/
     |                 ^^^^^^ redeclaration
     |
 106 |       INTEGER*4 VAR/5/
     |                 ~~~~~~ original declaration
 
 warning: This equivalence statement is not implemented yet, for now we will ignore it
-   --> tests/errors/continue_compilation_ff_1.f:109:7
+   --> tests/errors/continue_compilation_ff_1.f:108:7
     |
-109 |       EQUIVALENCE (X Y)
+108 |       EQUIVALENCE (X Y)
     |       ^^^^^^^^^^^^^^^^^ ignored for now
 
 semantic error: Variable 'integerklm' is not declared

@@ -638,27 +638,6 @@
                                     .false.
                                     .false.
                                 ),
-                            var2:
-                                (Variable
-                                    4
-                                    var2
-                                    []
-                                    Local
-                                    (IntegerConstant 6 (Integer 4) Decimal)
-                                    (IntegerConstant 6 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
                             x:
                                 (Variable
                                     4
