@@ -1,5 +1,5 @@
 ! This file check string concat functionality for arrays
-program intrinsics_415
+program intrinsics_416
   implicit none
   character(:),allocatable:: str1(:), str2
   character(4):: str3(2)
@@ -37,4 +37,4 @@ program intrinsics_415
   write(str6, "(*(A))") '"'//str4(:)//str5//'"'
   if (str6 /= '"abc xy""de  xy"') error stop
 
-end program intrinsics_415
+end program intrinsics_416
