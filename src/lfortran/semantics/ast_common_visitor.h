@@ -13933,7 +13933,18 @@ public:
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         if (first_struct != nullptr && operator_sym == nullptr) {
-            operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
+            // Walk up the inheritance chain to find the operator
+            ASR::Struct_t* cur_struct = first_struct;
+            while (cur_struct != nullptr) {
+                operator_sym = cur_struct->m_symtab->resolve_symbol("~def_op~" + op);
+                if (operator_sym != nullptr) break;
+                if (cur_struct->m_parent != nullptr) {
+                    cur_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(cur_struct->m_parent));
+                } else {
+                    break;
+                }
+            }
             if (operator_sym == nullptr) {
                 // The operator is not type-bound; try resolving as a regular
                 // custom operator (with the "~~" prefix) in the current scope.
@@ -14061,8 +14072,8 @@ public:
                 return_type = ASRUtils::duplicate_type(
                     al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
             } else {
-                return_type = ASRUtils::duplicate_type_without_dims(
-                    al, ASRUtils::expr_type(func->m_return_var), loc);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::expr_type(func->m_return_var));
             }
 
             std::string func_name = to_lower(func->m_name);
@@ -14171,8 +14182,8 @@ public:
                 return_type = ASRUtils::duplicate_type(
                     al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
             } else {
-                ASR::ttype_t* type = ASRUtils::expr_type(func->m_return_var);
-                return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::expr_type(func->m_return_var));
             }
             std::string func_name = to_lower(func->m_name);
             std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
@@ -15329,7 +15340,8 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if ((mfn->m_access == ASR::accessType::Private &&
+                if (((!to_submodule) &&
+                     mfn->m_access == ASR::accessType::Private &&
                      indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) ||
                     (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
                      to_submodule)) {
