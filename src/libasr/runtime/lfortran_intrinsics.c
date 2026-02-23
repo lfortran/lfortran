@@ -8508,6 +8508,17 @@ int shared_lib_callback(struct dl_phdr_info *info,
 
 #ifdef HAVE_LFORTRAN_MACHO
 void get_local_address_mac(struct Stacktrace *d) {
+    // Use image 0 (always the main executable on macOS) instead of
+    // source_filename, which can diverge from the binary name.
+    char *main_base = NULL;
+    if (_dyld_image_count() > 0) {
+        main_base = get_base_name((char *)_dyld_get_image_name(0));
+    }
+    if (main_base == NULL) {
+        printf("The executable name could not be resolved for stacktrace.\n"
+            "Aborting...\n");
+        abort();
+    }
     for (uint32_t i = 0; i < _dyld_image_count(); i++) {
         const struct mach_header *header = _dyld_get_image_header(i);
         intptr_t offset = _dyld_get_image_vmaddr_slide(i);
@@ -8520,18 +8531,14 @@ void get_local_address_mac(struct Stacktrace *d) {
                 struct segment_command* seg = (struct segment_command*)cmd;
                 if (((intptr_t)d->current_pc >= (seg->vmaddr+offset)) &&
                     ((intptr_t)d->current_pc < (seg->vmaddr+offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
+                    char *img_base = get_base_name((char *)_dyld_get_image_name(i));
+                    int mismatch = (img_base == NULL || strcmp(img_base, main_base) != 0);
+                    free(img_base);
+                    if (mismatch) { free(main_base); return; }
                     d->local_pc[d->local_pc_size] = d->current_pc - offset;
                     d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
                     d->local_pc_size++;
+                    free(main_base);
                     return;
                 }
             }
@@ -8539,24 +8546,21 @@ void get_local_address_mac(struct Stacktrace *d) {
                 struct segment_command_64* seg = (struct segment_command_64*)cmd;
                 if ((d->current_pc >= (seg->vmaddr + offset)) &&
                     (d->current_pc < (seg->vmaddr + offset + seg->vmsize))) {
-                    int check_filename = strcmp(get_base_name(
-                        (char *)_dyld_get_image_name(i)),
-                        get_base_name(source_filename));
-                    if ( check_filename != 0 ) return;
+                    char *img_base = get_base_name((char *)_dyld_get_image_name(i));
+                    int mismatch = (img_base == NULL || strcmp(img_base, main_base) != 0);
+                    free(img_base);
+                    if (mismatch) { free(main_base); return; }
                     d->local_pc[d->local_pc_size] = d->current_pc - offset;
                     d->binary_filename[d->local_pc_size] = (char *)_dyld_get_image_name(i);
-                    // Resolve symlinks to a real path:
-                    char buffer[PATH_MAX];
-                    char* resolved;
-                    resolved = realpath(d->binary_filename[d->local_pc_size], buffer);
-                    if (resolved) d->binary_filename[d->local_pc_size] = resolved;
                     d->local_pc_size++;
+                    free(main_base);
                     return;
                 }
             }
             cmd = (struct load_command*)((char*)cmd + cmd->cmdsize);
         }
     }
+    free(main_base);
     printf("The stack address was not found in any shared library or"
         " the main program, the stack is probably corrupted.\n"
         "Aborting...\n");
@@ -8608,21 +8612,31 @@ uint32_t get_file_size(int64_t fp) {
 void get_local_info_dwarfdump(struct Stacktrace *d) {
     // TODO: Read the contents of lines.dat from here itself.
     d->stack_size = 0;
-    char *base_name = get_base_name(source_filename);
-    if (base_name == NULL) {
+    // Use the binary executable path instead of source_filename to avoid
+    // Ninja preprocessed filename mismatches (e.g. *.f90-pp.f90).
+    const char *exe_path = binary_executable_path;
+    for (uint64_t i = 0; i < d->local_pc_size; i++) {
+        if (d->binary_filename[i] != NULL && d->binary_filename[i][0] != '\0') {
+            exe_path = d->binary_filename[i];
+            break;
+        }
+    }
+    char resolved[4096];
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    if (realpath(exe_path, resolved) != NULL) {
+        exe_path = resolved;
+    }
+#endif
+    const char *base = strrchr(exe_path, '/');
+    base = base ? (base + 1) : exe_path;
+    const char *dot = strrchr(base, '.');
+    size_t stem_len = dot ? (size_t)(dot - exe_path) : strlen(exe_path);
+    char filename[4096];
+    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat.txt",
+                 (int)stem_len, exe_path) >= (int)sizeof(filename)) {
         return;
     }
-
-    char *filename = malloc(strlen(base_name) + 15);
-    if (filename == NULL) {
-        free(base_name);
-        return;
-    }
-    strcpy(filename, base_name);
-    strcat(filename, "_lines.dat.txt");
     int64_t fd = _lpython_open(filename, "r");
-    free(base_name);
-    free(filename);
     if (fd < 0) {
         return;
     }
