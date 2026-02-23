@@ -18119,6 +18119,20 @@ public:
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
                 return;
+            } else if (sub_name == "_lcompilers_sleep_") {
+                llvm::Function *fn = module->getFunction("_lfortran_sleep");
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "_lfortran_sleep", module.get());
+                }
+                args = convert_call_args(x, is_method);
+                LCOMPILERS_ASSERT(args.size() > 0);
+                tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), args[0]) });
+                return;
             }
             h = get_hash((ASR::asr_t*)proc_sym);
         } else {

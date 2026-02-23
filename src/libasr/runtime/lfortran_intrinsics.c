@@ -5017,6 +5017,15 @@ LFORTRAN_API void _lfortran_abort()
     abort();
 }
 
+LFORTRAN_API void _lfortran_sleep(int32_t seconds)
+{
+#if defined(_WIN32)
+    Sleep((DWORD)seconds * 1000);
+#else
+    sleep((unsigned int)seconds);
+#endif
+}
+
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
