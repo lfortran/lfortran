@@ -2413,10 +2413,15 @@ public:
                 if (var->m_intent == ASRUtils::intent_out) {
                     diag.add(Diagnostic(
                         "Dummy argument '" + std::string(var->m_name) +
-                        "' with INTENT(OUT) cannot be used in a "
-                        "specification expression",
+                        "' has `intent(out)` and cannot be used for "
+                        "array bounds declaration",
                         Level::Error, Stage::Semantic, {
-                            Label("", {expr->base.loc})
+                            Label("hint: use `intent(in/inout)` or "
+                                "`allocatable` for '" +
+                                std::string(var->m_name) +
+                                "', or pass the size as a separate "
+                                "`intent(in)` argument",
+                                {expr->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -2424,9 +2429,13 @@ public:
                     diag.add(Diagnostic(
                         "OPTIONAL dummy argument '" +
                         std::string(var->m_name) +
-                        "' cannot be used in a specification expression",
+                        "' cannot be used for array bounds "
+                        "declaration",
                         Level::Error, Stage::Semantic, {
-                            Label("", {expr->base.loc})
+                            Label("hint: use a non-optional "
+                                "argument, or declare the array "
+                                "as `allocatable`",
+                                {expr->base.loc})
                         }));
                     throw SemanticAbort();
                 }
