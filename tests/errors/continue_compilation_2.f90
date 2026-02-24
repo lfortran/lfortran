@@ -472,6 +472,7 @@ program continue_compilation_2
     write (*, add_parens (badfmt_s)) "hi", 3
     ax = "xx"
     print "(aai6)", a,"hi",15
+    call sleep(1)
     contains
     logical function f(x)
         integer, intent(in), optional :: x

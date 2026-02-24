@@ -1756,6 +1756,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Mvbits, "mvbits")
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
+            SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)

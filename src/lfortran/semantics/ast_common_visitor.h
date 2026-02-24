@@ -1650,6 +1650,7 @@ public:
         {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
         {"execute_command_line", IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)},
         {"system", IntrinsicSignature({"command"}, 1, 1)},
+        {"sleep", IntrinsicSignature({"seconds"}, 1, 1)},
         {"move_alloc", IntrinsicSignature({"from", "to"}, 2, 2)},
         {"mvbits", IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)},
         {"modulo", IntrinsicSignature({"a", "p"}, 2, 2)},

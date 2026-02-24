@@ -35,6 +35,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Mvbits,
     Abort,
     System,
+    Sleep,
     // ...
 };
 
@@ -1600,6 +1601,78 @@ namespace System {
     }
 
 } // namespace System
+
+namespace Sleep {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1, "Unexpected number of args, sleep takes 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Argument to sleep must be of integer type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Sleep(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`sleep` is a non-standard extension", { loc }, "not part of the Fortran standard");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Sleep), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Sleep(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        const std::string c_func_name = "_lfortran_sleep";
+        const std::string new_name = "_lcompilers_sleep_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("seconds", arg_types[0], InOut);
+
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n",
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+        args_1.push_back(al, arg);
+
+        SetChar dep_1; dep_1.reserve(al, 0);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 0);
+        ASR::symbol_t *c_sym = make_ASR_Function_t(
+            s2c(al, c_func_name),
+            fn_symtab_1,
+            dep_1,
+            args_1,
+            body_1,
+            nullptr,
+            ASR::abiType::BindC,
+            ASR::deftypeType::Interface,
+            s2c(al, c_func_name)
+        );
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+        {
+            ASR::call_arg_t arg0; arg0.loc = loc; arg0.m_value = CastingUtil::perform_casting(args[0],
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), al, loc);
+            call_args.push_back(al, arg0);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace Sleep
 
 } // namespace LCompilers::ASRUtils
 
