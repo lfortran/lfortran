@@ -2985,26 +2985,24 @@ public:
                         = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
                         if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
-                            // Inherited bindings can point into a parent type
-                            // scope. Repack them into this type's scope via an
-                            // ExternalSymbol so modfile serialization keeps a
-                            // local indirection.
+                            // Inherited binding lives in a parent type's scope.
+                            // Copy the StructMethodDeclaration into the child's
+                            // symtab so that codegen never sees an ExternalSymbol
+                            // where it expects a StructMethodDeclaration.
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*cand_proc_sym));
+                            ASR::StructMethodDeclaration_t *parent_decl
+                                = ASR::down_cast<ASR::StructMethodDeclaration_t>(cand_proc_sym);
                             std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
                             ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
-                            if (local_proc_sym == nullptr ||
-                                ASRUtils::symbol_get_past_external(local_proc_sym) != cand_proc_sym) {
-                                std::string local_proc_name = cand_proc_name;
-                                if (local_proc_sym != nullptr) {
-                                    local_proc_name = clss->m_symtab->get_unique_name(cand_proc_name);
-                                }
-                                ASR::symbol_t *owner_sym = ASRUtils::get_asr_owner(cand_proc_sym);
-                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                            if (local_proc_sym == nullptr) {
+                                ASR::asr_t *new_decl = ASR::make_StructMethodDeclaration_t(
                                     al, cand_proc_sym->base.loc, clss->m_symtab,
-                                    s2c(al, local_proc_name), cand_proc_sym,
-                                    ASRUtils::symbol_name(owner_sym), nullptr, 0,
-                                    s2c(al, cand_proc_name), ASR::accessType::Public);
-                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(ext);
-                                clss->m_symtab->add_symbol(local_proc_name, local_proc_sym);
+                                    parent_decl->m_name, parent_decl->m_self_argument,
+                                    parent_decl->m_proc_name, parent_decl->m_proc,
+                                    parent_decl->m_abi, parent_decl->m_is_deferred,
+                                    parent_decl->m_is_nopass);
+                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
+                                clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
                             }
                             cand_proc_sym = local_proc_sym;
                         }
