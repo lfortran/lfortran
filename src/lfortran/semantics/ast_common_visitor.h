@@ -14006,13 +14006,6 @@ public:
                 std::string prefixed_op = update_custom_op_name(op);
                 op_sym = current_scope->resolve_symbol(to_lower(prefixed_op));
                 operator_sym = ASRUtils::symbol_get_past_external(op_sym);
-                if (operator_sym == nullptr) {
-                    diag.add(Diagnostic("`" + op
-                        + "` is not defined in the Struct: `" + first_struct->m_name
-                        + "` or in the current scope",
-                        Level::Error, Stage::Semantic, {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
             }
         }
 

@@ -1781,6 +1781,7 @@ RUN(NAME custom_operator_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_14 LABELS gfortran llvm)
 RUN(NAME custom_operator_15 LABELS gfortran llvm)
+RUN(NAME custom_operator_16 LABELS gfortran llvm)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
