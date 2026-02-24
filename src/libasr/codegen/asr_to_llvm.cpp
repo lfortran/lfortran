@@ -14269,7 +14269,21 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
+                        llvm::Value* iostat_arg = iostat;
+                        llvm::AllocaInst* tmp_iostat = nullptr;
+                        if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                            llvm::AllocaInst* iostat_alloca = llvm::dyn_cast<llvm::AllocaInst>(iostat);
+                            if (iostat_alloca && !iostat_alloca->getAllocatedType()->isIntegerTy(32)) {
+                                tmp_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
+                                iostat_arg = tmp_iostat;
+                            }
+                        }
+                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat_arg });
+                        if (tmp_iostat) {
+                            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), tmp_iostat);
+                            llvm::Value* widened = builder->CreateSExt(i32_val, llvm::Type::getInt64Ty(context));
+                            builder->CreateStore(widened, iostat);  
+                        }
                     }
                     return;
                 } else {
