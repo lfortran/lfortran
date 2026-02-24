@@ -793,7 +793,7 @@ public:
         for( size_t i = 0; i < x_n_args; i++ ) {
             ASR::expr_t* arg_expr = x_m_args[i].m_value;
             if ( x_m_args[i].m_value && is_descriptor_array_casted_to_pointer_to_data(x_m_args[i].m_value) &&
-                 !is_func_bind_c && !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                 !is_func_bind_c &&
                  !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) 
                  && !ASRUtils::is_stringToArray_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg)) {
                 ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
