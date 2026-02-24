@@ -181,7 +181,20 @@
                         })
                     hinit853
                     (FunctionType
-                        [(Real 4)]
+                        [(FunctionType
+                            [(Real 4)]
+                            (Real 4)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                        )]
                         (Real 4)
                         Source
                         Implementation
