@@ -128,13 +128,13 @@ contains
         integer, intent(out) :: lhs
         integer, intent(out) :: rhs
     end subroutine assign_bad_rhs
-
-
-
-
-
-
-
+    subroutine slash_init_warning_paths()
+        enum, bind(c)
+            enumerator :: red/1/
+        end enum
+        type(MyClass), save :: slash_x/MyClass(1)/
+        integer, save :: slash_y/2/
+    end subroutine slash_init_warning_paths
 
 
 

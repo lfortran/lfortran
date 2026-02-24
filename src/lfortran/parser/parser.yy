@@ -457,6 +457,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> var_modifiers
 %type <vec_ast> enum_var_modifiers
 %type <vec_ast> var_modifier_list
+%type <vec_ast> slash_init_list
 %type <ast> var_modifier
 %type <ast> statement
 %type <ast> statement1
@@ -1464,6 +1465,11 @@ data_stmt_value_list
     | data_stmt_repeat "*" data_stmt_constant { LIST_NEW($$); REPEAT_LIST_ADD($$, $1, $3); }
     ;
 
+slash_init_list
+    : slash_init_list "," data_stmt_constant { $$ = $1; LIST_ADD($$, $3); }
+    | data_stmt_constant { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
 data_stmt_repeat
     : designator { $$ = $1; }
     | TK_INTEGER { $$ = INTEGER($1, @$); }
@@ -1634,6 +1640,12 @@ var_sym_decl
             $$ = VAR_SYM_CODIM($1, $3.p, $3.n, None, @$); }
     | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
+    | id "/" slash_init_list "/" {
+            $$ = VAR_SYM_DIM_INIT($1, nullptr, 0,
+                 SLASH_INIT_EXPR($3, @$), SlashInit, @$); }
+    | id "(" array_comp_decl_list ")" "/" slash_init_list "/" %dprec 1 {
+            $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n,
+                 SLASH_INIT_EXPR($6, @$), SlashInit, @$); }
     | decl_spec %dprec 2 { $$ = VAR_SYM_SPEC($1, None, @$); }
     ;
 

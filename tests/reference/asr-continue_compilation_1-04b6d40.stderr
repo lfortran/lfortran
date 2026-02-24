@@ -52,6 +52,24 @@ semantic error: Dummy argument 'a' not defined
 93 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:133:27
+    |
+133 |             enumerator :: red/1/
+    |                           ^^^^^^ Use modern syntax instead: integer :: red = 1
+
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:135:32
+    |
+135 |         type(MyClass), save :: slash_x/MyClass(1)/
+    |                                ^^^^^^^^^^^^^^^^^^^ Use modern syntax instead: integer :: slash_x = MyClass(1)
+
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:136:26
+    |
+136 |         integer, save :: slash_y/2/
+    |                          ^^^^^^^^^^ Use modern syntax instead: integer :: slash_y = 2
+
 semantic error: Defined assignment procedure must not return a value
    --> tests/errors/continue_compilation_1.f90:112:5 - 116:32
     |
