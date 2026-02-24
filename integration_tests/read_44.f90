@@ -1,21 +1,18 @@
 program read_44
+      use iso_fortran_env, only: int64
+      implicit none
 
-    type :: inner_t
-        integer :: a
-        integer :: b
-    end type inner_t
-    type :: outer_t
-        integer :: id
-        type(inner_t) :: inner
-    end type outer_t
-    type(outer_t) :: x
-    character(len=12) :: s
-    s = "001002003"
+      type :: string_t
+          character(len=:), allocatable :: str
+      end type
 
-    read(s, "(I3,I3,I3)") x
+      type(string_t) :: val
+      integer(int64) :: i1, istat
 
-    if (x%id /= 1) error stop 1
-    if (x%inner%a /= 2) error stop 2
-    if (x%inner%b /= 3) error stop 3
+      val%str = "111"
+      read(val%str, *, iostat=istat) i1  
+      print*, i1, istat
+      if (i1 /= 111) error stop
+      if (istat /= 0) error stop
 
-end program read_44
+  end program read_44

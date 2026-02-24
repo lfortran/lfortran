@@ -276,21 +276,27 @@ semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
 215 |     integer :: aRank1(..)
     |                ^^^^^^^^^^ 
 
+semantic error: Array 'a_deferred' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
+   --> tests/errors/continue_compilation_2.f90:221:16
+    |
+221 |     integer :: a_deferred(:)
+    |                ^^^^^^^^^^^^^ 
+
 semantic error: More than one main program found
-   --> tests/errors/continue_compilation_2.f90:92:1 - 481:11
+   --> tests/errors/continue_compilation_2.f90:92:1 - 482:11
     |
  92 |    program continue_compilation_2
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-481 |    end program
+482 |    end program
     | ...^^^^^^^^^^^ first main program defined here
     |
-484 |    program second_program_test
+485 |    program second_program_test
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-487 |    end program second_program_test
+488 |    end program second_program_test
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
@@ -979,3 +985,9 @@ warning: Format string missing comma between descriptors (F2023 constraint C1302
     |
 474 |     print "(aai6)", a,"hi",15
     |           ^^^^^^^^ 
+
+warning: `sleep` is a non-standard extension
+   --> tests/errors/continue_compilation_2.f90:475:5
+    |
+475 |     call sleep(1)
+    |     ^^^^^^^^^^^^^ not part of the Fortran standard

@@ -248,6 +248,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* sign, int64_t sign_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_abort();
+LFORTRAN_API void _lfortran_sleep(int32_t seconds);
 LFORTRAN_API void _lfortran_inquire(
     const fchar* f_name_data, int64_t f_name_len,
     bool *exists, int32_t unit_num,

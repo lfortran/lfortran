@@ -944,8 +944,15 @@ public:
                         ASR::symbol_t *local_sym = current_scope->get_symbol(type_decl_name);
                         if (local_sym == nullptr) {
                             // Create ExternalSymbol in the submodule for the type declaration
-                            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(
-                                parent_scope->resolve_symbol(type_decl_name));
+                            ASR::symbol_t *resolved = parent_scope->resolve_symbol(type_decl_name);
+                            if (!resolved) {
+                                // Abstract interfaces are skipped by import_all when
+                                // importing into a submodule scope; fall back to
+                                // searching the parent module's symbol table directly.
+                                resolved = interface_module->m_symtab->get_symbol(type_decl_name);
+                            }
+                            ASR::symbol_t *orig_sym = resolved
+                                ? ASRUtils::symbol_get_past_external(resolved) : nullptr;
                             if (orig_sym) {
                                 SymbolTable *orig_symtab = ASRUtils::symbol_parent_symtab(orig_sym);
                                 ASR::asr_t *owner_asr = orig_symtab ? orig_symtab->asr_owner : nullptr;
@@ -2356,13 +2363,19 @@ public:
                     }
                     case AST::decl_attributeType::SimpleAttribute: {
                         auto &cdf = class_deferred_procedures;
+                        std::string new_dt_name = dt_name;
+                        // Use module-qualified name
+                        if (current_module_sym) {
+                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(ASRUtils::symbol_get_past_external(current_module_sym));
+                            new_dt_name = std::string(mod->m_name) + "_" + dt_name;
+                        }
                         AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
                         if( attr->m_attr == AST::simple_attributeType::AttrDeferred ) {
-                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("deferred") == cdf[dt_name][use_sym_name].end());
-                            cdf[dt_name][use_sym_name]["deferred"] = attr->base.base.loc;
+                            LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("deferred") == cdf[new_dt_name][use_sym_name].end());
+                            cdf[new_dt_name][use_sym_name]["deferred"] = attr->base.base.loc;
                         } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
-                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("nopass") == cdf[dt_name][use_sym_name].end());
-                            cdf[dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
+                            LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("nopass") == cdf[new_dt_name][use_sym_name].end());
+                            cdf[new_dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
                         }
                         break;
                     }
@@ -2972,26 +2985,24 @@ public:
                         = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
                         if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
-                            // Inherited bindings can point into a parent type
-                            // scope. Repack them into this type's scope via an
-                            // ExternalSymbol so modfile serialization keeps a
-                            // local indirection.
+                            // Inherited binding lives in a parent type's scope.
+                            // Copy the StructMethodDeclaration into the child's
+                            // symtab so that codegen never sees an ExternalSymbol
+                            // where it expects a StructMethodDeclaration.
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*cand_proc_sym));
+                            ASR::StructMethodDeclaration_t *parent_decl
+                                = ASR::down_cast<ASR::StructMethodDeclaration_t>(cand_proc_sym);
                             std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
                             ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
-                            if (local_proc_sym == nullptr ||
-                                ASRUtils::symbol_get_past_external(local_proc_sym) != cand_proc_sym) {
-                                std::string local_proc_name = cand_proc_name;
-                                if (local_proc_sym != nullptr) {
-                                    local_proc_name = clss->m_symtab->get_unique_name(cand_proc_name);
-                                }
-                                ASR::symbol_t *owner_sym = ASRUtils::get_asr_owner(cand_proc_sym);
-                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                            if (local_proc_sym == nullptr) {
+                                ASR::asr_t *new_decl = ASR::make_StructMethodDeclaration_t(
                                     al, cand_proc_sym->base.loc, clss->m_symtab,
-                                    s2c(al, local_proc_name), cand_proc_sym,
-                                    ASRUtils::symbol_name(owner_sym), nullptr, 0,
-                                    s2c(al, cand_proc_name), ASR::accessType::Public);
-                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(ext);
-                                clss->m_symtab->add_symbol(local_proc_name, local_proc_sym);
+                                    parent_decl->m_name, parent_decl->m_self_argument,
+                                    parent_decl->m_proc_name, parent_decl->m_proc,
+                                    parent_decl->m_abi, parent_decl->m_is_deferred,
+                                    parent_decl->m_is_nopass);
+                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
+                                clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
                             }
                             cand_proc_sym = local_proc_sym;
                         }
@@ -3118,6 +3129,12 @@ public:
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
         std::string proc = clss->m_name;
+        // Use module-qualified name
+        ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
+        if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
+            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
+            proc = std::string(mod->m_name) + "_" + proc;
+        }
         if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
             return true;
         }
@@ -3135,12 +3152,19 @@ public:
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
-                bool is_nopass = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("nopass"));
+                std::string new_dt_name = proc.first;
+                // Use module-qualified name
+                ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
+                if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
+                    ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
+                    new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
+                } 
+                bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("pass specified here", { pname.second["pass"].loc} ),
-                            diag::Label("nopass specified here", { cdf[proc.first][pname.first]["nopass"] })
+                            diag::Label("nopass specified here", { cdf[new_dt_name][pname.first]["nopass"] })
                         }));
                     throw SemanticAbort();
                 }
@@ -3151,7 +3175,7 @@ public:
                         diag.add(diag::Diagnostic(
                             "Interface must be specified for DEFERRED binding",
                             diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {cdf[proc.first][pname.first]["deferred"]})}));
+                                diag::Label("", {cdf[new_dt_name][pname.first]["deferred"]})}));
                         throw SemanticAbort();
                     } else {
                         diag.add(diag::Diagnostic(

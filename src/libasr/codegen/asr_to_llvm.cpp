@@ -4862,6 +4862,9 @@ public:
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr,
                 ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
+        if (ASRUtils::is_string_only(x.m_type)) {
+            value_type = llvm_utils->i8_ptr;
+        }
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
 
@@ -6943,6 +6946,7 @@ public:
                     llvm_tmp = llvm_utils->create_gep2(type, llvm_tmp, 0);
                     break;
                 }
+                case ASR::array_physical_typeType::UnboundedPointerArray:
                 case ASR::array_physical_typeType::PointerArray: {
                     break;
                 }
@@ -7800,6 +7804,10 @@ public:
                     llvm_target = llvm_utils->CreateLoad2(target_type_llvm, llvm_target);
                     llvm_target = arr_descr->get_pointer_to_data(x.m_target, target_type, llvm_target, module.get());
                 }
+                if (ASRUtils::is_string_only(target_type)) {
+                    llvm_target = llvm_utils->get_string_data(
+                        ASRUtils::get_string_type(target_type), llvm_target, true);
+                }
                 builder->CreateStore(llvm_value, llvm_target);
             } else if ((ASRUtils::is_string_only(value_type)) && (ASRUtils::is_unlimited_polymorphic_type(target_type))){
                 // String to unlimited polymorphic association
@@ -8079,6 +8087,12 @@ public:
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray));
                 if( LLVM::is_llvm_pointer(*value_type) ) {
+                    llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                    llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
+                }
+                if( ASR::is_a<ASR::FunctionType_t>(*value_type) &&
+                    (llvm::isa<llvm::AllocaInst>(llvm_value) ||
+                     llvm::isa<llvm::GlobalVariable>(llvm_value)) ) {
                     llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                     llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
@@ -14262,7 +14276,21 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
+                        llvm::Value* iostat_arg = iostat;
+                        llvm::AllocaInst* tmp_iostat = nullptr;
+                        if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                            llvm::AllocaInst* iostat_alloca = llvm::dyn_cast<llvm::AllocaInst>(iostat);
+                            if (iostat_alloca && !iostat_alloca->getAllocatedType()->isIntegerTy(32)) {
+                                tmp_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
+                                iostat_arg = tmp_iostat;
+                            }
+                        }
+                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat_arg });
+                        if (tmp_iostat) {
+                            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), tmp_iostat);
+                            llvm::Value* widened = builder->CreateSExt(i32_val, llvm::Type::getInt64Ty(context));
+                            builder->CreateStore(widened, iostat);  
+                        }
                     }
                     return;
                 } else {
@@ -18118,6 +18146,20 @@ public:
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
                 return;
+            } else if (sub_name == "_lcompilers_sleep_") {
+                llvm::Function *fn = module->getFunction("_lfortran_sleep");
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "_lfortran_sleep", module.get());
+                }
+                args = convert_call_args(x, is_method);
+                LCOMPILERS_ASSERT(args.size() > 0);
+                tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), args[0]) });
+                return;
             }
             h = get_hash((ASR::asr_t*)proc_sym);
         } else {
@@ -18319,6 +18361,7 @@ public:
                     ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
                 s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
             }
+            LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*s_class_proc));
             ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(class_proc->m_proc));
@@ -18527,6 +18570,7 @@ public:
                     ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
                 s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
             }
+            LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*s_class_proc));
             ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(class_proc->m_proc));
@@ -18753,7 +18797,8 @@ public:
                 throw CodeGenError("Procedure variable '" + std::string(proc_var->m_name)
                     + "' has no interface. Add explicit interface or ensure it is called somewhere.");
             }
-            s = ASR::down_cast<ASR::Function_t>(type_decl);
+            s = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(type_decl));
         } else {
             throw CodeGenError("FunctionCall: Symbol type not supported");
         }

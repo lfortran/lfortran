@@ -269,14 +269,40 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 if(is_module_variable(v)) return;
                 visit_ttype(*v->m_type);
-                // If the variable is not defined in the current scope, it is a
-                // "needed global" since we need to be able to access it from the
-                // nested procedure.
+                // If the variable is not defined in the current scope
+                // (or a child scope such as an associate block), it is a
+                // "needed global" since we need to be able to access it
+                // from the nested procedure.
                 if ( current_scope && par_func_sym &&
-                    v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
+                    !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
                     nesting_map[par_func_sym].insert(x.m_v);
                 }
             }
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        // Do NOT change current_scope here — the associate block is
+        // within the same function.  The scope-chain check in visit_Var
+        // correctly handles variables from child scopes.
+        // Visit selector expressions (m_symbolic_value / m_value) to
+        // detect host-associated variables used in associate selectors.
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_symbolic_value) {
+                    visit_expr(*v->m_symbolic_value);
+                }
+                if (v->m_value) {
+                    visit_expr(*v->m_value);
+                }
+            }
+        }
+        // Visit body statements.
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
         }
     }
 
