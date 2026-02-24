@@ -6943,6 +6943,7 @@ public:
                     llvm_tmp = llvm_utils->create_gep2(type, llvm_tmp, 0);
                     break;
                 }
+                case ASR::array_physical_typeType::UnboundedPointerArray:
                 case ASR::array_physical_typeType::PointerArray: {
                     break;
                 }

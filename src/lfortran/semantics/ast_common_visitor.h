@@ -5543,6 +5543,9 @@ public:
                             if (ad->m_dim->m_end_star == AST::dimension_typeType::AssumedRank) {
                                 is_assumed_rank = true;
                             }
+                            if (ad->n_dim > 0 && ad->m_dim[ad->n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar) {
+                                is_dimension_star = true;
+                            }
                             if (dims.size() > 0) {
                                 diag.add(Diagnostic(
                                     "Dimensions specified twice",
@@ -5659,6 +5662,19 @@ public:
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                }
+                if (!is_argument && !is_allocatable && !is_pointer
+                        && !is_dimension_star && dims.size() > 0) {
+                    for (size_t j = 0; j < dims.size(); j++) {
+                        if (dims[j].m_start == nullptr && dims[j].m_length == nullptr) {
+                            diag.semantic_error_label(
+                                "Array '" + std::string(s.m_name) +
+                                "' with a deferred shape cannot be a local variable; "
+                                "it must be a dummy argument, allocatable, or pointer",
+                                {s.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
