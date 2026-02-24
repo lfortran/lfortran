@@ -137,6 +137,20 @@ time_section "🧪 Testing splpak" '
   rm -rf splpak
 '
 
+time_section "🧪 Testing Formal" '
+  git clone https://github.com/certik/formal.git
+  cd formal
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout lf1
+  git checkout 671ab24c3d639b1a2fedd27f727e96dadf404c5c
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Formal"
+  cd ..
+'
+
 time_section "🧪 Testing Julienne" '
   git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
