@@ -13963,6 +13963,21 @@ public:
             }
         }
 
+        ASR::Struct_t *second_struct = nullptr;
+        if (is_binary) {
+            ASR::ttype_t* second_operand_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(second_operand));
+            if (ASR::is_a<ASR::StructType_t>(*second_operand_type)) {
+                ASR::symbol_t* second_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(second_operand));
+                if (second_struct_sym != nullptr &&
+                    ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(second_struct_sym))) {
+                    second_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(second_struct_sym));
+                }
+            }
+        }
+
         std::string new_op = op;
 
         // Append "~~" to the begining of any custom defined operator, that is not inside a struct
@@ -13997,6 +14012,21 @@ public:
                         + "` or in the current scope",
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
+                }
+            }
+        }
+
+        if (operator_sym == nullptr && second_struct != nullptr) {
+            // Try the RHS struct's inheritance chain
+            ASR::Struct_t* cur_struct = second_struct;
+            while (cur_struct != nullptr) {
+                operator_sym = cur_struct->m_symtab->resolve_symbol("~def_op~" + op);
+                if (operator_sym != nullptr) break;
+                if (cur_struct->m_parent != nullptr) {
+                    cur_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(cur_struct->m_parent));
+                } else {
+                    break;
                 }
             }
         }
@@ -14269,6 +14299,98 @@ public:
                 compiler_options.implicit_argument_casting);
             matched = true;
             break;
+        }
+
+        if (!matched && is_binary && second_struct != nullptr) {
+            // Try the RHS struct's inheritance chain for the operator
+            ASR::symbol_t* rhs_operator_sym = nullptr;
+            ASR::Struct_t* cur_struct = second_struct;
+            while (cur_struct != nullptr) {
+                rhs_operator_sym = cur_struct->m_symtab->resolve_symbol("~def_op~" + op);
+                if (rhs_operator_sym != nullptr) break;
+                if (cur_struct->m_parent != nullptr) {
+                    cur_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(cur_struct->m_parent));
+                } else {
+                    break;
+                }
+            }
+            if (rhs_operator_sym != nullptr && ASR::is_a<ASR::CustomOperator_t>(*rhs_operator_sym)) {
+                ASR::CustomOperator_t* rhs_gen_proc = ASR::down_cast<ASR::CustomOperator_t>(rhs_operator_sym);
+                for (size_t i = 0; i < rhs_gen_proc->n_procs; ++i) {
+                    ASR::symbol_t* proc;
+                    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*rhs_gen_proc->m_procs[i])) {
+                        proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(rhs_gen_proc->m_procs[i])->m_proc;
+                    } else {
+                        proc = rhs_gen_proc->m_procs[i];
+                    }
+                    if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(proc)))
+                        continue;
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc));
+                    if (func->n_args != 2) continue;
+                    bool args_match = ASRUtils::check_equal_type(
+                        ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand);
+                    args_match = args_match && ASRUtils::check_equal_type(
+                        ASRUtils::expr_type(func->m_args[1]), right_type, func->m_args[1], second_operand);
+                    if (!args_match) continue;
+
+                    Vec<ASR::call_arg_t> a_args;
+                    a_args.reserve(al, 2);
+                    a_args.push_back(al, { first_operand->base.loc, first_operand });
+                    a_args.push_back(al, { second_operand->base.loc, second_operand });
+
+                    ASR::ttype_t* return_type = nullptr;
+                    ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                    if (first_array_arg) {
+                        ASR::dimension_t* array_dims;
+                        size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::expr_type(first_array_arg), array_dims);
+                        Vec<ASR::dimension_t> new_dims;
+                        new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                        return_type = ASRUtils::duplicate_type(
+                            al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
+                    } else {
+                        return_type = ASRUtils::duplicate_type(
+                            al, ASRUtils::expr_type(func->m_return_var));
+                    }
+                    std::string func_name = to_lower(func->m_name);
+                    std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
+                    ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
+                    if (call_sym == nullptr) {
+                        ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
+                        ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
+                        std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
+                        if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
+                                == current_scope->get_counter())
+                            call_sym = real_proc;
+                        else {
+                            if (current_scope->resolve_symbol(matched_func_name))
+                                call_sym = current_scope->resolve_symbol(matched_func_name);
+                            else {
+                                call_sym = ASR::down_cast<ASR::symbol_t>(
+                                    ASR::make_ExternalSymbol_t(
+                                        al, real_proc->base.loc, current_scope,
+                                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public
+                                    )
+                                );
+                                current_scope->add_symbol(matched_func_name, call_sym);
+                            }
+                        }
+                    }
+                    if (call_sym == nullptr) continue;
+                    if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
+                            != current_scope->get_counter()) {
+                        ADD_ASR_DEPENDENCIES_WITH_NAME(
+                            current_scope, call_sym, current_function_dependencies, s2c(al, func_name)
+                        );
+                    }
+                    tmp = ASRUtils::make_FunctionCall_t_util(al, loc, call_sym, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+                        compiler_options.implicit_argument_casting);
+                    matched = true;
+                    break;
+                }
+            }
         }
 
         if (!matched) {
