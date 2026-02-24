@@ -3313,6 +3313,8 @@ public:
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         if (ASR::is_a<ASR::Real_t>(*obj_type)) {
             current_variable_type_ = obj_type;
+        } else if (ASRUtils::is_pointer(obj_type)) {
+            current_variable_type_ = obj_type;
         }
         this->visit_expr(*a->m_value[j++]);
         current_variable_type_ = temp_current_variable_type_;
@@ -3324,7 +3326,26 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+        ASR::expr_t* symbolic_expr = expression_value;
+        bool is_symbolic_value = false;
         if (!expression_value) {
+            ASR::symbol_t* sym = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*value)) {
+                sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(value)->m_v);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+                ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(value);
+                sym = ASRUtils::symbol_get_past_external(mem->m_m);
+            }
+            if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (var->m_symbolic_value) {  
+                    is_symbolic_value = true;
+                    symbolic_expr = var->m_symbolic_value;
+                    expression_value = value;
+                }
+            }
+        }
+        if (!expression_value && !is_symbolic_value) {
             diag.add(Diagnostic(
                 "The value in data must be a constant",
                 Level::Error, Stage::Semantic, {
@@ -3335,19 +3356,16 @@ public:
         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
             ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            v2->m_value = expression_value;
-            v2->m_symbolic_value = expression_value;
-            SetChar var_deps_vec;
-            var_deps_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                v2->m_symbolic_value, v2->m_value);
-            v2->m_dependencies = var_deps_vec.p;
-            v2->n_dependencies = var_deps_vec.size();
-            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-            LCOMPILERS_ASSERT(current_body != nullptr)
-            current_body->push_back(al, assign_stmt);
+            if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                v2->m_value = symbolic_expr;
+                v2->m_symbolic_value = symbolic_expr;
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            }
         } else if (ASR::is_a<ASR::Var_t>(*object)) {
             // This is the following case:
             // y / 2 /
@@ -3356,8 +3374,8 @@ public:
             // For pointer types (e.g. equivalenced arrays), don't set m_value
             // as it causes issues in LLVM codegen - rely on assignment instead
             if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
-                v2->m_value = expression_value;
-                v2->m_symbolic_value = expression_value;
+                v2->m_value = symbolic_expr;
+                v2->m_symbolic_value = symbolic_expr;
                 SetChar var_deps_vec;
                 var_deps_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
@@ -3365,11 +3383,6 @@ public:
                 v2->m_dependencies = var_deps_vec.p;
                 v2->n_dependencies = var_deps_vec.size();
             }
-            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-            LCOMPILERS_ASSERT(current_body != nullptr)
-            current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object) || ASR::is_a<ASR::StringSection_t>(*object)) {
             // This is the following case:
             // x(2) / 2 /
@@ -3380,11 +3393,6 @@ public:
             // won't work correctly
             // To fix that, we would have to iterate over data statements first
             // but we can fix that later.
-            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-            LCOMPILERS_ASSERT(current_body != nullptr)
-            current_body->push_back(al, assign_stmt);
         } else {
             diag.add(Diagnostic(
                 "The variable (object) type is not supported (only variables, character substrings and array items are supported so far)",
@@ -3392,6 +3400,17 @@ public:
                     Label("",{x.base.base.loc})
                 }));
             throw SemanticAbort();
+        }
+
+        LCOMPILERS_ASSERT(current_body != nullptr);
+        if (!ASRUtils::is_pointer(obj_type)) {
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+            current_body->push_back(al, assign_stmt);
+        } else {
+            ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, object, expression_value)); 
+            current_body->push_back(al, assoc_stmt);
         }
     }
 
