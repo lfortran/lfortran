@@ -490,8 +490,8 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
     }
 
-    void visit_Module(const ASR::Module_t& x) {
-        for (auto it: x.m_symtab->get_scope()) {
+    void update_procedure_variable_type_declarations(SymbolTable* symtab) {
+        for (auto it: symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*it.second) &&
                 ASR::down_cast<ASR::Variable_t>(it.second)->m_type_declaration ) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
@@ -508,7 +508,21 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 }
             }
         }
+    }
+
+    void visit_Module(const ASR::Module_t& x) {
+        update_procedure_variable_type_declarations(x.m_symtab);
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_Module(x);
+    }
+
+    void visit_Program(const ASR::Program_t& x) {
+        update_procedure_variable_type_declarations(x.m_symtab);
+        ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_Program(x);
+    }
+
+    void visit_Function(const ASR::Function_t& x) {
+        update_procedure_variable_type_declarations(x.m_symtab);
+        ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_Function(x);
     }
 
 };
