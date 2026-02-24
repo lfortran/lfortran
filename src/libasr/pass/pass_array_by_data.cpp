@@ -861,6 +861,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     } else {
                         new_x_name = resolve_new_proc(x.m_name);
                     }
+                    // If the variable hasn't been registered yet (e.g. due to
+                    // alphabetical visit order where an AssociateBlock or Block
+                    // containing the call is visited before this variable),
+                    // process it now so the call can be properly updated.
+                    if ( new_x_name == nullptr && !is_external &&
+                         v.proc2newproc.find((ASR::symbol_t*)variable) == v.proc2newproc.end() ) {
+                        visit_Variable(*variable);
+                        new_x_name = resolve_new_proc(x.m_name);
+                    }
                     if ( new_x_name != nullptr ) {
                         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
                         ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_type = new_func->m_function_signature;
