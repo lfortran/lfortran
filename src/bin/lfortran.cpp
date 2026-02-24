@@ -2727,6 +2727,49 @@ int main_app(int argc, char *argv[]) {
         return result;
     }
 
+    if (!compiler_options.separate_compilation
+        && !compiler_options.generate_code_for_global_procedures) {
+        bool all_fortran = true;
+        bool has_main = false;
+        bool parse_failed = false;
+        for (const auto &arg_file : opts.arg_files) {
+            if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
+                endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+                std::string input = read_file_ok(arg_file);
+                LCompilers::FortranEvaluator fe(compiler_options);
+                LCompilers::LocationManager lm;
+                {
+                    LCompilers::LocationManager::FileLocations fl;
+                    fl.in_filename = arg_file;
+                    lm.files.push_back(fl);
+                    lm.file_ends.push_back(input.size());
+                }
+                LCompilers::diag::Diagnostics diagnostics;
+                auto result = fe.get_asr2(input, lm, diagnostics);
+                if (!result.ok) {
+                    parse_failed = true;
+                    break;
+                }
+                if (LCompilers::ASRUtils::main_program_present(
+                        *result.result)) {
+                    has_main = true;
+                    break;
+                }
+            } else {
+                all_fortran = false;
+            }
+        }
+        if (!parse_failed && all_fortran && !has_main) {
+            std::cerr << "Note: The Fortran source files do not contain "
+                "a `program` (main program), so the executable cannot "
+                "be created." << std::endl;
+            std::cerr << "Hint: Add a `program` to one of the source "
+                "files, or use the `-c` flag to only compile to an "
+                "object file." << std::endl;
+            return 7;
+        }
+    }
+
     int err_ = 0;
     std::vector<std::string> object_files;
     // we need this separate vector to store temporary object files as some object files passed as arguments
