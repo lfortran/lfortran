@@ -15693,6 +15693,7 @@ public:
                      mfn->m_access == ASR::accessType::Private &&
                      indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) ||
                     (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
+                     ASRUtils::get_FunctionType(mfn)->m_module &&
                      to_submodule)) {
                     continue;
                 }
