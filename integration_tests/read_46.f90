@@ -1,4 +1,3 @@
-=======
 ! This program tests various compilation of various kinds
 ! for iostat variable
 program read_46

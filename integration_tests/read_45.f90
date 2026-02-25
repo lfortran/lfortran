@@ -1,4 +1,4 @@
-program read_44
+program read_45
 
     type :: inner_t
         integer :: a
@@ -18,4 +18,4 @@ program read_44
     if (x%inner%a /= 2) error stop 2
     if (x%inner%b /= 3) error stop 3
 
-end program read_44
+end program read_45
