@@ -7062,6 +7062,42 @@ public:
                     is_argument);
             }
             if (!sym_type->m_name) {
+                if (sym_type->m_sym == AST::symbolType::Asterisk) {
+                    std::string derived_type_name = "~assumed_type";
+                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+                    if (!v) {
+                        SymbolTable *parent_scope = current_scope;
+                        current_scope = al.make_new<SymbolTable>(parent_scope);
+                        ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
+                                                        s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
+                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                        nullptr, 0, nullptr, nullptr);
+                        ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                        ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
+                        struct_->m_struct_signature = struct_type;
+                        v = ASR::down_cast<ASR::symbol_t>(dtype);
+                        parent_scope->add_symbol(derived_type_name, v);
+                        current_scope = parent_scope;
+                    }
+                    type_declaration = v;
+                    type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+                    if (is_assumed_rank) {
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    } else {
+                        type = ASRUtils::make_Array_t_util(
+                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                    }
+                    if (is_pointer) {
+                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                            ASRUtils::type_get_past_allocatable(type)));
+                    }
+                    if (is_allocatable) {
+                        type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                            ASRUtils::type_get_past_allocatable(type)));
+                    }
+                    return type;
+                }
                 diag.add(Diagnostic(
                     "Type must have a name",
                     Level::Error, Stage::Semantic, {

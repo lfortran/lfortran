@@ -3647,7 +3647,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                nullptr,
                                0,
                                is_cstruct,
-                               derived_type_name == "~unlimited_polymorphic_type" ? true : false));
+                               (derived_type_name == "~unlimited_polymorphic_type" || derived_type_name == "~assumed_type") ? true : false));
 }
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
