@@ -7236,8 +7236,24 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star
                 );
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
                 type_declaration = v;
                 type = ASRUtils::get_union_type(al, loc, v);
