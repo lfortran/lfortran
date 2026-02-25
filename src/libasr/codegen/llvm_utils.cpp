@@ -9690,8 +9690,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             }
 
                             // Check if member struct has defined assignment (~assign)
-                            // Per Fortran standard, intrinsic assignment of a derived
-                            // type uses defined assignment for components that have one.
+                            // Per Fortran standard (10.2.1.3), intrinsic assignment of
+                            // a derived type uses defined assignment for components
+                            // that have one, but only when a matching overload exists
+                            // (i.e., the RHS argument is the same struct type).
                             ASR::Struct_t* mem_struct_t = ASR::down_cast<ASR::Struct_t>(mem_struct);
                             ASR::symbol_t* da_sym = use_defined_assignment ?
                                 mem_struct_t->m_symtab->resolve_symbol("~assign") : nullptr;
@@ -9699,31 +9701,48 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 da_sym = ASRUtils::symbol_get_past_external(da_sym);
                                 if (ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
                                     ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
-                                    if (custom_op->n_procs > 0) {
-                                        ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[0]);
-                                        ASR::symbol_t* assign_func_sym;
+                                    // Find a proc whose second arg is the same struct type
+                                    ASR::symbol_t* matching_func_sym = nullptr;
+                                    for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
+                                        ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
+                                        ASR::symbol_t* candidate;
                                         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
-                                            assign_func_sym = ASRUtils::symbol_get_past_external(
+                                            candidate = ASRUtils::symbol_get_past_external(
                                                 ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc)->m_proc);
                                         } else {
-                                            assign_func_sym = assign_proc;
+                                            candidate = assign_proc;
                                         }
-
+                                        ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
+                                        if (cand_func->n_args < 2) continue;
+                                        // Check second arg (RHS) type
+                                        ASR::Variable_t* rhs_var = ASRUtils::EXPR2VAR(cand_func->m_args[1]);
+                                        ASR::ttype_t* rhs_type = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(rhs_var->m_type));
+                                        rhs_type = ASRUtils::type_get_past_array(rhs_type);
+                                        if (ASR::is_a<ASR::StructType_t>(*rhs_type) &&
+                                                rhs_var->m_type_declaration &&
+                                                ASRUtils::symbol_get_past_external(
+                                                    rhs_var->m_type_declaration) == mem_struct) {
+                                            matching_func_sym = candidate;
+                                            break;
+                                        }
+                                    }
+                                    if (matching_func_sym) {
                                         // Compute the mangled function name
-                                        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(assign_func_sym);
+                                        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
                                         ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
                                             func_t->m_function_signature);
                                         std::string func_name;
                                         if (ftype->m_abi == ASR::abiType::BindC) {
                                             func_name = ftype->m_bindc_name ? ftype->m_bindc_name
-                                                : std::string(ASRUtils::symbol_name(assign_func_sym));
+                                                : std::string(ASRUtils::symbol_name(matching_func_sym));
                                         } else {
-                                            ASR::symbol_t* owner = ASRUtils::get_asr_owner(assign_func_sym);
+                                            ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
                                             if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
                                                 func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
-                                                    + "_" + ASRUtils::symbol_name(assign_func_sym);
+                                                    + "_" + ASRUtils::symbol_name(matching_func_sym);
                                             } else {
-                                                func_name = std::string(ASRUtils::symbol_name(assign_func_sym));
+                                                func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
                                             }
                                         }
 
