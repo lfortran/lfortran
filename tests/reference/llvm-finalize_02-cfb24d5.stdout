@@ -1,9 +1,9 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%array = type { %tt*, i32, %dimension_descriptor*, i1, i32 }
-%tt = type { float, %t }
-%t = type { i32 }
+%array = type { %finalize_02.tt*, i32, %dimension_descriptor*, i1, i32 }
+%finalize_02.tt = type { float, %finalize_02.t }
+%finalize_02.t = type { i32 }
 %dimension_descriptor = type { i32, i32, i32 }
 %array.0 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
 %array.1 = type { %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }
@@ -47,7 +47,7 @@ define void @ss(i32* %nang) {
   %8 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
   store i32 1, i32* %8, align 4
   %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store %tt* null, %tt** %9, align 8
+  store %finalize_02.tt* null, %finalize_02.tt** %9, align 8
   store %array* %arr_desc, %array** %arr_01, align 8
   %arr_02 = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_02, align 8
@@ -168,8 +168,8 @@ Finalize_Variable_arr_01:                         ; preds = %FINALIZE_SYMTABLE_s
 
 is_allocated.then:                                ; preds = %Finalize_Variable_arr_01
   %60 = getelementptr %array, %array* %58, i32 0, i32 0
-  %61 = load %tt*, %tt** %60, align 8
-  %62 = icmp ne %tt* %61, null
+  %61 = load %finalize_02.tt*, %finalize_02.tt** %60, align 8
+  %62 = icmp ne %finalize_02.tt* %61, null
   br i1 %62, label %is_allocated.then6, label %is_allocated.else
 
 is_allocated.then6:                               ; preds = %is_allocated.then
@@ -217,9 +217,9 @@ Finalize_array_of_structs.head:                   ; preds = %Finalize_array_of_s
 
 Finalize_array_of_structs.body:                   ; preds = %Finalize_array_of_structs.head
   %81 = load i64, i64* %arrSize_iter, align 4
-  %82 = getelementptr inbounds %tt, %tt* %61, i64 %81
-  %83 = getelementptr %tt, %tt* %82, i32 0, i32 0
-  %84 = getelementptr %tt, %tt* %82, i32 0, i32 1
+  %82 = getelementptr inbounds %finalize_02.tt, %finalize_02.tt* %61, i64 %81
+  %83 = getelementptr %finalize_02.tt, %finalize_02.tt* %82, i32 0, i32 0
+  %84 = getelementptr %finalize_02.tt, %finalize_02.tt* %82, i32 0, i32 1
   br label %Finalize_array_of_structs.head
 
 Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_structs.head
@@ -229,11 +229,11 @@ is_allocated.else:                                ; preds = %is_allocated.then
   br label %is_allocated.ifcont
 
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %Finalize_array_of_structs.end
-  %85 = icmp eq %tt* %61, null
+  %85 = icmp eq %finalize_02.tt* %61, null
   br i1 %85, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.ifcont
-  %86 = bitcast %tt* %61 to i8*
+  %86 = bitcast %finalize_02.tt* %61 to i8*
   call void @_lfortran_free(i8* %86)
   br label %free_done
 

@@ -173,6 +173,25 @@ public:
         }
     }
 
+    void visit_Struct(const ASR::Struct_t &x) {
+        // Mark final procedures (stored in member_functions) as used
+        for (size_t i = 0; i < x.n_member_functions; i++) {
+            ASR::symbol_t* sym = x.m_symtab->parent->get_symbol(x.m_member_functions[i]);
+            if (sym) {
+                ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(sym);
+                if (ASR::is_a<ASR::Function_t>(*resolved)) {
+                    uint64_t h = get_hash((ASR::asr_t*)resolved);
+                    fn_used[h] = x.m_member_functions[i];
+                    h = get_hash((ASR::asr_t*)sym);
+                    fn_used[h] = x.m_member_functions[i];
+                }
+            }
+        }
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+    }
+
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_proc);
         if (ASR::is_a<ASR::Function_t>(*s)) {

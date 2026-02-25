@@ -243,7 +243,7 @@
                                     [my_super_type]
                                     [x
                                     super]
-                                    []
+                                    [finalize]
                                     Source
                                     Public
                                     .false.

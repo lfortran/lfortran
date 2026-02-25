@@ -117,8 +117,10 @@ public:
         // To Be Implemented
     }
 
-    void visit_FinalName(const AST::FinalName_t&) {
-        // To Be Implemented
+    Vec<char*> final_proc_names;
+
+    void visit_FinalName(const AST::FinalName_t& x) {
+        final_proc_names.push_back(al, s2c(al, to_lower(x.m_name)));
     }
 
     void initialize_has_submodules(ASR::Module_t* m) {
@@ -2131,6 +2133,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
+        final_proc_names.reserve(al, 0);
         is_derived_type = true;
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
@@ -2194,7 +2197,8 @@ public:
         }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(), nullptr, 0,
+            data_member_names.p, data_member_names.size(),
+            final_proc_names.p, final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);

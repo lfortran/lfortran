@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 
@@ -118,6 +119,90 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
 
             ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>::visit_DoLoop(x);
         }
+};
+
+// Insert finalization calls before intrinsic assignment to non-pointer,
+// non-allocatable variables of finalizable type (Fortran 2018 §7.5.6.3 ¶1):
+//   "When an intrinsic assignment statement is executed, if the variable is
+//    not an unallocated allocatable variable and is of a finalizable type or
+//    has a finalizable component, it is finalized before the definition."
+class LHSFinalizationVisitor : public PassUtils::PassVisitor<LHSFinalizationVisitor>
+{
+public:
+    LHSFinalizationVisitor(Allocator& al_, SymbolTable* scope)
+        : PassVisitor(al_, scope) {}
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        // Only handle intrinsic assignment (no overloaded operator)
+        if (x.m_overloaded) return;
+
+        ASR::Variable_t* target_var = ASRUtils::expr_to_variable_or_null(x.m_target);
+        if (!target_var) return;
+
+        // Skip pointer and allocatable targets
+        if (ASRUtils::is_pointer(target_var->m_type)) return;
+        if (ASRUtils::is_allocatable(target_var->m_type)) return;
+
+        ASR::ttype_t* t = ASRUtils::type_get_past_array(target_var->m_type);
+        if (!ASR::is_a<ASR::StructType_t>(*t)) return;
+
+        if (!target_var->m_type_declaration) return;
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            target_var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) return;
+
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        if (struct_type->n_member_functions == 0) return;
+
+        Location loc = x.base.base.loc;
+        ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+            al, loc, (ASR::symbol_t*)target_var));
+
+        pass_result.reserve(al, struct_type->n_member_functions);
+        for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
+            std::string final_proc_name = struct_type->m_member_functions[fi];
+            ASR::symbol_t* final_sym =
+                struct_type->m_symtab->parent->get_symbol(final_proc_name);
+            if (!final_sym) continue;
+
+            // Ensure the FINAL procedure is accessible from current scope
+            ASR::symbol_t* local_final_sym =
+                current_scope->resolve_symbol(final_proc_name);
+            if (!local_final_sym) {
+                std::string module_name = "";
+                ASR::asr_t* owner = struct_type->m_symtab->parent->asr_owner;
+                if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                    module_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::symbol_t>(owner));
+                }
+                ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                    al, loc, current_scope,
+                    s2c(al, final_proc_name), final_sym,
+                    s2c(al, module_name), nullptr, 0,
+                    s2c(al, final_proc_name),
+                    ASR::accessType::Private);
+                current_scope->add_symbol(final_proc_name,
+                    ASR::down_cast<ASR::symbol_t>(ext));
+                local_final_sym = ASR::down_cast<ASR::symbol_t>(ext);
+            }
+
+            Vec<ASR::call_arg_t> call_args;
+            call_args.reserve(al, 1);
+            ASR::call_arg_t call_arg;
+            call_arg.loc = loc;
+            call_arg.m_value = var_expr;
+            call_args.push_back(al, call_arg);
+
+            ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                ASR::make_SubroutineCall_t(
+                    al, loc, local_final_sym, local_final_sym,
+                    call_args.p, call_args.n, nullptr, false));
+
+            pass_result.push_back(al, call_stmt);
+        }
+        // Keep the original assignment after the finalization call(s)
+        retain_original_stmt = true;
+    }
 };
 
 // Deallocate allocatable `intent(out)` dummy arguments at function entry.
@@ -270,6 +355,68 @@ public:
                 // (If the struct itself is allocatable, we already handled it above)
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
+
+                // Call user-defined FINAL procedures for non-allocatable
+                // intent(out) struct args (Fortran 2018 §7.5.6.3 ¶7):
+                //   "When a procedure is invoked with a nonpointer,
+                //    nonallocatable, INTENT(OUT) dummy argument of a type
+                //    for which a final subroutine is defined, the
+                //    finalization occurs before the procedure body executes."
+                if (struct_type->n_member_functions > 0) {
+                    ASR::expr_t* var_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, arg_sym));
+                    for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
+                        std::string final_proc_name =
+                            struct_type->m_member_functions[fi];
+                        ASR::symbol_t* final_sym =
+                            struct_type->m_symtab->parent->get_symbol(
+                                final_proc_name);
+                        if (!final_sym) continue;
+
+                        // Ensure the FINAL procedure is accessible from the
+                        // function's own symbol table; create an ExternalSymbol
+                        // if one does not already exist.
+                        ASR::symbol_t* local_final_sym =
+                            xx.m_symtab->resolve_symbol(final_proc_name);
+                        if (!local_final_sym) {
+                            std::string module_name = "";
+                            ASR::asr_t* owner =
+                                struct_type->m_symtab->parent->asr_owner;
+                            if (owner &&
+                                ASR::is_a<ASR::symbol_t>(*owner)) {
+                                module_name = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::symbol_t>(owner));
+                            }
+                            ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                                al, loc, xx.m_symtab,
+                                s2c(al, final_proc_name), final_sym,
+                                s2c(al, module_name), nullptr, 0,
+                                s2c(al, final_proc_name),
+                                ASR::accessType::Private);
+                            xx.m_symtab->add_symbol(final_proc_name,
+                                ASR::down_cast<ASR::symbol_t>(ext));
+                            local_final_sym =
+                                ASR::down_cast<ASR::symbol_t>(ext);
+                        }
+
+                        Vec<ASR::call_arg_t> call_args;
+                        call_args.reserve(al, 1);
+                        ASR::call_arg_t call_arg;
+                        call_arg.loc = loc;
+                        call_arg.m_value = var_expr;
+                        call_args.push_back(al, call_arg);
+
+                        ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                            ASR::make_SubroutineCall_t(
+                                al, loc, local_final_sym, local_final_sym,
+                                call_args.p, call_args.n, nullptr, false));
+
+                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                            loc, var_expr, arg_var->m_presence, call_stmt);
+                        dealloc_stmts.push_back(al, wrapped_stmt);
+                    }
+                }
+
                 SymbolTable* sym_table_of_struct = struct_type->m_symtab;
                 while (sym_table_of_struct != nullptr) {
                     for (auto& struct_member : sym_table_of_struct->get_scope()) {
@@ -351,8 +498,15 @@ void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
     IntentOutDeallocateVisitor iod(al);
     iod.visit_TranslationUnit(unit);
 
+    // Finalize LHS of intrinsic assignment (Fortran 2018 §7.5.6.3 ¶1)
+    LHSFinalizationVisitor lhsf(al, unit.m_symtab);
+    lhsf.visit_TranslationUnit(unit);
+
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);
+
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
 }
 
 

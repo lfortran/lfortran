@@ -808,6 +808,7 @@ RUN(NAME arrays_101 LABELS gfortran llvm)
 RUN(NAME arrays_102 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_103 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_104 LABELS gfortran llvm)
+RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1962,6 +1963,11 @@ RUN(NAME derived_types_104 LABELS gfortran llvm)
 RUN(NAME derived_types_105 LABELS gfortran llvm)
 RUN(NAME derived_types_106 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME derived_types_107 LABELS gfortran llvm)
+RUN(NAME derived_types_108 LABELS gfortran llvm)
+RUN(NAME derived_types_109 LABELS gfortran llvm)
+RUN(NAME derived_types_110 LABELS gfortran llvm)
+RUN(NAME derived_types_111 LABELS gfortran llvm)
+RUN(NAME derived_types_112 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -2698,6 +2704,9 @@ RUN(NAME pass_array_by_data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llv
 RUN(NAME pass_array_by_data_13 LABELS gfortran llvm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME deallocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)

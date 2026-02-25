@@ -29,6 +29,52 @@ class ASRToLLVMVisitor;
         return (uint64_t)node;
     }
 
+    // Returns a scope-qualified key for a Struct_t, for use in name2dertype
+    // and related maps. E.g., struct "object_t" inside module "mod_a" becomes
+    // "mod_a.object_t", preventing collisions between same-named types in
+    // different modules. Unlimited polymorphic types (starting with "~") are
+    // global sentinels and are never qualified.
+    inline std::string get_type_key(ASR::Struct_t* struct_type) {
+        std::string name = struct_type->m_name;
+        // Skip qualification for internal sentinel types like ~unlimited_polymorphic_type
+        if (!name.empty() && name[0] == '~') {
+            return name;
+        }
+        if (struct_type->m_symtab && struct_type->m_symtab->parent &&
+                struct_type->m_symtab->parent->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*struct_type->m_symtab->parent->asr_owner)) {
+            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                struct_type->m_symtab->parent->asr_owner);
+            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
+        }
+        return name;
+    }
+
+    // Returns a scope-qualified key for a Union_t.
+    inline std::string get_type_key(ASR::Union_t* union_type) {
+        std::string name = union_type->m_name;
+        if (union_type->m_symtab && union_type->m_symtab->parent &&
+                union_type->m_symtab->parent->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*union_type->m_symtab->parent->asr_owner)) {
+            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                union_type->m_symtab->parent->asr_owner);
+            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
+        }
+        return name;
+    }
+
+    // Returns a scope-qualified key for a symbol_t* that may be Struct or Union.
+    // Resolves ExternalSymbol automatically.
+    inline std::string get_type_key(ASR::symbol_t* sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::Struct_t>(*sym)) {
+            return get_type_key(ASR::down_cast<ASR::Struct_t>(sym));
+        } else if (ASR::is_a<ASR::Union_t>(*sym)) {
+            return get_type_key(ASR::down_cast<ASR::Union_t>(sym));
+        }
+        return std::string(ASRUtils::symbol_name(sym));
+    }
+
     namespace {
 
     // This exception is used to abort the visitor pattern when an error occurs.
@@ -853,11 +899,14 @@ class ASRToLLVMVisitor;
         std::unique_ptr<llvm::IRBuilder<>>                          &builder_;
         Allocator                                                   &al_;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
+        std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
-            std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al)  
-        :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor){}
+            std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
+            std::map<uint64_t, llvm::Function*> &llvm_symtab_fn)  
+        :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor),
+            llvm_symtab_fn_(llvm_symtab_fn){}
 
     private:
         /**
@@ -884,8 +933,30 @@ class ASRToLLVMVisitor;
             if(is_finalizable_type(v->m_type, get_struct_sym(v))) {
                 insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
             }
-            
+
             auto const llvm_var = get_llvm_var(v);
+
+            // Call user-defined FINAL procedures for non-allocatable struct
+            // locals at scope exit (Fortran 2018 §7.5.6.3).
+            // Allocatable types are handled by the deallocate path.
+            auto* struct_sym = get_struct_sym(v);
+            if (struct_sym != nullptr
+                    && !ASRUtils::is_allocatable(v->m_type)
+                    && struct_sym->n_member_functions > 0) {
+                for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
+                    std::string final_proc_name = struct_sym->m_member_functions[fi];
+                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
+                    if (final_sym) {
+                        final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                        if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                            llvm::Function* final_fn = llvm_symtab_fn_[fh];
+                            builder_->CreateCall(final_fn, {llvm_var});
+                        }
+                    }
+                }
+            }
+
             finalize(llvm_var, v->m_type, get_struct_sym(v), false);
         }
         
@@ -1095,6 +1166,7 @@ class ASRToLLVMVisitor;
                     struct_sym->m_struct_signature, struct_sym)->getPointerTo(), 
                     llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
             }
+
             // Finalize members
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
@@ -1403,6 +1475,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t_past);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
+                    // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
+                    if(struct_sym && struct_sym->n_member_functions > 0) { return true; }
                     if(struct_sym->m_parent){ // Check parent
                         ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                         finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct);

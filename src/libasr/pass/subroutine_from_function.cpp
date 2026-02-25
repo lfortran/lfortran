@@ -506,9 +506,14 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
             if(!pass_result.empty()){  // Flush `pass_result`.
-                LCOMPILERS_ASSERT(parent_body != nullptr);
-                for(size_t i = 0; i < pass_result.size(); i++){
-                    parent_body->push_back(al, pass_result[i]);
+                if (parent_body != nullptr) {
+                    for(size_t i = 0; i < pass_result.size(); i++){
+                        parent_body->push_back(al, pass_result[i]);
+                    }
+                } else {
+                    for(size_t i = 0; i < pass_result.size(); i++){
+                        body.push_back(al, pass_result[i]);
+                    }
                 }
                 pass_result.n = 0;
             }
