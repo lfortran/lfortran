@@ -767,7 +767,8 @@
                         })
                     points_a
                     points
-                    []
+                    [points
+                    stdlib_kinds_submodule_02]
                     .false.
                     .false.
                     .false.

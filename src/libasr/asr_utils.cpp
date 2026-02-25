@@ -1309,10 +1309,15 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                           pass_options.include_dirs.begin(),
                           pass_options.include_dirs.end());
 
+    bool found_empty_mod = false;
     for (auto path : mod_files_dirs) {
         std::string modfile;
         std::filesystem::path full_path = path / filename;
         if (read_file(full_path.string(), modfile)) {
+            if (modfile.empty()) {
+                found_empty_mod = true;
+                continue;
+            }
             Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
             if (res.ok) {
                 ASR::TranslationUnit_t* asr = res.result;
@@ -1325,6 +1330,35 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
             }
         }
     }
+
+    if (found_empty_mod) {
+        std::string smod_suffix = "@" + msym + ".smod";
+        for (auto &path : mod_files_dirs) {
+            std::filesystem::path search_dir = path.empty() ? std::filesystem::path(".") : path;
+            if (!std::filesystem::is_directory(search_dir)) continue;
+            for (auto &entry : std::filesystem::directory_iterator(search_dir)) {
+                std::string fname = entry.path().filename().string();
+                if (fname.size() > smod_suffix.size() &&
+                    fname.compare(fname.size() - smod_suffix.size(),
+                                  smod_suffix.size(), smod_suffix) == 0) {
+                    std::string smodfile;
+                    if (read_file(entry.path().string(), smodfile) && !smodfile.empty()) {
+                        Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, smodfile, false, symtab, lm);
+                        if (res.ok) {
+                            ASR::TranslationUnit_t* asr = res.result;
+                            if (intrinsic) {
+                                set_intrinsic(asr);
+                            }
+                            return asr;
+                        } else {
+                            return res.error;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return ErrorMessage("Module '" + msym + "' modfile was not found");
 }
 
@@ -1342,13 +1376,15 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
                           pass_options.include_dirs.begin(),
                           pass_options.include_dirs.end());
 
+    std::string smod_prefix = parent_module_name + "@";
     for (auto &path : mod_files_dirs) {
         if (path.empty()) path = ".";
+        if (!std::filesystem::is_directory(path)) continue;
         for (auto &file : std::filesystem::directory_iterator(path)) {
             std::string submod_filename = file.path().filename().string();
-            if (startswith(submod_filename, parent_module_name) && endswith(submod_filename, ".smod")) {
+            if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, ".smod")) {
                 std::string submodfile;
-                if (read_file(file.path().string(), submodfile)) {
+                if (read_file(file.path().string(), submodfile) && !submodfile.empty()) {
                     Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
                     if (sub_res.ok) {
                         ASR::TranslationUnit_t* asr = sub_res.result;

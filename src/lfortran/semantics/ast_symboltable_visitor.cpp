@@ -309,6 +309,10 @@ public:
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
+            current_module_dependencies.push_back(al, s2c(al, parent_name));
+            for (size_t i = 0; i < m->n_dependencies; i++) {
+                current_module_dependencies.push_back(al, m->m_dependencies[i]);
+            }
         } else {
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
