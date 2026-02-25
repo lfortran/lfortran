@@ -1184,7 +1184,27 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr_, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
 
-                finalize(member_ptr, member_asr_type, get_struct_sym(member_variable), true);
+                // Call user-defined FINAL procedures on finalizable components
+                // (Fortran 2018 §7.5.6.2, para 1-4)
+                auto* member_struct_sym = get_struct_sym(member_variable);
+                if (member_struct_sym != nullptr
+                        && !ASRUtils::is_allocatable(member_asr_type)
+                        && member_struct_sym->n_member_functions > 0) {
+                    for (size_t fi = 0; fi < member_struct_sym->n_member_functions; fi++) {
+                        std::string final_proc_name = member_struct_sym->m_member_functions[fi];
+                        ASR::symbol_t* final_sym = member_struct_sym->m_symtab->parent->get_symbol(final_proc_name);
+                        if (final_sym) {
+                            final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                            uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                            if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                                llvm::Function* final_fn = llvm_symtab_fn_[fh];
+                                builder_->CreateCall(final_fn, {member_ptr});
+                            }
+                        }
+                    }
+                }
+
+                finalize(member_ptr, member_asr_type, member_struct_sym, true);
             }
 
             // Finalize Parent
@@ -1481,8 +1501,11 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                         ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                         finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct);
                     }
-                    for(size_t i = 0; (i < struc_t->n_data_member_types) && !finalizable_struct; i++) {
-                        finalizable_struct |= is_finalizable_type(struc_t->m_data_member_types[i], struct_sym);
+                    for(size_t i = 0; (i < struct_sym->n_members) && !finalizable_struct; i++) {
+                        auto* member_var = ASR::down_cast<ASR::Variable_t>(
+                            struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
+                        if(ASRUtils::is_pointer(member_var->m_type)) continue;
+                        finalizable_struct |= is_finalizable_type(member_var->m_type, get_struct_sym(member_var));
                     }
                     return finalizable_struct;
                 }
