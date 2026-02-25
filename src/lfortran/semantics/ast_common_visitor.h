@@ -8092,6 +8092,9 @@ public:
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
+            if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
+                expr_type = ASRUtils::type_get_past_pointer(expr_type);
+            }
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
                 if(!ASRUtils::is_value_constant(expr)) 
                     use_descriptorArray = true;
