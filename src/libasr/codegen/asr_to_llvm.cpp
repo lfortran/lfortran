@@ -8933,7 +8933,7 @@ public:
                 }
 
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
-                    deepcopy_type, deepcopy_type, module.get());
+                    deepcopy_type, deepcopy_type, module.get(), true);
             }
             if (is_target_unlimited_polymorphic || is_target_class) {
                 // Store Vptr from original struct
@@ -8969,7 +8969,7 @@ public:
                 value_struct = llvm_utils->CreateLoad2(val_type, value_struct);
             }
             llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get());
+                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), true);
             return ;
         } else if (compiler_options.new_classes &&
                     (is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
@@ -9096,7 +9096,7 @@ public:
             llvm::Value* target_struct = tmp;
 
             llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_target_type, ASRUtils::type_get_past_allocatable(asr_value_type), module.get());
+                asr_target_type, ASRUtils::type_get_past_allocatable(asr_value_type), module.get(), true);
             return;
         }
 

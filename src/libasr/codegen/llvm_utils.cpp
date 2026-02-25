@@ -3034,7 +3034,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     void LLVMUtils::deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                              ASR::ttype_t* asr_dest_type,
-                             ASR::ttype_t* asr_src_type, llvm::Module* module) {
+                             ASR::ttype_t* asr_src_type, llvm::Module* module,
+                             bool use_defined_assignment) {
         switch( ASRUtils::type_get_past_array(asr_src_type)->type ) {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::UnsignedInteger:
@@ -3254,7 +3255,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 builder->CreateBitCast(dest, vptr_type->getPointerTo()));
                         }
                     }
-                    struct_api->struct_deepcopy(src_expr, src, asr_src_type, asr_dest_type, dest, module);
+                    struct_api->struct_deepcopy(src_expr, src, asr_src_type, asr_dest_type, dest, module, use_defined_assignment);
                 }
                 break;
             }
@@ -9310,7 +9311,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
-                                    ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module)
+                                    ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
+                                    bool use_defined_assignment)
     {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(src_ty)));
         ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
@@ -9686,7 +9688,65 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 // Reload target_struct after allocation
                                 dest_member = llvm_utils->CreateLoad2(struct_type->getPointerTo(), dest_member_orig);
                             }
-                            
+
+                            // Check if member struct has defined assignment (~assign)
+                            // Per Fortran standard, intrinsic assignment of a derived
+                            // type uses defined assignment for components that have one.
+                            ASR::Struct_t* mem_struct_t = ASR::down_cast<ASR::Struct_t>(mem_struct);
+                            ASR::symbol_t* da_sym = use_defined_assignment ?
+                                mem_struct_t->m_symtab->resolve_symbol("~assign") : nullptr;
+                            if (da_sym) {
+                                da_sym = ASRUtils::symbol_get_past_external(da_sym);
+                                if (ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
+                                    ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
+                                    if (custom_op->n_procs > 0) {
+                                        ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[0]);
+                                        ASR::symbol_t* assign_func_sym;
+                                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+                                            assign_func_sym = ASRUtils::symbol_get_past_external(
+                                                ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc)->m_proc);
+                                        } else {
+                                            assign_func_sym = assign_proc;
+                                        }
+
+                                        // Compute the mangled function name
+                                        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(assign_func_sym);
+                                        ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
+                                            func_t->m_function_signature);
+                                        std::string func_name;
+                                        if (ftype->m_abi == ASR::abiType::BindC) {
+                                            func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                                                : std::string(ASRUtils::symbol_name(assign_func_sym));
+                                        } else {
+                                            ASR::symbol_t* owner = ASRUtils::get_asr_owner(assign_func_sym);
+                                            if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                                                func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
+                                                    + "_" + ASRUtils::symbol_name(assign_func_sym);
+                                            } else {
+                                                func_name = std::string(ASRUtils::symbol_name(assign_func_sym));
+                                            }
+                                        }
+
+                                        // Get or declare the LLVM function
+                                        llvm::Function* assign_fn = module->getFunction(func_name);
+                                        if (!assign_fn) {
+                                            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                                                *func_t, module);
+                                            assign_fn = llvm::Function::Create(fntype,
+                                                llvm::Function::ExternalLinkage, func_name, module);
+                                        }
+
+                                        // Create class descriptors for dest and src
+                                        llvm::Value* dest_class = create_class_view(mem_struct_t, dest_member);
+                                        llvm::Value* src_class = create_class_view(mem_struct_t, src_member);
+
+                                        // Call defined assignment: assign(lhs=dest, rhs=src)
+                                        builder->CreateCall(assign_fn, {dest_class, src_class});
+                                        return;
+                                    }
+                                }
+                            }
+
                             // Get Copy function pointer
                             llvm::Value* fn;
                             llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
