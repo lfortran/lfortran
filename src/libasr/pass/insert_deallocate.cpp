@@ -270,6 +270,68 @@ public:
                 // (If the struct itself is allocatable, we already handled it above)
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
+
+                // Call user-defined FINAL procedures for non-allocatable
+                // intent(out) struct args (Fortran 2018 §7.5.6.3 ¶7):
+                //   "When a procedure is invoked with a nonpointer,
+                //    nonallocatable, INTENT(OUT) dummy argument of a type
+                //    for which a final subroutine is defined, the
+                //    finalization occurs before the procedure body executes."
+                if (struct_type->n_member_functions > 0) {
+                    ASR::expr_t* var_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, arg_sym));
+                    for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
+                        std::string final_proc_name =
+                            struct_type->m_member_functions[fi];
+                        ASR::symbol_t* final_sym =
+                            struct_type->m_symtab->parent->get_symbol(
+                                final_proc_name);
+                        if (!final_sym) continue;
+
+                        // Ensure the FINAL procedure is accessible from the
+                        // function's own symbol table; create an ExternalSymbol
+                        // if one does not already exist.
+                        ASR::symbol_t* local_final_sym =
+                            xx.m_symtab->resolve_symbol(final_proc_name);
+                        if (!local_final_sym) {
+                            std::string module_name = "";
+                            ASR::asr_t* owner =
+                                struct_type->m_symtab->parent->asr_owner;
+                            if (owner &&
+                                ASR::is_a<ASR::symbol_t>(*owner)) {
+                                module_name = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::symbol_t>(owner));
+                            }
+                            ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                                al, loc, xx.m_symtab,
+                                s2c(al, final_proc_name), final_sym,
+                                s2c(al, module_name), nullptr, 0,
+                                s2c(al, final_proc_name),
+                                ASR::accessType::Private);
+                            xx.m_symtab->add_symbol(final_proc_name,
+                                ASR::down_cast<ASR::symbol_t>(ext));
+                            local_final_sym =
+                                ASR::down_cast<ASR::symbol_t>(ext);
+                        }
+
+                        Vec<ASR::call_arg_t> call_args;
+                        call_args.reserve(al, 1);
+                        ASR::call_arg_t call_arg;
+                        call_arg.loc = loc;
+                        call_arg.m_value = var_expr;
+                        call_args.push_back(al, call_arg);
+
+                        ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                            ASR::make_SubroutineCall_t(
+                                al, loc, local_final_sym, local_final_sym,
+                                call_args.p, call_args.n, nullptr, false));
+
+                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                            loc, var_expr, arg_var->m_presence, call_stmt);
+                        dealloc_stmts.push_back(al, wrapped_stmt);
+                    }
+                }
+
                 SymbolTable* sym_table_of_struct = struct_type->m_symtab;
                 while (sym_table_of_struct != nullptr) {
                     for (auto& struct_member : sym_table_of_struct->get_scope()) {
