@@ -16915,9 +16915,7 @@ public:
                                     && ((!ASRUtils::is_allocatable(orig_arg->m_type)
                                         && ASRUtils::is_allocatable(arg_type))
                                         || !ASRUtils::is_allocatable(arg_type))
-                                    && (ASRUtils::is_array(arg_type)
-                                        || ASR::is_a<ASR::CPtr_t>(
-                                            *ASRUtils::expr_type(x.m_args[i].m_value))))
+                                    && ASRUtils::is_array(arg_type))
                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
                                     && ASRUtils::is_allocatable(arg_type)
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
@@ -16934,7 +16932,9 @@ public:
                                         orig_arg->m_type, value);
                                 } else if (!compiler_options.new_classes || !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
-                                    if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
+                                    if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))
+                                            && (ASRUtils::is_allocatable(x.m_args[i].m_value)
+                                                || ASRUtils::is_pointer(ASRUtils::expr_type(x.m_args[i].m_value)))) {
                                         check_and_allocate_scalar(x.m_args[i].m_value);
                                     }
                                     llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
