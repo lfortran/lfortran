@@ -996,8 +996,9 @@ namespace LCompilers {
                     // For bind(c) array dummies (including implicit interfaces), handle
                     // based on the physical type specified in the ASR.
                     ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
-                    if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
-                        // DescriptorArray: pass pointer to descriptor struct
+                    if (phys_type == ASR::array_physical_typeType::DescriptorArray ||
+                        phys_type == ASR::array_physical_typeType::AssumedRankArray) {
+                        // DescriptorArray/AssumedRankArray: pass pointer to descriptor struct
                         type = type_original->getPointerTo();
                     } else if (ASRUtils::is_character(*arg->m_type)) {
                         // PointerArray CHARACTER: use raw i8*
