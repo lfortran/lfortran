@@ -14090,6 +14090,23 @@ public:
                         llvm::Function::ExternalLinkage, func_name, module.get());
                 }
 
+                // If iostat is not i32*, create a temporary i32 and
+                // copy back after the reads (e.g. when iostat is i64).
+                llvm::Value* orig_iostat = nullptr;
+                llvm::Type* i32ptr = llvm::Type::getInt32Ty(context)->getPointerTo();
+                if (!iostat->getType()->isPointerTy() ||
+                    iostat->getType() != i32ptr) {
+                    // iostat is a non-null pointer of wrong element type
+                    if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                        orig_iostat = iostat;
+                        iostat = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt32Ty(context));
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                            iostat);
+                    }
+                }
+
                 for (size_t i = 0; i < x.n_values; i++) {
                     ASR::ttype_t* expr_type_full = ASRUtils::expr_type(x.m_values[i]);
                     ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
@@ -14188,6 +14205,13 @@ public:
                                 llvm::Type::getInt8Ty(context)->getPointerTo());
                             elem_len = str_len;
                         } else {
+                            if (ASR::is_a<ASR::Allocatable_t>(*expr_type_full) ||
+                                    ASR::is_a<ASR::Pointer_t>(*expr_type_full)) {
+                                llvm::Type* llvm_val_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i], val_type, module.get());
+                                var_ptr = llvm_utils->CreateLoad2(
+                                    llvm_val_type->getPointerTo(), var_ptr);
+                            }
                             data_ptr = builder->CreateBitCast(var_ptr,
                                 llvm::Type::getInt8Ty(context)->getPointerTo());
                         }
@@ -14196,6 +14220,16 @@ public:
                         builder->CreateCall(fn, {src_data, src_len, pos_ptr, iostat,
                             type_code_val, data_ptr, count, elem_len});
                     }
+                }
+
+                // Copy temporary i32 iostat back to the original wider variable
+                if (orig_iostat) {
+                    llvm::Value* tmp_val = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iostat);
+                    llvm::Value* extended = builder->CreateSExt(tmp_val,
+                        llvm::Type::getInt64Ty(context));
+                    builder->CreateStore(extended, orig_iostat);
+                    iostat = orig_iostat;
                 }
             }
         } else {
