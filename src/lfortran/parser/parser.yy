@@ -1947,6 +1947,7 @@ backspace_statement
 
 flush_statement
     : KW_FLUSH "(" write_arg_list ")" { $$ = FLUSH($3, @$); }
+    | KW_FLUSH id { $$ = FLUSH2($2, @$); }
     | KW_FLUSH TK_INTEGER { $$ = FLUSH1($2, @$); }
     ;
 

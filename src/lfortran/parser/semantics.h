@@ -1348,6 +1348,8 @@ ast_t* builtin3(Allocator &al,
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define FLUSH1(arg, l) make_Flush_t(p.m_a, l, 0, \
             EXPRS(A2LIST(p.m_a, INTEGER(arg, l))), 1, nullptr, 0, nullptr)
+#define FLUSH2(arg, l) make_Flush_t(p.m_a, l, 0, \
+            EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define ENDFILE2(arg, l) make_Endfile_t(p.m_a, l, 0, \
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define BIND2(args0, l) builtin3(p.m_a, args0, l, make_Bind_t)
