@@ -175,7 +175,20 @@
                         })
                     dqc25c
                     (FunctionType
-                        [(Real 8)]
+                        [(FunctionType
+                            [(Real 4)]
+                            (Real 8)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                        )]
                         ()
                         Source
                         Implementation

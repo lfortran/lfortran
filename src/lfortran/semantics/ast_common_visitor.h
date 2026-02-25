@@ -3944,6 +3944,82 @@ public:
         }
     }
 
+    void create_intrinsic_function_wrapper(const std::string& sym, Location loc) {
+        if (intrinsic_mapping.find(sym) == intrinsic_mapping.end()) {
+            return;
+        }
+        const auto& mapping = intrinsic_mapping.at(sym);
+        const std::string& generic_name = mapping.first;
+        const std::string& type_name = mapping.second[0];
+
+        ASR::ttype_t* arg_type = nullptr;
+        if (type_name == "int4") arg_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        else if (type_name == "int8") arg_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+        else if (type_name == "real4") arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+        else if (type_name == "real8") arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+        if (!arg_type) return;
+
+        ASR::ttype_t* ret_type = arg_type;
+        int64_t intrinsic_id = -1;
+        if (generic_name == "abs") {
+            intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs);
+        }
+        if (intrinsic_id == -1) return;
+
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        std::string arg_name = sym + "_arg";
+        SetChar dep;
+        dep.reserve(al, 1);
+        ASR::asr_t* arg_asr = ASRUtils::make_Variable_t_util(al, loc,
+            current_scope, s2c(al, arg_name), dep.p, 0,
+            ASRUtils::intent_unspecified, nullptr, nullptr,
+            ASR::storage_typeType::Default, arg_type, nullptr,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false);
+        current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_asr));
+
+        std::string ret_name = sym + "_return_var_name";
+        ASR::asr_t* ret_asr = ASRUtils::make_Variable_t_util(al, loc,
+            current_scope, s2c(al, ret_name), dep.p, 0,
+            ASRUtils::intent_return_var, nullptr, nullptr,
+            ASR::storage_typeType::Default, ret_type, nullptr,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false);
+        current_scope->add_symbol(ret_name, ASR::down_cast<ASR::symbol_t>(ret_asr));
+
+        ASR::symbol_t* arg_sym = current_scope->get_symbol(arg_name);
+        ASR::symbol_t* ret_sym = current_scope->get_symbol(ret_name);
+        ASR::expr_t* arg_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+        ASR::expr_t* ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
+
+        Vec<ASR::expr_t*> fn_args;
+        fn_args.reserve(al, 1);
+        fn_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
+
+        Vec<ASR::expr_t*> intrinsic_args;
+        intrinsic_args.reserve(al, 1);
+        intrinsic_args.push_back(al, arg_var);
+        ASR::expr_t* intrinsic_call = ASRUtils::EXPR(
+            ASR::make_IntrinsicElementalFunction_t(al, loc, intrinsic_id,
+                intrinsic_args.p, intrinsic_args.n, 0, ret_type, nullptr));
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, ret_var, intrinsic_call, nullptr, false, false)));
+
+        tmp = ASRUtils::make_Function_t_util(
+            al, loc, current_scope, s2c(al, sym),
+            nullptr, 0, fn_args.p, fn_args.n, body.p, body.n,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
+            ASR::abiType::Source, ASR::accessType::Public,
+            ASR::deftypeType::Implementation,
+            nullptr, false, false, false, false, false, nullptr, 0,
+            false, false, false);
+        parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+    }
+
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
         if (scope) {
             external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
@@ -4506,6 +4582,9 @@ public:
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
                                     explicit_intrinsic_procedures.push_back(sym);
+                                    if (compiler_options.implicit_interface) {
+                                        create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
@@ -13019,7 +13098,9 @@ public:
         if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
             && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
-            if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
+            bool is_v_dummy_arg = ASR::is_a<ASR::Variable_t>(*v) &&
+                ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(v)->m_intent);
+            if (!is_v_dummy_arg && (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name))) {
                 if (compiler_options.implicit_interface) {
                     bool is_function = true;
                     if ( !is_external_procedure ) {
@@ -13038,12 +13119,14 @@ public:
                 }
             } else if (compiler_options.implicit_interface && !ASRUtils::is_symbol_procedure_variable(v)) {
                 bool is_function = true;
-                // NOTE: ideally this shouldn't be needed, this is only to handle
-                // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
-                // implemented as intrinsic elemental function
-                intrinsic_as_node(x, is_function);
-                if (!is_function) {
-                    return;
+                if (!is_v_dummy_arg) {
+                    // NOTE: ideally this shouldn't be needed, this is only to handle
+                    // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
+                    // implemented as intrinsic elemental function
+                    intrinsic_as_node(x, is_function);
+                    if (!is_function) {
+                        return;
+                    }
                 }
 
                 // If implicit interface is allowed, we have to handle the
@@ -13091,6 +13174,11 @@ public:
                                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
                                 if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
                                     var->m_v = v;
+                                    ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(
+                                        current_function->m_function_signature);
+                                    if (i < func_type->n_arg_types && ASR::is_a<ASR::Function_t>(*v)) {
+                                        func_type->m_arg_types[i] = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+                                    }
                                 }
                             }
                         }

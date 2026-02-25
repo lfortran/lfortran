@@ -127,7 +127,7 @@
                         [(Complex 4)
                         (Complex 4)
                         (FunctionType
-                            []
+                            [(Complex 4)]
                             (Complex 4)
                             BindC
                             Interface
