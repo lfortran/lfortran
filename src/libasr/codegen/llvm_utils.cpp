@@ -1367,7 +1367,7 @@ namespace LCompilers {
                         llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration),
                                                  LLVM::is_llvm_pointer(*asr_type));
                     }
-                } else {
+                } else if (arg_expr) {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         llvm_type = getStructType(
                             ASR::down_cast<ASR::Struct_t>(
@@ -1380,6 +1380,14 @@ namespace LCompilers {
                                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr))),
                                            LLVM::is_llvm_pointer(*asr_type));
                     }
+                } else {
+                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(asr_type);
+                    std::vector<llvm::Type*> member_types;
+                    for (size_t i = 0; i < st->n_data_member_types; i++) {
+                        member_types.push_back(get_type_from_ttype_t_util(
+                            st->m_data_member_types[i], nullptr, module));
+                    }
+                    llvm_type = llvm::StructType::get(context, member_types);
                 }
                 break;
             }
