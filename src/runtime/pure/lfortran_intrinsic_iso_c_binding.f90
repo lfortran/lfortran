@@ -27,6 +27,7 @@ integer, parameter :: c_long_double_complex = -1
 integer, parameter :: c_bool = 1
 integer, parameter :: c_char = 1
 integer, parameter :: c_intptr_t = 8
+integer, parameter :: c_ptrdiff_t = 8
 character(len=1), parameter :: c_null_char = char(0)
 character(len=1), parameter :: c_new_line = char(10)
 type(c_ptr), parameter :: c_null_ptr = c_ptr(0)
@@ -63,6 +64,11 @@ interface
     !type(c_funptr) function c_funloc(x)
     integer function c_funloc(x)
     import c_funptr
+    !type(*), intent(in) :: x
+    integer, intent(in) :: x
+    end function
+
+    integer(c_size_t) function c_sizeof(x)
     !type(*), intent(in) :: x
     integer, intent(in) :: x
     end function

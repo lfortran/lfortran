@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     2
                                     1_test_obj_ptr
-                                    12 ptr
+                                    13 ptr
                                     test_obj
                                     []
                                     ptr
@@ -315,6 +315,16 @@
                                     c_ptr
                                     Public
                                 ),
+                            c_ptrdiff_t:
+                                (ExternalSymbol
+                                    2
+                                    c_ptrdiff_t
+                                    4 c_ptrdiff_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptrdiff_t
+                                    Public
+                                ),
                             c_short:
                                 (ExternalSymbol
                                     2
@@ -333,6 +343,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_size_t
+                                    Public
+                                ),
+                            c_sizeof:
+                                (ExternalSymbol
+                                    2
+                                    c_sizeof
+                                    4 c_sizeof
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_sizeof
                                     Public
                                 ),
                             instance:
@@ -413,11 +433,11 @@
                             test_obj:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             ptr:
                                                 (Variable
-                                                    12
+                                                    13
                                                     ptr
                                                     []
                                                     Local

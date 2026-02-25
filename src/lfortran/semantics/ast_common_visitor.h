@@ -1813,7 +1813,8 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc"
+        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
+        "c_sizeof"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -7041,18 +7042,24 @@ public:
             }
             
             if (abi == ASR::abiType::BindC) {
-                int64_t char_len;
-                ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type));
-                bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
-                if (!has_len || char_len != 1) {
-                    diag.add(Diagnostic(
-                        "Character dummy argument `" + sym +
-                        "` must be of constant length of one or assumed length, "
-                        "unless it has assumed shape or assumed rank in a BIND(C) procedure",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {loc})
-                        }));
-                    throw SemanticAbort();
+                ASR::ttype_t *inner_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_array(type)));
+                ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(inner_type);
+                if (str_type->m_len_kind != ASR::DeferredLength
+                        && str_type->m_len_kind != ASR::AssumedLength) {
+                    int64_t char_len;
+                    bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
+                    if (!has_len || char_len != 1) {
+                        diag.add(Diagnostic(
+                            "Character dummy argument `" + sym +
+                            "` must be of constant length of one or assumed length, "
+                            "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
@@ -7062,6 +7069,42 @@ public:
                     is_argument);
             }
             if (!sym_type->m_name) {
+                if (sym_type->m_sym == AST::symbolType::Asterisk) {
+                    std::string derived_type_name = "~assumed_type";
+                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+                    if (!v) {
+                        SymbolTable *parent_scope = current_scope;
+                        current_scope = al.make_new<SymbolTable>(parent_scope);
+                        ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
+                                                        s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
+                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                        nullptr, 0, nullptr, nullptr);
+                        ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                        ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
+                        struct_->m_struct_signature = struct_type;
+                        v = ASR::down_cast<ASR::symbol_t>(dtype);
+                        parent_scope->add_symbol(derived_type_name, v);
+                        current_scope = parent_scope;
+                    }
+                    type_declaration = v;
+                    type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+                    if (is_assumed_rank) {
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    } else {
+                        type = ASRUtils::make_Array_t_util(
+                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                    }
+                    if (is_pointer) {
+                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                            ASRUtils::type_get_past_allocatable(type)));
+                    }
+                    if (is_allocatable) {
+                        type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                            ASRUtils::type_get_past_allocatable(type)));
+                    }
+                    return type;
+                }
                 diag.add(Diagnostic(
                     "Type must have a name",
                     Level::Error, Stage::Semantic, {
@@ -12051,6 +12094,18 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
+    ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"X"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+        ASR::expr_t *arg = args[0];
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *size_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, x.base.base.loc, 8));
+        return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
+            size_type, nullptr);
+    }
+
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc, int kind) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
@@ -13068,6 +13123,8 @@ public:
                         tmp = create_Associated(x);
                     } else if (var_name == "c_funloc") {
                         tmp = create_PointerToCptr(x);
+                    } else if (var_name == "c_sizeof") {
+                        tmp = create_CSizeOf(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
@@ -15481,7 +15538,9 @@ public:
         }
 
     // Check CChar length
-        if(str->m_physical_type == ASR::CChar){
+        if(str->m_physical_type == ASR::CChar
+                && str->m_len_kind != ASR::DeferredLength
+                && str->m_len_kind != ASR::AssumedLength){
             int64_t len;
             if( !ASRUtils::extract_value(str->m_len, len) || (len != 1) ){
                 diag.add(Diagnostic(

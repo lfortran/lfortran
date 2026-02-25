@@ -4059,6 +4059,20 @@ public:
             ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
     }
 
+    void visit_SizeOfType(const ASR::SizeOfType_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_arg, nullptr, module.get());
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        tmp = llvm::ConstantInt::get(llvm_utils->getIntType(kind),
+            llvm::APInt(kind * 8, type_size));
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -16902,8 +16916,9 @@ public:
                                         && ASRUtils::is_allocatable(arg_type))
                                         || !ASRUtils::is_allocatable(arg_type))
                                     && (ASRUtils::is_array(arg_type)
-                                        || ASR::is_a<ASR::CPtr_t>(
-                                            *ASRUtils::expr_type(x.m_args[i].m_value))))
+                                        || (ASR::is_a<ASR::CPtr_t>(
+                                                *ASRUtils::expr_type(x.m_args[i].m_value))
+                                            && is_cptr_dummy_passed_by_value(orig_arg))))
                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
                                     && ASRUtils::is_allocatable(arg_type)
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
@@ -16920,7 +16935,9 @@ public:
                                         orig_arg->m_type, value);
                                 } else if (!compiler_options.new_classes || !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
-                                    if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
+                                    if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))
+                                            && (ASRUtils::is_allocatable(x.m_args[i].m_value)
+                                                || ASRUtils::is_pointer(ASRUtils::expr_type(x.m_args[i].m_value)))) {
                                         check_and_allocate_scalar(x.m_args[i].m_value);
                                     }
                                     llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());

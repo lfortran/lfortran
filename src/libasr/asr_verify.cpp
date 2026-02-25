@@ -746,11 +746,14 @@ public:
                 x.m_intent != ASR::Local /*Input OR Output*/){
                 if(ASRUtils::is_string_only(x.m_type) && 
                     str->m_physical_type == CChar){ // Exclude array of strings
-                    require(str->m_len_kind == ASR::ExpressionLength, 
-                        "Cbind character variable that isn't local must have length kind \"ExpressionLength\"");
-                    int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-                    require(len == 1,
-                        "Cbind character variable that isn't local must have length 1");
+                    if(str->m_len_kind != ASR::DeferredLength
+                            && str->m_len_kind != ASR::AssumedLength){
+                        require(str->m_len_kind == ASR::ExpressionLength, 
+                            "Cbind character variable that isn't local must have length kind \"ExpressionLength\"");
+                        int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+                        require(len == 1,
+                            "Cbind character variable that isn't local must have length 1");
+                    }
                 }
             }
             if(str->m_physical_type == ASR::CChar){

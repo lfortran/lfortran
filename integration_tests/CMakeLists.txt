@@ -1602,6 +1602,7 @@ RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc_11 LABELS gfortran llvm)
 RUN(NAME bindc_12 LABELS gfortran llvm)
+RUN(NAME bindc_13 LABELS gfortran llvm)
 
 RUN(NAME case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2028,6 +2029,7 @@ RUN(NAME allocate_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocate_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_43 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
@@ -2978,6 +2980,7 @@ RUN(NAME c_ptr_07 LABELS gfortran llvm)
 RUN(NAME c_ptr_08 LABELS gfortran llvm)
 RUN(NAME c_ptr_09 LABELS gfortran llvm)
 RUN(NAME c_ptr_10 LABELS gfortran llvm)
+RUN(NAME c_ptr_11 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
 
@@ -3477,3 +3480,5 @@ RUN(NAME infer_walrus_shadow_03 LABELS llvm_infer NO_STD_F23)
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
 
 RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME assumed_type_01 LABELS gfortran llvm)
