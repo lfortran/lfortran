@@ -1,4 +1,4 @@
-module arrays_104_mod
+module arrays_105_mod
   implicit none
   type :: t
     integer :: x = 0
@@ -23,8 +23,8 @@ contains
   end function
 end module
 
-program arrays_104
-  use arrays_104_mod
+program arrays_105
+  use arrays_105_mod
   implicit none
   call sub
 contains
