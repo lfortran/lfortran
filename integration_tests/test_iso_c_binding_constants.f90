@@ -54,6 +54,12 @@ program test_iso_c_binding_constants
    print *, c_char
    if (c_char /= 1) error stop
 
+   print *, c_intptr_t
+   if (c_intptr_t /= 8) error stop
+
+   print *, c_ptrdiff_t
+   if (c_ptrdiff_t /= 8) error stop
+
    print *, c_null_char
    if (c_null_char /= char(0)) error stop
 
