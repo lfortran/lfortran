@@ -5065,7 +5065,21 @@ public:
                         sym);
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
             if (x.m_parent_module && func_type->m_module) {
-                mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
+                std::string root_module = std::string(x.m_parent_module);
+                SymbolTable* tu_symtab = x.m_symtab->parent;
+                if (tu_symtab) {
+                    ASR::symbol_t* parent_sym = tu_symtab->get_symbol(root_module);
+                    while (parent_sym && ASR::is_a<ASR::Module_t>(*parent_sym)) {
+                        ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(parent_sym);
+                        if (parent_mod->m_parent_module) {
+                            root_module = std::string(parent_mod->m_parent_module);
+                            parent_sym = tu_symtab->get_symbol(root_module);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                mangle_prefix = "__module_" + root_module + "_";
             }
             instantiate_function(*v);
             mangle_prefix = "__module_" + std::string(x.m_name) + "_";
