@@ -381,7 +381,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
+            "#" whitespace? "ifdef" whitespace @t1 name @t2 [^\n\x00]* newline {
                 ConditionalDirective ifdef;
                 ifdef.active = branch_enabled;
                 ifdef.type = DirectiveType::Ifdef;
@@ -407,7 +407,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
+            "#" whitespace? "ifndef" whitespace @t1 name @t2 [^\n\x00]* newline {
                 ConditionalDirective ifndef;
                 ifndef.active = branch_enabled;
                 ifndef.type = DirectiveType::Ifndef;

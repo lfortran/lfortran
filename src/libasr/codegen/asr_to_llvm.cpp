@@ -6077,6 +6077,23 @@ public:
                                 || ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(v->m_type)))) {
                         llvm::Type* el_type = type->getArrayElementType();
                         init_value = get_const_array(v->m_value, el_type);
+                    } else if (v->m_symbolic_value
+                            && ASR::is_a<ASR::FunctionType_t>(*v->m_type)
+                            && ASR::is_a<ASR::Var_t>(*v->m_symbolic_value)) {
+                        // Procedure pointer initialized to a function target
+                        ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(v->m_symbolic_value)->m_v);
+                        uint32_t th = get_hash((ASR::asr_t*)target_sym);
+                        if (llvm_symtab_fn.find(th) != llvm_symtab_fn.end()) {
+                            llvm::Function* fn = llvm_symtab_fn[th];
+                            if (fn->getType() == type) {
+                                init_value = fn;
+                            } else {
+                                init_value = llvm::ConstantExpr::getBitCast(fn, type);
+                            }
+                        } else {
+                            init_value = llvm::Constant::getNullValue(type);
+                        }
                     } else {
                         init_value = llvm::Constant::getNullValue(type);
                     }
