@@ -347,7 +347,7 @@ public:
     arr_descr(LLVMArrUtils::Descriptor::get_descriptor(context,
               builder.get(), llvm_utils.get(),
               LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor, compiler_options_)),
-    llvm_symtab_finalizer(*this, llvm_utils, builder, al)
+    llvm_symtab_finalizer(*this, llvm_utils, builder, al, llvm_symtab_fn)
     {
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();

@@ -899,11 +899,14 @@ class ASRToLLVMVisitor;
         std::unique_ptr<llvm::IRBuilder<>>                          &builder_;
         Allocator                                                   &al_;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
+        std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
-            std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al)  
-        :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor){}
+            std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
+            std::map<uint64_t, llvm::Function*> &llvm_symtab_fn)  
+        :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor),
+            llvm_symtab_fn_(llvm_symtab_fn){}
 
     private:
         /**
@@ -930,8 +933,30 @@ class ASRToLLVMVisitor;
             if(is_finalizable_type(v->m_type, get_struct_sym(v))) {
                 insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
             }
-            
+
             auto const llvm_var = get_llvm_var(v);
+
+            // Call user-defined FINAL procedures for non-allocatable struct
+            // locals at scope exit (Fortran 2018 §7.5.6.3).
+            // Allocatable types are handled by the deallocate path.
+            auto* struct_sym = get_struct_sym(v);
+            if (struct_sym != nullptr
+                    && !ASRUtils::is_allocatable(v->m_type)
+                    && struct_sym->n_member_functions > 0) {
+                for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
+                    std::string final_proc_name = struct_sym->m_member_functions[fi];
+                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
+                    if (final_sym) {
+                        final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                        if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                            llvm::Function* final_fn = llvm_symtab_fn_[fh];
+                            builder_->CreateCall(final_fn, {llvm_var});
+                        }
+                    }
+                }
+            }
+
             finalize(llvm_var, v->m_type, get_struct_sym(v), false);
         }
         
@@ -1141,6 +1166,7 @@ class ASRToLLVMVisitor;
                     struct_sym->m_struct_signature, struct_sym)->getPointerTo(), 
                     llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
             }
+
             // Finalize members
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
@@ -1449,6 +1475,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t_past);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
+                    // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
+                    if(struct_sym && struct_sym->n_member_functions > 0) { return true; }
                     if(struct_sym->m_parent){ // Check parent
                         ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                         finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct);
