@@ -43,6 +43,35 @@ module continue_compilation_1_mod
     end type type_t
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 contains
 
     subroutine my_undefined_type_test()
@@ -265,6 +294,26 @@ program continue_compilation_1
     type(Derived) :: derived_var
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -566,6 +615,24 @@ program continue_compilation_1
     integer, intent(in) :: in_intent
     
     base_var = derived_var
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     contains
     subroutine sub(f)
         interface

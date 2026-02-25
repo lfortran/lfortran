@@ -83,6 +83,41 @@ module continue_compilation_2_mod
     end subroutine arank
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 end module continue_compilation_2_mod
 
@@ -227,6 +262,34 @@ program continue_compilation_2
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ! Use the space above to insert new declarations, and remove the line, so
+    ! that the lines below do not shift, to keep the diff minimal.
+    !
+    ! Only put statements below. If you need to call a function, put it into a
+    ! module above.
 
 
     allocate(str1(i))
@@ -473,6 +536,35 @@ program continue_compilation_2
     ax = "xx"
     print "(aai6)", a,"hi",15
     call sleep(1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     contains
     logical function f(x)
         integer, intent(in), optional :: x
