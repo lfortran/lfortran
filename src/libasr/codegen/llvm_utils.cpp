@@ -9693,7 +9693,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             // Per Fortran standard (10.2.1.3), intrinsic assignment of
                             // a derived type uses defined assignment for components
                             // that have one, but only when a matching overload exists
-                            // (i.e., the RHS argument is the same struct type).
+                            // (i.e., both LHS and RHS arguments are the same struct type).
                             ASR::Struct_t* mem_struct_t = ASR::down_cast<ASR::Struct_t>(mem_struct);
                             ASR::symbol_t* da_sym = use_defined_assignment ?
                                 mem_struct_t->m_symtab->resolve_symbol("~assign") : nullptr;
@@ -9701,7 +9701,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 da_sym = ASRUtils::symbol_get_past_external(da_sym);
                                 if (ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
                                     ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
-                                    // Find a proc whose second arg is the same struct type
+                                    // Find a proc whose both args are the same struct type
                                     ASR::symbol_t* matching_func_sym = nullptr;
                                     for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
                                         ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
@@ -9714,6 +9714,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                         }
                                         ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
                                         if (cand_func->n_args < 2) continue;
+                                        // Check first arg (LHS) type
+                                        ASR::Variable_t* lhs_var = ASRUtils::EXPR2VAR(cand_func->m_args[0]);
+                                        ASR::ttype_t* lhs_type = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(lhs_var->m_type));
+                                        lhs_type = ASRUtils::type_get_past_array(lhs_type);
+                                        if (!ASR::is_a<ASR::StructType_t>(*lhs_type) ||
+                                                !lhs_var->m_type_declaration ||
+                                                ASRUtils::symbol_get_past_external(
+                                                    lhs_var->m_type_declaration) != mem_struct) {
+                                            continue;
+                                        }
                                         // Check second arg (RHS) type
                                         ASR::Variable_t* rhs_var = ASRUtils::EXPR2VAR(cand_func->m_args[1]);
                                         ASR::ttype_t* rhs_type = ASRUtils::type_get_past_allocatable(
