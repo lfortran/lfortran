@@ -15689,12 +15689,9 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if (((!to_submodule) &&
+                if ((!to_submodule) &&
                      mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) ||
-                    (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
-                     ASRUtils::get_FunctionType(mfn)->m_module &&
-                     to_submodule)) {
+                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
                     continue;
                 }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
