@@ -110,55 +110,19 @@ FINALIZE_SYMTABLE_string_02:                      ; preds = %return
   br label %Finalize_Variable_firstname
 
 Finalize_Variable_firstname:                      ; preds = %FINALIZE_SYMTABLE_string_02
-  %45 = getelementptr %string_descriptor, %string_descriptor* %firstname, i32 0, i32 0
-  %46 = load i8*, i8** %45, align 8
-  %47 = icmp eq i8* %46, null
-  br i1 %47, label %free_done2, label %free_nonnull1
-
-free_nonnull1:                                    ; preds = %Finalize_Variable_firstname
-  call void @_lfortran_free(i8* %46)
-  br label %free_done2
-
-free_done2:                                       ; preds = %free_nonnull1, %Finalize_Variable_firstname
+  call void @finalize_str(%string_descriptor* %firstname, i1 false)
   br label %Finalize_Variable_greetings
 
-Finalize_Variable_greetings:                      ; preds = %free_done2
-  %48 = getelementptr %string_descriptor, %string_descriptor* %greetings, i32 0, i32 0
-  %49 = load i8*, i8** %48, align 8
-  %50 = icmp eq i8* %49, null
-  br i1 %50, label %free_done4, label %free_nonnull3
-
-free_nonnull3:                                    ; preds = %Finalize_Variable_greetings
-  call void @_lfortran_free(i8* %49)
-  br label %free_done4
-
-free_done4:                                       ; preds = %free_nonnull3, %Finalize_Variable_greetings
+Finalize_Variable_greetings:                      ; preds = %Finalize_Variable_firstname
+  call void @finalize_str(%string_descriptor* %greetings, i1 false)
   br label %Finalize_Variable_surname
 
-Finalize_Variable_surname:                        ; preds = %free_done4
-  %51 = getelementptr %string_descriptor, %string_descriptor* %surname, i32 0, i32 0
-  %52 = load i8*, i8** %51, align 8
-  %53 = icmp eq i8* %52, null
-  br i1 %53, label %free_done6, label %free_nonnull5
-
-free_nonnull5:                                    ; preds = %Finalize_Variable_surname
-  call void @_lfortran_free(i8* %52)
-  br label %free_done6
-
-free_done6:                                       ; preds = %free_nonnull5, %Finalize_Variable_surname
+Finalize_Variable_surname:                        ; preds = %Finalize_Variable_greetings
+  call void @finalize_str(%string_descriptor* %surname, i1 false)
   br label %Finalize_Variable_title
 
-Finalize_Variable_title:                          ; preds = %free_done6
-  %54 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
-  %55 = load i8*, i8** %54, align 8
-  %56 = icmp eq i8* %55, null
-  br i1 %56, label %free_done8, label %free_nonnull7
-
-free_nonnull7:                                    ; preds = %Finalize_Variable_title
-  call void @_lfortran_free(i8* %55)
-  br label %free_done8
-
-free_done8:                                       ; preds = %free_nonnull7, %Finalize_Variable_title
+Finalize_Variable_title:                          ; preds = %Finalize_Variable_surname
+  call void @finalize_str(%string_descriptor* %title, i1 false)
   ret i32 0
 }
 
@@ -175,3 +139,18 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}

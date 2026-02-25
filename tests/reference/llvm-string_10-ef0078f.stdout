@@ -238,16 +238,7 @@ FINALIZE_SYMTABLE_string_10:                      ; preds = %return
   br label %Finalize_Variable_num
 
 Finalize_Variable_num:                            ; preds = %FINALIZE_SYMTABLE_string_10
-  %118 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
-  %119 = load i8*, i8** %118, align 8
-  %120 = icmp eq i8* %119, null
-  br i1 %120, label %free_done8, label %free_nonnull7
-
-free_nonnull7:                                    ; preds = %Finalize_Variable_num
-  call void @_lfortran_free(i8* %119)
-  br label %free_done8
-
-free_done8:                                       ; preds = %free_nonnull7, %Finalize_Variable_num
+  call void @finalize_str(%string_descriptor* %num, i1 false)
   ret i32 0
 }
 
@@ -270,3 +261,18 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @exit(i32)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}

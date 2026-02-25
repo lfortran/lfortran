@@ -178,6 +178,7 @@ FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
   br label %Finalize_Variable_obj
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
+<<<<<<< HEAD
   %39 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
   %40 = icmp ne %module_call_subroutine_without_type_01.mytype_class* %39, null
   br i1 %40, label %is_allocated.then, label %is_allocated.else
@@ -201,6 +202,10 @@ is_allocated.else:                                ; preds = %Finalize_Variable_o
   br label %is_allocated.ifcont
 
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+=======
+  %39 = load %mytype_class*, %mytype_class** %obj, align 8
+  call void @"finalize_Allocatable[StructType_Class]__mytype"(%mytype_class* %39, i1 false)
+>>>>>>> 4c2e1d204 (Update reference tests)
   ret i32 0
 }
 
@@ -254,5 +259,29 @@ declare i8* @_lcompilers_snprintf(i8*, ...)
 declare void @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
 
 declare void @_lpython_free_argv()
+
+define internal void @"finalize_Allocatable[StructType_Class]__mytype"(%mytype_class* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %mytype_class* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %1 = icmp eq %mytype_class* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
+  %2 = bitcast %mytype_class* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  ret void
+}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
