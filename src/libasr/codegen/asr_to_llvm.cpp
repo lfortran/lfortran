@@ -16915,7 +16915,10 @@ public:
                                     && ((!ASRUtils::is_allocatable(orig_arg->m_type)
                                         && ASRUtils::is_allocatable(arg_type))
                                         || !ASRUtils::is_allocatable(arg_type))
-                                    && ASRUtils::is_array(arg_type))
+                                    && (ASRUtils::is_array(arg_type)
+                                        || (ASR::is_a<ASR::CPtr_t>(
+                                                *ASRUtils::expr_type(x.m_args[i].m_value))
+                                            && is_cptr_dummy_passed_by_value(orig_arg))))
                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
                                     && ASRUtils::is_allocatable(arg_type)
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
