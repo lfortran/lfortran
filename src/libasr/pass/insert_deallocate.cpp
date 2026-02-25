@@ -121,11 +121,13 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
         }
 };
 
-// Insert finalization calls before intrinsic assignment to non-pointer,
-// non-allocatable variables of finalizable type (Fortran 2018 §7.5.6.3 ¶1):
+// Insert finalization calls before intrinsic assignment to non-pointer
+// variables of finalizable type (Fortran 2018 §7.5.6.3 ¶1):
 //   "When an intrinsic assignment statement is executed, if the variable is
 //    not an unallocated allocatable variable and is of a finalizable type or
 //    has a finalizable component, it is finalized before the definition."
+//
+// For allocatable targets the finalization is guarded by an `allocated` check.
 class LHSFinalizationVisitor : public PassUtils::PassVisitor<LHSFinalizationVisitor>
 {
 public:
@@ -139,11 +141,13 @@ public:
         ASR::Variable_t* target_var = ASRUtils::expr_to_variable_or_null(x.m_target);
         if (!target_var) return;
 
-        // Skip pointer and allocatable targets
+        // Skip pointer targets
         if (ASRUtils::is_pointer(target_var->m_type)) return;
-        if (ASRUtils::is_allocatable(target_var->m_type)) return;
 
-        ASR::ttype_t* t = ASRUtils::type_get_past_array(target_var->m_type);
+        bool is_alloc = ASRUtils::is_allocatable(target_var->m_type);
+
+        ASR::ttype_t* t = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(target_var->m_type));
         if (!ASR::is_a<ASR::StructType_t>(*t)) return;
 
         if (!target_var->m_type_declaration) return;
@@ -158,7 +162,9 @@ public:
         ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
             al, loc, (ASR::symbol_t*)target_var));
 
-        pass_result.reserve(al, struct_type->n_member_functions);
+        // Build the list of finalization SubroutineCall statements
+        Vec<ASR::stmt_t*> final_calls;
+        final_calls.reserve(al, struct_type->n_member_functions);
         for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
             std::string final_proc_name = struct_type->m_member_functions[fi];
             ASR::symbol_t* final_sym =
@@ -198,8 +204,38 @@ public:
                     al, loc, local_final_sym, local_final_sym,
                     call_args.p, call_args.n, nullptr, false));
 
-            pass_result.push_back(al, call_stmt);
+            final_calls.push_back(al, call_stmt);
         }
+
+        pass_result.reserve(al, final_calls.n);
+        if (is_alloc) {
+            // Wrap finalization calls in: if (allocated(lhs)) then ...
+            ASR::ttype_t* logical_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4));
+
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, var_expr);
+
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(
+                    al, loc,
+                    static_cast<int64_t>(
+                        ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    allocated_args.p, allocated_args.n,
+                    0, logical_type, nullptr));
+
+            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                al, loc, nullptr, is_allocated,
+                final_calls.p, final_calls.n, nullptr, 0));
+
+            pass_result.push_back(al, if_stmt);
+        } else {
+            for (size_t i = 0; i < final_calls.n; i++) {
+                pass_result.push_back(al, final_calls[i]);
+            }
+        }
+
         // Keep the original assignment after the finalization call(s)
         retain_original_stmt = true;
     }

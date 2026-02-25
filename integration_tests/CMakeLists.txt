@@ -1967,7 +1967,7 @@ RUN(NAME derived_types_108 LABELS gfortran llvm)
 RUN(NAME derived_types_109 LABELS gfortran llvm)
 RUN(NAME derived_types_110 LABELS gfortran llvm)
 RUN(NAME derived_types_111 LABELS gfortran llvm)
-RUN(NAME derived_types_112 LABELS gfortran llvm)
+RUN(NAME derived_types_112 LABELS llvm)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -3488,6 +3488,8 @@ RUN(NAME infer_walrus_shadow_03 LABELS llvm_infer NO_STD_F23)
 
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
+
+RUN(NAME allocatable_lhs_finalization_01 LABELS llvm)
 
 RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
