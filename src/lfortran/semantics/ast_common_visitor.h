@@ -12965,7 +12965,20 @@ public:
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
             && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
-                if (compiler_options.implicit_interface) {
+                // Check if variable is in local scope (local variable or dummy argument)
+                // In that case, skip intrinsic processing
+                bool is_local_var = false;
+                if (v && ASR::is_a<ASR::Variable_t>(*v)) {
+                    std::map<std::string, ASR::symbol_t*> local_scope = current_scope->get_scope();
+                    if (local_scope.find(var_name) != local_scope.end() && local_scope[var_name] == v) {
+                        is_local_var = true;
+                    }
+                }
+                if (is_local_var && compiler_options.implicit_interface) {
+                    // Local variable shadows an intrinsic, but with implicit interface
+                    // Try to use it as a procedure variable if it has arguments
+                    // Fall through to the procedure variable handling below
+                } else if (!is_local_var && compiler_options.implicit_interface) {
                     bool is_function = true;
                     if ( !is_external_procedure ) {
                         v = intrinsic_as_node(x, is_function);
@@ -12973,13 +12986,21 @@ public:
                     if( !is_function ) {
                         return;
                     }
-                } else {
+                } else if (!is_local_var && !compiler_options.implicit_interface) {
                     diag.semantic_error_label(
                             var_name + " was declared as a variable, it can't be called as a function",
                             {x.base.base.loc},
                             "help: use the compiler option \"--implicit-interface\" to use intrinsic functions"
                         );
                     throw SemanticAbort();
+                }
+                if (is_local_var && compiler_options.implicit_interface) {
+                    // Create an implicit interface function for the local variable
+                    // so it can be called as a function
+                    bool was_function = true;
+                    create_implicit_interface_function(x, var_name, true, ASRUtils::symbol_type(v));
+                    v = current_scope->resolve_symbol(var_name);
+                    LCOMPILERS_ASSERT(v != nullptr);
                 }
             } else if (compiler_options.implicit_interface && !ASRUtils::is_symbol_procedure_variable(v)) {
                 bool is_function = true;

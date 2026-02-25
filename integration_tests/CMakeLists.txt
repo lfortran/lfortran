@@ -2648,6 +2648,8 @@ RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+ RUN(NAME procedure_arg_shadows_intrinsic_01 LABELS gfortran llvmImplicit EXTRA_ARGS --implicit-typing --implicit-interface)
+ 
 RUN(NAME private1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME modules_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
