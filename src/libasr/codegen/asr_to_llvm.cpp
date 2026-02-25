@@ -871,7 +871,8 @@ public:
         switch(str_type->m_len_kind){
             case ASR::ExpressionLength:{
                 LCOMPILERS_ASSERT(len);
-                int ptr_load_cpy = ptr_loads;ptr_loads = 1;
+                int ptr_load_cpy = ptr_loads;
+                ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(len));
                 visit_expr(*len);
                 ptr_loads = ptr_load_cpy;
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
