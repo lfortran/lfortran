@@ -146,6 +146,8 @@ time_section "🧪 Testing smart-pointers" '
   git checkout -t origin/lf2
   git checkout 95de5105c6a469b64feb39e999567f5e2fcdd033
   fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with smart-pointers"
   cd ..
