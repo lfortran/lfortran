@@ -14183,7 +14183,7 @@ public:
                         llvm::Value* data_ptr;
                         if (ASR::is_a<ASR::String_t>(*val_type)) {
                             auto [str_data, str_len] = llvm_utils->get_string_length_data(
-                                ASRUtils::get_string_type(val_type), var_ptr, true);
+                                ASRUtils::get_string_type(val_type), var_ptr);
                             data_ptr = builder->CreateBitCast(str_data,
                                 llvm::Type::getInt8Ty(context)->getPointerTo());
                             elem_len = str_len;
