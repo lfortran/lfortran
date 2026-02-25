@@ -144,27 +144,7 @@ FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate: ; preds = %retu
 
 Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
   %33 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  %34 = icmp ne %"~unlimited_polymorphic_type"* %33, null
-  br i1 %34, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_var
-  %35 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %33, i32 0, i32 1
-  %36 = load %"~unlimited_polymorphic_type"*, i8** %35, align 8
-  %37 = icmp eq %"~unlimited_polymorphic_type"* %33, null
-  br i1 %37, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %is_allocated.then
-  %38 = bitcast %"~unlimited_polymorphic_type"* %33 to i8*
-  call void @_lfortran_free(i8* %38)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_var
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  call void @"finalize_Allocatable[StructType_Class]__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %33, i1 false)
   ret i32 0
 }
 
@@ -204,6 +184,38 @@ declare i8* @__lfortran_dynamic_cast(i8*, i8*, i1)
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
+
+define internal void @"finalize_Allocatable[StructType_Class]__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %"~unlimited_polymorphic_type"* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @"finalize_StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %ptr, i1 %in_struct)
+  %1 = icmp eq %"~unlimited_polymorphic_type"* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
+  %2 = bitcast %"~unlimited_polymorphic_type"* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  ret void
+}
+
+define internal void @"finalize_StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %ptr, i32 0, i32 1
+  %1 = load %"~unlimited_polymorphic_type"*, i8** %0, align 8
+  ret void
+}
 
 declare void @_lfortran_free(i8*)
 

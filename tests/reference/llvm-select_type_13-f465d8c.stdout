@@ -864,52 +864,12 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
   %347 = load %shape_class*, %shape_class** %s1, align 8
-  %348 = icmp ne %shape_class* %347, null
-  br i1 %348, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_s1
-  %349 = getelementptr %shape_class, %shape_class* %347, i32 0, i32 1
-  %350 = load %shape*, %shape** %349, align 8
-  %351 = icmp eq %shape_class* %347, null
-  br i1 %351, label %free_done51, label %free_nonnull50
-
-free_nonnull50:                                   ; preds = %is_allocated.then
-  %352 = bitcast %shape_class* %347 to i8*
-  call void @_lfortran_free(i8* %352)
-  br label %free_done51
-
-free_done51:                                      ; preds = %free_nonnull50, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_s1
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done51
+  call void @"finalize_Allocatable[StructType_Class]__shape"(%shape_class* %347, i1 false)
   br label %Finalize_Variable_s2
 
-Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
-  %353 = load %shape_class*, %shape_class** %s2, align 8
-  %354 = icmp ne %shape_class* %353, null
-  br i1 %354, label %is_allocated.then52, label %is_allocated.else55
-
-is_allocated.then52:                              ; preds = %Finalize_Variable_s2
-  %355 = getelementptr %shape_class, %shape_class* %353, i32 0, i32 1
-  %356 = load %shape*, %shape** %355, align 8
-  %357 = icmp eq %shape_class* %353, null
-  br i1 %357, label %free_done54, label %free_nonnull53
-
-free_nonnull53:                                   ; preds = %is_allocated.then52
-  %358 = bitcast %shape_class* %353 to i8*
-  call void @_lfortran_free(i8* %358)
-  br label %free_done54
-
-free_done54:                                      ; preds = %free_nonnull53, %is_allocated.then52
-  br label %is_allocated.ifcont56
-
-is_allocated.else55:                              ; preds = %Finalize_Variable_s2
-  br label %is_allocated.ifcont56
-
-is_allocated.ifcont56:                            ; preds = %is_allocated.else55, %free_done54
+Finalize_Variable_s2:                             ; preds = %Finalize_Variable_s1
+  %348 = load %shape_class*, %shape_class** %s2, align 8
+  call void @"finalize_Allocatable[StructType_Class]__shape"(%shape_class* %348, i1 false)
   ret i32 0
 }
 
@@ -1057,5 +1017,29 @@ declare void @_lfortran_free(i8*)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lpython_free_argv()
+
+define internal void @"finalize_Allocatable[StructType_Class]__shape"(%shape_class* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %shape_class* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %1 = icmp eq %shape_class* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
+  %2 = bitcast %shape_class* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  ret void
+}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

@@ -96,16 +96,7 @@ FINALIZE_SYMTABLE_print_01:                       ; preds = %return
   br label %Finalize_Variable_lfortran_iomsg
 
 Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_print_01
-  %38 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
-  %39 = load i8*, i8** %38, align 8
-  %40 = icmp eq i8* %39, null
-  br i1 %40, label %free_done5, label %free_nonnull4
-
-free_nonnull4:                                    ; preds = %Finalize_Variable_lfortran_iomsg
-  call void @_lfortran_free(i8* %39)
-  br label %free_done5
-
-free_done5:                                       ; preds = %free_nonnull4, %Finalize_Variable_lfortran_iomsg
+  call void @finalize_str(%string_descriptor* %lfortran_iomsg, i1 false)
   ret i32 0
 }
 
@@ -122,3 +113,18 @@ declare void @_lfortran_free(i8*)
 declare void @_lfortran_file_write(i32, i32*, i8*, i64, ...)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}

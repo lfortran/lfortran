@@ -217,27 +217,7 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
   %94 = load %array*, %array** %arr, align 8
-  %95 = icmp ne %array* %94, null
-  br i1 %95, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_arr
-  %96 = getelementptr %array, %array* %94, i32 0, i32 0
-  %97 = load i32*, i32** %96, align 8
-  %98 = icmp eq i32* %97, null
-  br i1 %98, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %is_allocated.then
-  %99 = bitcast i32* %97 to i8*
-  call void @_lfortran_free(i8* %99)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_arr
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  call void @finalize_allocatable__Array_0__i32(%array* %94, i1 false)
   ret i32 0
 }
 
@@ -254,3 +234,73 @@ declare i8* @_lfortran_malloc(i64)
 declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_allocatable__Array_0__i32(%array* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %array* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_Array_0__i32(%array* %ptr, i1 %in_struct)
+  br i1 %in_struct, label %free_allocatable_array_if_in_struct.then, label %free_allocatable_array_if_in_struct.else
+
+free_allocatable_array_if_in_struct.then:         ; preds = %is_allocated.then
+  %1 = icmp eq %array* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_allocatable_array_if_in_struct.then
+  %2 = bitcast %array* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_allocatable_array_if_in_struct.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.else:         ; preds = %is_allocated.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.ifcont:       ; preds = %free_allocatable_array_if_in_struct.else, %free_done
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_allocatable_array_if_in_struct.ifcont
+  ret void
+}
+
+define internal void @finalize_Array_0__i32(%array* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %array, %array* %ptr, i32 0, i32 0
+  %1 = load i32*, i32** %0, align 8
+  br i1 %in_struct, label %free_dim_desc_if_in_struct.then, label %free_dim_desc_if_in_struct.else
+
+free_dim_desc_if_in_struct.then:                  ; preds = %entry
+  %2 = getelementptr %array, %array* %ptr, i32 0, i32 2
+  %3 = load %dimension_descriptor*, %dimension_descriptor** %2, align 8
+  %4 = icmp eq %dimension_descriptor* %3, null
+  br i1 %4, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_dim_desc_if_in_struct.then
+  %5 = bitcast %dimension_descriptor* %3 to i8*
+  call void @_lfortran_free(i8* %5)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_dim_desc_if_in_struct.then
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.else:                  ; preds = %entry
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.ifcont:                ; preds = %free_dim_desc_if_in_struct.else, %free_done
+  %6 = icmp eq i32* %1, null
+  br i1 %6, label %free_done2, label %free_nonnull1
+
+free_nonnull1:                                    ; preds = %free_dim_desc_if_in_struct.ifcont
+  %7 = bitcast i32* %1 to i8*
+  call void @_lfortran_free(i8* %7)
+  br label %free_done2
+
+free_done2:                                       ; preds = %free_nonnull1, %free_dim_desc_if_in_struct.ifcont
+  ret void
+}

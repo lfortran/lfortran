@@ -112,26 +112,7 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
   %36 = load %myint*, %myint** %ins, align 8
-  %37 = icmp ne %myint* %36, null
-  br i1 %37, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_ins
-  %38 = getelementptr %myint, %myint* %36, i32 0, i32 0
-  %39 = icmp eq %myint* %36, null
-  br i1 %39, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %is_allocated.then
-  %40 = bitcast %myint* %36 to i8*
-  call void @_lfortran_free(i8* %40)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_ins
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  call void @"finalize_Allocatable[StructType]__myint"(%myint* %36, i1 false)
   ret i32 0
 }
 
@@ -151,6 +132,30 @@ declare void @exit(i32)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lpython_free_argv()
+
+define internal void @"finalize_Allocatable[StructType]__myint"(%myint* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %myint* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %1 = icmp eq %myint* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
+  %2 = bitcast %myint* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  ret void
+}
 
 declare void @_lfortran_free(i8*)
 
