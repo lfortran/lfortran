@@ -9131,6 +9131,16 @@ public:
             this->visit_expr(*x.m_target);
             is_assignment_target = false;
             target = tmp;
+            // For pointer struct members, load the pointer so we store
+            // through it rather than overwriting the pointer field itself.
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+                ASR::is_a<ASR::Pointer_t>(*asr_target_type) &&
+                !ASRUtils::is_array(asr_target_type) &&
+                !ASRUtils::is_character(*asr_target_type)) {
+                llvm::Type* member_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, asr_target_type, module.get());
+                target = llvm_utils->CreateLoad2(member_ptr_type, target);
+            }
             if( ASR::is_a<ASR::ListItem_t>(*x.m_target) ) {
                 ASR::ListItem_t* asr_target0 = ASR::down_cast<ASR::ListItem_t>(x.m_target);
                 int64_t ptr_loads_copy = ptr_loads;
@@ -9235,6 +9245,7 @@ public:
             tmp = llvm_utils->CreateLoad2(union_type, tmp);
         }
         value = tmp;
+        load_non_array_non_character_pointers(m_value, value_type, value);
         if (x.m_target->type == ASR::exprType::ArrayItem)
             value = logical_store_val(value);
 
@@ -11391,6 +11402,8 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left_val);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
