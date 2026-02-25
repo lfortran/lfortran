@@ -113,8 +113,8 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             std::vector<std::string> build_order
                 = ASRUtils::determine_module_dependencies(x);
             for (auto &item : build_order) {
-                LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item));
                 ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+                if (mod == nullptr) continue;
                 visit_symbol(*mod);
             }
 

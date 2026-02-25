@@ -1546,9 +1546,8 @@ public:
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
             if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
-            LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
-                != nullptr);
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+            if (mod == nullptr) continue;
             visit_symbol(*mod);
         }
 

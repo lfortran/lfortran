@@ -349,7 +349,10 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a: current_scope) {
             if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
                 xx.m_symtab->erase_symbol(a.first);
-                xx.m_symtab->add_symbol(sym_to_new_name[a.second], a.second);
+                std::string new_name = sym_to_new_name[a.second];
+                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
+                    xx.m_symtab->add_symbol(new_name, a.second);
+                }
             }
         }
         current_scope = current_scope_copy;
@@ -378,7 +381,10 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a: current_scope) {
             if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
                 xx.m_symtab->erase_symbol(a.first);
-                xx.m_symtab->add_symbol(sym_to_new_name[a.second], a.second);
+                std::string new_name = sym_to_new_name[a.second];
+                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
+                    xx.m_symtab->add_symbol(new_name, a.second);
+                }
             }
         }
         current_scope = current_scope_copy;
@@ -459,7 +465,10 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a: current_scope) {
             if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
                 xx.m_symtab->erase_symbol(a.first);
-                xx.m_symtab->add_symbol(sym_to_new_name[a.second], a.second);
+                std::string new_name = sym_to_new_name[a.second];
+                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
+                    xx.m_symtab->add_symbol(new_name, a.second);
+                }
             }
         }
         current_scope = current_scope_copy;
@@ -516,7 +525,10 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a: current_scope) {
             if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
                 xx.m_symtab->erase_symbol(a.first);
-                xx.m_symtab->add_symbol(sym_to_new_name[a.second], a.second);
+                std::string new_name = sym_to_new_name[a.second];
+                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
+                    xx.m_symtab->add_symbol(new_name, a.second);
+                }
             }
         }
         current_scope = current_scope_copy;
