@@ -1166,6 +1166,11 @@ bool is_elemental_expr(ASR::expr_t* value) {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
             return !ASR::is_a<ASR::Array_t>(*struct_instance_member->m_type);
         }
+        case ASR::exprType::GetPointer: {
+            // GetPointer is just an address into existing expr,
+            // so no temporary variable needed.
+            return true;
+        }
         default: {
             return false;
         }
