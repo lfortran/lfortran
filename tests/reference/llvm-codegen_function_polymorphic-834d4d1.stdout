@@ -1,27 +1,27 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%abstype_class = type <{ i32 (...)**, %abstype* }>
-%abstype = type {}
+%codegen_function_polymorphic.abstype_class = type <{ i32 (...)**, %codegen_function_polymorphic.abstype* }>
+%codegen_function_polymorphic.abstype = type {}
 
-define void @__module_codegen_function_polymorphic_my_func(%abstype_class** %obj) {
+define void @__module_codegen_function_polymorphic_my_func(%codegen_function_polymorphic.abstype_class** %obj) {
 .entry:
-  %0 = load %abstype_class*, %abstype_class** %obj, align 8
-  %1 = ptrtoint %abstype_class* %0 to i64
+  %0 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
+  %1 = ptrtoint %codegen_function_polymorphic.abstype_class* %0 to i64
   %2 = icmp ne i64 %1, 0
   br i1 %2, label %then, label %else5
 
 then:                                             ; preds = %.entry
-  %3 = load %abstype_class*, %abstype_class** %obj, align 8
-  %4 = load %abstype_class*, %abstype_class** %obj, align 8
-  %5 = ptrtoint %abstype_class* %4 to i64
+  %3 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
+  %4 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
+  %5 = ptrtoint %codegen_function_polymorphic.abstype_class* %4 to i64
   %6 = icmp ne i64 %5, 0
   br i1 %6, label %then1, label %else3
 
 then1:                                            ; preds = %then
-  %7 = getelementptr %abstype_class, %abstype_class* %4, i32 0, i32 1
-  %8 = load %abstype*, %abstype** %7, align 8
-  %9 = bitcast %abstype* %8 to i8*
+  %7 = getelementptr %codegen_function_polymorphic.abstype_class, %codegen_function_polymorphic.abstype_class* %4, i32 0, i32 1
+  %8 = load %codegen_function_polymorphic.abstype*, %codegen_function_polymorphic.abstype** %7, align 8
+  %9 = bitcast %codegen_function_polymorphic.abstype* %8 to i8*
   %10 = ptrtoint i8* %9 to i64
   %11 = icmp ne i64 %10, 0
   br i1 %11, label %then2, label %else
@@ -31,7 +31,7 @@ then2:                                            ; preds = %then1
   store i8* %9, i8** %12, align 8
   %13 = load i8*, i8** %12, align 8
   call void @_lfortran_free(i8* %13)
-  %14 = bitcast %abstype** %7 to i8**
+  %14 = bitcast %codegen_function_polymorphic.abstype** %7 to i8**
   store i8* null, i8** %14, align 8
   br label %ifcont
 
@@ -40,11 +40,11 @@ else:                                             ; preds = %then1
 
 ifcont:                                           ; preds = %else, %then2
   %15 = alloca i8*, align 8
-  %16 = bitcast %abstype_class* %4 to i8*
+  %16 = bitcast %codegen_function_polymorphic.abstype_class* %4 to i8*
   store i8* %16, i8** %15, align 8
   %17 = load i8*, i8** %15, align 8
   call void @_lfortran_free(i8* %17)
-  store %abstype_class* null, %abstype_class** %obj, align 8
+  store %codegen_function_polymorphic.abstype_class* null, %codegen_function_polymorphic.abstype_class** %obj, align 8
   br label %ifcont4
 
 else3:                                            ; preds = %then

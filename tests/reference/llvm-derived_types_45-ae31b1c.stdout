@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%myint = type { i32 }
+%derived_types_45_mod.myint = type { i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"ins\00", align 1
 @1 = private unnamed_addr constant [48 x i8] c"tests/../integration_tests/derived_types_45.f90\00", align 1
@@ -14,33 +14,33 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %ins = alloca %myint*, align 8
-  store %myint* null, %myint** %ins, align 8
-  %temp_struct_var__ = alloca %myint, align 8
-  %2 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
-  %3 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
+  %ins = alloca %derived_types_45_mod.myint*, align 8
+  store %derived_types_45_mod.myint* null, %derived_types_45_mod.myint** %ins, align 8
+  %temp_struct_var__ = alloca %derived_types_45_mod.myint, align 8
+  %2 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  %3 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
   store i32 44, i32* %3, align 4
-  %4 = load %myint*, %myint** %ins, align 8
-  %5 = icmp eq %myint* %4, null
+  %4 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %5 = icmp eq %derived_types_45_mod.myint* %4, null
   br i1 %5, label %then, label %else
 
 then:                                             ; preds = %.entry
   %6 = call i8* @_lfortran_malloc(i64 4)
   call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
-  %7 = bitcast i8* %6 to %myint*
-  store %myint* %7, %myint** %ins, align 8
-  %8 = load %myint*, %myint** %ins, align 8
-  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
+  %7 = bitcast i8* %6 to %derived_types_45_mod.myint*
+  store %derived_types_45_mod.myint* %7, %derived_types_45_mod.myint** %ins, align 8
+  %8 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %9 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %8, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %10 = load %myint*, %myint** %ins, align 8
-  %11 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
+  %10 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %11 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
   %12 = load i32, i32* %11, align 4
-  %13 = getelementptr %myint, %myint* %10, i32 0, i32 0
+  %13 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %10, i32 0, i32 0
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
@@ -51,8 +51,8 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %14 = load %myint*, %myint** %ins, align 8
-  %15 = ptrtoint %myint* %14 to i64
+  %14 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %15 = ptrtoint %derived_types_45_mod.myint* %14 to i64
   %16 = icmp eq i64 %15, 0
   br i1 %16, label %then4, label %ifcont5
 
@@ -87,7 +87,7 @@ then4:                                            ; preds = %ifcont3
   unreachable
 
 ifcont5:                                          ; preds = %ifcont3
-  %33 = getelementptr %myint, %myint* %14, i32 0, i32 0
+  %33 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %14, i32 0, i32 0
   %34 = load i32, i32* %33, align 4
   %35 = icmp ne i32 %34, 44
   br i1 %35, label %then6, label %else7
@@ -111,17 +111,17 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
   br label %Finalize_Variable_ins
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
-  %36 = load %myint*, %myint** %ins, align 8
-  %37 = icmp ne %myint* %36, null
+  %36 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %37 = icmp ne %derived_types_45_mod.myint* %36, null
   br i1 %37, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %Finalize_Variable_ins
-  %38 = getelementptr %myint, %myint* %36, i32 0, i32 0
-  %39 = icmp eq %myint* %36, null
+  %38 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %36, i32 0, i32 0
+  %39 = icmp eq %derived_types_45_mod.myint* %36, null
   br i1 %39, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.then
-  %40 = bitcast %myint* %36 to i8*
+  %40 = bitcast %derived_types_45_mod.myint* %36 to i8*
   call void @_lfortran_free(i8* %40)
   br label %free_done
 
