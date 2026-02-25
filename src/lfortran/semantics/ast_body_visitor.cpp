@@ -1996,26 +1996,32 @@ public:
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
             // If no overload found and single struct value, then expand struct components
+            // (recursively for nested structs)
             if (overloaded_stmt == nullptr &&
                 a_values_vec.size() == 1) {
                 ASR::expr_t* expr = a_values_vec[0];
                 ASR::ttype_t* type = ASRUtils::expr_type(expr);
                 type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(type));
-                if (ASR::is_a<ASR::StructType_t>(*type) &&
-                    ASR::is_a<ASR::Var_t>(*expr)) {
-                    ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(expr);
-                    ASR::symbol_t *var_sym = var->m_v;
-                    ASR::Variable_t *var_decl =
-                        ASR::down_cast<ASR::Variable_t>(
-                            ASRUtils::symbol_get_past_external(var_sym));
-                    ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
-                        var_decl->m_type_declaration);
+                if (ASR::is_a<ASR::StructType_t>(*type)) {
+                    a_values_vec.n = 0;
+                    std::function<void(ASR::expr_t*)> expand_struct_expr;
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr) {
+                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
+                        stype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(stype));
+                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
+                            a_values_vec.push_back(al, struct_expr);
+                            return;
+                        }
+                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
-                    ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-                    if (struct_def->n_members > 0) {
-                        a_values_vec.n = 0;
+                        if (struct_def->n_members == 0) {
+                            a_values_vec.push_back(al, struct_expr);
+                            return;
+                        }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
                             ASR::symbol_t *member_sym =
@@ -2025,11 +2031,13 @@ public:
 
                             ASR::expr_t *member_expr = ASRUtils::EXPR(
                                 ASR::make_StructInstanceMember_t(
-                                    al, expr->base.loc, expr,
+                                    al, struct_expr->base.loc, struct_expr,
                                     member_sym, member_var->m_type, nullptr));
-                            a_values_vec.push_back(al, member_expr);
+                            // Recursively expand if the member is itself a struct
+                            expand_struct_expr(member_expr);
                         }
-                    }
+                    };
+                    expand_struct_expr(expr);
                 }
             }
 
