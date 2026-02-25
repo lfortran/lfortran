@@ -1069,6 +1069,7 @@ RUN(NAME submodule_41 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME submodule_42 LABELS gfortran llvm)
 RUN(NAME submodule_43 LABELS gfortran llvm)
 RUN(NAME submodule_44a LABELS gfortran llvm_submodule EXTRAFILES submodule_44b.f90)
+RUN(NAME c_sizeof_02 LABELS gfortran llvm)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
