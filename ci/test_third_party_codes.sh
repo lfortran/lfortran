@@ -145,6 +145,8 @@ time_section "🧪 Testing Formal" '
 
   git checkout lf1
   git checkout 671ab24c3d639b1a2fedd27f727e96dadf404c5c
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Formal"
