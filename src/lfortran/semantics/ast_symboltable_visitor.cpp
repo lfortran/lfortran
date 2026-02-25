@@ -1001,6 +1001,13 @@ public:
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
+        for (size_t i=0; i<x.n_use; i++) {
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         is_Function = true;
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
