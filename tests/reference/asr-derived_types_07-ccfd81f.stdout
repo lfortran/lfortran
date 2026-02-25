@@ -262,7 +262,7 @@
                                     [add_blank_line
                                     log_units
                                     max_width]
-                                    []
+                                    [final_logger]
                                     Source
                                     Private
                                     .false.
