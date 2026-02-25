@@ -499,6 +499,39 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASRUtils::SymbolDuplicator sd(al);
                     ASR::Variable_t* dup_var = ASR::down_cast<ASR::Variable_t>(sd.duplicate_Variable(var, current_scope));
                     dup_var->m_name = s2c(al, new_ext_var);
+                    // Clear initialization expressions since they may
+                    // reference symbols outside this module scope
+                    // (e.g., `procedure(...), pointer :: p => f` where
+                    // f lives in the program scope). The nested_vars
+                    // pass synchronises the value via assignments.
+                    dup_var->m_symbolic_value = nullptr;
+                    dup_var->m_value = nullptr;
+                    // Import m_type_declaration into the module scope
+                    // when it lives in a different scope
+                    ASR::symbol_t* type_decl = var->m_type_declaration;
+                    if (type_decl && current_scope->get_counter() !=
+                            ASRUtils::symbol_parent_symtab(type_decl)->get_counter()) {
+                        std::string td_name = std::string(ASRUtils::symbol_name(type_decl));
+                        ASR::symbol_t* existing_td = current_scope->get_symbol(td_name);
+                        if (existing_td == nullptr) {
+                            ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
+                            std::string owner_name = std::string(ASRUtils::symbol_name(
+                                ASRUtils::get_asr_owner(original)));
+                            ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                                al, type_decl->base.loc,
+                                current_scope,
+                                s2c(al, td_name),
+                                original,
+                                s2c(al, owner_name),
+                                nullptr, 0,
+                                ASRUtils::symbol_name(original),
+                                ASR::accessType::Public
+                            );
+                            existing_td = ASR::down_cast<ASR::symbol_t>(ext);
+                            current_scope->add_symbol(td_name, existing_td);
+                        }
+                        dup_var->m_type_declaration = existing_td;
+                    }
                     ASR::symbol_t* dup_sym = (ASR::symbol_t*) dup_var;
                     current_scope->add_symbol(new_ext_var, dup_sym);
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
