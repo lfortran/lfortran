@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 
@@ -415,6 +416,9 @@ void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
 
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);
+
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
 }
 
 
