@@ -29,43 +29,41 @@ FINALIZE_SYMTABLE_finalize_02:                    ; preds = %return
 
 define void @ss(i32* %nang) {
 .entry:
-  %0 = alloca i32, align 4
-  %1 = alloca i64, align 8
   %arr_01 = alloca %array*, align 8
   store %array* null, %array** %arr_01, align 8
   %arr_desc = alloca %array, align 8
-  %2 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
-  %3 = alloca i32, align 4
-  store i32 1, i32* %3, align 4
-  %4 = load i32, i32* %3, align 4
-  %5 = alloca %dimension_descriptor, i32 %4, align 8
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
+  %0 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
+  %1 = alloca i32, align 4
+  store i32 1, i32* %1, align 4
+  %2 = load i32, i32* %1, align 4
+  %3 = alloca %dimension_descriptor, i32 %2, align 8
+  %4 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 1
+  store i32 1, i32* %4, align 4
+  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 2
+  store i32 1, i32* %5, align 4
+  store %dimension_descriptor* %3, %dimension_descriptor** %0, align 8
+  %6 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
   store i32 1, i32* %6, align 4
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
-  store i32 1, i32* %7, align 4
-  store %dimension_descriptor* %5, %dimension_descriptor** %2, align 8
-  %8 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
-  store i32 1, i32* %8, align 4
-  %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store %tt* null, %tt** %9, align 8
+  %7 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
+  store %tt* null, %tt** %7, align 8
   store %array* %arr_desc, %array** %arr_01, align 8
   %arr_02 = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_02, align 8
   %arr_desc1 = alloca %array.0, align 8
-  %10 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 2
-  %11 = alloca i32, align 4
-  store i32 1, i32* %11, align 4
-  %12 = load i32, i32* %11, align 4
-  %13 = alloca %dimension_descriptor, i32 %12, align 8
-  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 1
+  %8 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 2
+  %9 = alloca i32, align 4
+  store i32 1, i32* %9, align 4
+  %10 = load i32, i32* %9, align 4
+  %11 = alloca %dimension_descriptor, i32 %10, align 8
+  %12 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 1
+  store i32 1, i32* %12, align 4
+  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 2
+  store i32 1, i32* %13, align 4
+  store %dimension_descriptor* %11, %dimension_descriptor** %8, align 8
+  %14 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 4
   store i32 1, i32* %14, align 4
-  %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 2
-  store i32 1, i32* %15, align 4
-  store %dimension_descriptor* %13, %dimension_descriptor** %10, align 8
-  %16 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 4
-  store i32 1, i32* %16, align 4
-  %17 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 0
-  store i32* null, i32** %17, align 8
+  %15 = getelementptr %array.0, %array.0* %arr_desc1, i32 0, i32 0
+  store i32* null, i32** %15, align 8
   store %array.0* %arr_desc1, %array.0** %arr_02, align 8
   %arr_03 = alloca i32*, align 8
   store i32* null, i32** %arr_03, align 8
@@ -73,52 +71,52 @@ define void @ss(i32* %nang) {
   store %array.1* null, %array.1** %arr_04, align 8
   %arr_desc2 = alloca %array.1, align 8
   %arr_desc_str_desc = alloca %string_descriptor, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
-  store i8* null, i8** %18, align 8
-  %19 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
-  store i64 0, i64* %19, align 4
-  %20 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 0
-  store %string_descriptor* %arr_desc_str_desc, %string_descriptor** %20, align 8
-  %21 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 2
-  %22 = alloca i32, align 4
-  store i32 1, i32* %22, align 4
-  %23 = load i32, i32* %22, align 4
-  %24 = alloca %dimension_descriptor, i32 %23, align 8
-  %25 = getelementptr %dimension_descriptor, %dimension_descriptor* %24, i32 0, i32 1
+  %16 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
+  store i8* null, i8** %16, align 8
+  %17 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
+  store i64 0, i64* %17, align 4
+  %18 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 0
+  store %string_descriptor* %arr_desc_str_desc, %string_descriptor** %18, align 8
+  %19 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 2
+  %20 = alloca i32, align 4
+  store i32 1, i32* %20, align 4
+  %21 = load i32, i32* %20, align 4
+  %22 = alloca %dimension_descriptor, i32 %21, align 8
+  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 1
+  store i32 1, i32* %23, align 4
+  %24 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 2
+  store i32 1, i32* %24, align 4
+  store %dimension_descriptor* %22, %dimension_descriptor** %19, align 8
+  %25 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 4
   store i32 1, i32* %25, align 4
-  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %24, i32 0, i32 2
-  store i32 1, i32* %26, align 4
-  store %dimension_descriptor* %24, %dimension_descriptor** %21, align 8
-  %27 = getelementptr %array.1, %array.1* %arr_desc2, i32 0, i32 4
-  store i32 1, i32* %27, align 4
   store %array.1* %arr_desc2, %array.1** %arr_04, align 8
   %arr_05 = alloca %string_descriptor, align 8
-  %28 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
-  store i8* null, i8** %28, align 8
-  %29 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
-  store i64 0, i64* %29, align 4
-  %30 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
-  store i64 20, i64* %30, align 4
-  %31 = call i8* @_lfortran_malloc(i64 100)
-  %32 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
-  store i8* %31, i8** %32, align 8
+  %26 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
+  store i8* null, i8** %26, align 8
+  %27 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
+  store i64 0, i64* %27, align 4
+  %28 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
+  store i64 20, i64* %28, align 4
+  %29 = call i8* @_lfortran_malloc(i64 100)
+  %30 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
+  store i8* %29, i8** %30, align 8
   %arr_06 = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_06, align 8
   %arr_desc3 = alloca %array.0, align 8
-  %33 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 2
-  %34 = alloca i32, align 4
-  store i32 1, i32* %34, align 4
-  %35 = load i32, i32* %34, align 4
-  %36 = alloca %dimension_descriptor, i32 %35, align 8
-  %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 1
+  %31 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 2
+  %32 = alloca i32, align 4
+  store i32 1, i32* %32, align 4
+  %33 = load i32, i32* %32, align 4
+  %34 = alloca %dimension_descriptor, i32 %33, align 8
+  %35 = getelementptr %dimension_descriptor, %dimension_descriptor* %34, i32 0, i32 1
+  store i32 1, i32* %35, align 4
+  %36 = getelementptr %dimension_descriptor, %dimension_descriptor* %34, i32 0, i32 2
+  store i32 1, i32* %36, align 4
+  store %dimension_descriptor* %34, %dimension_descriptor** %31, align 8
+  %37 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 4
   store i32 1, i32* %37, align 4
-  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 2
-  store i32 1, i32* %38, align 4
-  store %dimension_descriptor* %36, %dimension_descriptor** %33, align 8
-  %39 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 4
-  store i32 1, i32* %39, align 4
-  %40 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 0
-  store i32* null, i32** %40, align 8
+  %38 = getelementptr %array.0, %array.0* %arr_desc3, i32 0, i32 0
+  store i32* null, i32** %38, align 8
   store %array.0* %arr_desc3, %array.0** %arr_06, align 8
   %arr_07 = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
@@ -126,33 +124,33 @@ define void @ss(i32* %nang) {
   store %array.1* null, %array.1** %arr_08, align 8
   %arr_desc4 = alloca %array.1, align 8
   %arr_desc_str_desc5 = alloca %string_descriptor, align 8
-  %41 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
-  store i8* null, i8** %41, align 8
-  %42 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
-  store i64 0, i64* %42, align 4
-  %43 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 0
-  store %string_descriptor* %arr_desc_str_desc5, %string_descriptor** %43, align 8
-  %44 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 2
-  %45 = alloca i32, align 4
-  store i32 1, i32* %45, align 4
-  %46 = load i32, i32* %45, align 4
-  %47 = alloca %dimension_descriptor, i32 %46, align 8
-  %48 = getelementptr %dimension_descriptor, %dimension_descriptor* %47, i32 0, i32 1
+  %39 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
+  store i8* null, i8** %39, align 8
+  %40 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
+  store i64 0, i64* %40, align 4
+  %41 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 0
+  store %string_descriptor* %arr_desc_str_desc5, %string_descriptor** %41, align 8
+  %42 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 2
+  %43 = alloca i32, align 4
+  store i32 1, i32* %43, align 4
+  %44 = load i32, i32* %43, align 4
+  %45 = alloca %dimension_descriptor, i32 %44, align 8
+  %46 = getelementptr %dimension_descriptor, %dimension_descriptor* %45, i32 0, i32 1
+  store i32 1, i32* %46, align 4
+  %47 = getelementptr %dimension_descriptor, %dimension_descriptor* %45, i32 0, i32 2
+  store i32 1, i32* %47, align 4
+  store %dimension_descriptor* %45, %dimension_descriptor** %42, align 8
+  %48 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 4
   store i32 1, i32* %48, align 4
-  %49 = getelementptr %dimension_descriptor, %dimension_descriptor* %47, i32 0, i32 2
-  store i32 1, i32* %49, align 4
-  store %dimension_descriptor* %47, %dimension_descriptor** %44, align 8
-  %50 = getelementptr %array.1, %array.1* %arr_desc4, i32 0, i32 4
-  store i32 1, i32* %50, align 4
   store %array.1* %arr_desc4, %array.1** %arr_08, align 8
-  %51 = load i32, i32* %nang, align 4
-  store i32 %51, i32* @deep_0, align 4
-  %52 = load i32, i32* @deep_0, align 4
-  %53 = mul i32 1, %52
-  %54 = mul i32 %53, 4
-  %55 = sext i32 %54 to i64
-  %56 = call i8* @_lfortran_malloc(i64 %55)
-  %57 = bitcast i8* %56 to i32*
+  %49 = load i32, i32* %nang, align 4
+  store i32 %49, i32* @deep_0, align 4
+  %50 = load i32, i32* @deep_0, align 4
+  %51 = mul i32 1, %50
+  %52 = mul i32 %51, 4
+  %53 = sext i32 %52 to i64
+  %54 = call i8* @_lfortran_malloc(i64 %53)
+  %55 = bitcast i8* %54 to i32*
   br label %return
 
 return:                                           ; preds = %.entry
@@ -162,247 +160,368 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
   br label %Finalize_Variable_arr_01
 
 Finalize_Variable_arr_01:                         ; preds = %FINALIZE_SYMTABLE_ss
-  %58 = load %array*, %array** %arr_01, align 8
-  %59 = icmp ne %array* %58, null
-  br i1 %59, label %is_allocated.then, label %is_allocated.else7
-
-is_allocated.then:                                ; preds = %Finalize_Variable_arr_01
-  %60 = getelementptr %array, %array* %58, i32 0, i32 0
-  %61 = load %tt*, %tt** %60, align 8
-  %62 = icmp ne %tt* %61, null
-  br i1 %62, label %is_allocated.then6, label %is_allocated.else
-
-is_allocated.then6:                               ; preds = %is_allocated.then
-  br label %Calculate_arraySize
-
-Calculate_arraySize:                              ; preds = %is_allocated.then6
-  %63 = getelementptr %array, %array* %58, i32 0, i32 2
-  %64 = load %dimension_descriptor*, %dimension_descriptor** %63, align 8
-  %65 = getelementptr %array, %array* %58, i32 0, i32 4
-  %66 = load i32, i32* %65, align 4
-  store i64 1, i64* %1, align 4
-  store i32 0, i32* %0, align 4
-  br label %loop.head
-
-loop.head:                                        ; preds = %loop.body, %Calculate_arraySize
-  %67 = load i32, i32* %0, align 4
-  %68 = icmp slt i32 %67, %66
-  br i1 %68, label %loop.body, label %loop.end
-
-loop.body:                                        ; preds = %loop.head
-  %69 = load i32, i32* %0, align 4
-  %70 = load i64, i64* %1, align 4
-  %71 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %64, i32 %69
-  %72 = getelementptr %dimension_descriptor, %dimension_descriptor* %71, i32 0, i32 2
-  %73 = load i32, i32* %72, align 4
-  %74 = sext i32 %73 to i64
-  %75 = mul i64 %70, %74
-  store i64 %75, i64* %1, align 4
-  %76 = add i32 %69, 1
-  store i32 %76, i32* %0, align 4
-  br label %loop.head
-
-loop.end:                                         ; preds = %loop.head
-  %77 = load i64, i64* %1, align 4
-  %arrSize_iter = alloca i64, align 8
-  store i64 -1, i64* %arrSize_iter, align 4
-  br label %Finalize_array_of_structs.head
-
-Finalize_array_of_structs.head:                   ; preds = %Finalize_array_of_structs.body, %loop.end
-  %78 = load i64, i64* %arrSize_iter, align 4
-  %79 = add i64 %78, 1
-  store i64 %79, i64* %arrSize_iter, align 4
-  %80 = icmp slt i64 %79, %77
-  br i1 %80, label %Finalize_array_of_structs.body, label %Finalize_array_of_structs.end
-
-Finalize_array_of_structs.body:                   ; preds = %Finalize_array_of_structs.head
-  %81 = load i64, i64* %arrSize_iter, align 4
-  %82 = getelementptr inbounds %tt, %tt* %61, i64 %81
-  %83 = getelementptr %tt, %tt* %82, i32 0, i32 0
-  %84 = getelementptr %tt, %tt* %82, i32 0, i32 1
-  br label %Finalize_array_of_structs.head
-
-Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_structs.head
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %Finalize_array_of_structs.end
-  %85 = icmp eq %tt* %61, null
-  br i1 %85, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %is_allocated.ifcont
-  %86 = bitcast %tt* %61 to i8*
-  call void @_lfortran_free(i8* %86)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %is_allocated.ifcont
-  br label %is_allocated.ifcont8
-
-is_allocated.else7:                               ; preds = %Finalize_Variable_arr_01
-  br label %is_allocated.ifcont8
-
-is_allocated.ifcont8:                             ; preds = %is_allocated.else7, %free_done
+  %56 = load %array*, %array** %arr_01, align 8
+  call void @finalize_allocatable__Array_0__StructType__tt(%array* %56, i1 false)
   br label %Finalize_Variable_arr_02
 
-Finalize_Variable_arr_02:                         ; preds = %is_allocated.ifcont8
-  %87 = load %array.0*, %array.0** %arr_02, align 8
-  %88 = icmp ne %array.0* %87, null
-  br i1 %88, label %is_allocated.then9, label %is_allocated.else12
-
-is_allocated.then9:                               ; preds = %Finalize_Variable_arr_02
-  %89 = getelementptr %array.0, %array.0* %87, i32 0, i32 0
-  %90 = load i32*, i32** %89, align 8
-  %91 = icmp eq i32* %90, null
-  br i1 %91, label %free_done11, label %free_nonnull10
-
-free_nonnull10:                                   ; preds = %is_allocated.then9
-  %92 = bitcast i32* %90 to i8*
-  call void @_lfortran_free(i8* %92)
-  br label %free_done11
-
-free_done11:                                      ; preds = %free_nonnull10, %is_allocated.then9
-  br label %is_allocated.ifcont13
-
-is_allocated.else12:                              ; preds = %Finalize_Variable_arr_02
-  br label %is_allocated.ifcont13
-
-is_allocated.ifcont13:                            ; preds = %is_allocated.else12, %free_done11
+Finalize_Variable_arr_02:                         ; preds = %Finalize_Variable_arr_01
+  %57 = load %array.0*, %array.0** %arr_02, align 8
+  call void @finalize_allocatable__Array_0__i32(%array.0* %57, i1 false)
   br label %Finalize_Variable_arr_03
 
-Finalize_Variable_arr_03:                         ; preds = %is_allocated.ifcont13
-  %93 = load i32*, i32** %arr_03, align 8
-  %94 = icmp eq i32* %93, null
-  br i1 %94, label %free_done15, label %free_nonnull14
-
-free_nonnull14:                                   ; preds = %Finalize_Variable_arr_03
-  %95 = bitcast i32* %93 to i8*
-  call void @_lfortran_free(i8* %95)
-  br label %free_done15
-
-free_done15:                                      ; preds = %free_nonnull14, %Finalize_Variable_arr_03
+Finalize_Variable_arr_03:                         ; preds = %Finalize_Variable_arr_02
+  %58 = load i32*, i32** %arr_03, align 8
+  call void @"finalize_Allocatable[i32]"(i32* %58, i1 false)
   br label %Finalize_Variable_arr_04
 
-Finalize_Variable_arr_04:                         ; preds = %free_done15
-  %96 = load %array.1*, %array.1** %arr_04, align 8
-  %97 = icmp ne %array.1* %96, null
-  br i1 %97, label %is_allocated.then16, label %is_allocated.else19
-
-is_allocated.then16:                              ; preds = %Finalize_Variable_arr_04
-  %98 = getelementptr %array.1, %array.1* %96, i32 0, i32 0
-  %99 = load %string_descriptor*, %string_descriptor** %98, align 8
-  %100 = getelementptr %string_descriptor, %string_descriptor* %99, i32 0, i32 0
-  %101 = load i8*, i8** %100, align 8
-  %102 = icmp eq i8* %101, null
-  br i1 %102, label %free_done18, label %free_nonnull17
-
-free_nonnull17:                                   ; preds = %is_allocated.then16
-  call void @_lfortran_free(i8* %101)
-  br label %free_done18
-
-free_done18:                                      ; preds = %free_nonnull17, %is_allocated.then16
-  br label %is_allocated.ifcont20
-
-is_allocated.else19:                              ; preds = %Finalize_Variable_arr_04
-  br label %is_allocated.ifcont20
-
-is_allocated.ifcont20:                            ; preds = %is_allocated.else19, %free_done18
+Finalize_Variable_arr_04:                         ; preds = %Finalize_Variable_arr_03
+  %59 = load %array.1*, %array.1** %arr_04, align 8
+  call void @finalize_allocatable__Array_0__str(%array.1* %59, i1 false)
   br label %Finalize_Variable_arr_05
 
-Finalize_Variable_arr_05:                         ; preds = %is_allocated.ifcont20
-  %103 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
-  %104 = load i8*, i8** %103, align 8
-  %105 = icmp eq i8* %104, null
-  br i1 %105, label %free_done22, label %free_nonnull21
-
-free_nonnull21:                                   ; preds = %Finalize_Variable_arr_05
-  call void @_lfortran_free(i8* %104)
-  br label %free_done22
-
-free_done22:                                      ; preds = %free_nonnull21, %Finalize_Variable_arr_05
+Finalize_Variable_arr_05:                         ; preds = %Finalize_Variable_arr_04
+  call void @finalize_Array_1__str(%string_descriptor* %arr_05, i1 false)
   br label %Finalize_Variable_arr_06
 
-Finalize_Variable_arr_06:                         ; preds = %free_done22
-  %106 = load %array.0*, %array.0** %arr_06, align 8
-  %107 = icmp ne %array.0* %106, null
-  br i1 %107, label %is_allocated.then23, label %is_allocated.else26
-
-is_allocated.then23:                              ; preds = %Finalize_Variable_arr_06
-  %108 = getelementptr %array.0, %array.0* %106, i32 0, i32 0
-  %109 = load i32*, i32** %108, align 8
-  %110 = icmp eq i32* %109, null
-  br i1 %110, label %free_done25, label %free_nonnull24
-
-free_nonnull24:                                   ; preds = %is_allocated.then23
-  %111 = bitcast i32* %109 to i8*
-  call void @_lfortran_free(i8* %111)
-  br label %free_done25
-
-free_done25:                                      ; preds = %free_nonnull24, %is_allocated.then23
-  br label %is_allocated.ifcont27
-
-is_allocated.else26:                              ; preds = %Finalize_Variable_arr_06
-  br label %is_allocated.ifcont27
-
-is_allocated.ifcont27:                            ; preds = %is_allocated.else26, %free_done25
+Finalize_Variable_arr_06:                         ; preds = %Finalize_Variable_arr_05
+  %60 = load %array.0*, %array.0** %arr_06, align 8
+  call void @finalize_allocatable__Array_0__i32(%array.0* %60, i1 false)
   br label %Finalize_Variable_arr_07
 
-Finalize_Variable_arr_07:                         ; preds = %is_allocated.ifcont27
-  %112 = getelementptr %string_descriptor, %string_descriptor* %arr_07, i32 0, i32 0
-  %113 = load i8*, i8** %112, align 8
-  %114 = icmp eq i8* %113, null
-  br i1 %114, label %free_done29, label %free_nonnull28
-
-free_nonnull28:                                   ; preds = %Finalize_Variable_arr_07
-  call void @_lfortran_free(i8* %113)
-  br label %free_done29
-
-free_done29:                                      ; preds = %free_nonnull28, %Finalize_Variable_arr_07
+Finalize_Variable_arr_07:                         ; preds = %Finalize_Variable_arr_06
+  call void @"finalize_Allocatable[str]"(%string_descriptor* %arr_07, i1 false)
   br label %Finalize_Variable_arr_08
 
-Finalize_Variable_arr_08:                         ; preds = %free_done29
-  %115 = load %array.1*, %array.1** %arr_08, align 8
-  %116 = icmp ne %array.1* %115, null
-  br i1 %116, label %is_allocated.then30, label %is_allocated.else33
-
-is_allocated.then30:                              ; preds = %Finalize_Variable_arr_08
-  %117 = getelementptr %array.1, %array.1* %115, i32 0, i32 0
-  %118 = load %string_descriptor*, %string_descriptor** %117, align 8
-  %119 = getelementptr %string_descriptor, %string_descriptor* %118, i32 0, i32 0
-  %120 = load i8*, i8** %119, align 8
-  %121 = icmp eq i8* %120, null
-  br i1 %121, label %free_done32, label %free_nonnull31
-
-free_nonnull31:                                   ; preds = %is_allocated.then30
-  call void @_lfortran_free(i8* %120)
-  br label %free_done32
-
-free_done32:                                      ; preds = %free_nonnull31, %is_allocated.then30
-  br label %is_allocated.ifcont34
-
-is_allocated.else33:                              ; preds = %Finalize_Variable_arr_08
-  br label %is_allocated.ifcont34
-
-is_allocated.ifcont34:                            ; preds = %is_allocated.else33, %free_done32
+Finalize_Variable_arr_08:                         ; preds = %Finalize_Variable_arr_07
+  %61 = load %array.1*, %array.1** %arr_08, align 8
+  call void @finalize_allocatable__Array_0__str(%array.1* %61, i1 false)
   br label %Finalize_Variable_arr_09
 
-Finalize_Variable_arr_09:                         ; preds = %is_allocated.ifcont34
-  %122 = icmp eq i32* %57, null
-  br i1 %122, label %free_done36, label %free_nonnull35
-
-free_nonnull35:                                   ; preds = %Finalize_Variable_arr_09
-  %123 = bitcast i32* %57 to i8*
-  call void @_lfortran_free(i8* %123)
-  br label %free_done36
-
-free_done36:                                      ; preds = %free_nonnull35, %Finalize_Variable_arr_09
+Finalize_Variable_arr_09:                         ; preds = %Finalize_Variable_arr_08
+  call void @finalize_Array_1__i32(i32* %55, i1 false)
   ret void
 }
 
 declare i8* @_lfortran_malloc(i64)
 
+define internal void @finalize_allocatable__Array_0__StructType__tt(%array* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %array* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_Array_0__StructType__tt(%array* %ptr, i1 %in_struct)
+  br i1 %in_struct, label %free_allocatable_array_if_in_struct.then, label %free_allocatable_array_if_in_struct.else
+
+free_allocatable_array_if_in_struct.then:         ; preds = %is_allocated.then
+  %1 = icmp eq %array* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_allocatable_array_if_in_struct.then
+  %2 = bitcast %array* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_allocatable_array_if_in_struct.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.else:         ; preds = %is_allocated.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.ifcont:       ; preds = %free_allocatable_array_if_in_struct.else, %free_done
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_allocatable_array_if_in_struct.ifcont
+  ret void
+}
+
+define internal void @finalize_Array_0__StructType__tt(%array* %ptr, i1 %in_struct) {
+entry:
+  %0 = alloca i32, align 4
+  %1 = alloca i64, align 8
+  %2 = getelementptr %array, %array* %ptr, i32 0, i32 0
+  %3 = load %tt*, %tt** %2, align 8
+  %4 = icmp ne %tt* %3, null
+  br i1 %4, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  br label %Calculate_arraySize
+
+Calculate_arraySize:                              ; preds = %is_allocated.then
+  %5 = getelementptr %array, %array* %ptr, i32 0, i32 2
+  %6 = load %dimension_descriptor*, %dimension_descriptor** %5, align 8
+  %7 = getelementptr %array, %array* %ptr, i32 0, i32 4
+  %8 = load i32, i32* %7, align 4
+  store i64 1, i64* %1, align 4
+  store i32 0, i32* %0, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.body, %Calculate_arraySize
+  %9 = load i32, i32* %0, align 4
+  %10 = icmp slt i32 %9, %8
+  br i1 %10, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %11 = load i32, i32* %0, align 4
+  %12 = load i64, i64* %1, align 4
+  %13 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %6, i32 %11
+  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 2
+  %15 = load i32, i32* %14, align 4
+  %16 = sext i32 %15 to i64
+  %17 = mul i64 %12, %16
+  store i64 %17, i64* %1, align 4
+  %18 = add i32 %11, 1
+  store i32 %18, i32* %0, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  %19 = load i64, i64* %1, align 4
+  %arrSize_iter = alloca i64, align 8
+  store i64 -1, i64* %arrSize_iter, align 4
+  br label %Finalize_array_of_structs.head
+
+Finalize_array_of_structs.head:                   ; preds = %Finalize_array_of_structs.body, %loop.end
+  %20 = load i64, i64* %arrSize_iter, align 4
+  %21 = add i64 %20, 1
+  store i64 %21, i64* %arrSize_iter, align 4
+  %22 = icmp slt i64 %21, %19
+  br i1 %22, label %Finalize_array_of_structs.body, label %Finalize_array_of_structs.end
+
+Finalize_array_of_structs.body:                   ; preds = %Finalize_array_of_structs.head
+  %23 = load i64, i64* %arrSize_iter, align 4
+  %24 = getelementptr inbounds %tt, %tt* %3, i64 %23
+  br label %Finalize_array_of_structs.head
+
+Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_structs.head
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %Finalize_array_of_structs.end
+  br i1 %in_struct, label %free_dim_desc_if_in_struct.then, label %free_dim_desc_if_in_struct.else
+
+free_dim_desc_if_in_struct.then:                  ; preds = %is_allocated.ifcont
+  %25 = getelementptr %array, %array* %ptr, i32 0, i32 2
+  %26 = load %dimension_descriptor*, %dimension_descriptor** %25, align 8
+  %27 = icmp eq %dimension_descriptor* %26, null
+  br i1 %27, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_dim_desc_if_in_struct.then
+  %28 = bitcast %dimension_descriptor* %26 to i8*
+  call void @_lfortran_free(i8* %28)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_dim_desc_if_in_struct.then
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.else:                  ; preds = %is_allocated.ifcont
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.ifcont:                ; preds = %free_dim_desc_if_in_struct.else, %free_done
+  %29 = icmp eq %tt* %3, null
+  br i1 %29, label %free_done2, label %free_nonnull1
+
+free_nonnull1:                                    ; preds = %free_dim_desc_if_in_struct.ifcont
+  %30 = bitcast %tt* %3 to i8*
+  call void @_lfortran_free(i8* %30)
+  br label %free_done2
+
+free_done2:                                       ; preds = %free_nonnull1, %free_dim_desc_if_in_struct.ifcont
+  ret void
+}
+
 declare void @_lfortran_free(i8*)
+
+define internal void @finalize_allocatable__Array_0__i32(%array.0* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %array.0* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_Array_0__i32(%array.0* %ptr, i1 %in_struct)
+  br i1 %in_struct, label %free_allocatable_array_if_in_struct.then, label %free_allocatable_array_if_in_struct.else
+
+free_allocatable_array_if_in_struct.then:         ; preds = %is_allocated.then
+  %1 = icmp eq %array.0* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_allocatable_array_if_in_struct.then
+  %2 = bitcast %array.0* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_allocatable_array_if_in_struct.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.else:         ; preds = %is_allocated.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.ifcont:       ; preds = %free_allocatable_array_if_in_struct.else, %free_done
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_allocatable_array_if_in_struct.ifcont
+  ret void
+}
+
+define internal void @finalize_Array_0__i32(%array.0* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %array.0, %array.0* %ptr, i32 0, i32 0
+  %1 = load i32*, i32** %0, align 8
+  br i1 %in_struct, label %free_dim_desc_if_in_struct.then, label %free_dim_desc_if_in_struct.else
+
+free_dim_desc_if_in_struct.then:                  ; preds = %entry
+  %2 = getelementptr %array.0, %array.0* %ptr, i32 0, i32 2
+  %3 = load %dimension_descriptor*, %dimension_descriptor** %2, align 8
+  %4 = icmp eq %dimension_descriptor* %3, null
+  br i1 %4, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_dim_desc_if_in_struct.then
+  %5 = bitcast %dimension_descriptor* %3 to i8*
+  call void @_lfortran_free(i8* %5)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_dim_desc_if_in_struct.then
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.else:                  ; preds = %entry
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.ifcont:                ; preds = %free_dim_desc_if_in_struct.else, %free_done
+  %6 = icmp eq i32* %1, null
+  br i1 %6, label %free_done2, label %free_nonnull1
+
+free_nonnull1:                                    ; preds = %free_dim_desc_if_in_struct.ifcont
+  %7 = bitcast i32* %1 to i8*
+  call void @_lfortran_free(i8* %7)
+  br label %free_done2
+
+free_done2:                                       ; preds = %free_nonnull1, %free_dim_desc_if_in_struct.ifcont
+  ret void
+}
+
+define internal void @"finalize_Allocatable[i32]"(i32* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp eq i32* %ptr, null
+  br i1 %0, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  %1 = bitcast i32* %ptr to i8*
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}
+
+define internal void @finalize_allocatable__Array_0__str(%array.1* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp ne %array.1* %ptr, null
+  br i1 %0, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_Array_0__str(%array.1* %ptr, i1 %in_struct)
+  br i1 %in_struct, label %free_allocatable_array_if_in_struct.then, label %free_allocatable_array_if_in_struct.else
+
+free_allocatable_array_if_in_struct.then:         ; preds = %is_allocated.then
+  %1 = icmp eq %array.1* %ptr, null
+  br i1 %1, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_allocatable_array_if_in_struct.then
+  %2 = bitcast %array.1* %ptr to i8*
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_allocatable_array_if_in_struct.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.else:         ; preds = %is_allocated.then
+  br label %free_allocatable_array_if_in_struct.ifcont
+
+free_allocatable_array_if_in_struct.ifcont:       ; preds = %free_allocatable_array_if_in_struct.else, %free_done
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_allocatable_array_if_in_struct.ifcont
+  ret void
+}
+
+define internal void @finalize_Array_0__str(%array.1* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %array.1, %array.1* %ptr, i32 0, i32 0
+  %1 = load %string_descriptor*, %string_descriptor** %0, align 8
+  call void @finalize_str(%string_descriptor* %1, i1 false)
+  br i1 %in_struct, label %free_dim_desc_if_in_struct.then, label %free_dim_desc_if_in_struct.else
+
+free_dim_desc_if_in_struct.then:                  ; preds = %entry
+  %2 = getelementptr %array.1, %array.1* %ptr, i32 0, i32 2
+  %3 = load %dimension_descriptor*, %dimension_descriptor** %2, align 8
+  %4 = icmp eq %dimension_descriptor* %3, null
+  br i1 %4, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %free_dim_desc_if_in_struct.then
+  %5 = bitcast %dimension_descriptor* %3 to i8*
+  call void @_lfortran_free(i8* %5)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %free_dim_desc_if_in_struct.then
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.else:                  ; preds = %entry
+  br label %free_dim_desc_if_in_struct.ifcont
+
+free_dim_desc_if_in_struct.ifcont:                ; preds = %free_dim_desc_if_in_struct.else, %free_done
+  ret void
+}
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}
+
+define internal void @finalize_Array_1__str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  call void @finalize_str(%string_descriptor* %ptr, i1 false)
+  ret void
+}
+
+define internal void @"finalize_Allocatable[str]"(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  call void @finalize_str(%string_descriptor* %ptr, i1 %in_struct)
+  ret void
+}
+
+define internal void @finalize_Array_1__i32(i32* %ptr, i1 %in_struct) {
+entry:
+  %0 = icmp eq i32* %ptr, null
+  br i1 %0, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  %1 = bitcast i32* %ptr to i8*
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

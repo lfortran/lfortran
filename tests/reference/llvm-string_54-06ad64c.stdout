@@ -53,16 +53,7 @@ FINALIZE_SYMTABLE_string_54:                      ; preds = %return
   br label %Finalize_Variable_char
 
 Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
-  %5 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
-  %6 = load i8*, i8** %5, align 8
-  %7 = icmp eq i8* %6, null
-  br i1 %7, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %Finalize_Variable_char
-  call void @_lfortran_free(i8* %6)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_char
+  call void @finalize_str(%string_descriptor* %char, i1 false)
   ret i32 0
 }
 
@@ -71,5 +62,20 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lfortran_malloc(i64)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}
 
 declare void @_lfortran_free(i8*)

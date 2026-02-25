@@ -496,49 +496,7 @@ FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
   br label %Finalize_Variable_settings
 
 Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
-  br label %"Finalize_struct_fpm_run_settings's_name_member"
-
-"Finalize_struct_fpm_run_settings's_name_member": ; preds = %Finalize_Variable_settings
-  %17 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 1
-  %18 = getelementptr %string_descriptor, %string_descriptor* %17, i32 0, i32 0
-  %19 = load i8*, i8** %18, align 8
-  %20 = icmp eq i8* %19, null
-  br i1 %20, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %"Finalize_struct_fpm_run_settings's_name_member"
-  call void @_lfortran_free(i8* %19)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %"Finalize_struct_fpm_run_settings's_name_member"
-  br label %"Finalize_struct_fpm_run_settings's_args_member"
-
-"Finalize_struct_fpm_run_settings's_args_member": ; preds = %free_done
-  %21 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 2
-  %22 = getelementptr %string_descriptor, %string_descriptor* %21, i32 0, i32 0
-  %23 = load i8*, i8** %22, align 8
-  %24 = icmp eq i8* %23, null
-  br i1 %24, label %free_done2, label %free_nonnull1
-
-free_nonnull1:                                    ; preds = %"Finalize_struct_fpm_run_settings's_args_member"
-  call void @_lfortran_free(i8* %23)
-  br label %free_done2
-
-free_done2:                                       ; preds = %free_nonnull1, %"Finalize_struct_fpm_run_settings's_args_member"
-  br label %"Finalize_struct_fpm_run_settings's_runner_member"
-
-"Finalize_struct_fpm_run_settings's_runner_member": ; preds = %free_done2
-  %25 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 3
-  %26 = getelementptr %string_descriptor, %string_descriptor* %25, i32 0, i32 0
-  %27 = load i8*, i8** %26, align 8
-  %28 = icmp eq i8* %27, null
-  br i1 %28, label %free_done4, label %free_nonnull3
-
-free_nonnull3:                                    ; preds = %"Finalize_struct_fpm_run_settings's_runner_member"
-  call void @_lfortran_free(i8* %27)
-  br label %free_done4
-
-free_done4:                                       ; preds = %free_nonnull3, %"Finalize_struct_fpm_run_settings's_runner_member"
-  %29 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 4
+  call void @finalize_StructType__fpm_run_settings(%fpm_run_settings* %settings, i1 false)
   ret i32 0
 }
 
@@ -710,6 +668,48 @@ entry:
 declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_StructType__fpm_run_settings(%fpm_run_settings* %ptr, i1 %in_struct) {
+entry:
+  br label %"Finalize_struct_fpm_run_settings's_name_member"
+
+"Finalize_struct_fpm_run_settings's_name_member": ; preds = %entry
+  %0 = getelementptr %fpm_run_settings, %fpm_run_settings* %ptr, i32 0, i32 1
+  call void @finalize_Array_1__str(%string_descriptor* %0, i1 true)
+  br label %"Finalize_struct_fpm_run_settings's_args_member"
+
+"Finalize_struct_fpm_run_settings's_args_member": ; preds = %"Finalize_struct_fpm_run_settings's_name_member"
+  %1 = getelementptr %fpm_run_settings, %fpm_run_settings* %ptr, i32 0, i32 2
+  call void @finalize_str(%string_descriptor* %1, i1 true)
+  br label %"Finalize_struct_fpm_run_settings's_runner_member"
+
+"Finalize_struct_fpm_run_settings's_runner_member": ; preds = %"Finalize_struct_fpm_run_settings's_args_member"
+  %2 = getelementptr %fpm_run_settings, %fpm_run_settings* %ptr, i32 0, i32 3
+  call void @finalize_str(%string_descriptor* %2, i1 true)
+  %3 = getelementptr %fpm_run_settings, %fpm_run_settings* %ptr, i32 0, i32 4
+  ret void
+}
+
+define internal void @finalize_Array_1__str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  call void @finalize_str(%string_descriptor* %ptr, i1 false)
+  ret void
+}
+
+define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
+entry:
+  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %entry
+  call void @_lfortran_free(i8* %1)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %entry
+  ret void
+}
 
 declare void @_lfortran_free(i8*)
 
