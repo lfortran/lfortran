@@ -13971,6 +13971,7 @@ public:
 
         llvm::Value *unit_val, *iostat, *iostat_for_empty_read, *read_size;
         llvm::Value *advance, *advance_length;
+        int iostat_kind = 4; // kind of iostat variable (default INT32)
         bool is_string = false;
         if (x.m_unit == nullptr) {
             // Read from stdin
@@ -13991,6 +13992,7 @@ public:
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_iostat, false);
             ptr_loads = ptr_copy;
+            iostat_kind = ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_iostat))->m_kind;
             iostat = tmp;
             iostat_for_empty_read = iostat;
         } else {
@@ -14332,20 +14334,20 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
+                        // If iostat variable is of different kind(bytes)
+                        // Store the iostat result in correct variable size
                         llvm::Value* iostat_arg = iostat;
-                        llvm::AllocaInst* tmp_iostat = nullptr;
-                        if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
-                            llvm::AllocaInst* iostat_alloca = llvm::dyn_cast<llvm::AllocaInst>(iostat);
-                            if (iostat_alloca && !iostat_alloca->getAllocatedType()->isIntegerTy(32)) {
-                                tmp_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
-                                iostat_arg = tmp_iostat;
-                            }
+                        bool tmp_iostat = 0;
+                        if (iostat_kind != 4) {
+                            iostat_arg = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
+                            tmp_iostat = 1;
                         }
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat_arg });
                         if (tmp_iostat) {
-                            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), tmp_iostat);
-                            llvm::Value* widened = builder->CreateSExt(i32_val, llvm::Type::getInt64Ty(context));
-                            builder->CreateStore(widened, iostat);  
+                            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat_arg);
+                            llvm::Value* changed_size_var = builder->CreateIntCast(i32_val, 
+                                llvm::Type::getIntNTy(context, iostat_kind * 8), true);
+                            builder->CreateStore(changed_size_var, iostat);
                         }
                     }
                     return;
