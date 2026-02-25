@@ -1020,6 +1020,7 @@ RUN(NAME submodule_25a LABELS gfortran llvm_submodule EXTRAFILES submodule_25b.f
 RUN(NAME submodule_26 LABELS gfortran llvm)
 RUN(NAME submodule_27a LABELS gfortran llvm_submodule EXTRAFILES submodule_27b.f90 submodule_27c.f90)
 RUN(NAME submodule_28 LABELS gfortran llvm)
+RUN(NAME submodule_29a LABELS gfortran llvm_submodule EXTRAFILES submodule_29b.f90 submodule_29c.f90 submodule_29d.f90)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body

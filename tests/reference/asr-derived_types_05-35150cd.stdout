@@ -801,7 +801,7 @@
                         })
                     stdlib_string_type_constructor
                     derived_types_05_stdlib_string_type
-                    []
+                    [derived_types_05_stdlib_string_type]
                     .false.
                     .false.
                     .false.
