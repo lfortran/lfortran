@@ -1025,6 +1025,7 @@ RUN(NAME submodule_32 LABELS gfortran llvm)
 RUN(NAME submodule_33 LABELS gfortran llvm)
 RUN(NAME c_sizeof_02 LABELS gfortran llvm)
 RUN(NAME iso_c_binding_04 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
