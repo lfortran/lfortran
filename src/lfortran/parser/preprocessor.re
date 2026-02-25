@@ -789,6 +789,7 @@ std::string function_like_macro_expansion(
     unsigned char *string_start=(unsigned char*)(&expansion[0]);
     unsigned char *cur = string_start;
     std::string output;
+    bool paste_next = false;
     for (;;) {
         unsigned char *tok = cur;
         unsigned char *mar;
@@ -798,6 +799,13 @@ std::string function_like_macro_expansion(
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = "unsigned char";
 
+            [ \t]* "##" [ \t]* {
+                while (!output.empty() && (output.back() == ' ' || output.back() == '\t')) {
+                    output.pop_back();
+                }
+                paste_next = true;
+                continue;
+            }
             "#" name {
                 std::string t = token(tok + 1, cur);
                 auto search = std::find(def_args.begin(), def_args.end(), t);
@@ -808,10 +816,12 @@ std::string function_like_macro_expansion(
                     output.append("#");
                     output.append(t);
                 }
+                paste_next = false;
                 continue;
             }
             * {
                 output.append(token(tok, cur));
+                paste_next = false;
                 continue;
             }
             end {
@@ -822,18 +832,25 @@ std::string function_like_macro_expansion(
                 auto search = std::find(def_args.begin(), def_args.end(), t);
                 if (search != def_args.end()) {
                     size_t i = std::distance(def_args.begin(), search);
-                    output.append(expanded_args[i]);
+                    if (paste_next) {
+                        output.append(call_args[i]);
+                    } else {
+                        output.append(expanded_args[i]);
+                    }
                 } else {
                     output.append(t);
                 }
+                paste_next = false;
                 continue;
             }
             '"' ('""'|[^"\x00])* '"' {
                 output.append(token(tok, cur));
+                paste_next = false;
                 continue;
             }
             "'" ("''"|[^'\x00])* "'" {
                 output.append(token(tok, cur));
+                paste_next = false;
                 continue;
             }
         */
