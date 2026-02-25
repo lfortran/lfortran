@@ -1787,6 +1787,7 @@ RUN(NAME custom_operator_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_14 LABELS gfortran llvm)
 RUN(NAME custom_operator_15 LABELS gfortran llvm)
 RUN(NAME custom_operator_16 LABELS gfortran llvm)
+RUN(NAME custom_operator_17 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -1967,7 +1968,12 @@ RUN(NAME derived_types_108 LABELS gfortran llvm)
 RUN(NAME derived_types_109 LABELS gfortran llvm)
 RUN(NAME derived_types_110 LABELS gfortran llvm)
 RUN(NAME derived_types_111 LABELS gfortran llvm)
-RUN(NAME derived_types_112 LABELS gfortran llvm)
+RUN(NAME derived_types_112 LABELS llvm)
+RUN(NAME derived_types_113 LABELS gfortran llvm)
+RUN(NAME derived_types_114 LABELS gfortran llvm
+        EXTRAFILES derived_types_114_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME derived_types_115 LABELS gfortran llvm
+        EXTRAFILES derived_types_115_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -3388,6 +3394,7 @@ RUN(NAME separate_compilation_31 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_32 LABELS gfortran llvm EXTRAFILES separate_compilation_32a.f90 separate_compilation_32b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_33 LABELS llvm EXTRAFILES separate_compilation_33a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_34 LABELS gfortran llvm EXTRAFILES separate_compilation_34a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_35 LABELS gfortran llvm EXTRAFILES separate_compilation_35a.f90 EXTRA_ARGS --separate-compilation)
 
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
@@ -3488,6 +3495,8 @@ RUN(NAME infer_walrus_shadow_03 LABELS llvm_infer NO_STD_F23)
 
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
+
+RUN(NAME allocatable_lhs_finalization_01 LABELS llvm)
 
 RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
