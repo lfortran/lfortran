@@ -7042,18 +7042,24 @@ public:
             }
             
             if (abi == ASR::abiType::BindC) {
-                int64_t char_len;
-                ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type));
-                bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
-                if (!has_len || char_len != 1) {
-                    diag.add(Diagnostic(
-                        "Character dummy argument `" + sym +
-                        "` must be of constant length of one or assumed length, "
-                        "unless it has assumed shape or assumed rank in a BIND(C) procedure",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {loc})
-                        }));
-                    throw SemanticAbort();
+                ASR::ttype_t *inner_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_array(type)));
+                ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(inner_type);
+                if (str_type->m_len_kind != ASR::DeferredLength
+                        && str_type->m_len_kind != ASR::AssumedLength) {
+                    int64_t char_len;
+                    bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
+                    if (!has_len || char_len != 1) {
+                        diag.add(Diagnostic(
+                            "Character dummy argument `" + sym +
+                            "` must be of constant length of one or assumed length, "
+                            "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
@@ -15532,7 +15538,9 @@ public:
         }
 
     // Check CChar length
-        if(str->m_physical_type == ASR::CChar){
+        if(str->m_physical_type == ASR::CChar
+                && str->m_len_kind != ASR::DeferredLength
+                && str->m_len_kind != ASR::AssumedLength){
             int64_t len;
             if( !ASRUtils::extract_value(str->m_len, len) || (len != 1) ){
                 diag.add(Diagnostic(

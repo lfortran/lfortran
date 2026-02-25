@@ -1601,6 +1601,7 @@ RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc_11 LABELS gfortran llvm)
 RUN(NAME bindc_12 LABELS gfortran llvm)
+RUN(NAME bindc_13 LABELS gfortran llvm)
 
 RUN(NAME case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
