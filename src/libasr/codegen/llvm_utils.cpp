@@ -266,7 +266,7 @@ namespace LCompilers {
     }
 
     void LLVMUtils::createStructTypeContext(ASR::Struct_t* der_type) {
-        std::string der_type_name = std::string(der_type->m_name);
+        std::string der_type_name = get_type_key(der_type);
         if (name2dercontext.find(der_type_name) == name2dercontext.end() ) {
             llvm::StructType* der_type_llvm = llvm::StructType::create(context,
                                 {},
@@ -290,7 +290,7 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer) {
-        std::string der_type_name = std::string(der_type->m_name);
+        std::string der_type_name = get_type_key(der_type);
         createStructTypeContext(der_type);
         if (std::find(struct_type_stack.begin(), struct_type_stack.end(),
                         der_type_name) != struct_type_stack.end()) {
@@ -310,7 +310,7 @@ namespace LCompilers {
                                                         ASRUtils::symbol_get_past_external(der_type->m_parent));
                 llvm::Type* par_llvm = getStructType(par_der_type, module);
                 member_types.push_back(par_llvm);
-                dertype2parent[der_type_name] = std::string(par_der_type->m_name);
+                dertype2parent[der_type_name] = get_type_key(par_der_type);
                 member_idx += 1;
             }
             Allocator al(1024);
@@ -337,7 +337,7 @@ namespace LCompilers {
 
     llvm::Type* LLVMUtils::getUnion(ASR::Union_t* union_type,
         llvm::Module* module, bool is_pointer) {
-        std::string union_type_name = std::string(union_type->m_name);
+        std::string union_type_name = get_type_key(union_type);
         llvm::StructType* union_type_llvm = nullptr;
         if( name2dertype.find(union_type_name) != name2dertype.end() ) {
             union_type_llvm = name2dertype[union_type_name];
@@ -366,7 +366,7 @@ namespace LCompilers {
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
         bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(der_type);
-        std::string der_type_name = std::string(der_type->m_name);
+        std::string der_type_name = get_type_key(der_type);
         if (!compiler_options.new_classes) {
             der_type_name += "_polymorphic";
         } else if (!is_upoly) {
@@ -9578,7 +9578,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), dest, 1));
             }
 
-            std::string der_type_name = std::string(struct_sym->m_name);
+            std::string der_type_name = get_type_key(struct_sym);
             while( struct_sym != nullptr ) {
                 for (size_t i = 0; i < struct_sym->n_members; i++) {
                     std::string mem_name = struct_sym->m_members[i];
@@ -9821,13 +9821,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 }
                 if( struct_sym->m_parent != nullptr ) {
                     // gep the parent struct, which is the 0th member of the child struct
-                    src = llvm_utils->create_gep2(llvm_utils->name2dertype[struct_sym->m_name], src, 0);
-                    dest = llvm_utils->create_gep2(llvm_utils->name2dertype[struct_sym->m_name], dest, 0);
+                    src = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], src, 0);
+                    dest = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], dest, 0);
 
                     ASR::Struct_t* parent_struct_type_t =
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
 
-                    der_type_name = parent_struct_type_t->m_name;
+                    der_type_name = get_type_key(parent_struct_type_t);
                     struct_sym = parent_struct_type_t;
                 } else {
                     struct_sym = nullptr;
