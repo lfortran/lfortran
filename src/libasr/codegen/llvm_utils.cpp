@@ -598,7 +598,7 @@ namespace LCompilers {
         llvm::Type* type = nullptr;
 
         #define handle_llvm_pointers2() bool is_pointer_ = ASRUtils::is_class_type(t2) || \
-            (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
+            ASR::is_a<ASR::String_t>(*t2); \
             type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
                         is_array_type, arg_intent, module, get_pointer); \
@@ -606,7 +606,7 @@ namespace LCompilers {
                 type = type->getPointerTo(); \
             } \
 
-        #define handle_llvm_pointers_new_classes() bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
+        #define handle_llvm_pointers_new_classes() bool is_pointer_ = ASR::is_a<ASR::String_t>(*t2); \
             type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
                         is_array_type, arg_intent, module, get_pointer); \

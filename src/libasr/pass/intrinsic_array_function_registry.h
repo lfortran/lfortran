@@ -3332,6 +3332,18 @@ namespace Product {
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
             return nullptr;
         }
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*args[0])) {
+            ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(args[0]);
+            if (iaf->m_arr_intrinsic_id == static_cast<int64_t>(IntrinsicArrayFunctions::Shape)
+                    && iaf->n_args > 0) {
+                ASR::expr_t* shape_arg = ASRUtils::get_past_array_physical_cast(iaf->m_args[0]);
+                if (is_assumed_rank_array(expr_type(shape_arg))) {
+                    ASR::ttype_t* ret_type = extract_type(array_type);
+                    return ASRUtils::make_ArraySize_t_util(al, loc,
+                        iaf->m_args[0], nullptr, ret_type, nullptr, false);
+                }
+            }
+        }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Product);
     }
