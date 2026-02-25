@@ -2291,6 +2291,21 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
+                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
+                        if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
+                            for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
+                                std::string final_proc_name = struct_sym->m_member_functions[fi];
+                                ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
+                                if (final_sym) {
+                                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                                    uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                                    if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
+                                        llvm::Function* final_fn = llvm_symtab_fn[fh];
+                                        builder->CreateCall(final_fn, {tmp});
+                                    }
+                                }
+                            }
+                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
                         if (compiler_options.new_classes &&
