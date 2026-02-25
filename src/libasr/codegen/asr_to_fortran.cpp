@@ -2482,7 +2482,9 @@ public:
     }
 
 
-    // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
+    void visit_SizeOfType(const ASR::SizeOfType_t &x) {
+        src = "c_sizeof(" + ASRUtils::type_to_str_fortran_symbol(x.m_arg, nullptr) + ")";
+    }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
         (void)x; // suppress unused warning

@@ -4059,6 +4059,20 @@ public:
             ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
     }
 
+    void visit_SizeOfType(const ASR::SizeOfType_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_arg, nullptr, module.get());
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        tmp = llvm::ConstantInt::get(llvm_utils->getIntType(kind),
+            llvm::APInt(kind * 8, type_size));
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);

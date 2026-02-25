@@ -67,6 +67,11 @@ interface
     !type(*), intent(in) :: x
     integer, intent(in) :: x
     end function
+
+    integer(c_size_t) function c_sizeof(x)
+    !type(*), intent(in) :: x
+    integer, intent(in) :: x
+    end function
 end interface
 
 end module

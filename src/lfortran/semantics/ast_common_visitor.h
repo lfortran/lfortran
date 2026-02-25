@@ -1813,7 +1813,8 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc"
+        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
+        "c_sizeof"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -12087,6 +12088,18 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
+    ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"X"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+        ASR::expr_t *arg = args[0];
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *size_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, x.base.base.loc, 8));
+        return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
+            size_type, nullptr);
+    }
+
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc, int kind) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
@@ -13104,6 +13117,8 @@ public:
                         tmp = create_Associated(x);
                     } else if (var_name == "c_funloc") {
                         tmp = create_PointerToCptr(x);
+                    } else if (var_name == "c_sizeof") {
+                        tmp = create_CSizeOf(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
