@@ -1762,6 +1762,7 @@ RUN(NAME operator_overloading_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME operator_overloading_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1780,6 +1781,8 @@ RUN(NAME custom_operator_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_
 RUN(NAME custom_operator_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_14 LABELS gfortran llvm)
+RUN(NAME custom_operator_15 LABELS gfortran llvm)
+RUN(NAME custom_operator_16 LABELS gfortran llvm)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -2828,6 +2831,8 @@ RUN(NAME procedure_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_27 LABELS gfortran llvm)
 RUN(NAME procedure_28 LABELS gfortran llvm)
+RUN(NAME procedure_29 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

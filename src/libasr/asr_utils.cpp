@@ -1461,12 +1461,19 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         right_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(right)));
     }
     bool found = false;
-    if (is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
+    bool found_on_right = false;
+    if (!is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
+        if (right_struct != nullptr && is_op_overloaded(op, intrinsic_op_name, curr_scope, right_struct)) {
+            found_on_right = true;
+        }
+    }
+    ASR::Struct_t* op_struct = found_on_right ? right_struct : left_struct;
+    if (is_op_overloaded(op, intrinsic_op_name, curr_scope, op_struct)) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::symbol_t* orig_sym2 = nullptr;
-        if (left_struct != nullptr) {
-            ASR::Struct_t* temp_struct = left_struct;
+        if (op_struct != nullptr) {
+            ASR::Struct_t* temp_struct = op_struct;
             while (temp_struct) {
                 if (temp_struct->m_symtab->get_symbol(intrinsic_op_name) != nullptr) {
                     orig_sym2 = temp_struct->m_symtab->get_symbol(intrinsic_op_name);
@@ -1500,8 +1507,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
                 ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
-                if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
-                    ASR::Struct_t* temp_struct = left_struct;
+                if (cp->m_parent_symtab->get_counter() != op_struct->m_symtab->get_counter()) {
+                    ASR::Struct_t* temp_struct = op_struct;
                     while (temp_struct->m_parent) {
                         if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
                             cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
@@ -1574,11 +1581,23 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             if (i < n_interface_proc) {
                                 left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
                                 a_args.push_back(al, left_call_arg);
+                                right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
+                                a_args.push_back(al, right_call_arg);
+                            } else if (found_on_right) {
+                                // Operator is a type-bound procedure on the right
+                                // operand's type. Include both operands as regular
+                                // call arguments (not as self_arg) so that argument
+                                // order matches the function's formal parameters.
+                                left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
+                                a_args.push_back(al, left_call_arg);
+                                right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
+                                a_args.push_back(al, right_call_arg);
+                            } else {
+                                right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
+                                a_args.push_back(al, right_call_arg);
                             }
-                            right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
-                            a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
-                            if (i >= n_interface_proc) {
+                            if (i >= n_interface_proc && !found_on_right) {
                                 ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
                                 matched_func_name = ASRUtils::symbol_name(mem_ext);
                                 self_arg = left;
@@ -1590,7 +1609,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
                             if( a_name == nullptr ) {
-                                if (i >= n_interface_proc) {
+                                if (i >= n_interface_proc && !found_on_right) {
                                     err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                                 } else {
                                     a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
