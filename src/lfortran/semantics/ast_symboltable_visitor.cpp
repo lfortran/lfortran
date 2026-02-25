@@ -914,17 +914,24 @@ public:
 
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
-        if (interface_module->m_parent_module) {
-            SymbolTable* tu_symtab = current_scope->get_global_scope();
-            interface_module = ASR::down_cast<ASR::Module_t>(tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
-        }
+        SymbolTable* tu_symtab = current_scope->get_global_scope();
+        std::string proc_name = to_lower(std::string(x.m_name));
 
         ASR::Function_t* proc_interface = nullptr;
-        for (auto &item : interface_module->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second) && (std::string(ASR::down_cast<ASR::Function_t>(item.second)->m_name) == to_lower(std::string(x.m_name)))) {
-                proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
-                break;
+        while (proc_interface == nullptr) {
+            if (interface_module->m_parent_module) {
+                interface_module = ASR::down_cast<ASR::Module_t>(
+                    tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
             }
+            for (auto &item : interface_module->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second) &&
+                        std::string(ASR::down_cast<ASR::Function_t>(
+                            item.second)->m_name) == proc_name) {
+                    proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
+                    break;
+                }
+            }
+            if (!interface_module->m_parent_module) break;
         }
 
         if (proc_interface == nullptr) {
