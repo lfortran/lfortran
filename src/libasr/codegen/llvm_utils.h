@@ -910,6 +910,7 @@ class ASRToLLVMVisitor;
             
             llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
             LCOMPILERS_ASSERT(saved_BB)
+            llvm::BasicBlock::iterator insert_point = builder_->GetInsertPoint();
 
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
                 builder_->getContext(), "entry", finalizer_fn);
@@ -924,7 +925,7 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT(!builder_->GetInsertBlock()->getTerminator())
             builder_->CreateRetVoid();
 
-            builder_->SetInsertPoint(saved_BB);
+            builder_->SetInsertPoint(saved_BB, insert_point);
 
             return finalizer_fn;
         }
@@ -1119,7 +1120,7 @@ class ASRToLLVMVisitor;
                         auto const dim_desc_ptr = builder_->CreateLoad(
                             llvm_utils_->dim_descr_type_->getPointerTo(),
                             llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
-                        llvm_utils_->lfortran_free(dim_desc_ptr);
+                            llvm_utils_->lfortran_free(dim_desc_ptr);
                         }
                         , [](){}
                         , "free_dim_desc_if_in_struct");
