@@ -311,6 +311,10 @@ public:
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
+            current_module_dependencies.push_back(al, s2c(al, parent_name));
+            for (size_t i = 0; i < m->n_dependencies; i++) {
+                current_module_dependencies.push_back(al, m->m_dependencies[i]);
+            }
         } else {
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
@@ -419,7 +423,13 @@ public:
 
     void visit_Submodule(const AST::Submodule_t &x) {
         in_submodule = true;
-        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, std::string(to_lower(x.m_id)));
+        std::string parent_name;
+        if (x.m_parent_name) {
+            parent_name = to_lower(x.m_parent_name);
+        } else {
+            parent_name = to_lower(x.m_id);
+        }
+        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, parent_name);
         in_submodule = false;
     }
 
@@ -906,17 +916,24 @@ public:
 
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
-        if (interface_module->m_parent_module) {
-            SymbolTable* tu_symtab = current_scope->get_global_scope();
-            interface_module = ASR::down_cast<ASR::Module_t>(tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
-        }
+        SymbolTable* tu_symtab = current_scope->get_global_scope();
+        std::string proc_name = to_lower(std::string(x.m_name));
 
         ASR::Function_t* proc_interface = nullptr;
-        for (auto &item : interface_module->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second) && (std::string(ASR::down_cast<ASR::Function_t>(item.second)->m_name) == to_lower(std::string(x.m_name)))) {
-                proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
-                break;
+        while (proc_interface == nullptr) {
+            if (interface_module->m_parent_module) {
+                interface_module = ASR::down_cast<ASR::Module_t>(
+                    tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
             }
+            for (auto &item : interface_module->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second) &&
+                        std::string(ASR::down_cast<ASR::Function_t>(
+                            item.second)->m_name) == proc_name) {
+                    proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
+                    break;
+                }
+            }
+            if (!interface_module->m_parent_module) break;
         }
 
         if (proc_interface == nullptr) {
@@ -986,6 +1003,13 @@ public:
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
+        for (size_t i=0; i<x.n_use; i++) {
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         is_Function = true;
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {

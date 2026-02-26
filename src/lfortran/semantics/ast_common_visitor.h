@@ -7236,8 +7236,24 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star
                 );
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
                 type_declaration = v;
                 type = ASRUtils::get_union_type(al, loc, v);
@@ -8092,6 +8108,9 @@ public:
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
+            if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
+                expr_type = ASRUtils::type_get_past_pointer(expr_type);
+            }
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
                 if(!ASRUtils::is_value_constant(expr)) 
                     use_descriptorArray = true;
@@ -15689,11 +15708,9 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if (((!to_submodule) &&
+                if ((!to_submodule) &&
                      mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) ||
-                    (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
-                     to_submodule)) {
+                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
                     continue;
                 }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(

@@ -813,6 +813,7 @@ RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_02 LABELS gfortran llvm)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1019,7 +1020,16 @@ RUN(NAME submodule_24 LABELS gfortran llvm)
 RUN(NAME submodule_25a LABELS gfortran llvm_submodule EXTRAFILES submodule_25b.f90 submodule_25c.f90)
 RUN(NAME submodule_26 LABELS gfortran llvm)
 RUN(NAME submodule_27a LABELS gfortran llvm_submodule EXTRAFILES submodule_27b.f90 submodule_27c.f90)
-
+RUN(NAME submodule_28 LABELS gfortran llvm)
+RUN(NAME submodule_29a LABELS gfortran llvm_submodule EXTRAFILES submodule_29b.f90 submodule_29c.f90 submodule_29d.f90)
+RUN(NAME submodule_30a LABELS gfortran llvm_submodule EXTRAFILES submodule_30b.f90 submodule_30c.f90 submodule_30d.f90)
+RUN(NAME submodule_31 LABELS gfortran llvm)
+RUN(NAME submodule_32 LABELS gfortran llvm)
+RUN(NAME submodule_33 LABELS gfortran llvm)
+RUN(NAME c_sizeof_02 LABELS gfortran llvm)
+RUN(NAME iso_c_binding_04 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
+RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
@@ -2229,6 +2239,7 @@ RUN(NAME string_97 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_99 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_101 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2565,6 +2576,7 @@ RUN(NAME rewind_inquire_flush LABELS gfortran)
 RUN(NAME flush_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 RUN(NAME flush_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt file_02_data.txt)
 RUN(NAME flush_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME flush_04 LABELS gfortran llvm)
 
 RUN(NAME assign_to1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_to2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2789,6 +2801,7 @@ RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME iso_c_binding_01 LABELS gfortran llvm)
 RUN(NAME iso_c_binding_02 LABELS gfortran llvm)
+RUN(NAME iso_c_binding_03 LABELS gfortran llvm)
 
 RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -3046,6 +3059,8 @@ RUN(NAME cpp_pre_06 LABELS gfortran llvm
 RUN(NAME cpp_pre_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
+RUN(NAME cpp_pre_08 LABELS llvm
+    EXTRA_ARGS --cpp)
 
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 

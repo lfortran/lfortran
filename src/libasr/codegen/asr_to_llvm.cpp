@@ -871,7 +871,8 @@ public:
         switch(str_type->m_len_kind){
             case ASR::ExpressionLength:{
                 LCOMPILERS_ASSERT(len);
-                int ptr_load_cpy = ptr_loads;ptr_loads = 1;
+                int ptr_load_cpy = ptr_loads;
+                ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(len));
                 visit_expr(*len);
                 ptr_loads = ptr_load_cpy;
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
@@ -5059,7 +5060,21 @@ public:
                         sym);
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
             if (x.m_parent_module && func_type->m_module) {
-                mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
+                std::string root_module = std::string(x.m_parent_module);
+                SymbolTable* tu_symtab = x.m_symtab->parent;
+                if (tu_symtab) {
+                    ASR::symbol_t* parent_sym = tu_symtab->get_symbol(root_module);
+                    while (parent_sym && ASR::is_a<ASR::Module_t>(*parent_sym)) {
+                        ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(parent_sym);
+                        if (parent_mod->m_parent_module) {
+                            root_module = std::string(parent_mod->m_parent_module);
+                            parent_sym = tu_symtab->get_symbol(root_module);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                mangle_prefix = "__module_" + root_module + "_";
             }
             instantiate_function(*v);
             mangle_prefix = "__module_" + std::string(x.m_name) + "_";
@@ -9195,8 +9210,6 @@ public:
             h = get_hash((ASR::asr_t*)asr_target);
             target = llvm_symtab[h];
             if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASR::is_a<ASR::CPtr_t>(
-                    *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASRUtils::is_character(*asr_target->m_type)) {

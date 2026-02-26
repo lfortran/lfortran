@@ -598,7 +598,7 @@ namespace LCompilers {
         llvm::Type* type = nullptr;
 
         #define handle_llvm_pointers2() bool is_pointer_ = ASRUtils::is_class_type(t2) || \
-            (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
+            ASR::is_a<ASR::String_t>(*t2); \
             type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
                         is_array_type, arg_intent, module, get_pointer); \
@@ -606,7 +606,7 @@ namespace LCompilers {
                 type = type->getPointerTo(); \
             } \
 
-        #define handle_llvm_pointers_new_classes() bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
+        #define handle_llvm_pointers_new_classes() bool is_pointer_ = ASR::is_a<ASR::String_t>(*t2); \
             type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
                         is_array_type, arg_intent, module, get_pointer); \
@@ -996,8 +996,9 @@ namespace LCompilers {
                     // For bind(c) array dummies (including implicit interfaces), handle
                     // based on the physical type specified in the ASR.
                     ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
-                    if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
-                        // DescriptorArray: pass pointer to descriptor struct
+                    if (phys_type == ASR::array_physical_typeType::DescriptorArray ||
+                        phys_type == ASR::array_physical_typeType::AssumedRankArray) {
+                        // DescriptorArray/AssumedRankArray: pass pointer to descriptor struct
                         type = type_original->getPointerTo();
                     } else if (ASRUtils::is_character(*arg->m_type)) {
                         // PointerArray CHARACTER: use raw i8*
@@ -1367,7 +1368,7 @@ namespace LCompilers {
                         llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration),
                                                  LLVM::is_llvm_pointer(*asr_type));
                     }
-                } else {
+                } else if (arg_expr) {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         llvm_type = getStructType(
                             ASR::down_cast<ASR::Struct_t>(
@@ -1380,6 +1381,14 @@ namespace LCompilers {
                                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr))),
                                            LLVM::is_llvm_pointer(*asr_type));
                     }
+                } else {
+                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(asr_type);
+                    std::vector<llvm::Type*> member_types;
+                    for (size_t i = 0; i < st->n_data_member_types; i++) {
+                        member_types.push_back(get_type_from_ttype_t_util(
+                            st->m_data_member_types[i], nullptr, module));
+                    }
+                    llvm_type = llvm::StructType::get(context, member_types);
                 }
                 break;
             }
