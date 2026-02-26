@@ -995,7 +995,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
     dealloc_args.push_back(al, temporary_var);
     if( !add_allocated_check ) {
-        current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al,
             temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
             temporary_var->base.loc, alloc_args.p, alloc_args.size(),
@@ -1009,7 +1009,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
                 allocated_args.p, allocated_args.size(), 0,
                 ASRUtils::TYPE(ASR::make_Logical_t(al, value->base.loc, 4)), nullptr))),
-            {ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+            {ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al,
                 temporary_var->base.loc, dealloc_args.p, dealloc_args.size())),
              ASRUtils::STMT(ASR::make_Allocate_t(al,
                 temporary_var->base.loc, alloc_args.p, alloc_args.size(),

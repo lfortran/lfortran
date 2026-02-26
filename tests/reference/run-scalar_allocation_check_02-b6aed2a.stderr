@@ -1,5 +1,5 @@
-runtime error: Tried to access member of unallocated variable 'var'
-  --> tests/errors/scalar_allocation_check_02.f90:14:22
+runtime error: Attempting to deallocate unallocated variable 'var'
+  --> tests/errors/scalar_allocation_check_02.f90:10:16
    |
-14 |             print *, var%x
-   |                      ^^^^^ 'var' unallocated here
+10 |     deallocate(var)
+   |                ^^^ Cannot deallocate 'var' because it is not allocated
