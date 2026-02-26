@@ -137,6 +137,12 @@ semantic error: Dummy argument 'x' not defined
 83 |        end subroutine arank
    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: OPTIONAL dummy argument 'n' cannot be used for array bounds declaration
+   --> tests/errors/continue_compilation_2.f90:107:21
+    |
+107 |         real :: arr(n)
+    |                     ^ hint: use a non-optional argument, or declare the array as `allocatable`
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_2.f90:132:5 - 134:49
     |
@@ -322,6 +328,18 @@ semantic error: Argument `val_a` with intent(in) passed to a dummy argument with
    |
 73 |         res = inner_func(val_a)
    |                          ^^^^^ 
+
+semantic error: Dummy argument 'this' has `intent(out)` and cannot be used for array bounds declaration
+  --> tests/errors/continue_compilation_2.f90:98:27
+   |
+98 |             real :: array(this%n)
+   |                           ^^^^^^ hint: use `intent(in/inout)` or `allocatable` for 'this', or pass the size as a separate `intent(in)` argument
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:100:13
+    |
+100 |             array = [ (i,i = 1,this%n) ]
+    |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (integer and integer[:])
 
 semantic error: Deferred-length CHARACTER variable must be allocated with a character length `character(..)`
    --> tests/errors/continue_compilation_2.f90:295:14
@@ -823,12 +841,6 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 490 |     tm2_x = 5 + "x"
     |     ^^^^^       ^^^ type mismatch (integer and string)
-
-semantic error: Variable 'foo' is not declared
-   --> tests/errors/continue_compilation_2.f90:492:13
-    |
-492 |     print *,foo
-    |             ^^^ 'foo' is undeclared
 
 semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
    --> tests/errors/continue_compilation_2.f90:497:14
