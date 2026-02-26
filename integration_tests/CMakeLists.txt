@@ -3104,6 +3104,7 @@ RUN(NAME legacy_array_sections_14 LABELS gfortran llvm
 RUN(NAME legacy_array_sections_15 LABELS gfortran llvm
     EXTRA_ARGS --legacy-array-sections -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME legacy_array_sections_16 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
