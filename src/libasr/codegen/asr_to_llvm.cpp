@@ -4357,6 +4357,12 @@ public:
                 if (!initializer) {
                     throw CodeGenError("Non-constant value found in struct initialization");
                 }
+                if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(initializer);
+                    if (gv && gv->hasInitializer()) {
+                        initializer = gv->getInitializer();
+                    }
+                }
             }
             elements.push_back(initializer);
         }
@@ -5531,6 +5537,15 @@ public:
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     setup_string(ptr_member, symbol_type);
+                    if (!initialize_val && v && v->m_symbolic_value &&
+                        ASRUtils::is_string_only(ASRUtils::expr_type(v->m_symbolic_value))) {
+                        visit_expr(*v->m_symbolic_value);
+                        llvm_utils->lfortran_str_copy(
+                            ptr_member, tmp,
+                            ASRUtils::get_string_type(symbol_type),
+                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value)),
+                            ASRUtils::is_allocatable(symbol_type));
+                    }
                 }
                 if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
