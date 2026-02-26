@@ -1,0 +1,27 @@
+<!-- This is an automatically generated file. Do not edit it manually. -->
+
+# ArrayIsContiguous
+
+ArrayIsContiguous, a **expr** node.
+
+## Declaration
+
+### Syntax
+
+ArrayIsContiguous(expr array, ttype type, expr? value)
+
+### Arguments
+Input arguments are `array` of type expr, `type` of type ttype, `value` of type expr?.
+
+### Return values
+
+None.
+
+## ASR
+
+<!-- Generate ASR using pickle. -->
+
+## Restrictions
+
+<!-- Generated from asr_verify.cpp. -->
+None.
