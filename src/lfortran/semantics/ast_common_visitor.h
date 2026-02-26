@@ -13151,16 +13151,95 @@ public:
                         );
                     throw SemanticAbort();
                 }
-            } else if (compiler_options.implicit_interface && !ASRUtils::is_symbol_procedure_variable(v)) {
-                bool is_function = true;
-                if (!is_v_dummy_arg) {
-                    // NOTE: ideally this shouldn't be needed, this is only to handle
-                    // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
-                    // implemented as intrinsic elemental function
-                    intrinsic_as_node(x, is_function);
-                    if (!is_function) {
-                        return;
+            } else if (compiler_options.implicit_interface && is_v_dummy_arg && !ASRUtils::is_symbol_procedure_variable(v)) {
+                ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(v);
+                ASR::ttype_t* return_type = dummy_var->m_type;
+
+                std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
+                bool in_current_scope = (scope_.find(var_name) != scope_.end());
+                SymbolTable* owner_scope = current_scope;
+                if (!in_current_scope) {
+                    ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
+                    while(!sym_) {
+                        owner_scope = owner_scope->parent;
+                        sym_ = owner_scope->get_symbol(var_name);
                     }
+                }
+
+                Vec<ASR::call_arg_t> c_args;
+                visit_expr_list(x.m_args, x.n_args, c_args);
+
+                SymbolTable* fn_scope = al.make_new<SymbolTable>(owner_scope);
+                std::string iface_name = "~implicit_interface_" + var_name + "_" +
+                    fn_scope->get_counter();
+                Vec<ASR::expr_t*> iface_args;
+                iface_args.reserve(al, x.n_args);
+                Vec<ASR::ttype_t*> arg_types;
+                arg_types.reserve(al, x.n_args);
+                for (size_t i = 0; i < c_args.size(); i++) {
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(c_args[i].m_value);
+                    std::string arg_name = iface_name + "_arg_" + std::to_string(i);
+                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Variable_t(al, x.base.base.loc, fn_scope, s2c(al, arg_name),
+                            nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
+                            ASR::storage_typeType::Default, arg_type, nullptr,
+                            ASR::abiType::BindC, ASR::accessType::Public,
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                    fn_scope->add_symbol(arg_name, arg_sym);
+                    iface_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
+                    arg_types.push_back(al, arg_type);
+                }
+                std::string return_var_name = iface_name + "_return_var";
+                ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc, fn_scope, s2c(al, return_var_name),
+                        nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                        ASR::storage_typeType::Default, return_type, nullptr,
+                        ASR::abiType::BindC, ASR::accessType::Public,
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                fn_scope->add_symbol(return_var_name, return_sym);
+                ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+
+                ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, x.base.base.loc, arg_types.p, arg_types.size(), return_type,
+                    ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+                    false, false, false, false, false, nullptr, 0, false));
+                ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Function_t(
+                        al, x.base.base.loc, fn_scope, s2c(al, iface_name),
+                        iface_type, nullptr, 0, iface_args.p, iface_args.size(), nullptr, 0,
+                        return_var, ASR::accessType::Public, false, false,
+                        nullptr, nullptr, nullptr));
+                owner_scope->add_or_overwrite_symbol(iface_name, iface);
+
+                dummy_var->m_type = iface_type;
+                dummy_var->m_type_declaration = iface;
+
+                if (owner_scope->asr_owner &&
+                    ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner) &&
+                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner))) {
+                    ASR::Function_t *owner_func = ASR::down_cast<ASR::Function_t>(
+                        ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner));
+                    ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                        owner_func->m_function_signature);
+                    for (size_t i = 0; i < owner_func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                                owner_func->m_args[i])->m_v;
+                            if (arg_sym == v) {
+                                owner_ft->m_arg_types[i] = iface_type;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if (compiler_options.implicit_interface && !is_v_dummy_arg && !ASRUtils::is_symbol_procedure_variable(v)) {
+                bool is_function = true;
+                // NOTE: ideally this shouldn't be needed, this is only to handle
+                // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
+                // implemented as intrinsic elemental function
+                intrinsic_as_node(x, is_function);
+                if (!is_function) {
+                    return;
                 }
 
                 // If implicit interface is allowed, we have to handle the
