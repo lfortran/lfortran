@@ -13849,7 +13849,28 @@ public:
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
-            LCOMPILERS_ASSERT(false);
+            std::string op_str = "+";
+            switch (op) {
+                case (ASR::Add):
+                    break;
+                case (ASR::Sub):
+                    op_str = "-";
+                    break;
+                case (ASR::Mul):
+                    op_str = "*";
+                    break;
+                case (ASR::Div):
+                    op_str = "/";
+                    break;
+                case (ASR::Pow):
+                    op_str = "**";
+                    break;
+                default:
+                    LCOMPILERS_ASSERT(false);
+            }
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         if (overloaded != nullptr) {
