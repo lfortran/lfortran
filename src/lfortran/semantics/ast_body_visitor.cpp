@@ -118,10 +118,28 @@ public:
             ASR::down_cast<ASR::symbol_t>(block));
 
         for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    current_scope = parent_scope;
+                    from_block = false;
+                    all_loops_blocks_nesting--;
+                    throw a;
+                }
+            }
         }
         for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    current_scope = parent_scope;
+                    from_block = false;
+                    all_loops_blocks_nesting--;
+                    throw a;
+                }
+            }
         }
 
         // Resolve postponed type-bound procedure calls in dimension
@@ -3861,7 +3879,13 @@ public:
         // Template is a unit_decl_2
 
         for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         if( current_module_dependencies.size() > 0 ) {
@@ -3965,7 +3989,13 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
@@ -4306,7 +4336,13 @@ public:
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
         for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         starting_m_body = nullptr;
@@ -4389,7 +4425,13 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
@@ -4463,7 +4505,13 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         for (size_t i=0; i<x.n_decl; i++) {
@@ -8158,7 +8206,13 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
-            this->visit_program_unit(*x.m_contains[i]);
+            try {
+                this->visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
         current_scope = old_scope;
 
