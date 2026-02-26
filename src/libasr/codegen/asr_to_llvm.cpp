@@ -14223,13 +14223,13 @@ public:
                     }
                 }
 
-                // Copy temporary i32 iostat back to the original wider variable
+                // Copy temporary i32 iostat back to the original variable
                 if (orig_iostat) {
                     llvm::Value* tmp_val = llvm_utils->CreateLoad2(
                         llvm::Type::getInt32Ty(context), iostat);
-                    llvm::Value* extended = builder->CreateSExt(tmp_val,
-                        llvm::Type::getInt64Ty(context));
-                    builder->CreateStore(extended, orig_iostat);
+                    llvm::Value* converted = builder->CreateIntCast(tmp_val,
+                        llvm::Type::getIntNTy(context, iostat_kind * 8), true);
+                    builder->CreateStore(converted, orig_iostat);
                     iostat = orig_iostat;
                 }
             }
