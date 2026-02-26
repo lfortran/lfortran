@@ -28,6 +28,7 @@ integer, parameter :: c_bool = 1
 integer, parameter :: c_char = 1
 integer, parameter :: c_intptr_t = 8
 integer, parameter :: c_ptrdiff_t = 8
+integer, parameter :: c_signed_char = 1
 character(len=1), parameter :: c_null_char = char(0)
 character(len=1), parameter :: c_new_line = char(10)
 type(c_ptr), parameter :: c_null_ptr = c_ptr(0)

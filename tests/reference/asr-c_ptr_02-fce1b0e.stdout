@@ -335,6 +335,16 @@
                                     c_short
                                     Public
                                 ),
+                            c_signed_char:
+                                (ExternalSymbol
+                                    2
+                                    c_signed_char
+                                    4 c_signed_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_signed_char
+                                    Public
+                                ),
                             c_size_t:
                                 (ExternalSymbol
                                     2
