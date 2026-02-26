@@ -101,7 +101,7 @@ program read_47
   s = ".FALSE."
   read(s, *) l
   if (l) error stop "Test 7 failed (logical scalar F)"
-   deallocate(larr)
+  if (allocated(larr)) deallocate(larr)
 
   ! ----------------------------------------
   ! Test 8: int64
