@@ -4738,13 +4738,17 @@ public:
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
                     int eq_n_args = eq->n_args;
                     for (int i = 0; i < eq_n_args; i++) {
-                        if (eq->m_args[i].n_set_list == 2) {
-                            AST::expr_t *eq1 = eq->m_args[i].m_set_list[0];
-                            AST::expr_t *eq2 = eq->m_args[i].m_set_list[1];
+                        if (eq->m_args[i].n_set_list >= 2) {
+                          int n_set = eq->m_args[i].n_set_list;
+                          AST::expr_t *anchor = eq->m_args[i].m_set_list[n_set - 1];
+                          this->visit_expr(*anchor);
+                          ASR::expr_t* asr_anchor = ASRUtils::EXPR(tmp);
+                          for (int eq_idx = 0; eq_idx < n_set - 1; eq_idx++) {
+                            AST::expr_t *eq1 = eq->m_args[i].m_set_list[eq_idx];
+                            AST::expr_t *eq2 = anchor;
                             this->visit_expr(*eq1);
                             ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
-                            this->visit_expr(*eq2);
-                            ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
+                            ASR::expr_t* asr_eq2 = asr_anchor;
 
                             if (AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
                                 ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
@@ -5370,6 +5374,7 @@ public:
                                     }
                                 }
                             }
+                          }
                         } else {
                             diag.semantic_warning_label(
                                 "This equivalence statement is not implemented yet, for now we will ignore it",
