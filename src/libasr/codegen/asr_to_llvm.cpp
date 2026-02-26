@@ -4351,6 +4351,17 @@ public:
                 ASR::ArrayConstant_t *arr_expr = ASR::down_cast<ASR::ArrayConstant_t>(value);
                 type = llvm_utils->get_type_from_ttype_t_util(value, arr_expr->m_type, module.get());
                 initializer = get_const_array(value, type->getArrayElementType());
+            } else if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+                // For string constants in struct initialization, get descriptor value not pointer
+                ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+                llvm::Value* str_desc_ptr = llvm_utils->declare_string_constant(str_const);
+                
+                // Extract the constant initializer from the global variable
+                if (llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(str_desc_ptr)) {
+                    initializer = gv->getInitializer();  // Gets the descriptor struct constant
+                } else {
+                    throw CodeGenError("String constant must be a global variable");
+                }
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -5443,6 +5454,11 @@ public:
                 // and might be returned.
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
+                    // Skip initialization if variable has a DATA statement (m_symbolic_value)
+                    // to preserve the constant value set in struct initializer
+                    if (v->m_symbolic_value) {
+                        continue;
+                    }
                     if (compiler_options.new_classes &&
                             !LLVM::is_llvm_pointer(*v->m_type) &&
                             ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
