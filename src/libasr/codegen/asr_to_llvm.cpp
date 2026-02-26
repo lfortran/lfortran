@@ -14070,6 +14070,180 @@ public:
 
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
+        } else if (is_string) {
+            llvm::Value *src_data, *src_len;
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
+
+            {
+                // Use position-tracking approach for all types
+                llvm::Value* pos_ptr = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt64Ty(context));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0), pos_ptr);
+
+                // Get or create _lfortran_string_list_directed_read
+                std::string func_name = "_lfortran_string_list_directed_read";
+                llvm::Function *fn = module->getFunction(func_name);
+                if (!fn) {
+                    std::vector<llvm::Type*> param_types = {
+                        character_type,                                  // src_data
+                        llvm::Type::getInt64Ty(context),                 // src_len
+                        llvm::Type::getInt64Ty(context)->getPointerTo(), // pos_ptr
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                        llvm::Type::getInt32Ty(context),                 // type_code
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),  // data
+                        llvm::Type::getInt32Ty(context),                 // count
+                        llvm::Type::getInt64Ty(context)                  // elem_len
+                    };
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), param_types, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, module.get());
+                }
+
+                // If iostat is not i32*, create a temporary i32 and
+                // copy back after the reads (e.g. when iostat is i64).
+                llvm::Value* orig_iostat = nullptr;
+                llvm::Type* i32ptr = llvm::Type::getInt32Ty(context)->getPointerTo();
+                if (!iostat->getType()->isPointerTy() ||
+                    iostat->getType() != i32ptr) {
+                    // iostat is a non-null pointer of wrong element type
+                    if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                        orig_iostat = iostat;
+                        iostat = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt32Ty(context));
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                            iostat);
+                    }
+                }
+
+                for (size_t i = 0; i < x.n_values; i++) {
+                    ASR::ttype_t* expr_type_full = ASRUtils::expr_type(x.m_values[i]);
+                    ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+                    int ptr_loads_copy = ptr_loads;
+                    ptr_loads = 0;
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    this->visit_expr(*x.m_values[i]);
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* var_ptr = tmp; tmp = nullptr;
+                    ptr_loads = ptr_loads_copy;
+
+                    // Determine type code
+                    int32_t type_code;
+                    llvm::Value* elem_len = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), 0);
+                    if (ASR::is_a<ASR::String_t>(*val_type)) {
+                        type_code = 0;
+                    } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+                        type_code = 1;
+                    } else if (ASR::is_a<ASR::Integer_t>(*val_type)) {
+                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
+                        type_code = (int_type->m_kind <= 4) ? 2 : 3;
+                    } else if (ASR::is_a<ASR::Real_t>(*val_type)) {
+                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
+                        type_code = (real_type->m_kind == 4) ? 4 : 5;
+                    } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
+                        ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
+                        type_code = (complex_type->m_kind == 4) ? 6 : 7;
+                    } else {
+                        throw CodeGenError("Unsupported type in string list-directed read");
+                    }
+                    llvm::Value* type_code_val = llvm::ConstantInt::get(context, llvm::APInt(32, type_code));
+
+                    if (ASRUtils::is_array(expr_type_full) && !ASRUtils::is_fixed_size_array(expr_type_full)) {
+                        // Descriptor array - get data pointer and size at runtime
+                        ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(expr_type_full);
+                        llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i], past_alloc, module.get());
+                        llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i], val_type, module.get());
+                        if (ASR::is_a<ASR::Allocatable_t>(*expr_type_full) ||
+                                ASR::is_a<ASR::Pointer_t>(*expr_type_full)) {
+                            var_ptr = llvm_utils->CreateLoad2(llvm_arr_type->getPointerTo(), var_ptr);
+                        }
+
+                        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
+                        data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
+                        data_ptr = builder->CreateBitCast(data_ptr,
+                            llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                        // Get array size
+                        ASR::ttype_t *type32 = ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                            ASR::make_ArraySize_t(al, x.base.base.loc,
+                                x.m_values[i], nullptr, type32, nullptr));
+                        visit_ArraySize(*array_size);
+                        llvm::Value* count = tmp; tmp = nullptr;
+
+                        builder->CreateCall(fn, {src_data, src_len, pos_ptr, iostat,
+                            type_code_val, data_ptr, count, elem_len});
+                    } else if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+                        // Fixed-size array - get first element pointer
+                        int64_t arr_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
+                        ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
+                        llvm::Type *llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(expr_type_full), module.get());
+                        llvm::Type *llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i], val_type, module.get());
+
+                        llvm::Value* data_ptr;
+                        if (arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                            data_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
+                                {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0)});
+                        } else {
+                            data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, var_ptr);
+                            data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
+                        }
+                        data_ptr = builder->CreateBitCast(data_ptr,
+                            llvm::Type::getInt8Ty(context)->getPointerTo());
+                        llvm::Value* count = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), arr_size);
+                        builder->CreateCall(fn, {src_data, src_len, pos_ptr, iostat,
+                            type_code_val, data_ptr, count, elem_len});
+                    } else {
+                        // Scalar - read single value
+                        llvm::Value* data_ptr;
+                        if (ASR::is_a<ASR::String_t>(*val_type)) {
+                            auto [str_data, str_len] = llvm_utils->get_string_length_data(
+                                ASRUtils::get_string_type(val_type), var_ptr);
+                            data_ptr = builder->CreateBitCast(str_data,
+                                llvm::Type::getInt8Ty(context)->getPointerTo());
+                            elem_len = str_len;
+                        } else {
+                            if (ASR::is_a<ASR::Allocatable_t>(*expr_type_full) ||
+                                    ASR::is_a<ASR::Pointer_t>(*expr_type_full)) {
+                                llvm::Type* llvm_val_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i], val_type, module.get());
+                                var_ptr = llvm_utils->CreateLoad2(
+                                    llvm_val_type->getPointerTo(), var_ptr);
+                            }
+                            data_ptr = builder->CreateBitCast(var_ptr,
+                                llvm::Type::getInt8Ty(context)->getPointerTo());
+                        }
+                        llvm::Value* count = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), 1);
+                        builder->CreateCall(fn, {src_data, src_len, pos_ptr, iostat,
+                            type_code_val, data_ptr, count, elem_len});
+                    }
+                }
+
+                // Copy temporary i32 iostat back to the original variable
+                if (orig_iostat) {
+                    llvm::Value* tmp_val = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iostat);
+                    llvm::Value* converted = builder->CreateIntCast(tmp_val,
+                        llvm::Type::getIntNTy(context, iostat_kind * 8), true);
+                    builder->CreateStore(converted, orig_iostat);
+                    iostat = orig_iostat;
+                }
+            }
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {

@@ -7921,6 +7921,190 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
+// Unified string list-directed read function.
+// Reads `count` elements of the given type from a source string into
+// contiguous memory. Uses a position pointer to track parsing position
+// across successive calls for mixed-type reads.
+//
+// Type codes:
+// 0 = character (data is char*, elem_len is the fixed length per element)
+// 1 = logical  (int32_t*)
+// 2 = int32    (int32_t*)
+// 3 = int64    (int64_t*)
+// 4 = float    (float*)
+// 5 = double   (double*)
+// 6 = complex float  (struct _lfortran_complex_32*)
+// 7 = complex double (struct _lfortran_complex_64*)
+LFORTRAN_API void _lfortran_string_list_directed_read(
+    char* src_data, int64_t src_len, int64_t* pos_ptr, int32_t* iostat,
+    int32_t type_code, void* data, int32_t count, int64_t elem_len)
+{
+    if (iostat) *iostat = 0;
+    char* buf = (char*)malloc(src_len + 1);
+    if (!buf) return;
+    memcpy(buf, src_data, src_len);
+    buf[src_len] = '\0';
+
+    int64_t pos = *pos_ptr;
+
+    for (int32_t i = 0; i < count; i++) {
+        // Skip leading whitespace
+        while (pos < src_len && (buf[pos] == ' ' || buf[pos] == '\t')) {
+            pos++;
+        }
+        // Skip comma separator
+        if (pos < src_len && buf[pos] == ',') {
+            pos++;
+            while (pos < src_len && (buf[pos] == ' ' || buf[pos] == '\t')) {
+                pos++;
+            }
+        }
+        if (pos >= src_len) {
+            // No more data
+            if (type_code == 0 && elem_len > 0) {
+                char* dest = (char*)data + i * elem_len;
+                memset(dest, ' ', elem_len);
+            }
+            continue;
+        }
+
+        // For float/double/complex types, replace Fortran D/d exponent
+        // notation with 'e' so strtof/strtod can parse values like 1.0D0
+        if (type_code >= 4 && type_code <= 7) {
+            for (int64_t j = pos; j < src_len; j++) {
+                char c = buf[j];
+                if (c == ',' || c == ' ' || c == '\t' || c == ')' || c == '\0') break;
+                if ((c == 'd' || c == 'D') && j > pos) {
+                    char prev = buf[j - 1];
+                    if ((prev >= '0' && prev <= '9') || prev == '.') {
+                        buf[j] = 'e';
+                    }
+                }
+            }
+        }
+
+        switch (type_code) {
+            case 0: { // character
+                char* dest = (char*)data + i * elem_len;
+                int64_t token_start = pos;
+                while (pos < src_len && buf[pos] != ',') {
+                    pos++;
+                }
+                int64_t token_len = pos - token_start;
+                // Trim trailing spaces from token
+                while (token_len > 0 && buf[token_start + token_len - 1] == ' ') {
+                    token_len--;
+                }
+                int64_t copy_len = token_len < elem_len ? token_len : elem_len;
+                memcpy(dest, buf + token_start, copy_len);
+                for (int64_t j = copy_len; j < elem_len; j++) {
+                    dest[j] = ' ';
+                }
+                break;
+            }
+            case 1: { // logical
+                int32_t val = 0;
+                while (pos < src_len && buf[pos] != ',' && buf[pos] != ' ' && buf[pos] != '\t') {
+                    if (buf[pos] == 'T' || buf[pos] == 't') val = 1;
+                    pos++;
+                }
+                ((int32_t*)data)[i] = val;
+                break;
+            }
+            case 2: { // int32
+                char* endptr;
+                int32_t val = (int32_t)strtol(buf + pos, &endptr, 10);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad integer for item in list input\n"); exit(1);
+                }
+                ((int32_t*)data)[i] = val;
+                pos = endptr - buf;
+                break;
+            }
+            case 3: { // int64
+                char* endptr;
+                int64_t val = strtoll(buf + pos, &endptr, 10);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad integer for item in list input\n"); exit(1);
+                }
+                ((int64_t*)data)[i] = val;
+                pos = endptr - buf;
+                break;
+            }
+            case 4: { // float
+                char* endptr;
+                float val = strtof(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad real for item in list input\n"); exit(1);
+                }
+                ((float*)data)[i] = val;
+                pos = endptr - buf;
+                break;
+            }
+            case 5: { // double
+                char* endptr;
+                double val = strtod(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad real for item in list input\n"); exit(1);
+                }
+                ((double*)data)[i] = val;
+                pos = endptr - buf;
+                break;
+            }
+            case 6: { // complex float
+                char* endptr;
+                bool has_paren = (buf[pos] == '(');
+                if (has_paren) pos++;
+                float re = strtof(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad complex for item in list input\n"); exit(1);
+                }
+                pos = endptr - buf;
+                while (pos < src_len && (buf[pos] == ' ' || buf[pos] == ',' || buf[pos] == '\t')) pos++;
+                float im = strtof(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad complex for item in list input\n"); exit(1);
+                }
+                pos = endptr - buf;
+                if (has_paren) { while (pos < src_len && buf[pos] != ')') pos++; if (pos < src_len) pos++; }
+                ((struct _lfortran_complex_32*)data)[i].re = re;
+                ((struct _lfortran_complex_32*)data)[i].im = im;
+                break;
+            }
+            case 7: { // complex double
+                char* endptr;
+                bool has_paren = (buf[pos] == '(');
+                if (has_paren) pos++;
+                double re = strtod(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad complex for item in list input\n"); exit(1);
+                }
+                pos = endptr - buf;
+                while (pos < src_len && (buf[pos] == ' ' || buf[pos] == ',' || buf[pos] == '\t')) pos++;
+                double im = strtod(buf + pos, &endptr);
+                if (endptr == buf + pos) {
+                    if (iostat) { *iostat = 5010; *pos_ptr = pos; free(buf); return; }
+                    fprintf(stderr, "Error: Bad complex for item in list input\n"); exit(1);
+                }
+                pos = endptr - buf;
+                if (has_paren) { while (pos < src_len && buf[pos] != ')') pos++; if (pos < src_len) pos++; }
+                ((struct _lfortran_complex_64*)data)[i].re = re;
+                ((struct _lfortran_complex_64*)data)[i].im = im;
+                break;
+            }
+        }
+    }
+
+    *pos_ptr = pos;
+    free(buf);
+}
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
     char *buf = to_c_string((const fchar*)str, len);
     int rc = sscanf(buf, format, i);
