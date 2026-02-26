@@ -3133,6 +3133,7 @@ RUN(NAME equivalence_16 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME equivalence_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME equivalence_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

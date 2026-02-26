@@ -8376,7 +8376,18 @@ public:
                         }
                     }
                 }
-                builder->CreateStore(llvm_value, llvm_target);
+                if( LLVM::is_llvm_pointer(*target_type) &&
+                    !LLVM::is_llvm_pointer(*value_type) &&
+                    !is_value_data_only_array &&
+                    !llvm_value->getType()->isPointerTy() ) {
+                    llvm::Type* llvm_target_contents_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
+                    llvm::Value* loaded_target = llvm_utils->CreateLoad2(
+                        llvm_target_contents_type->getPointerTo(), llvm_target);
+                    builder->CreateStore(llvm_value, loaded_target);
+                } else {
+                    builder->CreateStore(llvm_value, llvm_target);
+                }
             }
         }
     }
