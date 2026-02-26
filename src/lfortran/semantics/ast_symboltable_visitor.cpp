@@ -419,7 +419,13 @@ public:
 
     void visit_Submodule(const AST::Submodule_t &x) {
         in_submodule = true;
-        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, std::string(to_lower(x.m_id)));
+        std::string parent_name;
+        if (x.m_parent_name) {
+            parent_name = to_lower(x.m_parent_name);
+        } else {
+            parent_name = to_lower(x.m_id);
+        }
+        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, parent_name);
         in_submodule = false;
     }
 
