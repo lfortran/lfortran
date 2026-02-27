@@ -480,7 +480,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
                     const Location& loc = arg_i->base.loc;
                     LCOMPILERS_ASSERT(arg_i != nullptr);
-                    if( ASRUtils::is_pointer(ASRUtils::expr_type(arg_i)) ) {
+                    bool is_data_pointer = ASRUtils::is_pointer(ASRUtils::expr_type(arg_i));
+                    bool is_proc_pointer = ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::expr_type(arg_i)) &&
+                        ASR::is_a<ASR::Var_t>(*arg_i) &&
+                        ASR::is_a<ASR::Variable_t>(
+                            *ASR::down_cast<ASR::Var_t>(arg_i)->m_v) &&
+                        ASRUtils::EXPR2VAR(arg_i)->m_intent == ASR::intentType::Local;
+                    if( is_data_pointer || is_proc_pointer ) {
                         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(
                             ASR::make_Logical_t(al, loc, 4));
                         is_present = ASRUtils::EXPR(ASR::make_PointerAssociated_t(
