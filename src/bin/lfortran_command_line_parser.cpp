@@ -127,7 +127,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_warnings = false;
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
-        bool disable_realloc_lhs = false;
+        bool no_realloc_lhs = false;
         bool old_classes = false;
         std::string fpe_traps_str;
 
@@ -261,8 +261,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
-        app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
-        app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
+        app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays_silent, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
+        app.add_flag("--no-realloc-lhs-arrays", no_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
@@ -398,8 +398,14 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.strict_bounds_checking = false;
         }
 
-        if (disable_realloc_lhs) {
+        if (no_realloc_lhs) {
             compiler_options.po.realloc_lhs_arrays = false;
+            compiler_options.po.no_realloc_lhs_arrays = true;
+        } else {
+            compiler_options.po.realloc_lhs_arrays = true;
+            if (compiler_options.po.realloc_lhs_arrays_silent || compiler_options.po.fast) {
+                compiler_options.po.realloc_lhs_arrays_silent = true;
+            }
         }
 
         if (old_classes) {
@@ -478,6 +484,10 @@ namespace LCompilers::CommandLineInterface {
 
         if (disable_implicit_argument_casting && compiler_options.implicit_argument_casting) {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
+        }
+
+        if (no_realloc_lhs && compiler_options.po.realloc_lhs_arrays_silent) {
+            throw lc::LCompilersException("Cannot use --realloc-lhs-arrays and --no-realloc-lhs-arrays at the same time");
         }
 
         // Decide if a file is fixed format based on the extension
