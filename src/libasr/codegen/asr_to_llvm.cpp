@@ -7583,6 +7583,8 @@ public:
         
         // Get value data pointer
         llvm::Value* value_data = nullptr;
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        unsigned idx_bits = idx_type->getIntegerBitWidth();
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
         if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
             ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
@@ -7605,6 +7607,40 @@ public:
             }
             value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
+            // If the value is an ArraySection, compute offset to the first
+            // element of the section and adjust the data pointer accordingly.
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    value_desc_type, value_desc);
+                llvm::Value* section_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
+                for (size_t vi = 0; vi < value_section->n_args; vi++) {
+                    ASR::array_index_t& vidx = value_section->m_args[vi];
+                    llvm::Value* first_idx;
+                    if (vidx.m_step != nullptr) {
+                        // Sliced dimension: use the lower bound of the slice
+                        if (vidx.m_left != nullptr) {
+                            visit_expr_wrapper(vidx.m_left, true);
+                            first_idx = tmp;
+                        } else {
+                            first_idx = llvm::ConstantInt::get(idx_type, 1);
+                        }
+                    } else {
+                        // Non-sliced (fixed index) dimension
+                        visit_expr_wrapper(vidx.m_right, true);
+                        first_idx = tmp;
+                    }
+                    first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
+                    llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                        src_dim_des_arr,
+                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, vi)));
+                    llvm::Value* stride = arr_descr->get_stride(dim_des, true);
+                    llvm::Value* lb = arr_descr->get_lower_bound(dim_des, true);
+                    section_offset = builder->CreateAdd(section_offset,
+                        builder->CreateMul(stride, builder->CreateSub(first_idx, lb)));
+                }
+                value_data = llvm_utils->create_ptr_gep2(value_el_type, value_data, section_offset);
+            }
         } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                    value_physical_type == ASR::array_physical_typeType::PointerArray) {
             llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -7622,8 +7658,6 @@ public:
         
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
-        llvm::Type* idx_type = arr_descr->get_index_type();
-        unsigned idx_bits = idx_type->getIntegerBitWidth();
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         // Set rank
