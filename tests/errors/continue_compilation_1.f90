@@ -165,23 +165,23 @@ contains
         integer, save :: slash_y/2/
     end subroutine slash_init_warning_paths
 
+    function dummy_func() result(r)
+        integer :: r
+        r = 42
+    end function dummy_func
 
+    subroutine dummy_sub()
+       print *, "dummy subroutine"
+    end subroutine dummy_sub
 
+    subroutine proc_ptr_error_tests()
+        implicit none
+        procedure(), pointer :: pf1
+        pf1 => dummy_sub
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        procedure(sub_test), pointer :: pf2
+        pf2 => dummy_func
+    end subroutine proc_ptr_error_tests
 
 
 
