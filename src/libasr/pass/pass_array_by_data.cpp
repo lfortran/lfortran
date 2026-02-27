@@ -504,7 +504,11 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 if ( resolved_type_dec ) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(resolved_type_dec);
                     var->m_type_declaration = resolved_type_dec;
-                    var->m_type = fn->m_function_signature;
+                    ASR::ttype_t* new_type = fn->m_function_signature;
+                    if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                        new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, var->base.base.loc, new_type));
+                    }
+                    var->m_type = new_type;
                 }
             }
         }
@@ -886,7 +890,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                     if ( new_x_name != nullptr ) {
                         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
-                        ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_type = new_func->m_function_signature;
+                        ASR::Variable_t* call_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name));
+                        ASR::ttype_t* new_type = new_func->m_function_signature;
+                        if (ASR::is_a<ASR::Pointer_t>(*call_var->m_type)) {
+                            new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, call_var->base.base.loc, new_type));
+                        }
+                        call_var->m_type = new_type;
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
@@ -1100,10 +1109,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     m_val = (ASR::expr_t*) pnc;
                 }
                 std::string new_sym_name = x.m_parent_symtab->get_unique_name(x.m_name);
+                ASR::ttype_t* new_var_type = subrout->m_function_signature;
+                if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+                    new_var_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, x.base.base.loc, new_var_type));
+                }
                 ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name),
                         x.m_dependencies, x.n_dependencies, x.m_intent,
-                        sym_val, m_val, x.m_storage, subrout->m_function_signature,
+                        sym_val, m_val, x.m_storage, new_var_type,
                         new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr));
                 v.proc2newproc[(ASR::symbol_t *) &x] = {new_func_sym_, {}};
                 x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_);

@@ -1080,7 +1080,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
-                require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
+                require(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
@@ -1259,7 +1259,7 @@ public:
         if (check_external) {
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(fn)))) ||
                     ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }

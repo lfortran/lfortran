@@ -344,10 +344,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
         // possible it is a `procedure(cb) :: call_back`
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        v->m_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
+        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
+        if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+            new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
+        }
+        v->m_type = new_type;
     }
     bool is_nopass { false };
     bool is_class_procedure { false };
