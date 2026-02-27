@@ -6538,7 +6538,8 @@ public:
                         ASR::ttype_t* param_type = v->m_type;
                         // Check if parameter expects a procedure type
                         if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))){
-                            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type))){
+                            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_array(passed_type)))){
                                 std::string passed_str =ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
                                 diag.add(diag::Diagnostic(
                                     "Type mismatch in argument `" + std::string(v->m_name) +

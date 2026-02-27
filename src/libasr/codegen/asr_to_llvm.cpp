@@ -16608,6 +16608,7 @@ public:
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
+                                    !is_func_type_arg &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
                                     !(compiler_options.new_classes &&

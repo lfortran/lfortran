@@ -951,6 +951,9 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
+            if (struct_sym == nullptr) {
+                return "derived_type";
+            }
             return ASRUtils::symbol_name(struct_sym);
         }
         case ASR::ttypeType::EnumType: {
