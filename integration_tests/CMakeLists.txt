@@ -2857,7 +2857,7 @@ RUN(NAME procedure_27 LABELS gfortran llvm)
 RUN(NAME procedure_28 LABELS gfortran llvm)
 RUN(NAME procedure_29 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME procedure_30 LABELS gfortran llvm)
+RUN(NAME procedure_30 LABELS llvm)
 RUN(NAME procedure_31 LABELS gfortran llvm)
 
 
