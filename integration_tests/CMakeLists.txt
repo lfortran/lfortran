@@ -2528,6 +2528,7 @@ RUN(NAME test_ieee_is_normal LABELS llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME test_ieee_is_finite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME test_ieee_unordered LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME test_ieee_support LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
+RUN(NAME test_ieee_infnan LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 
 RUN(NAME abs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran mlir)
 RUN(NAME abs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
