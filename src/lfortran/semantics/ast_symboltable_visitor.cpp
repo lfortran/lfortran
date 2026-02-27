@@ -46,6 +46,18 @@ public:
 
     ASR::ttype_t *tmp_type;
 
+    static bool is_equivalence_declaration(AST::unit_decl2_t* decl) {
+        if (AST::is_a<AST::Declaration_t>(*decl)) {
+            AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
+            for (size_t i = 0; i < d->n_attributes; i++) {
+                if (AST::is_a<AST::AttrEquivalence_t>(*d->m_attributes[i])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -501,6 +513,7 @@ public:
             }
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            if (is_equivalence_declaration(x.m_decl[i])) continue;
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
                 if(decl->m_vartype) {
@@ -527,6 +540,14 @@ public:
                     }
                 }
             }
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_equivalence_declaration(x.m_decl[i])) continue;
             try {
                 visit_unit_decl2(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
@@ -1147,6 +1168,7 @@ public:
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
+            if (is_equivalence_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1180,6 +1202,16 @@ public:
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
+            }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
             is_Function = false;
         }
@@ -1578,6 +1610,7 @@ public:
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
+            if (is_equivalence_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1607,6 +1640,12 @@ public:
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
         process_simd_variables();
