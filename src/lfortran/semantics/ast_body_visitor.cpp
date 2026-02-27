@@ -6615,7 +6615,11 @@ public:
                                                     iface_func->m_function_signature);
                                                 iface_ft->m_arg_types = passed_ft->m_arg_types;
                                                 iface_ft->n_arg_types = passed_ft->n_arg_types;
-                                                v->m_type = iface_func->m_function_signature;
+                                                ASR::ttype_t* new_type = iface_func->m_function_signature;
+                                                if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+                                                    new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
+                                                }
+                                                v->m_type = new_type;
                                                 ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                                     f->m_function_signature);
                                                 callee_ft->m_arg_types[i + offset] = v->m_type;
