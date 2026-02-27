@@ -5692,13 +5692,38 @@ namespace Char {
     static ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        char str = i;
+        int kind = ASR::down_cast<ASR::String_t>(
+            ASRUtils::extract_type(t1))->m_kind;
         std::string svalue;
-        svalue += str;
+        if (kind <= 1 || i <= 0x7F) {
+            svalue += (char)i;
+        } else if (i <= 0x7FF) {
+            svalue += (char)(0xC0 | (i >> 6));
+            svalue += (char)(0x80 | (i & 0x3F));
+        } else if (i <= 0xFFFF) {
+            svalue += (char)(0xE0 | (i >> 12));
+            svalue += (char)(0x80 | ((i >> 6) & 0x3F));
+            svalue += (char)(0x80 | (i & 0x3F));
+        } else if (i <= 0x10FFFF) {
+            svalue += (char)(0xF0 | (i >> 18));
+            svalue += (char)(0x80 | ((i >> 12) & 0x3F));
+            svalue += (char)(0x80 | ((i >> 6) & 0x3F));
+            svalue += (char)(0x80 | (i & 0x3F));
+        }
         Str s;
         s.from_str_view(svalue);
         char *result = s.c_str(al);
-        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+        ASR::ttype_t* result_type = t1;
+        if (kind > 1 && (int64_t)svalue.size() != 1) {
+            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            result_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, kind,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, (int64_t)svalue.size(), int_type)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+        }
+        return make_ConstantWithType(make_StringConstant_t, result, result_type, loc);
     }
 
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
