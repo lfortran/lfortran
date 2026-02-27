@@ -4875,6 +4875,8 @@ public:
                                 } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
                                     int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
                                     type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
+                                } else if (ASR::is_a<ASR::String_t>(*arg_type2)) {
+                                    type = arg_type2;
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -5000,6 +5002,8 @@ public:
                                         } else if (ASR::is_a<ASR::Logical_t>(*array1->m_type)) {
                                             int kind = ASR::down_cast<ASR::Logical_t>(array1->m_type)->m_kind;
                                             type1 = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::String_t>(*array1->m_type)) {
+                                            type1 = array1->m_type;
                                         } else {
                                             diag.semantic_warning_label(
                                                 "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -5326,6 +5330,8 @@ public:
                                             } else if (ASR::is_a<ASR::Logical_t>(*alias_elem_type)) {
                                                 int kind = ASR::down_cast<ASR::Logical_t>(alias_elem_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Logical_t(al, alias_expr->base.loc, kind));
+                                            } else if (ASR::is_a<ASR::String_t>(*alias_elem_type)) {
+                                                type = alias_elem_type;
                                             } else {
                                                 diag.semantic_warning_label(
                                                     "This equivalence statement is not implemented yet, for now we will ignore it",
