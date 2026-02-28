@@ -1987,16 +1987,17 @@ public:
                     al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
             }
             ASR::expr_t *a_tmp_iostat = a_iostat;
-            if (_type == AST::stmtType::Write && a_tmp_iostat == nullptr) {
+            std::string tmp_iostat_name;
+            if (a_tmp_iostat == nullptr) {
                 ASR::ttype_t* int_type =
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
-                std::string iostat_name =
+                tmp_iostat_name =
                     current_scope->get_unique_name("lfortran_tmp_iostat");
 
                 ASR::symbol_t* iostat_sym =
                     declare_implicit_variable2(
-                        loc, iostat_name,
+                        loc, tmp_iostat_name,
                         ASRUtils::intent_local,
                         int_type);
 
@@ -2004,7 +2005,25 @@ public:
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
             }
             overload_args.push_back(al, a_tmp_iostat);
-            overload_args.push_back(al, a_iomsg);
+            ASR::expr_t *a_tmp_iomsg = a_iomsg;
+            std::string tmp_iomsg_name;
+            if (a_tmp_iomsg == nullptr) {
+                ASR::ttype_t *str_type = ASRUtils::TYPE(
+                    ASR::make_String_t(
+                        al, loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 0,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::DescriptorString));
+                tmp_iomsg_name =
+                    current_scope->get_unique_name("lfortran_tmp_iomsg");
+                ASR::symbol_t *iomsg_sym = declare_implicit_variable2(
+                    loc, tmp_iomsg_name, ASRUtils::intent_local, str_type);
+                a_tmp_iomsg =
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, iomsg_sym));
+            }
+            overload_args.push_back(al, a_tmp_iomsg);
             if (ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
                     current_scope, asr, al, read_write_stmt.base.loc,
                     current_function_dependencies, current_module_dependencies,
@@ -2063,10 +2082,17 @@ public:
 
             if (overloaded_stmt != nullptr) {
                 needs_internal_iostat = true;
+            } else {
+                // No DTIO overload found; remove temp variables from scope
+                if (!tmp_iostat_name.empty()) {
+                    current_scope->erase_symbol(tmp_iostat_name);
+                }
+                if (!tmp_iomsg_name.empty()) {
+                    current_scope->erase_symbol(tmp_iomsg_name);
+                }
             }
         }
-        if (_type == AST::stmtType::Write &&
-            needs_internal_iostat &&
+        if (needs_internal_iostat &&
             a_iostat == nullptr) {
 
             ASR::ttype_t* int_type =

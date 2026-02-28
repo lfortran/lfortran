@@ -145,7 +145,6 @@ define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val,
   %4 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
   %5 = call i8* @_lfortran_malloc(i64 1)
   store i8* %5, i8** %4, align 8
-  %lfortran_tmp_iostat = alloca i32, align 4
   %6 = load %string_descriptor, %string_descriptor* %string, align 1
   %7 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
