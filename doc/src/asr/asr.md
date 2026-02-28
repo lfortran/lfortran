@@ -72,6 +72,18 @@ function (`name` member). They also store the original symbol
 (`original_name`), which can be one of: `null`, `GenericProcedure` or
 `ExternalSymbol`.
 
+### Call argument intent contract
+
+For call nodes (`SubroutineCall` / `FunctionCall`), actual argument expressions
+must satisfy the dummy argument intent:
+
+- `intent(in)`: any expression is allowed.
+- `intent(out)` / `intent(inout)`: actual argument must be writable (a variable
+  expression, or a cast wrapper such as `Cast`, `ArrayPhysicalCast`,
+  `StringPhysicalCast` around writable storage).
+- `intent(unspecified)`: any expression is allowed at the call site. Whether
+  the callee writes through the argument is runtime-dependent.
+
 When a module is compiled, it is parsed into full ASR, an object file is
 produced, and the full ASR (abi=Source, "body" is non-empty) is transformed into
 interface ASR (abi=LFortran, "body" is empty). Both interface and full ASR

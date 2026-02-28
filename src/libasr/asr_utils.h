@@ -170,7 +170,11 @@ Returns true, when the symbol 'f' is a procedure variable
 static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
     if (ASR::is_a<ASR::Variable_t>(*f)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f);
-        return ASR::is_a<ASR::FunctionType_t>(*v->m_type);
+        ASR::ttype_t* t = v->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
+        }
+        return ASR::is_a<ASR::FunctionType_t>(*t);
     }
     return false;
 }
@@ -178,7 +182,11 @@ static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
 static inline bool is_symbol_procedure_variable(const ASR::symbol_t* f) {
     if (ASR::is_a<ASR::Variable_t>(*f)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f);
-        return ASR::is_a<ASR::FunctionType_t>(*v->m_type);
+        ASR::ttype_t* t = v->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
+        }
+        return ASR::is_a<ASR::FunctionType_t>(*t);
     }
     return false;
 }
@@ -199,8 +207,11 @@ static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
         func_type = ASR::down_cast<ASR::FunctionType_t>(
             ASR::down_cast<ASR::Function_t>(a_name_)->m_function_signature);
     } else if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
-        func_type = ASR::down_cast<ASR::FunctionType_t>(
-            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type);
+        ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(a_name_)->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
+            var_type = ASR::down_cast<ASR::Pointer_t>(var_type)->m_type;
+        }
+        func_type = ASR::down_cast<ASR::FunctionType_t>(var_type);
     } else if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(
@@ -940,6 +951,9 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
+            if (struct_sym == nullptr) {
+                return "derived_type";
+            }
             return ASRUtils::symbol_name(struct_sym);
         }
         case ASR::ttypeType::EnumType: {
@@ -1514,6 +1528,69 @@ static inline bool is_variable(ASR::expr_t* a_value) {
             return false;
         }
     }
+}
+
+// Returns true if expression can be safely used as an actual argument for
+// INTENT(OUT/INOUT) dummy arguments.
+static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
+    if (a_value == nullptr) {
+        return false;
+    }
+    switch (a_value->type) {
+        case ASR::exprType::Var: {
+            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            return variable_t->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* a_item = ASR::down_cast<ASR::ArrayItem_t>(a_value);
+            return is_modifiable_actual_argument_expr(a_item->m_v);
+        }
+        case ASR::exprType::StringItem:
+        case ASR::exprType::StringSection:
+        case ASR::exprType::ArraySection:
+        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::IntrinsicArrayFunction:
+        case ASR::exprType::ListItem: {
+            return true;
+        }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::ArrayPhysicalCast: {
+            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::StringPhysicalCast: {
+            ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
+            return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            if (func_call->m_name == nullptr) {
+                return false;
+            }
+            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
+            if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                return std::string(func->m_name) == "_lfortran_get_item";
+            }
+            return false;
+        }
+        default:
+            return false;
+    }
+}
+
+static inline bool enforce_modifiable_actual_argument_check(const ASR::Function_t* f) {
+    if (f == nullptr) {
+        return false;
+    }
+    std::string fn_name = f->m_name;
+    if (fn_name.rfind("_lfortran_", 0) == 0 || fn_name.rfind("_lcompilers_", 0) == 0) {
+        return false;
+    }
+    return true;
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value) {
@@ -6837,6 +6914,7 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
 
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
+    bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(f);
     
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
@@ -6852,46 +6930,11 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                     ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
                     // Check if it's not a procedure (procedures don't have regular intent)
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
-                        if (callee_param->m_intent == ASR::intentType::Out ||
-                            callee_param->m_intent == ASR::intentType::InOut) {
+                        if (enforce_modifiable_check &&
+                            (callee_param->m_intent == ASR::intentType::Out ||
+                             callee_param->m_intent == ASR::intentType::InOut)) {
                             
-                            // For intent(out) and intent(inout), the actual argument must be a variable
-                            bool is_valid_variable = false;
-                            switch (passed_arg_expr->type) {
-                                case ASR::exprType::Var:
-                                case ASR::exprType::ArrayItem:
-                                case ASR::exprType::ArraySection:
-                                case ASR::exprType::StringItem:
-                                case ASR::exprType::StringSection:
-                                case ASR::exprType::StructInstanceMember:
-                                case ASR::exprType::IntrinsicArrayFunction:
-                                case ASR::exprType::ListItem:
-                                case ASR::exprType::Cast:
-                                    // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
-                                    is_valid_variable = true;
-                                    break;
-                                case ASR::exprType::FunctionCall: {
-                                    // Only allow specific intrinsic functions that return modifiable references
-                                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(passed_arg_expr);
-                                    if (func_call->m_name) {
-                                        ASR::symbol_t* func_sym = func_call->m_name;
-                                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
-                                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-                                            std::string func_name = func->m_name;
-                                            // Allow list access functions that return modifiable references
-                                            if (func_name == "_lfortran_get_item") {
-                                                is_valid_variable = true;
-                                            }
-                                        }
-                                    }
-                                    break;
-                                }
-                                default:
-                                    is_valid_variable = false;
-                                    break;
-                            }
-                            
-                            if (!is_valid_variable) {
+                            if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
                                     "(actual argument to INTENT = OUT/INOUT)",
@@ -7338,7 +7381,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
-        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) &&
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));

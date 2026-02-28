@@ -4890,6 +4890,8 @@ public:
                                 } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
                                     int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
                                     type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
+                                } else if (ASR::is_a<ASR::String_t>(*arg_type2)) {
+                                    type = arg_type2;
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -5015,6 +5017,8 @@ public:
                                         } else if (ASR::is_a<ASR::Logical_t>(*array1->m_type)) {
                                             int kind = ASR::down_cast<ASR::Logical_t>(array1->m_type)->m_kind;
                                             type1 = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::String_t>(*array1->m_type)) {
+                                            type1 = array1->m_type;
                                         } else {
                                             diag.semantic_warning_label(
                                                 "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -5341,6 +5345,8 @@ public:
                                             } else if (ASR::is_a<ASR::Logical_t>(*alias_elem_type)) {
                                                 int kind = ASR::down_cast<ASR::Logical_t>(alias_elem_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Logical_t(al, alias_expr->base.loc, kind));
+                                            } else if (ASR::is_a<ASR::String_t>(*alias_elem_type)) {
+                                                type = alias_elem_type;
                                             } else {
                                                 diag.semantic_warning_label(
                                                     "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -7527,6 +7533,16 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
+            if (!sym_type->m_name) {
+                Location &attr_loc = sym_type->base.base.loc;
+                diag.add(Diagnostic(
+                    "Procedure declarations without an explicit interface (procedure()) are not yet supported. "
+                    "Please use procedure(interface_name) or declare an interface block.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{attr_loc})
+                    }));
+                throw SemanticAbort();
+            }
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {
@@ -7565,6 +7581,9 @@ public:
             v = ASRUtils::symbol_get_past_external(v);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            if (is_pointer) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+            }
         } else {
             diag.add(Diagnostic("Type not implemented yet.",
                 Level::Error, Stage::Semantic, {
@@ -9407,7 +9426,7 @@ public:
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
-        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
+        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)));
         ASR::ttype_t *return_type = func->m_return_var_type;
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
@@ -13430,7 +13449,7 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2) ||
             ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
             (ASR::is_a<ASR::Variable_t>(*f2) &&
-            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(f2))) ) {
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2)))) ) {
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
                 // in Fortran, but have different interface (API), e.g.,

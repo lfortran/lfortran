@@ -2064,11 +2064,13 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
     const char* default_spacing = "    ";
     ASSERT(default_spacing_len == strlen(default_spacing));
     *result = realloc(*result, result_capacity + 1 /*Null Character*/ );
+    bool prev_is_char = false;
 
     while(move_to_next_element(s_info, false)){
+        bool curr_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
+                             s_info->current_element_type == STRING_DESCRIPTOR_TYPE);
         int size_to_allocate;
-        if((s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE) && 
+        if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
             size_to_allocate = (s_info->current_arg_info.current_string_len
                                  + default_spacing_len + 1) * sizeof(char);
@@ -2084,12 +2086,13 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
             }
         }
         if(result_capacity != old_capacity){*result = (char*)realloc(*result, result_capacity + 1);}
-        if(result_size > 0){
+        if(result_size > 0 && !(prev_is_char && curr_is_char)){
             strcpy((*result)+result_size, default_spacing);
             result_size+=default_spacing_len;
         }
         int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
         result_size += printed_arg_size;
+        prev_is_char = curr_is_char;
     }
 
     (*result_size_ptr) = result_size;
@@ -7996,9 +7999,40 @@ char* remove_whitespace(char* str, int64_t* len) {
 }
 
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len) {
-    _lfortran_copy_str_and_pad(
-        dest_data, dest_len,
-        src_data, src_len);
+    int64_t pos = 0;
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
+        pos++;
+    }
+
+    if (pos < src_len && (src_data[pos] == '\'' || src_data[pos] == '"')) {
+        char delim = src_data[pos];
+        pos++;
+        int64_t dest_pos = 0;
+        while (pos < src_len) {
+            if (src_data[pos] == delim) {
+                pos++;
+                if (pos < src_len && src_data[pos] == delim) {
+                    if (dest_pos < dest_len) {
+                        dest_data[dest_pos++] = delim;
+                    }
+                    pos++;
+                } else {
+                    break;
+                }
+            } else {
+                if (dest_pos < dest_len) {
+                    dest_data[dest_pos++] = src_data[pos];
+                }
+                pos++;
+            }
+        }
+        pad_with_spaces(dest_data, dest_pos, dest_len);
+    } else {
+        int64_t remaining = src_len - pos;
+        _lfortran_copy_str_and_pad(
+            dest_data, dest_len,
+            src_data + pos, remaining);
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {

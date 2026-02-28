@@ -1007,22 +1007,83 @@ public:
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        if( func_sym && ASR::is_a<ASR::Function_t>(*func_sym) ) {
+        size_t formal_offset = 0;
+        if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
             func = ASR::down_cast<ASR::Function_t>(func_sym);
+        } else if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
+            ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
+            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
+                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+                if (!method->m_is_nopass) {
+                    require(x.m_dt != nullptr,
+                        "Pass method call must provide m_dt (the passed object).");
+                    formal_offset = 1;
+                }
+            }
         }
 
-        if( func ) {
+        if (func) {
+            bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(func);
+            require(x.n_args + formal_offset <= func->n_args,
+                "More actual arguments than formal arguments in call.");
+
             for (size_t i = 0; i < x.n_args; i++) {
-                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
-                if (x.m_args[i].m_value == nullptr &&
-                    (ASR::is_a<ASR::Variable_t>(*arg_sym) &&
-                        ASR::down_cast<ASR::Variable_t>(arg_sym)->m_presence !=
-                        ASR::presenceType::Optional)) {
+                size_t formal_idx = i + formal_offset;
+                require(formal_idx < func->n_args,
+                    "More actual arguments than formal arguments in call.");
+                require(ASR::is_a<ASR::Var_t>(*func->m_args[formal_idx]),
+                    "Function argument must be a Var.");
+                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[formal_idx])->m_v;
+                if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                    continue;
+                }
+                ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                ASR::expr_t* passed_arg_expr = x.m_args[i].m_value;
 
+                if (passed_arg_expr == nullptr) {
+                    if (callee_param->m_presence != ASR::presenceType::Optional) {
                         require(false, "Required argument " +
-                                    std::string(ASRUtils::symbol_name(arg_sym)) +
+                                    std::string(callee_param->m_name) +
                                     " cannot be nullptr.");
+                    }
+                    continue;
+                }
 
+                if (check_external && enforce_modifiable_check &&
+                    !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
+                    (callee_param->m_intent == ASR::intentType::Out ||
+                     callee_param->m_intent == ASR::intentType::InOut)) {
+                    require_with_loc(ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr),
+                        "Non-variable expression in variable definition context "
+                        "(actual argument to INTENT = OUT/INOUT)",
+                        passed_arg_expr->base.loc);
+
+                    if (ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                            ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+                            require_with_loc(
+                                passed_var->m_intent != ASR::intentType::In,
+                                "Argument `" + std::string(passed_var->m_name) +
+                                "` with intent(in) passed to a dummy argument with modifying intent",
+                                passed_arg_expr->base.loc
+                            );
+                        }
+                    }
+                }
+            }
+
+            for (size_t i = x.n_args + formal_offset; i < func->n_args; i++) {
+                require(ASR::is_a<ASR::Var_t>(*func->m_args[i]),
+                    "Function argument must be a Var.");
+                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                    ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                    if (callee_param->m_presence != ASR::presenceType::Optional) {
+                        require(false, "Required argument " +
+                                    std::string(callee_param->m_name) +
+                                    " cannot be nullptr.");
+                    }
                 }
             }
         }
@@ -1080,7 +1141,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
-                require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
+                require(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
@@ -1259,7 +1320,7 @@ public:
         if (check_external) {
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(fn)))) ||
                     ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }

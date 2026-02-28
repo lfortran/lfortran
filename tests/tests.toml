@@ -2036,6 +2036,10 @@ filename = "../integration_tests/print_09.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/print_12.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/read_40.f90"
 run = true
 
