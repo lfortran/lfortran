@@ -2390,6 +2390,7 @@ public:
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);
@@ -2407,6 +2408,8 @@ public:
             throw SemanticAbort();
         }
 
+        ASR::ttype_t* target_type_underlying = ASRUtils::type_get_past_pointer(target_type);
+        ASR::ttype_t* value_type_underlying = ASRUtils::type_get_past_pointer(value_type);
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
@@ -2422,9 +2425,9 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
-        } else if (ASR::is_a<ASR::FunctionType_t>(*target_type) && ASR::is_a<ASR::FunctionType_t>(*value_type)) {
-            ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type);
-            ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type);
+        } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) && ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
+            ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type_underlying);
+            ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type_underlying);
             
             bool target_is_sub = (target_func_type->m_return_var_type == nullptr);
             bool value_is_sub = (value_func_type->m_return_var_type == nullptr);

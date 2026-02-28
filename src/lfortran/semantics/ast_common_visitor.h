@@ -4080,7 +4080,22 @@ public:
         } else if (current_scope->asr_owner) {
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
-        return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
+        if (std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end()) {
+            return true;
+        }
+        SymbolTable* s = (scope ? scope : current_scope);
+        s = s->parent;
+        while (s && s->asr_owner) {
+            auto it = external_procedures_mapping.find(get_hash(s->asr_owner));
+            if (it != external_procedures_mapping.end()) {
+                const std::vector<std::string>& parent_procs = it->second;
+                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                    return true;
+                }
+            }
+            s = s->parent;
+        }
+        return false;
     }
 
     bool check_is_explicit_intrinsic(std::string sym, SymbolTable* scope=nullptr) {
