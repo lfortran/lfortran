@@ -1573,12 +1573,6 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
 }
 
-static inline bool enforce_modifiable_actual_argument_check(const ASR::Function_t* f) {
-    if (f == nullptr) {
-        return false;
-    }
-    return true;
-}
 
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
@@ -6901,24 +6895,16 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
 
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
-    bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(f);
-    
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
-        
-        // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
+
         if (passed_arg_expr && i < f->n_args) {
-            // Check for INTENT(OUT/INOUT) - but safely
-            // We need to check if this is a regular argument (not a procedure)
-            // by looking at whether we can safely call EXPR2VAR
             if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
-                    // Check if it's not a procedure (procedures don't have regular intent)
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
-                        if (enforce_modifiable_check &&
-                            (callee_param->m_intent == ASR::intentType::Out ||
+                        if ((callee_param->m_intent == ASR::intentType::Out ||
                              callee_param->m_intent == ASR::intentType::InOut)) {
                             
                             if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
@@ -6936,8 +6922,6 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
             }
         }
         
-        // Now handle the original intent(in) -> intent(out/inout) mismatch check
-        // This only applies when passed_arg_expr is a Var_t
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
