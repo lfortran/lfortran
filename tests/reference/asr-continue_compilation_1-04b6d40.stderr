@@ -76,6 +76,23 @@ semantic error: Procedure declarations without an explicit interface (procedure(
 179 |         procedure(), pointer :: pf1
     |         ^^^^^^^^^^^ 
 
+semantic error: Procedure 'op_clash_f' is already defined as an interface body
+   --> tests/errors/continue_compilation_1.f90:186:5 - 190:27
+    |
+186 |        function op_clash_f(x) result(y)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+190 |        end function op_clash_f
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+ 35 |            function op_clash_f(x) result(y)
+    |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+    |
+ 38 |            end function
+    | ...~~~~~~~~~~~~~~~~~~~~ is already defined here
+
 semantic error: Defined assignment procedure must not return a value
    --> tests/errors/continue_compilation_1.f90:141:5 - 145:32
     |
@@ -206,12 +223,6 @@ semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
     |
 250 |     character(:), allocatable :: x(2)
     |                                  ^^^^ 
-
-semantic error: Expecting a scalar integer or parameter annotated integer variable 
-   --> tests/errors/continue_compilation_1.f90:252:26
-    |
-252 |     logical :: mask_size(size(arr_size))
-    |                          ^^^^^^^^^^^^^^ 
 
 semantic error: `protected` attribute is only allowed in specification part of a module
    --> tests/errors/continue_compilation_1.f90:253:5
@@ -1251,6 +1262,12 @@ semantic error: `bad` is not defined or imported
    --> tests/errors/continue_compilation_1.f90:609:13
     |
 609 |     bad_x = .bad. 10
+    |             ^^^^^^^^ 
+
+semantic error: `op` is not defined or imported
+   --> tests/errors/continue_compilation_1.f90:610:13
+    |
+610 |     bad_x = 5 .op. 3
     |             ^^^^^^^^ 
 
 semantic error: Operands of comparison operator '==' are not comparable: ieee_class_type == ieee_class_type
