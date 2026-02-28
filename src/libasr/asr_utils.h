@@ -4193,6 +4193,17 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             return true;
         }
     }
+    // Assumed-rank arrays (dimension(..)) accept any rank, including scalar
+    if (check_for_dimensions) {
+        if (ASR::is_a<ASR::Array_t>(*b) && is_assumed_rank_array(b)) {
+            return types_equal(a, ASR::down_cast<ASR::Array_t>(b)->m_type,
+                               a_expr, b_expr, false);
+        }
+        if (ASR::is_a<ASR::Array_t>(*a) && is_assumed_rank_array(a)) {
+            return types_equal(ASR::down_cast<ASR::Array_t>(a)->m_type, b,
+                               a_expr, b_expr, false);
+        }
+    }
     if (a->type == b->type) {
         // TODO: check dims
         // TODO: check all types
