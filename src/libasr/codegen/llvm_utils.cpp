@@ -724,7 +724,13 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
-                if (compiler_options.new_classes) {
+                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                    // Pointer(FunctionType) returns the same LLVM type as FunctionType (fntype*)
+                    // The extra indirection for by-reference passing is handled in convert_args
+                    type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi,
+                                m_storage, arg_m_value_attr, n_dims, a_kind,
+                                is_array_type, arg_intent, module, get_pointer);
+                } else if (compiler_options.new_classes) {
                     handle_llvm_pointers_new_classes()
                 } else {
                     handle_llvm_pointers2()
@@ -1013,7 +1019,8 @@ namespace LCompilers {
                     type = type_original;
                 }
                 if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(arg->m_type_declaration)) &&
-                    (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) ) {
+                    (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout ||
+                     ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
                 if( (arg->m_intent == ASRUtils::intent_out ||
@@ -1393,7 +1400,10 @@ namespace LCompilers {
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 bool is_pointer_;
-                if (compiler_options.new_classes) {
+                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                    // Pointer(FunctionType) returns the same LLVM type as FunctionType
+                    is_pointer_ = true;
+                } else if (compiler_options.new_classes) {
                     is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
                 } else {
                     is_pointer_ = (ASRUtils::is_class_type(t2) ||
@@ -3271,6 +3281,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         ASRUtils::get_string_type(asr_dest_type),
                         ASRUtils::get_string_type(asr_src_type),
                         ASRUtils::is_allocatable(asr_dest_type));
+                } else if (ASR::is_a<ASR::FunctionType_t>(*pointer_type->m_type)) {
+                    // Pointer(FunctionType) has the same LLVM layout as FunctionType (fntype*),
+                    // so use fntype* as load type (no extra getPointerTo()).
+                    llvm::Type* fn_ptr_type = get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module);
+                    src = CreateLoad2(fn_ptr_type, src);
+                    LLVM::CreateStore(*builder, src, dest);
                 } else {
                     src = CreateLoad2(get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module)->getPointerTo(), src);
                     LLVM::CreateStore(*builder, src, dest);

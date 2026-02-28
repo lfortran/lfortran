@@ -2078,7 +2078,7 @@ public:
                 ASRUtils::symbol_type(tmp_sym))), module.get());
 
             llvm::Type* dest_type = tp->getPointerTo();
-            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym)) ||
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(tmp_sym))) ||
                 (ASRUtils::is_class_type(ASRUtils::extract_type(
                     ASRUtils::symbol_type(tmp_sym))) && !compiler_options.new_classes)) {
                 // functions are pointers in LLVM, so we do not need to get the pointer to it
@@ -5382,6 +5382,7 @@ public:
         // - It's NOT a simple character type (but character arrays ARE included)
         if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) ||
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) &&
+            v->m_storage != ASR::storage_typeType::Save &&
             (ignore_intent ||
              v->m_intent == ASRUtils::intent_local ||
              v->m_intent == ASRUtils::intent_return_var ) &&
@@ -5589,7 +5590,9 @@ public:
                                 llvm::MaybeAlign(), tmp, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
                         } else if ((ASRUtils::is_pointer(v->m_type) &&
                                 !ASR::is_a<ASR::PointerNullConstant_t>(
-                                    *v->m_symbolic_value))        ||
+                                    *v->m_symbolic_value) &&
+                                !ASR::is_a<ASR::FunctionType_t>(
+                                    *ASRUtils::type_get_past_pointer(v->m_type)))  ||
                             ASRUtils::is_allocatable(v->m_type)) { // Any non primitve
                             throw LCompilersException("Not implemented");
                         } else {
@@ -6120,7 +6123,7 @@ public:
                         llvm::Type* el_type = type->getArrayElementType();
                         init_value = get_const_array(v->m_value, el_type);
                     } else if (v->m_symbolic_value
-                            && ASR::is_a<ASR::FunctionType_t>(*v->m_type)
+                            && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))
                             && ASR::is_a<ASR::Var_t>(*v->m_symbolic_value)) {
                         // Procedure pointer initialized to a function target
                         ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
@@ -6985,8 +6988,12 @@ public:
              || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(asr_type))
              || llvm::isa<llvm::AllocaInst>(llvm_tmp))) {
             ASR::ttype_t* contained_type = ASRUtils::type_get_past_pointer(asr_type);
-            llvm::Type* llvm_ty = llvm_utils->get_type_from_ttype_t_util(nullptr, contained_type, module.get());
-            llvm_tmp = llvm_utils->CreateLoad2(llvm_ty->getPointerTo(), llvm_tmp);
+            llvm::Type* llvm_ty = llvm_utils->get_type_from_ttype_t_util(asr_expr, contained_type, module.get());
+            // FunctionType already maps to a pointer type (fntype*) in LLVM,
+            // so we don't need getPointerTo() for it.
+            llvm::Type* load_type = ASR::is_a<ASR::FunctionType_t>(*contained_type)
+                ? llvm_ty : llvm_ty->getPointerTo();
+            llvm_tmp = llvm_utils->CreateLoad2(load_type, llvm_tmp);
         }
         asr_type = ASRUtils::get_contained_type(asr_type);
 
@@ -7583,6 +7590,8 @@ public:
         
         // Get value data pointer
         llvm::Value* value_data = nullptr;
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        unsigned idx_bits = idx_type->getIntegerBitWidth();
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
         if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
             ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
@@ -7605,6 +7614,40 @@ public:
             }
             value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
+            // If the value is an ArraySection, compute offset to the first
+            // element of the section and adjust the data pointer accordingly.
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    value_desc_type, value_desc);
+                llvm::Value* section_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
+                for (size_t vi = 0; vi < value_section->n_args; vi++) {
+                    ASR::array_index_t& vidx = value_section->m_args[vi];
+                    llvm::Value* first_idx;
+                    if (vidx.m_step != nullptr) {
+                        // Sliced dimension: use the lower bound of the slice
+                        if (vidx.m_left != nullptr) {
+                            visit_expr_wrapper(vidx.m_left, true);
+                            first_idx = tmp;
+                        } else {
+                            first_idx = llvm::ConstantInt::get(idx_type, 1);
+                        }
+                    } else {
+                        // Non-sliced (fixed index) dimension
+                        visit_expr_wrapper(vidx.m_right, true);
+                        first_idx = tmp;
+                    }
+                    first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
+                    llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                        src_dim_des_arr,
+                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, vi)));
+                    llvm::Value* stride = arr_descr->get_stride(dim_des, true);
+                    llvm::Value* lb = arr_descr->get_lower_bound(dim_des, true);
+                    section_offset = builder->CreateAdd(section_offset,
+                        builder->CreateMul(stride, builder->CreateSub(first_idx, lb)));
+                }
+                value_data = llvm_utils->create_ptr_gep2(value_el_type, value_data, section_offset);
+            }
         } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                    value_physical_type == ASR::array_physical_typeType::PointerArray) {
             llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -7622,8 +7665,6 @@ public:
         
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
-        llvm::Type* idx_type = arr_descr->get_index_type();
-        unsigned idx_bits = idx_type->getIntegerBitWidth();
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         // Set rank
@@ -12304,6 +12345,10 @@ public:
                         }
                         break;
                     }
+                    case ASR::ttypeType::FunctionType:{
+                        fetch_ptr(x);
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -16577,7 +16622,13 @@ public:
                                     tmp = target;
                                 }
                             } else {
-                                if( arg->m_intent == intent_local && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) ) {
+                                bool is_func_type_arg = ASR::is_a<ASR::FunctionType_t>(*arg->m_type) ||
+                                    (ASRUtils::is_pointer(arg->m_type) &&
+                                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(arg->m_type)));
+                                bool needs_func_ptr_load = is_func_type_arg &&
+                                    (arg->m_intent == intent_local ||
+                                     (ASRUtils::is_pointer(arg->m_type) && ASRUtils::is_arg_dummy(arg->m_intent)));
+                                if( needs_func_ptr_load ) {
                                     // (FunctionType**) --> (FunctionType*)
                                     bool pass_by_value = true;
                                     if ( ASR::is_a<ASR::Function_t>(*func_subrout) ) {
@@ -16588,7 +16639,8 @@ public:
                                                 ASR::down_cast<ASR::Var_t>(func->m_args[arg_idx])->m_v);
                                             if ( ASR::is_a<ASR::Variable_t>(*func_var_sym) ) {
                                                 ASR::Variable_t* func_variable = ASR::down_cast<ASR::Variable_t>(func_var_sym);
-                                                if ( func_variable->m_intent == ASRUtils::intent_inout || func_variable->m_intent == ASRUtils::intent_out ) {
+                                                if ( func_variable->m_intent == ASRUtils::intent_inout || func_variable->m_intent == ASRUtils::intent_out ||
+                                                     ASRUtils::is_pointer(func_variable->m_type) ) {
                                                     pass_by_value = false;
                                                 }
                                             }
@@ -16597,13 +16649,15 @@ public:
 
                                     if ( pass_by_value ) {
                                         // Pass-by-Value
+                                        ASR::ttype_t* load_type = ASRUtils::type_get_past_pointer(arg->m_type);
                                         tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                                            al, arg->base.base.loc, &arg->base)), arg->m_type, module.get()), tmp);
+                                            al, arg->base.base.loc, &arg->base)), load_type, module.get()), tmp);
                                     }
                                 }
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
+                                    !is_func_type_arg &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
                                     !(compiler_options.new_classes &&
@@ -16689,11 +16743,12 @@ public:
                         tmp = ptr_to_tmp;
                     }
                     // Bitcast procedure pointer if types don't match (implicit interface)
-                    // Only for procedure values passed by value (not intent inout/out)
+                    // Only for procedure values passed by value (not intent inout/out or pointer)
                     if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
                             ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
                             orig_arg_intent != ASR::intentType::InOut &&
-                            orig_arg_intent != ASR::intentType::Out) {
+                            orig_arg_intent != ASR::intentType::Out &&
+                            !ASRUtils::is_pointer(orig_arg->m_type)) {
                         llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                             orig_arg->m_type, module.get());
@@ -18047,7 +18102,7 @@ public:
         std::vector<llvm::Value*> args;
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
-            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
@@ -18097,6 +18152,7 @@ public:
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_decl)));
             s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
+            is_nopass = true;  // procedure pointer variables are always nopass
         } else {
             throw CodeGenError("SubroutineCall: Symbol type not supported");
         }
@@ -18259,10 +18315,13 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             if ( x.m_original_name && ASR::is_a<ASR::Variable_t>(*x.m_original_name) ) {
                 ASR::Variable_t* x_m_original_name = ASR::down_cast<ASR::Variable_t>(x.m_original_name);
-                if ( x_m_original_name->m_intent == ASRUtils::intent_out || x_m_original_name->m_intent == ASRUtils::intent_inout ) {
-                    fn = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, x_m_original_name->base.base.loc, &x_m_original_name->base)), x_m_original_name->m_type, module.get()), fn);
+                if ( x_m_original_name->m_intent == ASRUtils::intent_out || x_m_original_name->m_intent == ASRUtils::intent_inout
+                        || ASRUtils::is_pointer(x_m_original_name->m_type) ) {
+                    fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
                 }
+            } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
+                    ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type)) {
+                fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             }
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
@@ -18830,7 +18889,7 @@ public:
         std::vector<llvm::Value*> args;
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
-            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
@@ -18886,6 +18945,7 @@ public:
             }
             s = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(type_decl));
+            is_nopass = true;  // procedure pointer variables are always nopass
         } else {
             throw CodeGenError("FunctionCall: Symbol type not supported");
         }
@@ -19006,6 +19066,12 @@ public:
             }
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
+            // For procedure pointer variables (Pointer_t(FunctionType_t)), the argument
+            // is passed by reference (fntype**), so we need to load to get fntype*.
+            if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
+                    ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type)) {
+                fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
+            }
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {

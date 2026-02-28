@@ -170,7 +170,11 @@ Returns true, when the symbol 'f' is a procedure variable
 static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
     if (ASR::is_a<ASR::Variable_t>(*f)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f);
-        return ASR::is_a<ASR::FunctionType_t>(*v->m_type);
+        ASR::ttype_t* t = v->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
+        }
+        return ASR::is_a<ASR::FunctionType_t>(*t);
     }
     return false;
 }
@@ -178,7 +182,11 @@ static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
 static inline bool is_symbol_procedure_variable(const ASR::symbol_t* f) {
     if (ASR::is_a<ASR::Variable_t>(*f)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f);
-        return ASR::is_a<ASR::FunctionType_t>(*v->m_type);
+        ASR::ttype_t* t = v->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
+        }
+        return ASR::is_a<ASR::FunctionType_t>(*t);
     }
     return false;
 }
@@ -199,8 +207,11 @@ static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
         func_type = ASR::down_cast<ASR::FunctionType_t>(
             ASR::down_cast<ASR::Function_t>(a_name_)->m_function_signature);
     } else if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
-        func_type = ASR::down_cast<ASR::FunctionType_t>(
-            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type);
+        ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(a_name_)->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
+            var_type = ASR::down_cast<ASR::Pointer_t>(var_type)->m_type;
+        }
+        func_type = ASR::down_cast<ASR::FunctionType_t>(var_type);
     } else if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(
@@ -940,6 +951,9 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
+            if (struct_sym == nullptr) {
+                return "derived_type";
+            }
             return ASRUtils::symbol_name(struct_sym);
         }
         case ASR::ttypeType::EnumType: {
@@ -7338,7 +7352,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
-        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) &&
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
