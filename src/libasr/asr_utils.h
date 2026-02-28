@@ -1565,17 +1565,8 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
-        case ASR::exprType::FunctionCall: {
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-            if (func_call->m_name == nullptr) {
-                return false;
-            }
-            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
-            if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-                return std::string(func->m_name) == "_lfortran_get_item";
-            }
-            return false;
+        case ASR::exprType::DictItem: {
+            return true;
         }
         default:
             return false;
@@ -1584,10 +1575,6 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
 
 static inline bool enforce_modifiable_actual_argument_check(const ASR::Function_t* f) {
     if (f == nullptr) {
-        return false;
-    }
-    std::string fn_name = f->m_name;
-    if (fn_name.rfind("_lfortran_", 0) == 0 || fn_name.rfind("_lcompilers_", 0) == 0) {
         return false;
     }
     return true;

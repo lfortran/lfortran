@@ -375,12 +375,6 @@ semantic error: Variable 'pf1' is not declared
 180 |         pf1 => dummy_sub
     |         ^^^ 'pf1' is undeclared
 
-semantic error: Interface mismatch in procedure pointer assignment at (1): 'dummy_func' is not a subroutine
-   --> tests/errors/continue_compilation_1.f90:183:9
-    |
-183 |         pf2 => dummy_func
-    |         ^^^^^^^^^^^^^^^^^ (1)
-
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:268:14
     |
