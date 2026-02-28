@@ -1744,6 +1744,7 @@ RUN(NAME implicit_typing_07 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME generic_name_04 LABELS gfortran llvm)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -2633,7 +2633,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     // continue to next argument.
                     continue;
                 }
-                // Otherwise this should not be nullptr
+                if (args[i].m_value == nullptr) {
+                    // Required argument is not provided — overload doesn't match.
+                    return false;
+                }
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = v->m_type;
                 ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
