@@ -2390,6 +2390,7 @@ public:
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);
