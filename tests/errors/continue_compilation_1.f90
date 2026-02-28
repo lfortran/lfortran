@@ -616,6 +616,15 @@ program continue_compilation_1
     
     base_var = derived_var
 
+    type :: container(rk, ik)
+        integer, kind :: rk
+        integer, kind :: ik
+        integer(kind=ik)  :: i_val(20)
+        real(kind=rk)     :: r_val(20)
+    end type container
+
+    type(container(4)) :: obj1
+    type(container) :: obj2
 
 
 
