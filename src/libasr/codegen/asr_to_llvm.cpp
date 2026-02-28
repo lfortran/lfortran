@@ -17113,10 +17113,15 @@ public:
                         ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get());
                     llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
                     
-                    // Store vptr for intrinsic type
+                    // Store vptr for intrinsic type (skip for polymorphic args,
+                    // e.g. dummy placeholders for absent optional class(*) arguments)
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
-                    struct_api->store_intrinsic_type_vptr(arg_type,
-                        ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
+                    ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(arg_type));
+                    if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
+                        struct_api->store_intrinsic_type_vptr(arg_type,
+                            ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
+                    }
                     
                     // Store data pointer (bitcast scalar pointer to i8*)
                     llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
@@ -17895,6 +17900,7 @@ public:
         bool is_method = x.m_dt && !is_nopass;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
+            if (arg_expr == nullptr) continue;
             ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i].m_value);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
