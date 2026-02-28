@@ -77,7 +77,6 @@ namespace RandomInit {
     static inline ASR::stmt_t* instantiate_RandomInit(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        
         std::string c_func_name = "_lfortran_random_init";
         std::string new_name = "_lcompilers_random_init_";
 
@@ -206,7 +205,7 @@ namespace RandomSeed {
         } else {
             fill_func_arg_sub("get", real32, In);
         }
-       
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
@@ -262,7 +261,7 @@ namespace Srand {
         call_args.push_back(al, args[0]);
         ASR::expr_t* discard = declare("_lcompilers_srand_result", seed_type, Local);
         body.push_back(al, b.Assignment(discard, b.Call(s, call_args, seed_type)));
-        
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);

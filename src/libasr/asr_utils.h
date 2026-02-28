@@ -1573,7 +1573,6 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
 }
 
-
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
@@ -6906,7 +6905,6 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
                         if ((callee_param->m_intent == ASR::intentType::Out ||
                              callee_param->m_intent == ASR::intentType::InOut)) {
-                            
                             if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
@@ -6921,13 +6919,12 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                 }
             }
         }
-        
+
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                 ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                 if (passed_var->m_intent == ASR::intentType::In) {
-                   
                     if (i < f->n_args) {
                         ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
                         if (callee_param->m_intent == ASR::intentType::Out ||
