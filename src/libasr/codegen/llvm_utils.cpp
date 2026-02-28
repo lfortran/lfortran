@@ -8805,6 +8805,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)
     {
+        ttype = ASRUtils::type_get_past_allocatable_pointer(ttype);
+        kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
                 ttype, ASRUtils::extract_kind_from_ttype_t(ttype))) == intrinsic_type_vtab.end()) {
             create_vtab_for_intrinsic_type(ttype,
