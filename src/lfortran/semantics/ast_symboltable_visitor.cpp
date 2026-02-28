@@ -1851,8 +1851,14 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
-                    type_decl = v;
+                    if (ASRUtils::is_c_ptr(v, derived_type_name)) {
+                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    } else if (ASRUtils::is_c_funptr(v, derived_type_name)) {
+                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    } else {
+                        type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
+                        type_decl = v;
+                    }
                     break;
                 }
                 default :
