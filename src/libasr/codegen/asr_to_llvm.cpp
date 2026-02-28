@@ -12566,8 +12566,13 @@ public:
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
-        } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
+        } else if(source->getType()->isPointerTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
+        } else if(source_type->isArrayTy()){
+            // Source is a loaded array value (e.g. from struct member access),
+            // store into alloca to obtain a pointer for bitcast
+            source_ptr = llvm_utils->CreateAlloca(source->getType(), nullptr, "bitcast_source");
+            builder->CreateStore(source, source_ptr);
         } else if (is_array) {
             source_type = source->getType();
             source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
