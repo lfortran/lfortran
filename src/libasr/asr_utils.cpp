@@ -2664,6 +2664,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
+                if (args[i].m_value == nullptr) {
+                    // Required procedure argument is not provided — overload doesn't match.
+                    return false;
+                }
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sub_arg_sym);
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
