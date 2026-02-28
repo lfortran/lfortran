@@ -3053,16 +3053,20 @@ public:
                                         alloc_args_vec.p, alloc_args_vec.size(),
                                         stat, errmsg, source)));
             // Pushing assignment statements to source
-            for (size_t i = 0; i < alloc_args_vec.n ; i++) {
-                // Create assignment statement only for non-struct types
-                // All validation was already done above before creating the Allocate ASR node
-                if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
-                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(
-                        ASRUtils::make_Assignment_t_util(
-                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs_arrays, false
-                        )
-                    );
-                    current_body->push_back(al, assign_stmt);
+            if (source_cond) {
+                for (size_t i = 0; i < alloc_args_vec.n ; i++) {
+                    // Create assignment statement only for non-struct types
+                    // All validation was already done above before creating the Allocate ASR node
+                    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                        ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(
+                            ASRUtils::make_Assignment_t_util(
+                                al, x.base.base.loc, alloc_args_vec[i].m_a, source_copy, nullptr, compiler_options.po.realloc_lhs_arrays, false
+                            )
+                        );
+                        current_body->push_back(al, assign_stmt);
+                    }
                 }
             }
             tmp = nullptr;
