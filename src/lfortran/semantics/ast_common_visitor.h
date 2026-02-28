@@ -7518,6 +7518,16 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
+            if (!sym_type->m_name) {
+                Location &attr_loc = sym_type->base.base.loc;
+                diag.add(Diagnostic(
+                    "Procedure declarations without an explicit interface (procedure()) are not yet supported. "
+                    "Please use procedure(interface_name) or declare an interface block.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{attr_loc})
+                    }));
+                throw SemanticAbort();
+            }
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {

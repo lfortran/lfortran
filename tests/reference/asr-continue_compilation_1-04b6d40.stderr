@@ -70,6 +70,12 @@ warning: non-standard Fortran 77-style initialization (extension)
 165 |         integer, save :: slash_y/2/
     |                          ^^^^^^^^^^ Use modern syntax instead: integer :: slash_y = 2
 
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+   --> tests/errors/continue_compilation_1.f90:179:9
+    |
+179 |         procedure(), pointer :: pf1
+    |         ^^^^^^^^^^^ 
+
 semantic error: Defined assignment procedure must not return a value
    --> tests/errors/continue_compilation_1.f90:141:5 - 145:32
     |
@@ -121,6 +127,12 @@ semantic error: Interface 'missing_global_interface' is referenced but not defin
    |
 25 |     procedure(missing_global_interface), pointer :: p => null()
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: Interface 'sub_test' is referenced but not defined
+   --> tests/errors/continue_compilation_1.f90:182:9
+    |
+182 |         procedure(sub_test), pointer :: pf2
+    |         ^^^^^^^^^^^^^^^^^^^ Referenced here
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:210:5 - 212:49
@@ -356,6 +368,18 @@ semantic error: Character intrinsic 'len_trim' with class(*) argument must be in
     |
 138 |         print *, len_trim(generic)
     |                  ^^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Variable 'pf1' is not declared
+   --> tests/errors/continue_compilation_1.f90:180:9
+    |
+180 |         pf1 => dummy_sub
+    |         ^^^ 'pf1' is undeclared
+
+semantic error: Interface mismatch in procedure pointer assignment at (1): 'dummy_func' is not a subroutine
+   --> tests/errors/continue_compilation_1.f90:183:9
+    |
+183 |         pf2 => dummy_func
+    |         ^^^^^^^^^^^^^^^^^ (1)
 
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:268:14

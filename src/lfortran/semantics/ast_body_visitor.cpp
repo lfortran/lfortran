@@ -2422,6 +2422,41 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
+        } else if (ASR::is_a<ASR::FunctionType_t>(*target_type) && ASR::is_a<ASR::FunctionType_t>(*value_type)) {
+            ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type);
+            ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type);
+            
+            bool target_is_sub = (target_func_type->m_return_var_type == nullptr);
+            bool value_is_sub = (value_func_type->m_return_var_type == nullptr);
+            
+            if (target_is_sub != value_is_sub) {
+                std::string value_name = "";
+                if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) || 
+                    ASR::is_a<ASR::IntrinsicImpureFunction_t>(*value)) {
+                    value_name = "intrinsic function";
+                } else if (ASR::is_a<ASR::Var_t>(*value)) {
+                    ASR::symbol_t* value_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                    value_name = ASRUtils::symbol_name(value_sym);
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                    ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(value);
+                    if (fc->m_name) {
+                        value_name = ASRUtils::symbol_name(fc->m_name);
+                    }
+                }
+                if (value_name.empty()) {
+                    value_name = "unknown";
+                }
+                std::string expected_type = target_is_sub ? "a subroutine" : "a function";
+                diag.add(Diagnostic(
+                    "Interface mismatch in procedure pointer assignment at (1): '" + value_name + "' is not " + expected_type,
+                    Level::Error, Stage::Semantic, {
+                        Label("(1)",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }            
+            if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+            }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
