@@ -238,7 +238,9 @@ namespace Srand {
         std::string c_func_name = "_lfortran_init_random_seed";
         std::string new_name = "_lcompilers_srand_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("r", arg_types[0], Out);
+        fill_func_arg_sub("r", arg_types[0], In);
+        ASR::ttype_t* seed_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(arg_types[0]));
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
         ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
@@ -246,9 +248,9 @@ namespace Srand {
         args_1.push_back(al, arg);
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           seed_type,
            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
-           
+
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -258,7 +260,8 @@ namespace Srand {
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
         call_args.push_back(al, args[0]);
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+        ASR::expr_t* discard = declare("_lcompilers_srand_result", seed_type, Local);
+        body.push_back(al, b.Assignment(discard, b.Call(s, call_args, seed_type)));
         
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
