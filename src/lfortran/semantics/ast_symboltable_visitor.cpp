@@ -319,7 +319,38 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false);
-            std::string unsupported_sym_name = import_all(m, true);
+            std::set<std::string> submodule_proc_names;
+            for (size_t i = 0; i < x.n_contains; i++) {
+                AST::program_unit_t *pu = x.m_contains[i];
+                if (AST::is_a<AST::Procedure_t>(*pu)) {
+                    AST::Procedure_t *proc = AST::down_cast<AST::Procedure_t>(pu);
+                    submodule_proc_names.insert(to_lower(proc->m_name));
+                } else if (AST::is_a<AST::Function_t>(*pu)) {
+                    AST::Function_t *fn = AST::down_cast<AST::Function_t>(pu);
+                    for (size_t j = 0; j < fn->n_attributes; j++) {
+                        if (AST::is_a<AST::SimpleAttribute_t>(*fn->m_attributes[j])) {
+                            AST::SimpleAttribute_t *attr = AST::down_cast<AST::SimpleAttribute_t>(fn->m_attributes[j]);
+                            if (attr->m_attr == AST::simple_attributeType::AttrModule) {
+                                submodule_proc_names.insert(to_lower(fn->m_name));
+                                break;
+                            }
+                        }
+                    }
+                } else if (AST::is_a<AST::Subroutine_t>(*pu)) {
+                    AST::Subroutine_t *sub = AST::down_cast<AST::Subroutine_t>(pu);
+                    for (size_t j = 0; j < sub->n_attributes; j++) {
+                        if (AST::is_a<AST::SimpleAttribute_t>(*sub->m_attributes[j])) {
+                            AST::SimpleAttribute_t *attr = AST::down_cast<AST::SimpleAttribute_t>(sub->m_attributes[j]);
+                            if (attr->m_attr == AST::simple_attributeType::AttrModule) {
+                                submodule_proc_names.insert(to_lower(sub->m_name));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            std::string unsupported_sym_name = import_all(m, true, {},
+                submodule_proc_names);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
