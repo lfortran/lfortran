@@ -3269,15 +3269,19 @@ public:
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
                         rank_body.push_back(al, assoc_stmt);
                     }
-                    transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
+                    // Create the Block before transform_stmts so that
+                    // current_scope->asr_owner is set. This ensures
+                    // ADD_ASR_DEPENDENCIES correctly walks up the scope chain
+                    // and records dependencies for calls inside select rank.
                     std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
-                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al, 
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
                         rank_expr->base.base.loc, current_scope, s2c(al, block_name),
                         nullptr, 0));
                     ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_sym);
+                    parent_scope->add_symbol(block_name, block_sym);
+                    transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
                     block_t->m_body = rank_body.p;
                     block_t->n_body = rank_body.size();
-                    parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt; block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, rank_expr->base.base.loc, -1, block_sym)));
                     select_rank_body.push_back(al, ASR::down_cast<ASR::rank_stmt_t>(ASR::make_RankExpr_t(al, rank_expr->base.base.loc,
