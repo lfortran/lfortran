@@ -2407,6 +2407,9 @@ public:
             throw SemanticAbort();
         }
 
+        tmp = nullptr;
+        ASR::ttype_t* target_type_unwrapped = ASRUtils::type_get_past_pointer(target_type);
+        ASR::ttype_t* value_type_unwrapped = ASRUtils::type_get_past_pointer(value_type);
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
@@ -2422,13 +2425,13 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
-        } else if (ASR::is_a<ASR::FunctionType_t>(*target_type) && ASR::is_a<ASR::FunctionType_t>(*value_type)) {
-            ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type);
-            ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type);
-            
+        } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_unwrapped) && ASR::is_a<ASR::FunctionType_t>(*value_type_unwrapped)) {
+            ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type_unwrapped);
+            ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type_unwrapped);
+
             bool target_is_sub = (target_func_type->m_return_var_type == nullptr);
             bool value_is_sub = (value_func_type->m_return_var_type == nullptr);
-            
+
             if (target_is_sub != value_is_sub) {
                 std::string value_name = "";
                 if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) || 
@@ -2453,8 +2456,8 @@ public:
                         Label("(1)",{x.base.base.loc})
                     }));
                 throw SemanticAbort();
-            }            
-            if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+            }
+            if (ASRUtils::types_equal(target_type_unwrapped, value_type_unwrapped, target, value)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
