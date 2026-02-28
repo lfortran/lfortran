@@ -7768,7 +7768,8 @@ public:
 
                 if (array_section->m_args[i].m_right) {
                     if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
-                        ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right)) {
+                        ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right) &&
+                        ASR::down_cast<ASR::ArrayBound_t>(array_section->m_args[i].m_right)->m_value == nullptr) {
                         llvm::Value *lbound = builder->CreateSExtOrTrunc(
                             lbs.p[i], arr_descr->get_index_type());
                         ubs.p[i] = lbound;
