@@ -2652,7 +2652,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 bool is_elemental = ASRUtils::get_FunctionType(sub)->m_elemental;
                 if (ASR::is_a<ASR::StructType_t>(*arg2_ext)) {
                     if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
-                            (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1)) ||
+                            (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1) && !ASRUtils::is_assumed_rank_array(arg2)) ||
                             (!is_elemental && !ASRUtils::is_array(arg2) && ASRUtils::is_array(arg1))) {
                         return false;
                     }
