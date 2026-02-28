@@ -15234,23 +15234,43 @@ public:
                             llvm::Type::getInt1Ty(context));
         }
 
+        llvm::Value *size_orig_ptr = nullptr;
+        int size_kind = 4;
         if (x.m_size) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_size, true);
-            size_val = tmp;
             ptr_loads = ptr_loads_copy;
+            size_kind = ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(x.m_size));
+            if (size_kind == 4) {
+                size_val = tmp;
+            } else {
+                size_orig_ptr = tmp;
+                size_val = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt32Ty(context));
+            }
         } else {
             size_val = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt32Ty(context));
         }
 
+        llvm::Value *pos_orig_ptr = nullptr;
+        int pos_kind = 4;
         if (x.m_pos) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_pos, true);
-            pos_val = tmp;
             ptr_loads = ptr_loads_copy;
+            pos_kind = ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(x.m_pos));
+            if (pos_kind == 4) {
+                pos_val = tmp;
+            } else {
+                pos_orig_ptr = tmp;
+                pos_val = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt32Ty(context));
+            }
         } else {
             pos_val = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt32Ty(context));
@@ -15539,6 +15559,20 @@ public:
             formatted, formatted_len,
             unformatted, unformatted_len,
             iostat, nextrec});
+        if (size_orig_ptr) {
+            llvm::Value *loaded = builder->CreateLoad(
+                llvm::Type::getInt32Ty(context), size_val);
+            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
+                llvm_utils->getIntType(size_kind));
+            builder->CreateStore(converted, size_orig_ptr);
+        }
+        if (pos_orig_ptr) {
+            llvm::Value *loaded = builder->CreateLoad(
+                llvm::Type::getInt32Ty(context), pos_val);
+            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
+                llvm_utils->getIntType(pos_kind));
+            builder->CreateStore(converted, pos_orig_ptr);
+        }
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
