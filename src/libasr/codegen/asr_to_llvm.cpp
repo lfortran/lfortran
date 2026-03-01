@@ -16774,6 +16774,15 @@ public:
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
+                    // If the target parameter is a procedure pointer,
+                    // wrap the function pointer in an alloca
+                    if (orig_arg &&
+                        LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                        llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(
+                            *builder, tmp->getType());
+                        builder->CreateStore(tmp, ptr_to_tmp);
+                        tmp = ptr_to_tmp;
+                    }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
                 this->visit_expr_wrapper(x.m_args[i].m_value);
