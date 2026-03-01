@@ -2941,7 +2941,12 @@ namespace Exponent {
             }
             int32_t ix;
             std::memcpy(&ix, &x, sizeof(ix));
-            int32_t exponent = ((ix >> 23) & 0xff) - 126;
+            int32_t exponent_bits = (ix >> 23) & 0xff;
+            if (exponent_bits == 0xff) {
+                return make_ConstantWithType(make_IntegerConstant_t,
+                    std::numeric_limits<int32_t>::max(), arg_type, loc);
+            }
+            int32_t exponent = exponent_bits - 126;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
         else if (kind == 8) {
@@ -2951,7 +2956,12 @@ namespace Exponent {
             }
             int64_t ix;
             std::memcpy(&ix, &x, sizeof(ix));
-            int64_t exponent = ((ix >> 52) & 0x7ff) - 1022;
+            int64_t exponent_bits = (ix >> 52) & 0x7ff;
+            if (exponent_bits == 0x7ff) {
+                return make_ConstantWithType(make_IntegerConstant_t,
+                    std::numeric_limits<int32_t>::max(), arg_type, loc);
+            }
+            int64_t exponent = exponent_bits - 1022;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
         return nullptr;
@@ -2977,15 +2987,25 @@ namespace Exponent {
                 body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
                 b.Assignment(result, b.i32(0))
             }, {
-                b.Assignment(result, b.i2i_t(b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
-                    b.i64(52), int64), b.i64(0x7FF)), b.i64(1022)), int32))
+                b.If(b.Eq(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
+                    b.i64(52), int64), b.i64(0x7FF)), b.i64(0x7FF)), {
+                    b.Assignment(result, b.i32(std::numeric_limits<int32_t>::max()))
+                }, {
+                    b.Assignment(result, b.i2i_t(b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
+                        b.i64(52), int64), b.i64(0x7FF)), b.i64(1022)), int32))
+                })
             }));
         } else {
                 body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
                 b.Assignment(result, b.i32(0))
             }, {
-                b.Assignment(result, b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
-                b.i32(23), int32), b.i32(0x0FF)), b.i32(126)))
+                b.If(b.Eq(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
+                    b.i32(23), int32), b.i32(0x0FF)), b.i32(0x0FF)), {
+                    b.Assignment(result, b.i32(std::numeric_limits<int32_t>::max()))
+                }, {
+                    b.Assignment(result, b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
+                        b.i32(23), int32), b.i32(0x0FF)), b.i32(126)))
+                })
             }));
         }
 
