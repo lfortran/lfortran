@@ -1565,32 +1565,12 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
-        case ASR::exprType::FunctionCall: {
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-            if (func_call->m_name == nullptr) {
-                return false;
-            }
-            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
-            if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-                return std::string(func->m_name) == "_lfortran_get_item";
-            }
-            return false;
+        case ASR::exprType::DictItem: {
+            return true;
         }
         default:
             return false;
     }
-}
-
-static inline bool enforce_modifiable_actual_argument_check(const ASR::Function_t* f) {
-    if (f == nullptr) {
-        return false;
-    }
-    std::string fn_name = f->m_name;
-    if (fn_name.rfind("_lfortran_", 0) == 0 || fn_name.rfind("_lcompilers_", 0) == 0) {
-        return false;
-    }
-    return true;
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value) {
@@ -4191,6 +4171,17 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
     } else if (ASRUtils::is_class_type(b)) {
         if (ASR::down_cast<ASR::StructType_t>(b)->m_is_unlimited_polymorphic) {
             return true;
+        }
+    }
+    // Assumed-rank arrays (dimension(..)) accept any rank, including scalar
+    if (check_for_dimensions) {
+        if (ASR::is_a<ASR::Array_t>(*b) && is_assumed_rank_array(b)) {
+            return types_equal(a, ASR::down_cast<ASR::Array_t>(b)->m_type,
+                               a_expr, b_expr, false);
+        }
+        if (ASR::is_a<ASR::Array_t>(*a) && is_assumed_rank_array(a)) {
+            return types_equal(ASR::down_cast<ASR::Array_t>(a)->m_type, b,
+                               a_expr, b_expr, false);
         }
     }
     if (a->type == b->type) {
@@ -6914,26 +6905,17 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
 
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
-    bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(f);
-    
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
-        
-        // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
+
         if (passed_arg_expr && i < f->n_args) {
-            // Check for INTENT(OUT/INOUT) - but safely
-            // We need to check if this is a regular argument (not a procedure)
-            // by looking at whether we can safely call EXPR2VAR
             if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
-                    // Check if it's not a procedure (procedures don't have regular intent)
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
-                        if (enforce_modifiable_check &&
-                            (callee_param->m_intent == ASR::intentType::Out ||
+                        if ((callee_param->m_intent == ASR::intentType::Out ||
                              callee_param->m_intent == ASR::intentType::InOut)) {
-                            
                             if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
@@ -6948,15 +6930,12 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                 }
             }
         }
-        
-        // Now handle the original intent(in) -> intent(out/inout) mismatch check
-        // This only applies when passed_arg_expr is a Var_t
+
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                 ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                 if (passed_var->m_intent == ASR::intentType::In) {
-                   
                     if (i < f->n_args) {
                         ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
                         if (callee_param->m_intent == ASR::intentType::Out ||

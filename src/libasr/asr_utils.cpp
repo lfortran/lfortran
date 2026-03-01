@@ -1160,21 +1160,28 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     }
 
     if (mod->m_has_submodules) {
-        std::vector<ASR::TranslationUnit_t*> submods;
-        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
-            = ASRUtils::find_and_load_submodules(al, std::string(mod->m_name), *symtab, pass_options, lm);
-        if (res.ok) {
-            submods = res.result;
-        } else {
-            std::string error_message = res.error.message;
-            err(error_message, loc);
-        }
-        for (size_t i=0;i<submods.size();i++) {
-            ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
-            if (symtab->get_symbol(std::string(submod->m_name)) == nullptr) {
-                symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-                submod->m_symtab->parent = symtab;
-                submod->m_loaded_from_mod = true;
+        std::vector<ASR::Module_t*> pending;
+        pending.push_back(mod);
+        while (!pending.empty()) {
+            ASR::Module_t* current = pending.back();
+            pending.pop_back();
+            std::vector<ASR::TranslationUnit_t*> submods;
+            Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
+                = ASRUtils::find_and_load_submodules(al, std::string(current->m_name), *symtab, pass_options, lm);
+            if (res.ok) {
+                submods = res.result;
+            } else {
+                std::string error_message = res.error.message;
+                err(error_message, loc);
+            }
+            for (size_t i=0;i<submods.size();i++) {
+                ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
+                if (symtab->get_symbol(std::string(submod->m_name)) == nullptr) {
+                    symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+                    submod->m_symtab->parent = symtab;
+                    submod->m_loaded_from_mod = true;
+                    pending.push_back(submod);
+                }
             }
         }
     }
@@ -2664,6 +2671,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
+                if (args[i].m_value == nullptr) {
+                    // Required procedure argument is not provided — overload doesn't match.
+                    return false;
+                }
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sub_arg_sym);
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);

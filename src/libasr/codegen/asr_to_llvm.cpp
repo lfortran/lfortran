@@ -871,7 +871,8 @@ public:
         switch(str_type->m_len_kind){
             case ASR::ExpressionLength:{
                 LCOMPILERS_ASSERT(len);
-                int ptr_load_cpy = ptr_loads;ptr_loads = 1;
+                int ptr_load_cpy = ptr_loads;
+                ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(len));
                 visit_expr(*len);
                 ptr_loads = ptr_load_cpy;
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
@@ -5065,7 +5066,21 @@ public:
                         sym);
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
             if (x.m_parent_module && func_type->m_module) {
-                mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
+                std::string root_module = std::string(x.m_parent_module);
+                SymbolTable* tu_symtab = x.m_symtab->parent;
+                if (tu_symtab) {
+                    ASR::symbol_t* parent_sym = tu_symtab->get_symbol(root_module);
+                    while (parent_sym && ASR::is_a<ASR::Module_t>(*parent_sym)) {
+                        ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(parent_sym);
+                        if (parent_mod->m_parent_module) {
+                            root_module = std::string(parent_mod->m_parent_module);
+                            parent_sym = tu_symtab->get_symbol(root_module);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                mangle_prefix = "__module_" + root_module + "_";
             }
             instantiate_function(*v);
             mangle_prefix = "__module_" + std::string(x.m_name) + "_";
@@ -7768,7 +7783,8 @@ public:
 
                 if (array_section->m_args[i].m_right) {
                     if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
-                        ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right)) {
+                        ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right) &&
+                        ASR::down_cast<ASR::ArrayBound_t>(array_section->m_args[i].m_right)->m_value == nullptr) {
                         llvm::Value *lbound = builder->CreateSExtOrTrunc(
                             lbs.p[i], arr_descr->get_index_type());
                         ubs.p[i] = lbound;
@@ -12566,8 +12582,13 @@ public:
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
-        } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
+        } else if(source->getType()->isPointerTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
+        } else if(source_type->isArrayTy()){
+            // Source is a loaded array value (e.g. from struct member access),
+            // store into alloca to obtain a pointer for bitcast
+            source_ptr = llvm_utils->CreateAlloca(source->getType(), nullptr, "bitcast_source");
+            builder->CreateStore(source, source_ptr);
         } else if (is_array) {
             source_type = source->getType();
             source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
@@ -16773,6 +16794,15 @@ public:
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
+                    }
+                    // If the target parameter is a procedure pointer,
+                    // wrap the function pointer in an alloca
+                    if (orig_arg &&
+                        LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                        llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(
+                            *builder, tmp->getType());
+                        builder->CreateStore(tmp, ptr_to_tmp);
+                        tmp = ptr_to_tmp;
                     }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {

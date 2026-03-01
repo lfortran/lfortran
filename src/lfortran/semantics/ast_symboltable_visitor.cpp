@@ -319,7 +319,38 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false);
-            std::string unsupported_sym_name = import_all(m, true);
+            std::set<std::string> submodule_proc_names;
+            for (size_t i = 0; i < x.n_contains; i++) {
+                AST::program_unit_t *pu = x.m_contains[i];
+                if (AST::is_a<AST::Procedure_t>(*pu)) {
+                    AST::Procedure_t *proc = AST::down_cast<AST::Procedure_t>(pu);
+                    submodule_proc_names.insert(to_lower(proc->m_name));
+                } else if (AST::is_a<AST::Function_t>(*pu)) {
+                    AST::Function_t *fn = AST::down_cast<AST::Function_t>(pu);
+                    for (size_t j = 0; j < fn->n_attributes; j++) {
+                        if (AST::is_a<AST::SimpleAttribute_t>(*fn->m_attributes[j])) {
+                            AST::SimpleAttribute_t *attr = AST::down_cast<AST::SimpleAttribute_t>(fn->m_attributes[j]);
+                            if (attr->m_attr == AST::simple_attributeType::AttrModule) {
+                                submodule_proc_names.insert(to_lower(fn->m_name));
+                                break;
+                            }
+                        }
+                    }
+                } else if (AST::is_a<AST::Subroutine_t>(*pu)) {
+                    AST::Subroutine_t *sub = AST::down_cast<AST::Subroutine_t>(pu);
+                    for (size_t j = 0; j < sub->n_attributes; j++) {
+                        if (AST::is_a<AST::SimpleAttribute_t>(*sub->m_attributes[j])) {
+                            AST::SimpleAttribute_t *attr = AST::down_cast<AST::SimpleAttribute_t>(sub->m_attributes[j]);
+                            if (attr->m_attr == AST::simple_attributeType::AttrModule) {
+                                submodule_proc_names.insert(to_lower(sub->m_name));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            std::string unsupported_sym_name = import_all(m, true, {},
+                submodule_proc_names);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
@@ -945,17 +976,24 @@ public:
 
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
-        if (interface_module->m_parent_module) {
-            SymbolTable* tu_symtab = current_scope->get_global_scope();
-            interface_module = ASR::down_cast<ASR::Module_t>(tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
-        }
+        SymbolTable* tu_symtab = current_scope->get_global_scope();
+        std::string proc_name = to_lower(std::string(x.m_name));
 
         ASR::Function_t* proc_interface = nullptr;
-        for (auto &item : interface_module->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second) && (std::string(ASR::down_cast<ASR::Function_t>(item.second)->m_name) == to_lower(std::string(x.m_name)))) {
-                proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
-                break;
+        while (proc_interface == nullptr) {
+            if (interface_module->m_parent_module) {
+                interface_module = ASR::down_cast<ASR::Module_t>(
+                    tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
             }
+            for (auto &item : interface_module->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second) &&
+                        std::string(ASR::down_cast<ASR::Function_t>(
+                            item.second)->m_name) == proc_name) {
+                    proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
+                    break;
+                }
+            }
+            if (!interface_module->m_parent_module) break;
         }
 
         if (proc_interface == nullptr) {
