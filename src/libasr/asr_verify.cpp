@@ -1023,7 +1023,6 @@ public:
         }
 
         if (func) {
-            bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(func);
             require(x.n_args + formal_offset <= func->n_args,
                 "More actual arguments than formal arguments in call.");
 
@@ -1049,7 +1048,7 @@ public:
                     continue;
                 }
 
-                if (check_external && enforce_modifiable_check &&
+                if (check_external &&
                     !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
                     (callee_param->m_intent == ASR::intentType::Out ||
                      callee_param->m_intent == ASR::intentType::InOut)) {
@@ -1449,9 +1448,10 @@ public:
     void visit_String(const String_t &x){
 /*General Check on the length*/ 
         if(x.m_len){
-            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
+            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_len)))),
                 "String length must be of type INTEGER,"
-                "found " + 
+                "found " +
                 ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length

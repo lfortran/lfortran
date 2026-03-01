@@ -8239,6 +8239,9 @@ public:
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
+            if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
+                expr_type = ASRUtils::type_get_past_pointer(expr_type);
+            }
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
                 if(!ASRUtils::is_value_constant(expr)) 
                     use_descriptorArray = true;
@@ -15897,7 +15900,8 @@ public:
     }
 
     std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
-                           std::vector<std::string> symbols_already_imported_with_renaming = {}) {
+                           std::vector<std::string> symbols_already_imported_with_renaming = {},
+                           std::set<std::string> submodule_proc_names = {}) {
         // Import all symbols from the module, e.g.:
         //     use a
         std::set<std::string> indirect_public_symbols;
@@ -15915,12 +15919,15 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if (((!to_submodule) &&
+                if ((!to_submodule) &&
                      mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) ||
-                    (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
-                     ASRUtils::get_FunctionType(mfn)->m_module &&
-                     to_submodule)) {
+                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
+                    continue;
+                }
+                if (to_submodule &&
+                    ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
+                    ASRUtils::get_FunctionType(mfn)->m_module &&
+                    submodule_proc_names.count(item.first) > 0) {
                     continue;
                 }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
