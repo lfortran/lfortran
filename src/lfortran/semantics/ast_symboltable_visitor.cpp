@@ -403,6 +403,7 @@ public:
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
+        resolve_proc_pointer_placeholders();
         evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
@@ -630,6 +631,7 @@ public:
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
+        resolve_proc_pointer_placeholders();
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
              ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
              if (current_sym == placeholder_sym) {
@@ -1988,6 +1990,23 @@ public:
                             throw SemanticAbort();
                         }
                     }
+
+                    if (is_placeholder) {
+                        // Update the placeholder's FunctionType in-place so that
+                        // struct member variables still referencing it get the
+                        // correct function signature (e.g., return type).
+                        ASR::FunctionType_t* placeholder_sig = ASR::down_cast<ASR::FunctionType_t>(
+                            f2->m_function_signature);
+                        ASR::FunctionType_t* real_sig = ASR::down_cast<ASR::FunctionType_t>(
+                            func->m_function_signature);
+                        placeholder_sig->m_arg_types = real_sig->m_arg_types;
+                        placeholder_sig->n_arg_types = real_sig->n_arg_types;
+                        placeholder_sig->m_return_var_type = real_sig->m_return_var_type;
+                        placeholder_sig->m_elemental = real_sig->m_elemental;
+                        placeholder_sig->m_pure = real_sig->m_pure;
+                        placeholder_sig->m_module = real_sig->m_module;
+                    }
+
                     parent_scope->erase_symbol(sym_name);
                 } else {
                     diag.add(diag::Diagnostic(
@@ -3256,6 +3275,28 @@ public:
             return true;
         }
         return false;
+    }
+
+    void resolve_proc_pointer_placeholders() {
+        // After all interfaces/functions have been processed, update
+        // m_type_declaration for procedure pointer variables inside structs
+        // that still reference a placeholder Function_t.
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+            ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
+            for (auto &[sym_name, sym] : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                    ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
+                    for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+                            if (var->m_type_declaration == placeholder_sym) {
+                                var->m_type_declaration = real_sym;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void add_class_procedures() {
