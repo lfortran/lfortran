@@ -498,7 +498,7 @@
                             ColMajor
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Allocate
@@ -623,7 +623,7 @@
                         )
                         (IntegerConstant 42 (Integer 4) Decimal)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (IntrinsicImpureSubroutine
@@ -836,7 +836,7 @@
                         )
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (IntrinsicImpureSubroutine
@@ -890,7 +890,7 @@
                         )
                         (IntegerConstant 42 (Integer 4) Decimal)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (IntrinsicImpureSubroutine

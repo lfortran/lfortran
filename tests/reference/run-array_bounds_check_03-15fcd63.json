@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-array_bounds_check_03-15fcd63.stderr",
-    "stderr_hash": "8b217e6207cdfc2f20a61466ea55c04e9d0bfa0a22788075c1895979",
-    "returncode": 1
+    "stderr_hash": "e4762c09872e3625bcc6d7256a8c736eddb00f7809055506734f1597",
+    "returncode": 0
 }

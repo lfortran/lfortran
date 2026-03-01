@@ -291,7 +291,7 @@
                             (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -320,7 +320,7 @@
                         )
                         (Var 8 char_str_alloc)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -359,7 +359,7 @@
                         )
                         (Var 8 char_str)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -545,7 +545,7 @@
                             ()
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Print
@@ -631,7 +631,7 @@
                             ()
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Print
@@ -1403,7 +1403,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (If
@@ -1718,7 +1718,7 @@
                                                 (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             ()
-                                            .false.
+                                            .true.
                                             .false.
                                         )
                                         (Return)]
@@ -1737,7 +1737,7 @@
                                             (Var 7 delim_str)
                                             (Var 7 delim)
                                             ()
-                                            .false.
+                                            .true.
                                             .false.
                                         )]
                                         [(Assignment
@@ -1747,7 +1747,7 @@
                                                 (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             ()
-                                            .false.
+                                            .true.
                                             .false.
                                         )]
                                     )
@@ -1777,7 +1777,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (DoLoop
@@ -1831,7 +1831,7 @@
                                                 ()
                                             )
                                             ()
-                                            .false.
+                                            .true.
                                             .false.
                                         )]
                                         []
