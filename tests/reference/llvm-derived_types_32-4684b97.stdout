@@ -129,6 +129,7 @@ FINALIZE_SYMTABLE__lcompilers_trim_str:           ; preds = %return
 
 define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val, %string_descriptor* %string) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %__libasr__created__var__2_return_slot = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 1
   %buffer = alloca %string_descriptor, align 8
@@ -175,7 +176,6 @@ ifcont:                                           ; preds = %else, %then
   %18 = alloca i64, align 8
   %19 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %17, i64 4, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %18, i32 0, i32 0, double* %val)
   %20 = load i64, i64* %18, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %21 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %19, i8** %21, align 8
   %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -274,6 +274,7 @@ declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__libasr__created__var__0_return_slot = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
@@ -333,7 +334,6 @@ ifcont:                                           ; preds = %.entry
   store %string_descriptor %28, %string_descriptor* %29, align 1
   %30 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info.3, i32 0, i32 0), i64* %5, i32 0, i32 1, i64 %27, %string_descriptor* %29)
   %31 = load i64, i64* %5, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %32 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %30, i8** %32, align 8
   %33 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1

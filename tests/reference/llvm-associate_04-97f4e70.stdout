@@ -33,6 +33,8 @@ declare float @_lfortran_scos(float)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc1 = alloca %string_descriptor, align 8
+  %stringFormat_desc = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca float, align 4
   %myreal = alloca float, align 4
@@ -75,7 +77,6 @@ associate_block_start:                            ; preds = %.entry
   %20 = load float*, float** %v, align 8
   %21 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i64* %11, i32 0, i32 0, float* %15, float* %19, float* %20)
   %22 = load i64, i64* %11, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %21, i8** %23, align 8
   %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -109,7 +110,6 @@ FINALIZE_SYMTABLE_associate_block:                ; preds = %associate_block_end
   %35 = alloca i64, align 8
   %36 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %35, i32 0, i32 0, float* %myreal)
   %37 = load i64, i64* %35, align 4
-  %stringFormat_desc1 = alloca %string_descriptor, align 8
   %38 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
   store i8* %36, i8** %38, align 8
   %39 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1

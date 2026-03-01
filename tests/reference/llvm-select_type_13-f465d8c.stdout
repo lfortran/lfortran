@@ -141,6 +141,8 @@ FINALIZE_SYMTABLE_rectangle_area:                 ; preds = %return
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc35 = alloca %string_descriptor, align 8
+  %stringFormat_desc = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %s1 = alloca %select_type_13_module.shape_class*, align 8
   store %select_type_13_module.shape_class* null, %select_type_13_module.shape_class** %s1, align 8
@@ -331,7 +333,6 @@ ifcont10:                                         ; preds = %ifcont8
   store float %94, float* %95, align 4
   %96 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %67, i32 0, i32 0, float* %95)
   %97 = load i64, i64* %67, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %98 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %96, i8** %98, align 8
   %99 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -708,7 +709,6 @@ ifcont34:                                         ; preds = %ifcont32
   store float %283, float* %284, align 4
   %285 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %228, i32 0, i32 0, float* %256, float* %284)
   %286 = load i64, i64* %228, align 4
-  %stringFormat_desc35 = alloca %string_descriptor, align 8
   %287 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
   store i8* %285, i8** %287, align 8
   %288 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 1

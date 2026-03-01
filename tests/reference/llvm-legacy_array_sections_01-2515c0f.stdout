@@ -116,6 +116,7 @@ declare void @exit(i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %array_bound1 = alloca i32, align 4
   %array_bound = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
@@ -244,7 +245,6 @@ ifcont8:                                          ; preds = %loop.end
   %53 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 0
   %54 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info, i32 0, i32 0), i64* %52, i32 1, i32 0, i64 5, double* %53)
   %55 = load i64, i64* %52, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %56 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %54, i8** %56, align 8
   %57 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1

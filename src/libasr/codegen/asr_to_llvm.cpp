@@ -20082,7 +20082,11 @@ public:
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);
 
-            tmp = llvm_utils->create_string_descriptor(tmp, result_size,"stringFormat_desc");
+            llvm::Value* str_fmt_desc = llvm_utils->CreateAlloca(
+                llvm_utils->string_descriptor, nullptr, "stringFormat_desc");
+            builder->CreateStore(tmp, llvm_utils->CreateGEP2(llvm_utils->string_descriptor, str_fmt_desc, 0));
+            builder->CreateStore(result_size, llvm_utils->CreateGEP2(llvm_utils->string_descriptor, str_fmt_desc, 1));
+            tmp = str_fmt_desc;
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
         }
