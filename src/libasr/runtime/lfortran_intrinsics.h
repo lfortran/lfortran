@@ -400,6 +400,7 @@ typedef struct Label {
 } Label;
 
 LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...);
+LFORTRAN_API void _lcompilers_runtime_warning(Label *labels, uint32_t n_labels, const char* format, ...);
 
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
