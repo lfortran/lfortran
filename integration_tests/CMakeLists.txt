@@ -2802,6 +2802,7 @@ RUN(NAME read_45 LABELS gfortran llvm)
 RUN(NAME read_46 LABELS gfortran llvm)
 RUN(NAME read_47 LABELS gfortran llvm)
 RUN(NAME read_48 LABELS gfortran llvm)
+RUN(NAME read_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) // test fails with --fast
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
