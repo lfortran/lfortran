@@ -11631,6 +11631,20 @@ public:
                                 reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                         }
                     }
+                } else if (ASRUtils::is_character(*source_type)) {
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(source_type);
+                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+                    int str_len = 1;
+                    if (str_type->m_len && ASRUtils::expr_value(str_type->m_len)) {
+                        str_len = ASR::down_cast<ASR::IntegerConstant_t>(
+                            ASRUtils::expr_value(str_type->m_len))->m_n;
+                    }
+                    char* data = (char*)const_source->m_data;
+                    for (size_t i = 0; i < n_elements; i++) {
+                        for (int j = 0; j < str_len; j++) {
+                            source_bits.push_back(static_cast<uint8_t>(data[i * str_len + j]));
+                        }
+                    }
                 }
             } else {
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
