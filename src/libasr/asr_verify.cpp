@@ -1399,7 +1399,7 @@ public:
             "Allocatable cannot be inside array");
         visit_ttype(*x.m_type);
         if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-            require(x.n_dims == 0, "Assumed-rank arrays muust have 0 dimensions");
+            require(x.n_dims == 0, "Assumed-rank arrays must have 0 dimensions");
             return ;
         }
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
