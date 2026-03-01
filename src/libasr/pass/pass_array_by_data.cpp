@@ -112,7 +112,19 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     symbol_duplicator.duplicate_symbol(item.second, new_symtab);
                 }
             }
-          Vec<ASR::expr_t*> new_args;
+            // If a Block (e.g. from a select type construct) could not be duplicated
+            // into new_symtab, skip duplicating this function. Otherwise the duplicated
+            // body's BlockCall would still reference the original Block in the wrong scope.
+            for( auto& item: x->m_symtab->get_scope() ) {
+                if (ASR::is_a<ASR::Block_t>(*item.second)) { 
+                    std::string block_name = std::string(ASR::down_cast<ASR::Block_t>(item.second)->m_name);
+                    if (!new_symtab->get_symbol(block_name)) {
+                        return nullptr;
+                    }
+                }
+            }   
+
+            Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
             new_args.reserve(al, x->n_args);
             ASR::expr_t* return_var = nullptr;
