@@ -304,6 +304,68 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_arg.loc = this->result_var_->base.loc;
         new_arg.m_value = this->result_var_;
         new_args.push_back(al, new_arg);
+
+        ASRUtils::IntrinsicArrayFunctions intrinsic_id = func2intrinsicid[x_m_name];
+        if (intrinsic_id == ASRUtils::IntrinsicArrayFunctions::Pack &&
+            ASRUtils::is_allocatable(ASRUtils::expr_type(this->result_var_)) &&
+            x->n_args > 1 && x->m_args[1].m_value &&
+            ASRUtils::is_array(ASRUtils::expr_type(x->m_args[1].m_value))) {
+            const Location& loc = x->base.base.loc;
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            ASR::expr_t* alloc_size = nullptr;
+            ASR::expr_t* mask_arg = x->m_args[1].m_value;
+            SymbolTable* scope = ASRUtils::symbol_parent_symtab(
+                ASRUtils::symbol_get_past_external(x->m_name));
+
+            Vec<ASR::ttype_t*> count_arg_types;
+            count_arg_types.reserve(al, 1);
+            count_arg_types.push_back(al, ASRUtils::expr_type(mask_arg));
+
+            Vec<ASR::call_arg_t> count_m_args;
+            count_m_args.reserve(al, 1);
+            ASR::call_arg_t count_arg;
+            count_arg.loc = loc;
+            count_arg.m_value = mask_arg;
+            count_m_args.push_back(al, count_arg);
+
+            alloc_size = ASRUtils::IntrinsicArrayFunctionRegistry::
+                get_instantiate_function(
+                    static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count))(
+                    al, loc, scope, count_arg_types, int32_type,
+                    count_m_args, 0, 4);
+
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.m_len_expr = nullptr;
+            alloc_arg.m_type = nullptr;
+            alloc_arg.loc = loc;
+            alloc_arg.m_a = this->result_var_;
+            alloc_arg.m_sym_subclass = nullptr;
+            Vec<ASR::dimension_t> alloc_dims;
+            alloc_dims.reserve(al, 1);
+            ASR::dimension_t m_dim;
+            m_dim.loc = loc;
+            m_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, int32_type));
+            m_dim.m_length = alloc_size;
+            alloc_dims.push_back(al, m_dim);
+            alloc_arg.m_dims = alloc_dims.p;
+            alloc_arg.n_dims = alloc_dims.size();
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.reserve(al, 1);
+            alloc_args.push_back(al, alloc_arg);
+
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, this->result_var_);
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.size())));
+
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
+                al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr)));
+        }
+
         ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
             new_args.size(), x->m_dt, nullptr, false));
