@@ -10181,6 +10181,12 @@ public:
             
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
+        } else if (
+            m_new == ASR::array_physical_typeType::FixedSizeArray &&
+            m_old == ASR::array_physical_typeType::PointerArray) {
+            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+                m_arg, m_type, module.get())->getPointerTo();
+            tmp = builder->CreateBitCast(tmp, target_type);
         } else {
             LCOMPILERS_ASSERT(false);
         }
