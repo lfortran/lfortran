@@ -52,6 +52,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
+          cache-environment: true
+          cache-environment-key: env-${{ runner.os }}-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment.yml') }}
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
 
@@ -264,9 +266,17 @@ jobs:
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
 
-      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
-        shell: bash -e -l {0}
+      - name: Cache Kokkos
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        id: cache-kokkos
+        uses: actions/cache@v4
+        with:
+          path: ~/ext/kokkos
+          key: kokkos-3.1.01-ubuntu
+
+      - name: Build Kokkos
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && steps.cache-kokkos.outputs.cache-hit != 'true'
         run: |
             mkdir build-kokkos
             cd build-kokkos
@@ -277,10 +287,15 @@ jobs:
             cd build
             export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
             cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-            make
+            make -j$(nproc)
             make install
             cd ../../..
 
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
             cd integration_tests
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
@@ -332,13 +347,15 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
+          cache-environment: true
+          cache-environment-key: env-wasm-${{ hashFiles('ci/environment_linux.yml') }}
           create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
 
       - name : Remove existing node
         shell: bash -e -l {0}
@@ -347,7 +364,15 @@ jobs:
             node -v
             sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
 
+      - name: Cache Emscripten SDK
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: ~/ext/emsdk
+          key: emsdk-4.0.13-3.1.35-node-18.20.3
+
       - name: Setup Emscripten SDK
+        if: steps.cache-emsdk.outputs.cache-hit != 'true'
         shell: bash -l {0}
         run: |
           set -ex
