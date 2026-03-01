@@ -30,7 +30,13 @@ module continue_compilation_1_mod
         module procedure assign_bad_lhs
         module procedure assign_bad_rhs
     end interface
-
+    
+    interface operator(.op.)
+        function op_clash_f(x) result(y)
+            integer, intent(in) :: x
+            integer :: y
+        end function
+    end interface
     type :: Base
         integer :: x
     end type Base
@@ -41,12 +47,6 @@ module continue_compilation_1_mod
 
     type :: type_t
     end type type_t
-
-
-
-
-
-
 
 
 
@@ -183,11 +183,11 @@ contains
         pf2 => dummy_func
     end subroutine proc_ptr_error_tests
 
-
-
-
-
-
+    function op_clash_f(x) result(y)
+        integer, intent(in) :: x
+        integer :: y
+        y = x
+    end function op_clash_f
 
 
 
@@ -607,7 +607,7 @@ program continue_compilation_1
 
     ! unary defined operator with no matching function
     bad_x = .bad. 10
-
+    bad_x = 5 .op. 3
     ieee_cls = ieee_class(0.0)
     b = (ieee_cls == ieee_quiet_nan)
 
@@ -632,7 +632,6 @@ program continue_compilation_1
 
 
 
-    
     contains
     subroutine sub(f)
         interface
