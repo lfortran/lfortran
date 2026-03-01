@@ -14690,8 +14690,8 @@ public:
                 return_type = ASRUtils::duplicate_type(
                     al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
             } else {
-                return_type = ASRUtils::duplicate_type(
-                    al, ASRUtils::expr_type(func->m_return_var));
+                return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                return_type = handle_return_type(return_type, loc, a_args, func);
             }
             std::string func_name = to_lower(func->m_name);
             std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));

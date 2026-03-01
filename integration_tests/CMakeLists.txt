@@ -1811,6 +1811,7 @@ RUN(NAME custom_operator_14 LABELS gfortran llvm)
 RUN(NAME custom_operator_15 LABELS gfortran llvm)
 RUN(NAME custom_operator_16 LABELS gfortran llvm)
 RUN(NAME custom_operator_17 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME custom_operator_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
