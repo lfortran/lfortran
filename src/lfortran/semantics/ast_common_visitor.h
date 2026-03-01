@@ -13819,23 +13819,71 @@ public:
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                     std::pow(left_value, right_value), dest_type));
-        } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-            int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
-            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*left)
+            && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
 
-            if (op == ASR::Div && right_value == 0) {
-                diag.add(Diagnostic(
+            int64_t base = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
+            int64_t exp  = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+    
+            if (op != ASR::binopType::Pow) {
+                if (op == ASR::Div && exp == 0) {
+                    diag.add(Diagnostic(
                     "Division by zero",
-                    Level::Error, Stage::Semantic, {
-                        Label("", {loc})
-                    })
-                );
+                    Level::Error, Stage::Semantic,
+                    { Label("", {loc}) }
+                ));
+                throw SemanticAbort();}
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, left->base.loc,
+                perform_binop(base, exp, op),
+                dest_type));
+        }
+
+   
+        if (exp < 0) {
+            diag.add(Diagnostic(
+                "Negative exponent in integer power expression",
+                Level::Error, Stage::Semantic,
+                { Label("", {loc}) }
+            ));
+            throw SemanticAbort();
+        }
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(dest_type);
+
+        int64_t minv, maxv;
+        if (kind == 8) {
+            minv = std::numeric_limits<int64_t>::min();
+            maxv = std::numeric_limits<int64_t>::max();
+        } else if (kind == 4) {
+            minv = std::numeric_limits<int32_t>::min();
+            maxv = std::numeric_limits<int32_t>::max();
+        } else {
+            diag.add(Diagnostic(
+                "Unsupported INTEGER kind in exponentiation",
+                Level::Error, Stage::Semantic,
+                { Label("", {loc}) }
+            ));
+            throw SemanticAbort();
+        }
+
+        int64_t result = 1;
+        for (int64_t i = 0; i < exp; i++) {
+            if (base != 0 &&
+                (result > maxv / base || result < minv / base)) {
+                diag.add(Diagnostic(
+                    "Result of exponentiation exceeds the range of INTEGER(" +
+                    std::to_string(kind) + ")",
+                    Level::Error, Stage::Semantic,
+                    { Label("", {loc}) }
+                ));
                 throw SemanticAbort();
             }
-
-            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
-                    perform_binop(left_value, right_value, op), dest_type));
-        } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
+            result *= base;
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, left->base.loc, result, dest_type));
+}else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
             ASR::ComplexConstant_t *left_value
                 = ASR::down_cast<ASR::ComplexConstant_t>(
                         ASRUtils::expr_value(left));

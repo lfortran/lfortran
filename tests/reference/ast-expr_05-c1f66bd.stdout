@@ -1,25 +1,25 @@
-(TranslationUnit
-    [(Program
+([1m[35mTranslationUnit[39m[0m
+    [([1m[35mProgram[39m[0m
         expr_05
-        (TriviaNode
-            [(EndOfLine)
-            (Comment
+        ([1m[35mTriviaNode[39m[0m
+            [([1m[35mEndOfLine[39m[0m)
+            ([1m[35mComment[39m[0m
                 "! Test parantheses in expressions"
             )]
             []
         )
         []
-        [(ImplicitNone
+        [([1m[35mImplicitNone[39m[0m
             []
             ()
         )]
-        [(Declaration
-            (AttrType
-                TypeInteger
+        [([1m[35mDeclaration[39m[0m
+            ([1m[35mAttrType[39m[0m
+                [1m[32mTypeInteger[39m[0m
                 []
                 ()
                 ()
-                None
+                [1m[32mNone[39m[0m
             )
             []
             [(x
@@ -27,38 +27,38 @@
             []
             ()
             ()
-            None
+            [1m[32mNone[39m[0m
             ())
             (a
             []
             []
             ()
             ()
-            None
+            [1m[32mNone[39m[0m
             ())
             (b
             []
             []
             ()
             ()
-            None
+            [1m[32mNone[39m[0m
             ())
             (c
             []
             []
             ()
             ()
-            None
+            [1m[32mNone[39m[0m
             ())]
             ()
         )
-        (Declaration
-            (AttrType
-                TypeLogical
+        ([1m[35mDeclaration[39m[0m
+            ([1m[35mAttrType[39m[0m
+                [1m[32mTypeLogical[39m[0m
                 []
                 ()
                 ()
-                None
+                [1m[32mNone[39m[0m
             )
             []
             [(l
@@ -66,544 +66,539 @@
             []
             ()
             ()
-            None
+            [1m[32mNone[39m[0m
             ())]
             ()
         )]
-        [(Assignment
+        [([1m[35mAssignment[39m[0m
             0
-            a
-            3
+            [33ma[39m
+            [36m3[39m
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            b
-            4
+            [33mb[39m
+            [36m4[39m
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            c
-            5
-            (TriviaNode
+            [33mc[39m
+            [36m5[39m
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* 2 3)
+            [33mx[39m
+            (* [36m2[39m [36m3[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (u- 2) 3)
+            [33mx[39m
+            (* (u- [36m2[39m) [36m3[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* 2 (u- 3))
+            [33mx[39m
+            (* [36m2[39m (u- [36m3[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (u- 2) (u- 3))
+            [33mx[39m
+            (* (u- [36m2[39m) (u- [36m3[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (u- 2) (u- 3))
+            [33mx[39m
+            (* (u- [36m2[39m) (u- [36m3[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (** 2 3))
+            [33mx[39m
+            (u- (** [36m2[39m [36m3[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (** 2 3))
+            [33mx[39m
+            (u- (** [36m2[39m [36m3[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (* 2 3))
-            ()
-        )
-        (Assignment
-            0
-            x
-            (** 2 (u- 3))
-            (TriviaNode
+            [33mx[39m
+            (u- (* [36m2[39m [36m3[39m))
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            a
+            [33mx[39m
+            [33ma[39m
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (Parenthesis
-                a
+            [33mx[39m
+            ([1m[35mParenthesis[39m[0m
+                [33ma[39m
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* a b)
+            [33mx[39m
+            (* [33ma[39m [33mb[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (u- a) b)
+            [33mx[39m
+            (* (u- [33ma[39m) [33mb[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (* a b))
+            [33mx[39m
+            (u- (* [33ma[39m [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* a (u- b))
+            [33mx[39m
+            (* [33ma[39m (u- [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (u- a) (u- b))
-            (TriviaNode
+            [33mx[39m
+            (* (u- [33ma[39m) (u- [33mb[39m))
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* a b) c)
+            [33mx[39m
+            (* (* [33ma[39m [33mb[39m) [33mc[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* (u- a) b) c)
+            [33mx[39m
+            (* (* (u- [33ma[39m) [33mb[39m) [33mc[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* a (u- b)) c)
+            [33mx[39m
+            (* (* [33ma[39m (u- [33mb[39m)) [33mc[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* a b) (u- c))
+            [33mx[39m
+            (* (* [33ma[39m [33mb[39m) (u- [33mc[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* (u- a) (u- b)) (u- c))
-            (TriviaNode
+            [33mx[39m
+            (* (* (u- [33ma[39m) (u- [33mb[39m)) (u- [33mc[39m))
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (+ 3 (* 4 5))
+            [33mx[39m
+            (+ [36m3[39m (* [36m4[39m [36m5[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ 3 4) 5)
+            [33mx[39m
+            (* (+ [36m3[39m [36m4[39m) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* a (+ b (* 5 (- c b))))
+            [33mx[39m
+            (* [33ma[39m (+ [33mb[39m (* [36m5[39m (- [33mc[39m [33mb[39m))))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (- 3 (* (* 2 a) b)) 5)
+            [33mx[39m
+            (* (- [36m3[39m (* (* [36m2[39m [33ma[39m) [33mb[39m)) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ (* (* (u- 2) a) b) 3) 5)
+            [33mx[39m
+            (* (+ (* (* (u- [36m2[39m) [33ma[39m) [33mb[39m) [36m3[39m) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ (* (* (u- 2) a) b) (* (* 3 b) a)) 5)
+            [33mx[39m
+            (* (+ (* (* (u- [36m2[39m) [33ma[39m) [33mb[39m) (* (* [36m3[39m [33mb[39m) [33ma[39m)) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ (* (u- 2) (/ a b)) (** (+ a (u- b)) 2)) 5)
+            [33mx[39m
+            (* (+ (* (u- [36m2[39m) (/ [33ma[39m [33mb[39m)) (** (+ [33ma[39m (u- [33mb[39m)) [36m2[39m)) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ (* (* (u+ 2) a) b) 3) 5)
+            [33mx[39m
+            (* (+ (* (* (u+ [36m2[39m) [33ma[39m) [33mb[39m) [36m3[39m) [36m5[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (+ (+ (** a 2) (* (* 2 a) b)) (** b 2))
+            [33mx[39m
+            (+ (+ (** [33ma[39m [36m2[39m) (* (* [36m2[39m [33ma[39m) [33mb[39m)) (** [33mb[39m [36m2[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ a b) (- a b))
+            [33mx[39m
+            (* (+ [33ma[39m [33mb[39m) (- [33ma[39m [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (** (+ a b) 2)
+            [33mx[39m
+            (** (+ [33ma[39m [33mb[39m) [36m2[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (+ a b) (+ (- (** a 2) (* a b)) (** b 2)))
+            [33mx[39m
+            (* (+ [33ma[39m [33mb[39m) (+ (- (** [33ma[39m [36m2[39m) (* [33ma[39m [33mb[39m)) (** [33mb[39m [36m2[39m)))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (* (- a b) (+ a b)) (+ (** a 2) (** b 2)))
-            (TriviaNode
+            [33mx[39m
+            (* (* (- [33ma[39m [33mb[39m) (+ [33ma[39m [33mb[39m)) (+ (** [33ma[39m [36m2[39m) (** [33mb[39m [36m2[39m)))
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (/ 1 (* a b))
+            [33mx[39m
+            (/ [36m1[39m (* [33ma[39m [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (/ 1 a) b)
+            [33mx[39m
+            (* (/ [36m1[39m [33ma[39m) [33mb[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (* (/ 1 a) b)
-            (TriviaNode
+            [33mx[39m
+            (* (/ [36m1[39m [33ma[39m) [33mb[39m)
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (/ 1 (+ (* a b) 1))
+            [33mx[39m
+            (/ [36m1[39m (+ (* [33ma[39m [33mb[39m) [36m1[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (+ (* (/ 1 a) b) 1)
+            [33mx[39m
+            (+ (* (/ [36m1[39m [33ma[39m) [33mb[39m) [36m1[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (+ (* (/ 1 a) b) 1)
-            (TriviaNode
+            [33mx[39m
+            (+ (* (/ [36m1[39m [33ma[39m) [33mb[39m) [36m1[39m)
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- 2 (u- 2))
+            [33mx[39m
+            (- [36m2[39m (u- [36m2[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a (- (u- b) c))
+            [33mx[39m
+            (- [33ma[39m (- (u- [33mb[39m) [33mc[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a (* (u- 2) b))
+            [33mx[39m
+            (- [33ma[39m (* (u- [36m2[39m) [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- c (/ (u- 2) b))
+            [33mx[39m
+            (- [33mc[39m (/ (u- [36m2[39m) [33mb[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a (+ (+ 2 3) 4))
+            [33mx[39m
+            (- [33ma[39m (+ (+ [36m2[39m [36m3[39m) [36m4[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (+ a (+ (+ 2 3) 4))
+            [33mx[39m
+            (+ [33ma[39m (+ (+ [36m2[39m [36m3[39m) [36m4[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- (+ (* 2 a) (* a b)) (+ (* a b) (* 2 a)))
+            [33mx[39m
+            (- (+ (* [36m2[39m [33ma[39m) (* [33ma[39m [33mb[39m)) (+ (* [33ma[39m [33mb[39m) (* [36m2[39m [33ma[39m)))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- (+ (* 2 a) (* a b)) (- (* a b) (* 2 a)))
+            [33mx[39m
+            (- (+ (* [36m2[39m [33ma[39m) (* [33ma[39m [33mb[39m)) (- (* [33ma[39m [33mb[39m) (* [36m2[39m [33ma[39m)))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a (- b (- c 1)))
+            [33mx[39m
+            (- [33ma[39m (- [33mb[39m (- [33mc[39m [36m1[39m)))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a b)
+            [33mx[39m
+            (- [33ma[39m [33mb[39m)
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- a (- b c))
+            [33mx[39m
+            (- [33ma[39m (- [33mb[39m [33mc[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (- (- a b) c)
-            (TriviaNode
+            [33mx[39m
+            (- (- [33ma[39m [33mb[39m) [33mc[39m)
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (- a (+ (u- b) (- (u- b) (* (u- b) b)))))
+            [33mx[39m
+            (u- (- [33ma[39m (+ (u- [33mb[39m) (- (u- [33mb[39m) (* (u- [33mb[39m) [33mb[39m)))))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (+ 3 5))
+            [33mx[39m
+            (u- (+ [36m3[39m [36m5[39m))
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            x
-            (u- (+ a 5))
-            (TriviaNode
+            [33mx[39m
+            (u- (+ [33ma[39m [36m5[39m))
+            ([1m[35mTriviaNode[39m[0m
                 []
-                [(EndOfLine)
-                (EndOfLine)]
+                [([1m[35mEndOfLine[39m[0m)
+                ([1m[35mEndOfLine[39m[0m)]
             )
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                (BoolOp
-                    (<= (+ (* (** x 3) 4) a) 4)
-                    Or
-                    (BoolOp
-                        (< x 5)
-                        And
-                        (< x 6)
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    (<= (+ (* (** [33mx[39m [36m3[39m) [36m4[39m) [33ma[39m) [36m4[39m)
+                    [1m[32mOr[39m[0m
+                    ([1m[35mBoolOp[39m[0m
+                        (< [33mx[39m [36m5[39m)
+                        [1m[32mAnd[39m[0m
+                        (< [33mx[39m [36m6[39m)
                     )
                 )
-                Eqv
-                (BoolOp
-                    (Logical .true.)
-                    Or
-                    (BoolOp
-                        (not (Logical .false.))
-                        And
-                        (Logical .true.)
+                [1m[32mEqv[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    ([1m[35mLogical[39m[0m .true.)
+                    [1m[32mOr[39m[0m
+                    ([1m[35mBoolOp[39m[0m
+                        (not ([1m[35mLogical[39m[0m .false.))
+                        [1m[32mAnd[39m[0m
+                        ([1m[35mLogical[39m[0m .true.)
                     )
                 )
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                l
-                Or
-                (BoolOp
-                    l
-                    And
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                [33ml[39m
+                [1m[32mOr[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mAnd[39m[0m
+                    [33ml[39m
                 )
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                (BoolOp
-                    l
-                    Or
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mOr[39m[0m
+                    [33ml[39m
                 )
-                And
-                l
+                [1m[32mAnd[39m[0m
+                [33ml[39m
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                (BoolOp
-                    l
-                    And
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mAnd[39m[0m
+                    [33ml[39m
                 )
-                Or
-                l
+                [1m[32mOr[39m[0m
+                [33ml[39m
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                l
-                And
-                (BoolOp
-                    l
-                    Or
-                    l
-                )
-            )
-            ()
-        )
-        (Assignment
-            0
-            l
-            (BoolOp
-                l
-                Or
-                (BoolOp
-                    (not l)
-                    And
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                [33ml[39m
+                [1m[32mAnd[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mOr[39m[0m
+                    [33ml[39m
                 )
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                l
-                Or
-                (BoolOp
-                    l
-                    And
-                    (not l)
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                [33ml[39m
+                [1m[32mOr[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    (not [33ml[39m)
+                    [1m[32mAnd[39m[0m
+                    [33ml[39m
                 )
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                (BoolOp
-                    l
-                    And
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                [33ml[39m
+                [1m[32mOr[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mAnd[39m[0m
+                    (not [33ml[39m)
                 )
-                Or
-                (not l)
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                (BoolOp
-                    l
-                    And
-                    (not l)
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mAnd[39m[0m
+                    [33ml[39m
                 )
-                Or
-                l
+                [1m[32mOr[39m[0m
+                (not [33ml[39m)
             )
             ()
         )
-        (Assignment
+        ([1m[35mAssignment[39m[0m
             0
-            l
-            (BoolOp
-                l
-                And
-                (not (BoolOp
-                    l
-                    Or
-                    l
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mAnd[39m[0m
+                    (not [33ml[39m)
+                )
+                [1m[32mOr[39m[0m
+                [33ml[39m
+            )
+            ()
+        )
+        ([1m[35mAssignment[39m[0m
+            0
+            [33ml[39m
+            ([1m[35mBoolOp[39m[0m
+                [33ml[39m
+                [1m[32mAnd[39m[0m
+                (not ([1m[35mBoolOp[39m[0m
+                    [33ml[39m
+                    [1m[32mOr[39m[0m
+                    [33ml[39m
                 ))
             )
             ()
