@@ -62,6 +62,23 @@ public:
     }
 };
 
+static inline bool scope_forbids_automatic_data(SymbolTable* scope) {
+    while (scope && scope->asr_owner) {
+        if (!ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) break;
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (ASR::is_a<ASR::Function_t>(*owner) ||
+            ASR::is_a<ASR::Block_t>(*owner)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Program_t>(*owner) ||
+            ASR::is_a<ASR::Module_t>(*owner)) {
+            return true;
+        }
+        scope = scope->parent;
+    }
+    return true;
+}
+
 static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
 static std::map<std::string, int> assumed_rank_arrays;
 
@@ -15856,7 +15873,7 @@ public:
                         _processing_char_len = true;
                         this->visit_expr(*len_item->m_value);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        if (!in_Subroutine) {
+                        if (!in_Subroutine && scope_forbids_automatic_data(current_scope)) {
                             FindUserDefinedFuncCall finder;
                             finder.visit_expr(*len_expr);
                             if (!finder.func_name.empty()) {
@@ -15913,7 +15930,7 @@ public:
                         _processing_char_len = true;
                         this->visit_expr(*var_sym->m_length);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        if (!in_Subroutine) {
+                        if (!in_Subroutine && scope_forbids_automatic_data(current_scope)) {
                             FindUserDefinedFuncCall finder;
                             finder.visit_expr(*len_expr);
                             if (!finder.func_name.empty()) {

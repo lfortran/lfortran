@@ -9,6 +9,13 @@ end module halvestring_mod
 
 program character_24
 use halvestring_mod, only: half
+
+block
+    character(*), parameter :: blk_str = 'abcdeedcba'
+    character(len(half(blk_str))) :: blk_stringb
+    if (len(blk_stringb) /= 5) error stop
+end block
+
 call f()
 
 contains
