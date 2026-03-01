@@ -1,0 +1,13 @@
+{
+    "basename": "run-deallocate_01-24785c5",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/deallocate_01.f90",
+    "infile_hash": "dff70ffa528604d88a2c23217e3b3bd27f84c469de06a0daab441cf5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-deallocate_01-24785c5.stderr",
+    "stderr_hash": "feaf5afa06a14e59bdd428ea56f464d22b4c43ad7ca5f6a44f2b4bd9",
+    "returncode": 1
+}

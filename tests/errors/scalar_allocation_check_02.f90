@@ -7,7 +7,7 @@ program scalar_allocation_check_02
 
     class(base), allocatable :: var
 
-    deallocate(var)
+    
 
     select type(var)
         type is (base)
