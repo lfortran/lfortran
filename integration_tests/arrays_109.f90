@@ -1,4 +1,4 @@
-program arrays_108
+program arrays_109
     implicit none
     integer :: M(2)
 
@@ -18,4 +18,4 @@ contains
         M = make_vec()
     end subroutine
 
-end program arrays_108
+end program arrays_109
