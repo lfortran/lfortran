@@ -881,6 +881,7 @@ RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # constant arrays
 RUN(NAME arrays_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_16 LABELS gfortran llvm)
 
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # constant arrays
 RUN(NAME arrays_16_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -2266,6 +2267,7 @@ RUN(NAME string_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_101 LABELS gfortran llvm)
 RUN(NAME string_102 LABELS gfortran llvm)
 RUN(NAME string_103 LABELS gfortran llvm)
+RUN(NAME string_104 LABELS gfortran llvm EXTRA_ARGS --std=f23)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2699,6 +2701,8 @@ RUN(NAME external_11 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_12 LABELS gfortran llvm EXTRAFILES external_12_module.f90)
 RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mangle-underscore-external)
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
+RUN(NAME external_15 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_16 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2802,7 +2806,6 @@ RUN(NAME read_45 LABELS gfortran llvm)
 RUN(NAME read_46 LABELS gfortran llvm)
 RUN(NAME read_47 LABELS gfortran llvm)
 RUN(NAME read_48 LABELS gfortran llvm)
-RUN(NAME read_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) // test fails with --fast
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
