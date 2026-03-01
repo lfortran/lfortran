@@ -45,6 +45,34 @@ Dis-advantages:
 
 namespace LCompilers {
 
+// After duplicating a function body and its symbol table, BlockCall statements
+// still reference the original Block symbols. This visitor remaps them to the
+// corresponding duplicated Blocks in the new symbol table.
+class BlockCallRemapper : public ASR::BaseWalkVisitor<BlockCallRemapper> {
+    SymbolTable* new_symtab;
+public:
+    BlockCallRemapper(SymbolTable* new_symtab_) : new_symtab(new_symtab_) {}
+
+    void visit_BlockCall(const ASR::BlockCall_t& x) {
+        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
+        if (ASR::is_a<ASR::Block_t>(*xx.m_m)) {
+            std::string block_name = ASR::down_cast<ASR::Block_t>(xx.m_m)->m_name;
+            ASR::symbol_t* new_block = new_symtab->get_symbol(block_name);
+            if (new_block) {
+                xx.m_m = new_block;
+            }
+        }
+    }
+};
+
+static void remap_block_calls(Vec<ASR::stmt_t*>& body,
+        SymbolTable* /*old_symtab*/, SymbolTable* new_symtab) {
+    BlockCallRemapper remapper(new_symtab);
+    for (size_t i = 0; i < body.size(); i++) {
+        remapper.visit_stmt(*body[i]);
+    }
+}
+
 /*
 The following visitor converts function/subroutines (a.k.a procedures)
 with array arguments having empty dimensions to arrays having dimensional
@@ -112,17 +140,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     symbol_duplicator.duplicate_symbol(item.second, new_symtab);
                 }
             }
-            // If a Block (e.g. from a select type construct) could not be duplicated
-            // into new_symtab, skip duplicating this function. Otherwise the duplicated
-            // body's BlockCall would still reference the original Block in the wrong scope.
-            for( auto& item: x->m_symtab->get_scope() ) {
-                if (ASR::is_a<ASR::Block_t>(*item.second)) { 
-                    std::string block_name = std::string(ASR::down_cast<ASR::Block_t>(item.second)->m_name);
-                    if (!new_symtab->get_symbol(block_name)) {
-                        return nullptr;
-                    }
-                }
-            }   
+            // The duplicated body's BlockCall statements still reference
+            // Block symbols in the original symtab. Remap them to the
+            // corresponding duplicated Blocks in new_symtab.
+            remap_block_calls(new_body, x->m_symtab, new_symtab);
 
             Vec<ASR::expr_t*> new_args;
             std::string suffix = "";

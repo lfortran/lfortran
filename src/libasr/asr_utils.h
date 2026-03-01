@@ -5577,7 +5577,7 @@ class SymbolDuplicator {
         new_body.reserve(al, block_t->n_body);
         ASRUtils::ExprStmtDuplicator node_duplicator(al);
         node_duplicator.allow_procedure_calls = true;
-        node_duplicator.allow_reshape = false;
+        node_duplicator.allow_reshape = true;
         for( size_t i = 0; i < block_t->n_body; i++ ) {
             node_duplicator.success = true;
             ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(block_t->m_body[i]);
