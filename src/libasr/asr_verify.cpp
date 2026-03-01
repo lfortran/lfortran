@@ -1449,9 +1449,10 @@ public:
     void visit_String(const String_t &x){
 /*General Check on the length*/ 
         if(x.m_len){
-            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
+            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_len)))),
                 "String length must be of type INTEGER,"
-                "found " + 
+                "found " +
                 ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
