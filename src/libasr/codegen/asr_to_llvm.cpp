@@ -18239,9 +18239,19 @@ public:
             }
             if (ASR::is_a<ASR::Var_t>(*dt_expr)) {
                 ASR::Variable_t *caller = EXPR2VAR(dt_expr);
-                std::uint32_t h = get_hash((ASR::asr_t*)caller);
-                // declared variable in the current scope
-                llvm::Value* dt = llvm_symtab[h];
+                llvm::Value* dt;
+                if (caller->m_value && caller->m_storage == ASR::storage_typeType::Parameter) {
+                    // Parameter variables are not in llvm_symtab;
+                    // evaluate the value and store in a temporary
+                    this->visit_expr_wrapper(caller->m_value, true);
+                    llvm::Type* param_type = tmp->getType();
+                    dt = llvm_utils->CreateAlloca(param_type);
+                    builder->CreateStore(tmp, dt);
+                } else {
+                    std::uint32_t h = get_hash((ASR::asr_t*)caller);
+                    // declared variable in the current scope
+                    dt = llvm_symtab[h];
+                }
                 // Function class type
                 ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
                                                 ASRUtils::expr_type(s->m_args[0]));
@@ -19032,9 +19042,17 @@ public:
             }
             if (ASR::is_a<ASR::Var_t>(*dt_expr)) {
                 ASR::Variable_t *caller = EXPR2VAR(dt_expr);
-                std::uint32_t h = get_hash((ASR::asr_t*)caller);
-                // declared variable in the current scope
-                llvm::Value* dt = llvm_symtab[h];
+                llvm::Value* dt;
+                if (caller->m_value && caller->m_storage == ASR::storage_typeType::Parameter) {
+                    this->visit_expr_wrapper(caller->m_value, true);
+                    llvm::Type* param_type = tmp->getType();
+                    dt = llvm_utils->CreateAlloca(param_type);
+                    builder->CreateStore(tmp, dt);
+                } else {
+                    std::uint32_t h = get_hash((ASR::asr_t*)caller);
+                    // declared variable in the current scope
+                    dt = llvm_symtab[h];
+                }
                 // Function class type
                 ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
                                                 ASRUtils::expr_type(s->m_args[0]));
