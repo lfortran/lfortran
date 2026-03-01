@@ -2262,6 +2262,28 @@ public:
             current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
             return;
         }
+        // Parameterized Derived Type: store as template for later monomorphization
+        if (x.n_namelist > 0) {
+            pdt_templates[current_scope][dt_name] = &x;
+            // Create a placeholder Struct so that `use` statements can import
+            // the name and resolve_pdt_template can follow ExternalSymbol links.
+            SymbolTable *placeholder_scope = al.make_new<SymbolTable>(current_scope);
+            Vec<char*> empty_names;
+            empty_names.reserve(al, 0);
+            tmp = ASR::make_Struct_t(al, x.base.base.loc, placeholder_scope,
+                s2c(al, dt_name), nullptr,
+                empty_names.p, empty_names.size(),
+                empty_names.p, empty_names.size(),
+                empty_names.p, empty_names.size(),
+                ASR::abiType::Source, dflt_access, false, false,
+                nullptr, 0, nullptr, nullptr);
+            ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+            ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
+            ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
+            struct_->m_struct_signature = struct_signature;
+            current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
+            return;
+        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
