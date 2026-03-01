@@ -6097,10 +6097,25 @@ public:
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
-        ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
-        if( intrinsic_subroutine ) {
-            tmp = intrinsic_subroutine;
-            return;
+        // Only treat as intrinsic if no user-defined callable procedure
+        // with this name exists in scope (user procedures shadow intrinsics)
+        bool user_procedure_found = false;
+        {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(sub_name);
+            if (sym) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+                if (ASR::is_a<ASR::Function_t>(*s) ||
+                    ASR::is_a<ASR::GenericProcedure_t>(*s)) {
+                    user_procedure_found = true;
+                }
+            }
+        }
+        if (!user_procedure_found) {
+            ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
+            if( intrinsic_subroutine ) {
+                tmp = intrinsic_subroutine;
+                return;
+            }
         }
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
