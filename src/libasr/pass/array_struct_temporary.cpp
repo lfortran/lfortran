@@ -119,6 +119,20 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
     LCOMPILERS_ASSERT(!ASRUtils::is_array(value_type));
 
     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, value_type);
+    // Local temporaries cannot have AssumedLength string type
+    // (only dummy arguments can). Convert to Allocatable + DeferredLength
+    // so the runtime properly reallocates when a value is assigned.
+    if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable_pointer(var_type))) {
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+            ASRUtils::type_get_past_allocatable_pointer(var_type));
+        if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+            str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
+            if (!ASRUtils::is_allocatable(var_type)) {
+                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                    al, value->base.loc, var_type));
+            }
+        }
+    }
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
