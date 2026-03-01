@@ -815,9 +815,8 @@ RUN(NAME arrays_104 LABELS gfortran llvm)
 RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
-
 RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_109 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
@@ -1040,6 +1039,7 @@ RUN(NAME submodule_30a LABELS gfortran llvm_submodule EXTRAFILES submodule_30b.f
 RUN(NAME submodule_31 LABELS gfortran llvm)
 RUN(NAME submodule_32 LABELS gfortran llvm)
 RUN(NAME submodule_33 LABELS gfortran llvm)
+RUN(NAME submodule_34a LABELS gfortran llvm_submodule EXTRAFILES submodule_34b.f90)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
@@ -1601,6 +1601,7 @@ RUN(NAME modules_66 LABELS gfortran llvm
 RUN(NAME modules_67 LABELS gfortran llvm
         EXTRAFILES modules_67_origin.f90 modules_67_reexport.f90 modules_67_consumer.f90)
 RUN(NAME modules_68 LABELS gfortran llvm)
+RUN(NAME modules_69 LABELS gfortran llvm)
 
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
@@ -1815,6 +1816,7 @@ RUN(NAME custom_operator_14 LABELS gfortran llvm)
 RUN(NAME custom_operator_15 LABELS gfortran llvm)
 RUN(NAME custom_operator_16 LABELS gfortran llvm)
 RUN(NAME custom_operator_17 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME custom_operator_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -2001,6 +2003,8 @@ RUN(NAME derived_types_114 LABELS gfortran llvm
         EXTRAFILES derived_types_114_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME derived_types_115 LABELS gfortran llvm
         EXTRAFILES derived_types_115_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME derived_types_116 LABELS gfortran llvm)
+RUN(NAME derived_types_117 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)

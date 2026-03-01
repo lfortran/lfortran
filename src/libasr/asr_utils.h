@@ -5119,9 +5119,42 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                 ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
                 x->m_name = new_es;
                 if( x->m_original_name ) {
-                    ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
+                    std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
+                    ASR::symbol_t* x_original_name = current_scope->resolve_symbol(orig_name);
                     if( x_original_name ) {
                         x->m_original_name = x_original_name;
+                    } else {
+                        // The original_name (e.g. a GenericProcedure) is not
+                        // in the current scope. Create an ExternalSymbol so
+                        // that modfile serialisation can find the symbol table.
+                        ASR::symbol_t* orig_sym = x->m_original_name;
+                        // Resolve through any ExternalSymbol chain to get the
+                        // actual symbol and its owning module.
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*orig_sym)) {
+                            ASR::ExternalSymbol_t* es = ASR::down_cast<ASR::ExternalSymbol_t>(orig_sym);
+                            orig_sym = es->m_external;
+                        }
+                        SymbolTable* orig_symtab = ASRUtils::symbol_parent_symtab(orig_sym);
+                        if( orig_symtab->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*orig_symtab->asr_owner) &&
+                            ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(orig_symtab->asr_owner)) ) {
+                            ASR::Module_t* orig_mod = ASR::down_cast<ASR::Module_t>(
+                                ASR::down_cast<ASR::symbol_t>(orig_symtab->asr_owner));
+                            std::string unique_name = current_scope->get_unique_name(orig_name, false);
+                            Str s2; s2.from_str_view(unique_name);
+                            char *unique_name_c = s2.c_str(al);
+                            ASR::symbol_t* new_orig = ASR::down_cast<ASR::symbol_t>(
+                                ASR::make_ExternalSymbol_t(
+                                    al, orig_sym->base.loc,
+                                    current_scope, unique_name_c,
+                                    orig_sym,
+                                    orig_mod->m_name, nullptr, 0,
+                                    ASRUtils::symbol_name(orig_sym),
+                                    ASR::accessType::Private));
+                            current_scope->add_symbol(unique_name, new_orig);
+                            ASRUtils::insert_module_dependency(new_orig, al, current_module_dependencies);
+                            x->m_original_name = new_orig;
+                        }
                     }
                 }
                 return;
