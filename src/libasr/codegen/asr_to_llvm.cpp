@@ -795,10 +795,13 @@ public:
                                 ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(
                                     ASRUtils::type_get_past_allocatable_pointer(arr_type_asr));
                                 if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                                    visit_expr_load_wrapper(arr_expr, ASRUtils::is_allocatable_or_pointer(arr_type_asr) ? 1 : 0);
+                                    visit_expr_load_wrapper(arr_expr, 0);
                                     llvm::Value* arr_desc = tmp;
                                     llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(arr_expr,
                                         ASRUtils::type_get_past_allocatable_pointer(arr_type_asr), module.get());
+                                    if (ASRUtils::is_allocatable_or_pointer(arr_type_asr)) {
+                                        arr_desc = llvm_utils->CreateLoad2(arr_type_llvm->getPointerTo(), arr_desc);
+                                    }
                                     llvm::Value* is_empty = builder->CreateICmpEQ(
                                         arr_descr->get_array_size(arr_type_llvm, arr_desc, nullptr, 4),
                                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
