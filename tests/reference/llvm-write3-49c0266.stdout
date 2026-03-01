@@ -19,7 +19,6 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
   %4 = call i8* @_lfortran_malloc(i64 1)
   store i8* %4, i8** %3, align 8
-  %lfortran_tmp_iostat = alloca i32, align 4
   %nwrite = alloca i32, align 4
   store i32 6, i32* %nwrite, align 4
   store i32 6, i32* %nwrite, align 4

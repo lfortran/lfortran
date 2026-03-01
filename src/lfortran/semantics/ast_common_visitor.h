@@ -5677,16 +5677,36 @@ public:
                             is_implicitly_declared = true;
                             pre_declared_array_dims[sym] = 2;
                         } else {
-                            // re-declaring a global scope variable is allowed
-                            // Otherwise raise an error
                             ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
-                            diag.add(Diagnostic(
-                                "Symbol is already declared in the same scope",
-                                Level::Error, Stage::Semantic, {
-                                    Label("redeclaration",{s.loc}),
-                                    Label("original declaration",{orig_decl->base.loc}, false)
-                                }));
-                            throw SemanticAbort();
+                            // A local variable is allowed to shadow a private
+                            // module function that was imported only indirectly
+                            // (as a specific of a public generic interface).
+                            if (ASR::is_a<ASR::ExternalSymbol_t>(*orig_decl)) {
+                                ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(orig_decl);
+                                ASR::symbol_t *external = ext->m_external;
+                                if (ASR::is_a<ASR::Function_t>(*external) &&
+                                    ASR::down_cast<ASR::Function_t>(external)->m_access == ASR::accessType::Private) {
+                                    current_scope->erase_symbol(sym);
+                                } else {
+                                    diag.add(Diagnostic(
+                                        "Symbol is already declared in the same scope",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("redeclaration",{s.loc}),
+                                            Label("original declaration",{orig_decl->base.loc}, false)
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                            } else {
+                                // re-declaring a global scope variable is allowed
+                                // Otherwise raise an error
+                                diag.add(Diagnostic(
+                                    "Symbol is already declared in the same scope",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("redeclaration",{s.loc}),
+                                        Label("original declaration",{orig_decl->base.loc}, false)
+                                    }));
+                                throw SemanticAbort();
+                            }
                         }
                     }
                 }
@@ -9510,10 +9530,14 @@ public:
                             ASRUtils::get_struct_sym_from_struct_expr(val),
                             current_scope);
                     }
+                    SetChar tmp_deps;
+                    tmp_deps.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, tmp_deps,
+                        ret_type, nullptr, nullptr, tmp_name);
                     ASR::symbol_t* tmp_sym =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util( al, val->base.loc, current_scope,
-                                s2c(al, tmp_name), nullptr, 0,
+                                s2c(al, tmp_name), tmp_deps.p, tmp_deps.n,
                                 ASR::intentType::Local, nullptr, nullptr,
                                 ASR::storage_typeType::Default, ret_type, type_declaration, ASR::abiType::Source,
                                 ASR::accessType::Private, ASR::presenceType::Required, false

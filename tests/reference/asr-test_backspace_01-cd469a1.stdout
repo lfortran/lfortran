@@ -70,69 +70,6 @@
                                     .false.
                                     .false.
                                 ),
-                            lfortran_tmp_iostat:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            lfortran_tmp_iostat1:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            lfortran_tmp_iostat2:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat2
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
                             line:
                                 (Variable
                                     2

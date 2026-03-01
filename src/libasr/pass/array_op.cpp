@@ -1194,14 +1194,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
         if (xx.m_source) {
             pass_result.push_back(al, &(xx.base));
+            bool generated_loop = false;
             // Pushing assignment statements to source
             for (size_t i = 0; i < x.n_args ; i++) {
                 if( !ASRUtils::is_array(
                         ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     continue;
                 }
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs, false));
+                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, source_copy, nullptr, realloc_lhs, false));
                 ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
                 Vec<ASR::expr_t**> fix_type_args;
                 fix_type_args.reserve(al, 2);
@@ -1210,26 +1213,35 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
                 Vec<ASR::expr_t**> vars1;
                 vars1.reserve(al, 1);
-                if( ASRUtils::is_array(
-                        ASRUtils::expr_type(assignment_t->m_value)) ) {
-                    vars1.push_back(al, &(assignment_t->m_value));
-                }
-                vars1.push_back(al, &(assignment_t->m_target));
+                ArrayVarAddressCollector var_collector_target(al, vars1);
+                var_collector_target.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_target));
+                var_collector_target.call_replacer();
+                ArrayVarAddressCollector var_collector_value(al, vars1);
+                var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_value));
+                var_collector_value.call_replacer();
 
                 // TODO: Remove the following. Instead directly handle
                 // allocate with source in the backend.
                 if( xx.m_args[i].n_dims == 0 ) {
                     Vec<ASR::expr_t**> vars2;
                     vars2.reserve(al, 1);
-                    vars2.push_back(al, &(assignment_t->m_target));
-                    if( ASRUtils::is_array(
-                            ASRUtils::expr_type(assignment_t->m_value)) ) {
-                        vars2.push_back(al, &(assignment_t->m_value));
-                    }
+                    ArrayVarAddressCollector var_collector2_target(al, vars2);
+                    var_collector2_target.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_target));
+                    var_collector2_target.call_replacer();
+                    ArrayVarAddressCollector var_collector2_value(al, vars2);
+                    var_collector2_value.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_value));
+                    var_collector2_value.call_replacer();
                     insert_realloc_for_target(
                         xx.m_args[i].m_a, xx.m_source, vars2);
                 }
                 generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
+                generated_loop = true;
+            }
+            // Clear source when data copy loops were generated, since
+            // the loops handle the copy. Keeping array-typed source
+            // expressions (e.g. real(a)) would cause backend errors.
+            if (generated_loop) {
+                xx.m_source = nullptr;
             }
         }
     }
