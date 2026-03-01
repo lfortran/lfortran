@@ -18201,6 +18201,23 @@ public:
                     ASRUtils::symbol_get_past_external(x.m_name));
             }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            // The interface function includes the pass (self) argument
+            // but explicit call args (x.m_args) do not. When the
+            // interface has more args, prepend the parent object.
+            if (func->n_args > x.n_args) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
+                uint64_t ptr_loads_copy2 = ptr_loads;
+                ptr_loads = 1;
+                this->visit_expr(*sim->m_v);
+                ptr_loads = ptr_loads_copy2;
+                llvm::Value* pass_arg_val = tmp;
+                llvm::Type* expected_type = fntype->getParamType(0);
+                if (pass_arg_val->getType() != expected_type) {
+                    pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
+                }
+                args.insert(args.begin(), pass_arg_val);
+            }
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -18988,8 +19005,26 @@ public:
             llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
             args = convert_call_args(x, false);
+            const ASR::Function_t* func = ASRUtils::get_function(x.m_name);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                *ASRUtils::get_function(x.m_name), module.get());
+                *func, module.get());
+            // The interface function includes the pass (self) argument
+            // but explicit call args (x.m_args) do not. When the
+            // interface has more args, prepend the parent object.
+            if (func->n_args > x.n_args) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
+                uint64_t ptr_loads_copy2 = ptr_loads;
+                ptr_loads = 1;
+                this->visit_expr(*sim->m_v);
+                ptr_loads = ptr_loads_copy2;
+                llvm::Value* pass_arg_val = tmp;
+                llvm::Type* expected_type = fntype->getParamType(0);
+                if (pass_arg_val->getType() != expected_type) {
+                    pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
+                }
+                args.insert(args.begin(), pass_arg_val);
+            }
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }

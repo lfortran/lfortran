@@ -3453,6 +3453,7 @@ RUN(NAME separate_compilation_32 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_33 LABELS llvm EXTRAFILES separate_compilation_33a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_34 LABELS gfortran llvm EXTRAFILES separate_compilation_34a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_35 LABELS gfortran llvm EXTRAFILES separate_compilation_35a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_36 LABELS gfortran llvm EXTRAFILES separate_compilation_36a.f90 EXTRA_ARGS --separate-compilation)
 
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
