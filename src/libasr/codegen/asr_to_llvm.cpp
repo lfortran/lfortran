@@ -19104,6 +19104,18 @@ public:
                 dt_polymorphic = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
                                                 ASRUtils::expr_type(dt_expr));
                 args.push_back(dt_polymorphic);
+            } else if(ASR::is_a<ASR::StructConstant_t>(*dt_expr) ||
+                      ASR::is_a<ASR::StructConstructor_t>(*dt_expr)) {
+                this->visit_expr_wrapper(dt_expr, true);
+                llvm::Type* param_type = tmp->getType();
+                llvm::Value* dt = llvm_utils->CreateAlloca(param_type);
+                builder->CreateStore(tmp, dt);
+                ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
+                                                ASRUtils::expr_type(s->m_args[0]));
+                ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable_pointer(
+                                                ASRUtils::expr_type(dt_expr));
+                dt = convert_to_polymorphic_arg(dt_expr, dt, s->m_args[0], s_m_args0_type, dt_type);
+                args.push_back(dt);
             } else {
                 throw CodeGenError("FunctionCall: StructType symbol type not supported");
             }
