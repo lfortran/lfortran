@@ -3074,6 +3074,29 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         }
 };
 
+class ExprReferencesSymbolVisitor:
+    public ASR::BaseWalkVisitor<ExprReferencesSymbolVisitor> {
+public:
+    ASR::symbol_t* target_sym;
+    bool found;
+
+    ExprReferencesSymbolVisitor(ASR::symbol_t* sym) :
+        target_sym(sym), found(false) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        if (x.m_v == target_sym) {
+            found = true;
+        }
+    }
+};
+
+static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym) {
+    if (!expr) return false;
+    ExprReferencesSymbolVisitor visitor(sym);
+    visitor.visit_expr(*expr);
+    return visitor.found;
+}
+
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
