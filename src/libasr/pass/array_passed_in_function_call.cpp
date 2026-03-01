@@ -856,7 +856,7 @@ public:
                     int integer_kind = pass_options.descriptor_index_64 ? 8 : 4;
                     current_body->push_back(al,
                         b.If(not_is_contiguous, {
-                            ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+                            ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al,
                                 array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size())),
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
                                 array_var_temporary->base.loc, alloc_args.p, alloc_args.size(),

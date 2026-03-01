@@ -1322,7 +1322,7 @@ namespace MoveAlloc {
         // This matches standard MOVE_ALLOC semantics and avoids double-allocation at runtime.
         Vec<ASR::expr_t*> deallocate_to_args; deallocate_to_args.reserve(al, 1);
         deallocate_to_args.push_back(al, args[1]);
-        ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+        ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
             al, loc, deallocate_to_args.p, deallocate_to_args.n));
         std::vector<ASR::stmt_t*> deallocate_to_body;
         deallocate_to_body.push_back(deallocate_to);
@@ -1382,9 +1382,9 @@ namespace MoveAlloc {
             if_body.push_back(b.Assignment(args[1], args[0]));
             Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
             explicit_deallocate_args.push_back(al, args[0]);
-            ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            ASR::stmt_t* implicit_deallocate = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-            if_body.push_back(explicit_deallocate);
+            if_body.push_back(implicit_deallocate);
         }
 
         ASR::stmt_t* if_stmt = b.If(is_from_allocated, if_body, {});
