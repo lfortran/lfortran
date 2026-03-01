@@ -212,10 +212,12 @@ public:
                 }
             }
             if((all_blocks_nesting ==0 || pragma_in_block) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
-                ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
-                omp_region_body.push_back(tmp_stmt);
+                if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
+                    ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
+                    omp_region_body.push_back(tmp_stmt);
+                }
             } else {
-                if (tmp) {
+                if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
                     ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                     body.push_back(al, tmp_stmt);
                 } else if (!tmp_vec.empty()) {

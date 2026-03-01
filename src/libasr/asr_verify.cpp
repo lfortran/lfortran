@@ -1023,7 +1023,6 @@ public:
         }
 
         if (func) {
-            bool enforce_modifiable_check = ASRUtils::enforce_modifiable_actual_argument_check(func);
             require(x.n_args + formal_offset <= func->n_args,
                 "More actual arguments than formal arguments in call.");
 
@@ -1049,7 +1048,7 @@ public:
                     continue;
                 }
 
-                if (check_external && enforce_modifiable_check &&
+                if (check_external &&
                     !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
                     (callee_param->m_intent == ASR::intentType::Out ||
                      callee_param->m_intent == ASR::intentType::InOut)) {
