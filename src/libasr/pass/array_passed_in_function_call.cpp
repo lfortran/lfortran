@@ -250,11 +250,11 @@ public:
         }
         // dimensions can be different for an ArrayConstructor e.g. [1, a], where `a` is an
         // ArrayConstructor like [5, 2, 1]
-        if (ASR::is_a<ASR::ArrayConstructor_t>(*value) &&
-               !PassUtils::is_args_contains_allocatable(value)) {
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
             ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
             value_m_dims->m_length = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
         }
+
 
         /*
             Handle character type with assumed length OR functioncall (to avoid duplicate calls).
