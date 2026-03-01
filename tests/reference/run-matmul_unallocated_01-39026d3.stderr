@@ -1,5 +1,0 @@
-runtime error: Array 'result' is indexed but not allocated.
-  --> tests/errors/matmul_unallocated_01.f90:10:5
-   |
-10 | C = matmul(A, B)
-   |     ^^^^^^^^^^^^

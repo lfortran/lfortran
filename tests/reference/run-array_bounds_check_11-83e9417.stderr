@@ -1,8 +1,0 @@
-runtime error: Array shape mismatch in assignment to 'e'. Tried to match size 4 of dimension 1 of LHS with size 2 of dimension 1 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
- --> tests/errors/array_bounds_check_11.f90:9:5
-  |
-9 |     e = a + b
-  |     ^ LHS size is 4
-  |
-9 |     e = a + b
-  |         ^ RHS size is 2

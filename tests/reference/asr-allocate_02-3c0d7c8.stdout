@@ -610,7 +610,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -628,7 +628,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -646,7 +646,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -698,7 +698,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -750,7 +750,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -802,7 +802,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -865,7 +865,7 @@
                                             ()
                                         )
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                     )
                                     (Assignment
@@ -918,21 +918,21 @@
                         (Var 2 a)
                         (Var 2 isource)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
                         (Var 2 b)
                         (Var 2 isource)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
                         (Var 2 c)
                         (Var 2 isource)
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -962,7 +962,7 @@
                             ()
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -992,7 +992,7 @@
                             ()
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Assignment
@@ -1022,7 +1022,7 @@
                             ()
                         )
                         ()
-                        .false.
+                        .true.
                         .false.
                     )
                     (Print

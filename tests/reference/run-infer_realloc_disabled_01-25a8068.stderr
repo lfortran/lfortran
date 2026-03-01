@@ -1,5 +1,13 @@
-runtime error: Array 'x' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+runtime warning: Array 'x' is not allocated, automatically allocating. Use '--no-realloc-lhs-arrays' to make this an error.
  --> tests/errors/infer_realloc_disabled_01.f90:3:5
   |
 3 |     x = [1, 2, 3]
   |     ^ 'x' not allocated here
+runtime warning: The array 'x' is being automatically reallocated, potentially slowing performance, due to LHS being size 3, and RHS being size 2. If this is intended, allocate explicitly before the assignment or use the '--realloc-lhs-arrays' option to suppress this warning.
+ --> tests/errors/infer_realloc_disabled_01.f90:4:5
+  |
+4 |     x = [4, 5]
+  |     ^ LHS size is 3
+  |
+4 |     x = [4, 5]
+  |         ^^^^^^ RHS size is 2
