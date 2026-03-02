@@ -9669,6 +9669,10 @@ public:
         if (compiler_options.po.bounds_checking) {
             // Check for errors in array operations in the RHS of the assignment
             generate_binop_checks(x.m_components, x.n_components);
+        }
+        if (compiler_options.po.bounds_checking ||
+            compiler_options.po.no_realloc_lhs_arrays ||
+            !compiler_options.po.realloc_lhs_arrays_silent) {
 
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
 
@@ -9703,12 +9707,19 @@ public:
                         if (!x.m_move_allocation) {
                             llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                             llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
+                            if (compiler_options.po.no_realloc_lhs_arrays) {
+                                llvm_utils->generate_runtime_error(is_not_allocated,
+                                    "Array '%s' is not allocated. Use '--realloc-lhs-arrays' to reallocate LHS automatically.",
                                     {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
-                                    infile,
-                                    location_manager,
+                                    infile, location_manager,
                                     target_var_name_llvm);
+                            } else if (!compiler_options.po.realloc_lhs_arrays_silent) {
+                                llvm_utils->generate_runtime_warning(is_not_allocated,
+                                    "Array '%s' is not allocated, automatically allocating. Use '--no-realloc-lhs-arrays' to make this an error.",
+                                    {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
+                                    infile, location_manager,
+                                    target_var_name_llvm);
+                            }
                         }
 
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -9719,17 +9730,25 @@ public:
 
                         builder->CreateCondBr(is_allocated, thenBB, mergeBB);
                         builder->SetInsertPoint(thenBB); {
-                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                                "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
-                                                                {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                                LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
-                                                                infile,
-                                                                location_manager,
-                                                                LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
-                                                                target_size,
-                                                                dim_llvm,
-                                                                value_size,
-                                                                dim_llvm);
+                            if (compiler_options.po.no_realloc_lhs_arrays) {
+                                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                    "Array shape mismatch in assignment to '%s'. LHS size %d dim %d, RHS size %d dim %d.",
+                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                    LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                    infile, location_manager,
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
+                                    target_size, dim_llvm, value_size, dim_llvm);
+                            } else if (!compiler_options.po.realloc_lhs_arrays_silent) {
+                                llvm_utils->generate_runtime_warning(builder->CreateICmpNE(value_size, target_size),
+                                "The array '%s' is being automatically reallocated, potentially slowing performance, "
+                                "due to LHS being size %d, and RHS being size %d. If this is intended, "
+                                "allocate explicitly before the assignment or use the '--realloc-lhs-arrays' option to suppress this warning.",
+                                {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                    LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                    infile, location_manager,
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
+                                    target_size, value_size);
+                            }
                         }
                         builder->CreateBr(mergeBB);
 
@@ -9737,9 +9756,9 @@ public:
                     } else {
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
-                                                     {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                         LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
-                                                          infile,
+                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                                        LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                        infile,
                                                         location_manager,
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
@@ -9750,8 +9769,8 @@ public:
                 } else {
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
-                                                   {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                       LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                                                    LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
                                                         infile,
                                                         location_manager,
                                                         target_size,

@@ -2768,10 +2768,8 @@ static void print_label_span(const Span *span, bool is_primary,
     free(line_text);
 }
 
-LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
+static void _lcompilers_runtime_diagnostic(Label *labels, uint32_t n_labels, int is_error, const char* format, va_list args)
+{        
     va_list args_copy;
     va_copy(args_copy, args);
     int needed = vsnprintf(NULL, 0, format, args_copy);
@@ -2779,28 +2777,26 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
     if (needed < 0) {
         vfprintf(stderr, format, args);
         fflush(stderr);
-        va_end(args);
         return;
     }
     char *error_msg = (char*)malloc((size_t)needed + 1);
     if (!error_msg) {
         vfprintf(stderr, format, args);
         fflush(stderr);
-        va_end(args);
         return;
     }
     vsnprintf(error_msg, (size_t)needed + 1, format, args);
-    va_end(args);
 
     bool use_colors = _lfortran_use_runtime_colors;
     const char *color_reset = use_colors ? "\033[0;0m" : "";
     const char *color_bold = use_colors ? "\033[0;1m" : "";
-    const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
     const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
+    const char *color = is_error ? (use_colors ? "\033[0;31;1m" : "") : (use_colors ? "\033[0;33;1m" : "");
+    const char *label_str = is_error ? "runtime error" : "runtime warning";
 
     if (n_labels == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fprintf(stderr, "%s%s%s%s: %s%s\n",
+                color, label_str, color_reset, color_bold, error_msg, color_reset);
         fflush(stderr);
         free(error_msg);
         return;
@@ -2815,15 +2811,15 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
     }
 
     if (!primary_label || primary_label->n_spans == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fprintf(stderr, "%s%s%s%s: %s%s\n",
+                color, label_str, color_reset, color_bold, error_msg, color_reset);
         fflush(stderr);
         free(error_msg);
         return;
     }
 
-    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-            color_bold_red, color_reset, color_bold, error_msg, color_reset);
+    fprintf(stderr, "%s%s%s%s: %s%s\n",
+            color, label_str, color_reset, color_bold, error_msg, color_reset);
 
     Span *first_span = &primary_label->spans[0];
     const char *filename = first_span->filename ? first_span->filename : "unknown";
@@ -2846,6 +2842,25 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
 
     fflush(stderr);
     free(error_msg);
+    if (is_error) {
+        exit(1);
+    }
+}
+
+LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    _lcompilers_runtime_diagnostic(labels, n_labels, 1, format, args);
+    va_end(args);
+}
+
+LFORTRAN_API void _lcompilers_runtime_warning(Label *labels, uint32_t n_labels, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    _lcompilers_runtime_diagnostic(labels, n_labels, 0, format, args);
+    va_end(args);
 }
 
 LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {

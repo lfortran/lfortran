@@ -1341,13 +1341,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
-            bool per_assign_realloc = xx.m_realloc_lhs ||
-                should_auto_realloc_component_assignment(xx.m_target);
-            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
-        }
-
-        if (bounds_checking && 
+        if ((bounds_checking || !pass_options.realloc_lhs_arrays_silent) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
@@ -1368,6 +1362,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
+        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
+            bool per_assign_realloc = xx.m_realloc_lhs ||
+                should_auto_realloc_component_assignment(xx.m_target);
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
+        }
         // Don't generate a loop for a move assignment
         // The assignment should be handled in the backend
         if (x.m_move_allocation) {

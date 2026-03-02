@@ -1,8 +1,8 @@
-runtime error: Array shape mismatch in subroutine 'f_integer____0'. Tried to match size 3 of dimension 1 of argument number 3, but expected size is 2
+runtime warning: The array 'e' is being automatically reallocated, potentially slowing performance, due to LHS being size 3, and RHS being size 2. If this is intended, allocate explicitly before the assignment or use the '--realloc-lhs-arrays' option to suppress this warning.
  --> tests/errors/array_bounds_check_12.f90:8:5
   |
 8 |     e = f(a)
-  |     ^
+  |     ^ LHS size is 3
   |
 8 |     e = f(a)
-  |     ~ Parameter is size 2, argument is size 3
+  |         ^^^^ RHS size is 2

@@ -5,9 +5,9 @@
     "infile_hash": "fe97c92f3a6b2f82c2bc6c67e08a1e1f7b9baec1974bf5f02afd0cbb",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
+    "stdout": "run-infer_realloc_disabled_01-25a8068.stdout",
+    "stdout_hash": "7f04f368ab5b53d568c1590932a5ceebec89b14fcb03bf7f46197078",
     "stderr": "run-infer_realloc_disabled_01-25a8068.stderr",
-    "stderr_hash": "7cb4727b3826d621ebf8f74a71e5feeef7bc824d04802b12202deef3",
-    "returncode": 1
+    "stderr_hash": "ccebee9068658723402af7d5b6caf40dfbe6786df3ceb289850ee168",
+    "returncode": 0
 }

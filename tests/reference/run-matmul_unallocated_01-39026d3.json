@@ -5,9 +5,9 @@
     "infile_hash": "69fa6b271c924d4944c45f3f5d8f6a569ff838a441c57aa9cbb649e0",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "run-matmul_unallocated_01-39026d3.stderr",
-    "stderr_hash": "993157587abaee0428c9c6be9786a6b33e48ea75c3666d3b0fbcd208",
-    "returncode": 1
+    "stdout": "run-matmul_unallocated_01-39026d3.stdout",
+    "stdout_hash": "0fc35f28b2d162814183f8541877031cbd4b1063a5d4bc18a3250b19",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

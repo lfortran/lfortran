@@ -183,7 +183,7 @@
                                                 (Var 3 strings)
                                                 (Var 3 strings_a)
                                                 ()
-                                                .false.
+                                                .true.
                                                 .false.
                                             )]
                                             [(Assignment
@@ -219,7 +219,7 @@
                                                     ()
                                                 )
                                                 ()
-                                                .false.
+                                                .true.
                                                 .false.
                                             )]
                                         )]
@@ -267,7 +267,7 @@
                                                 ()
                                             )
                                             ()
-                                            .false.
+                                            .true.
                                             .false.
                                         )]
                                         []
