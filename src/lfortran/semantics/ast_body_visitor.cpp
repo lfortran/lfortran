@@ -7515,65 +7515,65 @@ public:
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_control != 1) {
-            diag.add(Diagnostic(
-                "Forall statement: exactly one control statement is required for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (! h.m_var) {
-            diag.add(Diagnostic(
-                "Forall statement: loop variable is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (! h.m_start) {
-            diag.add(Diagnostic(
-                "Forall statement: start condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (! h.m_end) {
-            diag.add(Diagnostic(
-                "Forall statement: end condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        ASR::expr_t *var = ASRUtils::EXPR(
-            resolve_variable(x.base.base.loc, to_lower(h.m_var))
-        );
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (! h.m_var) {
+                diag.add(Diagnostic(
+                    "Forall statement: loop variable is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (! h.m_start) {
+                diag.add(Diagnostic(
+                    "Forall statement: start condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (! h.m_end) {
+                diag.add(Diagnostic(
+                    "Forall statement: end condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
 
-        ASR::stmt_t* assign_stmt;
+        // Build the innermost assignment statement
         this->visit_stmt(*x.m_assign);
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
-        assign_stmt = ASRUtils::STMT(tmp);
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
-        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, assign_stmt);
+        ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
+
+        // Nest ForAllSingle nodes from innermost to outermost
+        for (int i = x.n_control - 1; i >= 0; i--) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            ASR::expr_t *var = ASRUtils::EXPR(
+                resolve_variable(x.base.base.loc, to_lower(h.m_var))
+            );
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, inner_stmt);
+            inner_stmt = ASRUtils::STMT(tmp);
+        }
         all_loops_blocks_nesting -= 1;
     }
 
