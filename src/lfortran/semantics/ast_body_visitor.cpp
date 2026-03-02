@@ -2519,17 +2519,23 @@ public:
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
-                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
-                tmp_storage = variable->m_storage;
+                ASR::ttype_t* base_type = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
+                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+                    tmp_storage = variable->m_storage;
+                    base_type = variable->m_type;
+                } else {
+                    base_type = ASRUtils::expr_type(tmp_array_section->m_v);
+                }
                 ASR::dimension_t *var_dims;
-                ASRUtils::extract_dimensions_from_ttype(variable->m_type, var_dims);
+                ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
                 Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
                 for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
                     if (tmp_array_section->m_args[i].m_left) {
                         tmp_dims.push_back(al, var_dims[i]);
                     }
                 }
-                tmp_type = ASRUtils::duplicate_type(al, variable->m_type, &tmp_dims);
+                tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
             } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
