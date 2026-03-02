@@ -765,7 +765,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
         fill_dimensions_for_ArrIntrinsic(al, (int64_t) n_dims - 1,
             args[0], args[1], diag, runtime_dim, dims);
-        return_type = ASRUtils::duplicate_type(al, array_type, &dims, ASR::array_physical_typeType::DescriptorArray, true);
+        ASR::ttype_t* base_array_type = ASRUtils::type_get_past_allocatable_pointer(array_type);
+        return_type = ASRUtils::duplicate_type(al, base_array_type, &dims, ASR::array_physical_typeType::DescriptorArray, true);
         if ( (int64_t) n_dims == 1 ) {
             // For the arrays of rank 1, we return a scalar value
             // instead of an array. Currently `return_type` in case of
