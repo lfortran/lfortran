@@ -4978,11 +4978,20 @@ public:
                     for(size_t i=0; i < temp_array->n_args; i++){
                         this->visit_expr(*temp_array->m_args[i]);
                         ASR::expr_t *temp = ASRUtils::EXPR(tmp);
-                        if( ASRUtils::expr_type(temp)->type == ASR::ttypeType::Array ) {
-                            flat_size += ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(temp));
+                        ASR::ttype_t* temp_type = ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(temp));
+                        if( temp_type->type == ASR::ttypeType::Array ) {
+                            int64_t arr_size = ASRUtils::get_fixed_size_of_array(temp_type);
+                            if (arr_size < 0) {
+                                flat_size = -1;
+                            } else if (flat_size >= 0) {
+                                flat_size += arr_size;
+                            }
                             is_array_concat = true;
                         } else {
-                            flat_size += 1;
+                            if (flat_size >= 0) {
+                                flat_size += 1;
+                            }
                         }
                     }
                 }
