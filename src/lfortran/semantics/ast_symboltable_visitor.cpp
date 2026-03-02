@@ -404,6 +404,7 @@ public:
         add_class_procedures();
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
@@ -632,6 +633,7 @@ public:
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
              ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
              if (current_sym == placeholder_sym) {
@@ -3390,6 +3392,23 @@ public:
                 }
             }
         }
+    }
+
+    void resolve_pending_proc_ptr_inits() {
+        for (auto &item : pending_proc_ptr_inits) {
+            ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
+            if (!proc_sym) {
+                diag.semantic_error_label("Variable '" + item.proc_name
+                    + "' is not declared", {item.loc},
+                    "'" + item.proc_name + "' is undeclared");
+                throw SemanticAbort();
+            }
+            ASR::expr_t *init_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, item.loc, proc_sym));
+            item.var->m_symbolic_value = init_expr;
+            item.var->m_value = nullptr;
+        }
+        pending_proc_ptr_inits.clear();
     }
 
     void add_class_procedures() {

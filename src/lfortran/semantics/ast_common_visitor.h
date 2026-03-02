@@ -1937,6 +1937,14 @@ public:
     int idl_nesting_level = 0;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
+    struct PendingProcPtrInit {
+        std::string proc_name;
+        ASR::Variable_t* var;
+        SymbolTable* resolve_scope;
+        Location loc;
+    };
+    std::vector<PendingProcPtrInit> pending_proc_ptr_inits;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -6404,6 +6412,26 @@ public:
                 } else if (s.m_initializer != nullptr) {
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
+                    }
+                    // Defer procedure pointer initialization when the target
+                    // procedure is not yet in scope (e.g. module contains)
+                    if (is_derived_type && is_pointer
+                            && AST::is_a<AST::Name_t>(*s.m_initializer)
+                            && type && ASR::is_a<ASR::Pointer_t>(
+                                *ASRUtils::type_get_past_allocatable(type))
+                            && ASR::is_a<ASR::FunctionType_t>(
+                                *ASR::down_cast<ASR::Pointer_t>(
+                                    ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        std::string init_name = to_lower(
+                            AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
+                        ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
+                        if (!init_sym && variable_added_to_symtab) {
+                            pending_proc_ptr_inits.push_back({
+                                init_name, variable_added_to_symtab,
+                                current_scope->parent,
+                                s.m_initializer->base.loc});
+                            continue;
+                        }
                     }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
