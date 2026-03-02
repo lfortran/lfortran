@@ -772,7 +772,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             // instead of an array. Currently `return_type` in case of
             // allocatable will be `Allocatable( integer 4 )` and hence
             // we need to remove the allocatable part.
-            return_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(return_type));
+            return_type = ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(return_type)));
         }
     }
     value = eval_ArrIntrinsic(al, loc, return_type, arg_values, diag, intrinsic_func_id);

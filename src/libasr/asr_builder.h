@@ -791,7 +791,7 @@ class ASRBuilder {
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
@@ -815,7 +815,7 @@ class ASRBuilder {
 
     ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
@@ -839,7 +839,7 @@ class ASRBuilder {
 
     ASR::expr_t *GtE(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
@@ -863,7 +863,7 @@ class ASRBuilder {
 
     ASR::expr_t *LtE(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
@@ -887,7 +887,7 @@ class ASRBuilder {
 
     ASR::expr_t *Eq(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
@@ -914,7 +914,7 @@ class ASRBuilder {
 
     ASR::expr_t *NotEq(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));

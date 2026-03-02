@@ -1482,6 +1482,7 @@ RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum/pro
 RUN(NAME intrinsics_416 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # string concat
 RUN(NAME intrinsics_417 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sleep
 RUN(NAME intrinsics_418 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME intrinsics_419 LABELS gfortran llvm) # maxval/minval with dim on pointer arrays
 RUN(NAME intrinsics_420 LABELS gfortran llvm) # dble/float with array constructor
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
