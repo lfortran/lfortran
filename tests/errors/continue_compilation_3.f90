@@ -185,7 +185,7 @@ program continue_compilation_3
 
     !and_okay_int_int
     print *, 5 .and. 6
-
+    
     !adding a few more cases
     print *, 5 .or. 6
     print *, 5 .eqv. 6
@@ -202,14 +202,12 @@ program continue_compilation_3
     print *, "8356" .eqv. 8356.00
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
-<<<<<<< HEAD
-    call ss("hello")
-=======
     print *,  [( '*',i , i = 1, 10 )] 
->>>>>>> e72ca92a5 (test: add tests andupdate references)
+    call ss("hello")
     contains 
     subroutine bpe()
         print *, size(bpe)
         bpe = d
     end subroutine
+    
 end program
