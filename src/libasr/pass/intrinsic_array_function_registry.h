@@ -3951,12 +3951,6 @@ namespace MatMul {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
-        bool is_type_allocatable = false;
-        if (ASRUtils::is_allocatable(matrix_a) || ASRUtils::is_allocatable(matrix_b)) {
-            // TODO: Use Array type as return type instead of allocatable
-            //  for both Array and Allocatable as input arguments.
-            is_type_allocatable = true;
-        }
         ASR::ttype_t *type_a = expr_type(matrix_a);
         ASR::ttype_t *type_b = expr_type(matrix_b);
         ASR::ttype_t *ret_type = nullptr;
@@ -4067,9 +4061,6 @@ namespace MatMul {
             return nullptr;
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
-        if (is_type_allocatable) {
-            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
-        }
         ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args, diag);
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
