@@ -3697,7 +3697,7 @@ public:
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
-                nullptr, 0, nullptr, nullptr));
+                nullptr, 0, nullptr, nullptr, nullptr, 0));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -5761,6 +5761,8 @@ public:
                             }
                         }
                     }
+
+                    bool is_kind_parameter = false;
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
                         if (AST::is_a<AST::SimpleAttribute_t>(*a)) {
@@ -5822,6 +5824,10 @@ public:
                                 is_volatile = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
+                                // PDT kind parameter: treat as a Parameter variable
+                                is_kind_parameter = true;
+                                storage_type = ASR::storage_typeType::Parameter;
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -5921,7 +5927,7 @@ public:
                         throw SemanticAbort();
                     }
                     if (!s.m_initializer && s_intent == ASRUtils::intent_local
-                            && storage_type == ASR::storage_typeType::Parameter) {
+                            && storage_type == ASR::storage_typeType::Parameter && !is_kind_parameter) {
                         diag.add(Diagnostic(
                             "Variable `" + std::string(s.m_name) +
                             "` with parameter attribute is not initialised",
@@ -6971,6 +6977,251 @@ public:
 
     }
 
+    // Replace sentinel/index kind values in a type with actual values.
+    static void replace_sentinel_kinds(ASR::ttype_t* type,
+        const std::map<int64_t, int64_t>& sentinel_to_actual)
+    {
+        if (!type) return;
+
+        ASR::ttype_t* base_type = type;
+        if (ASR::is_a<ASR::Pointer_t>(*base_type)) {
+            base_type = ASR::down_cast<ASR::Pointer_t>(base_type)->m_type;
+        } else if (ASR::is_a<ASR::Allocatable_t>(*base_type)) {
+            base_type = ASR::down_cast<ASR::Allocatable_t>(base_type)->m_type;
+        }
+        base_type = ASRUtils::type_get_past_array(base_type);
+
+        switch (base_type->type) {
+            case ASR::ttypeType::Integer: {
+                ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(base_type);
+                auto it = sentinel_to_actual.find(t->m_kind);
+                if (it != sentinel_to_actual.end()) t->m_kind = it->second;
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                ASR::Real_t* t = ASR::down_cast<ASR::Real_t>(base_type);
+                auto it = sentinel_to_actual.find(t->m_kind);
+                if (it != sentinel_to_actual.end()) t->m_kind = it->second;
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                ASR::Complex_t* t = ASR::down_cast<ASR::Complex_t>(base_type);
+                auto it = sentinel_to_actual.find(t->m_kind);
+                if (it != sentinel_to_actual.end()) t->m_kind = it->second;
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                ASR::Logical_t* t = ASR::down_cast<ASR::Logical_t>(base_type);
+                auto it = sentinel_to_actual.find(t->m_kind);
+                if (it != sentinel_to_actual.end()) t->m_kind = it->second;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    // Monomorphize a Parameterized Derived Type (PDT).
+    // Given type(t(4)), look up the PDT template "t", substitute kind
+    // parameters, and create a concrete struct "t_4" in the current scope.
+    ASR::ttype_t* instantiate_pdt(const Location &loc,
+        const std::string &pdt_name, AST::AttrType_t *sym_type,
+        bool is_pointer, bool is_allocatable,
+        Vec<ASR::dimension_t>& dims,
+        ASR::symbol_t *&type_declaration,
+        ASR::abiType abi, bool is_argument)
+    {
+        // Look up the PDT as an ASR Struct symbol with kind_params
+        ASR::symbol_t* pdt_sym = current_scope->resolve_symbol(pdt_name);
+        LCOMPILERS_ASSERT(pdt_sym != nullptr);
+        ASR::symbol_t* pdt_sym_orig = ASRUtils::symbol_get_past_external(pdt_sym);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*pdt_sym_orig));
+        ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(pdt_sym_orig);
+
+        // Scope where the PDT template lives
+        SymbolTable* pdt_scope = ASRUtils::symbol_parent_symtab(pdt_sym_orig);
+
+        // Collect kind parameter names (in order) from the ASR Struct node
+        std::vector<std::string> kind_param_names;
+        for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
+            kind_param_names.push_back(std::string(pdt_struct->m_kind_params[i]));
+        }
+
+        // Build sentinel → actual kind value mapping and monomorphized name.
+        // Positional args in sym_type->m_kind correspond 1:1 to kind_param_names
+        // (when all params are kind params).
+        std::map<int64_t, int64_t> sentinel_to_actual;
+        std::map<std::string, int64_t> kind_values;
+        std::string monomorphized_name = pdt_name;
+
+        for (size_t i = 0; i < kind_param_names.size(); i++) {
+            const std::string& param_name = kind_param_names[i];
+            int64_t kind_val = -1;
+
+            if (i < sym_type->n_kind && sym_type->m_kind[i].m_value) {
+                // User provided an explicit value for this param
+                this->visit_expr(*sym_type->m_kind[i].m_value);
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
+                    sym_type->m_kind[i].loc, diag);
+            } else {
+                // Use original default (stored in m_symbolic_value of template)
+                ASR::symbol_t* param_sym = pdt_struct->m_symtab->get_symbol(param_name);
+                if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
+                    ASR::Variable_t* pv = ASR::down_cast<ASR::Variable_t>(param_sym);
+                    if (pv->m_symbolic_value) {
+                        kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                            ASRUtils::expr_value(pv->m_symbolic_value))->m_n;
+                    }
+                }
+                if (kind_val < 0) {
+                    diag.add(Diagnostic(
+                        "Parameterized derived type '" + pdt_name +
+                        "' parameter '" + param_name +
+                        "' has no default value and must be specified",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+
+            sentinel_to_actual[i] = kind_val;
+            kind_values[param_name] = kind_val;
+            monomorphized_name += "_" + std::to_string(kind_val);
+        }
+
+        // Check if the monomorphized struct already exists in scope
+        ASR::symbol_t *v = current_scope->resolve_symbol(monomorphized_name);
+        if (v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))) {
+            type_declaration = v;
+            ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, v, true);
+            type = ASRUtils::make_Array_t_util(
+                al, loc, type, dims.p, dims.size(), abi, is_argument);
+            if (is_pointer) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+            }
+            if (is_allocatable) {
+                type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+            }
+            return type;
+        }
+
+        // Create a new scope for the monomorphized struct
+        SymbolTable *new_scope = al.make_new<SymbolTable>(pdt_scope);
+
+        // Copy all symbols from the PDT template's symtab
+        ASRUtils::SymbolDuplicator duplicator(al);
+        duplicator.duplicate_SymbolTable(pdt_struct->m_symtab, new_scope);
+
+        // Update kind parameter variables with actual concrete values
+        for (size_t i = 0; i < kind_param_names.size(); i++) {
+            const std::string& param_name = kind_param_names[i];
+            int64_t actual_val = kind_values[param_name];
+            ASR::symbol_t* kp_sym = new_scope->get_symbol(param_name);
+            if (kp_sym && ASR::is_a<ASR::Variable_t>(*kp_sym)) {
+                ASR::Variable_t* kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+                ASR::expr_t *val = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, actual_val, int_type));
+                kp_var->m_value = val;
+                kp_var->m_symbolic_value = val;
+            }
+        }
+
+        // Fix sentinel/index kind values in member variable types
+        for (auto& item : new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            // Skip kind parameters themselves
+            if (kind_values.find(item.first) != kind_values.end()) continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
+            replace_sentinel_kinds(var->m_type, sentinel_to_actual);
+        }
+
+        // Build data member names (same as template)
+        Vec<char*> new_data_member_names;
+        new_data_member_names.reserve(al, pdt_struct->n_members);
+        for (size_t i = 0; i < pdt_struct->n_members; i++) {
+            new_data_member_names.push_back(al, pdt_struct->m_members[i]);
+        }
+
+        // Compute struct dependencies
+        SetChar struct_dependencies;
+        struct_dependencies.reserve(al, 1);
+        for (auto& item : new_scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+            char* aggregate_type_name = nullptr;
+            if (!ASRUtils::is_unlimited_polymorphic_type(item.second)) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::symbol_type(item.second));
+                if (ASR::is_a<ASR::StructType_t>(*var_type)) {
+                    aggregate_type_name = ASRUtils::symbol_name(
+                        dt_variable->m_type_declaration);
+                } else if (ASR::is_a<ASR::UnionType_t>(*var_type)) {
+                    aggregate_type_name = ASRUtils::symbol_name(
+                        dt_variable->m_type_declaration);
+                }
+            }
+            if (aggregate_type_name) {
+                struct_dependencies.push_back(al, aggregate_type_name);
+            }
+        }
+
+        Vec<char*> pdt_final_proc_names;
+        pdt_final_proc_names.reserve(al, 0);
+        tmp = ASR::make_Struct_t(al, loc, new_scope,
+            s2c(al, monomorphized_name), nullptr,
+            struct_dependencies.p, struct_dependencies.size(),
+            new_data_member_names.p, new_data_member_names.size(),
+            pdt_final_proc_names.p, pdt_final_proc_names.size(),
+            ASR::abiType::Source, dflt_access, false, false,
+            nullptr, 0, nullptr, nullptr, nullptr, 0);
+
+        ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
+            al, loc, struct_sym, true);
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        struct_t->m_struct_signature = struct_signature;
+        pdt_scope->add_symbol(monomorphized_name, struct_sym);
+
+        // If the monomorphized struct was created in a different scope (e.g.
+        // the module scope) from the calling scope, create an ExternalSymbol
+        // in the calling scope so the type_declaration reference is valid.
+        ASR::symbol_t* type_decl_sym = struct_sym;
+        if (current_scope->resolve_symbol(monomorphized_name) == nullptr) {
+            ASR::symbol_t* module_sym = nullptr;
+            if (pdt_scope->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*pdt_scope->asr_owner)) {
+                module_sym = ASR::down_cast<ASR::symbol_t>(pdt_scope->asr_owner);
+            }
+            if (module_sym && ASR::is_a<ASR::Module_t>(*module_sym)) {
+                ASR::symbol_t* ext = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(al, loc, current_scope,
+                        s2c(al, monomorphized_name), struct_sym,
+                        ASRUtils::symbol_name(module_sym),
+                        nullptr, 0, s2c(al, monomorphized_name),
+                        ASR::accessType::Public));
+                current_scope->add_symbol(monomorphized_name, ext);
+                type_decl_sym = ext;
+            }
+        }
+
+        type_declaration = type_decl_sym;
+        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, type_decl_sym, true);
+        type = ASRUtils::make_Array_t_util(
+            al, loc, type, dims.p, dims.size(), abi, is_argument);
+        if (is_pointer) {
+            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+        }
+        if (is_allocatable) {
+            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+        }
+        return type;
+    }
+
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
@@ -7050,8 +7301,9 @@ public:
         }
 
         // general assignments and checks except when it's a
-        // "Character" declaration
+        // "Character" declaration or a parameterized derived type
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
+            sym_type->m_type != AST::decl_typeType::TypeType &&
             sym_type->m_kind != nullptr
         ) {
             if (sym_type->m_kind->m_value) {
@@ -7070,7 +7322,7 @@ public:
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if (a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Real",
                     Level::Error, Stage::Semantic, {
@@ -7102,7 +7354,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Integer",
                     Level::Error, Stage::Semantic, {
@@ -7122,7 +7374,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Logical",
                     Level::Error, Stage::Semantic, {
@@ -7141,7 +7393,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
@@ -7311,7 +7563,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                        nullptr, 0, nullptr, nullptr);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -7368,6 +7620,23 @@ public:
                     is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
             } else if (derived_type_name == "unsigned") {
                 return ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
+            }
+
+            // Check if this is a Parameterized Derived Type instantiation
+            // e.g., type(t(4)) :: a, or type(t) :: x where t has default kind values.
+            // We detect PDTs by checking if the ASR Struct has kind_params.
+            {
+                ASR::symbol_t* pdt_sym = current_scope->resolve_symbol(derived_type_name);
+                if (pdt_sym) {
+                    ASR::symbol_t* pdt_orig = ASRUtils::symbol_get_past_external(pdt_sym);
+                    if (ASR::is_a<ASR::Struct_t>(*pdt_orig)) {
+                        ASR::Struct_t* pdt_st = ASR::down_cast<ASR::Struct_t>(pdt_orig);
+                        if (pdt_st->n_kind_params > 0) {
+                            return instantiate_pdt(loc, derived_type_name, sym_type,
+                                is_pointer, is_allocatable, dims, type_declaration, abi, is_argument);
+                        }
+                    }
+                }
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
@@ -7512,7 +7781,7 @@ public:
                     ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                     s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                     nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                    nullptr, 0, nullptr, nullptr);
+                                                    nullptr, 0, nullptr, nullptr, nullptr, 0);
                     ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                     ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                     ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
