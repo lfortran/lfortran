@@ -4439,6 +4439,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Private;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Private;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -4454,6 +4455,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Public;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Public;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
