@@ -3407,6 +3407,13 @@ public:
                 ASR::make_Var_t(al, item.loc, proc_sym));
             item.var->m_symbolic_value = init_expr;
             item.var->m_value = nullptr;
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
+                item.var->m_type, item.var->m_symbolic_value, item.var->m_value,
+                item.var->m_name);
+            item.var->m_dependencies = variable_dependencies_vec.p;
+            item.var->n_dependencies = variable_dependencies_vec.n;
         }
         pending_proc_ptr_inits.clear();
     }
