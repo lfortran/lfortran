@@ -341,9 +341,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
-    if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+    if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
         // possible it is a `procedure(cb) :: call_back`
-        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
         ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
