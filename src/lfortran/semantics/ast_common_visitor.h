@@ -16324,6 +16324,9 @@ public:
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if ((!to_submodule) && es0->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
                     /* a_symtab */ current_scope,

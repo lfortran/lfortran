@@ -388,6 +388,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // Update access of use-associated ExternalSymbol entries based on the
+        // final dflt_access (set by private/public statements processed above).
+        // use statements are processed before private/public, so ExternalSymbols
+        // may have been created with the wrong default access.
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    es->m_access = assgnd_access[item.first];
+                } else {
+                    es->m_access = dflt_access;
+                }
+            }
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
