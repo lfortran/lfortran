@@ -31,6 +31,7 @@ namespace LCompilers::LFortran {
 
 static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
 static std::map<std::string, int> assumed_rank_arrays;
+static int PDT_SENTINEL = 1000;
 
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
@@ -6977,7 +6978,7 @@ public:
 
     }
 
-    // Replace sentinel/index kind values in a type with actual values.
+    // Replace sentinel kind values in a type with actual values.
     static void replace_sentinel_kinds(ASR::ttype_t* type,
         const std::map<int64_t, int64_t>& sentinel_to_actual)
     {
@@ -7086,7 +7087,8 @@ public:
                 }
             }
 
-            sentinel_to_actual[i] = kind_val;
+            int64_t sentinel = PDT_SENTINEL + i;
+            sentinel_to_actual[sentinel] = kind_val;
             kind_values[param_name] = kind_val;
             monomorphized_name += "_" + std::to_string(kind_val);
         }

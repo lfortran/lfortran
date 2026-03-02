@@ -2320,10 +2320,11 @@ public:
                     ASR::Variable_t *kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
                     // m_symbolic_value already has the user default (or nullptr)
                     // from visit_unit_decl2.  Now set m_value to a unique index value.
+                    int sentinel = PDT_SENTINEL + i;
                     ASR::ttype_t *int_type = ASRUtils::TYPE(
                         ASR::make_Integer_t(al, x.base.base.loc, 4));
                     kp_var->m_value = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int_type));
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, sentinel, int_type));
                 }
             }
 
