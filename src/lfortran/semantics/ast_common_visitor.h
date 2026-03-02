@@ -29,6 +29,56 @@ using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
 
+class FindUserDefinedFuncCall :
+    public ASR::BaseWalkVisitor<FindUserDefinedFuncCall>
+{
+public:
+    std::string func_name;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        if (!func_name.empty()) return;
+        ASR::symbol_t* fn_sym = x.m_name;
+        bool is_intrinsic = false;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*fn_sym)) {
+            std::string mod_name = ASR::down_cast<ASR::ExternalSymbol_t>(
+                fn_sym)->m_module_name;
+            if (startswith(mod_name, "lfortran_intrinsic")) {
+                is_intrinsic = true;
+            }
+        }
+        if (!is_intrinsic) {
+            ASR::ttype_t* ret_type = ASRUtils::type_get_past_array(x.m_type);
+            if (ASR::is_a<ASR::String_t>(*ret_type)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ret_type);
+                if (str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)) {
+                    ASR::BaseWalkVisitor<FindUserDefinedFuncCall>::visit_FunctionCall(x);
+                    return;
+                }
+            }
+            func_name = ASRUtils::symbol_name(fn_sym);
+            return;
+        }
+        ASR::BaseWalkVisitor<FindUserDefinedFuncCall>::visit_FunctionCall(x);
+    }
+};
+
+static inline bool scope_forbids_automatic_data(SymbolTable* scope) {
+    while (scope && scope->asr_owner) {
+        if (!ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) break;
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (ASR::is_a<ASR::Function_t>(*owner) ||
+            ASR::is_a<ASR::Block_t>(*owner)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Program_t>(*owner) ||
+            ASR::is_a<ASR::Module_t>(*owner)) {
+            return true;
+        }
+        scope = scope->parent;
+    }
+    return true;
+}
+
 static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
 static std::map<std::string, int> assumed_rank_arrays;
 
@@ -15837,6 +15887,23 @@ public:
                         _processing_char_len = true;
                         this->visit_expr(*len_item->m_value);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        if (!in_Subroutine && scope_forbids_automatic_data(current_scope)) {
+                            FindUserDefinedFuncCall finder;
+                            finder.visit_expr(*len_expr);
+                            if (!finder.func_name.empty()) {
+                                std::string context = in_module
+                                    ? "a module" : "the main program";
+                                diag.add(Diagnostic(
+                                    "Character length in " + context +
+                                    " must be a compile-time constant, but"
+                                    " it depends on a call to the function '"
+                                    + finder.func_name + "'",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
                     }
@@ -15877,6 +15944,23 @@ public:
                         _processing_char_len = true;
                         this->visit_expr(*var_sym->m_length);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        if (!in_Subroutine && scope_forbids_automatic_data(current_scope)) {
+                            FindUserDefinedFuncCall finder;
+                            finder.visit_expr(*len_expr);
+                            if (!finder.func_name.empty()) {
+                                std::string context = in_module
+                                    ? "a module" : "the main program";
+                                diag.add(Diagnostic(
+                                    "Character length in " + context +
+                                    " must be a compile-time constant, but"
+                                    " it depends on a call to the function '"
+                                    + finder.func_name + "'",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
                     }
