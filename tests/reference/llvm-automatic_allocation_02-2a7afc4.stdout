@@ -44,6 +44,22 @@ source_filename = "LFortran"
 @37 = private unnamed_addr constant [32 x i8] c"Variable '%s' is not allocated.\00", align 1
 @38 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@40 = private unnamed_addr constant [2 x i8] c"i\00", align 1
+@41 = private unnamed_addr constant [55 x i8] c"tests/../integration_tests/automatic_allocation_02.f90\00", align 1
+@42 = private unnamed_addr constant [51 x i8] c"Cannot deallocate '%s' because it is not allocated\00", align 1
+@43 = private unnamed_addr constant [51 x i8] c"Attempting to deallocate unallocated variable '%s'\00", align 1
+@44 = private unnamed_addr constant [2 x i8] c"r\00", align 1
+@45 = private unnamed_addr constant [55 x i8] c"tests/../integration_tests/automatic_allocation_02.f90\00", align 1
+@46 = private unnamed_addr constant [51 x i8] c"Cannot deallocate '%s' because it is not allocated\00", align 1
+@47 = private unnamed_addr constant [51 x i8] c"Attempting to deallocate unallocated variable '%s'\00", align 1
+@48 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@49 = private unnamed_addr constant [55 x i8] c"tests/../integration_tests/automatic_allocation_02.f90\00", align 1
+@50 = private unnamed_addr constant [51 x i8] c"Cannot deallocate '%s' because it is not allocated\00", align 1
+@51 = private unnamed_addr constant [51 x i8] c"Attempting to deallocate unallocated variable '%s'\00", align 1
+@52 = private unnamed_addr constant [2 x i8] c"l\00", align 1
+@53 = private unnamed_addr constant [55 x i8] c"tests/../integration_tests/automatic_allocation_02.f90\00", align 1
+@54 = private unnamed_addr constant [51 x i8] c"Cannot deallocate '%s' because it is not allocated\00", align 1
+@55 = private unnamed_addr constant [51 x i8] c"Attempting to deallocate unallocated variable '%s'\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -476,134 +492,270 @@ ifcont37:                                         ; preds = %else36, %then35
   %191 = load i32*, i32** %i, align 8
   %192 = ptrtoint i32* %191 to i64
   %193 = icmp ne i64 %192, 0
-  br i1 %193, label %then38, label %else39
+  %194 = xor i1 %193, true
+  br i1 %194, label %then38, label %ifcont39
 
 then38:                                           ; preds = %ifcont37
-  %194 = alloca i8*, align 8
-  %195 = bitcast i32* %191 to i8*
-  store i8* %195, i8** %194, align 8
-  %196 = load i8*, i8** %194, align 8
-  call void @_lfortran_free(i8* %196)
+  %195 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %196 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %197 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %196, i32 0, i32 0
+  %198 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @41, i32 0, i32 0), i8** %198, align 8
+  %199 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 1
+  store i32 19, i32* %199, align 4
+  %200 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 2
+  store i32 16, i32* %200, align 4
+  %201 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 3
+  store i32 19, i32* %201, align 4
+  %202 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 4
+  store i32 16, i32* %202, align 4
+  %203 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
+  %204 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %195, i32 0, i32 0
+  %205 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %196, i32 0, i32 0
+  %206 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 2
+  %207 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 0
+  store i1 true, i1* %207, align 1
+  %208 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 1
+  store i8* %203, i8** %208, align 8
+  store { i8*, i32, i32, i32, i32 }* %205, { i8*, i32, i32, i32, i32 }** %206, align 8
+  %209 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 3
+  store i32 1, i32* %209, align 4
+  %210 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %195, i32 0, i32 0
+  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %210, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont39:                                         ; preds = %ifcont37
+  br i1 %193, label %then40, label %else41
+
+then40:                                           ; preds = %ifcont39
+  %211 = alloca i8*, align 8
+  %212 = bitcast i32* %191 to i8*
+  store i8* %212, i8** %211, align 8
+  %213 = load i8*, i8** %211, align 8
+  call void @_lfortran_free(i8* %213)
   store i32* null, i32** %i, align 8
-  br label %ifcont40
+  br label %ifcont42
 
-else39:                                           ; preds = %ifcont37
-  br label %ifcont40
+else41:                                           ; preds = %ifcont39
+  br label %ifcont42
 
-ifcont40:                                         ; preds = %else39, %then38
-  %197 = load float*, float** %r, align 8
-  %198 = ptrtoint float* %197 to i64
-  %199 = icmp ne i64 %198, 0
-  br i1 %199, label %then41, label %else42
+ifcont42:                                         ; preds = %else41, %then40
+  %214 = load float*, float** %r, align 8
+  %215 = ptrtoint float* %214 to i64
+  %216 = icmp ne i64 %215, 0
+  %217 = xor i1 %216, true
+  br i1 %217, label %then43, label %ifcont44
 
-then41:                                           ; preds = %ifcont40
-  %200 = alloca i8*, align 8
-  %201 = bitcast float* %197 to i8*
-  store i8* %201, i8** %200, align 8
-  %202 = load i8*, i8** %200, align 8
-  call void @_lfortran_free(i8* %202)
+then43:                                           ; preds = %ifcont42
+  %218 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %219 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %220 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %219, i32 0, i32 0
+  %221 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @45, i32 0, i32 0), i8** %221, align 8
+  %222 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 1
+  store i32 20, i32* %222, align 4
+  %223 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 2
+  store i32 16, i32* %223, align 4
+  %224 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 3
+  store i32 20, i32* %224, align 4
+  %225 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 4
+  store i32 16, i32* %225, align 4
+  %226 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @46, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
+  %227 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %218, i32 0, i32 0
+  %228 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %219, i32 0, i32 0
+  %229 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 2
+  %230 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 0
+  store i1 true, i1* %230, align 1
+  %231 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 1
+  store i8* %226, i8** %231, align 8
+  store { i8*, i32, i32, i32, i32 }* %228, { i8*, i32, i32, i32, i32 }** %229, align 8
+  %232 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 3
+  store i32 1, i32* %232, align 4
+  %233 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %218, i32 0, i32 0
+  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %233, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont44:                                         ; preds = %ifcont42
+  br i1 %216, label %then45, label %else46
+
+then45:                                           ; preds = %ifcont44
+  %234 = alloca i8*, align 8
+  %235 = bitcast float* %214 to i8*
+  store i8* %235, i8** %234, align 8
+  %236 = load i8*, i8** %234, align 8
+  call void @_lfortran_free(i8* %236)
   store float* null, float** %r, align 8
-  br label %ifcont43
+  br label %ifcont47
 
-else42:                                           ; preds = %ifcont40
-  br label %ifcont43
+else46:                                           ; preds = %ifcont44
+  br label %ifcont47
 
-ifcont43:                                         ; preds = %else42, %then41
-  %203 = load %complex_4*, %complex_4** %c, align 8
-  %204 = ptrtoint %complex_4* %203 to i64
-  %205 = icmp ne i64 %204, 0
-  br i1 %205, label %then44, label %else45
+ifcont47:                                         ; preds = %else46, %then45
+  %237 = load %complex_4*, %complex_4** %c, align 8
+  %238 = ptrtoint %complex_4* %237 to i64
+  %239 = icmp ne i64 %238, 0
+  %240 = xor i1 %239, true
+  br i1 %240, label %then48, label %ifcont49
 
-then44:                                           ; preds = %ifcont43
-  %206 = alloca i8*, align 8
-  %207 = bitcast %complex_4* %203 to i8*
-  store i8* %207, i8** %206, align 8
-  %208 = load i8*, i8** %206, align 8
-  call void @_lfortran_free(i8* %208)
+then48:                                           ; preds = %ifcont47
+  %241 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %242 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %243 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %242, i32 0, i32 0
+  %244 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @49, i32 0, i32 0), i8** %244, align 8
+  %245 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 1
+  store i32 21, i32* %245, align 4
+  %246 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 2
+  store i32 16, i32* %246, align 4
+  %247 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 3
+  store i32 21, i32* %247, align 4
+  %248 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 4
+  store i32 16, i32* %248, align 4
+  %249 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  %250 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %241, i32 0, i32 0
+  %251 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %242, i32 0, i32 0
+  %252 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 2
+  %253 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 0
+  store i1 true, i1* %253, align 1
+  %254 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 1
+  store i8* %249, i8** %254, align 8
+  store { i8*, i32, i32, i32, i32 }* %251, { i8*, i32, i32, i32, i32 }** %252, align 8
+  %255 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 3
+  store i32 1, i32* %255, align 4
+  %256 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %241, i32 0, i32 0
+  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %256, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont49:                                         ; preds = %ifcont47
+  br i1 %239, label %then50, label %else51
+
+then50:                                           ; preds = %ifcont49
+  %257 = alloca i8*, align 8
+  %258 = bitcast %complex_4* %237 to i8*
+  store i8* %258, i8** %257, align 8
+  %259 = load i8*, i8** %257, align 8
+  call void @_lfortran_free(i8* %259)
   store %complex_4* null, %complex_4** %c, align 8
-  br label %ifcont46
+  br label %ifcont52
 
-else45:                                           ; preds = %ifcont43
-  br label %ifcont46
+else51:                                           ; preds = %ifcont49
+  br label %ifcont52
 
-ifcont46:                                         ; preds = %else45, %then44
-  %209 = load i1*, i1** %l, align 8
-  %210 = ptrtoint i1* %209 to i64
-  %211 = icmp ne i64 %210, 0
-  br i1 %211, label %then47, label %else48
+ifcont52:                                         ; preds = %else51, %then50
+  %260 = load i1*, i1** %l, align 8
+  %261 = ptrtoint i1* %260 to i64
+  %262 = icmp ne i64 %261, 0
+  %263 = xor i1 %262, true
+  br i1 %263, label %then53, label %ifcont54
 
-then47:                                           ; preds = %ifcont46
-  %212 = alloca i8*, align 8
-  %213 = bitcast i1* %209 to i8*
-  store i8* %213, i8** %212, align 8
-  %214 = load i8*, i8** %212, align 8
-  call void @_lfortran_free(i8* %214)
+then53:                                           ; preds = %ifcont52
+  %264 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %265 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %266 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %265, i32 0, i32 0
+  %267 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @53, i32 0, i32 0), i8** %267, align 8
+  %268 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 1
+  store i32 22, i32* %268, align 4
+  %269 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 2
+  store i32 16, i32* %269, align 4
+  %270 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 3
+  store i32 22, i32* %270, align 4
+  %271 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 4
+  store i32 16, i32* %271, align 4
+  %272 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @54, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
+  %273 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %264, i32 0, i32 0
+  %274 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %265, i32 0, i32 0
+  %275 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 2
+  %276 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 0
+  store i1 true, i1* %276, align 1
+  %277 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 1
+  store i8* %272, i8** %277, align 8
+  store { i8*, i32, i32, i32, i32 }* %274, { i8*, i32, i32, i32, i32 }** %275, align 8
+  %278 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 3
+  store i32 1, i32* %278, align 4
+  %279 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %264, i32 0, i32 0
+  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %279, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont54:                                         ; preds = %ifcont52
+  br i1 %262, label %then55, label %else56
+
+then55:                                           ; preds = %ifcont54
+  %280 = alloca i8*, align 8
+  %281 = bitcast i1* %260 to i8*
+  store i8* %281, i8** %280, align 8
+  %282 = load i8*, i8** %280, align 8
+  call void @_lfortran_free(i8* %282)
   store i1* null, i1** %l, align 8
-  br label %ifcont49
+  br label %ifcont57
 
-else48:                                           ; preds = %ifcont46
-  br label %ifcont49
+else56:                                           ; preds = %ifcont54
+  br label %ifcont57
 
-ifcont49:                                         ; preds = %else48, %then47
+ifcont57:                                         ; preds = %else56, %then55
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont49
+return:                                           ; preds = %ifcont57
   br label %FINALIZE_SYMTABLE_automatic_allocation_02
 
 FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
   br label %Finalize_Variable_c
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
-  %215 = load %complex_4*, %complex_4** %c, align 8
-  %216 = icmp eq %complex_4* %215, null
-  br i1 %216, label %free_done, label %free_nonnull
+  %283 = load %complex_4*, %complex_4** %c, align 8
+  %284 = icmp eq %complex_4* %283, null
+  br i1 %284, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_c
-  %217 = bitcast %complex_4* %215 to i8*
-  call void @_lfortran_free(i8* %217)
+  %285 = bitcast %complex_4* %283 to i8*
+  call void @_lfortran_free(i8* %285)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_c
   br label %Finalize_Variable_i
 
 Finalize_Variable_i:                              ; preds = %free_done
-  %218 = load i32*, i32** %i, align 8
-  %219 = icmp eq i32* %218, null
-  br i1 %219, label %free_done51, label %free_nonnull50
+  %286 = load i32*, i32** %i, align 8
+  %287 = icmp eq i32* %286, null
+  br i1 %287, label %free_done59, label %free_nonnull58
 
-free_nonnull50:                                   ; preds = %Finalize_Variable_i
-  %220 = bitcast i32* %218 to i8*
-  call void @_lfortran_free(i8* %220)
-  br label %free_done51
+free_nonnull58:                                   ; preds = %Finalize_Variable_i
+  %288 = bitcast i32* %286 to i8*
+  call void @_lfortran_free(i8* %288)
+  br label %free_done59
 
-free_done51:                                      ; preds = %free_nonnull50, %Finalize_Variable_i
+free_done59:                                      ; preds = %free_nonnull58, %Finalize_Variable_i
   br label %Finalize_Variable_l
 
-Finalize_Variable_l:                              ; preds = %free_done51
-  %221 = load i1*, i1** %l, align 8
-  %222 = icmp eq i1* %221, null
-  br i1 %222, label %free_done53, label %free_nonnull52
+Finalize_Variable_l:                              ; preds = %free_done59
+  %289 = load i1*, i1** %l, align 8
+  %290 = icmp eq i1* %289, null
+  br i1 %290, label %free_done61, label %free_nonnull60
 
-free_nonnull52:                                   ; preds = %Finalize_Variable_l
-  %223 = bitcast i1* %221 to i8*
-  call void @_lfortran_free(i8* %223)
-  br label %free_done53
+free_nonnull60:                                   ; preds = %Finalize_Variable_l
+  %291 = bitcast i1* %289 to i8*
+  call void @_lfortran_free(i8* %291)
+  br label %free_done61
 
-free_done53:                                      ; preds = %free_nonnull52, %Finalize_Variable_l
+free_done61:                                      ; preds = %free_nonnull60, %Finalize_Variable_l
   br label %Finalize_Variable_r
 
-Finalize_Variable_r:                              ; preds = %free_done53
-  %224 = load float*, float** %r, align 8
-  %225 = icmp eq float* %224, null
-  br i1 %225, label %free_done55, label %free_nonnull54
+Finalize_Variable_r:                              ; preds = %free_done61
+  %292 = load float*, float** %r, align 8
+  %293 = icmp eq float* %292, null
+  br i1 %293, label %free_done63, label %free_nonnull62
 
-free_nonnull54:                                   ; preds = %Finalize_Variable_r
-  %226 = bitcast float* %224 to i8*
-  call void @_lfortran_free(i8* %226)
-  br label %free_done55
+free_nonnull62:                                   ; preds = %Finalize_Variable_r
+  %294 = bitcast float* %292 to i8*
+  call void @_lfortran_free(i8* %294)
+  br label %free_done63
 
-free_done55:                                      ; preds = %free_nonnull54, %Finalize_Variable_r
+free_done63:                                      ; preds = %free_nonnull62, %Finalize_Variable_r
   ret i32 0
 }
 

@@ -373,7 +373,7 @@ public:
                 Vec<ASR::expr_t*> dealloc_args;
                 dealloc_args.reserve(al, 1);
                 dealloc_args.push_back(al, var_expr);
-                ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                     al, loc, dealloc_args.p, dealloc_args.n));
 
                 // Create If statement: if (allocated(arg)) deallocate(arg)
@@ -480,7 +480,7 @@ public:
                             Vec<ASR::expr_t*> dealloc_args;
                             dealloc_args.reserve(al, 1);
                             dealloc_args.push_back(al, member_expr);
-                            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                                 al, loc, dealloc_args.p, dealloc_args.n));
 
                             // Create If statement: if (allocated(arg%member)) deallocate(arg%member)
