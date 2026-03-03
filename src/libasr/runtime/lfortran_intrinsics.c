@@ -5185,7 +5185,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -5315,7 +5316,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;
