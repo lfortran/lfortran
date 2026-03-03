@@ -124,6 +124,18 @@ public:
                 child = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
             } else if (ASR::is_a<ASR::Block_t>(*sym)) {
                 child = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+                child = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Enum_t>(*sym)) {
+                child = ASR::down_cast<ASR::Enum_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Requirement_t>(*sym)) {
+                child = ASR::down_cast<ASR::Requirement_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                child = ASR::down_cast<ASR::Template_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                child = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                child = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
             }
             if (child) find_symbol_in_tree(child, name, results);
         }
