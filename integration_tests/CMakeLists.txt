@@ -1499,6 +1499,7 @@ RUN(NAME intrinsics_419 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxval/
 RUN(NAME intrinsics_420 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble/float with array constructor
 RUN(NAME intrinsics_421 LABELS gfortran llvm) # execute_command_line cmdstat/cmdmsg
 RUN(NAME intrinsics_422 LABELS gfortran llvm fortran) # this_image
+RUN(NAME intrinsics_423 LABELS gfortran llvm fortran) # num_images
 
 RUN(NAME intrinsics_426 LABELS gfortran llvm) # count(mask, dim) with variable dim
 
