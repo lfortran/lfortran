@@ -907,6 +907,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                 }
 
+                ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
+                bool dt_implicitPass = (x.m_dt != nullptr) && (orig_func->n_args > x.n_args);
+
                 if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end()) {
                     ASR::symbol_t* new_x_name = nullptr;
                     if (is_external && (v.proc2newproc.find(x.m_name) != v.proc2newproc.end())) {
@@ -953,16 +956,20 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, call_var->base.base.loc, new_type));
                         }
                         call_var->m_type = new_type;
+                        // Create ExternalSymbol for structInstanceMember if needed
+                        if (ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(new_x_name))) {
+                            new_x_name = ASRUtils::import_struct_instance_member(v.al, new_x_name, current_scope);
+                        }
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, dt_implicitPass);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
                         return;
                     }
                 } else if ( is_present ) {
-                    Vec<ASR::call_arg_t> new_args = construct_new_args(original_subrout_sym, x.n_args, x.m_args, present_indices);
+                    Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, present_indices, dt_implicitPass);
                     xx.m_args = new_args.p;
                     xx.n_args = new_args.size();
                     return;
