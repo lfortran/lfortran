@@ -8632,14 +8632,11 @@ uint32_t get_file_size(int64_t fp) {
 }
 
 /*
- * `lines_dat.txt` file must be created before calling this function,
- * The file can be created using the command:
- *     ./src/bin/dat_convert.py lines.dat
- * This function fills in the `addresses` and `line_numbers`
- * from the `lines_dat.txt` file.
+ * Fills in the `addresses` and `line_numbers` from the packed binary
+ * debug-map file (`*_lines.dat`), where each entry is:
+ *     (address:uint64, line:uint64, file_id:uint64)
  */
-void get_local_info_dwarfdump(struct Stacktrace *d) {
-    // TODO: Read the contents of lines.dat from here itself.
+void get_local_info_debug_map(struct Stacktrace *d) {
     d->stack_size = 0;
     // Use the binary executable path instead of source_filename to avoid
     // Ninja preprocessed filename mismatches (e.g. *.f90-pp.f90).
@@ -8661,50 +8658,27 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     const char *dot = strrchr(base, '.');
     size_t stem_len = dot ? (size_t)(dot - exe_path) : strlen(exe_path);
     char filename[4096];
-    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat.txt",
+    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat",
                  (int)stem_len, exe_path) >= (int)sizeof(filename)) {
         return;
     }
-    int64_t fd = _lpython_open(filename, "r");
-    if (fd < 0) {
-        return;
-    }
-    uint32_t size = get_file_size(fd);
-    if (size == 0) {
-        _lpython_close(fd);
-        return;
-    }
-    char *file_contents = _lpython_read(fd, size);
-    _lpython_close(fd);
-    if (file_contents == NULL) {
+
+    FILE *fp = fopen(filename, "rb");
+    if (fp == NULL) {
         return;
     }
 
-    char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
-    bool address = true;
-    uint32_t j = 0;
-    for (uint32_t i = 0; i < size; i++) {
-        if (file_contents[i] == '\n') {
-            memset(s, '\0', sizeof(s));
-            j = 0;
-            d->stack_size++;
-            continue;
-        } else if (file_contents[i] == ' ') {
-            s[j] = '\0';
-            j = 0;
-            if (address) {
-                d->addresses[d->stack_size] = strtol(s, NULL, 10);
-                address = false;
-            } else {
-                d->line_numbers[d->stack_size] = strtol(s, NULL, 10);
-                address = true;
-            }
-            memset(s, '\0', sizeof(s));
+    uint64_t entry[3];
+    while (d->stack_size < LCOMPILERS_MAX_STACKTRACE_LENGTH &&
+            fread(entry, sizeof(uint64_t), 3, fp) == 3) {
+        if (entry[1] == 0) {
             continue;
         }
-        s[j++] = file_contents[i];
+        d->addresses[d->stack_size] = entry[0];
+        d->line_numbers[d->stack_size] = entry[1];
+        d->stack_size++;
     }
-    free(file_contents);
+    fclose(fp);
 }
 
 char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len) {
@@ -8739,7 +8713,7 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
 static inline uint64_t bisection(const uint64_t vec[],
         uint64_t size, uint64_t i) {
     if (i < vec[0]) return 0;
-    if (i >= vec[size-1]) return size;
+    if (i >= vec[size-1]) return size-1;
     uint64_t i1 = 0, i2 = size-1;
     while (i1 < i2-1) {
         uint64_t imid = (i1+i2)/2;
@@ -8779,7 +8753,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     source_filename = filename;
     struct Stacktrace d = get_stacktrace_addresses();
     get_local_address(&d);
-    get_local_info_dwarfdump(&d);
+    get_local_info_debug_map(&d);
     if (d.stack_size == 0) {
         print_stacktrace_raw_addresses(&d, use_colors);
         return;
