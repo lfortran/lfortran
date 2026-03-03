@@ -407,6 +407,13 @@ public:
                 } else {
                     es->m_access = dflt_access;
                 }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    co->m_access = assgnd_access[item.first];
+                } else {
+                    co->m_access = dflt_access;
+                }
             }
         }
         for (size_t i=0; i<x.n_contains; i++) {

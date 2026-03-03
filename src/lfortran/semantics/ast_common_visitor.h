@@ -4406,6 +4406,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrIntrinsicOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrIntrinsicOperator_t>(s.m_spec);
+                                    std::string op_sym_name = intrinsic2str[op_attr->m_op];
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
                                     // Assignment Overloading Encountered
                                     if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
@@ -4414,6 +4423,12 @@ public:
                                     } else {
                                     assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
                                     }
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access["~assign"] = access;
                                 } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
                                     //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
                                     // Custom Operator Overloading Encountered
@@ -4423,6 +4438,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrDefinedOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec);
+                                    std::string op_sym_name = "~~" + to_lower(std::string(op_attr->m_op_name));
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute type not implemented yet.",
