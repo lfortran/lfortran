@@ -394,6 +394,34 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
+    void visit_StringSection(const ASR::StringSection_t &x) {
+        this->visit_expr(*x.m_arg);
+        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        std::string str(str_val);
+        int start = 1, end = (int)str.size();
+        if (x.m_start) {
+            this->visit_expr(*x.m_start);
+            start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
+        if (x.m_end) {
+            this->visit_expr(*x.m_end);
+            end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
+        std::string result = str.substr(start - 1, end - start + 1);
+        value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
+            s2c(al, result), x.m_type));
+    }
+
+    void visit_StringItem(const ASR::StringItem_t &x) {
+        this->visit_expr(*x.m_arg);
+        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        this->visit_expr(*x.m_idx);
+        int idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        std::string result(1, str_val[idx - 1]);
+        value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
+            s2c(al, result), x.m_type));
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         int left_val, right_val;
         this->visit_expr(*x.m_left);
@@ -477,7 +505,8 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
             this->visit_expr(*x.m_args[i]);
             // TODO: handle multiple types
-            if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type) || ASRUtils::is_logical(*arg_type)) {
+            if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type)
+                    || ASRUtils::is_logical(*arg_type) || ASRUtils::is_character(*arg_type)) {
                 args.push_back(al, value);
             } else {
                 diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
