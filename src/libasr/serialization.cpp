@@ -97,15 +97,15 @@ public:
 #endif
             DeserializationBaseVisitor(al, load_symtab_id, offset) {}
 
-    SymbolTable *external_symtab_root = nullptr;
-    static void find_symbol_in_tree(SymbolTable *symtab, const std::string &name,
+    const SymbolTable *external_symtab_root = nullptr;
+    static void find_symbol_in_tree(const SymbolTable *symtab, const std::string &name,
             std::vector<ASR::symbol_t*> &results) {
         if (!symtab) return;
         ASR::symbol_t *found = symtab->get_symbol(name);
         if (found) results.push_back(found);
         for (auto &pair : symtab->get_scope()) {
             ASR::symbol_t *sym = pair.second;
-            SymbolTable *child = nullptr;
+            const SymbolTable *child = nullptr;
             if (ASR::is_a<ASR::Module_t>(*sym)) {
                 child = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
             } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
