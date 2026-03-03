@@ -319,6 +319,53 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
 
+            // When a module has submodules, the Interface declaration
+            // (empty body) can be transformed but the Implementation
+            // (in the submodule) may fail (e.g. body contains reshape).
+            // Remove such Interface entries so callers are not redirected
+            // to a function that has no definition.
+            std::vector<ASR::symbol_t*> iface_to_remove;
+            for (auto& kv : proc2newproc) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(kv.first);
+                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
+                if (ftype->m_deftype != ASR::deftypeType::Interface) continue;
+                SymbolTable* parent_symtab = func->m_symtab->parent;
+                if (!parent_symtab || !parent_symtab->asr_owner) continue;
+                ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                    parent_symtab->asr_owner);
+                if (!ASR::is_a<ASR::Module_t>(*parent_sym)) continue;
+                ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(parent_sym);
+                if (!mod->m_has_submodules) continue;
+                std::string func_name = std::string(func->m_name);
+                bool impl_processed = false;
+                for (auto& top_item : x.m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Module_t>(*top_item.second)) continue;
+                    ASR::Module_t* sub_mod = ASR::down_cast<ASR::Module_t>(
+                        top_item.second);
+                    if (!sub_mod->m_parent_module) continue;
+                    if (std::string(sub_mod->m_parent_module) !=
+                            std::string(mod->m_name)) continue;
+                    ASR::symbol_t* impl_sym = sub_mod->m_symtab->resolve_symbol(
+                        func_name);
+                    if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym) &&
+                            proc2newproc.find(impl_sym) != proc2newproc.end()) {
+                        impl_processed = true;
+                        break;
+                    }
+                }
+                if (!impl_processed) {
+                    iface_to_remove.push_back(kv.first);
+                }
+            }
+            for (ASR::symbol_t* sym : iface_to_remove) {
+                ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(
+                    proc2newproc[sym].first);
+                SymbolTable* scope = new_func->m_symtab->parent;
+                scope->erase_symbol(std::string(new_func->m_name));
+                newprocs.erase(proc2newproc[sym].first);
+                proc2newproc.erase(sym);
+            }
+
             // Visit the program
             for (auto &a : x.m_symtab->get_scope()) {
                 if( ASR::is_a<ASR::Program_t>(*a.second) ) {
