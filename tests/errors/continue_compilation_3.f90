@@ -185,7 +185,7 @@ program continue_compilation_3
 
     !and_okay_int_int
     print *, 5 .and. 6
-    
+
     !adding a few more cases
     print *, 5 .or. 6
     print *, 5 .eqv. 6
