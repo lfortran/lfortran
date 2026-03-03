@@ -36,6 +36,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Abort,
     System,
     Sleep,
+    CoSum,
     // ...
 };
 
@@ -1686,6 +1687,58 @@ namespace Sleep {
     }
 
 } // namespace Sleep
+
+namespace CoSum {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 4,
+            "Unexpected number of args, co_sum takes 1 to 4 arguments, found " + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_complex(*ASRUtils::expr_type(x.m_args[0])),
+            "First argument must be of integer, real, or complex type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoSum(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoSum),
+            m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_CoSum(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // co_sum is a no-op in single-image (non-coarray) mode
+        const std::string new_name = "_lcompilers_co_sum_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("a", arg_types[0], InOut);
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace CoSum
 
 } // namespace LCompilers::ASRUtils
 
