@@ -1350,6 +1350,7 @@ public:
                         diag.add(diag::Diagnostic(
                             "Procedure '" + sym_name + "' is already defined as an interface body",
                             diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
                         throw SemanticAbort();
                     }
                     // Previous declaration will be shadowed
@@ -2025,6 +2026,7 @@ public:
                         diag.add(diag::Diagnostic(
                             "Procedure '" + sym_name + "' is already defined as an interface body",
                             diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
                         throw SemanticAbort();
                     }
                     parent_scope->erase_symbol(sym_name);
