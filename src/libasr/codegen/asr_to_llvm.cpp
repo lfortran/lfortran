@@ -574,25 +574,39 @@ public:
     }
 
     inline bool verify_dimensions_t(ASR::dimension_t* m_dims, int n_dims) {
-        if( n_dims <= 0 ) {
-            return false;
-        }
-        bool is_ok = true;
-        for( int r = 0; r < n_dims; r++ ) {
-            if( m_dims[r].m_length == nullptr ) {
-                is_ok = false;
-                break;
-            }
-        }
-        return is_ok;
-    }
+       if( n_dims <= 0 ) {
+           return false;
+       }
+       bool is_ok = true;
+       for( int r = 0; r < n_dims; r++ ) {
+           if( m_dims[r].m_length == nullptr ) {
+               is_ok = false;
+               break;
+           }
+       }
+       return is_ok;
+   }
 
-    void fill_array_details(llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type,
-                            ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
-                            bool reserve_data_memory=true) {
-        std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2;
+   inline bool is_assumed_size_array(ASR::dimension_t* m_dims, int n_dims) {
+       // Assumed-size arrays have dimension(*) with null start and length
+       for( int r = 0; r < n_dims; r++ ) {
+           if( m_dims[r].m_start == nullptr && m_dims[r].m_length == nullptr ) {
+               return true;
+           }
+       }
+       return false;
+   }
+
+   void fill_array_details(llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type,
+                           ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
+                           bool reserve_data_memory=true) {
+       // Skip for assumed-size arrays - they don't have descriptor initialization
+       if( is_assumed_size_array(m_dims, n_dims) ) {
+           return;
+       }
+       std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
+       int64_t ptr_loads_copy = ptr_loads;
+       ptr_loads = 2;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
             LCOMPILERS_ASSERT(m_dim.m_start != nullptr);
