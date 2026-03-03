@@ -1719,9 +1719,19 @@ namespace CoSum {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         // co_sum is a no-op in single-image (non-coarray) mode
-        const std::string new_name = "_lcompilers_co_sum_";
+        const std::string new_name = "_lcompilers_co_sum_"
+            + std::to_string(arg_types.n);
         declare_basic_variables(new_name);
         fill_func_arg_sub("a", arg_types[0], InOut);
+        if (arg_types.n >= 2) {
+            fill_func_arg_sub("result_image", arg_types[1], In);
+        }
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
 
         ASR::symbol_t *fn_sym = make_ASR_Function_t(
             s2c(al, fn_name),
