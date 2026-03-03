@@ -1,4 +1,4 @@
-program t
+program read_49
   implicit none
 
   character(len=10) :: s
@@ -20,4 +20,4 @@ program t
 
   print *, "PASS"
 
-end program
+end program read_49
