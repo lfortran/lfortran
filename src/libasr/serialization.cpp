@@ -181,24 +181,23 @@ public:
                 std::vector<ASR::symbol_t*> candidates;
                 find_symbol_in_tree(external_symtab_root, symbol_name, candidates);
                 ASR::symbolType expected_ty = static_cast<ASR::symbolType>(symbol_type);
-                ASR::symbol_t *unique_candidate = nullptr;
+                std::vector<ASR::symbol_t*> matching_candidates;
                 for (ASR::symbol_t *s_candidate : candidates) {
-                    if (s_candidate->type != expected_ty) {
-                        continue;
-                    }
-                    if (unique_candidate == nullptr) {
-                        unique_candidate = s_candidate;
-                    } else {
-                        throw LCompilersException(
-                            "Deserialization failed: symbol '" + symbol_name
-                            + "' is ambiguous — " + std::to_string(candidates.size())
-                            + " symbols with the same name and type exist in the "
-                            + "external symbol table. Cannot resolve unambiguously.");
+                    if (s_candidate->type == expected_ty) {
+                        matching_candidates.push_back(s_candidate);
                     }
                 }
-                if (unique_candidate != nullptr) {
-                    return unique_candidate;
+                if (matching_candidates.size() == 1) {
+                    return matching_candidates[0];
+                } else if (matching_candidates.size() > 1) {
+                    throw LCompilersException(
+                        "Deserialization failed: symbol '" + symbol_name
+                        + "' is ambiguous — " + std::to_string(matching_candidates.size())
+                        + " symbols with the same name and type exist in the "
+                        + "external symbol table. Cannot resolve unambiguously.");
                 }
+                // If no matching candidates are found, fall through to the
+                // existing error handling below.
             }
             throw LCompilersException(
                 "Deserialization failed: symbol '" + symbol_name
