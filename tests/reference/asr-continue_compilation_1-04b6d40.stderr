@@ -327,6 +327,18 @@ semantic error: Intent attribute can only be applied to procedure arguments
 615 |     integer, intent(in) :: in_intent
     |              ^^^^^^^^^^ 
 
+semantic error: Parameterized derived type 'container' parameter 'ik' has no default value and must be specified
+   --> tests/errors/continue_compilation_1.f90:626:5
+    |
+626 |     type(container(4)) :: obj1
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Parameterized derived type 'container' parameter 'rk' has no default value and must be specified
+   --> tests/errors/continue_compilation_1.f90:627:5
+    |
+627 |     type(container) :: obj2
+    |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
     |

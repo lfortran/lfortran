@@ -304,6 +304,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_arg.loc = this->result_var_->base.loc;
         new_arg.m_value = this->result_var_;
         new_args.push_back(al, new_arg);
+
+
         ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
             new_args.size(), x->m_dt, nullptr, false));

@@ -3074,6 +3074,29 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         }
 };
 
+class ExprReferencesSymbolVisitor:
+    public ASR::BaseWalkVisitor<ExprReferencesSymbolVisitor> {
+public:
+    ASR::symbol_t* target_sym;
+    bool found;
+
+    ExprReferencesSymbolVisitor(ASR::symbol_t* sym) :
+        target_sym(sym), found(false) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        if (x.m_v == target_sym) {
+            found = true;
+        }
+    }
+};
+
+static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym) {
+    if (!expr) return false;
+    ExprReferencesSymbolVisitor visitor(sym);
+    visitor.visit_expr(*expr);
+    return visitor.found;
+}
+
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
@@ -4923,7 +4946,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, nullptr, 0,
-            nullptr, nullptr);
+            nullptr, nullptr, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -5603,7 +5626,8 @@ class SymbolDuplicator {
             struct_type_t->m_member_functions, struct_type_t->n_member_functions, struct_type_t->m_abi,
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
-            struct_type_t->m_parent));
+            struct_type_t->m_parent,
+            struct_type_t->m_kind_params, struct_type_t->n_kind_params));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(

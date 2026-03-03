@@ -189,20 +189,44 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 const_elements += 1;
             }
         }
-        // Count scalar elements inside implied-do so mixed forms compute correctly per iteration.
-        if( const_elements > 0 ) {
-            if( implied_doloop_size_ == nullptr ) {
-                implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, kind, loc);
-            } else {
-                implied_doloop_size_ = builder.Add(
+
+        ASR::symbol_t* loop_var_sym = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
+            loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
+        }
+        bool inner_depends_on_var = (loop_var_sym != nullptr &&
+            implied_doloop_size_ != nullptr && d == nullptr &&
+            ASRUtils::expr_references_symbol(implied_doloop_size_, loop_var_sym));
+
+        if (inner_depends_on_var) {
+            ASR::expr_t* two = make_ConstantWithKind(
+                make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
+            ASR::expr_t* arith_sum = builder.Div(
+                builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
+            if (const_elements > 0) {
+                ASR::expr_t* const_total = builder.Mul(
                     make_ConstantWithKind(make_IntegerConstant_t,
                         make_Integer_t, const_elements, kind, loc),
-                    implied_doloop_size_);
+                    implied_doloop_size);
+                implied_doloop_size = builder.Add(arith_sum, const_total);
+            } else {
+                implied_doloop_size = arith_sum;
             }
-        }
-        if( implied_doloop_size_ ) {
-            implied_doloop_size = builder.Mul(implied_doloop_size_, implied_doloop_size);
+        } else {
+            if( const_elements > 0 ) {
+                if( implied_doloop_size_ == nullptr ) {
+                    implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
+                        make_Integer_t, const_elements, kind, loc);
+                } else {
+                    implied_doloop_size_ = builder.Add(
+                        make_ConstantWithKind(make_IntegerConstant_t,
+                            make_Integer_t, const_elements, kind, loc),
+                        implied_doloop_size_);
+                }
+            }
+            if( implied_doloop_size_ ) {
+                implied_doloop_size = builder.Mul(implied_doloop_size_, implied_doloop_size);
+            }
         }
         return implied_doloop_size;
     }

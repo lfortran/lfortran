@@ -1596,6 +1596,7 @@ declaration_type_spec
     | KW_TYPE "(" intrinsic_type_spec ")" %dprec 2 { $$ = ATTR_TYPE_ATTR(
         Type, $3, @$); }
     | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
+    | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }

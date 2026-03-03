@@ -2262,6 +2262,111 @@ public:
             current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
             return;
         }
+        ASR::symbol_t* parent_sym = nullptr;
+        if( attr_extend != nullptr ) {
+            std::string parent_sym_name = to_lower(attr_extend->m_name);
+            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+                diag.add(diag::Diagnostic(
+                    parent_sym_name + " is not defined.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            parent_sym = current_scope->get_symbol(parent_sym_name);
+        }
+
+        // Parameterized Derived Type: store as template for later monomorphization
+        if (x.n_namelist > 0) {
+
+            // Build a full PDT template Struct in ASR with kind_params populated.
+            // This allows instantiation from ASR alone (e.g. when loaded from .mod files).
+            SymbolTable *parent_scope_pdt = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope_pdt);
+            data_member_names.reserve(al, 0);
+            final_proc_names.reserve(al, 0);
+            is_derived_type = true;
+
+            // Collect kind/len parameter names and identify which declaration
+            // indices correspond to kind/len params vs regular members.
+            Vec<char*> kind_params;
+            kind_params.reserve(al, x.n_namelist);
+            std::set<size_t> kind_len_decl_indices;
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+                AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+                bool is_kind_attr = false;
+                bool is_len_attr = false;
+                for (size_t j = 0; j < decl.n_attributes; j++) {
+                    if (AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[j])) {
+                        AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(decl.m_attributes[j]);
+                        if (sa->m_attr == AST::simple_attributeType::AttrKind) {
+                            is_kind_attr = true;
+                        } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
+                            is_len_attr = true;
+                        }
+                    }
+                }
+                if (is_kind_attr || is_len_attr) {
+                    kind_len_decl_indices.insert(i);
+                }
+                if (is_kind_attr) {
+                    for (size_t j = 0; j < decl.n_syms; j++) {
+                        kind_params.push_back(al, s2c(al, to_lower(decl.m_syms[j].m_name)));
+                    }
+                }
+            }
+
+            // First pass: process only kind/len parameter declarations
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (kind_len_decl_indices.find(i) != kind_len_decl_indices.end()) {
+                    this->visit_unit_decl2(*x.m_items[i]);
+                }
+            }
+
+            // Assign each kind param a unique index value (as per declaration) for type resolution.
+            // m_symbolic_value keeps the user's explicit default (or nullptr).
+            // m_value gets the index so that member types can be traced back.
+            for (size_t i = 0; i < kind_params.size(); i++) {
+                std::string kp_name = kind_params[i];
+                ASR::symbol_t *kp_sym = current_scope->get_symbol(kp_name);
+                if (kp_sym && ASR::is_a<ASR::Variable_t>(*kp_sym)) {
+                    ASR::Variable_t *kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
+                    // m_symbolic_value already has the user default (or nullptr)
+                    // from visit_unit_decl2.  Now set m_value to a unique index value.
+                    int sentinel = PDT_SENTINEL + i;
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    kp_var->m_value = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, sentinel, int_type));
+                }
+            }
+
+            // Second pass: process remaining (non-kind/len) declarations
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
+                    this->visit_unit_decl2(*x.m_items[i]);
+                }
+            }
+
+            is_derived_type = false;
+
+            tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
+                s2c(al, dt_name), nullptr,
+                nullptr, 0,
+                data_member_names.p, data_member_names.size(),
+                final_proc_names.p, final_proc_names.size(),
+                ASR::abiType::Source, dflt_access, false, is_abstract,
+                nullptr, 0, nullptr, parent_sym,
+                kind_params.p, kind_params.size());
+            ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+            ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
+            ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
+            struct_->m_struct_signature = struct_signature;
+
+            current_scope = parent_scope_pdt;
+            current_scope->add_symbol(dt_name, derived_type_sym);
+            return;
+        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
@@ -2286,18 +2391,6 @@ public:
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
-        }
-        ASR::symbol_t* parent_sym = nullptr;
-        if( attr_extend != nullptr ) {
-            std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( parent_scope->get_symbol(parent_sym_name) == nullptr ) {
-                diag.add(diag::Diagnostic(
-                    parent_sym_name + " is not defined.",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
@@ -2331,7 +2424,8 @@ public:
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
+            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
+            nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);

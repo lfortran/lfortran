@@ -298,6 +298,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             nullptr, 0, nullptr, \
             name2char(name), None)
 
+#define ATTR_TYPE_NAME_KIND(x, name, kind, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            kind.p, kind.size(), nullptr, \
+            name2char(name), None)
+
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \

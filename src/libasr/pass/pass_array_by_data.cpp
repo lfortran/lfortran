@@ -897,10 +897,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 // check if subrout_sym is present as value in proc2newproc
                 bool is_present = false;
                 std::vector<size_t> present_indices;
+                ASR::symbol_t* original_subrout_sym = nullptr;
                 for ( auto it: v.proc2newproc ) {
                     if (it.second.first == subrout_sym) {
                         is_present = true;
                         present_indices = it.second.second;
+                        original_subrout_sym = it.first;
                         break;
                     }
                 }
@@ -938,7 +940,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         return;
                     }
                 } else if ( is_present ) {
-                    Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, present_indices);
+                    Vec<ASR::call_arg_t> new_args = construct_new_args(original_subrout_sym, x.n_args, x.m_args, present_indices);
                     xx.m_args = new_args.p;
                     xx.n_args = new_args.size();
                     return;
