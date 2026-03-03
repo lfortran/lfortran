@@ -11953,8 +11953,7 @@ public:
         }
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
-            *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
-        if(size) size_value = ASRUtils::expr_value(size);
+            *mold_value = ASRUtils::expr_value(mold);
 
         if (source_value && mold_value) {
             std::vector<uint8_t> source_bits;
