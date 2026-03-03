@@ -11953,8 +11953,7 @@ public:
         }
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
-            *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
-        if(size) size_value = ASRUtils::expr_value(size);
+            *mold_value = ASRUtils::expr_value(mold);
 
         if (source_value && mold_value) {
             std::vector<uint8_t> source_bits;
@@ -12029,22 +12028,25 @@ public:
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
             }
 
+            // When the result is an array (size argument provided or array mold),
+            // skip compile-time evaluation and let the backend handle it,
+            // since the compile-time path only produces scalar values.
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+            }
+
             std::size_t target_size = 0;
-            if (size_value) {
-                target_size = ASR::down_cast<ASR::IntegerConstant_t>(size_value)->m_n;
-            } else {
-                if (ASR::is_a<ASR::Integer_t>(*type)) {
-                    target_size = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
-                } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                    target_size = ASR::down_cast<ASR::Real_t>(type)->m_kind;
-                } else if (ASR::is_a<ASR::Complex_t>(*type)) {
-                    target_size = 2 * ASR::down_cast<ASR::Complex_t>(type)->m_kind;
-                } else if (ASR::is_a<ASR::Logical_t>(*type)) {
-                    target_size = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-                } else if (ASR::is_a<ASR::String_t>(*type)) {
-                    int len = -1; ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(type)->m_len, len);
-                    target_size = len;
-                }
+            if (ASR::is_a<ASR::Integer_t>(*type)) {
+                target_size = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+            } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                target_size = ASR::down_cast<ASR::Real_t>(type)->m_kind;
+            } else if (ASR::is_a<ASR::Complex_t>(*type)) {
+                target_size = 2 * ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+            } else if (ASR::is_a<ASR::Logical_t>(*type)) {
+                target_size = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+            } else if (ASR::is_a<ASR::String_t>(*type)) {
+                int len = -1; ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(type)->m_len, len);
+                target_size = len;
             }
             std::vector<uint8_t> result_bits(source_bits.begin(),
                                             source_bits.begin() + std::min(source_bits.size(), target_size));
