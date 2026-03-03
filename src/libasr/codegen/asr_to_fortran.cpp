@@ -1482,6 +1482,12 @@ public:
         src += "\n";
     }
 
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        src = indent;
+        src += "sync all";
+        src += "\n";
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {

@@ -16595,6 +16595,10 @@ public:
         construct_stop(exit_code, "ERROR STOP", x.m_code, x.base.base.loc);
     }
 
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        // No-op: coarray sync all is not yet supported at runtime
+    }
+
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint32_t& m_h, ASR::Variable_t*& orig_arg,

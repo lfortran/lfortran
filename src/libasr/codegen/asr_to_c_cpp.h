@@ -2896,6 +2896,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += indent + "exit(1);\n";
     }
 
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "// SYNC ALL\n";
+    }
+
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &/*x*/) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + " /* FIXME: implied do loop */ ";

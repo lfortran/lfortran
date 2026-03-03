@@ -7851,6 +7851,10 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
+    void visit_SyncAll(const AST::SyncAll_t &x) {
+        tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
+    }
+
     void visit_Nullify(const AST::Nullify_t &x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
