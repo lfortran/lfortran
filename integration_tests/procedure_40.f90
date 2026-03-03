@@ -1,5 +1,5 @@
 ! Test procedure pointer in derived type with optional argument
-module procedure_34_mod
+module procedure_40_mod
     implicit none
 
     abstract interface
@@ -20,10 +20,10 @@ contains
         if (associated(obj%cb)) call obj%cb(1, 2)
     end subroutine call_it
 
-end module procedure_34_mod
+end module procedure_40_mod
 
-program procedure_34
-    use procedure_34_mod
+program procedure_40
+    use procedure_40_mod
     implicit none
     type(t) :: obj
 
@@ -43,4 +43,4 @@ contains
         if (.not. present(y)) error stop
         if (y /= 2) error stop
     end subroutine my_callback
-end program procedure_34
+end program procedure_40
