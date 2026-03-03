@@ -8603,6 +8603,54 @@ public:
                 }
             }
 
+            // Special-case: transfer(non_string_scalar, int_mold, size) lowered as BitCast.
+            // When scalarized into element-wise assignments like seed(i) = BitCast(key(1), ...),
+            // bitcast the source pointer to the target element type and use the index to GEP.
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
+                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)) &&
+                !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
+                ASRUtils::is_array(bc->m_type)) {
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                if (ai->n_args == 1 && ai->m_args[0].m_right) {
+                    // Get the target element pointer
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    visit_expr(*x.m_target);
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* dest_ptr = tmp;
+
+                    // Get the source value and store it in an alloca
+                    this->visit_expr_wrapper(bc->m_source, true);
+                    llvm::Value* source_val = tmp;
+                    llvm::Type* source_llvm_type = source_val->getType();
+                    llvm::Value* source_ptr = builder->CreateAlloca(source_llvm_type, nullptr, "transfer_source");
+                    builder->CreateStore(source_val, source_ptr);
+
+                    // Bitcast source pointer to target element type pointer
+                    ASR::ttype_t* target_elem_type = ASRUtils::expr_type(x.m_target);
+                    llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, target_elem_type, module.get());
+                    llvm::Value* casted_ptr = builder->CreateBitCast(
+                        source_ptr, target_base_type->getPointerTo());
+
+                    // Get the index (1-based) and convert to 0-based
+                    visit_expr_wrapper(ai->m_args[0].m_right, true);
+                    llvm::Value* idx = tmp;
+                    idx = builder->CreateZExtOrTrunc(idx, llvm::Type::getInt64Ty(context));
+                    llvm::Value* zero_based = builder->CreateSub(
+                        idx, llvm::ConstantInt::get(idx->getType(), 1));
+
+                    // GEP into the bitcasted source and load the element
+                    llvm::Value* elem_ptr = builder->CreateGEP(
+                        target_base_type, casted_ptr, zero_based);
+                    llvm::Value* elem_val = llvm_utils->CreateLoad2(target_base_type, elem_ptr);
+
+                    // Store into the target
+                    builder->CreateStore(elem_val, dest_ptr);
+                    return;
+                }
+            }
+
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* target_type_past_alloc =
                 ASRUtils::type_get_past_allocatable_pointer(target_type);
