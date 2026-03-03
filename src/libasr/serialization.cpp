@@ -169,16 +169,24 @@ public:
                 std::vector<ASR::symbol_t*> candidates;
                 find_symbol_in_tree(external_symtab_root, symbol_name, candidates);
                 ASR::symbolType expected_ty = static_cast<ASR::symbolType>(symbol_type);
-                candidates.erase(
-                    std::remove_if(candidates.begin(), candidates.end(),
-                        [expected_ty](ASR::symbol_t *s){ return s->type != expected_ty; }),
-                    candidates.end());
-                if (candidates.size() == 1) return candidates[0];
-                if (candidates.size() >= 2) throw LCompilersException(
-                    "Deserialization failed: symbol '" + symbol_name
-                    + "' is ambiguous — " + std::to_string(candidates.size())
-                    + " symbols with the same name and type exist in the "
-                    + "external symbol table. Cannot resolve unambiguously.");
+                ASR::symbol_t *unique_candidate = nullptr;
+                for (ASR::symbol_t *s_candidate : candidates) {
+                    if (s_candidate->type != expected_ty) {
+                        continue;
+                    }
+                    if (unique_candidate == nullptr) {
+                        unique_candidate = s_candidate;
+                    } else {
+                        throw LCompilersException(
+                            "Deserialization failed: symbol '" + symbol_name
+                            + "' is ambiguous — " + std::to_string(candidates.size())
+                            + " symbols with the same name and type exist in the "
+                            + "external symbol table. Cannot resolve unambiguously.");
+                    }
+                }
+                if (unique_candidate != nullptr) {
+                    return unique_candidate;
+                }
             }
             throw LCompilersException(
                 "Deserialization failed: symbol '" + symbol_name
