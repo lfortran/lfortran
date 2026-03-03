@@ -2262,6 +2262,19 @@ public:
             current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
             return;
         }
+        ASR::symbol_t* parent_sym = nullptr;
+        if( attr_extend != nullptr ) {
+            std::string parent_sym_name = to_lower(attr_extend->m_name);
+            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+                diag.add(diag::Diagnostic(
+                    parent_sym_name + " is not defined.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            parent_sym = current_scope->get_symbol(parent_sym_name);
+        }
+
         // Parameterized Derived Type: store as template for later monomorphization
         if (x.n_namelist > 0) {
 
@@ -2342,8 +2355,8 @@ public:
                 nullptr, 0,
                 data_member_names.p, data_member_names.size(),
                 final_proc_names.p, final_proc_names.size(),
-                ASR::abiType::Source, dflt_access, false, false,
-                nullptr, 0, nullptr, nullptr,
+                ASR::abiType::Source, dflt_access, false, is_abstract,
+                nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -2378,18 +2391,6 @@ public:
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
-        }
-        ASR::symbol_t* parent_sym = nullptr;
-        if( attr_extend != nullptr ) {
-            std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( parent_scope->get_symbol(parent_sym_name) == nullptr ) {
-                diag.add(diag::Diagnostic(
-                    parent_sym_name + " is not defined.",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
