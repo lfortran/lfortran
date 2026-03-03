@@ -64,6 +64,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(CompilerVersion)
         INTRINSIC_NAME_CASE(CommandArgumentCount)
+        INTRINSIC_NAME_CASE(ThisImage)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(OutOfRange)
@@ -306,6 +307,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &CompilerVersion::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -572,6 +575,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &SymbolicGetArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
         };
@@ -634,6 +639,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
                 {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
+                {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
