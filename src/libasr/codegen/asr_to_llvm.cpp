@@ -9367,7 +9367,8 @@ public:
                 value = llvm_utils->CreateLoad2(st_type, value);
             }
         }
-        if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value))) {
+        if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value)) &&
+             ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_target_type))) {
             // For struct members (especially common blocks), treat as allocatable
             // so _lfortran_strcpy allocates memory if the pointer is NULL.
             // Common block structs are initialized with zeroinitializer, so

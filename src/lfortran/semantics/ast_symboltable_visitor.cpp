@@ -397,6 +397,13 @@ public:
                 ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 if (assgnd_access.count(item.first)) {
                     es->m_access = assgnd_access[item.first];
+                } else if (item.first.size() > 1 && item.first[0] == '~'
+                           && assgnd_access.count(item.first.substr(1))) {
+                    // When a name like "merge_config" is made public,
+                    // also make the associated generic interface
+                    // "~merge_config" public so that constructor
+                    // overloads remain accessible.
+                    es->m_access = assgnd_access[item.first.substr(1)];
                 } else {
                     es->m_access = dflt_access;
                 }
