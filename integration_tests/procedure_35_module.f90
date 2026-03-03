@@ -1,4 +1,4 @@
-module procedure_34_module
+module procedure_35_module
 
    type :: MyType
       procedure(pintfc), pointer, nopass :: ptr => null()
@@ -19,4 +19,4 @@ contains
       class(MyType), intent(inout) :: self
    end subroutine method
    
-end module procedure_34_module
+end module procedure_35_module
