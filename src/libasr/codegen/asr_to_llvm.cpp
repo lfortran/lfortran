@@ -4896,7 +4896,7 @@ public:
         llvm::Type* value_type;
 
         value_type = ASRUtils::is_array(x.m_type)?
-            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr,
+            llvm_utils->get_el_type(x.m_var_expr,
                 ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         if (ASRUtils::is_string_only(x.m_type)) {
@@ -5838,7 +5838,7 @@ public:
             case ASR::exprType::PointerNullConstant: {
                 ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
                 llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
-                    ? llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr,
+                    ? llvm_utils->get_el_type(pnc->m_var_expr,
                         ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
                     : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
