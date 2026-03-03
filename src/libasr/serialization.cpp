@@ -1,4 +1,6 @@
 #include <string>
+#include <vector>
+#include <algorithm>
 
 #include <libasr/config.h>
 #include <libasr/serialization.h>
@@ -95,6 +97,38 @@ public:
 #endif
             DeserializationBaseVisitor(al, load_symtab_id, offset) {}
 
+    SymbolTable *external_symtab_root = nullptr;
+    static void find_symbol_in_tree(SymbolTable *symtab, const std::string &name,
+            std::vector<ASR::symbol_t*> &results) {
+        if (!symtab) return;
+        ASR::symbol_t *found = symtab->get_symbol(name);
+        if (found) results.push_back(found);
+        for (auto &pair : symtab->get_scope()) {
+            ASR::symbol_t *sym = pair.second;
+            SymbolTable *child = nullptr;
+            if (ASR::is_a<ASR::Module_t>(*sym)) {
+                child = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                child = ASR::down_cast<ASR::Struct_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                child = ASR::down_cast<ASR::Function_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+                child = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Enum_t>(*sym)) {
+                child = ASR::down_cast<ASR::Enum_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Requirement_t>(*sym)) {
+                child = ASR::down_cast<ASR::Requirement_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                child = ASR::down_cast<ASR::Template_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                child = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                child = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
+            }
+            if (child) find_symbol_in_tree(child, name, results);
+        }
+    }
+
     bool read_bool() {
         uint8_t b = read_int8();
         return (b == 1);
@@ -131,6 +165,21 @@ public:
         uint64_t symbol_type = read_int8();
         std::string symbol_name  = read_string();
         if (id_symtab_map.find(symtab_id) == id_symtab_map.end()) {
+            if (external_symtab_root) {
+                std::vector<ASR::symbol_t*> candidates;
+                find_symbol_in_tree(external_symtab_root, symbol_name, candidates);
+                ASR::symbolType expected_ty = static_cast<ASR::symbolType>(symbol_type);
+                candidates.erase(
+                    std::remove_if(candidates.begin(), candidates.end(),
+                        [expected_ty](ASR::symbol_t *s){ return s->type != expected_ty; }),
+                    candidates.end());
+                if (candidates.size() == 1) return candidates[0];
+                if (candidates.size() >= 2) throw LCompilersException(
+                    "Deserialization failed: symbol '" + symbol_name
+                    + "' is ambiguous — " + std::to_string(candidates.size())
+                    + " symbols with the same name and type exist in the "
+                    + "external symbol table. Cannot resolve unambiguously.");
+            }
             throw LCompilersException(
                 "Deserialization failed: symbol '" + symbol_name
                 + "' references symbol table with ID "
@@ -465,19 +514,12 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
     }
 }
 
-ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable & /*external_symtab*/, uint32_t offset) {
-    return deserialize_asr(al, s, load_symtab_id, offset);
-}
-
-ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, uint32_t offset) {
+static ASR::asr_t* deserialize_asr_impl(Allocator &al, const std::string &s,
+        bool load_symtab_id, SymbolTable *external_symtab, uint32_t offset) {
     ASRDeserializationVisitor v(al, s, load_symtab_id, offset);
+    v.external_symtab_root = external_symtab;
     ASR::asr_t *node = v.deserialize_node();
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(node);
-
-    // Connect the `parent` member of symbol tables
-    // Also set the `asr_owner` member correctly for all symbol tables
     ASR::FixParentSymtabVisitor p;
     p.visit_TranslationUnit(*tu);
 
@@ -487,9 +529,19 @@ ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
         std::cerr << diagnostics.render2();
         throw LCompilersException("Verify failed");
     };
- #endif
+#endif
 
     return node;
+}
+
+ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
+        bool load_symtab_id, SymbolTable &external_symtab, uint32_t offset) {
+    return deserialize_asr_impl(al, s, load_symtab_id, &external_symtab, offset);
+}
+
+ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
+        bool load_symtab_id, uint32_t offset) {
+    return deserialize_asr_impl(al, s, load_symtab_id, nullptr, offset);
 }
 
 } // namespace LCompilers
