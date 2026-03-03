@@ -442,11 +442,11 @@ namespace LCompilers {
                     // Unlimited polymorphic array with intrinsic type spec
                     // (e.g., allocate(integer :: arr(5)))
                     llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
-                        ASR::down_cast<ASR::Struct_t>(variable_declaration),
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)),
                         struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
                 } else {
                     llvm_utils->struct_api->allocate_array_of_classes(
-                        ASR::down_cast<ASR::Struct_t>(variable_declaration)
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration))
                         , struct_type
                         , ptr2firstptr
                         , prod
