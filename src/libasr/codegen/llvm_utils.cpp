@@ -182,6 +182,21 @@ namespace LCompilers {
         return nullptr;
     }
 
+    llvm::Value* LLVMUtils::lfortran_free_nocheck(llvm::Value* ptr) {
+        std::string func_name = "_lfortran_free";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
+        }
+        llvm::Type* const i8PtrTy = llvm::Type::getInt8Ty(context)->getPointerTo();
+        builder->CreateCall(fn, {builder->CreateBitCast(ptr, i8PtrTy)});
+        return nullptr;
+    }
+
     llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args)
     {
         llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
