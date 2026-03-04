@@ -1,4 +1,5 @@
 module assumed_size_associate_01_mod
+  implicit none
   contains
 
   subroutine sort_ascending(dx)
@@ -6,30 +7,34 @@ module assumed_size_associate_01_mod
     call quicksort()
   contains
     subroutine quicksort()
+      real :: temp
       if (dx(2) < dx(1)) then
+        temp = dx(1)
+        dx(1) = dx(2)
+        dx(2) = temp
       end if
     end subroutine quicksort
   end subroutine sort_ascending
 
-  subroutine dsort(Dx)
-    implicit none
-    real, dimension(*), intent(inout) :: Dx
-    call sort_ascending(Dx)
+  subroutine dsort(dx)
+    real, dimension(*), intent(inout) :: dx
+    call sort_ascending(dx)
   end subroutine dsort
 
   subroutine dfc(w)
-    real :: w(*)
-    call dfcmn(w(5))
+    real, intent(inout) :: w(*)
+    call dfcmn(w(1))
   end subroutine dfc
 
   subroutine dfcmn(xtemp)
-    real :: xtemp(*)
+    real, intent(inout) :: xtemp(*)
     call dsort(xtemp)
   end subroutine dfcmn
 
 end module
 
-program name
+program assumed_size_associate_01
   use assumed_size_associate_01_mod
   implicit none
-end program name
+  print *, "PASS"
+end program assumed_size_associate_01
