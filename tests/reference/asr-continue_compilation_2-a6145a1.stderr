@@ -405,12 +405,6 @@ semantic error: Missing actual argument 'x' in call to 'cmplx'
     |              ^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:319:5
-    |
-319 |     call co_sum (val, result_image=1)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Coarrays are not supported yet
    --> tests/errors/continue_compilation_2.f90:324:5
     |
 324 |     call event_query(1, 1, 1)
