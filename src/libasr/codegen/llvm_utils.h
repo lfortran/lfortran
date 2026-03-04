@@ -929,8 +929,8 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * A wrapper of the LLVM function.
-         * Saves currrent BasicBlock, Creates a new one, 
+         * Setup LLVM function.
+         * Stacks currrent BasicBlock, Creates a new one, 
          * inserts the finalization code, and then reverts back to the saved BasicBlock.
          *
          * Returns the finalizer function to be consumed by caller.
@@ -1030,8 +1030,8 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
             if(t_past->type == ASR::StructType){
                 check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        finalize(ptr, t_past, struct_sym, in_struct);
-                        free_allocatable_ptr(ptr, t, in_struct);
+                    finalize(ptr, t_past, struct_sym, in_struct);
+                    free_allocatable_ptr(ptr, t, in_struct);
                 });
             } else if (t_past->type == ASR::Array) {
                 check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() {
@@ -1389,7 +1389,9 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         }
             
         /**
-         * @details It's responsbile of deallocating each element within the array.
+         * @details It's responsbile of deallocating each element within the array;
+         * It's main job is to properly free aggregate types (e.g. struct, class, array of strings, etc.).
+         *
          * You should expect a loop and a call to type finalizer.
          * Example : finalize each {i32, i64*} within the array.
          * Notice: it's a utility for `finalize_array`, not meant to be used by other finalizers.
