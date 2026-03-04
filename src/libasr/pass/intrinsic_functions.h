@@ -4,6 +4,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
+#include <cstring>
 #include <limits>
 
 namespace LCompilers::ASRUtils {
@@ -603,6 +604,33 @@ namespace Fix {
 // `stdeval` is the name of the function in the `std` namespace for compile
 //  numerical time evaluation
 // `lcompilers_name` is the name that we use in the C runtime library
+static inline const char* quad_precision_trig_result(
+        const char* func_name, double arg) {
+    static const char* PI_STR =
+        "3.14159265358979323846264338327950288e+00";
+    static const char* PI_HALF_STR =
+        "1.57079632679489661923132169163975144e+00";
+    static const char* ZERO_STR = "0.0e+00";
+    static const char* ONE_STR = "1.0e+00";
+    if (std::strcmp(func_name, "acos") == 0) {
+        if (arg == -1.0) return PI_STR;
+        if (arg == 0.0) return PI_HALF_STR;
+        if (arg == 1.0) return ZERO_STR;
+    } else if (std::strcmp(func_name, "asin") == 0) {
+        if (arg == 0.0) return ZERO_STR;
+        if (arg == 1.0) return PI_HALF_STR;
+    } else if (std::strcmp(func_name, "cos") == 0) {
+        if (arg == 0.0) return ONE_STR;
+    } else if (std::strcmp(func_name, "sin") == 0) {
+        if (arg == 0.0) return ZERO_STR;
+    } else if (std::strcmp(func_name, "tan") == 0) {
+        if (arg == 0.0) return ZERO_STR;
+    } else if (std::strcmp(func_name, "log") == 0) {
+        if (arg == 1.0) return ZERO_STR;
+    }
+    return nullptr;
+}
+
 #define create_trig(X, stdeval, lcompilers_name)                                \
 namespace X {                                                                   \
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
@@ -612,6 +640,21 @@ namespace X {                                                                   
         double rv = -1;                                                         \
         if( ASRUtils::extract_value(args[0], rv) ) {                            \
             double val = std::stdeval(rv);                                      \
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);                  \
+            if (kind > 8) {                                                     \
+                const char* known = quad_precision_trig_result(                 \
+                    #stdeval, rv);                                               \
+                char* r_str;                                                    \
+                if (known) {                                                    \
+                    r_str = s2c(al, std::string(known));                        \
+                } else {                                                        \
+                    char buf[80];                                               \
+                    snprintf(buf, sizeof(buf), "%.17e", val);                   \
+                    r_str = s2c(al, std::string(buf));                          \
+                }                                                               \
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(                 \
+                    al, loc, val, t, r_str));                                   \
+            }                                                                   \
             return make_ConstantWithType(make_RealConstant_t, val, t, loc);     \
         } else {                                                                \
             std::complex<double> crv;                                           \
@@ -656,6 +699,8 @@ namespace MathIntrinsicFunction{
         std::string c_func_name;
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
             c_func_name = "_lfortran_s" + lcompiler_name;
+        } else if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            c_func_name = "_lfortran_q" + lcompiler_name;
         } else {
             c_func_name = "_lfortran_d" + lcompiler_name;
         }
@@ -4973,6 +5018,8 @@ namespace SelectedRealKind {
             kind = 4;
         } else if (p < 16 && r < 308 && radix == 2) {
             kind = 8;
+        } else if (p < 34 && r < 4932 && radix == 2) {
+            kind = 16;
         } else if (radix != 2) {
             kind = -5;
         } else {
@@ -4999,13 +5046,17 @@ namespace SelectedRealKind {
         body.push_back(al, b.If(b.And(b.And(b.Lt(p, b.i_t(7, arg_types[0])), b.Lt(r, b.i_t(38, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
             b.Assignment(result, b.i32(4))
         }, {
-            b.If( b.And(b.And(b.Lt(p, b.i_t(15, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+            b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
                 b.Assignment(result, b.i32(8))
             }, {
-                b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
-                    b.Assignment(result, b.i32(-5))
+                b.If( b.And(b.And(b.Lt(p, b.i_t(34, arg_types[0])), b.Lt(r, b.i_t(4932, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+                    b.Assignment(result, b.i32(16))
                 }, {
-                    b.Assignment(result, b.i32(-1))
+                    b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
+                        b.Assignment(result, b.i32(-5))
+                    }, {
+                        b.Assignment(result, b.i32(-1))
+                    })
                 })
             })
         }));
@@ -7437,6 +7488,11 @@ namespace Epsilon {
                 epsilon_val = std::numeric_limits<float>::epsilon(); break;
             } case 8: {
                 epsilon_val = std::numeric_limits<double>::epsilon(); break;
+            } case 16: {
+                char* r_str = s2c(al, std::string(
+                    "1.92592994438723585305597794258492732e-34"));
+                return EXPR(ASR::make_RealConstant_t(
+                    al, loc, 0.0, arg_type, r_str));
             } default: {
                 break;
             }
@@ -7459,6 +7515,8 @@ namespace Precision {
                 precision_val = 6; break;
             } case 8: {
                 precision_val = 15; break;
+            } case 16: {
+                precision_val = 33; break;
             } default: {
                 append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                 return nullptr;
@@ -7481,6 +7539,11 @@ namespace Tiny {
                 tiny_value = std::numeric_limits<float>::min(); break;
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
+            } case 16: {
+                char* r_str = s2c(al, std::string(
+                    "3.36210314311209350626267781732175260e-4932"));
+                return EXPR(ASR::make_RealConstant_t(
+                    al, loc, 0.0, arg_type, r_str));
             } default: {
                 append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                     return nullptr;
@@ -7566,6 +7629,11 @@ namespace Huge {
                     huge_value = std::numeric_limits<float>::max(); break;
                 } case 8: {
                     huge_value = std::numeric_limits<double>::max(); break;
+                } case 16: {
+                    char* r_str = s2c(al, std::string(
+                        "1.18973149535723176508575932662800702e+4932"));
+                    return EXPR(ASR::make_RealConstant_t(
+                        al, loc, 0.0, arg_type, r_str));
                 } default: {
                     append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                     return nullptr;

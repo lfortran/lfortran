@@ -1402,6 +1402,7 @@ typedef enum primitive_types{
     INTEGER_8_TYPE = 3,
     FLOAT_64_TYPE = 4,
     FLOAT_32_TYPE = 5,
+    FLOAT_128_TYPE = 15,
     CHAR_PTR_TYPE = 6,
     LOGICAL_TYPE = 7,
     CPTR_VOID_PTR_TYPE = 8,
@@ -1428,6 +1429,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -1740,7 +1742,9 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float), 
         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/,
-        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/ };
+        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
+        sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
+        16 /*FLOAT_128_TYPE: 128-bit IEEE float*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -1817,6 +1821,16 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             break;
         case '4':
             *PrimitiveType = FLOAT_32_TYPE;
+            break;
+        case '1':
+            if (s_info->serialization_string[s_info->current_stop++] == '6') {
+                *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+                fprintf(stderr, "RunTime - compiler"
+                "internal error : Unidentified Print Types Serialization --> %s\n",
+                        s_info->serialization_string);
+                exit(1);
+            }
             break;
         default:
             fprintf(stderr, "RunTime - compiler" 
@@ -2000,6 +2014,130 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+static void format_quad_fortran(char* result, const void* raw_bytes) {
+    /*
+     * Convert IEEE 754 binary128 (quad precision) to a decimal string
+     * with 36 significant digits, matching gfortran's default output.
+     *
+     * Layout: 1 sign bit, 15 exponent bits (bias 16383), 112 fraction bits.
+     * Uses __uint128_t for exact digit extraction via repeated multiply-by-10.
+     */
+    typedef unsigned __int128 u128;
+    const uint8_t* bytes = (const uint8_t*)raw_bytes;
+    uint64_t lo, hi;
+    memcpy(&lo, bytes, 8);
+    memcpy(&hi, bytes + 8, 8);
+
+    int sign = (hi >> 63) & 1;
+    int biased_exp = (int)((hi >> 48) & 0x7FFF);
+    uint64_t frac_hi = hi & 0x0000FFFFFFFFFFFFULL;
+    uint64_t frac_lo = lo;
+
+    if (biased_exp == 0x7FFF) {
+        sprintf(result, "%s", (frac_hi || frac_lo) ? "NaN"
+            : (sign ? "-Infinity" : "Infinity"));
+        return;
+    }
+    if (biased_exp == 0 && frac_hi == 0 && frac_lo == 0) {
+        sprintf(result, "%s0.0000000000000000000000000000000000000",
+            sign ? "-" : "");
+        return;
+    }
+
+    u128 sig;
+    int e2;
+    if (biased_exp != 0) {
+        sig = ((u128)1 << 112) | ((u128)frac_hi << 64) | frac_lo;
+        e2 = biased_exp - 16383 - 112;
+    } else {
+        sig = ((u128)frac_hi << 64) | frac_lo;
+        e2 = 1 - 16383 - 112;
+    }
+
+    /* value = sig * 2^e2, sig is 113 bits for normal numbers */
+
+    if (e2 >= 0) {
+        double val = (double)(uint64_t)(sig >> 64) * pow(2.0, 64 + e2)
+                   + (double)(uint64_t)sig * pow(2.0, e2);
+        if (sign) val = -val;
+        sprintf(result, "%.36E", val);
+        return;
+    }
+
+    int neg_e2 = -e2;
+
+    if (neg_e2 > 124) {
+        /*
+         * For very small values, fall back to double-based formatting.
+         * The 128-bit multiply-by-10 loop would overflow.
+         */
+        double val = (double)(uint64_t)(sig >> 64) * pow(2.0, 64 + e2)
+                   + (double)(uint64_t)sig * pow(2.0, e2);
+        if (sign) val = -val;
+        sprintf(result, "%.36E", val);
+        return;
+    }
+
+    u128 int_part = sig >> neg_e2;
+    u128 frac_num = sig & (((u128)1 << neg_e2) - 1);
+
+    int raw[50];
+    int ndigits = 0;
+
+    if (int_part == 0) {
+        raw[ndigits++] = 0;
+    } else {
+        char tmp[40];
+        int ntmp = 0;
+        u128 ip = int_part;
+        while (ip > 0) {
+            tmp[ntmp++] = (int)(ip % 10);
+            ip /= 10;
+        }
+        for (int i = ntmp - 1; i >= 0; i--)
+            raw[ndigits++] = tmp[i];
+    }
+
+    int int_count = ndigits;
+    int frac_needed = 36 - int_count;
+    if (frac_needed < 0) frac_needed = 0;
+
+    u128 mask = ((u128)1 << neg_e2) - 1;
+    for (int i = 0; i < frac_needed; i++) {
+        frac_num *= 10;
+        int d = (int)(frac_num >> neg_e2);
+        frac_num &= mask;
+        raw[ndigits++] = d;
+    }
+
+    /* Round by peeking at the next digit */
+    frac_num *= 10;
+    if ((int)(frac_num >> neg_e2) >= 5) {
+        int carry = 1;
+        for (int i = ndigits - 1; i >= 0 && carry; i--) {
+            int d = raw[i] + carry;
+            raw[i] = d % 10;
+            carry = d / 10;
+        }
+        if (carry) {
+            memmove(raw + 1, raw, (size_t)ndigits * sizeof(int));
+            raw[0] = 1;
+            ndigits++;
+            int_count++;
+        }
+    }
+
+    char* p = result;
+    if (sign) *p++ = '-';
+
+    for (int i = 0; i < int_count; i++)
+        *p++ = '0' + raw[i];
+    *p++ = '.';
+    for (int i = int_count; i < ndigits; i++)
+        *p++ = '0' + raw[i];
+    *p = '\0';
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
@@ -2053,6 +2191,9 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             } else {
                 format_float_fortran(result, *(float*)arg);
             }
+            break;
+        case FLOAT_128_TYPE:
+            format_quad_fortran(result, arg);
             break;
         case LOGICAL_TYPE:
             sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
