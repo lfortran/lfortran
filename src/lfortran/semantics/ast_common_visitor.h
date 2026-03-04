@@ -7131,18 +7131,25 @@ public:
 
         // Scope where the PDT template lives
         SymbolTable* pdt_scope = ASRUtils::symbol_parent_symtab(pdt_sym_orig);
-        LCOMPILERS_ASSERT(kind_val_vec.size() == pdt_struct->n_kind_params);
+
+        // kind_val_vec may contain [parent_vals..., child_vals...].
+        // The child's own kind params are the last n_kind_params entries.
+        // All entries are used for the monomorphized name.
+        LCOMPILERS_ASSERT(kind_val_vec.size() >= pdt_struct->n_kind_params);
+        size_t child_offset = kind_val_vec.size() - pdt_struct->n_kind_params;
 
         std::map<int64_t, int64_t> sentinel_to_actual;
         std::map<std::string, int64_t> kind_values;
         std::string monomorphized_name = pdt_name;
+        for (size_t i = 0; i < kind_val_vec.size(); i++) {
+            monomorphized_name += "_" + std::to_string(kind_val_vec[i]);
+        }
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
             std::string kp_name(pdt_struct->m_kind_params[i]);
-            int64_t kind_val = kind_val_vec[i];
+            int64_t kind_val = kind_val_vec[child_offset + i];
             int64_t sentinel = PDT_SENTINEL + i;
             sentinel_to_actual[sentinel] = kind_val;
             kind_values[kp_name] = kind_val;
-            monomorphized_name += "_" + std::to_string(kind_val);
         }
 
         // Check if the monomorphized struct already exists in scope
@@ -7179,6 +7186,8 @@ public:
                     ASR::make_IntegerConstant_t(al, loc, kv.second, int_type));
                 kp_var->m_value = val;
                 kp_var->m_symbolic_value = val;
+                kp_var->m_dependencies = nullptr;
+                kp_var->n_dependencies = 0;
             }
         }
 
@@ -7258,6 +7267,36 @@ public:
             }
         }
 
+        // recursively instantiate the parent
+        // using the prefix kind values (everything before child_offset).
+        ASR::symbol_t * new_parent = pdt_struct->m_parent;
+        if (child_offset > 0) {
+            LCOMPILERS_ASSERT(pdt_struct->m_parent);
+            ASR::symbol_t* parent_orig = ASRUtils::symbol_get_past_external(
+                pdt_struct->m_parent);
+            while (parent_orig) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
+                    parent_orig);
+                if (parent_struct->n_kind_params > 0) {
+                    std::string parent_name = std::string(
+                        ASRUtils::symbol_name(parent_orig));
+                    std::vector<int64_t> parent_vals(
+                        kind_val_vec.begin(),
+                        kind_val_vec.begin() + child_offset);
+                    ASR::symbol_t* parent_type_decl = nullptr;
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 0);
+                    instantiate_pdt_by_values(loc, parent_name, parent_vals,
+                        false, false, empty_dims, parent_type_decl,
+                        ASR::abiType::Source, false);
+                    new_parent = parent_type_decl;
+                    parent_orig = nullptr;
+                } else {
+                    parent_orig = ASRUtils::symbol_get_past_external(parent_struct->m_parent);
+                }
+            }
+        }
+
         Vec<char*> pdt_final_proc_names;
         pdt_final_proc_names.reserve(al, 0);
         tmp = ASR::make_Struct_t(al, loc, new_scope,
@@ -7266,7 +7305,7 @@ public:
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
-            nullptr, 0, nullptr, pdt_struct->m_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -7321,18 +7360,94 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*pdt_sym_orig));
         ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(pdt_sym_orig);
 
-        std::vector<int64_t> kind_val_vec;
+        // Build the full kind parameter list by walking the parent chain.
+        // Parent kind params come first (outermost ancestor first)        
+        struct ParamInfo {
+            std::string name;
+            ASR::Struct_t* owner;
+        };
+        std::vector<ParamInfo> all_params;
+
+        // Walk the parent chain to collect ancestor PDT structs
+        std::vector<ASR::Struct_t*> parent_chain;
+        ASR::symbol_t* walk_sym = pdt_struct->m_parent;
+        while (walk_sym) {
+            ASR::symbol_t* walk_orig = ASRUtils::symbol_get_past_external(walk_sym);
+            if (ASR::is_a<ASR::Struct_t>(*walk_orig)) {
+                ASR::Struct_t* walk_struct = ASR::down_cast<ASR::Struct_t>(walk_orig);
+                if (walk_struct->n_kind_params > 0) {
+                    parent_chain.push_back(walk_struct);
+                }
+                walk_sym = walk_struct->m_parent;
+            } else {
+                break;
+            }
+        }
+        // Reverse so outermost ancestor comes first
+        std::reverse(parent_chain.begin(), parent_chain.end());
+
+        // Collect parent kind params (outermost first)
+        for (auto* ps : parent_chain) {
+            for (size_t i = 0; i < ps->n_kind_params; i++) {
+                all_params.push_back({std::string(ps->m_kind_params[i]), ps});
+            }
+        }
+
+        // Collect the child's own kind params
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
-            std::string param_name(pdt_struct->m_kind_params[i]);
+            all_params.push_back({std::string(pdt_struct->m_kind_params[i]), pdt_struct});
+        }
+
+        // Build a map from keyword name to kind_item index for keyword args.
+        // Positional args (m_id == nullptr) are consumed in order; keyword
+        // args (m_id != nullptr) are matched by name to the PDT's kind_params.
+        std::map<std::string, size_t> keyword_arg_map;
+        size_t n_positional = 0;
+        bool seen_keyword = false;
+        for (size_t i = 0; i < sym_type->n_kind; i++) {
+            if (sym_type->m_kind[i].m_id != nullptr) {
+                seen_keyword = true;
+                std::string kw_name = to_lower(sym_type->m_kind[i].m_id);
+                keyword_arg_map[kw_name] = i;
+            } else {
+                if (seen_keyword) {
+                    diag.add(Diagnostic(
+                        "Positional argument after keyword argument in "
+                        "parameterized derived type '" + pdt_name + "'",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+                n_positional++;
+            }
+        }
+
+        // Resolve all kind parameter values (parent + own) in order
+        std::vector<int64_t> all_kind_vals;
+        for (size_t i = 0; i < all_params.size(); i++) {
+            const std::string& param_name = all_params[i].name;
+            ASR::Struct_t* owner = all_params[i].owner;
             int64_t kind_val = -1;
-            if (i < sym_type->n_kind && sym_type->m_kind[i].m_value) {
+
+            // Check for keyword argument matching this parameter
+            auto kw_it = keyword_arg_map.find(param_name);
+            if (kw_it != keyword_arg_map.end()) {
+                size_t kw_idx = kw_it->second;
+                if (sym_type->m_kind[kw_idx].m_value) {
+                    this->visit_expr(*sym_type->m_kind[kw_idx].m_value);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                    kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
+                        sym_type->m_kind[kw_idx].loc, diag);
+                }
+            } else if (i < n_positional && sym_type->m_kind[i].m_value) {
+                // Positional argument at index i
                 this->visit_expr(*sym_type->m_kind[i].m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
                     sym_type->m_kind[i].loc, diag);
-            } else {
-                // Fall back to the template's default value
-                ASR::symbol_t* param_sym = pdt_struct->m_symtab->get_symbol(param_name);
+            }
+            if (kind_val < 0) {
+                // Fall back to the owner template's default value
+                ASR::symbol_t* param_sym = owner->m_symtab->get_symbol(param_name);
                 if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
                     ASR::Variable_t* pv = ASR::down_cast<ASR::Variable_t>(param_sym);
                     if (pv->m_symbolic_value) {
@@ -7349,10 +7464,14 @@ public:
                     throw SemanticAbort();
                 }
             }
-            kind_val_vec.push_back(kind_val);
+            all_kind_vals.push_back(kind_val);
         }
-        return instantiate_pdt_by_values(loc, pdt_name, kind_val_vec,
-            is_pointer, is_allocatable, dims, type_declaration, abi, is_argument);
+
+        // Parent instantiation is handled recursively inside
+        // instantiate_pdt_by_values using the prefix of all_kind_vals.
+        return instantiate_pdt_by_values(loc, pdt_name, all_kind_vals,
+            is_pointer, is_allocatable, dims, type_declaration, abi,
+            is_argument);
     }
 
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
