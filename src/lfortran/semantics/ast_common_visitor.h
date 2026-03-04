@@ -7292,16 +7292,52 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*pdt_sym_orig));
         ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(pdt_sym_orig);
 
+        // Build a map from keyword name to kind_item index for keyword args.
+        // Positional args (m_id == nullptr) are consumed in order; keyword
+        // args (m_id != nullptr) are matched by name to the PDT's kind_params.
+        std::map<std::string, size_t> keyword_arg_map;
+        size_t n_positional = 0;
+        bool seen_keyword = false;
+        for (size_t i = 0; i < sym_type->n_kind; i++) {
+            if (sym_type->m_kind[i].m_id != nullptr) {
+                seen_keyword = true;
+                std::string kw_name = to_lower(sym_type->m_kind[i].m_id);
+                keyword_arg_map[kw_name] = i;
+            } else {
+                if (seen_keyword) {
+                    diag.add(Diagnostic(
+                        "Positional argument after keyword argument in "
+                        "parameterized derived type '" + pdt_name + "'",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+                n_positional++;
+            }
+        }
+
         std::vector<int64_t> kind_val_vec;
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
             std::string param_name(pdt_struct->m_kind_params[i]);
             int64_t kind_val = -1;
-            if (i < sym_type->n_kind && sym_type->m_kind[i].m_value) {
+
+            // Check for keyword argument matching this parameter
+            auto kw_it = keyword_arg_map.find(param_name);
+            if (kw_it != keyword_arg_map.end()) {
+                size_t kw_idx = kw_it->second;
+                if (sym_type->m_kind[kw_idx].m_value) {
+                    this->visit_expr(*sym_type->m_kind[kw_idx].m_value);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                    kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
+                        sym_type->m_kind[kw_idx].loc, diag);
+                }
+            } else if (i < n_positional && sym_type->m_kind[i].m_value) {
+                // Positional argument at index i
                 this->visit_expr(*sym_type->m_kind[i].m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
                     sym_type->m_kind[i].loc, diag);
-            } else {
+            }
+            if (kind_val < 0) {
                 // Fall back to the template's default value
                 ASR::symbol_t* param_sym = pdt_struct->m_symtab->get_symbol(param_name);
                 if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
