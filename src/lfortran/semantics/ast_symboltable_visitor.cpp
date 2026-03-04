@@ -1375,6 +1375,20 @@ public:
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
+                    bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
+
+                    if (!is_placeholder && !was_module_procedure && !in_submodule && deftype != ASR::deftypeType::Interface) {
+                        std::vector<Location> locs = {f1->base.loc};
+                        std::vector<diag::Label> labels;
+                        labels.push_back(diag::Label("", {tmp->loc}));
+                        labels.push_back(diag::Label("is already defined here", locs, false));
+                        diag.add(diag::Diagnostic(
+                            "Procedure '" + sym_name + "' is already defined as an interface body",
+                            diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -2014,11 +2028,10 @@ public:
                   // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
-
+                    bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
                     if (!is_placeholder) {
                        if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
                                 ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
-        
                             diag.add(diag::Diagnostic(
                                 "Argument(s) or return type mismatch in interface and implementation",
                                 diag::Level::Error, diag::Stage::Semantic, {
@@ -2026,7 +2039,6 @@ public:
                             throw SemanticAbort();
                         }
                     }
-
                     if (is_placeholder) {
                         // Update the placeholder's FunctionType in-place so that
                         // struct member variables still referencing it get the
@@ -2042,7 +2054,17 @@ public:
                         placeholder_sig->m_pure = real_sig->m_pure;
                         placeholder_sig->m_module = real_sig->m_module;
                     }
-
+                    if (!is_placeholder && !was_module_procedure && !in_submodule && deftype != ASR::deftypeType::Interface) {
+                        std::vector<Location> locs = {f1->base.loc};
+                        std::vector<diag::Label> labels;
+                        labels.push_back(diag::Label("", {tmp->loc}));
+                        labels.push_back(diag::Label("is already defined here", locs, false));
+                        diag.add(diag::Diagnostic(
+                            "Procedure '" + sym_name + "' is already defined as an interface body",
+                            diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
                     parent_scope->erase_symbol(sym_name);
                 } else {
                     diag.add(diag::Diagnostic(
@@ -2062,7 +2084,6 @@ public:
                 throw SemanticAbort();
             }
         }
-
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
