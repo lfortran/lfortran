@@ -1941,6 +1941,14 @@ public:
     int idl_nesting_level = 0;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
+    struct PendingProcPtrInit {
+        std::string proc_name;
+        ASR::Variable_t* var;
+        SymbolTable* resolve_scope;
+        Location loc;
+    };
+    std::vector<PendingProcPtrInit> pending_proc_ptr_inits;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -4402,6 +4410,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrIntrinsicOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrIntrinsicOperator_t>(s.m_spec);
+                                    std::string op_sym_name = intrinsic2str[op_attr->m_op];
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
                                     // Assignment Overloading Encountered
                                     if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
@@ -4410,6 +4427,12 @@ public:
                                     } else {
                                     assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
                                     }
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access["~assign"] = access;
                                 } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
                                     //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
                                     // Custom Operator Overloading Encountered
@@ -4419,6 +4442,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrDefinedOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec);
+                                    std::string op_sym_name = "~~" + to_lower(std::string(op_attr->m_op_name));
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute type not implemented yet.",
@@ -4435,6 +4467,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Private;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Private;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -4450,6 +4483,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Public;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Public;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -6408,6 +6442,26 @@ public:
                 } else if (s.m_initializer != nullptr) {
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
+                    }
+                    // Defer procedure pointer initialization when the target
+                    // procedure is not yet in scope (e.g. module contains)
+                    if (is_derived_type && is_pointer
+                            && AST::is_a<AST::Name_t>(*s.m_initializer)
+                            && type && ASR::is_a<ASR::Pointer_t>(
+                                *ASRUtils::type_get_past_allocatable(type))
+                            && ASR::is_a<ASR::FunctionType_t>(
+                                *ASR::down_cast<ASR::Pointer_t>(
+                                    ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        std::string init_name = to_lower(
+                            AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
+                        ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
+                        if (!init_sym && variable_added_to_symtab) {
+                            pending_proc_ptr_inits.push_back({
+                                init_name, variable_added_to_symtab,
+                                current_scope->parent,
+                                s.m_initializer->base.loc});
+                            continue;
+                        }
                     }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
@@ -12764,8 +12818,15 @@ public:
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            to_type = ASRUtils::make_Array_t_util(al, loc, to_type,
+                arr->m_dims, arr->n_dims);
+        }
         if (ASRUtils::is_integer(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::IntegerConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -12821,8 +12882,15 @@ public:
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            to_type = ASRUtils::make_Array_t_util(al, loc, to_type,
+                arr->m_dims, arr->n_dims);
+        }
         if (ASRUtils::is_integer(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::IntegerConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -12832,7 +12900,9 @@ public:
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
                 to_type, value, nullptr));
         } else if (ASRUtils::is_logical(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::LogicalConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::LogicalConstant_t>(
                                         ASRUtils::expr_value(arg))->m_value;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -14428,12 +14498,14 @@ public:
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_character(*dest_type)) {
-            diag.semantic_error_label(
-                            "Binary numeric operators cannot be used on strings",
-                            {x.base.base.loc},
-                            "help: use '//' for string concatenation"
-                        );
-            throw SemanticAbort();
+            if (overloaded == nullptr) {
+                diag.semantic_error_label(
+                                "Binary numeric operators cannot be used on strings",
+                                {x.base.base.loc},
+                                "help: use '//' for string concatenation"
+                            );
+                throw SemanticAbort();
+            }
         } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
             // if overloaded is not found, then reject
             if (overloaded == nullptr) {
@@ -16402,6 +16474,9 @@ public:
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if ((!to_submodule) && es0->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
                     /* a_symtab */ current_scope,

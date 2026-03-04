@@ -388,6 +388,34 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // Update access of use-associated ExternalSymbol entries based on the
+        // final dflt_access (set by private/public statements processed above).
+        // use statements are processed before private/public, so ExternalSymbols
+        // may have been created with the wrong default access.
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    es->m_access = assgnd_access[item.first];
+                } else if (item.first.size() > 1 && item.first[0] == '~'
+                           && assgnd_access.count(item.first.substr(1))) {
+                    // When a name like "merge_config" is made public,
+                    // also make the associated generic interface
+                    // "~merge_config" public so that constructor
+                    // overloads remain accessible.
+                    es->m_access = assgnd_access[item.first.substr(1)];
+                } else {
+                    es->m_access = dflt_access;
+                }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    co->m_access = assgnd_access[item.first];
+                } else {
+                    co->m_access = dflt_access;
+                }
+            }
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -404,6 +432,7 @@ public:
         add_class_procedures();
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
@@ -632,6 +661,7 @@ public:
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
              ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
              if (current_sym == placeholder_sym) {
@@ -3391,6 +3421,30 @@ public:
                 }
             }
         }
+    }
+
+    void resolve_pending_proc_ptr_inits() {
+        for (auto &item : pending_proc_ptr_inits) {
+            ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
+            if (!proc_sym) {
+                diag.semantic_error_label("Variable '" + item.proc_name
+                    + "' is not declared", {item.loc},
+                    "'" + item.proc_name + "' is undeclared");
+                throw SemanticAbort();
+            }
+            ASR::expr_t *init_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, item.loc, proc_sym));
+            item.var->m_symbolic_value = init_expr;
+            item.var->m_value = nullptr;
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
+                item.var->m_type, item.var->m_symbolic_value, item.var->m_value,
+                item.var->m_name);
+            item.var->m_dependencies = variable_dependencies_vec.p;
+            item.var->n_dependencies = variable_dependencies_vec.n;
+        }
+        pending_proc_ptr_inits.clear();
     }
 
     void add_class_procedures() {
