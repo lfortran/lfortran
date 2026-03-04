@@ -2519,17 +2519,23 @@ public:
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
-                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
-                tmp_storage = variable->m_storage;
+                ASR::ttype_t* base_type = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
+                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+                    tmp_storage = variable->m_storage;
+                    base_type = variable->m_type;
+                } else {
+                    base_type = ASRUtils::expr_type(tmp_array_section->m_v);
+                }
                 ASR::dimension_t *var_dims;
-                ASRUtils::extract_dimensions_from_ttype(variable->m_type, var_dims);
+                ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
                 Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
                 for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
                     if (tmp_array_section->m_args[i].m_left) {
                         tmp_dims.push_back(al, var_dims[i]);
                     }
                 }
-                tmp_type = ASRUtils::duplicate_type(al, variable->m_type, &tmp_dims);
+                tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
             } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
@@ -4978,11 +4984,20 @@ public:
                     for(size_t i=0; i < temp_array->n_args; i++){
                         this->visit_expr(*temp_array->m_args[i]);
                         ASR::expr_t *temp = ASRUtils::EXPR(tmp);
-                        if( ASRUtils::expr_type(temp)->type == ASR::ttypeType::Array ) {
-                            flat_size += ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(temp));
+                        ASR::ttype_t* temp_type = ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(temp));
+                        if( temp_type->type == ASR::ttypeType::Array ) {
+                            int64_t arr_size = ASRUtils::get_fixed_size_of_array(temp_type);
+                            if (arr_size < 0) {
+                                flat_size = -1;
+                            } else if (flat_size >= 0) {
+                                flat_size += arr_size;
+                            }
                             is_array_concat = true;
                         } else {
-                            flat_size += 1;
+                            if (flat_size >= 0) {
+                                flat_size += 1;
+                            }
                         }
                     }
                 }
@@ -5933,17 +5948,20 @@ public:
 
         // we handle kwargs here
         if (x.n_keywords > 0) {
+            bool is_proc_pointer_var = false;
             if (ASR::is_a<ASR::Variable_t>(*f2)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+                [[maybe_unused]] ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v_type));
                 f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                is_proc_pointer_var = true;
             }
             if (ASR::is_a<ASR::Function_t>(*f2)) {
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(f2);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                              f->m_args, f->n_args, x.base.base.loc, f,
-                             diags, x.n_member);
+                             diags, x.n_member, is_proc_pointer_var);
                 if (diags.has_error()) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                                             diags.diagnostics.begin(), diags.diagnostics.end());
@@ -7515,65 +7533,65 @@ public:
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_control != 1) {
-            diag.add(Diagnostic(
-                "Forall statement: exactly one control statement is required for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (! h.m_var) {
-            diag.add(Diagnostic(
-                "Forall statement: loop variable is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (! h.m_start) {
-            diag.add(Diagnostic(
-                "Forall statement: start condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (! h.m_end) {
-            diag.add(Diagnostic(
-                "Forall statement: end condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        ASR::expr_t *var = ASRUtils::EXPR(
-            resolve_variable(x.base.base.loc, to_lower(h.m_var))
-        );
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (! h.m_var) {
+                diag.add(Diagnostic(
+                    "Forall statement: loop variable is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (! h.m_start) {
+                diag.add(Diagnostic(
+                    "Forall statement: start condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (! h.m_end) {
+                diag.add(Diagnostic(
+                    "Forall statement: end condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
 
-        ASR::stmt_t* assign_stmt;
+        // Build the innermost assignment statement
         this->visit_stmt(*x.m_assign);
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
-        assign_stmt = ASRUtils::STMT(tmp);
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
-        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, assign_stmt);
+        ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
+
+        // Nest ForAllSingle nodes from innermost to outermost
+        for (int i = x.n_control - 1; i >= 0; i--) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            ASR::expr_t *var = ASRUtils::EXPR(
+                resolve_variable(x.base.base.loc, to_lower(h.m_var))
+            );
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, inner_stmt);
+            inner_stmt = ASRUtils::STMT(tmp);
+        }
         all_loops_blocks_nesting -= 1;
     }
 
