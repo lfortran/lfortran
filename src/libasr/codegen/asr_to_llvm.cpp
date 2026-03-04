@@ -10260,14 +10260,15 @@ public:
             this->visit_stmt(*(block->m_body[i]));
         }
 
-        // Free BLOCK-local heap arrays before exiting BLOCK (important for loops)
+        start_new_block(blockend);
+        // Finalize struct members before freeing the backing array memory
+        llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
+
+        // Free BLOCK-local heap arrays after finalizing (important for loops)
         for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
             llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
-
-        start_new_block(blockend);
-        llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
 
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
