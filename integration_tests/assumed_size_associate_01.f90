@@ -1,4 +1,4 @@
-module test_mod
+module assumed_size_associate_01_mod
   contains
 
   subroutine sort_ascending(dx)
@@ -30,6 +30,6 @@ module test_mod
 end module
 
 program name
-  use test_mod
+  use assumed_size_associate_01_mod
   implicit none
 end program name
