@@ -2412,6 +2412,7 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;
         std::cout << "LFortran version: " << version << std::endl;
+        std::cout << "Status: alpha (expected to fail on third-party codes)" << std::endl;
         std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
         std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
