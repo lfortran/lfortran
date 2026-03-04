@@ -12885,6 +12885,10 @@ public:
                         tmp = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(context));
                     } else if( arg_kind == 8 && dest_kind == 4 ) {
                         tmp = builder->CreateFPTrunc(tmp, llvm::Type::getFloatTy(context));
+                    } else if( dest_kind == 16 ) {
+                        tmp = builder->CreateFPExt(tmp, llvm::Type::getFP128Ty(context));
+                    } else if( arg_kind == 16 ) {
+                        tmp = builder->CreateFPTrunc(tmp, llvm_utils->getFPType(dest_kind));
                     } else {
                         std::string msg = "Conversion from " + std::to_string(arg_kind) +
                                           " to " + std::to_string(dest_kind) + " not implemented yet.";
