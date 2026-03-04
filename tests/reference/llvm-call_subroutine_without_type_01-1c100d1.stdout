@@ -179,7 +179,7 @@ FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
   %39 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  call void @"finalize_Allocatable[StructType_Class]__mytype"(%module_call_subroutine_without_type_01.mytype_class* %39, i1 false)
+  call void @finalize_allocatable__StructType_Class__mytype(%module_call_subroutine_without_type_01.mytype_class* %39, i1 false)
   ret i32 0
 }
 
@@ -234,7 +234,7 @@ declare void @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*,
 
 declare void @_lpython_free_argv()
 
-define internal void @"finalize_Allocatable[StructType_Class]__mytype"(%module_call_subroutine_without_type_01.mytype_class* %0, i1 %1) {
+define internal void @finalize_allocatable__StructType_Class__mytype(%module_call_subroutine_without_type_01.mytype_class* %0, i1 %1) {
 entry:
   %2 = icmp ne %module_call_subroutine_without_type_01.mytype_class* %0, null
   br i1 %2, label %is_allocated.then, label %is_allocated.else

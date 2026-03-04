@@ -1508,17 +1508,18 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         // Get a unique string key for finalizable ASR types
         std::string get_type_key(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym) {
             LCOMPILERS_ASSERT(!ASRUtils::is_pointer(t))
-            if(ASRUtils::is_array_t(t)){
-                std::string array_key {};
-                if(ASRUtils::is_allocatable(t)) {array_key += "allocatable__";}
-                array_key += "Array_";
-                array_key += get_type_key(ASRUtils::extract_type(t), struct_sym);
-                return array_key;
+            std::string key {};
+            if(ASRUtils::is_allocatable(t)) {key += "allocatable__";}
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(t); 
+            if(ASRUtils::is_array_t(t_past)){
+                key += "Array_";
+                key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
             } else if(struct_sym != nullptr) { // StructType or structType Class
-                return ASRUtils::get_type_code(t) +"__" + struct_sym->m_name;
+                key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
             } else {
-                return ASRUtils::get_type_code(t);
+                key += ASRUtils::get_type_code(t_past, false, false, false);
             }
+            return key; 
         }
 
         /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.

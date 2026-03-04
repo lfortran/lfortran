@@ -144,7 +144,7 @@ FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate: ; preds = %retu
 
 Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
   %33 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  call void @"finalize_Allocatable[StructType_Class]__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %33, i1 false)
+  call void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %33, i1 false)
   ret i32 0
 }
 
@@ -185,7 +185,7 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
 
-define internal void @"finalize_Allocatable[StructType_Class]__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0, i1 %1) {
+define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0, i1 %1) {
 entry:
   %2 = icmp ne %"~unlimited_polymorphic_type"* %0, null
   br i1 %2, label %is_allocated.then, label %is_allocated.else
