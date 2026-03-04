@@ -5275,8 +5275,14 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *size = ftell(fp);
             fseek(fp, current_pos, SEEK_SET);
         }
-        if (recl != NULL && access_id == 2) {
-            *recl = unit_recl;
+        if (recl != NULL) {
+            if (access_id == 1) {
+                *recl = -2;
+            } else if (access_id == 2) {
+                *recl = unit_recl;
+            } else {
+                *recl = -1;
+            }
         }
         if (sequential != NULL) {
             if (access_id == 0) {
