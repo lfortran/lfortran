@@ -5163,6 +5163,9 @@ public:
             if (!compiler_options.continue_compilation) throw e;
         }
         current_variable_type_ = temp_current_variable_type_;
+        if (tmp == nullptr) {
+            throw SemanticAbort();
+        }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value)) &&
                 ASR::is_a<ASR::Var_t>(*value)) {
