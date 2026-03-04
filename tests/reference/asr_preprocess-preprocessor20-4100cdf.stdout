@@ -21,6 +21,7 @@
                             (RealConstant
                                 3.140000
                                 (Real 4)
+                                ()
                             )]
                             FormatFortran
                             (Allocatable

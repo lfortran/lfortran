@@ -100,6 +100,7 @@
                                         (RealConstant
                                             0.000000
                                             (Real 8)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4) Decimal)
@@ -130,6 +131,7 @@
                                         (RealConstant
                                             0.000000
                                             (Real 4)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4) Decimal)
@@ -160,6 +162,7 @@
                                         (RealConstant
                                             5.000000
                                             (Real 4)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4) Decimal)
@@ -190,6 +193,7 @@
                                         (RealConstant
                                             5.000000
                                             (Real 8)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4) Decimal)

@@ -42,6 +42,7 @@
                                 (RealConstant
                                     3.000000
                                     (Real 4)
+                                    ()
                                 )
                             )]
                             FormatFortran
