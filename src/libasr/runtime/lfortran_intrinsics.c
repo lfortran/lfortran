@@ -7676,6 +7676,26 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 }
 
+LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len) {
+    if (iomsg == NULL || iomsg_len <= 0 || iostat == 0) return;
+
+    const char* msg;
+    if (iostat > 0) {
+        msg = "Invalid input in READ statement";
+    } else if (iostat == -1) {
+        msg = "End of file reached in READ statement";
+    } else if (iostat == -2) {
+        msg = "End of record reached in READ statement";
+    } else {
+        msg = "End of file reached in READ statement";
+    }
+
+    int64_t msg_len = (int64_t)strlen(msg);
+    if (msg_len > iomsg_len) msg_len = iomsg_len;
+    memcpy(iomsg, msg, (size_t)msg_len);
+    pad_with_spaces(iomsg, msg_len, iomsg_len);
+}
+
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
