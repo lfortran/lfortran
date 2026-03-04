@@ -267,9 +267,11 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
     std::string c_func_name;
+    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+    bool needs_fp128_cast = false;
     switch (arg_type->type) {
         case ASR::ttypeType::Complex : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            if (arg_kind == 4) {
                 c_func_name = "_lfortran_c" + new_name;
             } else {
                 c_func_name = "_lfortran_z" + new_name;
@@ -277,8 +279,10 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            if (arg_kind == 4) {
                 c_func_name = "_lfortran_s" + new_name;
+            } else if (arg_kind == 16) {
+                c_func_name = "_lfortran_q" + new_name;
             } else {
                 c_func_name = "_lfortran_d" + new_name;
             }
@@ -295,18 +299,23 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     fill_func_arg("x", arg_type);
     auto result = declare(new_name, ASRUtils::extract_type(return_type), ReturnVar);
 
+    ASR::ttype_t *bindc_type = needs_fp128_cast
+        ? ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8)) : arg_type;
+    ASR::ttype_t *bindc_ret_type = needs_fp128_cast
+        ? ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8)) : return_type;
+
     {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1;
         {
             args_1.reserve(al, 1);
-            ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_type,
+            ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", bindc_type,
                 ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, arg);
         }
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            return_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+            bindc_ret_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -314,7 +323,19 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+
+        if (needs_fp128_cast) {
+            Vec<ASR::expr_t*> cast_args;
+            cast_args.reserve(al, 1);
+            cast_args.push_back(al, EXPR(ASR::make_Cast_t(al, loc, args[0],
+                ASR::cast_kindType::RealToReal, bindc_type, nullptr, nullptr)));
+            ASR::expr_t *call_result = b.Call(s, cast_args, bindc_ret_type);
+            body.push_back(al, b.Assignment(result,
+                EXPR(ASR::make_Cast_t(al, loc, call_result,
+                    ASR::cast_kindType::RealToReal, return_type, nullptr, nullptr))));
+        } else {
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
     }
 
     ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -4390,6 +4411,9 @@ namespace Real {
             return make_ConstantWithType(make_RealConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
+            if (r->m_r_str) {
+                return EXPR(ASR::make_RealConstant_t(al, loc, r->m_r, t1, r->m_r_str));
+            }
             return make_ConstantWithType(make_RealConstant_t, r->m_r, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
