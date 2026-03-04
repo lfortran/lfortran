@@ -1069,9 +1069,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Module_t>(*a.second)) {
-                    this->visit_symbol(*a.second);
+            // Visit modules in dependency order so that struct member
+            // transformations in a dependency are visible when processing
+            // modules that use those structs (e.g. StructInstanceMember
+            // references).
+            std::vector<std::string> mod_order
+                = ASRUtils::determine_module_dependencies(x);
+            for (auto &name : mod_order) {
+                ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+                if (sym && ASR::is_a<ASR::Module_t>(*sym)) {
+                    this->visit_symbol(*sym);
                 }
             }
             for (auto &a : x.m_symtab->get_scope()) {
