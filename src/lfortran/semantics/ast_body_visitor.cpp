@@ -4224,7 +4224,7 @@ public:
     }
 
     void visit_stmts_helper(std::vector<AST::stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
-                            std::vector<ASR::asr_t*> &tmp_vec, std::string original_function_name, ASR::expr_t* return_var,
+                            std::string original_function_name, ASR::expr_t* return_var,
                             std::vector<ASR::stmt_t*> &after_return_stmt_entry_function, bool is_last = false, bool is_main_function = false) {
         bool return_encountered = false;
         bool entry_encountered = false;
@@ -4299,11 +4299,24 @@ public:
                 if (tmp_stmt->type == ASR::stmtType::Return) {
                     return_encountered = true;
                 }
-            } else if (!tmp_vec.empty()) {
-                for(auto &x: tmp_vec) {
-                    stmt_vector.push_back(ASRUtils::STMT(x));
+            } else if (!this->tmp_vec.empty()) {
+                for(auto &x: this->tmp_vec) {
+                    ASR::stmt_t* s = ASRUtils::STMT(x);
+                    if (return_var != nullptr && s->type == ASR::stmtType::FileWrite) {
+                        ASR::FileWrite_t* fw = ASR::down_cast<ASR::FileWrite_t>(s);
+                        if (fw->m_unit && ASR::is_a<ASR::Var_t>(*fw->m_unit)) {
+                            std::string unit_name = ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::Var_t>(fw->m_unit)->m_v);
+                            if (original_function_name == unit_name ||
+                                entry_functions[original_function_name].find(unit_name) !=
+                                    entry_functions[original_function_name].end()) {
+                                fw->m_unit = return_var;
+                            }
+                        }
+                    }
+                    stmt_vector.push_back(s);
                 }
-                tmp_vec.clear();
+                this->tmp_vec.clear();
             }
             tmp = nullptr;
         }
@@ -4316,7 +4329,7 @@ public:
         ASR::symbol_t* master_function_sym = current_scope->resolve_symbol(master_function_name);
         ASR::Function_t* master_function = ASR::down_cast<ASR::Function_t>(master_function_sym);
 
-        std::vector<ASR::asr_t*> tmp_vector; std::vector<ASR::stmt_t*> stmt_vector; std::vector<ASR::stmt_t*> after_return_stmt_entry_function;
+        std::vector<ASR::stmt_t*> stmt_vector; std::vector<ASR::stmt_t*> after_return_stmt_entry_function;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
@@ -4355,7 +4368,7 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
-        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
+        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
@@ -4363,7 +4376,7 @@ public:
             stmt_vector.push_back(go_to_target_stmt); go_to_target++;
             // check if it is last entry function
             bool is_last = it.first == entry_functions[original_function_name].rbegin()->first;
-            visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
+            visit_stmts_helper(it.second, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
         }
         for (auto &it: stmt_vector) {
             master_function_body.push_back(al, it);

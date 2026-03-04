@@ -885,6 +885,12 @@ public:
         ASR::symbol_t* return_var = current_scope->resolve_symbol(function_name);
         ASR::expr_t* return_var_expr = nullptr;
         if (return_var) {
+            if (ASR::is_a<ASR::Variable_t>(*return_var)) {
+                ASR::Variable_t* rv = ASR::down_cast<ASR::Variable_t>(return_var);
+                if (rv->m_intent == ASR::intentType::Local) {
+                    rv->m_intent = ASR::intentType::ReturnVar;
+                }
+            }
             return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var));
         }
         if (!return_var && is_function) {
