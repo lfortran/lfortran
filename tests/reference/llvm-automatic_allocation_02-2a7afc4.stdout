@@ -556,22 +556,26 @@ FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
   %215 = load %complex_4*, %complex_4** %c, align 8
-  call void @"finalize_Allocatable[c32]"(%complex_4* %215, i1 false)
+  %216 = bitcast %complex_4* %215 to i8*
+  call void @_lfortran_free(i8* %216)
   br label %Finalize_Variable_i
 
 Finalize_Variable_i:                              ; preds = %Finalize_Variable_c
-  %216 = load i32*, i32** %i, align 8
-  call void @"finalize_Allocatable[i32]"(i32* %216, i1 false)
+  %217 = load i32*, i32** %i, align 8
+  %218 = bitcast i32* %217 to i8*
+  call void @_lfortran_free(i8* %218)
   br label %Finalize_Variable_l
 
 Finalize_Variable_l:                              ; preds = %Finalize_Variable_i
-  %217 = load i1*, i1** %l, align 8
-  call void @"finalize_Allocatable[i1]"(i1* %217, i1 false)
+  %219 = load i1*, i1** %l, align 8
+  %220 = bitcast i1* %219 to i8*
+  call void @_lfortran_free(i8* %220)
   br label %Finalize_Variable_r
 
 Finalize_Variable_r:                              ; preds = %Finalize_Variable_l
-  %218 = load float*, float** %r, align 8
-  call void @"finalize_Allocatable[r32]"(float* %218, i1 false)
+  %221 = load float*, float** %r, align 8
+  %222 = bitcast float* %221 to i8*
+  call void @_lfortran_free(i8* %222)
   ret i32 0
 }
 
@@ -593,61 +597,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
-
-define internal void @"finalize_Allocatable[c32]"(%complex_4* %ptr, i1 %in_struct) {
-entry:
-  %0 = icmp eq %complex_4* %ptr, null
-  br i1 %0, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %entry
-  %1 = bitcast %complex_4* %ptr to i8*
-  call void @_lfortran_free(i8* %1)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %entry
-  ret void
-}
-
-define internal void @"finalize_Allocatable[i32]"(i32* %ptr, i1 %in_struct) {
-entry:
-  %0 = icmp eq i32* %ptr, null
-  br i1 %0, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %entry
-  %1 = bitcast i32* %ptr to i8*
-  call void @_lfortran_free(i8* %1)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %entry
-  ret void
-}
-
-define internal void @"finalize_Allocatable[i1]"(i1* %ptr, i1 %in_struct) {
-entry:
-  %0 = icmp eq i1* %ptr, null
-  br i1 %0, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %entry
-  %1 = bitcast i1* %ptr to i8*
-  call void @_lfortran_free(i8* %1)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %entry
-  ret void
-}
-
-define internal void @"finalize_Allocatable[r32]"(float* %ptr, i1 %in_struct) {
-entry:
-  %0 = icmp eq float* %ptr, null
-  br i1 %0, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %entry
-  %1 = bitcast float* %ptr to i8*
-  call void @_lfortran_free(i8* %1)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %entry
-  ret void
-}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

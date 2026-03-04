@@ -6,11 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-finalize_02-cfb24d5.stdout",
-<<<<<<< HEAD
-    "stdout_hash": "adccb7b353faeb64da9699aa42000dc7b9d7be6f0f1ea15512697f9d",
-=======
-    "stdout_hash": "bdf7a4fd75da68251b22232233d1a2ee4471d1936de3e189450e886e",
->>>>>>> 4c2e1d204 (Update reference tests)
+    "stdout_hash": "ad79fb4f16d5766ea9b947999cd0f6fcdf37b06efaaa05d8bbbb5205",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

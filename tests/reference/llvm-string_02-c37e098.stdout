@@ -110,19 +110,27 @@ FINALIZE_SYMTABLE_string_02:                      ; preds = %return
   br label %Finalize_Variable_firstname
 
 Finalize_Variable_firstname:                      ; preds = %FINALIZE_SYMTABLE_string_02
-  call void @finalize_str(%string_descriptor* %firstname, i1 false)
+  %45 = getelementptr %string_descriptor, %string_descriptor* %firstname, i32 0, i32 0
+  %46 = load i8*, i8** %45, align 8
+  call void @_lfortran_free(i8* %46)
   br label %Finalize_Variable_greetings
 
 Finalize_Variable_greetings:                      ; preds = %Finalize_Variable_firstname
-  call void @finalize_str(%string_descriptor* %greetings, i1 false)
+  %47 = getelementptr %string_descriptor, %string_descriptor* %greetings, i32 0, i32 0
+  %48 = load i8*, i8** %47, align 8
+  call void @_lfortran_free(i8* %48)
   br label %Finalize_Variable_surname
 
 Finalize_Variable_surname:                        ; preds = %Finalize_Variable_greetings
-  call void @finalize_str(%string_descriptor* %surname, i1 false)
+  %49 = getelementptr %string_descriptor, %string_descriptor* %surname, i32 0, i32 0
+  %50 = load i8*, i8** %49, align 8
+  call void @_lfortran_free(i8* %50)
   br label %Finalize_Variable_title
 
 Finalize_Variable_title:                          ; preds = %Finalize_Variable_surname
-  call void @finalize_str(%string_descriptor* %title, i1 false)
+  %51 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
+  %52 = load i8*, i8** %51, align 8
+  call void @_lfortran_free(i8* %52)
   ret i32 0
 }
 
@@ -139,18 +147,3 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
-
-define internal void @finalize_str(%string_descriptor* %ptr, i1 %in_struct) {
-entry:
-  %0 = getelementptr %string_descriptor, %string_descriptor* %ptr, i32 0, i32 0
-  %1 = load i8*, i8** %0, align 8
-  %2 = icmp eq i8* %1, null
-  br i1 %2, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %entry
-  call void @_lfortran_free(i8* %1)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %entry
-  ret void
-}
