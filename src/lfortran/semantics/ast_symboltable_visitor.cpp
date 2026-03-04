@@ -3403,10 +3403,15 @@ public:
 
     void resolve_proc_pointer_placeholders() {
         // After all interfaces/functions have been processed, update
-        // m_type_declaration for procedure pointer variables inside structs
-        // that still reference a placeholder Function_t.
+        // m_type_declaration and m_type for procedure pointer variables
+        // inside structs that still reference a placeholder Function_t.
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
+            if (!real_sym || real_sym == placeholder_sym) continue;
+            ASR::symbol_t *real_sym_underlying = ASRUtils::symbol_get_past_external(real_sym);
+            if (!ASR::is_a<ASR::Function_t>(*real_sym_underlying)) continue;
+            ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
+            ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
@@ -3415,6 +3420,12 @@ public:
                             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
                             if (var->m_type_declaration == placeholder_sym) {
                                 var->m_type_declaration = real_sym;
+                                if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                                    var->m_type = ASRUtils::TYPE(
+                                        ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                                } else {
+                                    var->m_type = real_func_type;
+                                }
                             }
                         }
                     }

@@ -18190,7 +18190,6 @@ public:
             llvm::Type* func_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_dt, ASRUtils::symbol_type(x.m_name), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
-            args = convert_call_args(x, false);
             ASR::Function_t* func = nullptr;
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
@@ -18201,6 +18200,8 @@ public:
                 func = ASR::down_cast<ASR::Function_t>(
                     ASRUtils::symbol_get_past_external(x.m_name));
             }
+            bool will_prepend_self = (func && func->n_args > x.n_args);
+            args = convert_call_args(x, will_prepend_self);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             // The interface function includes the pass (self) argument
             // but explicit call args (x.m_args) do not. When the

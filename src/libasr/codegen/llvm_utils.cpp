@@ -376,6 +376,10 @@ namespace LCompilers {
         if( name2dertype.find(der_type_name) != name2dertype.end() ) {
             der_type_llvm = name2dertype[der_type_name];
         } else {
+            // Forward-declare the class type as opaque and register it
+            // in the cache to prevent new struct type creation in case of recursive types.
+            der_type_llvm = llvm::StructType::create(context, der_type_name);
+            name2dertype[der_type_name] = der_type_llvm;
             if ( compiler_options.new_classes ) {
                 llvm::Type* inner_type = nullptr;
                 if (is_upoly) {
@@ -385,7 +389,7 @@ namespace LCompilers {
                     // %_class = <(i32,..)**, %_struct>
                     inner_type = getStructType(der_type, module, true);
                 }
-                der_type_llvm = llvm::StructType::create(context, { vptr_type, inner_type }, der_type_name, true);
+                der_type_llvm->setBody({ vptr_type, inner_type }, true);
             } else {
                 std::vector<llvm::Type*> member_types;
                 member_types.push_back(getIntType(8));
@@ -394,10 +398,8 @@ namespace LCompilers {
                 } else {
                     member_types.push_back(getStructType(der_type, module, true));
                 }
-                der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
+                der_type_llvm->setBody(member_types, false);
             }
-            name2dertype[der_type_name] = der_type_llvm;
-
         }
         LCOMPILERS_ASSERT(der_type_llvm != nullptr);
         if( is_pointer ) {
