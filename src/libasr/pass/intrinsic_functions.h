@@ -5792,27 +5792,40 @@ namespace Achar {
 
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
 
-        /* Declare Arguments + Return Variable */
-        fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", character(1), ReturnVar);
+        ASR::expr_t* result;
+        ASR::ttype_t* call_return_type = return_type;
 
-        /* Body */
-        /*
-            function _lcompilers_achar_#####(i) result(result)
-                integer, intent(in) :: i
-                character(1) :: result
-                result = transfer(i, result)
-            end function
-        */
-        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+        if (ASRUtils::is_array(arg_types[0])) {
+            fill_func_arg("codes", arg_types[0]);
 
-        /* Create Function + Add Into SymTable*/
+            ASR::expr_t* n = b.ArraySize(args[0], b.i32(1), int32);
+            ASR::ttype_t* result_str_type = b.String(n,
+                ASR::string_length_kindType::ExpressionLength);
+            result = declare("result", result_str_type, ReturnVar);
+            auto j = declare("j", int32, Local);
+            auto tmp_char = declare("tmp_char", character(1), Local);
+
+            body.push_back(al, b.DoLoop(j, b.i32(1), n, {
+                b.Assignment(tmp_char, b.BitCast(
+                    b.ArrayItem_01(args[0], {j}), tmp_char)),
+                b.Assignment(b.StringSection(result, j, j), tmp_char)
+            }));
+
+            ASR::expr_t* n_caller = b.ArraySize(
+                new_args[0].m_value, b.i32(1), int32);
+            call_return_type = b.String(n_caller,
+                ASR::string_length_kindType::ExpressionLength);
+        } else {
+            fill_func_arg("i", arg_types[0]);
+            result = declare("result", character(1), ReturnVar);
+            body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+        }
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
 
-        /* Return Call To The Function */
-        return b.Call(f_sym, new_args, return_type, nullptr);
+        return b.Call(f_sym, new_args, call_return_type, nullptr);
     }
 
 } // namespace Achar
