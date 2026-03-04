@@ -329,6 +329,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(kv.first);
                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
                 if (ftype->m_deftype != ASR::deftypeType::Interface) continue;
+                // Only consider module procedure interfaces (m_module=true).
+                // Abstract interfaces should not be removed.
+                if (!ftype->m_module) continue;
                 SymbolTable* parent_symtab = func->m_symtab->parent;
                 if (!parent_symtab || !parent_symtab->asr_owner) continue;
                 ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
