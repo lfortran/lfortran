@@ -2941,6 +2941,7 @@ RUN(NAME procedure_38 LABELS gfortran llvm)
 RUN(NAME procedure_39 LABELS gfortran llvm)
 RUN(NAME procedure_40 LABELS gfortran llvm)
 RUN(NAME procedure_41 LABELS gfortran llvm)
+
 RUN(NAME procedure_43 LABELS gfortran llvm EXTRAFILES procedure_43_module.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
