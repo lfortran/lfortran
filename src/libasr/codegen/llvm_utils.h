@@ -4,8 +4,6 @@
 #include "libasr/asr_utils.h"
 #include "libasr/assert.h"
 #include "libasr/exception.h"
-#include <llvm/ADT/ArrayRef.h>
-#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
@@ -13,11 +11,8 @@
 
 #include <map>
 #include <string>
-#include <initializer_list>
-#include <type_traits>
 #include <unordered_map>
 #include <tuple>
-#include <utility>
 
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
