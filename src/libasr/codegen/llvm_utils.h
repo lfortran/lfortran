@@ -939,63 +939,6 @@ class ASRToLLVMVisitor;
             }
         }
 
-        bool is_cached(const std::string& cache_key) {
-            return type_finalizer_cache_.find(cache_key) != type_finalizer_cache_.end();
-        }
-
-        template <typename... SignatureArgs>
-        llvm::BasicBlock* START_CACHE(const std::string &cache_key, SignatureArgs&&... signature_args) {
-            static_assert((std::is_same_v<llvm::Value*, std::decay_t<SignatureArgs>> && ...));
-
-            auto const key_it = type_finalizer_cache_.find(cache_key);
-            LCOMPILERS_ASSERT_MSG(key_it == type_finalizer_cache_.end(), "Cache already exists, Please use it.")
-
-            std::vector<llvm::Value**> args {&signature_args...};
-
-            // Fetch function signature
-            std::vector<llvm::Type*> arg_types;
-            for (llvm::Value** arg: args) {
-                LCOMPILERS_ASSERT(*arg)
-                arg_types.push_back((*arg)->getType());
-            }
-
-            auto *const finalizer_fn_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(builder_->getContext()),
-                arg_types, false);
-            auto *const finalizer_fn = llvm::Function::Create(finalizer_fn_type,
-                llvm::Function::InternalLinkage, "finalize_"+cache_key, llvm_utils_->module);
-
-            type_finalizer_cache_[cache_key] = finalizer_fn;
-            builder_->CreateCall(finalizer_fn, {signature_args...}); // Insert call to the finalizer in the current block
-            
-            llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
-            LCOMPILERS_ASSERT(saved_BB)
-            // We don't jump between insert points, No need to save insertpoint.
-
-            llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
-                builder_->getContext(), "entry", finalizer_fn);
-            builder_->SetInsertPoint(entry);
-
-            for(size_t i = 0; i < args.size(); i++) {
-                *(args[i]) = finalizer_fn->getArg(i);
-            }
-
-            return saved_BB;
-        }
-
-        void END_CACHE(llvm::BasicBlock* revert_bb) {
-            LCOMPILERS_ASSERT(revert_bb)
-            if (!builder_->GetInsertBlock()->getTerminator()) {
-                builder_->CreateRetVoid();
-            }
-            builder_->SetInsertPoint(revert_bb);
-        }
-
-        llvm::Value* call_cached_finalizer(const std::string& cache_key,
-                const std::vector<llvm::Value*>& call_args) {
-            return builder_->CreateCall(type_finalizer_cache_[cache_key], call_args);
-        }
-
         void finalize_variable(ASR::Variable_t* const v){
             if(not_finalizable_variable(v)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
@@ -1526,6 +1469,76 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             return key; 
         }
 
+        bool is_cached(const std::string& cache_key) {
+            return type_finalizer_cache_.find(cache_key) != type_finalizer_cache_.end();
+        }
+
+        /**
+         * Starts CACHE mode for the following set of instructions until `END_CACHE` is called.
+         * In CACHE mode, we create a finalizer function for the type we're finalizing,
+         * 
+         * How to use ?
+         * - Pass a unqiue cache for the following set of instructions (mainly tagged by the type we're finalizing)
+         * - Pass the signature of the finalizer function. Those are caught by reference, We direct them to the parameters of the finalizer function.
+         * - Use returned BasicBlock as the revert point to jump back to after finishing the finalizer function.
+         */
+        template <typename... SignatureArgs>
+        llvm::BasicBlock* START_CACHE(const std::string &cache_key, SignatureArgs&&... signature_args) {
+            static_assert((std::is_same_v<llvm::Value*, std::decay_t<SignatureArgs>> && ...));
+
+            auto const key_it = type_finalizer_cache_.find(cache_key);
+            LCOMPILERS_ASSERT_MSG(key_it == type_finalizer_cache_.end(), "Cache already exists, Please use it.")
+
+            std::vector<llvm::Value**> args {&signature_args...};
+
+            // Fetch function signature
+            std::vector<llvm::Type*> arg_types;
+            for (llvm::Value** arg: args) {
+                LCOMPILERS_ASSERT(*arg)
+                arg_types.push_back((*arg)->getType());
+            }
+
+            auto *const finalizer_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(builder_->getContext()),
+                arg_types, false);
+            auto *const finalizer_fn = llvm::Function::Create(finalizer_fn_type,
+                llvm::Function::InternalLinkage, "finalize_"+cache_key, llvm_utils_->module);
+
+            type_finalizer_cache_[cache_key] = finalizer_fn;
+            builder_->CreateCall(finalizer_fn, {signature_args...}); // Insert call to the finalizer in the current block
+            
+            llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
+            LCOMPILERS_ASSERT(saved_BB)
+            // We don't jump between insert points, No need to save insertpoint.
+
+            llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
+                builder_->getContext(), "entry", finalizer_fn);
+            builder_->SetInsertPoint(entry);
+
+            for(size_t i = 0; i < args.size(); i++) {
+                *(args[i]) = finalizer_fn->getArg(i);
+            }
+
+            return saved_BB;
+        }
+        
+        /**
+         * Finishes `START_CACHE` job by reverting back to the passed BasicBlock.
+         * It also terminates the function body with `return void`
+         */
+        void END_CACHE(llvm::BasicBlock* revert_bb) {
+            LCOMPILERS_ASSERT(revert_bb)
+            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+                "`END CACHE` adds the terminator, not expected to be added by other utility")
+            builder_->CreateRetVoid();
+            builder_->SetInsertPoint(revert_bb);
+        }
+
+        llvm::Value* call_cached_finalizer(const std::string& cache_key,
+                const std::vector<llvm::Value*>& call_args) {
+            return builder_->CreateCall(type_finalizer_cache_[cache_key], call_args);
+        }
+
         /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.
         template <typename finProcess>
         void check_if_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, finProcess fin){
@@ -1737,7 +1750,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->getBasicBlockList().back().getTerminator()){
+                if(cache_pair.second->back().getTerminator() != nullptr){
                     LCOMPILERS_ASSERT(("Cache function" + 
                             cache_pair.second->getName().str() +
                             "Not properly created").c_str())

@@ -496,7 +496,7 @@ FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
   br label %Finalize_Variable_settings
 
 Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
-  call void @finalize_StructType__fpm_run_settings(%modules_36_fpm_main_01.fpm_run_settings* %settings)
+  call void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %settings)
   ret i32 0
 }
 
@@ -669,7 +669,7 @@ declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lpython_free_argv()
 
-define internal void @finalize_StructType__fpm_run_settings(%modules_36_fpm_main_01.fpm_run_settings* %0) {
+define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %0) {
 entry:
   br label %"Finalize_struct_fpm_run_settings's_name_member"
 
