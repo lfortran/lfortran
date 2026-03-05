@@ -109,24 +109,24 @@ contains
         print *, arr
     end subroutine
 end module intent_out_array_bounds_mod
+module halvestring_mod
+contains
+    pure function half(s1) result(s2)
+        character(*), intent(in) :: s1
+        character(len(s1)/2) :: s2
+        s2 = s1
+    end function half
+end module halvestring_mod
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+module halvestring_user_mod
+use halvestring_mod, only: half
+character(*), parameter :: mod_spec_str = 'abcdeedcba'
+character(len(half(mod_spec_str))) :: mod_spec_stringb
+end module halvestring_user_mod
 ! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_2
     use continue_compilation_2_mod
-    
+    use halvestring_mod, only: half
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
     implicit real(a-z)
@@ -254,9 +254,9 @@ program continue_compilation_2
     character(8) :: badfmt_s = '(a i0)'
     character(:), allocatable :: ax
     integer :: a_deferred(:)
-    
-
-
+    character(*), parameter :: spec_str = 'abcdeedcba'
+    character(len(half(spec_str))) :: spec_stringb
+    character :: spec_stringc*(len(half(spec_str)))
 
 
 

@@ -143,6 +143,12 @@ semantic error: OPTIONAL dummy argument 'n' cannot be used for array bounds decl
 107 |         real :: arr(n)
     |                     ^ hint: use a non-optional argument, or declare the array as `allocatable`
 
+semantic error: Character length in a module must be a compile-time constant, but it depends on a call to the function 'half'
+   --> tests/errors/continue_compilation_2.f90:124:11
+    |
+124 | character(len(half(mod_spec_str))) :: mod_spec_stringb
+    |           ^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_2.f90:132:5 - 134:49
     |
@@ -287,6 +293,18 @@ semantic error: Array 'a_deferred' with a deferred shape cannot be a local varia
     |
 256 |     integer :: a_deferred(:)
     |                ^^^^^^^^^^^^^ 
+
+semantic error: Character length in the main program must be a compile-time constant, but it depends on a call to the function 'half'
+   --> tests/errors/continue_compilation_2.f90:258:15
+    |
+258 |     character(len(half(spec_str))) :: spec_stringb
+    |               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Character length in the main program must be a compile-time constant, but it depends on a call to the function 'half'
+   --> tests/errors/continue_compilation_2.f90:259:32
+    |
+259 |     character :: spec_stringc*(len(half(spec_str)))
+    |                                ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: More than one main program found
    --> tests/errors/continue_compilation_2.f90:127:1 - 574:11
