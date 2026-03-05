@@ -1402,6 +1402,7 @@ typedef enum primitive_types{
     INTEGER_8_TYPE = 3,
     FLOAT_64_TYPE = 4,
     FLOAT_32_TYPE = 5,
+    FLOAT_128_TYPE = 15,
     CHAR_PTR_TYPE = 6,
     LOGICAL_TYPE = 7,
     CPTR_VOID_PTR_TYPE = 8,
@@ -1428,6 +1429,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -1740,7 +1742,9 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float), 
         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/,
-        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/ };
+        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
+        sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
+        16 /*FLOAT_128_TYPE: 128-bit IEEE float*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -1817,6 +1821,16 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             break;
         case '4':
             *PrimitiveType = FLOAT_32_TYPE;
+            break;
+        case '1':
+            if (s_info->serialization_string[s_info->current_stop++] == '6') {
+                *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+                fprintf(stderr, "RunTime - compiler"
+                "internal error : Unidentified Print Types Serialization --> %s\n",
+                        s_info->serialization_string);
+                exit(1);
+            }
             break;
         default:
             fprintf(stderr, "RunTime - compiler" 
@@ -2000,6 +2014,235 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+#if defined(__APPLE__) && defined(__aarch64__) && !defined(COMPILE_TO_WASM)
+void _lf_qp_powi(const void *base_ptr, int exp, void *rp);
+void _lf_qp_div(const void *ap, const void *bp, void *rp);
+void _lf_qp_mul(const void *ap, const void *bp, void *rp);
+void _lf_qp_trunc_df(const void *qp, void *dp);
+void _lf_qp_extend_df(const void *dp, void *rp);
+#endif
+
+static double fp128_to_double_scaled(const void *raw, int *dec_exp) {
+    uint64_t lo, hi;
+    memcpy(&lo, raw, 8);
+    memcpy(&hi, (const char*)raw + 8, 8);
+    int sign = (int)(hi >> 63);
+    int bexp = (int)((hi >> 48) & 0x7FFF);
+    uint64_t sig_hi = hi & 0x0000FFFFFFFFFFFFULL;
+
+    if (bexp == 0 && sig_hi == 0 && lo == 0) {
+        *dec_exp = 0;
+        return sign ? -0.0 : 0.0;
+    }
+    if (bexp == 0x7FFF) {
+        *dec_exp = 0;
+        return (sig_hi || lo) ? __builtin_nan("") : (sign ? -__builtin_inf() : __builtin_inf());
+    }
+
+    int true_exp;
+    double sig_d;
+    double two_48 = ldexp(1.0, 48);
+    double two_112 = ldexp(1.0, 112);
+    if (bexp == 0) {
+        true_exp = 1 - 16383;
+        __uint128_t s = ((__uint128_t)sig_hi << 64) | lo;
+        while (!(s & ((__uint128_t)1 << 112))) { s <<= 1; true_exp--; }
+        uint64_t sh = (uint64_t)(s >> 64);
+        uint64_t sl = (uint64_t)s;
+        sig_d = (double)sh / two_48 + (double)sl / two_112;
+    } else {
+        true_exp = bexp - 16383;
+        sig_d = 1.0 + (double)sig_hi / two_48 + (double)lo / two_112;
+    }
+
+    double approx_log10 = log10(sig_d) + 0.30102999566398119521 * true_exp;
+    int de = (int)floor(approx_log10);
+
+    /* Use fp128 arithmetic: scaled = raw / 10^de (or raw * 10^|de| if de<0) */
+    double ten = 10.0;
+    unsigned char ten_fp128[16], power[16], scaled_fp128[16], abs_raw[16];
+    _lf_qp_extend_df(&ten, ten_fp128);
+
+    memcpy(abs_raw, raw, 16);
+    if (sign) {
+        unsigned char *p = abs_raw + 15;
+        *p &= 0x7F;
+    }
+
+    _lf_qp_powi(ten_fp128, de, power);
+    _lf_qp_div(abs_raw, power, scaled_fp128);
+
+    double scaled;
+    _lf_qp_trunc_df(scaled_fp128, &scaled);
+
+    if (scaled >= 10.0) { scaled /= 10.0; de++; }
+    if (scaled < 1.0 && scaled > 0.0) { scaled *= 10.0; de--; }
+    if (sign) scaled = -scaled;
+
+    *dec_exp = de;
+    return scaled;
+}
+
+static double fp128_to_double(const void *raw) {
+    uint64_t lo, hi;
+    memcpy(&lo, raw, 8);
+    memcpy(&hi, (const char*)raw + 8, 8);
+    int sign = (int)(hi >> 63);
+    int exp = (int)((hi >> 48) & 0x7FFF);
+    uint64_t sig_hi = hi & 0x0000FFFFFFFFFFFF;
+    if (exp == 0x7FFF) {
+        uint64_t d = ((uint64_t)sign << 63) | ((uint64_t)0x7FF << 52);
+        if (sig_hi || lo) d |= 1;
+        double r; memcpy(&r, &d, 8); return r;
+    }
+    if (exp == 0 && sig_hi == 0 && lo == 0) {
+        double r = 0.0; return sign ? -r : r;
+    }
+    int d_exp = exp - 16383 + 1023;
+    if (d_exp >= 0x7FF) {
+        uint64_t d = ((uint64_t)sign << 63) | ((uint64_t)0x7FF << 52);
+        double r; memcpy(&r, &d, 8); return r;
+    }
+    if (d_exp <= 0) {
+        double r = 0.0; return sign ? -r : r;
+    }
+    uint64_t d_sig = (sig_hi >> 12) | ((sig_hi & 0xFFF) ? 0 : 0);
+    d_sig = sig_hi >> (48 - 52);
+    /* sig_hi is 48 bits of the 112-bit significand, need top 52 bits:
+       top 48 bits from sig_hi + top 4 bits from lo */
+    d_sig = (sig_hi << 4) | (lo >> 60);
+    if ((lo >> 59) & 1) {
+        d_sig++;
+        if (d_sig >= ((uint64_t)1 << 52)) { d_sig = 0; d_exp++; }
+    }
+    uint64_t d = ((uint64_t)sign << 63) | ((uint64_t)d_exp << 52) | d_sig;
+    double r; memcpy(&r, &d, 8); return r;
+}
+
+static void format_quad_fortran(char* result, const void* raw_bytes) {
+    /*
+     * Convert IEEE 754 binary128 (quad precision) to a decimal string
+     * with 36 significant digits, matching gfortran's default output.
+     *
+     * Layout: 1 sign bit, 15 exponent bits (bias 16383), 112 fraction bits.
+     * Uses __uint128_t for exact digit extraction via repeated multiply-by-10.
+     */
+    typedef unsigned __int128 u128;
+    const uint8_t* bytes = (const uint8_t*)raw_bytes;
+    uint64_t lo, hi;
+    memcpy(&lo, bytes, 8);
+    memcpy(&hi, bytes + 8, 8);
+
+    int sign = (hi >> 63) & 1;
+    int biased_exp = (int)((hi >> 48) & 0x7FFF);
+    uint64_t frac_hi = hi & 0x0000FFFFFFFFFFFFULL;
+    uint64_t frac_lo = lo;
+
+    if (biased_exp == 0x7FFF) {
+        sprintf(result, "%s", (frac_hi || frac_lo) ? "NaN"
+            : (sign ? "-Infinity" : "Infinity"));
+        return;
+    }
+    if (biased_exp == 0 && frac_hi == 0 && frac_lo == 0) {
+        sprintf(result, "%s0.0000000000000000000000000000000000000",
+            sign ? "-" : "");
+        return;
+    }
+
+    u128 sig;
+    int e2;
+    if (biased_exp != 0) {
+        sig = ((u128)1 << 112) | ((u128)frac_hi << 64) | frac_lo;
+        e2 = biased_exp - 16383 - 112;
+    } else {
+        sig = ((u128)frac_hi << 64) | frac_lo;
+        e2 = 1 - 16383 - 112;
+    }
+
+    /* value = sig * 2^e2, sig is 113 bits for normal numbers */
+
+    if (e2 >= 0) {
+        double val = (double)(uint64_t)(sig >> 64) * pow(2.0, 64 + e2)
+                   + (double)(uint64_t)sig * pow(2.0, e2);
+        if (sign) val = -val;
+        sprintf(result, "%.36E", val);
+        return;
+    }
+
+    int neg_e2 = -e2;
+
+    if (neg_e2 > 124) {
+        /*
+         * For very small values, fall back to double-based formatting.
+         * The 128-bit multiply-by-10 loop would overflow.
+         */
+        double val = (double)(uint64_t)(sig >> 64) * pow(2.0, 64 + e2)
+                   + (double)(uint64_t)sig * pow(2.0, e2);
+        if (sign) val = -val;
+        sprintf(result, "%.36E", val);
+        return;
+    }
+
+    u128 int_part = sig >> neg_e2;
+    u128 frac_num = sig & (((u128)1 << neg_e2) - 1);
+
+    int raw[50];
+    int ndigits = 0;
+
+    if (int_part == 0) {
+        raw[ndigits++] = 0;
+    } else {
+        char tmp[40];
+        int ntmp = 0;
+        u128 ip = int_part;
+        while (ip > 0) {
+            tmp[ntmp++] = (int)(ip % 10);
+            ip /= 10;
+        }
+        for (int i = ntmp - 1; i >= 0; i--)
+            raw[ndigits++] = tmp[i];
+    }
+
+    int int_count = ndigits;
+    int frac_needed = 36 - int_count;
+    if (frac_needed < 0) frac_needed = 0;
+
+    u128 mask = ((u128)1 << neg_e2) - 1;
+    for (int i = 0; i < frac_needed; i++) {
+        frac_num *= 10;
+        int d = (int)(frac_num >> neg_e2);
+        frac_num &= mask;
+        raw[ndigits++] = d;
+    }
+
+    /* Round by peeking at the next digit */
+    frac_num *= 10;
+    if ((int)(frac_num >> neg_e2) >= 5) {
+        int carry = 1;
+        for (int i = ndigits - 1; i >= 0 && carry; i--) {
+            int d = raw[i] + carry;
+            raw[i] = d % 10;
+            carry = d / 10;
+        }
+        if (carry) {
+            memmove(raw + 1, raw, (size_t)ndigits * sizeof(int));
+            raw[0] = 1;
+            ndigits++;
+            int_count++;
+        }
+    }
+
+    char* p = result;
+    if (sign) *p++ = '-';
+
+    for (int i = 0; i < int_count; i++)
+        *p++ = '0' + raw[i];
+    *p++ = '.';
+    for (int i = int_count; i < ndigits; i++)
+        *p++ = '0' + raw[i];
+    *p = '\0';
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
@@ -2053,6 +2296,9 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             } else {
                 format_float_fortran(result, *(float*)arg);
             }
+            break;
+        case FLOAT_128_TYPE:
+            format_quad_fortran(result, arg);
             break;
         case LOGICAL_TYPE:
             sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
@@ -2412,6 +2658,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     case  FLOAT_32_TYPE:
                         double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
                         break;
+                    case  FLOAT_128_TYPE:
+                        double_val = fp128_to_double(s_info.current_arg_info.current_arg);
+                        break;
                     case CHAR_PTR_TYPE:
                     case STRING_DESCRIPTOR_TYPE:
                         char_val = *(char**)s_info.current_arg_info.current_arg;
@@ -2585,7 +2834,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     }
                     char buffer[100];
                     char formatted[100];
-                    if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
+                    if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE || s_info.current_element_type == FLOAT_128_TYPE) {
                         if (isnan(double_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(double_val)) {
@@ -2661,17 +2910,45 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     result_len += temp_len;
                     free(temp_buf);
                 } else if (tolower(value[0]) == 'e') {
-                    // check for decimal presence before passing, else leads to segmentation fault
-                    // as FORTRAN seeks for E<width>.<number of digits>
                     if (strchr(value, '.') == NULL) {
                         fprintf(stderr, "Error: Invalid format descriptor E - Proper Format is E<width>.<number of digits>\n");
                         fprintf(stderr, "Period required in format specifier\n");
                         exit(1);
                     }
-                    // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
                     char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                    if (format_type == 'n') {
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        int dec_exp = 0;
+                        double scaled = fp128_to_double_scaled(
+                            s_info.current_arg_info.current_arg, &dec_exp);
+                        if (format_type == 'n') {
+                            handle_en(value, scaled, scale, &temp_buf, "E", is_SP_specifier);
+                        } else {
+                            handle_decimal(value, scaled, scale, &temp_buf, "E", is_SP_specifier);
+                        }
+                        if (dec_exp != 0) {
+                            char *ep = strrchr(temp_buf, 'E');
+                            if (!ep) ep = strrchr(temp_buf, 'D');
+                            if (ep) {
+                                int old_exp = atoi(ep + 1);
+                                int actual_exp = old_exp + dec_exp;
+                                char letter = *ep;
+                                int w_d, d_d, e_d;
+                                parse_decimal_or_en_format(value, &w_d, &d_d, &e_d);
+                                char exp_sign = (actual_exp >= 0) ? '+' : '-';
+                                if (actual_exp < 0) actual_exp = -actual_exp;
+                                char exp_buf[20];
+                                if (e_d > 0) {
+                                    snprintf(exp_buf, sizeof(exp_buf),
+                                        "%c%c%0*d", letter, exp_sign, e_d, actual_exp);
+                                } else {
+                                    snprintf(exp_buf, sizeof(exp_buf),
+                                        "%c%c%02d", letter, exp_sign, actual_exp);
+                                }
+                                strcpy(ep, exp_buf);
+                            }
+                        }
+                    } else if (format_type == 'n') {
                         handle_en(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
                     } else {
                         handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
@@ -10046,3 +10323,609 @@ __lfortran_dynamic_cast(const void* static_ptr,
 
     return (void*) dst_ptr;
 }
+
+/*
+ * IEEE 754 binary128 (fp128) soft-float builtins for ARM64 macOS.
+ *
+ * Apple Clang does not support __float128 and Apple's compiler-rt omits
+ * fp128 builtins on ARM64.  LLVM lowers fp128 operations to calls such as
+ * __divtf3, __multf3, __gttf2, etc., which we provide here using
+ * __uint128_t integer arithmetic with assembly calling-convention stubs.
+ *
+ * Format (binary128):
+ *   Bit 127       : sign
+ *   Bits 112-126  : biased exponent (15 bits, bias 16383)
+ *   Bits 0-111    : significand fraction (112 bits, implicit leading 1)
+ */
+#if defined(__APPLE__) && defined(__aarch64__) && !defined(COMPILE_TO_WASM)
+
+#define QP_SIG_BITS    112
+#define QP_EXP_BIAS    16383
+#define QP_SIGN_BIT    ((__uint128_t)1 << 127)
+#define QP_EXP_MASK    (((__uint128_t)0x7FFF) << QP_SIG_BITS)
+#define QP_SIG_MASK    ((((__uint128_t)1) << QP_SIG_BITS) - 1)
+#define QP_IMPLICIT    ((__uint128_t)1 << QP_SIG_BITS)
+#define QP_QNAN        (QP_EXP_MASK | ((__uint128_t)1 << (QP_SIG_BITS - 1)))
+
+static inline int qp_is_nan(__uint128_t v) {
+    return (v & QP_EXP_MASK) == QP_EXP_MASK && (v & QP_SIG_MASK) != 0;
+}
+
+static void qp_wide_mul(__uint128_t a, __uint128_t b,
+                         __uint128_t *hi, __uint128_t *lo) {
+    uint64_t aL = (uint64_t)a, aH = (uint64_t)(a >> 64);
+    uint64_t bL = (uint64_t)b, bH = (uint64_t)(b >> 64);
+    __uint128_t ll = (__uint128_t)aL * bL;
+    __uint128_t lh = (__uint128_t)aL * bH;
+    __uint128_t hl = (__uint128_t)aH * bL;
+    __uint128_t hh = (__uint128_t)aH * bH;
+    __uint128_t mid = lh + hl;
+    int mid_carry = (mid < lh);
+    *lo = ll + (mid << 64);
+    int lo_carry = (*lo < ll);
+    *hi = hh + (mid >> 64) + ((__uint128_t)mid_carry << 64) + lo_carry;
+}
+
+/* ── Comparison (returns <0, 0, >0) ── */
+
+/* For __gttf2 / __getf2: NaN → -1 (so "a > b" is false) */
+int _lf_qp_cmp_ge(const void *ap, const void *bp) {
+    __uint128_t a, b;
+    memcpy(&a, ap, 16);
+    memcpy(&b, bp, 16);
+    if (qp_is_nan(a) || qp_is_nan(b)) return -1;
+    __uint128_t aa = a & ~QP_SIGN_BIT, ba = b & ~QP_SIGN_BIT;
+    if (aa == 0 && ba == 0) return 0;
+    int an = (int)(a >> 127), bn = (int)(b >> 127);
+    if (an != bn) return an ? -1 : 1;
+    if (a == b) return 0;
+    int mg = (aa > ba) ? 1 : -1;
+    return an ? -mg : mg;
+}
+
+/* For __netf2 / __letf2 / __lttf2 / __eqtf2: NaN → 1 */
+int _lf_qp_cmp_le(const void *ap, const void *bp) {
+    __uint128_t a, b;
+    memcpy(&a, ap, 16);
+    memcpy(&b, bp, 16);
+    if (qp_is_nan(a) || qp_is_nan(b)) return 1;
+    __uint128_t aa = a & ~QP_SIGN_BIT, ba = b & ~QP_SIGN_BIT;
+    if (aa == 0 && ba == 0) return 0;
+    int an = (int)(a >> 127), bn = (int)(b >> 127);
+    if (an != bn) return an ? -1 : 1;
+    if (a == b) return 0;
+    int mg = (aa > ba) ? 1 : -1;
+    return an ? -mg : mg;
+}
+
+/* ── fp128 → int32 (truncation towards zero) ── */
+
+int32_t _lf_qp_fix_si(const void *ap) {
+    __uint128_t a;
+    memcpy(&a, ap, 16);
+    int sign = (int)(a >> 127);
+    int bexp = (int)((a >> QP_SIG_BITS) & 0x7FFF);
+    if (bexp == 0) return 0;
+    int exp = bexp - QP_EXP_BIAS;
+    if (exp < 0) return 0;
+    if (exp >= 31) return sign ? (-2147483647 - 1) : 2147483647;
+    __uint128_t sig = (a & QP_SIG_MASK) | QP_IMPLICIT;
+    int32_t r = (exp >= QP_SIG_BITS)
+        ? (int32_t)((uint64_t)(sig << (exp - QP_SIG_BITS)))
+        : (int32_t)((uint64_t)(sig >> (QP_SIG_BITS - exp)));
+    return sign ? -r : r;
+}
+
+/* ── fp128 multiplication ── */
+
+void _lf_qp_mul(const void *ap, const void *bp, void *rp) {
+    __uint128_t a, b, result;
+    memcpy(&a, ap, 16);
+    memcpy(&b, bp, 16);
+    int as = (int)(a >> 127), bs = (int)(b >> 127), rs = as ^ bs;
+    int ae = (int)((a >> QP_SIG_BITS) & 0x7FFF);
+    int be = (int)((b >> QP_SIG_BITS) & 0x7FFF);
+    __uint128_t am = a & QP_SIG_MASK, bm = b & QP_SIG_MASK;
+
+    if (ae == 0x7FFF && am) { memcpy(rp, &a, 16); return; }
+    if (be == 0x7FFF && bm) { memcpy(rp, &b, 16); return; }
+    if (ae == 0x7FFF) {
+        result = (be == 0 && bm == 0) ? QP_QNAN
+                 : ((__uint128_t)rs << 127) | QP_EXP_MASK;
+        memcpy(rp, &result, 16); return;
+    }
+    if (be == 0x7FFF) {
+        result = (ae == 0 && am == 0) ? QP_QNAN
+                 : ((__uint128_t)rs << 127) | QP_EXP_MASK;
+        memcpy(rp, &result, 16); return;
+    }
+    if ((ae == 0 && am == 0) || (be == 0 && bm == 0)) {
+        result = (__uint128_t)rs << 127;
+        memcpy(rp, &result, 16); return;
+    }
+
+    if (ae == 0) { while (!(am & QP_IMPLICIT)) { am <<= 1; ae--; } ae++; }
+    else am |= QP_IMPLICIT;
+    if (be == 0) { while (!(bm & QP_IMPLICIT)) { bm <<= 1; be--; } be++; }
+    else bm |= QP_IMPLICIT;
+
+    __uint128_t pH, pL;
+    qp_wide_mul(am, bm, &pH, &pL);
+    int re = ae + be - QP_EXP_BIAS;
+    __uint128_t rm;
+    int round_bit, sticky;
+
+    if (pH & ((__uint128_t)1 << 97)) {
+        rm = (pH << 15) | (pL >> 113);
+        round_bit = (int)((pL >> 112) & 1);
+        sticky = (pL & (((__uint128_t)1 << 112) - 1)) != 0;
+        re++;
+    } else {
+        rm = (pH << 16) | (pL >> 112);
+        round_bit = (int)((pL >> 111) & 1);
+        sticky = (pL & (((__uint128_t)1 << 111) - 1)) != 0;
+    }
+
+    if (round_bit && (sticky || (rm & 1))) {
+        rm++;
+        if (rm & ((__uint128_t)1 << (QP_SIG_BITS + 1))) {
+            rm >>= 1;
+            re++;
+        }
+    }
+
+    rm &= QP_SIG_MASK;
+    if (re >= 0x7FFF) {
+        result = ((__uint128_t)rs << 127) | QP_EXP_MASK;
+    } else if (re <= 0) {
+        int shift = 1 - re;
+        result = (shift >= 113) ? ((__uint128_t)rs << 127)
+            : ((__uint128_t)rs << 127) | ((rm | QP_IMPLICIT) >> shift);
+    } else {
+        result = ((__uint128_t)rs << 127)
+               | ((__uint128_t)re << QP_SIG_BITS) | rm;
+    }
+    memcpy(rp, &result, 16);
+}
+
+/* ── fp128 division (binary restoring) ── */
+
+void _lf_qp_div(const void *ap, const void *bp, void *rp) {
+    __uint128_t a, b, result;
+    memcpy(&a, ap, 16);
+    memcpy(&b, bp, 16);
+    int as = (int)(a >> 127), bs = (int)(b >> 127), rs = as ^ bs;
+    int ae = (int)((a >> QP_SIG_BITS) & 0x7FFF);
+    int be = (int)((b >> QP_SIG_BITS) & 0x7FFF);
+    __uint128_t am = a & QP_SIG_MASK, bm = b & QP_SIG_MASK;
+
+    if (ae == 0x7FFF && am) { memcpy(rp, &a, 16); return; }
+    if (be == 0x7FFF && bm) { memcpy(rp, &b, 16); return; }
+    if (ae == 0x7FFF) {
+        result = (be == 0x7FFF) ? QP_QNAN
+                 : ((__uint128_t)rs << 127) | QP_EXP_MASK;
+        memcpy(rp, &result, 16); return;
+    }
+    if (be == 0x7FFF) {
+        result = (__uint128_t)rs << 127;
+        memcpy(rp, &result, 16); return;
+    }
+    if (ae == 0 && am == 0) {
+        result = (be == 0 && bm == 0) ? QP_QNAN
+                 : (__uint128_t)rs << 127;
+        memcpy(rp, &result, 16); return;
+    }
+    if (be == 0 && bm == 0) {
+        result = ((__uint128_t)rs << 127) | QP_EXP_MASK;
+        memcpy(rp, &result, 16); return;
+    }
+
+    if (ae == 0) { while (!(am & QP_IMPLICIT)) { am <<= 1; ae--; } ae++; }
+    else am |= QP_IMPLICIT;
+    if (be == 0) { while (!(bm & QP_IMPLICIT)) { bm <<= 1; be--; } be++; }
+    else bm |= QP_IMPLICIT;
+
+    int re = ae - be + QP_EXP_BIAS;
+    __uint128_t q = 0, rem = am;
+    int need_extra = 0;
+
+    if (rem >= bm) {
+        q = 1;
+        rem -= bm;
+    } else {
+        re--;
+        need_extra = 1;
+    }
+
+    for (int i = 0; i < QP_SIG_BITS + need_extra; i++) {
+        rem <<= 1;
+        q <<= 1;
+        if (rem >= bm) {
+            q |= 1;
+            rem -= bm;
+        }
+    }
+
+    rem <<= 1;
+    int round_bit = (rem >= bm);
+    if (round_bit) rem -= bm;
+    int sticky = (rem != 0);
+
+    if (round_bit && (sticky || (q & 1)))
+        q++;
+
+    if (q & ((__uint128_t)1 << (QP_SIG_BITS + 1))) {
+        q >>= 1;
+        re++;
+    }
+
+    __uint128_t rm = q & QP_SIG_MASK;
+    if (re >= 0x7FFF) {
+        result = ((__uint128_t)rs << 127) | QP_EXP_MASK;
+    } else if (re <= 0) {
+        int shift = 1 - re;
+        result = (shift >= 113) ? ((__uint128_t)rs << 127)
+            : ((__uint128_t)rs << 127) | ((rm | QP_IMPLICIT) >> shift);
+    } else {
+        result = ((__uint128_t)rs << 127)
+               | ((__uint128_t)re << QP_SIG_BITS) | rm;
+    }
+    memcpy(rp, &result, 16);
+}
+
+/* ── fp128 power to integer ── */
+
+void _lf_qp_powi(const void *base_ptr, int exp, void *rp) {
+    __uint128_t one = (__uint128_t)QP_EXP_BIAS << QP_SIG_BITS;
+    __uint128_t result = one;
+    __uint128_t cur;
+    memcpy(&cur, base_ptr, 16);
+
+    int neg = (exp < 0);
+    unsigned int uexp = neg ? (unsigned int)(-exp) : (unsigned int)exp;
+
+    while (uexp > 0) {
+        if (uexp & 1)
+            _lf_qp_mul(&result, &cur, &result);
+        _lf_qp_mul(&cur, &cur, &cur);
+        uexp >>= 1;
+    }
+
+    if (neg)
+        _lf_qp_div(&one, &result, &result);
+
+    memcpy(rp, &result, 16);
+}
+
+/*
+ * _lfortran_qlog10: log10 for fp128 using binary exponent decomposition.
+ * log10(x) = log10(2) * true_exponent + log10(significand_in_double)
+ */
+void _lf_qp_log10(const void *xp, void *rp) {
+    __uint128_t x;
+    memcpy(&x, xp, 16);
+    int bexp = (int)((x >> QP_SIG_BITS) & 0x7FFF);
+    __uint128_t sig = x & QP_SIG_MASK;
+
+    if (bexp == 0 && sig == 0) {
+        __uint128_t neg_inf = ((__uint128_t)1 << 127) | QP_EXP_MASK;
+        memcpy(rp, &neg_inf, 16);
+        return;
+    }
+    if (bexp == 0x7FFF) {
+        memcpy(rp, &x, 16);
+        return;
+    }
+
+    int true_exp;
+    if (bexp == 0) {
+        true_exp = 1 - QP_EXP_BIAS;
+        while (!(sig & QP_IMPLICIT)) { sig <<= 1; true_exp--; }
+    } else {
+        true_exp = bexp - QP_EXP_BIAS;
+        sig |= QP_IMPLICIT;
+    }
+
+    double sig_d = (double)(uint64_t)(sig >> 64) / (double)(1ULL << 48)
+                 + (double)(uint64_t)sig / (double)((__uint128_t)1 << 112);
+    double result = 0.30102999566398119521 * true_exp + log10(sig_d);
+    _lf_qp_extend_df(&result, rp);
+}
+
+/*
+ * Assembly stubs bridging the ARM64 Q-register calling convention
+ * to pointer-based C helpers above.
+ *
+ * fp128 values are passed/returned in Q (128-bit SIMD) registers;
+ * the C helpers use memory pointers instead.
+ */
+
+/* __gttf2(q0:fp128, q1:fp128) → w0:int  [NaN → -1] */
+__asm__(
+    ".globl ___gttf2\n"
+    ".p2align 2\n"
+    "___gttf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_ge\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __getf2(q0:fp128, q1:fp128) → w0:int  [NaN → -1] */
+__asm__(
+    ".globl ___getf2\n"
+    ".p2align 2\n"
+    "___getf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_ge\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __netf2(q0:fp128, q1:fp128) → w0:int  [NaN → 1] */
+__asm__(
+    ".globl ___netf2\n"
+    ".p2align 2\n"
+    "___netf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_le\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __letf2(q0:fp128, q1:fp128) → w0:int  [NaN → 1] */
+__asm__(
+    ".globl ___letf2\n"
+    ".p2align 2\n"
+    "___letf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_le\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __lttf2(q0:fp128, q1:fp128) → w0:int  [NaN → 1] */
+__asm__(
+    ".globl ___lttf2\n"
+    ".p2align 2\n"
+    "___lttf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_le\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __eqtf2(q0:fp128, q1:fp128) → w0:int  [NaN → 1] */
+__asm__(
+    ".globl ___eqtf2\n"
+    ".p2align 2\n"
+    "___eqtf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_cmp_le\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* __fixtfsi(q0:fp128) → w0:int32 */
+__asm__(
+    ".globl ___fixtfsi\n"
+    ".p2align 2\n"
+    "___fixtfsi:\n"
+    "    stp x29, x30, [sp, #-32]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    add x0, sp, #16\n"
+    "    bl __lf_qp_fix_si\n"
+    "    ldp x29, x30, [sp], #32\n"
+    "    ret\n"
+);
+
+/* __multf3(q0:fp128, q1:fp128) → q0:fp128 */
+__asm__(
+    ".globl ___multf3\n"
+    ".p2align 2\n"
+    "___multf3:\n"
+    "    stp x29, x30, [sp, #-64]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    add x2, sp, #48\n"
+    "    bl __lf_qp_mul\n"
+    "    ldr q0, [sp, #48]\n"
+    "    ldp x29, x30, [sp], #64\n"
+    "    ret\n"
+);
+
+/* __divtf3(q0:fp128, q1:fp128) → q0:fp128 */
+__asm__(
+    ".globl ___divtf3\n"
+    ".p2align 2\n"
+    "___divtf3:\n"
+    "    stp x29, x30, [sp, #-64]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    str q1, [sp, #32]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    add x2, sp, #48\n"
+    "    bl __lf_qp_div\n"
+    "    ldr q0, [sp, #48]\n"
+    "    ldp x29, x30, [sp], #64\n"
+    "    ret\n"
+);
+
+/* __powitf2(q0:fp128, w0:int) → q0:fp128 */
+__asm__(
+    ".globl ___powitf2\n"
+    ".p2align 2\n"
+    "___powitf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    mov w9, w0\n"
+    "    str q0, [sp, #16]\n"
+    "    add x0, sp, #16\n"
+    "    mov w1, w9\n"
+    "    add x2, sp, #32\n"
+    "    bl __lf_qp_powi\n"
+    "    ldr q0, [sp, #32]\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/*
+ * __extenddftf2: double (d0) → fp128 (q0)
+ * IEEE 754: double = 1+11+52, fp128 = 1+15+112
+ */
+void _lf_qp_extend_df(const void *dp, void *rp) {
+    uint64_t d;
+    memcpy(&d, dp, 8);
+
+    int sign     = (int)(d >> 63);
+    int d_exp    = (int)((d >> 52) & 0x7FF);
+    uint64_t d_frac = d & 0x000FFFFFFFFFFFFFULL;
+
+    __uint128_t result;
+
+    if (d_exp == 0 && d_frac == 0) {
+        result = (__uint128_t)sign << 127;
+    } else if (d_exp == 0x7FF) {
+        uint64_t hi = ((uint64_t)sign << 63) | ((uint64_t)0x7FFF << 48)
+                    | (d_frac >> 4);
+        uint64_t lo = d_frac << 60;
+        result = ((__uint128_t)hi << 64) | lo;
+    } else {
+        int q_exp = d_exp - 1023 + QP_EXP_BIAS;
+        uint64_t hi = ((uint64_t)sign << 63) | ((uint64_t)q_exp << 48)
+                    | (d_frac >> 4);
+        uint64_t lo = d_frac << 60;
+        result = ((__uint128_t)hi << 64) | lo;
+    }
+    memcpy(rp, &result, 16);
+}
+
+/* __extenddftf2(d0:double) → q0:fp128 */
+__asm__(
+    ".globl ___extenddftf2\n"
+    ".p2align 2\n"
+    "___extenddftf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str d0, [sp, #16]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_extend_df\n"
+    "    ldr q0, [sp, #32]\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/*
+ * __trunctfdf2: fp128 (q0) → double (d0)
+ * Truncate with round-to-nearest-even.
+ */
+void _lf_qp_trunc_df(const void *qp, void *dp) {
+    __uint128_t q;
+    memcpy(&q, qp, 16);
+
+    int sign  = (int)(q >> 127);
+    int q_exp = (int)((q >> 112) & 0x7FFF);
+    __uint128_t q_frac = q & (((__uint128_t)1 << 112) - 1);
+
+    uint64_t result;
+
+    if (q_exp == 0x7FFF) {
+        uint64_t d_frac = (uint64_t)(q_frac >> 60);
+        result = ((uint64_t)sign << 63) | ((uint64_t)0x7FF << 52) | d_frac;
+    } else if (q_exp == 0 && q_frac == 0) {
+        result = (uint64_t)sign << 63;
+    } else {
+        int d_exp = q_exp - QP_EXP_BIAS + 1023;
+        if (d_exp >= 0x7FF) {
+            result = ((uint64_t)sign << 63) | ((uint64_t)0x7FF << 52);
+        } else if (d_exp <= 0) {
+            result = (uint64_t)sign << 63;
+        } else {
+            uint64_t d_frac = (uint64_t)(q_frac >> 60);
+            uint64_t round_bit = (uint64_t)((q_frac >> 59) & 1);
+            uint64_t sticky = (q_frac & (((__uint128_t)1 << 59) - 1)) != 0;
+            d_frac += (round_bit && (sticky || (d_frac & 1)));
+            if (d_frac >= (1ULL << 52)) {
+                d_frac = 0;
+                d_exp++;
+                if (d_exp >= 0x7FF) {
+                    result = ((uint64_t)sign << 63) | ((uint64_t)0x7FF << 52);
+                    memcpy(dp, &result, 8);
+                    return;
+                }
+            }
+            result = ((uint64_t)sign << 63) | ((uint64_t)d_exp << 52) | d_frac;
+        }
+    }
+    memcpy(dp, &result, 8);
+}
+
+/* __trunctfdf2(q0:fp128) → d0:double */
+__asm__(
+    ".globl ___trunctfdf2\n"
+    ".p2align 2\n"
+    "___trunctfdf2:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_trunc_df\n"
+    "    ldr d0, [sp, #32]\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+/* _lfortran_qlog10(q0:fp128) → q0:fp128 */
+__asm__(
+    ".globl __lfortran_qlog10\n"
+    ".p2align 2\n"
+    "__lfortran_qlog10:\n"
+    "    stp x29, x30, [sp, #-48]!\n"
+    "    mov x29, sp\n"
+    "    str q0, [sp, #16]\n"
+    "    add x0, sp, #16\n"
+    "    add x1, sp, #32\n"
+    "    bl __lf_qp_log10\n"
+    "    ldr q0, [sp, #32]\n"
+    "    ldp x29, x30, [sp], #48\n"
+    "    ret\n"
+);
+
+#endif /* __APPLE__ && __aarch64__ */

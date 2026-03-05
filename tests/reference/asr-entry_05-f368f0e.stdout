@@ -484,6 +484,7 @@
                                             (RealConstant
                                                 0.500000
                                                 (Real 8)
+                                                ()
                                             )
                                             Mul
                                             (IntrinsicElementalFunction
@@ -680,11 +681,13 @@
                                 (RealConstant
                                     83.029999
                                     (Real 4)
+                                    ()
                                 )
                                 (Real 4)
                                 (RealConstant
                                     -83.029999
                                     (Real 4)
+                                    ()
                                 )
                             )
                             (IntrinsicArrayFunction
@@ -823,11 +826,13 @@
                                             (RealConstant
                                                 83.029999
                                                 (Real 4)
+                                                ()
                                             )
                                             (Real 4)
                                             (RealConstant
                                                 -83.029999
                                                 (Real 4)
+                                                ()
                                             )
                                         )
                                         (Real 4)
@@ -841,6 +846,7 @@
                                 (RealConstant
                                     0.000000
                                     (Real 4)
+                                    ()
                                 )
                                 (Logical 4)
                                 ()

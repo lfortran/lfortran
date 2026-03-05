@@ -38,6 +38,7 @@
                             (RealConstant
                                 1.500000
                                 (Real 4)
+                                ()
                             )
                             RealToInteger
                             (Integer 4)
@@ -48,6 +49,7 @@
                             (RealConstant
                                 10.500000
                                 (Real 4)
+                                ()
                             )
                             RealToInteger
                             (Integer 4)
@@ -58,6 +60,7 @@
                             (RealConstant
                                 2.400000
                                 (Real 4)
+                                ()
                             )
                             RealToInteger
                             (Integer 4)

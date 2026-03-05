@@ -5821,6 +5821,18 @@ public:
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                } else if (llvm_type->isFP128Ty()) {
+                    if (rc->m_r_str) {
+                        llvm::APFloat apf(llvm::APFloat::IEEEquad(),
+                            llvm::StringRef(rc->m_r_str));
+                        return llvm::ConstantFP::get(llvm_type, apf);
+                    } else {
+                        llvm::APFloat apf(rc->m_r);
+                        bool losesInfo;
+                        apf.convert(llvm::APFloat::IEEEquad(),
+                            llvm::APFloat::rmNearestTiesToEven, &losesInfo);
+                        return llvm::ConstantFP::get(llvm_type, apf);
+                    }
                 }
                 break;
             }
@@ -11499,7 +11511,8 @@ public:
                 type);
         llvm::Value *fsource = builder->CreateSIToFP(source,
                 type);
-        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" :
+            (a_kind == 16 ? "llvm.copysign.f128" : "llvm.copysign.f64");
         llvm::Function *fn_copysign = module->getFunction(func_name);
         if (!fn_copysign) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -11731,14 +11744,17 @@ public:
                     // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                     if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
 #if LLVM_VERSION_MAJOR <= 12
-                        func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+                        func_name = (return_kind == 4) ? "llvm.powi.f32" :
+                            (return_kind == 16 ? "llvm.powi.f128" : "llvm.powi.f64");
                         #else
-                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
+                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" :
+                            (return_kind == 16 ? "llvm.powi.f128.i32" : "llvm.powi.f64.i32");
                         #endif
-                        right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
+                        right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context));
                         exponent_type = llvm::Type::getInt32Ty(context);
                     } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
-                        func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
+                        func_name = (return_kind == 4) ? "llvm.pow.f32" :
+                            (return_kind == 16 ? "llvm.pow.f128" : "llvm.pow.f64");
                         right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
                         exponent_type = base_type;
                     } else {
@@ -11959,6 +11975,20 @@ public:
             }
             case 8 : {
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
+                break;
+            }
+            case 16 : {
+                if (x.m_r_str) {
+                    llvm::APFloat apf(llvm::APFloat::IEEEquad(),
+                        llvm::StringRef(x.m_r_str));
+                    tmp = llvm::ConstantFP::get(context, apf);
+                } else {
+                    llvm::APFloat apf(val);
+                    bool losesInfo;
+                    apf.convert(llvm::APFloat::IEEEquad(),
+                        llvm::APFloat::rmNearestTiesToEven, &losesInfo);
+                    tmp = llvm::ConstantFP::get(context, apf);
+                }
                 break;
             }
             default : {
@@ -12855,6 +12885,10 @@ public:
                         tmp = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(context));
                     } else if( arg_kind == 8 && dest_kind == 4 ) {
                         tmp = builder->CreateFPTrunc(tmp, llvm::Type::getFloatTy(context));
+                    } else if( dest_kind == 16 ) {
+                        tmp = builder->CreateFPExt(tmp, llvm::Type::getFP128Ty(context));
+                    } else if( arg_kind == 16 ) {
+                        tmp = builder->CreateFPTrunc(tmp, llvm_utils->getFPType(dest_kind));
                     } else {
                         std::string msg = "Conversion from " + std::to_string(arg_kind) +
                                           " to " + std::to_string(dest_kind) + " not implemented yet.";

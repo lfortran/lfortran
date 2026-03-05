@@ -302,12 +302,14 @@
                                 [(RealConstant
                                     2.000000
                                     (Real 8)
+                                    ()
                                 )]
                                 0
                                 (Real 8)
                                 (RealConstant
                                     0.693147
                                     (Real 8)
+                                    ()
                                 )
                             )]
                             FormatFortran

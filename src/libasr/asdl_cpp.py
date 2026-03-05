@@ -262,6 +262,8 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit("};", 1)
         if ( cons.name == "IntegerConstant" ):
             args[-1] += " = ASR::integerbozType::Decimal"
+        if ( cons.name == "RealConstant" ):
+            args[-1] += " = nullptr"
         self.emit("static inline %s_t* make_%s_t(%s) {" % (subs["mod"],
             cons.name, ", ".join(args)), 1)
         self.emit(    "%s_t *n;" % cons.name, 2)

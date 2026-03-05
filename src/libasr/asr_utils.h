@@ -105,6 +105,20 @@ static inline double extract_real_8(const char *s) {
     return std::strtod(r_str.c_str(), nullptr);
 }
 
+static inline double extract_real_16(const char *s) {
+    std::string r_str = ASRUtils::extract_real(s);
+    return std::strtod(r_str.c_str(), nullptr);
+}
+
+static inline std::string extract_real_16_str(const char *s) {
+    std::string x = ASRUtils::extract_real(s);
+    size_t pos = x.rfind('_');
+    if (pos != std::string::npos) {
+        x = x.substr(0, pos);
+    }
+    return x;
+}
+
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
 {
     return ASR::down_cast<ASR::expr_t>(f);
@@ -2262,6 +2276,7 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             switch (r->m_kind) {
                 case 4: { res = "f32"; break; }
                 case 8: { res = "f64"; break; }
+                case 16: { res = "f128"; break; }
                 default: { throw LCompilersException("Float kind not supported"); }
             }
             return res;
@@ -7768,9 +7783,11 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         }
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+                ASR::RealConstant_t *rc = ASR::down_cast<ASR::RealConstant_t>(args[i]);
                 args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
+                    al, loc, rc->m_r,
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)),
+                    rc->m_r_str));
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
                     al, loc, args.p[i], ASR::cast_kindType::RealToReal,

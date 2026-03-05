@@ -19,6 +19,7 @@
                                         (RealConstant
                                             1.000000
                                             (Real 8)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4) Decimal)
@@ -49,6 +50,7 @@
                                         (RealConstant
                                             1.000000
                                             (Real 4)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4) Decimal)
@@ -83,11 +85,13 @@
                                     (RealConstant
                                         1.000000
                                         (Real 4)
+                                        ()
                                     )
                                     (Real 4)
                                     (RealConstant
                                         -1.000000
                                         (Real 4)
+                                        ()
                                     )
                                 )]
                                 0
@@ -95,6 +99,7 @@
                                 (RealConstant
                                     3.141593
                                     (Real 4)
+                                    ()
                                 )
                             )
                             (StringConstant
@@ -121,11 +126,13 @@
                                     (RealConstant
                                         1.000000
                                         (Real 8)
+                                        ()
                                     )
                                     (Real 8)
                                     (RealConstant
                                         -1.000000
                                         (Real 8)
+                                        ()
                                     )
                                 )]
                                 0
@@ -133,6 +140,7 @@
                                 (RealConstant
                                     3.141593
                                     (Real 8)
+                                    ()
                                 )
                             )
                             (StringConstant

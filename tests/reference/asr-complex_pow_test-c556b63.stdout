@@ -79,10 +79,12 @@
                             (RealConstant
                                 3.000000
                                 (Real 4)
+                                ()
                             )
                             (RealConstant
                                 4.000000
                                 (Real 4)
+                                ()
                             )
                             (Complex 4)
                             (ComplexConstant
@@ -101,10 +103,12 @@
                             (RealConstant
                                 3.000000
                                 (Real 4)
+                                ()
                             )
                             (RealConstant
                                 2.000000
                                 (Real 4)
+                                ()
                             )
                             (Complex 4)
                             (ComplexConstant

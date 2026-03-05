@@ -269,7 +269,7 @@ public:
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                     double rval = r->m_r;
                     value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                        rval, dest_type2);
+                        rval, dest_type2, r->m_r_str);
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                   ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);

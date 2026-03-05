@@ -120,6 +120,7 @@
         (RealConstant
             3.140000
             (Real 4)
+            ()
         )
         ()
         .false.
@@ -131,10 +132,12 @@
             (RealConstant
                 1.000000
                 (Real 4)
+                ()
             )
             (RealConstant
                 2.000000
                 (Real 4)
+                ()
             )
             (Complex 4)
             (ComplexConstant

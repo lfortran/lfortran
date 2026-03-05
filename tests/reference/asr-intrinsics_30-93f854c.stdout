@@ -46,6 +46,7 @@
                                         (RealConstant
                                             22.900000
                                             (Real 4)
+                                            ()
                                         )
                                         (Integer 4)
                                         (IntegerConstant 37 (Integer 4) Decimal)

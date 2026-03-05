@@ -82,6 +82,7 @@
                                 (RealConstant
                                     1.000000
                                     (Real 4)
+                                    ()
                                 )
                                 (Var 2 size)
                                 (Array
