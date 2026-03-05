@@ -1515,7 +1515,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             for(auto &fn_arg : finalizer_fn->args()) {
                 *(args[i++]) = &fn_arg;
             }
-            LCOMPILERS_ASSERT(i == args.size())
+            LCOMPILERS_ASSERT(i == (int)args.size())
             }
 
             return saved_BB;
