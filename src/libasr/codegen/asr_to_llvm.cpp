@@ -2155,7 +2155,7 @@ public:
     }
 
     template <typename T>
-    void visit_Deallocate(const T& x) {
+    void visit_Deallocate(const T& x, bool is_explicit = false) {
         llvm::Function* free_fn = llvm_utils->_Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
@@ -2293,6 +2293,23 @@ public:
                         builder->CreatePtrToInt(
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
+                    if (is_explicit) {
+                        std::string var_name = "";
+                        if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                            var_name = ASRUtils::symbol_name(sym);
+                        }
+                        // Skip runtime check for compiler-generated temporaries
+                            llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                            llvm_utils->generate_runtime_error(builder->CreateNot(cond),
+                                "Attempting to deallocate unallocated variable '%s'",
+                                {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
+                                infile,
+                                location_manager,
+                                var_name_llvm);
+                        
+                    }
                     llvm_utils->create_if_else(cond, [=]() {
                         // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
                         if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
@@ -2360,6 +2377,24 @@ public:
                     // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
+                    if (is_explicit) {
+                        std::string var_name = "";
+                        if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                            var_name = ASRUtils::symbol_name(sym);
+                        }
+                        // Skip runtime check for compiler-generated temporaries
+                        
+                            llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                            llvm_utils->generate_runtime_error(builder->CreateNot(cond),
+                                "Attempting to deallocate unallocated variable '%s'",
+                                {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
+                                infile,
+                                location_manager,
+                                var_name_llvm);
+                        
+                    }
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         call_lfortran_free(free_fn, typ,  llvm_data_type);
@@ -2374,7 +2409,7 @@ public:
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        visit_Deallocate(x);
+        visit_Deallocate(x, true);
     }
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {
