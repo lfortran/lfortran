@@ -976,6 +976,9 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::FunctionParam: {
+            return false;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
