@@ -14443,6 +14443,20 @@ public:
                                 arr_data = builder->CreateBitCast(arr_data, fn_param_type);
                             }
                         }
+                        if (x.m_iostat) {
+                            int ptr_copy = ptr_loads;
+                            ptr_loads = 0;
+
+                            this->visit_expr_wrapper(x.m_iostat);
+                            llvm::Value* ios_ptr = tmp;
+
+                            ptr_loads = ptr_copy;
+
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                ios_ptr
+                            );
+                        }
                         if (ASRUtils::is_array_of_strings(type)) {
                             // For string arrays, pass elem_len
                             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
