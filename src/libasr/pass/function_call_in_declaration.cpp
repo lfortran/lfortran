@@ -737,6 +737,10 @@ public:
             ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+                const ASR::ttype_t* current_type = (const ASR::ttype_t*)&x;
+                if (func->m_function_signature != current_type) {
+                    return;
+                }
             } else {
                 return;
             }
