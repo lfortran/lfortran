@@ -20,7 +20,7 @@ on:
 # will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
 
 
 env:
