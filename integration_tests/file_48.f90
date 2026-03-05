@@ -2,7 +2,7 @@ program daio4
   implicit none
 
   integer, parameter :: unit_no = 24
-  integer :: i, i1, iolen
+  integer :: i, i1, iolen, irl
   logical :: l, pf
   character(4) :: s
   real :: r
@@ -35,5 +35,15 @@ program daio4
   end do
 
   close (unit_no)
+
+  irl = -99
+  inquire (42, recl=irl)
+  if (irl /= -1) error stop
+
+  open (42, file='fort.42', access='stream')
+  inquire (42, recl=irl)
+  if (irl /= -2) error stop
+
+  close (42, status='delete')
 
 end program

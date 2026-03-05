@@ -408,16 +408,24 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
             width = atoi(format + 1);
         }
         const char* special_str;
+        const char* short_str = NULL;
         if (isnan(val)) {
             special_str = "NaN";
         } else if (val < 0) {
             special_str = "-Infinity";
+            short_str = "-Inf";
         } else if (use_sign_plus) {
             special_str = "+Infinity";
+            short_str = "+Inf";
         } else {
             special_str = "Infinity";
+            short_str = "Inf";
         }
         int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
         if (width == 0 || special_len <= width) {
             if (width > special_len) {
                 for (int i = 0; i < width - special_len; i++) {
@@ -577,10 +585,39 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     double abs_val = fabs(val);
 
     // Handle special values (Infinity, NaN) before any log10 calculations
-    if (isnan(val)) {
-        snprintf(formatted_value, sizeof(formatted_value), "NaN");
-    } else if (isinf(val)) {
-        snprintf(formatted_value, sizeof(formatted_value), "%sInfinity", (val < 0) ? "-" : "");
+    if (isnan(val) || isinf(val)) {
+        const char* special_str;
+        const char* short_str = NULL;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+            short_str = "-Inf";
+        } else if (sign_plus_exist) {
+            special_str = "+Infinity";
+            short_str = "+Inf";
+        } else {
+            special_str = "Infinity";
+            short_str = "Inf";
+        }
+        int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
     } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
@@ -684,8 +721,25 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     // Handle special values (Infinity, NaN) before any log10 calculations
     if (isnan(val) || isinf(val)) {
-        const char* special_str = isnan(val) ? "NaN" : ((val < 0) ? "-Infinity" : "Infinity");
+        const char* special_str;
+        const char* short_str = NULL;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+            short_str = "-Inf";
+        } else if (is_signed_plus) {
+            special_str = "+Infinity";
+            short_str = "+Inf";
+        } else {
+            special_str = "Infinity";
+            short_str = "Inf";
+        }
         int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
         if (width == 0 || special_len <= width) {
             if (width > special_len) {
                 for (int i = 0; i < width - special_len; i++) {
@@ -2535,7 +2589,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         if (isnan(double_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(double_val)) {
-                            snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                            const char* inf_long = (double_val < 0) ? "-Infinity" : "Infinity";
+                            const char* inf_short = (double_val < 0) ? "-Inf" : "Inf";
+                            if (width > 0 && (int)strlen(inf_long) > width) {
+                                snprintf(formatted, sizeof(formatted), "%s", inf_short);
+                            } else {
+                                snprintf(formatted, sizeof(formatted), "%s", inf_long);
+                            }
                         } else if (width == 0 && !has_dot) {
                             if (s_info.current_element_type == FLOAT_32_TYPE) {
                                 format_float_fortran(formatted, (float)double_val);
@@ -5185,7 +5245,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -5275,8 +5336,14 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *size = ftell(fp);
             fseek(fp, current_pos, SEEK_SET);
         }
-        if (recl != NULL && access_id == 2) {
-            *recl = unit_recl;
+        if (recl != NULL) {
+            if (access_id == 1) {
+                *recl = -2;
+            } else if (access_id == 2) {
+                *recl = unit_recl;
+            } else {
+                *recl = -1;
+            }
         }
         if (sequential != NULL) {
             if (access_id == 0) {
@@ -5315,7 +5382,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;

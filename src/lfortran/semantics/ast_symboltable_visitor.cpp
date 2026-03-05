@@ -388,6 +388,34 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // Update access of use-associated ExternalSymbol entries based on the
+        // final dflt_access (set by private/public statements processed above).
+        // use statements are processed before private/public, so ExternalSymbols
+        // may have been created with the wrong default access.
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    es->m_access = assgnd_access[item.first];
+                } else if (item.first.size() > 1 && item.first[0] == '~'
+                           && assgnd_access.count(item.first.substr(1))) {
+                    // When a name like "merge_config" is made public,
+                    // also make the associated generic interface
+                    // "~merge_config" public so that constructor
+                    // overloads remain accessible.
+                    es->m_access = assgnd_access[item.first.substr(1)];
+                } else {
+                    es->m_access = dflt_access;
+                }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    co->m_access = assgnd_access[item.first];
+                } else {
+                    co->m_access = dflt_access;
+                }
+            }
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -404,6 +432,7 @@ public:
         add_class_procedures();
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
@@ -632,6 +661,7 @@ public:
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
         resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
              ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
              if (current_sym == placeholder_sym) {
@@ -855,6 +885,12 @@ public:
         ASR::symbol_t* return_var = current_scope->resolve_symbol(function_name);
         ASR::expr_t* return_var_expr = nullptr;
         if (return_var) {
+            if (ASR::is_a<ASR::Variable_t>(*return_var)) {
+                ASR::Variable_t* rv = ASR::down_cast<ASR::Variable_t>(return_var);
+                if (rv->m_intent == ASR::intentType::Local) {
+                    rv->m_intent = ASR::intentType::ReturnVar;
+                }
+            }
             return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var));
         }
         if (!return_var && is_function) {
@@ -1339,6 +1375,20 @@ public:
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
+                    bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
+
+                    if (!is_placeholder && !was_module_procedure && !in_submodule && deftype != ASR::deftypeType::Interface) {
+                        std::vector<Location> locs = {f1->base.loc};
+                        std::vector<diag::Label> labels;
+                        labels.push_back(diag::Label("", {tmp->loc}));
+                        labels.push_back(diag::Label("is already defined here", locs, false));
+                        diag.add(diag::Diagnostic(
+                            "Procedure '" + sym_name + "' is already defined as an interface body",
+                            diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -1978,11 +2028,10 @@ public:
                   // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
-
+                    bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
                     if (!is_placeholder) {
                        if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
                                 ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
-        
                             diag.add(diag::Diagnostic(
                                 "Argument(s) or return type mismatch in interface and implementation",
                                 diag::Level::Error, diag::Stage::Semantic, {
@@ -1990,7 +2039,6 @@ public:
                             throw SemanticAbort();
                         }
                     }
-
                     if (is_placeholder) {
                         // Update the placeholder's FunctionType in-place so that
                         // struct member variables still referencing it get the
@@ -2006,7 +2054,17 @@ public:
                         placeholder_sig->m_pure = real_sig->m_pure;
                         placeholder_sig->m_module = real_sig->m_module;
                     }
-
+                    if (!is_placeholder && !was_module_procedure && !in_submodule && deftype != ASR::deftypeType::Interface) {
+                        std::vector<Location> locs = {f1->base.loc};
+                        std::vector<diag::Label> labels;
+                        labels.push_back(diag::Label("", {tmp->loc}));
+                        labels.push_back(diag::Label("is already defined here", locs, false));
+                        diag.add(diag::Diagnostic(
+                            "Procedure '" + sym_name + "' is already defined as an interface body",
+                            diag::Level::Error, diag::Stage::Semantic, labels));
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
                     parent_scope->erase_symbol(sym_name);
                 } else {
                     diag.add(diag::Diagnostic(
@@ -2026,7 +2084,6 @@ public:
                 throw SemanticAbort();
             }
         }
-
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -3373,10 +3430,15 @@ public:
 
     void resolve_proc_pointer_placeholders() {
         // After all interfaces/functions have been processed, update
-        // m_type_declaration for procedure pointer variables inside structs
-        // that still reference a placeholder Function_t.
+        // m_type_declaration and m_type for procedure pointer variables
+        // inside structs that still reference a placeholder Function_t.
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
+            if (!real_sym || real_sym == placeholder_sym) continue;
+            ASR::symbol_t *real_sym_underlying = ASRUtils::symbol_get_past_external(real_sym);
+            if (!ASR::is_a<ASR::Function_t>(*real_sym_underlying)) continue;
+            ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
+            ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
@@ -3385,12 +3447,42 @@ public:
                             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
                             if (var->m_type_declaration == placeholder_sym) {
                                 var->m_type_declaration = real_sym;
+                                if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                                    var->m_type = ASRUtils::TYPE(
+                                        ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                                } else {
+                                    var->m_type = real_func_type;
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    void resolve_pending_proc_ptr_inits() {
+        for (auto &item : pending_proc_ptr_inits) {
+            ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
+            if (!proc_sym) {
+                diag.semantic_error_label("Variable '" + item.proc_name
+                    + "' is not declared", {item.loc},
+                    "'" + item.proc_name + "' is undeclared");
+                throw SemanticAbort();
+            }
+            ASR::expr_t *init_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, item.loc, proc_sym));
+            item.var->m_symbolic_value = init_expr;
+            item.var->m_value = nullptr;
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
+                item.var->m_type, item.var->m_symbolic_value, item.var->m_value,
+                item.var->m_name);
+            item.var->m_dependencies = variable_dependencies_vec.p;
+            item.var->n_dependencies = variable_dependencies_vec.n;
+        }
+        pending_proc_ptr_inits.clear();
     }
 
     void add_class_procedures() {

@@ -309,6 +309,8 @@ ASR::expr_t* get_first_array_function_args(T* func) {
     return first_array_arg;
 }
 
+ASR::symbol_t* extract_symbol(ASR::expr_t* expr);
+
 /*
     sets allocation size of an elemental function, which can be
     either an intrinsic elemental function or a user-defined
@@ -848,8 +850,9 @@ bool set_allocation_size(
             array_var_collector.visit_expr(*array_reshape_t->m_shape);
             bool set_length_to_zero = false;
             for( size_t i = 0; i < array_vars.size(); i++ ) {
-                if( ASR::down_cast<ASR::Var_t>(array_vars.p[i])->m_v ==
-                    ASR::down_cast<ASR::Var_t>(temporary_var)->m_v ) {
+                ASR::symbol_t* shape_sym = extract_symbol(array_vars.p[i]);
+                ASR::symbol_t* temp_sym = extract_symbol(temporary_var);
+                if( shape_sym && temp_sym && shape_sym == temp_sym ) {
                     add_allocated_check = true;
                     set_length_to_zero = true;
                     break;
