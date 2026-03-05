@@ -1509,9 +1509,13 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
                 builder_->getContext(), "entry", finalizer_fn);
             builder_->SetInsertPoint(entry);
-
-            for(size_t i = 0; i < args.size(); i++) {
-                *(args[i]) = finalizer_fn->getArg(i);
+            
+            {// Direct passed arg to function's args
+            int i = 0;
+            for(auto &fn_arg : finalizer_fn->args()) {
+                *(args[i++]) = &fn_arg;
+            }
+            LCOMPILERS_ASSERT(i == args.size())
             }
 
             return saved_BB;
