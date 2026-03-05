@@ -1502,8 +1502,9 @@ public:
     }
     void visit_StringPhysicalCast(const StringPhysicalCast_t &x){
         require(x.m_type, "x.m_type cannot be nullptr");
-        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringPhysicalCast should be of string type");
-        ASR::String_t* str = ASR::down_cast<ASR::String_t>(x.m_type);
+        ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
+        require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")

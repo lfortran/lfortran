@@ -11501,7 +11501,7 @@ public:
             x.m_new == ASR::string_physical_typeType::CChar){
             // CChar -> is represented as `char*` in LLVM backend.
             this->visit_expr_load_wrapper(x.m_arg, 0);
-            bool is_alloc = ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg));
+            bool is_alloc = ASRUtils::is_allocatable(x.m_type);
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp, is_alloc);
         } else if (x.m_old == ASR::string_physical_typeType::CChar &&
             x.m_new == ASR::string_physical_typeType::DescriptorString){

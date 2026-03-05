@@ -3677,7 +3677,8 @@ static inline bool is_array_of_strings(ASR::ttype_t* type){
  * If the string is already of the required physical type, it returns the same string
  * PointerString -> Needs to have information about the length of the string
 */
-static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
+static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string,
+        ASR::string_physical_typeType to, bool make_allocatable = false){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(string)));
     LCOMPILERS_ASSERT(to != str_type->m_physical_type)
@@ -3685,7 +3686,10 @@ static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_
         ASR::make_String_t(al, string->base.loc,
             1, nullptr,
             ASR::ImplicitLength, to));
-            
+    if (make_allocatable) {
+        cast_expr_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, string->base.loc, cast_expr_type));
+    }
     return ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         str_type->m_physical_type, to, cast_expr_type, nullptr));
@@ -7055,7 +7059,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !is_character_phsyical_types_matched(orig_arg_type, arg_type)){
             arg = a_args[i].m_value = 
                 create_string_physical_cast(al, arg, 
-                    get_string_type(orig_arg_type)->m_physical_type);
+                    get_string_type(orig_arg_type)->m_physical_type,
+                    is_allocatable(func_type->m_arg_types[i + is_method]));
         }
 
         if( func_type->m_abi != ASR::abiType::BindC &&
