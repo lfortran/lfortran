@@ -7253,6 +7253,17 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
+    char *p = buffer;
+    while (*p == ' ') p++;
+    if (*p == '+' || *p == '-') p++;
+    char *digit_start = p;
+    while (*p >= '0' && *p <= '9') p++;
+    while (*p == ' ') p++;
+    if (p == digit_start || *p != '\0') {
+        free(buffer);
+        if (iostat) *iostat = 5010;
+        return false;
+    }
 
     parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode);
 
