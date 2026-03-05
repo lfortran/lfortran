@@ -792,6 +792,19 @@ module lfortran_intrinsic_ieee_arithmetic
         ! TODO: Implement halting mode setting
     end subroutine
 
+    ! IEEE_GET_UNDERFLOW_MODE
+    subroutine ieee_get_underflow_mode(gradual)
+        logical, intent(out) :: gradual
+        ! TODO: Implement using C binding to query FTZ/DAZ mode
+        gradual = .true.
+    end subroutine
+
+    ! IEEE_SET_UNDERFLOW_MODE
+    subroutine ieee_set_underflow_mode(gradual)
+        logical, intent(in) :: gradual
+        ! TODO: Implement using C binding to set FTZ/DAZ mode
+    end subroutine
+
     ! IEEE_GET_STATUS
     subroutine ieee_get_status(status_value)
         type(ieee_status_type), intent(out) :: status_value
