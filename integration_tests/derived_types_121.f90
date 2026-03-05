@@ -27,6 +27,7 @@ contains
     class(tensor_t(double_precision)), intent(in) :: self
     double precision, allocatable :: tensor_values(:)
 
+    allocate(tensor_values(size(self%values_)))
     tensor_values = self%values_
   end function double_precision_values
 
