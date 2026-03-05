@@ -1516,6 +1516,10 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
             } else if(struct_sym != nullptr) { // StructType or structType Class
                 key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
+                if(auto module = ASRUtils::get_sym_module(&struct_sym->base)) {
+                    key += "_of_"; 
+                    key += module->m_name;
+                }
             } else {
                 key += ASRUtils::get_type_code(t_past, false, false, false);
             }
