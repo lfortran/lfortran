@@ -1486,8 +1486,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         llvm::BasicBlock* START_CACHE(const std::string &cache_key, SignatureArgs&&... signature_args) {
             static_assert((std::is_same_v<llvm::Value*, std::decay_t<SignatureArgs>> && ...));
 
-            auto const key_it = type_finalizer_cache_.find(cache_key);
-            LCOMPILERS_ASSERT_MSG(key_it == type_finalizer_cache_.end(), "Cache already exists, Please use it.")
+            LCOMPILERS_ASSERT_MSG(type_finalizer_cache_.find(cache_key) == type_finalizer_cache_.end(),
+                                "Cache already exists, Please use it.")
 
             std::vector<llvm::Value**> args {&signature_args...};
 
@@ -1521,7 +1521,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
 
             return saved_BB;
         }
-        
+
         /**
          * Finishes `START_CACHE` job by reverting back to the passed BasicBlock.
          * It also terminates the function body with `return void`
