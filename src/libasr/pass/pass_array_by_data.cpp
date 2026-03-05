@@ -913,6 +913,28 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         new_x_name = v.proc2newproc[x.m_name].first;
                     } else {
                         new_x_name = resolve_new_proc(x.m_name);
+                        // If the call target was an ExternalSymbol and
+                        // resolve_new_proc returned a symbol outside the
+                        // current scope (e.g. a new Variable inside a
+                        // struct's symtab), wrap it in an ExternalSymbol
+                        // so that m_name stays within the current scope.
+                        if (is_external && new_x_name != nullptr &&
+                            ASRUtils::symbol_parent_symtab(new_x_name)->get_counter() !=
+                                current_scope->get_counter()) {
+                            ASR::ExternalSymbol_t* orig_ext =
+                                ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                            std::string new_ext_name = current_scope->get_unique_name(
+                                ASRUtils::symbol_name(new_x_name));
+                            ASR::symbol_t* new_ext = ASR::down_cast<ASR::symbol_t>(
+                                ASR::make_ExternalSymbol_t(al, x.m_name->base.loc,
+                                    current_scope, s2c(al, new_ext_name), new_x_name,
+                                    orig_ext->m_module_name,
+                                    orig_ext->m_scope_names, orig_ext->n_scope_names,
+                                    ASRUtils::symbol_name(new_x_name),
+                                    orig_ext->m_access));
+                            current_scope->add_symbol(new_ext_name, new_ext);
+                            new_x_name = new_ext;
+                        }
                     }
                     // If the variable hasn't been registered yet (e.g. due to
                     // alphabetical visit order where an AssociateBlock or Block
@@ -1047,9 +1069,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Module_t>(*a.second)) {
-                    this->visit_symbol(*a.second);
+            // Visit modules in dependency order so that struct member
+            // transformations in a dependency are visible when processing
+            // modules that use those structs (e.g. StructInstanceMember
+            // references).
+            std::vector<std::string> mod_order
+                = ASRUtils::determine_module_dependencies(x);
+            for (auto &name : mod_order) {
+                ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+                if (sym && ASR::is_a<ASR::Module_t>(*sym)) {
+                    this->visit_symbol(*sym);
                 }
             }
             for (auto &a : x.m_symtab->get_scope()) {
@@ -1168,14 +1197,21 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_m)) {
                     ASR::symbol_t* new_func = v.proc2newproc[ASRUtils::symbol_get_past_external(x.m_m)].first;
                     ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_m);
-                    std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(x.m_m));
+                    // Use current_scope when the ExternalSymbol's parent
+                    // symtab differs (e.g. in duplicated functions where
+                    // m_m was not remapped by EditProcedureVisitor).
+                    SymbolTable* target_scope = x_sym_ext->m_parent_symtab;
+                    if (target_scope->get_counter() != current_scope->get_counter()) {
+                        target_scope = current_scope;
+                    }
+                    std::string new_func_sym_name = target_scope->get_unique_name(ASRUtils::symbol_name(x.m_m));
                     new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(v.al, x.m_m->base.loc, x_sym_ext->m_parent_symtab,
+                        ASR::make_ExternalSymbol_t(v.al, x.m_m->base.loc, target_scope,
                             s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
                             x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
                             x_sym_ext->m_access));
                     v.proc2newproc[x.m_m] = {new_func_sym_, {}};
-                    x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+                    target_scope->add_symbol(new_func_sym_name, new_func_sym_);
                 } else if (ASR::is_a<ASR::Variable_t>(*x.m_m)) {
                     new_func_sym_ = v.proc2newproc[x.m_m].first;
                 }

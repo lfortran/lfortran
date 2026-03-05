@@ -16,41 +16,10 @@
                                     []
                                     toml_character_tokenizer
                                     Public
-                                ),
-                            toml_table:
-                                (ExternalSymbol
-                                    2
-                                    toml_table
-                                    8 toml_table
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    toml_table
-                                    Public
-                                ),
-                            toml_tokenizer:
-                                (ExternalSymbol
-                                    2
-                                    toml_tokenizer
-                                    8 toml_tokenizer
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    toml_tokenizer
-                                    Public
-                                ),
-                            toml_tokenizer_:
-                                (ExternalSymbol
-                                    2
-                                    toml_tokenizer_
-                                    8 toml_tokenizer_
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    toml_tokenizer_
-                                    Public
                                 )
                         })
                     module_25
-                    [tomlf_de_character
-                    tomlf_de_tokenizer_25]
+                    [tomlf_de_character]
                     [(Print
                         (StringConstant
                             "running module_25 program"
@@ -220,7 +189,7 @@
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_table
-                                    Public
+                                    Private
                                 ),
                             toml_tokenizer:
                                 (ExternalSymbol
@@ -230,7 +199,7 @@
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer
-                                    Public
+                                    Private
                                 ),
                             toml_tokenizer_:
                                 (ExternalSymbol
@@ -240,7 +209,7 @@
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer_
-                                    Public
+                                    Private
                                 )
                         })
                     tomlf_de_character

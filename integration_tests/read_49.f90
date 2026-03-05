@@ -1,23 +1,12 @@
-program read_49
-  implicit none
-
-  character(len=10) :: s
-  character(5), allocatable :: a(:)
-  integer :: ios
-
-  allocate(a(1))
-
-  s = "hello"
-
-  read(s, *, iostat=ios) a
-  if (ios /= 0) then
-     error stop "READ failed"
-  end if
-
-  if (a(1) /= "hello") then
-     error stop "Wrong value in a(1)"
-  end if
-
-  print *, "PASS"
-
-end program read_49
+implicit none ! substringext.f90
+character(8):: string = 'abcd'
+integer:: unit = 42
+open(newunit=unit, file='foobar', status='new')
+write (unit, "(A)") string(1:4)
+rewind unit
+read  (unit,"(A)") string(5:8)
+close (unit,status = 'delete')
+if (string /= 'abcdabcd') stop 1
+print "(A)",string
+print *, 'Test passed'
+end program

@@ -394,6 +394,34 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
+    void visit_StringSection(const ASR::StringSection_t &x) {
+        this->visit_expr(*x.m_arg);
+        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        std::string str(str_val);
+        int start = 1, end = (int)str.size();
+        if (x.m_start) {
+            this->visit_expr(*x.m_start);
+            start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
+        if (x.m_end) {
+            this->visit_expr(*x.m_end);
+            end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
+        std::string result = str.substr(start - 1, end - start + 1);
+        value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
+            s2c(al, result), x.m_type));
+    }
+
+    void visit_StringItem(const ASR::StringItem_t &x) {
+        this->visit_expr(*x.m_arg);
+        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        this->visit_expr(*x.m_idx);
+        int idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        std::string result(1, str_val[idx - 1]);
+        value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
+            s2c(al, result), x.m_type));
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         int left_val, right_val;
         this->visit_expr(*x.m_left);
@@ -477,7 +505,8 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
             this->visit_expr(*x.m_args[i]);
             // TODO: handle multiple types
-            if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type) || ASRUtils::is_logical(*arg_type)) {
+            if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type)
+                    || ASRUtils::is_logical(*arg_type) || ASRUtils::is_character(*arg_type)) {
                 args.push_back(al, value);
             } else {
                 diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
@@ -1940,6 +1969,14 @@ public:
     // implied do loop nesting
     int idl_nesting_level = 0;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
+
+    struct PendingProcPtrInit {
+        std::string proc_name;
+        ASR::Variable_t* var;
+        SymbolTable* resolve_scope;
+        Location loc;
+    };
+    std::vector<PendingProcPtrInit> pending_proc_ptr_inits;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -4402,6 +4439,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrIntrinsicOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrIntrinsicOperator_t>(s.m_spec);
+                                    std::string op_sym_name = intrinsic2str[op_attr->m_op];
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
                                     // Assignment Overloading Encountered
                                     if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
@@ -4410,6 +4456,12 @@ public:
                                     } else {
                                     assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
                                     }
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access["~assign"] = access;
                                 } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
                                     //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
                                     // Custom Operator Overloading Encountered
@@ -4419,6 +4471,15 @@ public:
                                     } else {
                                     overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
                                     }
+                                    AST::AttrDefinedOperator_t *op_attr =
+                                        AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec);
+                                    std::string op_sym_name = "~~" + to_lower(std::string(op_attr->m_op_name));
+                                    ASR::accessType access = (sa->m_attr == AST::simple_attributeType::AttrPublic)
+                                        ? ASR::accessType::Public
+                                        : (sa->m_attr == AST::simple_attributeType::AttrPrivate)
+                                            ? ASR::accessType::Private
+                                            : ASR::accessType::Public;
+                                    assgnd_access[op_sym_name] = access;
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute type not implemented yet.",
@@ -4435,6 +4496,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Private;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Private;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -4450,6 +4512,7 @@ public:
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Public;
                                     } else {
+                                        assgnd_access[sym] = ASR::accessType::Public;
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -6409,6 +6472,26 @@ public:
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
                     }
+                    // Defer procedure pointer initialization when the target
+                    // procedure is not yet in scope (e.g. module contains)
+                    if (is_derived_type && is_pointer
+                            && AST::is_a<AST::Name_t>(*s.m_initializer)
+                            && type && ASR::is_a<ASR::Pointer_t>(
+                                *ASRUtils::type_get_past_allocatable(type))
+                            && ASR::is_a<ASR::FunctionType_t>(
+                                *ASR::down_cast<ASR::Pointer_t>(
+                                    ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        std::string init_name = to_lower(
+                            AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
+                        ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
+                        if (!init_sym && variable_added_to_symtab) {
+                            pending_proc_ptr_inits.push_back({
+                                init_name, variable_added_to_symtab,
+                                current_scope->parent,
+                                s.m_initializer->base.loc});
+                            continue;
+                        }
+                    }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
                         // This branch is to handle cases of BOZ Declarations inside Real Array 
@@ -7048,18 +7131,25 @@ public:
 
         // Scope where the PDT template lives
         SymbolTable* pdt_scope = ASRUtils::symbol_parent_symtab(pdt_sym_orig);
-        LCOMPILERS_ASSERT(kind_val_vec.size() == pdt_struct->n_kind_params);
+
+        // kind_val_vec may contain [parent_vals..., child_vals...].
+        // The child's own kind params are the last n_kind_params entries.
+        // All entries are used for the monomorphized name.
+        LCOMPILERS_ASSERT(kind_val_vec.size() >= pdt_struct->n_kind_params);
+        size_t child_offset = kind_val_vec.size() - pdt_struct->n_kind_params;
 
         std::map<int64_t, int64_t> sentinel_to_actual;
         std::map<std::string, int64_t> kind_values;
         std::string monomorphized_name = pdt_name;
+        for (size_t i = 0; i < kind_val_vec.size(); i++) {
+            monomorphized_name += "_" + std::to_string(kind_val_vec[i]);
+        }
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
             std::string kp_name(pdt_struct->m_kind_params[i]);
-            int64_t kind_val = kind_val_vec[i];
+            int64_t kind_val = kind_val_vec[child_offset + i];
             int64_t sentinel = PDT_SENTINEL + i;
             sentinel_to_actual[sentinel] = kind_val;
             kind_values[kp_name] = kind_val;
-            monomorphized_name += "_" + std::to_string(kind_val);
         }
 
         // Check if the monomorphized struct already exists in scope
@@ -7096,6 +7186,8 @@ public:
                     ASR::make_IntegerConstant_t(al, loc, kv.second, int_type));
                 kp_var->m_value = val;
                 kp_var->m_symbolic_value = val;
+                kp_var->m_dependencies = nullptr;
+                kp_var->n_dependencies = 0;
             }
         }
 
@@ -7175,6 +7267,36 @@ public:
             }
         }
 
+        // recursively instantiate the parent
+        // using the prefix kind values (everything before child_offset).
+        ASR::symbol_t * new_parent = pdt_struct->m_parent;
+        if (child_offset > 0) {
+            LCOMPILERS_ASSERT(pdt_struct->m_parent);
+            ASR::symbol_t* parent_orig = ASRUtils::symbol_get_past_external(
+                pdt_struct->m_parent);
+            while (parent_orig) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
+                    parent_orig);
+                if (parent_struct->n_kind_params > 0) {
+                    std::string parent_name = std::string(
+                        ASRUtils::symbol_name(parent_orig));
+                    std::vector<int64_t> parent_vals(
+                        kind_val_vec.begin(),
+                        kind_val_vec.begin() + child_offset);
+                    ASR::symbol_t* parent_type_decl = nullptr;
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 0);
+                    instantiate_pdt_by_values(loc, parent_name, parent_vals,
+                        false, false, empty_dims, parent_type_decl,
+                        ASR::abiType::Source, false);
+                    new_parent = parent_type_decl;
+                    parent_orig = nullptr;
+                } else {
+                    parent_orig = ASRUtils::symbol_get_past_external(parent_struct->m_parent);
+                }
+            }
+        }
+
         Vec<char*> pdt_final_proc_names;
         pdt_final_proc_names.reserve(al, 0);
         tmp = ASR::make_Struct_t(al, loc, new_scope,
@@ -7183,7 +7305,7 @@ public:
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
-            nullptr, 0, nullptr, pdt_struct->m_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -7238,18 +7360,94 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*pdt_sym_orig));
         ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(pdt_sym_orig);
 
-        std::vector<int64_t> kind_val_vec;
+        // Build the full kind parameter list by walking the parent chain.
+        // Parent kind params come first (outermost ancestor first)        
+        struct ParamInfo {
+            std::string name;
+            ASR::Struct_t* owner;
+        };
+        std::vector<ParamInfo> all_params;
+
+        // Walk the parent chain to collect ancestor PDT structs
+        std::vector<ASR::Struct_t*> parent_chain;
+        ASR::symbol_t* walk_sym = pdt_struct->m_parent;
+        while (walk_sym) {
+            ASR::symbol_t* walk_orig = ASRUtils::symbol_get_past_external(walk_sym);
+            if (ASR::is_a<ASR::Struct_t>(*walk_orig)) {
+                ASR::Struct_t* walk_struct = ASR::down_cast<ASR::Struct_t>(walk_orig);
+                if (walk_struct->n_kind_params > 0) {
+                    parent_chain.push_back(walk_struct);
+                }
+                walk_sym = walk_struct->m_parent;
+            } else {
+                break;
+            }
+        }
+        // Reverse so outermost ancestor comes first
+        std::reverse(parent_chain.begin(), parent_chain.end());
+
+        // Collect parent kind params (outermost first)
+        for (auto* ps : parent_chain) {
+            for (size_t i = 0; i < ps->n_kind_params; i++) {
+                all_params.push_back({std::string(ps->m_kind_params[i]), ps});
+            }
+        }
+
+        // Collect the child's own kind params
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
-            std::string param_name(pdt_struct->m_kind_params[i]);
+            all_params.push_back({std::string(pdt_struct->m_kind_params[i]), pdt_struct});
+        }
+
+        // Build a map from keyword name to kind_item index for keyword args.
+        // Positional args (m_id == nullptr) are consumed in order; keyword
+        // args (m_id != nullptr) are matched by name to the PDT's kind_params.
+        std::map<std::string, size_t> keyword_arg_map;
+        size_t n_positional = 0;
+        bool seen_keyword = false;
+        for (size_t i = 0; i < sym_type->n_kind; i++) {
+            if (sym_type->m_kind[i].m_id != nullptr) {
+                seen_keyword = true;
+                std::string kw_name = to_lower(sym_type->m_kind[i].m_id);
+                keyword_arg_map[kw_name] = i;
+            } else {
+                if (seen_keyword) {
+                    diag.add(Diagnostic(
+                        "Positional argument after keyword argument in "
+                        "parameterized derived type '" + pdt_name + "'",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+                n_positional++;
+            }
+        }
+
+        // Resolve all kind parameter values (parent + own) in order
+        std::vector<int64_t> all_kind_vals;
+        for (size_t i = 0; i < all_params.size(); i++) {
+            const std::string& param_name = all_params[i].name;
+            ASR::Struct_t* owner = all_params[i].owner;
             int64_t kind_val = -1;
-            if (i < sym_type->n_kind && sym_type->m_kind[i].m_value) {
+
+            // Check for keyword argument matching this parameter
+            auto kw_it = keyword_arg_map.find(param_name);
+            if (kw_it != keyword_arg_map.end()) {
+                size_t kw_idx = kw_it->second;
+                if (sym_type->m_kind[kw_idx].m_value) {
+                    this->visit_expr(*sym_type->m_kind[kw_idx].m_value);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                    kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
+                        sym_type->m_kind[kw_idx].loc, diag);
+                }
+            } else if (i < n_positional && sym_type->m_kind[i].m_value) {
+                // Positional argument at index i
                 this->visit_expr(*sym_type->m_kind[i].m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
                     sym_type->m_kind[i].loc, diag);
-            } else {
-                // Fall back to the template's default value
-                ASR::symbol_t* param_sym = pdt_struct->m_symtab->get_symbol(param_name);
+            }
+            if (kind_val < 0) {
+                // Fall back to the owner template's default value
+                ASR::symbol_t* param_sym = owner->m_symtab->get_symbol(param_name);
                 if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
                     ASR::Variable_t* pv = ASR::down_cast<ASR::Variable_t>(param_sym);
                     if (pv->m_symbolic_value) {
@@ -7266,10 +7464,14 @@ public:
                     throw SemanticAbort();
                 }
             }
-            kind_val_vec.push_back(kind_val);
+            all_kind_vals.push_back(kind_val);
         }
-        return instantiate_pdt_by_values(loc, pdt_name, kind_val_vec,
-            is_pointer, is_allocatable, dims, type_declaration, abi, is_argument);
+
+        // Parent instantiation is handled recursively inside
+        // instantiate_pdt_by_values using the prefix of all_kind_vals.
+        return instantiate_pdt_by_values(loc, pdt_name, all_kind_vals,
+            is_pointer, is_allocatable, dims, type_declaration, abi,
+            is_argument);
     }
 
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
@@ -12764,8 +12966,15 @@ public:
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            to_type = ASRUtils::make_Array_t_util(al, loc, to_type,
+                arr->m_dims, arr->n_dims);
+        }
         if (ASRUtils::is_integer(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::IntegerConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -12821,8 +13030,15 @@ public:
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            to_type = ASRUtils::make_Array_t_util(al, loc, to_type,
+                arr->m_dims, arr->n_dims);
+        }
         if (ASRUtils::is_integer(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::IntegerConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -12832,7 +13048,9 @@ public:
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
                 to_type, value, nullptr));
         } else if (ASRUtils::is_logical(*type)) {
-            if (ASRUtils::expr_value(arg) != nullptr) {
+            if (ASRUtils::expr_value(arg) != nullptr &&
+                    ASR::is_a<ASR::LogicalConstant_t>(
+                        *ASRUtils::expr_value(arg))) {
                 double dval = ASR::down_cast<ASR::LogicalConstant_t>(
                                         ASRUtils::expr_value(arg))->m_value;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
@@ -14428,12 +14646,14 @@ public:
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_character(*dest_type)) {
-            diag.semantic_error_label(
-                            "Binary numeric operators cannot be used on strings",
-                            {x.base.base.loc},
-                            "help: use '//' for string concatenation"
-                        );
-            throw SemanticAbort();
+            if (overloaded == nullptr) {
+                diag.semantic_error_label(
+                                "Binary numeric operators cannot be used on strings",
+                                {x.base.base.loc},
+                                "help: use '//' for string concatenation"
+                            );
+                throw SemanticAbort();
+            }
         } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
             // if overloaded is not found, then reject
             if (overloaded == nullptr) {
@@ -16402,6 +16622,9 @@ public:
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if ((!to_submodule) && es0->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
                     /* a_symtab */ current_scope,

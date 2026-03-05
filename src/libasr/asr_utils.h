@@ -7518,11 +7518,10 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
         if( ASRUtils::is_array(arg_type) ) {
             a_args[i] = cast_to_descriptor(al, arg);
             if( !ASRUtils::is_array(a_type) ) {
-                ASR::ttype_t* underlying_type = ASRUtils::extract_type(arg_type);
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type)));
-                a_type = TYPE(ASR::make_Array_t(al, a_type->base.loc, underlying_type,
+                a_type = TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type,
                                     e->m_dims, e->n_dims, e->m_physical_type));
             }
         }
