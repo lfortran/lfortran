@@ -97,14 +97,7 @@ FINALIZE_SYMTABLE_print_01:                       ; preds = %return
 Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_print_01
   %38 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
   %39 = load i8*, i8** %38, align 8
-  %40 = icmp eq i8* %39, null
-  br i1 %40, label %free_done5, label %free_nonnull4
-
-free_nonnull4:                                    ; preds = %Finalize_Variable_lfortran_iomsg
   call void @_lfortran_free(i8* %39)
-  br label %free_done5
-
-free_done5:                                       ; preds = %free_nonnull4, %Finalize_Variable_lfortran_iomsg
   ret i32 0
 }
 

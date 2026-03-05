@@ -422,27 +422,13 @@ FINALIZE_SYMTABLE_string_11:                      ; preds = %return
 Finalize_Variable_mystring:                       ; preds = %FINALIZE_SYMTABLE_string_11
   %30 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
   %31 = load i8*, i8** %30, align 8
-  %32 = icmp eq i8* %31, null
-  br i1 %32, label %free_done3, label %free_nonnull2
-
-free_nonnull2:                                    ; preds = %Finalize_Variable_mystring
   call void @_lfortran_free(i8* %31)
-  br label %free_done3
-
-free_done3:                                       ; preds = %free_nonnull2, %Finalize_Variable_mystring
   br label %Finalize_Variable_teststring
 
-Finalize_Variable_teststring:                     ; preds = %free_done3
-  %33 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
-  %34 = load i8*, i8** %33, align 8
-  %35 = icmp eq i8* %34, null
-  br i1 %35, label %free_done5, label %free_nonnull4
-
-free_nonnull4:                                    ; preds = %Finalize_Variable_teststring
-  call void @_lfortran_free(i8* %34)
-  br label %free_done5
-
-free_done5:                                       ; preds = %free_nonnull4, %Finalize_Variable_teststring
+Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_mystring
+  %32 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
+  %33 = load i8*, i8** %32, align 8
+  call void @_lfortran_free(i8* %33)
   ret i32 0
 }
 
