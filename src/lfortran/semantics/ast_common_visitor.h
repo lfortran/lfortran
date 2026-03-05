@@ -5894,18 +5894,15 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
-<<<<<<< HEAD
                                 // PDT kind parameter: treat as a Parameter variable
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
-=======
                                 // PDT kind type parameter: treat as compile-time constant
                                 storage_type = ASR::storage_typeType::Parameter;
                                 is_pdt_kind_or_len = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
                                 // PDT len type parameter
                                 is_pdt_kind_or_len = true;
->>>>>>> a92a6c340 (fix: handle kind parameter attribute in parameterized derived types)
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
