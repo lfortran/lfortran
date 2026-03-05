@@ -1407,6 +1407,29 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                                             not_to_be_erased.find(parent_func) != not_to_be_erased.end()) {
                                         protect = true;
                                     }
+                                    // Also check if any Struct in the parent
+                                    // module has an SMD referencing this
+                                    // function. When compiling a submodule,
+                                    // the Struct is only reachable through
+                                    // ExternalSymbols so
+                                    // visit_StructMethodDeclaration may not
+                                    // have been called.
+                                    if (!protect && parent_func) {
+                                        for (auto &sym_item : parent_mod->m_symtab->get_scope()) {
+                                            if (!ASR::is_a<ASR::Struct_t>(*sym_item.second)) continue;
+                                            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(sym_item.second);
+                                            for (auto &st_item : st->m_symtab->get_scope()) {
+                                                if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*st_item.second)) continue;
+                                                ASR::StructMethodDeclaration_t* smd =
+                                                    ASR::down_cast<ASR::StructMethodDeclaration_t>(st_item.second);
+                                                if (ASRUtils::symbol_get_past_external(smd->m_proc) == parent_func) {
+                                                    protect = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (protect) break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1459,9 +1482,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x){
             ASR::ASRPassBaseWalkVisitor<RemoveArrayByDescriptorProceduresVisitor>::visit_StructMethodDeclaration(x);
             ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x.m_proc);
-            if (v.proc2newproc.find(proc) != v.proc2newproc.end()) {
-                not_to_be_erased.insert(proc);
-            }
+            // Always protect SMD-referenced functions. For submodule
+            // procedures, proc points to the parent module's interface
+            // (not in proc2newproc), but the submodule's implementation
+            // must still be kept so the vtable can reference it.
+            not_to_be_erased.insert(proc);
         }
 };
 
