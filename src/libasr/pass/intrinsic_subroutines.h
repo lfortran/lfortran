@@ -1176,11 +1176,20 @@ namespace ExecuteCommandLine {
             ASR::expr_t *cmdstat_arg = args[optional_arg_index];
             ASR::ttype_t *cmdstat_type = ASRUtils::expr_type(cmdstat_arg);
             body.push_back(al, b.Assignment(cmdstat_arg, b.i_t(0, cmdstat_type)));
-            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(1, cmdstat_type)));
+            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(3, cmdstat_type)));
+            optional_arg_index++;
+        }
+        if (overload_id & CMDMSG_BIT) {
+            ASR::expr_t *cmdmsg_arg = args[optional_arg_index];
+            failure_handlers.push_back(b.Assignment(cmdmsg_arg,
+                b.StringConstant("Invalid command line", character(20))));
             optional_arg_index++;
         }
         if (!failure_handlers.empty()) {
-            ASR::expr_t *system_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            ASR::expr_t *cmd_not_found = b.Eq(exit_status_local, b.i_t(127, ret_type));
+            ASR::expr_t *cmd_not_exec = b.Eq(exit_status_local, b.i_t(126, ret_type));
+            ASR::expr_t *system_call_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            ASR::expr_t *system_failed = b.Or(b.Or(cmd_not_found, cmd_not_exec), system_call_failed);
             body.push_back(al, b.If(system_failed, failure_handlers, {}));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
