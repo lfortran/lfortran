@@ -4896,7 +4896,7 @@ public:
         llvm::Type* value_type;
 
         value_type = ASRUtils::is_array(x.m_type)?
-            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr,
+            llvm_utils->get_el_type(x.m_var_expr,
                 ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
             llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         if (ASRUtils::is_string_only(x.m_type)) {
@@ -5838,7 +5838,7 @@ public:
             case ASR::exprType::PointerNullConstant: {
                 ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
                 llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
-                    ? llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr,
+                    ? llvm_utils->get_el_type(pnc->m_var_expr,
                         ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
                     : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
@@ -10260,14 +10260,15 @@ public:
             this->visit_stmt(*(block->m_body[i]));
         }
 
-        // Free BLOCK-local heap arrays before exiting BLOCK (important for loops)
+        start_new_block(blockend);
+        // Finalize struct members before freeing the backing array memory
+        llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
+
+        // Free BLOCK-local heap arrays after finalizing (important for loops)
         for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
             llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
-
-        start_new_block(blockend);
-        llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
 
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
