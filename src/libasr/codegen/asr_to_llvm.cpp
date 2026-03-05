@@ -13956,6 +13956,9 @@ public:
                 this->visit_expr_wrapper(x.m_iostat, false);
                 ptr_loads = ptr_copy;
                 iostat = tmp;
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                    iostat);
             } else {
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
@@ -14097,6 +14100,9 @@ public:
             iostat_kind = ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_iostat))->m_kind;
             iostat = tmp;
             iostat_for_empty_read = iostat;
+            llvm::Value* zero_val = llvm::ConstantInt::get(
+                llvm::Type::getIntNTy(context, iostat_kind * 8), 0);
+            builder->CreateStore(zero_val, iostat);
         } else {
             // Pass NULL to read functions so runtime prints specific error messages
             iostat = llvm::ConstantPointerNull::get(
@@ -14108,6 +14114,35 @@ public:
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
         }
+
+        llvm::Value *iomsg_data = nullptr;
+        llvm::Value *iomsg_len = nullptr;
+        if (x.m_iomsg) {
+            std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+        }
+
+        auto emit_set_read_iomsg = [&]() {
+            if (!x.m_iomsg || !x.m_iostat) return;
+            llvm::Value* iostat_val = builder->CreateLoad(
+                llvm::Type::getIntNTy(context, iostat_kind * 8), iostat);
+            if (iostat_kind != 4) {
+                iostat_val = builder->CreateIntCast(
+                    iostat_val, llvm::Type::getInt32Ty(context), true);
+            }
+            std::string func_name = "_lfortran_set_read_iomsg";
+            llvm::Function *iomsg_fn = module->getFunction(func_name);
+            if (!iomsg_fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),
+                        character_type,
+                        llvm::Type::getInt64Ty(context)
+                    }, false);
+                iomsg_fn = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+            }
+            builder->CreateCall(iomsg_fn, {iostat_val, iomsg_data, iomsg_len});
+        };
 
         if (x.m_advance) {
             this->visit_expr_load_wrapper(x.m_advance, 0, true);
@@ -14452,6 +14487,7 @@ public:
                             builder->CreateStore(changed_size_var, iostat);
                         }
                     }
+                    emit_set_read_iomsg();
                     return;
                 } else {
                     fn = get_read_function(type);
@@ -14550,6 +14586,7 @@ public:
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
             }
         }
+        emit_set_read_iomsg();
     }
 
     void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
