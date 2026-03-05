@@ -313,6 +313,12 @@ jobs:
         run: |
           ./ci/grammar_conflicts.sh
 
+      - name: Check Trailing Whitespace
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        run: |
+          python3 check_trailing_whitespace.py
+
       # Run last. Script checks out to first commit in PR history
       - name: Check for Added Binary Files
         shell: bash -e -l {0}
