@@ -5675,6 +5675,7 @@ public:
                 char *bindc_name = nullptr;
                 bool is_volatile = false;
                 bool is_protected = false;
+                bool is_pdt_kind_or_len = false;
                 AST::AttrType_t *sym_type = nullptr;
 
                 if (AST::is_a<AST::AttrType_t>(*x.m_vartype))
@@ -5893,9 +5894,18 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
+<<<<<<< HEAD
                                 // PDT kind parameter: treat as a Parameter variable
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
+=======
+                                // PDT kind type parameter: treat as compile-time constant
+                                storage_type = ASR::storage_typeType::Parameter;
+                                is_pdt_kind_or_len = true;
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
+                                // PDT len type parameter
+                                is_pdt_kind_or_len = true;
+>>>>>>> a92a6c340 (fix: handle kind parameter attribute in parameterized derived types)
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -6162,7 +6172,7 @@ public:
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
                         }
-                        if( is_derived_type ) {
+                        if( is_derived_type && !is_pdt_kind_or_len ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                             if ( s.n_dim > 0 && !is_template) {
                                 for (size_t dim_i = 0; dim_i < s.n_dim; dim_i++) {
