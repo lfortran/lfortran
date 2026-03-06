@@ -7239,26 +7239,12 @@ public:
         {
             ASR::symbol_t *pdt_existing = pdt_scope->get_symbol(monomorphized_name);
             if (pdt_existing && ASR::is_a<ASR::Struct_t>(*pdt_existing)) {
-                ASR::Struct_t* existing_struct = ASR::down_cast<ASR::Struct_t>(pdt_existing);
-                sync_pdt_specialization_symbols(pdt_struct->m_symtab, existing_struct->m_symtab);
-                ASR::symbol_t* type_decl_sym = pdt_existing;
-                if (current_scope->resolve_symbol(monomorphized_name) == nullptr) {
-                    ASR::symbol_t* module_sym = nullptr;
-                    if (pdt_scope->asr_owner != nullptr &&
-                        ASR::is_a<ASR::symbol_t>(*pdt_scope->asr_owner)) {
-                        module_sym = ASR::down_cast<ASR::symbol_t>(pdt_scope->asr_owner);
-                    }
-                    if (module_sym && ASR::is_a<ASR::Module_t>(*module_sym)) {
-                        ASR::symbol_t* ext = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(al, loc, current_scope,
-                                s2c(al, monomorphized_name), pdt_existing,
-                                ASRUtils::symbol_name(module_sym),
-                                nullptr, 0, s2c(al, monomorphized_name),
-                                ASR::accessType::Public));
-                        current_scope->add_symbol(monomorphized_name, ext);
-                        type_decl_sym = ext;
-                    }
-                }
+                ASR::Struct_t* existing_struct =
+                    ASR::down_cast<ASR::Struct_t>(pdt_existing);
+                sync_pdt_specialization_symbols(
+                    pdt_struct->m_symtab, existing_struct->m_symtab);
+                ASR::symbol_t* type_decl_sym = ASRUtils::import_struct_type(
+                    al, pdt_existing, current_scope);
                 type_declaration = type_decl_sym;
                 ASR::ttype_t *type = ASRUtils::make_StructType_t_util(
                     al, loc, type_decl_sym, true);

@@ -6090,7 +6090,18 @@ public:
             }
             llvm::Value *ptr = nullptr;
             // Allocate the variable
-            if( !compiler_options.stack_arrays && array_size ) { // malloc for PointerArray
+            if( is_array_of_strings &&
+                    (v->m_storage == ASR::Save || v->m_storage == ASR::Parameter) &&
+                    !ASRUtils::is_allocatable(v->m_type) &&
+                    ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::PointerArray ) {
+                ASR::ArrayConstant_t* arr_const = nullptr;
+                ASR::expr_t* value = v->m_value != nullptr ? v->m_value : v->m_symbolic_value;
+                if (value) {
+                    arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(value));
+                }
+                ptr = llvm_utils->handle_global_nonallocatable_stringArray(
+                    al, ASR::down_cast<ASR::Array_t>(v->m_type), arr_const, v->m_name);
+            } else if( !compiler_options.stack_arrays && array_size ) { // malloc for PointerArray
                 if(is_array_of_strings){
                     ptr = create_and_setup_string_for_array(v->m_type, array_size, compiler_options.stack_arrays, v->m_name);
                 } else {
@@ -6324,8 +6335,11 @@ public:
                 target_var = ptr;
                 if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
-                    && 
-                    ASRUtils::is_string_only(v->m_type)) {
+                    &&
+                    (ASRUtils::is_string_only(v->m_type) ||
+                     (ASRUtils::is_array_of_strings(v->m_type) &&
+                      !ASRUtils::is_allocatable(v->m_type) &&
+                      ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::PointerArray))) {
                     // DO Nothing
                     // (String + Save) variable is declared as global llvm variable with the intended inital value
                 } else if(v->m_storage == ASR::storage_typeType::Save &&
