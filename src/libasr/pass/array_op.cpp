@@ -971,7 +971,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     template <typename T>
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
                        Vec<ASR::expr_t**>& fix_types_args,
-                       const Location& loc) {
+                       const Location& loc,
+                       const std::vector<ASR::expr_t*>* scalar_targets = nullptr) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
         var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
@@ -1008,7 +1009,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::array_index_t array_index;
                 array_index.loc = loc;
                 array_index.m_left = nullptr;
-                array_index.m_right = var2indices[i][j];
+                array_index.m_right = get_singleton_safe_index(*vars[i],
+                    var2indices[i][j], j + 1, loc, scalar_targets);
                 array_index.m_step = nullptr;
                 indices.push_back(al, array_index);
             }
@@ -1188,6 +1190,59 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         return base_var->m_intent == ASR::intentType::Out ||
             base_var->m_intent == ASR::intentType::ReturnVar;
+    }
+
+    void collect_array_if_scalar_targets(ASR::stmt_t** body, size_t n_body,
+            std::vector<ASR::expr_t*>& scalar_targets) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t* stmt = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                ASR::Assignment_t& assignment = *ASR::down_cast<ASR::Assignment_t>(stmt);
+                ASR::expr_t* value = ASRUtils::get_past_array_broadcast(assignment.m_value);
+                if (assignment.m_move_allocation ||
+                    !ASRUtils::is_array(ASRUtils::expr_type(assignment.m_target)) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                    continue;
+                }
+
+                if (std::find(scalar_targets.begin(), scalar_targets.end(),
+                        assignment.m_target) != scalar_targets.end()) {
+                    continue;
+                }
+                scalar_targets.push_back(assignment.m_target);
+            } else if (ASR::is_a<ASR::If_t>(*stmt)) {
+                ASR::If_t& if_stmt = *ASR::down_cast<ASR::If_t>(stmt);
+                collect_array_if_scalar_targets(if_stmt.m_body,
+                    if_stmt.n_body, scalar_targets);
+                collect_array_if_scalar_targets(if_stmt.m_orelse,
+                    if_stmt.n_orelse, scalar_targets);
+            }
+        }
+    }
+
+    ASR::expr_t* get_singleton_safe_index(ASR::expr_t* expr, ASR::expr_t* index_expr,
+            size_t dim, const Location& loc,
+            const std::vector<ASR::expr_t*>* scalar_targets) {
+        if (!scalar_targets ||
+                std::find(scalar_targets->begin(), scalar_targets->end(), expr) ==
+                    scalar_targets->end()) {
+            return index_expr;
+        }
+
+        ASRUtils::ASRBuilder builder(al, loc);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        int idx_kind = get_index_kind();
+        ASR::expr_t* dim_expr = make_ConstantWithKind(make_IntegerConstant_t,
+            make_Integer_t, dim, idx_kind, loc);
+        ASR::expr_t* one = make_ConstantWithKind(make_IntegerConstant_t,
+            make_Integer_t, 1, idx_kind, loc);
+        ASR::expr_t* target_extent = ASRUtils::EXPR(ASR::make_ArraySize_t(
+            al, loc, expr, dim_expr, idx_type, nullptr));
+        ASR::expr_t* is_singleton_extent = builder.Eq(target_extent, one);
+        ASR::expr_t* lower_bound = PassUtils::get_bound(expr, dim,
+            "lbound", al, idx_kind);
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, is_singleton_extent,
+            lower_bound, index_expr, idx_type, nullptr));
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
@@ -1433,10 +1488,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
+        std::vector<ASR::expr_t*> scalar_targets;
+        collect_array_if_scalar_targets(x.m_body, x.n_body, scalar_targets);
+        collect_array_if_scalar_targets(x.m_orelse, x.n_orelse, scalar_targets);
+
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
 
-        generate_loop(x, vars, fix_type_args, loc);
+        generate_loop(x, vars, fix_type_args, loc, &scalar_targets);
 
         ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
         remove_array_processing_node_visitor.visit_If(x);
