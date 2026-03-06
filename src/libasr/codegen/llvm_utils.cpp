@@ -9139,8 +9139,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASRUtils::symbol_get_past_external(struct_sym));
 
         llvm::Type *class_type = llvm_utils->getClassType(struct_t, false);
-        llvm::Type *struct_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::symbol_type(struct_sym), struct_sym, module);
+        llvm::Type *struct_type = llvm_utils->getStructType(struct_t, module);
 
         // allocate class wrapper first
         llvm::DataLayout data_layout(module->getDataLayout());
@@ -9169,7 +9168,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
         malloc_ptr = builder->CreateBitCast(malloc_ptr, struct_type->getPointerTo());
         builder->CreateStore(malloc_ptr, actual_ptr);
-        allocate_struct_array_members(struct_t, malloc_ptr, ASRUtils::symbol_type(struct_sym), false);
+        ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, struct_sym, true);
+        allocate_struct_array_members(struct_t, malloc_ptr, struct_signature, false);
         builder->CreateRetVoid();
 
         if (savedBB) {

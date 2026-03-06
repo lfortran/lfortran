@@ -5450,6 +5450,18 @@ class SymbolDuplicator {
                 new_symbol_name = generic_procedure->m_name;
                 break;
             }
+            case ASR::symbolType::CustomOperator: {
+                ASR::CustomOperator_t* custom_operator = ASR::down_cast<ASR::CustomOperator_t>(symbol);
+                new_symbol = duplicate_CustomOperator(custom_operator, destination_symtab);
+                new_symbol_name = custom_operator->m_name;
+                break;
+            }
+            case ASR::symbolType::StructMethodDeclaration: {
+                ASR::StructMethodDeclaration_t* struct_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(symbol);
+                new_symbol = duplicate_StructMethodDeclaration(struct_method, destination_symtab);
+                new_symbol_name = struct_method->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -5634,6 +5646,25 @@ class SymbolDuplicator {
             al, genericProcedure->base.base.loc, destination_symtab,
             genericProcedure->m_name, genericProcedure->m_procs,
             genericProcedure->n_procs, genericProcedure->m_access));
+    }
+
+    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t* customOperator,
+        SymbolTable* destination_symtab) {
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
+            al, customOperator->base.base.loc, destination_symtab,
+            customOperator->m_name, customOperator->m_procs,
+            customOperator->n_procs, customOperator->m_access));
+    }
+
+    ASR::symbol_t* duplicate_StructMethodDeclaration(
+        ASR::StructMethodDeclaration_t* structMethod,
+        SymbolTable* destination_symtab) {
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
+            al, structMethod->base.base.loc, destination_symtab,
+            structMethod->m_name, structMethod->m_self_argument,
+            structMethod->m_proc_name, structMethod->m_proc,
+            structMethod->m_abi, structMethod->m_is_deferred,
+            structMethod->m_is_nopass));
     }
 
 };
