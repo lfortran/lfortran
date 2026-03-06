@@ -8659,6 +8659,49 @@ public:
                     return;
                 }
             }
+
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
+                ASRUtils::is_array(bc->m_type) &&
+                !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(bc->m_source)) !=
+                    ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::type_get_past_array(bc->m_type))) {
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                if (ai->n_args == 1 && ai->m_args[0].m_right) {
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    visit_expr(*x.m_target);
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* dest_ptr = tmp;
+
+                    visit_expr_wrapper(ai->m_args[0].m_right, true);
+                    llvm::Value* idx = tmp;
+
+                    visit_expr_wrapper(bc->m_source, true);
+                    llvm::Value* source_val = tmp;
+                    llvm::Value* source_alloca = builder->CreateAlloca(
+                        source_val->getType(), nullptr, "transfer_source");
+                    builder->CreateStore(source_val, source_alloca);
+
+                    llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target,
+                        ASRUtils::type_get_past_array(bc->m_type),
+                        module.get());
+                    llvm::Value* src_as_elem_ptr = builder->CreateBitCast(
+                        source_alloca, elem_type->getPointerTo());
+                    llvm::Value* zero_based = builder->CreateSub(
+                        idx, llvm::ConstantInt::get(idx->getType(), 1));
+                    zero_based = builder->CreateZExtOrTrunc(
+                        zero_based, llvm::Type::getInt32Ty(context));
+                    llvm::Value* elem_ptr = builder->CreateGEP(
+                        elem_type, src_as_elem_ptr, zero_based);
+                    llvm::Value* elem_val = llvm_utils->CreateLoad2(
+                        elem_type, elem_ptr);
+                    builder->CreateStore(elem_val, dest_ptr);
+                    return;
+                }
+            }
         }
 
         if( x.m_overloaded ) {

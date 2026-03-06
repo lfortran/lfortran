@@ -173,7 +173,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7F800001', kind=4), 1.0_real32)
+            y = transfer(int(z'7FA00000', kind=4), 1.0_real32)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FC00000', kind=4), 1.0_real32)
         case (3)  ! ieee_negative_inf
@@ -207,7 +207,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7FF0000000000001', kind=8), 1.0_real64)
+            y = transfer(int(z'7FF4000000000000', kind=8), 1.0_real64)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FF8000000000000', kind=8), 1.0_real64)
         case (3)  ! ieee_negative_inf

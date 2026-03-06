@@ -9625,7 +9625,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::Value* src_member = nullptr;
                     if (llvm::isa<llvm::ConstantStruct>(src) ||
                         llvm::isa<llvm::ConstantAggregateZero>(src)) {
-                        if (!ASRUtils::is_value_constant(ASRUtils::EXPR(
+                        ASR::ttype_t* mem_type_check = ASRUtils::symbol_type(mem_sym);
+                        bool is_simple_scalar =
+                            !LLVM::is_llvm_struct(mem_type_check) &&
+                            !ASRUtils::is_array(mem_type_check) &&
+                            !ASRUtils::is_pointer(mem_type_check) &&
+                            !ASRUtils::is_allocatable(mem_type_check) &&
+                            !ASRUtils::is_descriptorString(mem_type_check);
+                        if (!is_simple_scalar &&
+                            !ASRUtils::is_value_constant(ASRUtils::EXPR(
                                 ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
                             continue;
                         }
