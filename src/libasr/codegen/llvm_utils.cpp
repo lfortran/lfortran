@@ -2582,16 +2582,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         sequence = std::string((char*)arrayConst_t->m_data, arrayConst_t->m_n_data);
     }
     ASR::ttype_t* fake_string_type = ASRUtils::duplicate_type(al, array_t->m_type);
+    int64_t actual_len = 0;
+    ASRUtils::extract_value(ASRUtils::get_string_type(array_t->m_type)->m_len, actual_len);
     { // Modify length
         ASR::String_t* fake_string = ASR::down_cast<ASR::String_t>(fake_string_type);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*fake_string->m_len))
-        int64_t &fake_string_len = ASR::down_cast<ASR::IntegerConstant_t>(fake_string->m_len)->m_n;
-        fake_string_len*= ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t); 
+        int64_t fake_string_len = actual_len * ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t);
+        fake_string->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, fake_string->base.base.loc, fake_string_len,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, fake_string->base.base.loc, 4))));
     }
 
     ASR::String_t* str = ASRUtils::get_string_type(fake_string_type);
     int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-    int64_t actual_len; ASRUtils::extract_value(ASRUtils::get_string_type(array_t->m_type)->m_len, actual_len);
     sequence.resize(len,' '); // Pad
     llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, actual_len));
     llvm::Constant* string_constant;
