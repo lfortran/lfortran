@@ -3199,6 +3199,9 @@ public:
             case ASRUtils::IntrinsicElementalFunctions::CommandArgumentCount: {
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::ThisImage: {
+                break;
+            }
             case ASRUtils::IntrinsicElementalFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
@@ -16590,6 +16593,10 @@ public:
         llvm::Value *exit_code = llvm::ConstantInt::get(context,
                 llvm::APInt(32, exit_code_int));
         construct_stop(exit_code, "ERROR STOP", x.m_code, x.base.base.loc);
+    }
+
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        // No-op: coarray sync all is not yet supported at runtime
     }
 
     template <typename T>
