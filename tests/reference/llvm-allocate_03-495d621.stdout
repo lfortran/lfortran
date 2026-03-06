@@ -999,27 +999,7 @@ FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
   %445 = load %array*, %array** %c, align 8
-  %446 = icmp ne %array* %445, null
-  br i1 %446, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_c
-  %447 = getelementptr %array, %array* %445, i32 0, i32 0
-  %448 = load i32*, i32** %447, align 8
-  %449 = icmp eq i32* %448, null
-  br i1 %449, label %free_done40, label %free_nonnull39
-
-free_nonnull39:                                   ; preds = %is_allocated.then
-  %450 = bitcast i32* %448 to i8*
-  call void @_lfortran_free(i8* %450)
-  br label %free_done40
-
-free_done40:                                      ; preds = %free_nonnull39, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_c
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done40
+  call void @finalize_allocatable__Array_i32(%array* %445, i1 false)
   ret i32 0
 }
 
@@ -3232,5 +3212,54 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_allocatable__Array_i32(%array* %0, i1 %1) {
+entry:
+  %2 = icmp ne %array* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_descriptorArray_Array_i32(%array* %0, i1 %1)
+  br i1 %1, label %allocatableArray_in_struct.then, label %allocatableArray_in_struct.else
+
+allocatableArray_in_struct.then:                  ; preds = %is_allocated.then
+  %3 = bitcast %array* %0 to i8*
+  call void @_lfortran_free(i8* %3)
+  br label %allocatableArray_in_struct.ifcont
+
+allocatableArray_in_struct.else:                  ; preds = %is_allocated.then
+  br label %allocatableArray_in_struct.ifcont
+
+allocatableArray_in_struct.ifcont:                ; preds = %allocatableArray_in_struct.else, %allocatableArray_in_struct.then
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %allocatableArray_in_struct.ifcont
+  ret void
+}
+
+define internal void @finalize_descriptorArray_Array_i32(%array* %0, i1 %1) {
+entry:
+  %2 = getelementptr %array, %array* %0, i32 0, i32 0
+  %3 = load i32*, i32** %2, align 8
+  br i1 %1, label %dimDesc_in_struct.then, label %dimDesc_in_struct.else
+
+dimDesc_in_struct.then:                           ; preds = %entry
+  %4 = getelementptr %array, %array* %0, i32 0, i32 2
+  %5 = load %dimension_descriptor*, %dimension_descriptor** %4, align 8
+  %6 = bitcast %dimension_descriptor* %5 to i8*
+  call void @_lfortran_free(i8* %6)
+  br label %dimDesc_in_struct.ifcont
+
+dimDesc_in_struct.else:                           ; preds = %entry
+  br label %dimDesc_in_struct.ifcont
+
+dimDesc_in_struct.ifcont:                         ; preds = %dimDesc_in_struct.else, %dimDesc_in_struct.then
+  %7 = bitcast i32* %3 to i8*
+  call void @_lfortran_free(i8* %7)
+  ret void
+}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

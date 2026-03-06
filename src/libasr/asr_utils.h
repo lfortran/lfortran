@@ -7037,6 +7037,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
+        if( i + is_method >= func_type->n_arg_types ) {
+            break;
+        }
         if( a_args[i].m_value == nullptr ) {
             continue;
         }

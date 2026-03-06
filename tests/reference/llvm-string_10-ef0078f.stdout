@@ -240,14 +240,7 @@ FINALIZE_SYMTABLE_string_10:                      ; preds = %return
 Finalize_Variable_num:                            ; preds = %FINALIZE_SYMTABLE_string_10
   %118 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
   %119 = load i8*, i8** %118, align 8
-  %120 = icmp eq i8* %119, null
-  br i1 %120, label %free_done8, label %free_nonnull7
-
-free_nonnull7:                                    ; preds = %Finalize_Variable_num
   call void @_lfortran_free(i8* %119)
-  br label %free_done8
-
-free_done8:                                       ; preds = %free_nonnull7, %Finalize_Variable_num
   ret i32 0
 }
 
