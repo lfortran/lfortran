@@ -1643,7 +1643,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
          * @param idx Index (zero based) of the member within the struct we want to get a ptr to.
          */
         llvm::Value* get_ptr_to_struct_variable_member(llvm::Value* const ptr, ASR::Struct_t* const struct_, const int idx) {
-            verify(ptr, get_llvm_type(struct_->m_struct_signature, struct_)->getPointerTo());
+            // finalize_struct() unwraps any class wrapper before visiting members.
+            verify(ptr, llvm_utils_->getStructType(struct_, llvm_utils_->module, true));
             LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&struct_->base),
                               "This utility shouldn't be called on unlimited polymorphic struct type")
 
