@@ -8117,6 +8117,33 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            // Check if this is a Parameterized Derived Type (PDT) instantiation
+            // using class(), e.g., class(tensor_t(double_precision)).
+            // If so, instantiate the PDT and create a class type (is_cstruct=false).
+            if (v) {
+                ASR::symbol_t* pdt_orig = ASRUtils::symbol_get_past_external(v);
+                if (ASR::is_a<ASR::Struct_t>(*pdt_orig)) {
+                    ASR::Struct_t* pdt_st = ASR::down_cast<ASR::Struct_t>(pdt_orig);
+                    if (pdt_st->n_kind_params > 0) {
+                        // Instantiate PDT to get the monomorphized struct symbol
+                        instantiate_pdt(loc, derived_type_name, sym_type,
+                            is_pointer, is_allocatable, dims, type_declaration, abi, is_argument);
+                        // Build class type (is_cstruct=false) from the instantiated PDT
+                        type = ASRUtils::make_StructType_t_util(al, loc, type_declaration, false);
+                        if (is_assumed_rank) {
+                            type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                        } else {
+                            type = ASRUtils::make_Array_t_util(
+                                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                        }
+                        if (is_pointer) {
+                            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                                ASRUtils::type_get_past_allocatable(type)));
+                        }
+                        return type;
+                    }
+                }
+            }
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     if (this->is_derived_type && (is_pointer || is_allocatable)) {

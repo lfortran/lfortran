@@ -2043,7 +2043,7 @@ RUN(NAME derived_types_117 LABELS gfortran llvm)
 RUN(NAME derived_types_118 LABELS gfortran llvm)
 RUN(NAME derived_types_119 LABELS gfortran llvm)
 RUN(NAME derived_types_120 LABELS gfortran llvm)
-
+RUN(NAME derived_types_121 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
