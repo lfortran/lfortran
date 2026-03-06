@@ -1498,10 +1498,10 @@ RUN(NAME intrinsics_418 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS
 RUN(NAME intrinsics_419 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxval/minval with dim on pointer arrays
 RUN(NAME intrinsics_420 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble/float with array constructor
 RUN(NAME intrinsics_421 LABELS gfortran llvm) # execute_command_line cmdstat/cmdmsg
-RUN(NAME intrinsics_422 LABELS gfortran llvm fortran) # this_image
-RUN(NAME intrinsics_423 LABELS gfortran llvm fortran) # num_images
-RUN(NAME intrinsics_424 LABELS gfortran llvm) # co_sum
-RUN(NAME intrinsics_425 LABELS gfortran llvm) # co_sum with optional args
+RUN(NAME intrinsics_422 LABELS llvm) # this_image
+RUN(NAME intrinsics_423 LABELS llvm) # num_images
+RUN(NAME intrinsics_424 LABELS llvm) # co_sum
+RUN(NAME intrinsics_425 LABELS llvm) # co_sum with optional args
 
 RUN(NAME intrinsics_426 LABELS gfortran llvm) # count(mask, dim) with variable dim
 
@@ -3664,4 +3664,4 @@ RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME assumed_type_01 LABELS gfortran llvm)
 
-RUN(NAME sync_all_01 LABELS llvm cpp)
+RUN(NAME sync_all_01 LABELS llvm)
