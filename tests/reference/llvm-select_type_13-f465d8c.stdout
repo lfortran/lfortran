@@ -1021,17 +1021,31 @@ declare void @_lpython_free_argv()
 define internal void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0, i1 %1) {
 entry:
   %2 = icmp ne %select_type_13_module.shape_class* %0, null
-  br i1 %2, label %is_allocated.then, label %is_allocated.else
+  br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %select_type_13_module.shape_class* %0 to i8*
-  call void @_lfortran_free(i8* %3)
+  %3 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %0, i32 0, i32 1
+  %4 = load %select_type_13_module.shape*, %select_type_13_module.shape** %3, align 8
+  %5 = icmp ne %select_type_13_module.shape* %4, null
+  br i1 %5, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  %6 = bitcast %select_type_13_module.shape* %4 to i8*
+  call void @_lfortran_free(i8* %6)
   br label %is_allocated.ifcont
 
-is_allocated.else:                                ; preds = %entry
+is_allocated.else:                                ; preds = %is_allocated.then
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  %7 = bitcast %select_type_13_module.shape_class* %0 to i8*
+  call void @_lfortran_free(i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
   ret void
 }
 
