@@ -9986,7 +9986,9 @@ public:
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
-        fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
+        if (verify_dimensions_t(m_dims, n_dims)) {
+            fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
+        }
         if( LLVM::is_llvm_pointer(*m_type) ) {
             llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                 target_type->getPointerTo(), nullptr, "array_descriptor_ptr");
