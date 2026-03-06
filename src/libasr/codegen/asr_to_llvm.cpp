@@ -4292,11 +4292,15 @@ public:
         member_type = ASRUtils::type_get_past_array(member_type);
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = member->m_type_declaration;
-            current_der_type_name = get_type_key(s_sym);
-            if (!ASRUtils::is_class_type(member_type)) {
-                uint32_t h = get_hash((ASR::asr_t*)member);
-                if( llvm_symtab.find(h) != llvm_symtab.end() ) {
-                    tmp = llvm_symtab[h];
+            ASR::symbol_t *resolved_s_sym = s_sym != nullptr ?
+                ASRUtils::symbol_get_past_external(s_sym) : nullptr;
+            if (resolved_s_sym != nullptr) {
+                current_der_type_name = get_type_key(resolved_s_sym);
+                if (!ASRUtils::is_class_type(member_type)) {
+                    uint32_t h = get_hash((ASR::asr_t*)member);
+                    if( llvm_symtab.find(h) != llvm_symtab.end() ) {
+                        tmp = llvm_symtab[h];
+                    }
                 }
             }
         }
@@ -6422,15 +6426,17 @@ public:
     }
 
     bool is_function_variable(const ASR::Variable_t &v) {
-        if (v.m_type_declaration) {
-            return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v.m_type_declaration));
-        } else {
+        if (!v.m_type_declaration) {
             return false;
         }
+        const ASR::symbol_t *type_declaration =
+            ASRUtils::symbol_get_past_external(v.m_type_declaration);
+        return type_declaration != nullptr &&
+            ASR::is_a<ASR::Function_t>(*type_declaration);
     }
 
     bool is_function_variable(const ASR::symbol_t *v) {
-        if( !ASR::is_a<ASR::Variable_t>(*v) ) {
+        if( v == nullptr || !ASR::is_a<ASR::Variable_t>(*v) ) {
             return false;
         }
         return is_function_variable(*ASR::down_cast<ASR::Variable_t>(v));
@@ -6630,8 +6636,13 @@ public:
                         instantiate_function(*v);
                     }
                     parent_function = parent_function_copy;
-                } else if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(item.second)) && is_function_variable(ASRUtils::symbol_get_past_external(item.second)) ) {
-                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(item.second));
+                } else {
+                    ASR::symbol_t *resolved_sym = ASRUtils::symbol_get_past_external(item.second);
+                    if (!(resolved_sym && ASR::is_a<ASR::Variable_t>(*resolved_sym) &&
+                            is_function_variable(resolved_sym))) {
+                        continue;
+                    }
+                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(resolved_sym);
                     bool interface_as_arg = false;
                     for (size_t i=0; i<x.n_args; i++) {
                         if (is_a<ASR::Var_t>(*x.m_args[i])) {

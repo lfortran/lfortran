@@ -3561,6 +3561,7 @@ RUN(NAME separate_compilation_35 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_36 LABELS gfortran llvm EXTRAFILES separate_compilation_36a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_37 LABELS gfortran llvm EXTRAFILES separate_compilation_37a.f90 separate_compilation_37b.f90 EXTRA_ARGS --separate-compilation)
 
+RUN(NAME separate_compilation_38 LABELS gfortran llvm EXTRAFILES separate_compilation_38a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_40 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
 
 
