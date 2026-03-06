@@ -835,6 +835,66 @@ namespace LCompilers {
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
                                    arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type);
+                } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
+                    ASR::expr_t* curr_init = idoloop->m_values[i];
+                    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                    ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::expr_type(arr_idx)));
+                    ASR::expr_t* start = arr_idx;
+                    ASR::expr_t* curr_init_array_size = ASRUtils::get_size(
+                        expr_duplicator.duplicate_expr(curr_init), al, false);
+                    Vec<ASR::array_index_t> array_section_index;
+                    array_section_index.reserve(al, 1);
+                    ASR::array_index_t section_index; section_index.loc = loc;
+                    ASR::expr_t* start_plus_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, loc, start, ASR::binopType::Add, curr_init_array_size,
+                        ASRUtils::expr_type(arr_idx), nullptr));
+                    section_index.m_left = start;
+                    section_index.m_right = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, loc, start_plus_size, ASR::binopType::Sub, int32_one,
+                        ASRUtils::expr_type(arr_idx), nullptr));
+                    section_index.m_step = int32_one;
+                    array_section_index.push_back(al, section_index);
+
+                    ASR::dimension_t dimension;
+                    dimension.loc = loc;
+                    dimension.m_start = int32_one;
+                    if( (ASRUtils::is_allocatable(ASRUtils::expr_type(curr_init)) ||
+                        ASRUtils::is_pointer(ASRUtils::expr_type(curr_init)) ||
+                        ASRUtils::is_dimension_empty(ASRUtils::expr_type(curr_init))) &&
+                        (ASR::is_a<ASR::FunctionCall_t>(*curr_init) ||
+                         ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
+                        dimension.m_length = nullptr;
+                    } else {
+                        dimension.m_length = ASRUtils::get_size(curr_init, al, true);
+                    }
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                    dims.push_back(al, dimension);
+                    bool is_alloc_return_func = false;
+                    if( dimension.m_length && ASR::is_a<ASR::ArraySize_t>(*dimension.m_length) ) {
+                        ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(dimension.m_length);
+                        if( (ASR::is_a<ASR::FunctionCall_t>(*array_size->m_v) &&
+                            ASRUtils::is_allocatable(array_size->m_v)) ||
+                            ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size->m_v) ) {
+                            is_alloc_return_func = true;
+                        }
+                    }
+                    ASR::ttype_t* section_type = ASRUtils::make_Array_t_util(al, loc,
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(arr_var))),
+                        dims.p, dims.size(), ASR::abiType::Source, false,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        false, false, !is_alloc_return_func);
+                    ASR::expr_t* res = ASRUtils::EXPR(ASR::make_ArraySection_t(
+                        al, loc, arr_var, array_section_index.p, 1, section_type, nullptr));
+                    ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        arr_var->base.loc, res, curr_init, nullptr, false, false));
+                    doloop_body.push_back(al, doloop_stmt);
+                    ASR::stmt_t* inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        arr_var->base.loc, arr_idx,
+                        expr_duplicator.duplicate_expr(start_plus_size), nullptr, false, false));
+                    doloop_body.push_back(al, inc_stmt);
                 } else {
                     ASR::expr_t* idoloop_m_values_i = idoloop->m_values[i];
                     if( perform_cast ) {
