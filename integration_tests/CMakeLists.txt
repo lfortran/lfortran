@@ -1922,6 +1922,7 @@ RUN(NAME pdt_07 LABELS gfortran llvm)
 RUN(NAME pdt_08 LABELS gfortran llvm)
 RUN(NAME pdt_09 LABELS gfortran llvm)
 RUN(NAME pdt_10 LABELS gfortran llvm)
+RUN(NAME pdt_11 LABELS gfortran llvm EXTRAFILES pdt_11_module.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
