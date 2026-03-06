@@ -532,6 +532,10 @@ public:
 
 static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc, diag::Diagnostics &diag) {
     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*left_value) ||
+            !ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
+            return nullptr;
+        }
         int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left_value)->m_n;
         int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right_value)->m_n;
         bool result = true;
@@ -554,6 +558,10 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
 
     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))) {
+        if (!ASR::is_a<ASR::RealConstant_t>(*left_value) ||
+            !ASR::is_a<ASR::RealConstant_t>(*right_value)) {
+            return nullptr;
+        }
         double left_val = ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r;
         double right_val = ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r;
         bool result = true;
@@ -576,6 +584,10 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
 
     } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
+        if (!ASR::is_a<ASR::ComplexConstant_t>(*left_value) ||
+            !ASR::is_a<ASR::ComplexConstant_t>(*right_value)) {
+            return nullptr;
+        }
         ASR::ComplexConstant_t *left0
             = ASR::down_cast<ASR::ComplexConstant_t>(left_value);
         ASR::ComplexConstant_t *right0
@@ -607,7 +619,10 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
 
     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
-
+        if (!ASR::is_a<ASR::LogicalConstant_t>(*left_value) ||
+            !ASR::is_a<ASR::LogicalConstant_t>(*right_value)) {
+            return nullptr;
+        }
         bool left_val = ASR::down_cast<ASR::LogicalConstant_t>(
                                 left_value)->m_value;
         bool right_val = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -631,6 +646,10 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(left_value))) {
+        if (!ASR::is_a<ASR::StringConstant_t>(*left_value) ||
+            !ASR::is_a<ASR::StringConstant_t>(*right_value)) {
+            return nullptr;
+        }
         char* left_val = ASR::down_cast<ASR::StringConstant_t>(
                                 left_value)->m_s;
         char* right_val = ASR::down_cast<ASR::StringConstant_t>(
