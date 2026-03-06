@@ -3780,6 +3780,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
 }
 
 static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
+    if (is_assumed_rank_array(type)) {
+        return ASR::make_Allocatable_t(al, loc, type);
+    }
     return ASR::make_Allocatable_t(
         al, loc, duplicate_type_with_empty_dims(al, type));
 }
