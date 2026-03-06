@@ -8184,32 +8184,9 @@ public:
                 ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v));
                 if (pdt_struct->n_kind_params > 0) {
-                    // PDT with kind parameters: monomorphize using defaults
-                    std::vector<int64_t> kind_val_vec;
-                    for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
-                        std::string kp_name(pdt_struct->m_kind_params[i]);
-                        ASR::symbol_t* kp_s = pdt_struct->m_symtab->get_symbol(kp_name);
-                        int64_t def_val = -1;
-                        if (kp_s && ASR::is_a<ASR::Variable_t>(*kp_s)) {
-                            ASR::Variable_t* kp_v = ASR::down_cast<ASR::Variable_t>(kp_s);
-                            if (kp_v->m_symbolic_value) {
-                                def_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                                    ASRUtils::expr_value(kp_v->m_symbolic_value))->m_n;
-                            }
-                        }
-                        if (def_val < 0) {
-                            diag.add(Diagnostic(
-                                "Parameterized derived type '" + derived_type_name +
-                                "' parameter '" + kp_name +
-                                "' has no default value and must be specified",
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        }
-                        kind_val_vec.push_back(def_val);
-                    }
-                    type = instantiate_pdt_by_values(loc, derived_type_name,
-                        kind_val_vec, is_pointer, is_allocatable, dims,
-                        type_declaration, abi, is_argument);
+                    type = instantiate_pdt(loc, derived_type_name, sym_type,
+                        is_pointer, is_allocatable, dims, type_declaration,
+                        abi, is_argument);
                     // Mark as polymorphic (class) rather than concrete (type)
                     ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
                         ASRUtils::extract_type(type));
