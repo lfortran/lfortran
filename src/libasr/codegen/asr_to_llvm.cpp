@@ -2256,7 +2256,7 @@ public:
                     : tmp ;
                 llvm_utils->free_strings(tmp_expr, tmp);
             } else {
-                if (dims == 0) {
+                if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
                     llvm::Type* llvm_data_type;
                     llvm::Value* tmp_ = tmp;
                     if (LLVM::is_llvm_pointer(*cur_type)) {
