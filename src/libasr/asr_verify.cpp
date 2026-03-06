@@ -852,11 +852,22 @@ public:
             require(is_valid_owner,
                 "ExternalSymbol::m_external '" + std::string(x.m_name) + "' is not in a module or struct type, owner: " +
                 x_m_module_name);
-            require(x_m_module_name == asr_owner_name,
+            // m_module_name can be either the direct owner or the
+            // top-level module when scope_names provides the path.
+            bool name_matches = (x_m_module_name == asr_owner_name);
+            if (!name_matches && m != nullptr && x.n_scope_names > 0) {
+                name_matches = (x_m_module_name == std::string(m->m_name));
+            }
+            require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
             ASR::symbol_t *s = nullptr;
             if( m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external)) ) {
+                s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+            } else if( m != nullptr && x.n_scope_names > 0
+                       && x_m_module_name == std::string(m->m_name) ) {
+                // m_module_name refers to the top-level module and
+                // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
