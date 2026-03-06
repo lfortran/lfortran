@@ -831,6 +831,36 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
                         subrout_sym, (i + dt_implicitPass), orig_args[i].m_value);
+                    // The function parameter expects PointerArray but the actual
+                    // call arg may be DescriptorArray (e.g. a temp created by
+                    // subroutine_from_function). Add ArrayPhysicalCast.
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(orig_args[i].m_value);
+                    if (ASRUtils::is_array(arg_type)) {
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(arg_type)));
+                        if (array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(subrout_sym);
+                            size_t param_idx = i + dt_implicitPass;
+                            if (param_idx < ft->n_arg_types &&
+                                    ASRUtils::is_array(ft->m_arg_types[param_idx])) {
+                                ASR::Array_t* param_array = ASR::down_cast<ASR::Array_t>(
+                                    ASRUtils::type_get_past_allocatable(
+                                        ASRUtils::type_get_past_pointer(ft->m_arg_types[param_idx])));
+                                if (param_array->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                                    ASR::expr_t* physical_cast = ASRUtils::EXPR(
+                                        ASRUtils::make_ArrayPhysicalCast_t_util(
+                                            al, orig_args[i].m_value->base.loc,
+                                            orig_args[i].m_value, array_t->m_physical_type,
+                                            ASR::array_physical_typeType::PointerArray,
+                                            ASRUtils::duplicate_type(al, arg_type, nullptr,
+                                                ASR::array_physical_typeType::PointerArray, true),
+                                            nullptr));
+                                    orig_args[i].m_value = physical_cast;
+                                }
+                            }
+                        }
+                    }
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
