@@ -41,10 +41,12 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
-          micromamba-version: '1.5.10-0'
+          micromamba-version: '2.0.4-0'
           environment-file: src/ci/environment_linux.yml
+          cache-environment: true
+          cache-environment-key: env-debug-oos-${{ hashFiles('src/ci/environment_linux.yml') }}
           create-args: >-
             python=3.10
 
@@ -108,6 +110,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
+          cache-environment: true
+          cache-environment-key: env-release-${{ hashFiles('ci/environment_linux.yml') }}
           create-args: >-
             python=3.10
 
@@ -230,6 +234,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -248,6 +254,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -266,6 +274,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -283,6 +293,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -300,6 +312,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             llvmdev=21.1.0 
             python=${{ matrix.python-version }}
@@ -314,6 +328,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -328,6 +344,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-llvm-${{ matrix.llvm-version }}-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
@@ -346,8 +364,16 @@ jobs:
         if: matrix.llvm-version > 11
         run: micromamba install -y -n lf libunwind=1.7.2
 
-      - name: Setup WASI SDK
+      - name: Cache WASI SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        id: cache-wasi-sdk
+        uses: actions/cache@v4
+        with:
+          path: ~/ext/wasi-sdk
+          key: wasi-sdk-21.0-linux
+
+      - name: Setup WASI SDK
+        if: (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) && steps.cache-wasi-sdk.outputs.cache-hit != 'true'
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -359,8 +385,16 @@ jobs:
           echo $WASI_SDK_PATH
           $WASI_SDK_PATH/bin/clang --version
 
-      - name: Install wasmtime
+      - name: Cache wasmtime
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        id: cache-wasmtime
+        uses: actions/cache@v4
+        with:
+          path: ~/wasmtime-v19.0.2-x86_64-linux
+          key: wasmtime-v19.0.2-x86_64-linux
+
+      - name: Install wasmtime
+        if: (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) && steps.cache-wasmtime.outputs.cache-hit != 'true'
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -369,8 +403,16 @@ jobs:
           export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
           wasmtime --version
 
-      - name: Setup Emscripten SDK
+      - name: Cache Emscripten SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: ~/ext/emsdk
+          key: emsdk-4.0.13-3.1.35
+
+      - name: Setup Emscripten SDK
+        if: (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) && steps.cache-emsdk.outputs.cache-hit != 'true'
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -555,6 +597,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
+          cache-environment: true
+          cache-environment-key: env-tarball-${{ hashFiles('ci/environment_linux.yml') }}
           create-args: >-
             python=3.10
 
@@ -590,6 +634,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
+          cache-environment: true
+          cache-environment-key: env-no-llvm-${{ hashFiles('ci/environment_linux.yml') }}
           create-args: >-
             python=3.10
 
@@ -614,6 +660,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
+          cache-environment: true
+          cache-environment-key: env-mlir-${{ hashFiles('ci/environment_linux_llvm.yml') }}
           create-args: >-
             python=3.10
             mlir=19.1.6
@@ -666,6 +714,8 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_docs_linux.yml
+          cache-environment: true
+          cache-environment-key: env-docs-${{ hashFiles('ci/environment_docs_linux.yml') }}
 
       - uses: hendrikmuhs/ccache-action@main
         with:
