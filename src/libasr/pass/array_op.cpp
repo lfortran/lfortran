@@ -656,12 +656,24 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void increment_index_variables(std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
+                                   Vec<ASR::expr_t*>& vars_expr,
                                    size_t var_with_maxrank, int64_t loop_depth,
                                    Vec<ASR::stmt_t*>& do_loop_body, const Location& loc) {
         ASR::expr_t* step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc);
         for( size_t i = 0; i < var2indices.size(); i++ ) {
             if( i == var_with_maxrank ) {
                 continue;
+            }
+            // Skip scalar broadcast: check if variable has a fixed size of 1 element
+            // to avoid incrementing index for single-element arrays in broadcast context
+            ASR::expr_t* var_expr = vars_expr[i];
+            ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+            if (ASRUtils::is_fixed_size_array(var_type)) {
+                int64_t total_size = ASRUtils::get_fixed_size_of_array(var_type);
+                if (total_size == 1) {
+                    // This is a single-element array, don't increment its index
+                    continue;
+                }
             }
             // Skip variables with lower rank than the current loop depth
             if( loop_depth >= static_cast<int64_t>(var2indices[i].n) ) {
@@ -919,7 +931,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         set_index_variables(var2indices, index2var, var_with_maxrank,
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
-        increment_index_variables(var2indices, var_with_maxrank, 0,
+        increment_index_variables(var2indices, vars_expr, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
@@ -932,7 +944,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( int64_t i = 1; i < static_cast<int64_t>(var_rank); i++ ) {
             set_index_variables(var2indices, index2var, var_with_maxrank,
                                 i, parent_do_loop_body, loc);
-            increment_index_variables(var2indices, var_with_maxrank, i,
+            increment_index_variables(var2indices, vars_expr, var_with_maxrank, i,
                                       do_loop_body, loc);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
@@ -1050,7 +1062,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
-        increment_index_variables(var2indices, var_with_maxrank, 0,
+        increment_index_variables(var2indices, vars_expr, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
@@ -1061,7 +1073,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( int64_t i = 1; i < static_cast<int64_t>(var_ranks[var_with_maxrank]); i++ ) {
             set_index_variables(var2indices, vars_expr, var_with_maxrank,
                                 i, parent_do_loop_body, loc);
-            increment_index_variables(var2indices, var_with_maxrank, i,
+            increment_index_variables(var2indices, vars_expr, var_with_maxrank, i,
                                       do_loop_body, loc);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
