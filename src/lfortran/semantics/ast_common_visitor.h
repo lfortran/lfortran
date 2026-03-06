@@ -10609,9 +10609,6 @@ public:
         ASR::symbol_t* member = der_type->m_symtab->get_symbol(var_name);
         if( member != nullptr ) {
             scope = der_type->m_symtab;
-        } else if (ASR::symbol_t* legacy_member = resolve_legacy_type_bound_proc(loc, var_name, der_type)) {
-            member = legacy_member;
-            scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
             member = resolve_deriv_type_proc(loc, var_name, "", nullptr, nullptr, scope, der_type->m_parent);
         } else {
@@ -10620,89 +10617,6 @@ public:
             throw SemanticAbort();
         }
         return member;
-    }
-
-    ASR::symbol_t* resolve_legacy_type_bound_proc(const Location &loc,
-            const std::string &binding_name, ASR::Struct_t* der_type) {
-        SymbolTable* owner_scope = ASRUtils::symbol_parent_symtab(
-            (ASR::symbol_t*)der_type);
-        if (owner_scope == nullptr) {
-            return nullptr;
-        }
-
-        std::string binding_suffix = "_" + binding_name;
-        Vec<ASR::symbol_t*> matching_procs;
-        matching_procs.reserve(al, owner_scope->get_scope().size());
-        for (auto& item : owner_scope->get_scope()) {
-            ASR::symbol_t* proc_sym = ASRUtils::symbol_get_past_external(item.second);
-            if (proc_sym == nullptr || !ASR::is_a<ASR::Function_t>(*proc_sym)) {
-                continue;
-            }
-
-            std::string proc_name = ASRUtils::symbol_name(proc_sym);
-            if (proc_name != binding_name && !endswith(proc_name, binding_suffix)) {
-                continue;
-            }
-
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-            if (func->n_args == 0 || !ASR::is_a<ASR::Var_t>(*func->m_args[0])) {
-                continue;
-            }
-
-            ASR::expr_t* self_arg = func->m_args[0];
-            ASR::ttype_t* self_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(self_arg))));
-            ASR::ttype_t* der_type_signature = der_type->m_struct_signature;
-            if (der_type_signature == nullptr) {
-                der_type_signature = ASRUtils::make_StructType_t_util(al, loc, (ASR::symbol_t*)der_type, true);
-            }
-            if (!ASRUtils::check_equal_type(self_type, der_type_signature, self_arg, nullptr)) {
-                continue;
-            }
-
-            ASR::symbol_t* local_proc_sym = der_type->m_symtab->get_symbol(proc_name);
-            if (local_proc_sym == nullptr) {
-                char* pass_arg_name = nullptr;
-                ASR::Variable_t* self_var = ASRUtils::EXPR2VAR(self_arg);
-                if (self_var != nullptr) {
-                    pass_arg_name = s2c(al, self_var->m_name);
-                }
-                ASR::asr_t* local_decl = ASR::make_StructMethodDeclaration_t(
-                    al, proc_sym->base.loc, der_type->m_symtab, s2c(al, proc_name),
-                    pass_arg_name, s2c(al, proc_name), proc_sym, ASR::abiType::Source,
-                    false, false);
-                local_proc_sym = ASR::down_cast<ASR::symbol_t>(local_decl);
-                der_type->m_symtab->add_symbol(proc_name, local_proc_sym);
-            }
-            matching_procs.push_back(al, local_proc_sym);
-        }
-
-        if (matching_procs.size() == 0) {
-            return nullptr;
-        }
-
-        ASR::symbol_t* binding_sym = der_type->m_symtab->get_symbol(binding_name);
-        if (binding_sym != nullptr) {
-            return binding_sym;
-        }
-
-        if (matching_procs.size() == 1) {
-            ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                ASRUtils::symbol_get_past_external(matching_procs[0]));
-            ASR::asr_t* binding_decl = ASR::make_StructMethodDeclaration_t(
-                al, method->base.base.loc, der_type->m_symtab, s2c(al, binding_name),
-                method->m_self_argument, method->m_proc_name, method->m_proc,
-                method->m_abi, method->m_is_deferred, method->m_is_nopass);
-            binding_sym = ASR::down_cast<ASR::symbol_t>(binding_decl);
-        } else {
-            ASR::asr_t* binding_decl = ASR::make_GenericProcedure_t(
-                al, loc, der_type->m_symtab, s2c(al, binding_name),
-                matching_procs.p, matching_procs.size(), ASR::accessType::Public);
-            binding_sym = ASR::down_cast<ASR::symbol_t>(binding_decl);
-        }
-        der_type->m_symtab->add_symbol(binding_name, binding_sym);
-        return binding_sym;
     }
 
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
