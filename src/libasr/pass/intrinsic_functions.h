@@ -200,7 +200,9 @@ enum class IntrinsicElementalFunctions : int64_t {
     Present,
     And,
     Or,
-    Xor
+    Xor,
+    ThisImage,
+    NumImages
     // ...
 };
 
@@ -1412,6 +1414,46 @@ namespace CommandArgumentCount {
         return b.Call(new_symbol, new_args, return_type);
     }
 } // namespace CommandArgumentCount
+
+namespace ThisImage {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "this_image() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_ThisImage(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return_type = ASRUtils::extract_type(return_type);
+        ASR::expr_t *m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+                nullptr, 0, 0, return_type, m_value);
+    }
+} // namespace ThisImage
+
+namespace NumImages {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "num_images() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_NumImages(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return_type = ASRUtils::extract_type(return_type);
+        ASR::expr_t *m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+                nullptr, 0, 0, return_type, m_value);
+    }
+} // namespace NumImages
 
 namespace Sign {
 

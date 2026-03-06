@@ -3199,6 +3199,12 @@ public:
             case ASRUtils::IntrinsicElementalFunctions::CommandArgumentCount: {
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::ThisImage: {
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::NumImages: {
+                break;
+            }
             case ASRUtils::IntrinsicElementalFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
