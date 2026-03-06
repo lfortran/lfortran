@@ -337,7 +337,7 @@ ifcont29:                                         ; preds = %else28, %then27
   store i32 0, i32* %i, align 4
   br label %loop.head30
 
-loop.head30:                                      ; preds = %FINALIZE_SYMTABLE_block, %ifcont29
+loop.head30:                                      ; preds = %free_done, %ifcont29
   %108 = load i32, i32* %i, align 4
   %109 = add i32 %108, 1
   %110 = icmp sle i32 %109, 1000
@@ -476,20 +476,20 @@ ifcont48:                                         ; preds = %loop.end46
   %167 = load float, float* %166, align 4
   %168 = fadd float %149, %167
   store float %168, float* %sum, align 4
-  %169 = icmp eq i8* %113, null
-  br i1 %169, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %ifcont48
-  call void @_lfortran_free(i8* %113)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %ifcont48
   br label %block.end
 
-block.end:                                        ; preds = %free_done
+block.end:                                        ; preds = %ifcont48
   br label %FINALIZE_SYMTABLE_block
 
 FINALIZE_SYMTABLE_block:                          ; preds = %block.end
+  %169 = icmp eq i8* %113, null
+  br i1 %169, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %FINALIZE_SYMTABLE_block
+  call void @_lfortran_free(i8* %113)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %FINALIZE_SYMTABLE_block
   br label %loop.head30
 
 loop.end49:                                       ; preds = %loop.head30

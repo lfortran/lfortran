@@ -35,6 +35,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(Abort)
         INTRINSIC_SUBROUTINE_NAME_CASE(System)
         INTRINSIC_SUBROUTINE_NAME_CASE(Sleep)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CoSum)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -83,6 +84,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&System::instantiate_System, &System::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::Sleep),
             {&Sleep::instantiate_Sleep, &Sleep::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CoSum),
+            {&CoSum::instantiate_CoSum, &CoSum::verify_args}},
         };
         return intrinsic_subroutine_by_id_db;
     }
@@ -107,6 +110,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"abort", &Abort::create_Abort},
                 {"system", &System::create_System},
                 {"sleep", &Sleep::create_Sleep},
+                {"co_sum", &CoSum::create_CoSum},
         };
         return intrinsic_subroutine_by_name_db;
     }

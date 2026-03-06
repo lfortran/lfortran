@@ -319,6 +319,56 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
 
+            // When a module has submodules, the Interface declaration
+            // (empty body) can be transformed but the Implementation
+            // (in the submodule) may fail (e.g. body contains reshape).
+            // Remove such Interface entries so callers are not redirected
+            // to a function that has no definition.
+            std::vector<ASR::symbol_t*> iface_to_remove;
+            for (auto& kv : proc2newproc) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(kv.first);
+                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
+                if (ftype->m_deftype != ASR::deftypeType::Interface) continue;
+                // Only consider module procedure interfaces (m_module=true).
+                // Abstract interfaces should not be removed.
+                if (!ftype->m_module) continue;
+                SymbolTable* parent_symtab = func->m_symtab->parent;
+                if (!parent_symtab || !parent_symtab->asr_owner) continue;
+                ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                    parent_symtab->asr_owner);
+                if (!ASR::is_a<ASR::Module_t>(*parent_sym)) continue;
+                ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(parent_sym);
+                if (!mod->m_has_submodules) continue;
+                std::string func_name = std::string(func->m_name);
+                bool impl_processed = false;
+                for (auto& top_item : x.m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Module_t>(*top_item.second)) continue;
+                    ASR::Module_t* sub_mod = ASR::down_cast<ASR::Module_t>(
+                        top_item.second);
+                    if (!sub_mod->m_parent_module) continue;
+                    if (std::string(sub_mod->m_parent_module) !=
+                            std::string(mod->m_name)) continue;
+                    ASR::symbol_t* impl_sym = sub_mod->m_symtab->resolve_symbol(
+                        func_name);
+                    if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym) &&
+                            proc2newproc.find(impl_sym) != proc2newproc.end()) {
+                        impl_processed = true;
+                        break;
+                    }
+                }
+                if (!impl_processed) {
+                    iface_to_remove.push_back(kv.first);
+                }
+            }
+            for (ASR::symbol_t* sym : iface_to_remove) {
+                ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(
+                    proc2newproc[sym].first);
+                SymbolTable* scope = new_func->m_symtab->parent;
+                scope->erase_symbol(std::string(new_func->m_name));
+                newprocs.erase(proc2newproc[sym].first);
+                proc2newproc.erase(sym);
+            }
+
             // Visit the program
             for (auto &a : x.m_symtab->get_scope()) {
                 if( ASR::is_a<ASR::Program_t>(*a.second) ) {
@@ -781,6 +831,36 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
                         subrout_sym, (i + dt_implicitPass), orig_args[i].m_value);
+                    // The function parameter expects PointerArray but the actual
+                    // call arg may be DescriptorArray (e.g. a temp created by
+                    // subroutine_from_function). Add ArrayPhysicalCast.
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(orig_args[i].m_value);
+                    if (ASRUtils::is_array(arg_type)) {
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(arg_type)));
+                        if (array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(subrout_sym);
+                            size_t param_idx = i + dt_implicitPass;
+                            if (param_idx < ft->n_arg_types &&
+                                    ASRUtils::is_array(ft->m_arg_types[param_idx])) {
+                                ASR::Array_t* param_array = ASR::down_cast<ASR::Array_t>(
+                                    ASRUtils::type_get_past_allocatable(
+                                        ASRUtils::type_get_past_pointer(ft->m_arg_types[param_idx])));
+                                if (param_array->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                                    ASR::expr_t* physical_cast = ASRUtils::EXPR(
+                                        ASRUtils::make_ArrayPhysicalCast_t_util(
+                                            al, orig_args[i].m_value->base.loc,
+                                            orig_args[i].m_value, array_t->m_physical_type,
+                                            ASR::array_physical_typeType::PointerArray,
+                                            ASRUtils::duplicate_type(al, arg_type, nullptr,
+                                                ASR::array_physical_typeType::PointerArray, true),
+                                            nullptr));
+                                    orig_args[i].m_value = physical_cast;
+                                }
+                            }
+                        }
+                    }
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
@@ -979,6 +1059,17 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 return;
             }
 
+            // Don't transform calls dispatched through StructMethodDeclaration
+            // (type-bound procedures). These may go through the vtable, which
+            // is linkonce_odr and must be identical across all compilation
+            // units. Since ____N versions are only created when function bodies
+            // are available, the vtable would be inconsistent between units
+            // that define vs. merely use the type.
+            if (is_struct_method_declaration(x.m_name)) {
+                not_to_be_erased.insert(subrout_sym);
+                return;
+            }
+
             ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
             Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, call_with_implicit_dt_passed(&x));
@@ -1008,10 +1099,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             ASR::symbol_t* new_func_sym_ = new_func_sym;
-            // Note: smd.m_proc is updated by RemoveArrayByDescriptorProceduresVisitor::visit_StructMethodDeclaration
-            // after all call sites are processed. Updating it here would cause the second copy of the
-            // caller (e.g. method1_integer____1) to see the new proc via symbol_get_past_StructMethodDeclaration,
-            // fail the proc2newproc lookup, and return early without expanding array args.
+            // Note: smd.m_proc is intentionally NOT updated (see
+            // visit_StructMethodDeclaration). Calls through SMDs are skipped
+            // earlier in this function so this code path is only reached for
+            // non-SMD calls.
             if( is_external && !is_struct_method_declaration(x.m_name) ) { // Redirect ExternalSymbol to new fn symbol.
                 ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
                 std::string new_func_sym_name = std::string(ASRUtils::symbol_name(new_func_sym));
@@ -1292,7 +1383,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
 
-            std::vector<std::string> to_be_erased;
+            std::vector<std::pair<std::string, ASR::symbol_t*>> to_be_erased;
 
             for( auto& item: current_scope->get_scope() ) {
                 if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -1304,10 +1395,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                     sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second)->m_external;
                 }
-                if( v.proc2newproc.find(sym) != v.proc2newproc.end() &&
-                    not_to_be_erased.find(sym) == not_to_be_erased.end() ) {
+                if( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
                     LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
-                    to_be_erased.push_back(item.first);
+                    to_be_erased.push_back({item.first, sym});
                 }
                 if ( ASR::is_a<ASR::Module_t>(*item.second) ||
                     ASR::is_a<ASR::Program_t>(*item.second) ||
@@ -1323,7 +1413,60 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
             if (!skip_removal) {
                 for (auto &item: to_be_erased) {
-                    current_scope->erase_symbol(item);
+                    if (not_to_be_erased.find(item.second) != not_to_be_erased.end()) {
+                        continue;
+                    }
+                    // If this function is in a submodule, check if the parent
+                    // module's counterpart is protected (referenced by an SMD).
+                    // The submodule provides the body for the parent module's
+                    // interface function, so it must not be erased either.
+                    bool protect = false;
+                    ASR::asr_t* owner = current_scope->asr_owner;
+                    if (ASR::is_a<ASR::symbol_t>(*owner)) {
+                        ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
+                        if (ASR::is_a<ASR::Module_t>(*owner_sym)) {
+                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
+                            if (mod->m_parent_module && std::strlen(mod->m_parent_module) > 0) {
+                                ASR::symbol_t* parent_mod_sym =
+                                    current_scope->parent->resolve_symbol(mod->m_parent_module);
+                                if (parent_mod_sym && ASR::is_a<ASR::Module_t>(*parent_mod_sym)) {
+                                    ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(parent_mod_sym);
+                                    ASR::symbol_t* parent_func =
+                                        parent_mod->m_symtab->resolve_symbol(item.first);
+                                    if (parent_func &&
+                                            not_to_be_erased.find(parent_func) != not_to_be_erased.end()) {
+                                        protect = true;
+                                    }
+                                    // Also check if any Struct in the parent
+                                    // module has an SMD referencing this
+                                    // function. When compiling a submodule,
+                                    // the Struct is only reachable through
+                                    // ExternalSymbols so
+                                    // visit_StructMethodDeclaration may not
+                                    // have been called.
+                                    if (!protect && parent_func) {
+                                        for (auto &sym_item : parent_mod->m_symtab->get_scope()) {
+                                            if (!ASR::is_a<ASR::Struct_t>(*sym_item.second)) continue;
+                                            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(sym_item.second);
+                                            for (auto &st_item : st->m_symtab->get_scope()) {
+                                                if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*st_item.second)) continue;
+                                                ASR::StructMethodDeclaration_t* smd =
+                                                    ASR::down_cast<ASR::StructMethodDeclaration_t>(st_item.second);
+                                                if (ASRUtils::symbol_get_past_external(smd->m_proc) == parent_func) {
+                                                    protect = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (protect) break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (!protect) {
+                        current_scope->erase_symbol(item.first);
+                    }
                 }
             }
         }
@@ -1361,14 +1504,19 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             visit_Unit(x);
         }
 
-        // Update function symbol in case it's not updated. 
+        // Note: We intentionally do NOT update m_proc to the ____N version.
+        // The vtable is linkonce_odr and must reference the original
+        // (descriptor-based) functions so it stays identical across all
+        // compilation units. We also mark the original function as
+        // not-to-be-erased so it remains available for the vtable.
         void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x){
             ASR::ASRPassBaseWalkVisitor<RemoveArrayByDescriptorProceduresVisitor>::visit_StructMethodDeclaration(x);
-            auto &xx = const_cast<ASR::StructMethodDeclaration_t&>(x);
-            if(v.proc2newproc.find(xx.m_proc) != v.proc2newproc.end()){
-                xx.m_proc_name = ASRUtils::symbol_name(v.proc2newproc[xx.m_proc].first);
-                xx.m_proc = v.proc2newproc[xx.m_proc].first;
-            }
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x.m_proc);
+            // Always protect SMD-referenced functions. For submodule
+            // procedures, proc points to the parent module's interface
+            // (not in proc2newproc), but the submodule's implementation
+            // must still be kept so the vtable can reference it.
+            not_to_be_erased.insert(proc);
         }
 };
 
@@ -1382,11 +1530,17 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     EditProcedureCallsVisitor u(al, v, not_to_be_erased, pass_options);
     u.visit_TranslationUnit(unit);
     /*
-        Always run RemoveArrayByDescriptorProceduresVisitor so that smd.m_proc is updated
-        to point to the new (array-by-data) function. The skip_removal flag prevents
-        deletion of the original procedures in separate-compilation mode (where other
-        compilation units may still reference them), but the smd.m_proc update must
-        always happen so the LLVM backend sees the correct function signature.
+        RemoveArrayByDescriptorProceduresVisitor removes original (descriptor-
+        based) procedures that have been replaced by ____N versions, unless
+        skip_removal is set (separate-compilation mode, where other compilation
+        units may still reference the originals).
+
+        Note: StructMethodDeclaration.m_proc is intentionally NOT updated to
+        point to the ____N version.  The vtable uses linkonce_odr linkage and
+        must be identical across all compilation units.  Since ____N versions
+        are only created when function bodies are available, updating the SMD
+        would make the vtable inconsistent between submodules (which have the
+        bodies) and other units that merely `use` the module.
 
         If separate compilation is enabled using `--separate-compilation`, then we don't
         drop the original ( unused ) procedures. This is for the module procedures where when

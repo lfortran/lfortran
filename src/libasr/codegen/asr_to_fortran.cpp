@@ -1482,6 +1482,12 @@ public:
         src += "\n";
     }
 
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        src = indent;
+        src += "sync all";
+        src += "\n";
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -1838,6 +1844,8 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
+        else if(intrinsic_func_name == "ThisImage") intrinsic_func_name = "this_image";
+        else if(intrinsic_func_name == "NumImages") intrinsic_func_name = "num_images";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
         else if(intrinsic_func_name == "StringConcat") {{visit_expr(*x.m_args[0]);out+=src;} out+="//"; {visit_expr(*x.m_args[1]);out+=src;} src=std::move(out);return;}
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);

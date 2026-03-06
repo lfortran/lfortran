@@ -864,52 +864,12 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
   %347 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s1, align 8
-  %348 = icmp ne %select_type_13_module.shape_class* %347, null
-  br i1 %348, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_s1
-  %349 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %347, i32 0, i32 1
-  %350 = load %select_type_13_module.shape*, %select_type_13_module.shape** %349, align 8
-  %351 = icmp eq %select_type_13_module.shape_class* %347, null
-  br i1 %351, label %free_done51, label %free_nonnull50
-
-free_nonnull50:                                   ; preds = %is_allocated.then
-  %352 = bitcast %select_type_13_module.shape_class* %347 to i8*
-  call void @_lfortran_free(i8* %352)
-  br label %free_done51
-
-free_done51:                                      ; preds = %free_nonnull50, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_s1
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done51
+  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %347, i1 false)
   br label %Finalize_Variable_s2
 
-Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
-  %353 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s2, align 8
-  %354 = icmp ne %select_type_13_module.shape_class* %353, null
-  br i1 %354, label %is_allocated.then52, label %is_allocated.else55
-
-is_allocated.then52:                              ; preds = %Finalize_Variable_s2
-  %355 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %353, i32 0, i32 1
-  %356 = load %select_type_13_module.shape*, %select_type_13_module.shape** %355, align 8
-  %357 = icmp eq %select_type_13_module.shape_class* %353, null
-  br i1 %357, label %free_done54, label %free_nonnull53
-
-free_nonnull53:                                   ; preds = %is_allocated.then52
-  %358 = bitcast %select_type_13_module.shape_class* %353 to i8*
-  call void @_lfortran_free(i8* %358)
-  br label %free_done54
-
-free_done54:                                      ; preds = %free_nonnull53, %is_allocated.then52
-  br label %is_allocated.ifcont56
-
-is_allocated.else55:                              ; preds = %Finalize_Variable_s2
-  br label %is_allocated.ifcont56
-
-is_allocated.ifcont56:                            ; preds = %is_allocated.else55, %free_done54
+Finalize_Variable_s2:                             ; preds = %Finalize_Variable_s1
+  %348 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s2, align 8
+  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %348, i1 false)
   ret i32 0
 }
 
@@ -1057,5 +1017,22 @@ declare void @_lfortran_free(i8*)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lpython_free_argv()
+
+define internal void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0, i1 %1) {
+entry:
+  %2 = icmp ne %select_type_13_module.shape_class* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %3 = bitcast %select_type_13_module.shape_class* %0 to i8*
+  call void @_lfortran_free(i8* %3)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  ret void
+}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
