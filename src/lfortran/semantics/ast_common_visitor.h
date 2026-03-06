@@ -10663,7 +10663,7 @@ public:
                             dim.m_length = nullptr;
                             dims.push_back(al, dim);
                         }
-                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(temp));
+                        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(temp));
                         ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, arg_expr->base.loc,
                             elem_type, dims.p, dims.size(), ASR::abiType::Source, false, 
                             ASR::array_physical_typeType::DescriptorArray, false, false, true

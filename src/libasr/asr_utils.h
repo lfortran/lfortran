@@ -3019,6 +3019,7 @@ static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
 }
 
 inline bool is_assumed_rank_array(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
     if (!ASR::is_a<ASR::Array_t>(*x)) {
         return false;
     }
