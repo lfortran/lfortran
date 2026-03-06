@@ -1004,9 +1004,14 @@ class ASRToLLVMVisitor;
             switch (t_past->type) {
                 case(ASR::StructType) :  {
                     if (llvm_utils_->compiler_options.new_classes && struct_sym != nullptr
-                            && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)
-                            && var_ptr->getType() == llvm_utils_->getClassType(struct_sym, true)) {
-                        auto const struct_ptr = get_struct_instance_ptr(var_ptr, struct_sym);
+                            && ASRUtils::is_class_type(t)
+                            && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                        // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
+                        // be decided from the ASR class flag, not the LLVM pointer type.
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                        auto const struct_ptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                            llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
                         check_if_allocated_then_finalize(struct_ptr, struct_sym->m_struct_signature, struct_sym,
                             [this, struct_ptr](){llvm_utils_->lfortran_free_nocheck(struct_ptr);});
                     } else if(ASRUtils::is_class_type(t)){ // {VTable*, struct*} -- Free struct
@@ -1205,34 +1210,8 @@ class ASRToLLVMVisitor;
             (void)ptr; (void)t; (void) struct_sym;
         }
 
-        llvm::Value* get_struct_instance_ptr(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
-            llvm::Type* const struct_ptr_type = llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true);
-            if (ptr->getType() == struct_ptr_type) {
-                return ptr;
-            }
-            if (llvm_utils_->compiler_options.new_classes &&
-                    !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                llvm::Type* const class_ptr_type = llvm_utils_->getClassType(struct_sym, true);
-                if (ptr->getType() == class_ptr_type) {
-                    llvm::Type* const class_type = llvm_utils_->getClassType(struct_sym);
-                    return llvm_utils_->CreateLoad2(struct_ptr_type,
-                        llvm_utils_->create_gep2(class_type, ptr, 1));
-                }
-            }
-            verify(ptr, struct_ptr_type);
-            return ptr;
-        }
-
         void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            if (llvm_utils_->compiler_options.new_classes &&
-                    !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                llvm::Type* const struct_ptr_type = llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true);
-                if (ptr->getType() != struct_ptr_type) {
-                    verify(ptr, llvm_utils_->getClassType(struct_sym, true));
-                }
-            } else {
-                verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
-            }
+            verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
             const std::string cache_key = get_type_key(t, struct_sym);
             if(is_cached(cache_key)){
                 builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
@@ -1243,8 +1222,12 @@ class ASRToLLVMVisitor;
             START_CACHE(cache_key, ptr);
 
             if (llvm_utils_->compiler_options.new_classes &&
+                    ASRUtils::is_class_type(t) &&
                     !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                ptr = get_struct_instance_ptr(ptr, struct_sym);
+                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
             } else if (ASRUtils::is_class_type(t)) {
                 // {VTable*, struct*} -- Fetch struct
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
@@ -1657,16 +1640,16 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
          *
          * @param ptr pointer to the struct.
          * @param struct_ The struct symbol we're working with.
-         * @param idx Index (zero based) of the member within the struct we want to get a ptr to. 
+         * @param idx Index (zero based) of the member within the struct we want to get a ptr to.
          */
         llvm::Value* get_ptr_to_struct_variable_member(llvm::Value* const ptr, ASR::Struct_t* const struct_, const int idx) {
-            llvm::Value* const struct_ptr = get_struct_instance_ptr(ptr, struct_);
+            verify(ptr, get_llvm_type(struct_->m_struct_signature, struct_)->getPointerTo());
             LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&struct_->base),
                               "This utility shouldn't be called on unlimited polymorphic struct type")
 
             bool is_extended = struct_->m_parent != nullptr;
             llvm::Value* const fetched_member = llvm_utils_->create_gep2(
-                llvm_utils_->getStructType(struct_, llvm_utils_->module), struct_ptr, idx + is_extended);
+                llvm_utils_->getStructType(struct_, llvm_utils_->module), ptr, idx + is_extended);
             auto const fetched_member_variable = ASR::down_cast<ASR::Variable_t>(struct_->m_symtab->get_symbol(struct_->m_members[idx]));
             auto const fetched_member_asr_type = fetched_member_variable->m_type;
             if(LLVM::is_llvm_pointer(*fetched_member_asr_type)) {
