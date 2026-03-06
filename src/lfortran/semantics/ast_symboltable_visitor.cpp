@@ -2410,6 +2410,9 @@ public:
                     this->visit_unit_decl2(*x.m_items[i]);
                 }
             }
+            for (size_t i = 0; i < x.n_contains; i++) {
+                visit_procedure_decl(*x.m_contains[i]);
+            }
 
             is_derived_type = false;
 
@@ -2425,6 +2428,27 @@ public:
             ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
             struct_->m_struct_signature = struct_signature;
+
+            if (vars_with_deferred_struct_declaration.find(dt_name)
+                != vars_with_deferred_struct_declaration.end()) {
+                for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[dt_name]) {
+                    ASR::ttype_t* var_type = var->m_type;
+                    if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                        ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
+                            ASRUtils::extract_type(var_type));
+                        ASR::ttype_t* type = ASRUtils::make_StructType_t_util(
+                            al, x.base.base.loc, derived_type_sym, stype->m_is_cstruct);
+                        if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
+                            var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
+                        } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
+                        }
+                    }
+                    var->m_type_declaration = derived_type_sym;
+                }
+                vars_with_deferred_struct_declaration.erase(dt_name);
+            }
 
             current_scope = parent_scope_pdt;
             current_scope->add_symbol(dt_name, derived_type_sym);
@@ -3257,6 +3281,36 @@ public:
         return nullptr;
     }
 
+    void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
+        SymbolTable* enclosing_scope) {
+        if (template_struct->n_kind_params == 0) {
+            return;
+        }
+
+        ASRUtils::SymbolDuplicator duplicator(al);
+        std::string specialization_prefix = std::string(template_struct->m_name) + "_";
+        for (auto& item : enclosing_scope->get_scope()) {
+            ASR::symbol_t* candidate_sym = ASRUtils::symbol_get_past_external(item.second);
+            if (!candidate_sym || !ASR::is_a<ASR::Struct_t>(*candidate_sym)) {
+                continue;
+            }
+
+            ASR::Struct_t* specialization = ASR::down_cast<ASR::Struct_t>(candidate_sym);
+            if (specialization == template_struct ||
+                !startswith(std::string(specialization->m_name), specialization_prefix)) {
+                continue;
+            }
+
+            for (auto& member : template_struct->m_symtab->get_scope()) {
+                if (specialization->m_symtab->get_symbol(member.first) != nullptr ||
+                    ASR::is_a<ASR::Variable_t>(*member.second)) {
+                    continue;
+                }
+                duplicator.duplicate_symbol(member.second, specialization->m_symtab);
+            }
+        }
+    }
+
     void add_generic_class_procedures() {
         for (auto &proc : generic_class_procedures) {
             Location loc;
@@ -3339,8 +3393,31 @@ public:
                 }
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
+                sync_pdt_specialization_symbols(clss, current_scope);
             }
         }
+    }
+
+    bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
+        candidate_sym = ASRUtils::symbol_get_past_external(candidate_sym);
+        template_sym = ASRUtils::symbol_get_past_external(template_sym);
+        if (candidate_sym == nullptr || template_sym == nullptr ||
+            !ASR::is_a<ASR::Struct_t>(*candidate_sym) ||
+            !ASR::is_a<ASR::Struct_t>(*template_sym)) {
+            return false;
+        }
+
+        ASR::Struct_t* candidate_struct = ASR::down_cast<ASR::Struct_t>(candidate_sym);
+        ASR::Struct_t* template_struct = ASR::down_cast<ASR::Struct_t>(template_sym);
+        if (template_struct->n_kind_params == 0) {
+            return false;
+        }
+
+        std::string template_name = template_struct->m_name;
+        std::string candidate_name = candidate_struct->m_name;
+        return startswith(candidate_name, template_name + "_") &&
+            ASRUtils::symbol_parent_symtab(candidate_sym) ==
+                ASRUtils::symbol_parent_symtab(template_sym);
     }
 
     bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
@@ -3350,7 +3427,8 @@ public:
         if (ASRUtils::is_class_type(var_type)) {
             ASR::symbol_t* var_type_clss_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
             while (var_type_clss_sym) {
-                if (var_type_clss_sym == clss_sym) {
+                if (var_type_clss_sym == clss_sym ||
+                    is_pdt_instantiation_of(var_type_clss_sym, clss_sym)) {
                     return true;
                 }
                 var_type_clss_sym = ASR::down_cast<ASR::Struct_t>(var_type_clss_sym)->m_parent;
@@ -3565,6 +3643,7 @@ public:
                     is_deferred, is_nopass);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
+                sync_pdt_specialization_symbols(clss, proc_scope);
             }
         }
     }

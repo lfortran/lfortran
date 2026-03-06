@@ -64,6 +64,27 @@ private:
     bool _processing_unbounded_pointer_array = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
+    char* get_dependency_symbol_name(ASR::symbol_t* sym) {
+        if (!sym) {
+            return nullptr;
+        }
+        ASR::symbol_t* resolved_sym = ASRUtils::symbol_get_past_external(sym);
+        if (resolved_sym) {
+            char* resolved_name = ASRUtils::symbol_name(resolved_sym);
+            if (resolved_name) {
+                return resolved_name;
+            }
+        }
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+            if (ext->m_name) {
+                return ext->m_name;
+            }
+            return ext->m_original_name;
+        }
+        return ASRUtils::symbol_name(sym);
+    }
+ 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
@@ -571,8 +592,11 @@ public:
             if ( ASR::is_a<ASR::Variable_t>(*a.second) ) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(a.second);
                 if ( var->m_type_declaration ) {
-                    struct_dependencies.push_back(
-                        std::string(ASRUtils::symbol_name(var->m_type_declaration)));
+                    char* type_decl_name = get_dependency_symbol_name(
+                        var->m_type_declaration);
+                    if (type_decl_name) {
+                        struct_dependencies.push_back(std::string(type_decl_name));
+                    }
                 }
             }
             // TODO: Uncomment the following line

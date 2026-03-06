@@ -332,8 +332,22 @@ namespace LCompilers {
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
-                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
+                ASR::symbol_t* member_type_decl = ASRUtils::symbol_get_past_external(
+                    member->m_type_declaration);
+                ASR::ttype_t* member_base_type = ASRUtils::extract_type(member->m_type);
+                if (member_type_decl == nullptr &&
+                    ASR::is_a<ASR::StructType_t>(*member_base_type)) {
+                    member_type_decl = &der_type->base;
+                }
+                bool is_array_type_local = false, is_malloc_array_type_local = false;
+                bool is_list_local = false;
+                ASR::dimension_t* m_dims_local = nullptr;
+                int n_dims_local = 0, a_kind_local = 0;
+                llvm::Type* llvm_mem_type = get_type_from_ttype_t(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, member->base.base.loc, &member->base)),
+                    member->m_type, member_type_decl, member->m_storage,
+                    is_array_type_local, is_malloc_array_type_local, is_list_local,
+                    m_dims_local, n_dims_local, a_kind_local, module, member->m_abi);
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -836,12 +850,17 @@ namespace LCompilers {
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
+                }
+                if (type_declaration) {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         type = getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);
                     } else {
                         type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
                     }
+                } else if (arg_expr == nullptr && !struct_type_stack.empty()) {
+                    llvm::Type* current_struct = name2dercontext[struct_type_stack.back()];
+                    type = current_struct->getPointerTo();
                 } else {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         type = getStructType(
@@ -1383,6 +1402,8 @@ namespace LCompilers {
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
+                }
+                if (type_declaration) {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration),
                                                   module,
@@ -1391,6 +1412,10 @@ namespace LCompilers {
                         llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration),
                                                  LLVM::is_llvm_pointer(*asr_type));
                     }
+                } else if (arg_expr == nullptr && !struct_type_stack.empty()) {
+                    llvm::Type* current_struct = name2dercontext[struct_type_stack.back()];
+                    llvm_type = LLVM::is_llvm_pointer(*asr_type) ?
+                        current_struct->getPointerTo() : current_struct;
                 } else {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         llvm_type = getStructType(
@@ -9139,8 +9164,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASRUtils::symbol_get_past_external(struct_sym));
 
         llvm::Type *class_type = llvm_utils->getClassType(struct_t, false);
-        llvm::Type *struct_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::symbol_type(struct_sym), struct_sym, module);
+        llvm::Type *struct_type = llvm_utils->getStructType(struct_t, module);
 
         // allocate class wrapper first
         llvm::DataLayout data_layout(module->getDataLayout());
@@ -9169,7 +9193,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
         malloc_ptr = builder->CreateBitCast(malloc_ptr, struct_type->getPointerTo());
         builder->CreateStore(malloc_ptr, actual_ptr);
-        allocate_struct_array_members(struct_t, malloc_ptr, ASRUtils::symbol_type(struct_sym), false);
+        ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, struct_sym, true);
+        allocate_struct_array_members(struct_t, malloc_ptr, struct_signature, false);
         builder->CreateRetVoid();
 
         if (savedBB) {

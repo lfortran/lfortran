@@ -8583,12 +8583,11 @@ char *get_base_name(char *filename) {
     char *slash_idx_ptr = strrchr(filename, '/');
     const char *base_start = slash_idx_ptr ? (slash_idx_ptr + 1) : filename;
     const char *dot_idx_ptr = strrchr(base_start, '.');
-
-    if (dot_idx_ptr == NULL || dot_idx_ptr == base_start) {
+    size_t base_len = dot_idx_ptr == NULL ? strlen(base_start)
+                                          : (size_t)(dot_idx_ptr - base_start);
+    if (base_len == 0) {
         return NULL;
     }
-
-    size_t base_len = (size_t)(dot_idx_ptr - base_start);
     char *base_name = malloc(base_len + 1);
     if (base_name == NULL) {
         return NULL;
