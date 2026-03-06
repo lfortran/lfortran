@@ -158,6 +158,17 @@ public:
                 READ_SYMBOL_CASE(StructMethodDeclaration)
                 default : throw LCompilersException("Symbol type not supported");
             }
+            if (ty == ASR::symbolType::ExternalSymbol) {
+                ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+                ext->m_parent_symtab = symtab;
+                ext->m_name = s2c(al, symbol_name);
+                ext->m_external = nullptr;
+                ext->m_module_name = nullptr;
+                ext->m_scope_names = nullptr;
+                ext->n_scope_names = 0;
+                ext->m_original_name = s2c(al, symbol_name);
+                ext->m_access = ASR::accessType::Public;
+            }
             symtab->add_symbol(symbol_name, s);
         }
         ASR::symbol_t *sym = symtab->get_symbol(symbol_name);
@@ -373,7 +384,8 @@ public:
         }
         LCOMPILERS_ASSERT(x.m_external == nullptr);
         if (x.m_module_name == nullptr) {
-            throw LCompilersException("The ExternalSymbol was referenced in some ASR node, but it was not loaded as part of the SymbolTable");
+            throw LCompilersException("The ExternalSymbol '" + std::string(x.m_name)
+                + "' was referenced in some ASR node, but it was not loaded as part of the SymbolTable");
         }
         std::string module_name = x.m_module_name;
         std::string original_name = x.m_original_name;

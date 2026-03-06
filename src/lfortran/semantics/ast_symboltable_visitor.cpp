@@ -2429,6 +2429,27 @@ public:
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
             struct_->m_struct_signature = struct_signature;
 
+            if (vars_with_deferred_struct_declaration.find(dt_name)
+                != vars_with_deferred_struct_declaration.end()) {
+                for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[dt_name]) {
+                    ASR::ttype_t* var_type = var->m_type;
+                    if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                        ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
+                            ASRUtils::extract_type(var_type));
+                        ASR::ttype_t* type = ASRUtils::make_StructType_t_util(
+                            al, x.base.base.loc, derived_type_sym, stype->m_is_cstruct);
+                        if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
+                            var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
+                        } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
+                        }
+                    }
+                    var->m_type_declaration = derived_type_sym;
+                }
+                vars_with_deferred_struct_declaration.erase(dt_name);
+            }
+
             current_scope = parent_scope_pdt;
             current_scope->add_symbol(dt_name, derived_type_sym);
             return;
