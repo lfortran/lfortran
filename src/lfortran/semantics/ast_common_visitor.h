@@ -7161,18 +7161,6 @@ public:
     }
 
     // Core monomorphizer: given explicit kind values, create the concrete struct.
-    void sync_pdt_specialization_symbols(SymbolTable* template_scope,
-        SymbolTable* specialization_scope) {
-        ASRUtils::SymbolDuplicator duplicator(al);
-        for (auto& item : template_scope->get_scope()) {
-            if (specialization_scope->get_symbol(item.first) != nullptr ||
-                ASR::is_a<ASR::Variable_t>(*item.second)) {
-                continue;
-            }
-            duplicator.duplicate_symbol(item.second, specialization_scope);
-        }
-    }
-
     // Called both from instantiate_pdt (which parses kind args from AST) and
     // recursively for inner PDT members that were deferred during template
     // construction.
@@ -7218,9 +7206,6 @@ public:
         // Check if the monomorphized struct already exists in scope
         ASR::symbol_t *v = current_scope->resolve_symbol(monomorphized_name);
         if (v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))) {
-            ASR::Struct_t* existing_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(v));
-            sync_pdt_specialization_symbols(pdt_struct->m_symtab, existing_struct->m_symtab);
             type_declaration = v;
             ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, v, true);
             type = ASRUtils::make_Array_t_util(
@@ -7239,10 +7224,6 @@ public:
         {
             ASR::symbol_t *pdt_existing = pdt_scope->get_symbol(monomorphized_name);
             if (pdt_existing && ASR::is_a<ASR::Struct_t>(*pdt_existing)) {
-                ASR::Struct_t* existing_struct =
-                    ASR::down_cast<ASR::Struct_t>(pdt_existing);
-                sync_pdt_specialization_symbols(
-                    pdt_struct->m_symtab, existing_struct->m_symtab);
                 ASR::symbol_t* type_decl_sym = ASRUtils::import_struct_type(
                     al, pdt_existing, current_scope);
                 type_declaration = type_decl_sym;
