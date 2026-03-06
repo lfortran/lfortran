@@ -920,7 +920,9 @@ public:
             s_access, deftype, nullptr,
             false, false, false, false, false,
             nullptr, 0,
-            is_requirement, false, false);
+            is_requirement,
+            /* m_deterministic */ (deftype == ASR::deftypeType::Implementation),
+            /* m_side_effect_free */ (deftype == ASR::deftypeType::Implementation));
         parent_scope->add_symbol(function_name, ASR::down_cast<ASR::symbol_t>(tmp_));
 
         for (auto &item: current_scope->get_scope()) {
@@ -1447,6 +1449,9 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
+        bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
+        bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
+                                     || is_pure || is_elemental;
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -1461,7 +1466,7 @@ public:
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, false, false);
+            is_requirement, init_deterministic, init_side_effect_free);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2002,6 +2007,9 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
 
+        bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
+        bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
+                                     || is_pure || is_elemental;
         tmp = ASRUtils::make_Function_t_util(
             /* al */ al, /* loc */ x.base.base.loc,
             /* m_symtab */ current_scope, /* m_name */ s2c(al, to_lower(sym_name)),
@@ -2015,8 +2023,9 @@ public:
             /* m_pure */ is_pure, /* m_module */ is_module,
             /* m_inline */ false, /* m_static */ false,
             /* m_restrictions */ nullptr, /* n_restrictions */ 0,
-            /* m_is_restriction */ is_requirement, /* m_deterministic */ false,
-            /* m_side_effects_free */ false, /* m_c_header */ nullptr,
+            /* m_is_restriction */ is_requirement,
+            /* m_deterministic */ init_deterministic,
+            /* m_side_effect_free */ init_side_effect_free, /* m_c_header */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
         );
