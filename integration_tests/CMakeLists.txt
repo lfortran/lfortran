@@ -2132,6 +2132,10 @@ RUN(NAME realloc_lhs_16 LABELS gfortran llvm
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME realloc_lhs_17 FILE realloc_lhs_16 LABELS llvm
     EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_18 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_19 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
