@@ -3571,6 +3571,8 @@ RUN(NAME separate_compilation_39 LABELS llvm EXTRAFILES separate_compilation_39a
 RUN(NAME separate_compilation_40 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_41 LABELS gfortran llvm EXTRAFILES separate_compilation_41a.f90 separate_compilation_41b.f90 separate_compilation_41c.f90 EXTRA_ARGS --separate-compilation)
 
+RUN(NAME separate_compilation_42 LABELS llvm EXTRA_ARGS --separate-compilation)
+
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
