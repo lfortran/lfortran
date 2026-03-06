@@ -207,8 +207,8 @@
                                     )]
                                     (Var 14 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             lt_my_type:
@@ -324,8 +324,8 @@
                                     )]
                                     (Var 13 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:
@@ -446,8 +446,8 @@
                                                     []
                                                     (Var 7 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -948,8 +948,8 @@
                                                     []
                                                     (Var 11 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             quicksort:
@@ -1516,8 +1516,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -4023,8 +4023,8 @@
                                     )]
                                     (Var 4 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:

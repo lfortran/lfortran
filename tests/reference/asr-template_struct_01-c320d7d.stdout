@@ -206,8 +206,8 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             get_snd:
@@ -325,8 +325,8 @@
                                                     )]
                                                     (Var 7 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

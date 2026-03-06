@@ -167,8 +167,8 @@
                                     )]
                                     (Var 13 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             lt_my_type:
@@ -284,8 +284,8 @@
                                     )]
                                     (Var 12 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:
@@ -406,8 +406,8 @@
                                                     []
                                                     (Var 7 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -612,8 +612,8 @@
                                                     []
                                                     (Var 9 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             qs:
@@ -992,8 +992,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             swp:
@@ -1117,8 +1117,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -3121,8 +3121,8 @@
                                     )]
                                     (Var 4 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:
