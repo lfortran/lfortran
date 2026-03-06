@@ -2404,6 +2404,20 @@ public:
                 }
             }
 
+            // Create a preliminary Struct_t and add it to the parent scope
+            // so that recursive self-references (e.g., type(recursive_t(k))
+            // inside recursive_t) can resolve during member processing.
+            tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
+                s2c(al, dt_name), nullptr,
+                nullptr, 0,
+                nullptr, 0,
+                nullptr, 0,
+                ASR::abiType::Source, dflt_access, false, is_abstract,
+                nullptr, 0, nullptr, parent_sym,
+                kind_params.p, kind_params.size());
+            ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+            parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
+
             // Second pass: process remaining (non-kind/len) declarations
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
@@ -2416,21 +2430,16 @@ public:
 
             is_derived_type = false;
 
-            tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
-                s2c(al, dt_name), nullptr,
-                nullptr, 0,
-                data_member_names.p, data_member_names.size(),
-                final_proc_names.p, final_proc_names.size(),
-                ASR::abiType::Source, dflt_access, false, is_abstract,
-                nullptr, 0, nullptr, parent_sym,
-                kind_params.p, kind_params.size());
-            ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
-            ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
+            // Update the preliminary Struct with complete member data
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
+            struct_->m_members = data_member_names.p;
+            struct_->n_members = data_member_names.size();
+            struct_->m_member_functions = final_proc_names.p;
+            struct_->n_member_functions = final_proc_names.size();
+            ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
             struct_->m_struct_signature = struct_signature;
 
             current_scope = parent_scope_pdt;
-            current_scope->add_symbol(dt_name, derived_type_sym);
             return;
         }
         SymbolTable *parent_scope = current_scope;

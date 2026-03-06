@@ -7278,6 +7278,7 @@ public:
         // template construction.
         SymbolTable* saved_scope = current_scope;
         current_scope = pdt_scope;  // inner PDT must be visible from template scope
+        std::vector<std::string> self_recursive_members;
         for (auto& item : new_scope->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             if (kind_values.find(item.first) != kind_values.end()) continue;
@@ -7296,6 +7297,10 @@ public:
                 } else {
                     actual_inner.push_back(s);
                 }
+            }
+            if (inner_name == pdt_name && actual_inner == kind_val_vec) {
+                self_recursive_members.push_back(item.first);
+                continue;
             }
             ASR::symbol_t* inner_sym_decl = nullptr;
             Vec<ASR::dimension_t> empty_dims;
@@ -7386,6 +7391,14 @@ public:
             al, loc, struct_sym, true);
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         struct_t->m_struct_signature = struct_signature;
+        for (const std::string& member_name : self_recursive_members) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                new_scope->get_symbol(member_name));
+            var->m_type = rewrap_pdt_member_type(var->m_type, struct_signature,
+                var->base.base.loc);
+            var->m_type_declaration = struct_sym;
+        }
+
         pdt_scope->add_symbol(monomorphized_name, struct_sym);
 
         // If the monomorphized struct was created in a different scope (e.g.
