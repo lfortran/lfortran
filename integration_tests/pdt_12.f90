@@ -8,6 +8,7 @@ module pdt_12
 
     interface
         module subroutine touch(self)
+            import :: recursive_t
             type(recursive_t), intent(inout) :: self
         end subroutine touch
     end interface
