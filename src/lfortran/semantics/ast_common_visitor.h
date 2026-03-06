@@ -14389,7 +14389,7 @@ public:
 
                 bool is_v_dummy_arg_local = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(v)->m_intent);
                 if (compiler_options.implicit_interface && is_char && !is_array && !is_v_dummy_arg_local && x.n_args == 1 && x.n_subargs == 0 &&
-                    x.m_args[0].m_start == nullptr && x.m_args[0].m_step == nullptr) {
+                    !ASRUtils::is_allocatable(t) && x.m_args[0].m_start == nullptr && x.m_args[0].m_step == nullptr) {
                     ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
                     current_scope->erase_symbol(var_name);
                     create_implicit_interface_function(x, var_name, true, old_type);
