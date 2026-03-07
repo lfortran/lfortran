@@ -1097,7 +1097,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         ASRUtils::ExprStmtDuplicator d(al);
-        ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(value));
+        ASR::expr_t* size_expr = ASRUtils::get_expr_size_expr(value);
+        if (size_expr == nullptr) {
+            return;
+        }
+        ASR::expr_t* realloc_var = d.duplicate_expr(size_expr);
 
         Location loc; loc.first = 1, loc.last = 1;
         ASRUtils::ASRBuilder builder(al, loc);
@@ -1363,7 +1367,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        if( call_replace_on_expr(xx.m_value->type) ) {
+        if( call_replace_on_expr(xx.m_value->type) ||
+            ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value) ) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(xx.m_value);
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 1);
+                args.push_back(al, xx.m_value);
+                xx.m_value = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(
+                    al, idl->base.base.loc, args.p, args.size(),
+                    idl->m_type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
+            }
             replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&xx.m_value);

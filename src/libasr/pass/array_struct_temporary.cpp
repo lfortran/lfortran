@@ -976,6 +976,17 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::ImpliedDoLoop: {
+            ASR::ImpliedDoLoop_t* implied_do_loop =
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+            allocate_dims.reserve(al, 1);
+            ASR::dimension_t allocate_dim;
+            allocate_dim.loc = loc;
+            allocate_dim.m_start = int32_one;
+            allocate_dim.m_length = ASRUtils::get_ImpliedDoLoop_size(al, implied_do_loop);
+            allocate_dims.push_back(al, allocate_dim);
+            break;
+        }
         case ASR::exprType::FunctionParam: {
             return false;
         }

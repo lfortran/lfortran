@@ -1586,6 +1586,9 @@ public:
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
+            if (n_dims == 0 && curr_arg.n_dims > 0) {
+                n_dims = curr_arg.n_dims;
+            }
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
             if( n_dims == 0 ) {
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
@@ -2253,7 +2256,7 @@ public:
                     : tmp ;
                 llvm_utils->free_strings(tmp_expr, tmp);
             } else {
-                if (dims == 0) {
+                if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
                     llvm::Type* llvm_data_type;
                     llvm::Value* tmp_ = tmp;
                     if (LLVM::is_llvm_pointer(*cur_type)) {
@@ -10463,7 +10466,13 @@ public:
         visit_Var(*selector_var);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_selector = tmp;
-        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::expr_type(x.m_selector), module.get());
+        ASR::ttype_t* selector_asr_type = ASRUtils::expr_type(x.m_selector);
+        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
+        if (ASRUtils::is_allocatable(selector_asr_type)) {
+            llvm_selector = llvm_utils->CreateLoad2(llvm_selector_type_, llvm_selector);
+            selector_asr_type = ASRUtils::type_get_past_allocatable(selector_asr_type);
+            llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
+        }
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
 
         llvm::Value* rank = arr_descr->get_rank(llvm_selector_type_, llvm_selector);

@@ -812,9 +812,33 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
-            if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
-                ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
-                ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+            if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
+                ASR::is_a<ASR::GetPointer_t>(*x.m_value) ) {
+                return ;
+            }
+
+            if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+                ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(x.m_value);
+                if( ASR::is_a<ASR::ArrayConstructor_t>(*reshape->m_array) ) {
+                    ASR::ArrayConstructor_t* arr_con =
+                        ASR::down_cast<ASR::ArrayConstructor_t>(reshape->m_array);
+                    bool has_implied_do = false;
+                    for( size_t i = 0; i < arr_con->n_args; i++ ) {
+                        if( ASR::is_a<ASR::ImpliedDoLoop_t>(*arr_con->m_args[i]) ) {
+                            has_implied_do = true;
+                            break;
+                        }
+                    }
+                    if( has_implied_do ) {
+                        ASR::expr_t* result_var_copy = replacer.result_var;
+                        replacer.result_var = nullptr;
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = &(const_cast<ASR::ArrayReshape_t*>(reshape)->m_array);
+                        this->call_replacer();
+                        current_expr = current_expr_copy;
+                        replacer.result_var = result_var_copy;
+                    }
+                }
                 return ;
             }
 
