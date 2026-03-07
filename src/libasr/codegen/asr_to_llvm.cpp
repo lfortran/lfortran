@@ -3868,7 +3868,8 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
                 llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
-                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get());
+                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
+                    const_cast<ASR::expr_t*>(x.m_array), asr_data_type);
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
