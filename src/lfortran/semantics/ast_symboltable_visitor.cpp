@@ -1019,10 +1019,6 @@ public:
 
         ASR::Function_t* proc_interface = nullptr;
         while (proc_interface == nullptr) {
-            if (interface_module->m_parent_module) {
-                interface_module = ASR::down_cast<ASR::Module_t>(
-                    tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
-            }
             for (auto &item : interface_module->m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*item.second) &&
                         std::string(ASR::down_cast<ASR::Function_t>(
@@ -1030,8 +1026,21 @@ public:
                     proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
                     break;
                 }
+                if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                    ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
+                    for (size_t i = 0; i < gp->n_procs; i++) {
+                        if (ASR::is_a<ASR::Function_t>(*gp->m_procs[i]) &&
+                                std::string(ASRUtils::symbol_name(gp->m_procs[i])) == proc_name) {
+                            proc_interface = ASR::down_cast<ASR::Function_t>(gp->m_procs[i]);
+                            break;
+                        }
+                    }
+                    if (proc_interface) break;
+                }
             }
-            if (!interface_module->m_parent_module) break;
+            if (proc_interface || !interface_module->m_parent_module) break;
+            interface_module = ASR::down_cast<ASR::Module_t>(
+                tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
         }
 
         if (proc_interface == nullptr) {
