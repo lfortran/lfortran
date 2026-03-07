@@ -3768,7 +3768,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     if (ASR::is_a<ASR::Var_t>(*x) ||
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstant_t>(*x) ||
+        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
         return x;
     }
 
@@ -3857,7 +3858,6 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     } else if (inside_binop) {
         return nullptr;
     } else {
-        LCOMPILERS_ASSERT(false);
         return nullptr;
     }
 }

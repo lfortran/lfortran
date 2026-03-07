@@ -345,6 +345,13 @@ public:
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
         current_scope = current_scope_copy;
     }
+
+    void visit_Block(const Block_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Block(x);
+        current_scope = current_scope_copy;
+    }
     /**
      * Searches for an enum containing a specific enumerator across all loaded
      * modules.  When multiple modules define an enum with the same name (e.g.

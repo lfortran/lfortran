@@ -1682,6 +1682,8 @@ public:
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        {"this_image", IntrinsicSignature({}, 0, 0)},
+        {"num_images", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
         {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
@@ -1701,6 +1703,7 @@ public:
         {"execute_command_line", IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)},
         {"system", IntrinsicSignature({"command"}, 1, 1)},
         {"sleep", IntrinsicSignature({"seconds"}, 1, 1)},
+        {"co_sum", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
         {"move_alloc", IntrinsicSignature({"from", "to"}, 2, 2)},
         {"mvbits", IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)},
         {"modulo", IntrinsicSignature({"a", "p"}, 2, 2)},
@@ -7128,6 +7131,35 @@ public:
         }
     }
 
+    ASR::ttype_t* rewrap_pdt_member_type(ASR::ttype_t* original_type,
+        ASR::ttype_t* new_base_type, const Location& loc)
+    {
+        switch (original_type->type) {
+            case ASR::ttypeType::Pointer: {
+                ASR::Pointer_t* pointer_type = ASR::down_cast<ASR::Pointer_t>(original_type);
+                return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    rewrap_pdt_member_type(pointer_type->m_type, new_base_type, loc)));
+            }
+            case ASR::ttypeType::Allocatable: {
+                ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(original_type);
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                    rewrap_pdt_member_type(alloc_type->m_type, new_base_type, loc)));
+            }
+            case ASR::ttypeType::Array: {
+                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(original_type);
+                ASR::dimension_t* copied_dims = ASRUtils::duplicate_dimensions(
+                    al, array_type->m_dims, array_type->n_dims);
+                return ASRUtils::make_Array_t_util(al, loc,
+                    rewrap_pdt_member_type(array_type->m_type, new_base_type, loc),
+                    copied_dims, array_type->n_dims, ASR::abiType::Source, false,
+                    array_type->m_physical_type, true);
+            }
+            default: {
+                return new_base_type;
+            }
+        }
+    }
+
     // Core monomorphizer: given explicit kind values, create the concrete struct.
     // Called both from instantiate_pdt (which parses kind args from AST) and
     // recursively for inner PDT members that were deferred during template
@@ -7192,24 +7224,8 @@ public:
         {
             ASR::symbol_t *pdt_existing = pdt_scope->get_symbol(monomorphized_name);
             if (pdt_existing && ASR::is_a<ASR::Struct_t>(*pdt_existing)) {
-                ASR::symbol_t* type_decl_sym = pdt_existing;
-                if (current_scope->resolve_symbol(monomorphized_name) == nullptr) {
-                    ASR::symbol_t* module_sym = nullptr;
-                    if (pdt_scope->asr_owner != nullptr &&
-                        ASR::is_a<ASR::symbol_t>(*pdt_scope->asr_owner)) {
-                        module_sym = ASR::down_cast<ASR::symbol_t>(pdt_scope->asr_owner);
-                    }
-                    if (module_sym && ASR::is_a<ASR::Module_t>(*module_sym)) {
-                        ASR::symbol_t* ext = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(al, loc, current_scope,
-                                s2c(al, monomorphized_name), pdt_existing,
-                                ASRUtils::symbol_name(module_sym),
-                                nullptr, 0, s2c(al, monomorphized_name),
-                                ASR::accessType::Public));
-                        current_scope->add_symbol(monomorphized_name, ext);
-                        type_decl_sym = ext;
-                    }
-                }
+                ASR::symbol_t* type_decl_sym = ASRUtils::import_struct_type(
+                    al, pdt_existing, current_scope);
                 type_declaration = type_decl_sym;
                 ASR::ttype_t *type = ASRUtils::make_StructType_t_util(
                     al, loc, type_decl_sym, true);
@@ -7262,6 +7278,7 @@ public:
         // template construction.
         SymbolTable* saved_scope = current_scope;
         current_scope = pdt_scope;  // inner PDT must be visible from template scope
+        std::vector<std::string> self_recursive_members;
         for (auto& item : new_scope->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             if (kind_values.find(item.first) != kind_values.end()) continue;
@@ -7281,6 +7298,10 @@ public:
                     actual_inner.push_back(s);
                 }
             }
+            if (inner_name == pdt_name && actual_inner == kind_val_vec) {
+                self_recursive_members.push_back(item.first);
+                continue;
+            }
             ASR::symbol_t* inner_sym_decl = nullptr;
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 0);
@@ -7289,7 +7310,7 @@ public:
                 false, false, empty_dims, inner_sym_decl,
                 ASR::abiType::Source, false);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
-            var->m_type = inner_type;
+            var->m_type = rewrap_pdt_member_type(var->m_type, inner_type, var->base.base.loc);
             var->m_type_declaration = inner_sym_decl;
         }
         current_scope = saved_scope;
@@ -7370,6 +7391,14 @@ public:
             al, loc, struct_sym, true);
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         struct_t->m_struct_signature = struct_signature;
+        for (const std::string& member_name : self_recursive_members) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                new_scope->get_symbol(member_name));
+            var->m_type = rewrap_pdt_member_type(var->m_type, struct_signature,
+                var->base.base.loc);
+            var->m_type_declaration = struct_sym;
+        }
+
         pdt_scope->add_symbol(monomorphized_name, struct_sym);
 
         // If the monomorphized struct was created in a different scope (e.g.
@@ -8181,32 +8210,9 @@ public:
                 ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v));
                 if (pdt_struct->n_kind_params > 0) {
-                    // PDT with kind parameters: monomorphize using defaults
-                    std::vector<int64_t> kind_val_vec;
-                    for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
-                        std::string kp_name(pdt_struct->m_kind_params[i]);
-                        ASR::symbol_t* kp_s = pdt_struct->m_symtab->get_symbol(kp_name);
-                        int64_t def_val = -1;
-                        if (kp_s && ASR::is_a<ASR::Variable_t>(*kp_s)) {
-                            ASR::Variable_t* kp_v = ASR::down_cast<ASR::Variable_t>(kp_s);
-                            if (kp_v->m_symbolic_value) {
-                                def_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                                    ASRUtils::expr_value(kp_v->m_symbolic_value))->m_n;
-                            }
-                        }
-                        if (def_val < 0) {
-                            diag.add(Diagnostic(
-                                "Parameterized derived type '" + derived_type_name +
-                                "' parameter '" + kp_name +
-                                "' has no default value and must be specified",
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        }
-                        kind_val_vec.push_back(def_val);
-                    }
-                    type = instantiate_pdt_by_values(loc, derived_type_name,
-                        kind_val_vec, is_pointer, is_allocatable, dims,
-                        type_declaration, abi, is_argument);
+                    type = instantiate_pdt(loc, derived_type_name, sym_type,
+                        is_pointer, is_allocatable, dims, type_declaration,
+                        abi, is_argument);
                     // Mark as polymorphic (class) rather than concrete (type)
                     ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
                         ASRUtils::extract_type(type));
@@ -10393,7 +10399,9 @@ public:
                 if( par_der_type->m_parent != nullptr ) {
                     ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(par_der_type->m_parent);
                     par_der_type = ASR::down_cast<ASR::Struct_t>(parent_sym);
-                    if (par_der_type->m_name == var_name) {    // if the parent type is the member itself
+                    if (par_der_type->m_name == var_name ||
+                        startswith(std::string(par_der_type->m_name),
+                                   var_name + "_")) {
                         member = parent_sym;
                     }
                 } else {
@@ -10657,7 +10665,7 @@ public:
                             dim.m_length = nullptr;
                             dims.push_back(al, dim);
                         }
-                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(temp));
+                        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(temp));
                         ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, arg_expr->base.loc,
                             elem_type, dims.p, dims.size(), ASR::abiType::Source, false, 
                             ASR::array_physical_typeType::DescriptorArray, false, false, true
@@ -12724,8 +12732,8 @@ public:
 
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
-        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images",
-            "image_status", "get_team", "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank",
+        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "lcobound", "ucobound", "failed_images",
+            "image_status", "get_team", "image_index", "stopped_images", "team_number", "coshape", "corank",
             "event_query"};
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
