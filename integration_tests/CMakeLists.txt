@@ -1054,6 +1054,7 @@ RUN(NAME submodule_35 LABELS gfortran llvm) # submodule function via interface
 RUN(NAME submodule_36 LABELS gfortran llvm)
 RUN(NAME submodule_37a LABELS gfortran llvm_submodule EXTRAFILES submodule_37b.f90 submodule_37c.f90 submodule_37d.f90 EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME submodule_38a LABELS gfortran llvm_submodule EXTRAFILES submodule_38b.f90 submodule_38c.f90 EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME submodule_39a LABELS gfortran llvm_submodule EXTRAFILES submodule_39b.f90 submodule_39c.f90 EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME submodule_40a LABELS gfortran llvm_submodule EXTRAFILES submodule_40b.f90 submodule_40c.f90 EXTRA_ARGS --realloc-lhs-arrays)
 
@@ -1922,6 +1923,10 @@ RUN(NAME pdt_05 LABELS gfortran llvm)
 RUN(NAME pdt_06 LABELS gfortran llvm EXTRAFILES pdt_06_module.f90)
 RUN(NAME pdt_07 LABELS gfortran llvm)
 RUN(NAME pdt_08 LABELS gfortran llvm)
+RUN(NAME pdt_09 LABELS llvm)
+RUN(NAME pdt_10 LABELS llvm)
+RUN(NAME pdt_11 LABELS llvm EXTRAFILES pdt_11_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_12 LABELS llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
@@ -3561,6 +3566,10 @@ RUN(NAME separate_compilation_34 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_35 LABELS gfortran llvm EXTRAFILES separate_compilation_35a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_36 LABELS gfortran llvm EXTRAFILES separate_compilation_36a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_37 LABELS gfortran llvm EXTRAFILES separate_compilation_37a.f90 separate_compilation_37b.f90 EXTRA_ARGS --separate-compilation)
+
+RUN(NAME separate_compilation_38 LABELS gfortran llvm EXTRAFILES separate_compilation_38a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_39 LABELS llvm EXTRAFILES separate_compilation_39a.f90 separate_compilation_39b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_40 LABELS llvm EXTRA_ARGS --separate-compilation)
 
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
