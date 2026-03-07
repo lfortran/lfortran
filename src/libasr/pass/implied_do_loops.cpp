@@ -252,6 +252,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         int const_elements = 0;
         ASR::expr_t* implied_doloop_size_ = nullptr;
+        // Track whether size came from a runtime expression (e.g. FunctionCall
+        // returning allocatable array) vs a nested ImpliedDoLoop/ArrayConstructor.
+        // The arithmetic sum formula only applies to the latter.
+        bool has_runtime_array_size = false;
         for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
                 if( implied_doloop_size_ == nullptr ) {
@@ -280,6 +284,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     if( ASRUtils::is_fixed_size_array(element_type) ) {
                         const_elements += ASRUtils::get_fixed_size_of_array(element_type);
                     } else {
+                        has_runtime_array_size = true;
                         ASR::expr_t* element_array_size = get_array_expr_size(
                             implied_doloop->m_values[i]);
                         if( implied_doloop_size_ == nullptr ) {
@@ -301,6 +306,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         bool inner_depends_on_var = (loop_var_sym != nullptr &&
             implied_doloop_size_ != nullptr && d == nullptr &&
+            !has_runtime_array_size &&
             ASRUtils::expr_references_symbol(implied_doloop_size_, loop_var_sym));
 
         if (inner_depends_on_var) {
