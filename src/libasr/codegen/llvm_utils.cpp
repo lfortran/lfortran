@@ -2320,6 +2320,16 @@ namespace LCompilers {
         ASR::ttype_t* type = ASRUtils::expr_type(expr);
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
 
+        ASR::String_t* str_type = ASRUtils::get_string_type(type);
+        if (ASRUtils::is_string_only(type) &&
+                str_type->m_physical_type == ASR::CChar) {
+            llvm::Value* data_ptr = builder->CreateLoad(character_type, tmp);
+            builder->CreateCall(_Deallocate(), {data_ptr});
+            builder->CreateStore(
+                llvm::ConstantPointerNull::getNullValue(character_type), tmp);
+            return;
+        }
+
         // Get string representation in the backend (e.g. `i8*` or `string_descriptor*`)
         llvm::Value* str{};
         if (ASRUtils::is_string_only(type)) {
@@ -2343,7 +2353,7 @@ namespace LCompilers {
         }
         LCOMPILERS_ASSERT(str)
         llvm::Value* str_data {}, *str_len {};
-        std::tie(str_data, str_len) = get_string_length_data(ASRUtils::get_string_type(type), str, true, true);
+        std::tie(str_data, str_len) = get_string_length_data(str_type, str, true, true);
         builder->CreateCall(_Deallocate(),{builder->CreateLoad(character_type, str_data)});
         builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
@@ -2357,8 +2367,31 @@ namespace LCompilers {
         llvm::Value *lhs_data, *lhs_len;
         llvm::Value *rhs_data, *rhs_len;
 
-        std::tie(lhs_data, lhs_len) = get_string_length_data(dest_str_type, dest, true, true);
-        std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src);
+        if (dest_str_type->m_physical_type == ASR::CChar) {
+            lhs_data = dest;
+            lhs_len = builder->CreateAlloca(
+                llvm::Type::getInt64Ty(context), nullptr, "cchar_len");
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                lhs_len);
+        } else {
+            std::tie(lhs_data, lhs_len) = get_string_length_data(
+                dest_str_type, dest, true, true);
+        }
+
+        if (src_str_type->m_physical_type == ASR::CChar) {
+            rhs_data = builder->CreateLoad(character_type, src);
+            llvm::Value* rhs_len_val = builder->CreateCall(
+                module->getOrInsertFunction("strlen",
+                    llvm::FunctionType::get(
+                        llvm::Type::getInt64Ty(context),
+                        {character_type}, false)),
+                {rhs_data});
+            rhs_len = rhs_len_val;
+        } else {
+            std::tie(rhs_data, rhs_len) = get_string_length_data(
+                src_str_type, src);
+        }
 
         // For struct members (like common blocks) with fixed-length CHARACTER,
         // the descriptor may be initialized with zeroinitializer (length=0).

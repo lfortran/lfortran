@@ -11575,7 +11575,8 @@ public:
             x.m_new == ASR::string_physical_typeType::CChar){
             // CChar -> is represented as `char*` in LLVM backend.
             this->visit_expr_load_wrapper(x.m_arg, 0);
-            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+            bool is_alloc = ASRUtils::is_allocatable(x.m_type);
+            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp, is_alloc);
         } else if (x.m_old == ASR::string_physical_typeType::CChar &&
             x.m_new == ASR::string_physical_typeType::DescriptorString){
             this->visit_expr_load_wrapper(x.m_arg, 0);// Typically a bind-C-function return
@@ -12380,13 +12381,13 @@ public:
             if( loads == 0 ) {
                 type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
-                    x->m_type, module.get());
+                    x->m_type, module.get(), x->m_abi);
 
             } else {
                 type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     ASRUtils::type_get_past_allocatable_pointer(x->m_type),
-                    module.get());
+                    module.get(), x->m_abi);
             }
             tmp = llvm_utils->CreateLoad2(type_req, tmp);
             loads++;
@@ -18648,6 +18649,41 @@ public:
                 args.push_back(pass_arg);
             }
             builder->CreateCall(fn, args);
+            fixup_descriptor_after_cchar_bind_c_call(x, s, is_method);
+        }
+    }
+
+    void fixup_descriptor_after_cchar_bind_c_call(
+            const ASR::SubroutineCall_t &x,
+            ASR::Function_t* s, bool is_method) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!x.m_args[i].m_value) continue;
+            if (!ASR::is_a<ASR::StringPhysicalCast_t>(*x.m_args[i].m_value)) continue;
+            ASR::StringPhysicalCast_t* cast =
+                ASR::down_cast<ASR::StringPhysicalCast_t>(x.m_args[i].m_value);
+            if (cast->m_old != ASR::string_physical_typeType::DescriptorString ||
+                cast->m_new != ASR::string_physical_typeType::CChar) continue;
+            size_t arg_idx = i + (is_method ? 1 : 0);
+            if (arg_idx >= s->n_args) continue;
+            ASR::Variable_t* orig_arg = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(s->m_args[arg_idx])->m_v));
+            if (!ASRUtils::is_allocatable(orig_arg->m_type)) continue;
+
+            this->visit_expr_load_wrapper(cast->m_arg, 0);
+            llvm::Value* desc = tmp;
+            llvm::Value* data_ptr = llvm_utils->create_gep2(
+                llvm_utils->string_descriptor, desc, 0);
+            llvm::Value* data = builder->CreateLoad(character_type, data_ptr);
+            llvm::Value* len_ptr = llvm_utils->create_gep2(
+                llvm_utils->string_descriptor, desc, 1);
+            llvm::Value* str_len = builder->CreateCall(
+                module->getOrInsertFunction("strlen",
+                    llvm::FunctionType::get(
+                        llvm::Type::getInt64Ty(context),
+                        {character_type}, false)),
+                {data});
+            builder->CreateStore(str_len, len_ptr);
         }
     }
 
@@ -18690,13 +18726,19 @@ public:
             visit_expr_load_wrapper(arg, 1, true);
             tmp = arr_descr->get_is_allocated_flag(tmp, arg);
         } else if (ASRUtils::is_character(*expr_type(arg))) {
-            visit_expr_load_wrapper(arg, 0);
-            tmp = builder->CreateICmpNE(
-                llvm_utils->get_string_data(
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(arg))),
-                    tmp),
-                llvm::ConstantPointerNull::get(
-                    character_type));
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(expr_type(arg)));
+            if (str_type->m_physical_type == ASR::CChar) {
+                tmp = builder->CreateICmpNE(
+                    builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        llvm::APInt(64, 0)));
+            } else {
+                visit_expr_load_wrapper(arg, 0);
+                tmp = builder->CreateICmpNE(
+                    llvm_utils->get_string_data(str_type, tmp),
+                    llvm::ConstantPointerNull::get(character_type));
+            }
         } else {
             tmp = builder->CreateICmpNE(
                 builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
