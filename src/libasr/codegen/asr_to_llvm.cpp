@@ -16245,6 +16245,43 @@ public:
 
                 }
             }
+            ASR::ttype_t* val_type_fw = ASRUtils::expr_type(m_values[i]);
+            if (ASRUtils::is_array(val_type_fw) &&
+                ASRUtils::is_character(*ASRUtils::extract_type(val_type_fw))) {
+                int ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr_wrapper(m_values[i], true);
+                ptr_loads = ptr_copy;
+                llvm::Value* arr_val = tmp;
+
+                ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(val_type_fw);
+                llvm::Type* arr_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    m_values[i], type_past_alloc, module.get());
+
+                if (ASRUtils::is_allocatable(val_type_fw)) {
+                    arr_val = llvm_utils->CreateLoad2(
+                        arr_llvm_type->getPointerTo(), arr_val);
+                }
+
+                llvm::Value* str_data = llvm_utils->get_stringArray_data(
+                    val_type_fw, arr_val);
+                llvm::Value* elem_len = llvm_utils->get_stringArray_length(
+                    val_type_fw, arr_val);
+
+                llvm::Value* arr_size = arr_descr->get_array_size(
+                    arr_llvm_type, arr_val, nullptr, 4);
+                llvm::Value* arr_size_i64 = builder->CreateSExt(
+                    arr_size, llvm::Type::getInt64Ty(context));
+                llvm::Value* total_len = builder->CreateMul(
+                    arr_size_i64, elem_len);
+
+                fmt.push_back("%s");
+                args.push_back(str_data);
+                if (x.m_is_formatted) {
+                    args.push_back(total_len);
+                }
+                continue;
+            }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc); // return of visited expression `m_values[i]` stored in `tmp`
 
