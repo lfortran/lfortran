@@ -287,6 +287,30 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         has_runtime_array_size = true;
                         ASR::expr_t* element_array_size = get_array_expr_size(
                             implied_doloop->m_values[i]);
+                        // The size expression may reference the loop variable
+                        // (e.g. size(a(i)%values())). Since this expression is
+                        // evaluated before the loop starts, replace the loop
+                        // variable with its start value so the index is valid.
+                        if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
+                            ASR::symbol_t* lv_sym = ASR::down_cast<ASR::Var_t>(
+                                implied_doloop->m_var)->m_v;
+                            ASRUtils::ExprStmtDuplicator dup(al);
+                            element_array_size = dup.duplicate_expr(element_array_size);
+                            class ReplaceLoopVar : public ASR::BaseExprReplacer<ReplaceLoopVar> {
+                            public:
+                                Allocator& al;
+                                ASR::symbol_t* sym;
+                                ASR::expr_t* replacement;
+                                ReplaceLoopVar(Allocator& a, ASR::symbol_t* s, ASR::expr_t* r)
+                                    : al(a), sym(s), replacement(r) {}
+                                void replace_Var(ASR::Var_t* x) {
+                                    if (x->m_v == sym) *current_expr = replacement;
+                                }
+                            };
+                            ReplaceLoopVar replacer(al, lv_sym, implied_doloop->m_start);
+                            replacer.current_expr = &element_array_size;
+                            replacer.replace_expr(element_array_size);
+                        }
                         if( implied_doloop_size_ == nullptr ) {
                             implied_doloop_size_ = element_array_size;
                         } else {
