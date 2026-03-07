@@ -395,8 +395,8 @@
                     []
                     (Var 6 save_func)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             save_module_03:
@@ -703,8 +703,8 @@
                                     []
                                     (Var 12 save_func_mod)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             save_sub_mod:
@@ -901,8 +901,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1133,8 +1133,8 @@
                                     []
                                     (Var 8 save_func)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             save_nested_func:
@@ -1310,8 +1310,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1335,8 +1335,8 @@
                     []
                     (Var 7 save_nested_func)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             save_nested_sub:
@@ -1559,8 +1559,8 @@
                                     []
                                     (Var 5 save_func)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             save_sub:
@@ -1715,8 +1715,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1740,8 +1740,8 @@
                     []
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             save_sub:
@@ -1938,8 +1938,8 @@
                     []
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
