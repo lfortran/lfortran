@@ -167,6 +167,24 @@ namespace RandomSeed {
         if (!is_real(*arg_types[1])) {
             flag = 1;
             fill_func_arg_sub("put", arg_types[1], In);
+            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(arg_types[1]));
+            if (fn_symtab->get_symbol(c_func_name_1) == nullptr) {
+                ASR::symbol_t *s_seed = b.create_c_func_subroutines(
+                    c_func_name_1, fn_symtab, 1, elem_type);
+                fn_symtab->add_symbol(c_func_name_1, s_seed);
+                dep.push_back(al, s2c(al, c_func_name_1));
+            }
+            std::vector<ASR::expr_t*> idx = {b.i32(1)};
+            auto seed_elem = declare("_seed_elem", elem_type, Local);
+            body.push_back(al, b.Assignment(seed_elem,
+                b.ArrayItem_01(args[1], idx)));
+            Vec<ASR::expr_t*> put_call_args; put_call_args.reserve(al, 1);
+            put_call_args.push_back(al, seed_elem);
+            auto seed_discard = declare("_seed_val", elem_type, Local);
+            body.push_back(al, b.Assignment(seed_discard,
+                b.Call(fn_symtab->get_symbol(c_func_name_1),
+                    put_call_args, elem_type)));
         } else {
             fill_func_arg_sub("put", real32, In);
         }
