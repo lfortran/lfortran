@@ -1511,6 +1511,7 @@ RUN(NAME intrinsics_424 LABELS llvm) # co_sum
 RUN(NAME intrinsics_425 LABELS llvm) # co_sum with optional args
 
 RUN(NAME intrinsics_426 LABELS gfortran llvm) # count(mask, dim) with variable dim
+RUN(NAME intrinsics_427 LABELS gfortran llvm) # maxval with derived-type component in declaration
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
