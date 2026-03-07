@@ -138,7 +138,7 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing Fiats" '
-  git clone //github.com/BerkeleyLab/fiats
+  git clone https://github.com/BerkeleyLab/fiats
   cd fiats
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
