@@ -3886,10 +3886,32 @@ public:
                 llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, element_type, module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
-                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-                llvm_size = builder->CreateMul(llvm_size,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+
+                bool is_struct_type = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(element_type));
+                if (is_struct_type) {
+                    // Struct types with allocatable components need element-wise
+                    // deep copy; a flat memcpy would share allocatable pointers.
+                    llvm::Value* llvm_total_bytes = llvm::ConstantInt::get(
+                        context, llvm::APInt(32, size * data_size));
+                    builder->CreateMemSet(target_,
+                        llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                        llvm_total_bytes, llvm::MaybeAlign());
+                    for (int64_t i = 0; i < size; i++) {
+                        llvm::Value* src_elem = llvm_utils->create_gep2(
+                            target_type, array, i);
+                        llvm::Value* dest_elem = llvm_utils->create_gep2(
+                            target_type, target, i);
+                        llvm_utils->deepcopy(const_cast<ASR::expr_t*>(x.m_array),
+                            src_elem, dest_elem, element_type, element_type,
+                            module.get());
+                    }
+                } else {
+                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                    llvm_size = builder->CreateMul(llvm_size,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                    builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                }
                 tmp = target;
                 break;
             }
