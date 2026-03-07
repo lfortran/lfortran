@@ -262,6 +262,16 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
                         implied_doloop_size_);
                 }
+            } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+                bool is_alloc_inner = false;
+                ASR::expr_t* ac_size = get_ArrayConstructor_size(
+                    ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]),
+                    is_alloc_inner);
+                if( implied_doloop_size_ == nullptr ) {
+                    implied_doloop_size_ = ac_size;
+                } else {
+                    implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
+                }
             } else {
                 ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(
