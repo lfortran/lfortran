@@ -10359,6 +10359,14 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
 
+        // Save stack pointer to reclaim alloca space at block exit.
+        // Block-scoped variables (descriptors, temporaries, loop vars)
+        // are allocated via alloca each time the block executes; without
+        // stackrestore, a block inside a loop leaks stack every iteration.
+        llvm::Function *stacksave_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stacksave);
+        llvm::Value *saved_stack = builder->CreateCall(stacksave_fn);
+
         // BLOCK arrays always use heap allocation (can be in loops)
         // Track allocations separately for cleanup at BLOCK exit
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
@@ -10380,6 +10388,11 @@ public:
             llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
+
+        // Restore stack pointer to reclaim block-scoped alloca space
+        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stackrestore);
+        builder->CreateCall(stackrestore_fn, {saved_stack});
 
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
