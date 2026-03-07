@@ -2025,7 +2025,7 @@ public:
         // Avoid touching the descriptor if the array is not allocated
         {
             llvm::Type* index_type = arr_descr->get_index_type();
-            llvm::Value* size_var = llvm_utils->CreateAlloca(*builder, index_type, nullptr, "arg_array_size_tmp");
+            llvm::Value* size_var = llvm_utils->CreateAlloca(index_type, nullptr, "arg_array_size_tmp");
             builder->CreateStore(llvm::ConstantInt::get(index_type, 0), size_var);
             llvm_utils->create_if_else(is_allocated, [&]() {
                 visit_ArraySizeUtil(x.m_args[0].m_a,
