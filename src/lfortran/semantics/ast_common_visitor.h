@@ -15905,7 +15905,37 @@ public:
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
     }
 
+    bool is_valid_complex_literal_part(const AST::expr_t &expr) {
+        if (AST::is_a<AST::Num_t>(expr)) return true;
+        if (AST::is_a<AST::Real_t>(expr)) return true;
+        if (AST::is_a<AST::Name_t>(expr)) return true;
+        if (AST::is_a<AST::UnaryOp_t>(expr)) {
+            const AST::UnaryOp_t &u = *AST::down_cast<AST::UnaryOp_t>(&expr);
+            if (u.m_op == AST::unaryopType::USub || u.m_op == AST::unaryopType::UAdd) {
+                return AST::is_a<AST::Num_t>(*u.m_operand) ||
+                       AST::is_a<AST::Real_t>(*u.m_operand);
+            }
+        }
+        return false;
+    }
+
     void visit_Complex(const AST::Complex_t &x) {
+        if (!is_valid_complex_literal_part(*x.m_re)) {
+            diag.add(Diagnostic(
+                "Only a literal constant or a named constant is allowed "
+                "as part of a complex literal constant",
+                Level::Error, Stage::Semantic,
+                {Label("", {x.m_re->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (!is_valid_complex_literal_part(*x.m_im)) {
+            diag.add(Diagnostic(
+                "Only a literal constant or a named constant is allowed "
+                "as part of a complex literal constant",
+                Level::Error, Stage::Semantic,
+                {Label("", {x.m_im->base.loc})}));
+            throw SemanticAbort();
+        }
         this->visit_expr(*x.m_re);
         ASR::expr_t *re = ASRUtils::EXPR(tmp);
         ASR::expr_t *re_value = ASRUtils::expr_value(re);
