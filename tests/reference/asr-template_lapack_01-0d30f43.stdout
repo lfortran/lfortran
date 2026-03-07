@@ -154,8 +154,8 @@
                                                     []
                                                     (Var 6 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -288,8 +288,8 @@
                                                     []
                                                     (Var 9 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             gemm:
@@ -689,8 +689,8 @@
                                                     []
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             nonsimple_external_matmul:
@@ -1088,8 +1088,8 @@
                                                     )]
                                                     (Var 10 c)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             real:
@@ -1555,8 +1555,8 @@
                                                     []
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1698,8 +1698,8 @@
                                     )]
                                     (Var 14 b)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_cast_to_real:
@@ -1776,8 +1776,8 @@
                                     )]
                                     (Var 13 b)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_external_matmul:
@@ -2149,8 +2149,8 @@
                                     )]
                                     (Var 15 c)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_gemm_double:
@@ -2560,8 +2560,8 @@
                                     []
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_gemm_real:
@@ -2941,8 +2941,8 @@
                                     []
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             simple_external_matmul:
@@ -3022,8 +3022,8 @@
                                                     []
                                                     (Var 18 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             gemm:
@@ -3423,8 +3423,8 @@
                                                     []
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             real:
@@ -3843,8 +3843,8 @@
                                                     )]
                                                     (Var 19 c)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

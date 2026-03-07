@@ -1932,6 +1932,8 @@ public:
     std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
+    bool current_function_deterministic = true;
+    bool current_function_side_effect_free = true;
     ASR::ttype_t* current_variable_type_;
     ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
 
@@ -10122,6 +10124,12 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
+        if (!func->m_deterministic) {
+            current_function_deterministic = false;
+        }
+        if (!func->m_side_effect_free) {
+            current_function_side_effect_free = false;
+        }
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr, current_scope, current_function_dependencies,
             compiler_options.implicit_argument_casting);

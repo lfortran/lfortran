@@ -2913,8 +2913,8 @@
                                     )]
                                     (Var 60 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_f32_value:
@@ -3000,8 +3000,8 @@
                                     )]
                                     (Var 61 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_f64:
@@ -3087,8 +3087,8 @@
                                     )]
                                     (Var 62 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_f64_value:
@@ -3174,8 +3174,8 @@
                                     )]
                                     (Var 63 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i32:
@@ -3258,8 +3258,8 @@
                                     )]
                                     (Var 56 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i32_value:
@@ -3342,8 +3342,8 @@
                                     )]
                                     (Var 57 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i64:
@@ -3432,8 +3432,8 @@
                                     )]
                                     (Var 58 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i64_value:
@@ -3522,8 +3522,8 @@
                                     )]
                                     (Var 59 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             sub_int_double:

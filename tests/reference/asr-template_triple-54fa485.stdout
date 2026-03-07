@@ -110,8 +110,8 @@
                                     )]
                                     (Var 3 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             max_integer:
@@ -218,8 +218,8 @@
                                     )]
                                     (Var 5 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             min_integer:
@@ -326,8 +326,8 @@
                                     )]
                                     (Var 6 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             minus_integer:
@@ -433,8 +433,8 @@
                                     )]
                                     (Var 4 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             one_integer:
@@ -490,8 +490,8 @@
                                     )]
                                     (Var 8 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -547,8 +547,8 @@
                                     )]
                                     (Var 7 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -667,8 +667,8 @@
                                     )]
                                     (Var 10 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             max_real:
@@ -775,8 +775,8 @@
                                     )]
                                     (Var 13 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             min_real:
@@ -883,8 +883,8 @@
                                     )]
                                     (Var 14 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             minus_real:
@@ -990,8 +990,8 @@
                                     )]
                                     (Var 11 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             one_real:
@@ -1050,8 +1050,8 @@
                                     )]
                                     (Var 16 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             slash_real:
@@ -1157,8 +1157,8 @@
                                     )]
                                     (Var 12 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             zero_real:
@@ -1217,8 +1217,8 @@
                                     )]
                                     (Var 15 result)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1555,8 +1555,8 @@
                                                     []
                                                     (Var 19 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1696,8 +1696,8 @@
                                                     []
                                                     (Var 21 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1825,8 +1825,8 @@
                                                     )]
                                                     (Var 22 result)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_r:
@@ -1931,8 +1931,8 @@
                                                     )]
                                                     (Var 23 result)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })

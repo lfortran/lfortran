@@ -341,6 +341,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 100 |             array = [ (i,i = 1,this%n) ]
     |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (integer and integer[:])
 
+semantic error: PRINT statement is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_2.f90:117:9
+    |
+117 |         print "(A,I0)", 'b = ', b
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Deferred-length CHARACTER variable must be allocated with a character length `character(..)`
    --> tests/errors/continue_compilation_2.f90:295:14
     |
