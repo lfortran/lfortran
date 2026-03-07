@@ -8213,10 +8213,12 @@ public:
                     type = instantiate_pdt(loc, derived_type_name, sym_type,
                         is_pointer, is_allocatable, dims, type_declaration,
                         abi, is_argument);
-                    // Mark as polymorphic (class) rather than concrete (type)
-                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
-                        ASRUtils::extract_type(type));
-                    stype->m_is_cstruct = false;
+                    // Mark as polymorphic (class) rather than concrete (type).
+                    // Use make_StructType_t_util to get a duplicate with
+                    // is_cstruct=false instead of mutating in-place, which
+                    // would corrupt the struct's m_struct_signature.
+                    type = ASRUtils::make_StructType_t_util(
+                        al, loc, type_declaration, false);
                 } else {
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
