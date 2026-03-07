@@ -10399,7 +10399,9 @@ public:
                 if( par_der_type->m_parent != nullptr ) {
                     ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(par_der_type->m_parent);
                     par_der_type = ASR::down_cast<ASR::Struct_t>(parent_sym);
-                    if (par_der_type->m_name == var_name) {    // if the parent type is the member itself
+                    if (par_der_type->m_name == var_name ||
+                        startswith(std::string(par_der_type->m_name),
+                                   var_name + "_")) {
                         member = parent_sym;
                     }
                 } else {
