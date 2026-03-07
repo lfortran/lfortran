@@ -1692,7 +1692,7 @@ public:
         {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},
         {"dshiftl", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
         {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
-        {"random_init", IntrinsicSignature({"repeatable", "image"}, 2, 2)},
+        {"random_init", IntrinsicSignature({"repeatable", "image_distinct"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
         {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
