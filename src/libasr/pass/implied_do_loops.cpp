@@ -157,6 +157,83 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     realloc_lhs(realloc_lhs_), allocate_target(allocate_target_),
     pass_options(pass_options_) {}
 
+    // Given an array expression (e.g. elemental function call, binop on
+    // arrays), return the size of the array without referencing the
+    // implied-do loop variable.  We first check the expression's type for
+    // explicit dimension lengths; if they are absent (DescriptorArray with
+    // deferred dims) we drill into operands/arguments to find an
+    // ArraySection or Var whose size can be computed from bounds alone.
+    ASR::expr_t* get_array_expr_size(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(expr)));
+
+        // Fixed-size arrays: known at compile time
+        if( ASRUtils::is_fixed_size_array(type) ) {
+            return nullptr; // handled by caller via const_elements
+        }
+
+        // If the type carries explicit dimension lengths, compute the
+        // product directly — these typically reference ArrayBound on the
+        // original arrays and do NOT reference the loop variable.
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+        if( n_dims > 0 && m_dims[0].m_length != nullptr ) {
+            ASR::expr_t* size = m_dims[0].m_length;
+            for( size_t d = 1; d < n_dims; d++ ) {
+                if( m_dims[d].m_length == nullptr ) break;
+                ASRUtils::ASRBuilder b(al, expr->base.loc);
+                size = b.Mul(size, m_dims[d].m_length);
+            }
+            return size;
+        }
+
+        // Otherwise, find the first array operand whose size is
+        // representable without the loop variable.
+        auto first_array_arg = [&](ASR::expr_t** args, size_t n) -> ASR::expr_t* {
+            for( size_t j = 0; j < n; j++ ) {
+                if( args[j] && ASRUtils::is_array(ASRUtils::expr_type(args[j])) )
+                    return args[j];
+            }
+            return nullptr;
+        };
+
+        if( ASR::is_a<ASR::FunctionCall_t>(*expr) ) {
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
+            for( size_t j = 0; j < fc->n_args; j++ ) {
+                if( fc->m_args[j].m_value &&
+                    ASRUtils::is_array(ASRUtils::expr_type(fc->m_args[j].m_value)) ) {
+                    ASR::expr_t* r = get_array_expr_size(fc->m_args[j].m_value);
+                    if( r ) return r;
+                }
+            }
+        } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr) ) {
+            auto* ef = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            ASR::expr_t* a = first_array_arg(ef->m_args, ef->n_args);
+            if( a ) { ASR::expr_t* r = get_array_expr_size(a); if( r ) return r; }
+        } else if( ASR::is_a<ASR::RealBinOp_t>(*expr) ) {
+            auto* bo = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            ASR::expr_t* ops[2] = {bo->m_left, bo->m_right};
+            ASR::expr_t* a = first_array_arg(ops, 2);
+            if( a ) { ASR::expr_t* r = get_array_expr_size(a); if( r ) return r; }
+        } else if( ASR::is_a<ASR::IntegerBinOp_t>(*expr) ) {
+            auto* bo = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            ASR::expr_t* ops[2] = {bo->m_left, bo->m_right};
+            ASR::expr_t* a = first_array_arg(ops, 2);
+            if( a ) { ASR::expr_t* r = get_array_expr_size(a); if( r ) return r; }
+        } else if( ASR::is_a<ASR::RealUnaryMinus_t>(*expr) ) {
+            auto* uo = ASR::down_cast<ASR::RealUnaryMinus_t>(expr);
+            ASR::expr_t* r = get_array_expr_size(uo->m_arg);
+            if( r ) return r;
+        } else if( ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr) ) {
+            auto* uo = ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
+            ASR::expr_t* r = get_array_expr_size(uo->m_arg);
+            if( r ) return r;
+        }
+
+        // Leaf array expressions (ArraySection, Var, etc.)
+        return ASRUtils::get_size(expr, al, false);
+    }
+
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
         const Location& loc = implied_doloop->base.base.loc;
         ASRUtils::ASRBuilder builder(al, loc);
@@ -186,7 +263,25 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         implied_doloop_size_);
                 }
             } else {
-                const_elements += 1;
+                ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(implied_doloop->m_values[i])));
+                if( ASRUtils::is_array(element_type) ) {
+                    if( ASRUtils::is_fixed_size_array(element_type) ) {
+                        const_elements += ASRUtils::get_fixed_size_of_array(element_type);
+                    } else {
+                        ASR::expr_t* element_array_size = get_array_expr_size(
+                            implied_doloop->m_values[i]);
+                        if( implied_doloop_size_ == nullptr ) {
+                            implied_doloop_size_ = element_array_size;
+                        } else {
+                            implied_doloop_size_ = builder.Add(element_array_size,
+                                implied_doloop_size_);
+                        }
+                    }
+                } else {
+                    const_elements += 1;
+                }
             }
         }
 
