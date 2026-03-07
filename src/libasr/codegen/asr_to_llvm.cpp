@@ -11566,14 +11566,17 @@ public:
             end = tmp;
         }
         
-        /* Calculate Resulting Length */
+        /* Calculate Resulting Length (clamped to 0 per F2018 9.4.1) */
         llvm::Value* str_section_len {};
         {
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* end_INT64   = llvm_utils->convert_kind(end, llvm::Type::getInt64Ty(context));
-            str_section_len = builder->CreateAdd(
+            llvm::Value* raw_len = builder->CreateAdd(
                                             builder->CreateSub(end_INT64, start_INT64),
                                             llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+            llvm::Value* is_negative = builder->CreateICmpSLT(raw_len, zero);
+            str_section_len = builder->CreateSelect(is_negative, zero, raw_len);
         }
 
         /* Get Start-String Ptr (GEP) */
