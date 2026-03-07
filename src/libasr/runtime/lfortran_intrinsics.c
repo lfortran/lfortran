@@ -3966,16 +3966,15 @@ LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx) {
 
 // Specific For Fortran Strings
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end){
-    if( (start<=0) || (end <=0) ){
-        char* empty = malloc(1*sizeof(char));
-        empty = "";
+    if( (start<=0) || (end <=0) || (end < start) ){
+        char* empty = (char*)malloc(1*sizeof(char));
+        empty[0] = '\0';
         return empty;
     }
     char* return_str = (char*)malloc(end - start + 1 + 1 /*Null Char*/);
     memcpy(return_str, s + start - 1, end - start + 1);
     return_str[end - start + 1] = '\0';
     return return_str;
-
 }
 
 LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int64_t idx2, int64_t step,

@@ -407,7 +407,8 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             this->visit_expr(*x.m_end);
             end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        std::string result = str.substr(start - 1, end - start + 1);
+        int len = end - start + 1;
+        std::string result = len > 0 ? str.substr(start - 1, len) : "";
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
