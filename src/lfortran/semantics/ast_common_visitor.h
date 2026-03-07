@@ -5021,6 +5021,8 @@ public:
 
                     // --- End helpers ---
 
+                    std::set<ASR::Variable_t*> equiv_sources;
+
                     int eq_n_args = eq->n_args;
                     for (int i = 0; i < eq_n_args; i++) {
                         if (eq->m_args[i].n_set_list >= 2) {
@@ -5710,11 +5712,26 @@ public:
                                                 ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
                                             source_type = arg_type2;
                                         } else {
-                                            source_expr = asr_eq2;
-                                            pointer_expr = asr_eq1;
-                                            pointer_var = ASR::down_cast<ASR::Variable_t>(
-                                                ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
-                                            source_type = arg_type1;
+                                            // Default: source=eq2, pointer=eq1.
+                                            // If eq2 is already a source from a prior
+                                            // equivalence group, swap to preserve the link.
+                                            ASR::Variable_t* candidate_src =
+                                                ASR::down_cast<ASR::Variable_t>(
+                                                    ASR::down_cast<ASR::Var_t>(asr_eq2)->m_v);
+                                            ASR::Variable_t* candidate_ptr =
+                                                ASR::down_cast<ASR::Variable_t>(
+                                                    ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
+                                            if (equiv_sources.count(candidate_ptr)) {
+                                                source_expr = asr_eq1;
+                                                pointer_expr = asr_eq2;
+                                                pointer_var = candidate_src;
+                                                source_type = arg_type1;
+                                            } else {
+                                                source_expr = asr_eq2;
+                                                pointer_expr = asr_eq1;
+                                                pointer_var = candidate_ptr;
+                                                source_type = arg_type2;
+                                            }
                                         }
 
                                         ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
@@ -5755,6 +5772,11 @@ public:
                                                 pointer_expr, nullptr, nullptr);
                                             ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
                                             data_structure[current_scope->counter].push_back(stmt);
+
+                                            if (ASR::is_a<ASR::Var_t>(*source_expr)) {
+                                                equiv_sources.insert(ASR::down_cast<ASR::Variable_t>(
+                                                    ASR::down_cast<ASR::Var_t>(source_expr)->m_v));
+                                            }
                                         }
                                     }
                                 }
