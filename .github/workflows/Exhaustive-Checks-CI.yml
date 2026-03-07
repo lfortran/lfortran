@@ -322,6 +322,8 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.10
+            binutils
+            zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '12')
