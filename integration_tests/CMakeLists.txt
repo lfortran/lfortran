@@ -3740,5 +3740,5 @@ RUN(NAME allocatable_cchar_01 LABELS gfortran llvm)
 RUN(NAME sync_all_01 LABELS llvm)
 
 RUN(NAME random_init_01 LABELS gfortran llvm)
-
 RUN(NAME random_number_01 LABELS gfortran llvm)
+RUN(NAME pure_side_effects_01 LABELS gfortran llvm)
