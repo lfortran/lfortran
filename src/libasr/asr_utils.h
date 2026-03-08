@@ -5055,6 +5055,28 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
         ASR::expr_t* new_value = externalize_struct_refs_in_init(al, sc->m_value, scope);
         return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, init_expr->base.loc,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
+    } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
+        ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
+        if (pnc->m_var_expr != nullptr) {
+            // The var_expr references a symbol in the struct's scope which may
+            // not be accessible from the current scope. Replace it with the
+            // struct type symbol resolved from the current scope.
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(pnc->m_var_expr);
+            if (struct_sym != nullptr) {
+                std::string struct_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                ASR::symbol_t* resolved = scope->resolve_symbol(struct_name);
+                if (resolved != nullptr) {
+                    ASR::expr_t* new_var_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, init_expr->base.loc, resolved));
+                    return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                        al, init_expr->base.loc, pnc->m_type, new_var_expr));
+                }
+            }
+            // If we can't resolve, strip var_expr to avoid scope violations
+            return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, init_expr->base.loc, pnc->m_type, nullptr));
+        }
     }
 
     // For other expression types, return as-is (they don't contain struct references in their construction)
