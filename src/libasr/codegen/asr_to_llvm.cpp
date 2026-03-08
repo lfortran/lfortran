@@ -3954,6 +3954,10 @@ public:
     }
 
     void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value);
+            return;
+        }
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type)), module.get());
@@ -3995,6 +3999,8 @@ public:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
                 break;
             case ASR::array_physical_typeType::PointerArray:
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+                break;
             case ASR::array_physical_typeType::StringArraySinglePointer:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break;
