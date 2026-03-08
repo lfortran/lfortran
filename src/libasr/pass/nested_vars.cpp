@@ -515,20 +515,29 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         ASR::symbol_t* existing_td = current_scope->get_symbol(td_name);
                         if (existing_td == nullptr) {
                             ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
-                            std::string owner_name = std::string(ASRUtils::symbol_name(
-                                ASRUtils::get_asr_owner(original)));
-                            ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
-                                al, type_decl->base.loc,
-                                current_scope,
-                                s2c(al, td_name),
-                                original,
-                                s2c(al, owner_name),
-                                nullptr, 0,
-                                ASRUtils::symbol_name(original),
-                                ASR::accessType::Public
-                            );
-                            existing_td = ASR::down_cast<ASR::symbol_t>(ext);
-                            current_scope->add_symbol(td_name, existing_td);
+                            ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original);
+                            if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
+                                // Cannot create ExternalSymbol pointing into
+                                // a Program; duplicate the abstract interface
+                                // into the module scope instead.
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(original, current_scope);
+                                existing_td = current_scope->get_symbol(td_name);
+                            } else {
+                                std::string owner_name = std::string(ASRUtils::symbol_name(owner_sym));
+                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                                    al, type_decl->base.loc,
+                                    current_scope,
+                                    s2c(al, td_name),
+                                    original,
+                                    s2c(al, owner_name),
+                                    nullptr, 0,
+                                    ASRUtils::symbol_name(original),
+                                    ASR::accessType::Public
+                                );
+                                existing_td = ASR::down_cast<ASR::symbol_t>(ext);
+                                current_scope->add_symbol(td_name, existing_td);
+                            }
                         }
                         dup_var->m_type_declaration = existing_td;
                     }
