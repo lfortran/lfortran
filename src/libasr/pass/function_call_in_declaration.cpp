@@ -242,6 +242,9 @@ public:
             if (!exists_in_arginfo(arg_num, indices)) {
                 indices.push_back(info);
             }
+        } else if (is_a<ASR::StructInstanceMember_t>(*arg)) {
+            ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(arg);
+            helper_get_arg_indices_used(struct_member->m_v, indices);
         } else if (is_a<ASR::LogicalNot_t>(*arg)) {
             ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
             helper_get_arg_indices_used(not_expr->m_arg, indices);

@@ -2025,7 +2025,7 @@ public:
         // Avoid touching the descriptor if the array is not allocated
         {
             llvm::Type* index_type = arr_descr->get_index_type();
-            llvm::Value* size_var = llvm_utils->CreateAlloca(*builder, index_type, nullptr, "arg_array_size_tmp");
+            llvm::Value* size_var = llvm_utils->CreateAlloca(index_type, nullptr, "arg_array_size_tmp");
             builder->CreateStore(llvm::ConstantInt::get(index_type, 0), size_var);
             llvm_utils->create_if_else(is_allocated, [&]() {
                 visit_ArraySizeUtil(x.m_args[0].m_a,
@@ -3868,7 +3868,8 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
                 llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
-                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get());
+                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
+                    const_cast<ASR::expr_t*>(x.m_array), asr_data_type);
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -3885,10 +3886,32 @@ public:
                 llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, element_type, module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
-                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-                llvm_size = builder->CreateMul(llvm_size,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+
+                bool is_struct_type = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(element_type));
+                if (is_struct_type) {
+                    // Struct types with allocatable components need element-wise
+                    // deep copy; a flat memcpy would share allocatable pointers.
+                    llvm::Value* llvm_total_bytes = llvm::ConstantInt::get(
+                        context, llvm::APInt(32, size * data_size));
+                    builder->CreateMemSet(target_,
+                        llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                        llvm_total_bytes, llvm::MaybeAlign());
+                    for (int64_t i = 0; i < size; i++) {
+                        llvm::Value* src_elem = llvm_utils->create_gep2(
+                            target_type, array, i);
+                        llvm::Value* dest_elem = llvm_utils->create_gep2(
+                            target_type, target, i);
+                        llvm_utils->deepcopy(const_cast<ASR::expr_t*>(x.m_array),
+                            src_elem, dest_elem, element_type, element_type,
+                            module.get());
+                    }
+                } else {
+                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                    llvm_size = builder->CreateMul(llvm_size,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                    builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                }
                 tmp = target;
                 break;
             }
@@ -10325,7 +10348,23 @@ public:
         llvm::BasicBlock* start_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_start");
         start_new_block(start_BB);
 
+        // Save stack pointer to reclaim alloca space at block exit.
+        // Associate-block-scoped variables (descriptors, temporaries)
+        // are allocated via alloca each time the block executes; without
+        // stackrestore, an associate block inside a loop leaks stack
+        // every iteration.
+#if LLVM_VERSION_MAJOR >= 18
+        llvm::Value *saved_stack = builder->CreateStackSave();
+#else
+        llvm::Function *stacksave_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stacksave);
+        llvm::Value *saved_stack = builder->CreateCall(stacksave_fn);
+#endif
+
+        size_t heap_arrays_before = heap_fixed_size_arrays.n;
+        in_block_context = true;
         declare_vars(*associate_block);
+        in_block_context = false;
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
@@ -10333,6 +10372,21 @@ public:
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
         llvm_symtab_finalizer.finalize_symtab(associate_block->m_symtab);
+
+        // Free associate-block-local heap arrays
+        for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        heap_fixed_size_arrays.n = heap_arrays_before;
+
+        // Restore stack pointer to reclaim block-scoped alloca space
+#if LLVM_VERSION_MAJOR >= 18
+        builder->CreateStackRestore(saved_stack);
+#else
+        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stackrestore);
+        builder->CreateCall(stackrestore_fn, {saved_stack});
+#endif
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -10359,6 +10413,18 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
 
+        // Save stack pointer to reclaim alloca space at block exit.
+        // Block-scoped variables (descriptors, temporaries, loop vars)
+        // are allocated via alloca each time the block executes; without
+        // stackrestore, a block inside a loop leaks stack every iteration.
+#if LLVM_VERSION_MAJOR >= 18
+        llvm::Value *saved_stack = builder->CreateStackSave();
+#else
+        llvm::Function *stacksave_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stacksave);
+        llvm::Value *saved_stack = builder->CreateCall(stacksave_fn);
+#endif
+
         // BLOCK arrays always use heap allocation (can be in loops)
         // Track allocations separately for cleanup at BLOCK exit
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
@@ -10380,6 +10446,15 @@ public:
             llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
+
+        // Restore stack pointer to reclaim block-scoped alloca space
+#if LLVM_VERSION_MAJOR >= 18
+        builder->CreateStackRestore(saved_stack);
+#else
+        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
+            module.get(), llvm::Intrinsic::stackrestore);
+        builder->CreateCall(stackrestore_fn, {saved_stack});
+#endif
 
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
@@ -11529,14 +11604,17 @@ public:
             end = tmp;
         }
         
-        /* Calculate Resulting Length */
+        /* Calculate Resulting Length (clamped to 0 per F2018 9.4.1) */
         llvm::Value* str_section_len {};
         {
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* end_INT64   = llvm_utils->convert_kind(end, llvm::Type::getInt64Ty(context));
-            str_section_len = builder->CreateAdd(
+            llvm::Value* raw_len = builder->CreateAdd(
                                             builder->CreateSub(end_INT64, start_INT64),
                                             llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+            llvm::Value* is_negative = builder->CreateICmpSLT(raw_len, zero);
+            str_section_len = builder->CreateSelect(is_negative, zero, raw_len);
         }
 
         /* Get Start-String Ptr (GEP) */

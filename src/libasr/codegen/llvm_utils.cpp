@@ -9505,40 +9505,56 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                 builder->CreateCall(fnTy, elem_fn, {src_data_ptr, dest_data_ptr});
             } else {
-                // Get actual struct from class wrapper
-                if (is_src_class) {
-                    llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                        struct_sym->m_struct_signature, &struct_sym->base, module);
-                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                        llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
-                }
-                if (is_dest_class) {
-                    llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                        struct_sym->m_struct_signature, &struct_sym->base, module);
-                    if (ASRUtils::is_allocatable(dest_ty)) {
-                        llvm::DataLayout data_layout(module->getDataLayout());
-                        int64_t type_size = data_layout.getTypeAllocSize(actual_struct_type);
-                        llvm::Value* malloc_size = llvm::ConstantInt::get(
-                            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
-                        llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                            context, *module, *builder, malloc_size);
-                        builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
-                            context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
-                        builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
+                if (!is_src_class && !is_dest_class) {
+                    // Elements are plain structs (declared as type(), not
+                    // class()), so they have no class wrapper.  Copy each
+                    // element directly via deepcopy on the element type.
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(src_ty);
+                    if (is_descriptor_array) {
+                        allocate_struct_array_members(
+                            struct_sym, dest_elem_ptr, elem_type, false);
+                    }
+                    llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
+                        elem_type, ASRUtils::extract_type(dest_ty), module);
+                } else {
+                    // For class arrays, call allocate_struct_array_members
+                    // BEFORE unwrapping the class wrapper, because the function
+                    // expects a class pointer and will unwrap it internally.
+                    if (is_descriptor_array) {
+                        allocate_struct_array_members(
+                            struct_sym, dest_elem_ptr, ASRUtils::extract_type(src_ty), false);
+                    }
+
+                    // Get actual struct from class wrapper
+                    if (is_src_class) {
+                        llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                            struct_sym->m_struct_signature, &struct_sym->base, module);
+                        src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                            llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
+                    }
+                    if (is_dest_class) {
+                        llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                            struct_sym->m_struct_signature, &struct_sym->base, module);
+                        if (ASRUtils::is_allocatable(dest_ty)) {
+                            llvm::DataLayout data_layout(module->getDataLayout());
+                            int64_t type_size = data_layout.getTypeAllocSize(actual_struct_type);
+                            llvm::Value* malloc_size = llvm::ConstantInt::get(
+                                llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                            llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, malloc_size);
+                            builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+                                context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+                            builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
+                                llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
+                        }
+                        dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                             llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                     }
-                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                        llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
-                }
 
-                if (is_descriptor_array) {
-                    allocate_struct_array_members(
-                        struct_sym, dest_elem_ptr, struct_sym->m_struct_signature, false);
+                    src_elem_ptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr);
+                    dest_elem_ptr = builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr);
+                    builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
                 }
-
-                src_elem_ptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr);
-                dest_elem_ptr = builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr);
-                builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
             }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
