@@ -8314,6 +8314,53 @@ public:
         Vec<ASR::call_arg_t> vals;
         visit_expr_list(m_args, n_args, vals);
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
+
+        // For PDTs with kind parameters, resolve to the instantiated type
+        // and re-cast args to concrete member types (not sentinel types).
+        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
+        if (struct_type->n_kind_params > 0) {
+            std::string pdt_name = struct_type->m_name;
+            std::vector<int64_t> kind_vals;
+            for (size_t i = 0; i < struct_type->n_kind_params; i++) {
+                std::string kp_name(struct_type->m_kind_params[i]);
+                ASR::symbol_t* kp_sym = struct_type->m_symtab->get_symbol(kp_name);
+                ASR::Variable_t* kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
+                int64_t kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                    ASRUtils::expr_value(kp_var->m_symbolic_value))->m_n;
+                kind_vals.push_back(kind_val);
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t* type_declaration = nullptr;
+            instantiate_pdt_by_values(loc, pdt_name, kind_vals,
+                false, false, dims, type_declaration,
+                ASR::abiType::Source, false);
+            if (type_declaration) {
+                v = type_declaration;
+            }
+
+            // Re-cast args to the instantiated member types
+            ASR::symbol_t* v_inst = ASRUtils::symbol_get_past_external(v);
+            ASR::Struct_t* inst_struct = ASR::down_cast<ASR::Struct_t>(v_inst);
+            for (size_t i = 0; i < vals.size() && i < inst_struct->n_members; i++) {
+                if (vals[i].m_value == nullptr) continue;
+                std::string member_name(inst_struct->m_members[i]);
+                ASR::symbol_t* inst_member_sym =
+                    inst_struct->m_symtab->get_symbol(member_name);
+                if (inst_member_sym) {
+                    ASR::ttype_t* inst_member_type =
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::symbol_type(inst_member_sym));
+                    ASR::ttype_t* arg_type =
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::expr_type(vals[i].m_value));
+                    ImplicitCastRules::set_converted_value(al, loc,
+                        &vals.p[i].m_value, arg_type, inst_member_type, diag);
+                }
+            }
+        }
+
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
         // Ensure all values are constant before creating StructConstant
