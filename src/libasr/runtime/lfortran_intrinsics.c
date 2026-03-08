@@ -223,6 +223,12 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 
 LFORTRAN_API void _lfortran_init_random_clock()
 {
+    // The old implementation used the clock to initialize the random seed.
+    // Fortran requires random numbers to be deterministic, so we always
+    // initialize with the same seed. The old code should be refactored to
+    // some other function, possibly controllable with a compiler option or
+    // some other mechanism.
+/*
     unsigned int count;
 #if defined(_WIN32)
     count = (unsigned int)clock();
@@ -235,6 +241,8 @@ LFORTRAN_API void _lfortran_init_random_clock()
     }
 #endif
     srand(count);
+*/
+    srand(0);
 }
 
 LFORTRAN_API double _lfortran_random()
