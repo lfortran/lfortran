@@ -1939,6 +1939,7 @@ RUN(NAME pdt_12 LABELS llvm)
 RUN(NAME pdt_13 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME pdt_14 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME pdt_15 LABELS gfortran llvm)
+RUN(NAME pdt_16 LABELS gfortran llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
