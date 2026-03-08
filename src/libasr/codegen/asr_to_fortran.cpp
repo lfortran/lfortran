@@ -258,6 +258,9 @@ public:
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
+                if (!type_decl) {
+                    throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
+                }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
                 r = "type(";
                 r += struct_name;
@@ -272,6 +275,9 @@ public:
                 r = "type(c_ptr)";
                 break;
             } case ASR::ttypeType::FunctionType: {
+                if (!type_decl) {
+                    throw LCompilersException("Missing procedure symbol while generating Fortran type spec");
+                }
                 r = "procedure(";
                 r += ASRUtils::symbol_name(type_decl);
                 r += ")";
@@ -877,8 +883,19 @@ public:
     void visit_Allocate(const ASR::Allocate_t &x) {
         std::string r = indent;
         r += "allocate(";
+        bool prefer_mold_clause = false;
         for (size_t i = 0; i < x.n_args; i ++) {
-            if (x.m_args[i].m_type) {
+            bool emit_type_spec = x.m_args[i].m_type != nullptr;
+            if (emit_type_spec) {
+                ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_args[i].m_type);
+                if ((ASR::is_a<ASR::StructType_t>(*base_type) ||
+                     ASR::is_a<ASR::FunctionType_t>(*base_type)) &&
+                    x.m_args[i].m_sym_subclass == nullptr) {
+                    emit_type_spec = false;
+                    prefer_mold_clause = true;
+                }
+            }
+            if (emit_type_spec) {
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
             }
@@ -904,6 +921,16 @@ public:
         if (x.m_stat) {
             r += ", stat=";
             visit_expr(*x.m_stat);
+            r += src;
+        }
+        if (x.m_errmsg) {
+            r += ", errmsg=";
+            visit_expr(*x.m_errmsg);
+            r += src;
+        }
+        if (x.m_source) {
+            r += prefer_mold_clause ? ", mold=" : ", source=";
+            visit_expr(*x.m_source);
             r += src;
         }
         r += ")";
@@ -1648,7 +1675,82 @@ public:
         src = r;
     }
 
-    // void visit_SelectType(const ASR::SelectType_t &x) {}
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        auto emit_select_type_body = [&](ASR::stmt_t** body, size_t n_body,
+                                         std::string &out) {
+            for (size_t i = 0; i < n_body; i++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(body[i]);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
+                    ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                    for (size_t j = 0; j < block->n_body; j++) {
+                        visit_stmt(*block->m_body[j]);
+                        out += src;
+                    }
+                } else {
+                    visit_stmt(*body[i]);
+                    out += src;
+                }
+            }
+        };
+
+        std::string r = indent;
+        r += "select type (";
+        if (x.m_assoc_name) {
+            r += std::string(x.m_assoc_name);
+            r += " => ";
+        }
+        visit_expr(*x.m_selector);
+        r += src;
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+
+        inc_indent();
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (ASR::is_a<ASR::TypeStmtName_t>(*x.m_body[i])) {
+                ASR::TypeStmtName_t* type_stmt = ASR::down_cast<ASR::TypeStmtName_t>(x.m_body[i]);
+                r += indent;
+                r += "type is (";
+                r += ASRUtils::symbol_name(type_stmt->m_sym);
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(type_stmt->m_body, type_stmt->n_body, r);
+                dec_indent();
+            } else if (ASR::is_a<ASR::ClassStmt_t>(*x.m_body[i])) {
+                ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(x.m_body[i]);
+                r += indent;
+                r += "class is (";
+                r += ASRUtils::symbol_name(class_stmt->m_sym);
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(class_stmt->m_body, class_stmt->n_body, r);
+                dec_indent();
+            } else if (ASR::is_a<ASR::TypeStmtType_t>(*x.m_body[i])) {
+                ASR::TypeStmtType_t* type_stmt = ASR::down_cast<ASR::TypeStmtType_t>(x.m_body[i]);
+                r += indent;
+                r += "type is (";
+                r += get_type(type_stmt->m_type);
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(type_stmt->m_body, type_stmt->n_body, r);
+                dec_indent();
+            }
+        }
+
+        if (x.n_default > 0) {
+            r += indent;
+            r += "class default\n";
+            inc_indent();
+            emit_select_type_body(x.m_default, x.n_default, r);
+            dec_indent();
+        }
+
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        src = r;
+    }
 
     // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
 
@@ -2379,9 +2481,10 @@ public:
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
 
-        // If the cast is from Integer to Logical, do nothing
-        if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
-            // Implicit conversion between integer -> logical
+        if (x.m_kind == ASR::cast_kindType::IntegerToLogical ||
+            x.m_kind == ASR::cast_kindType::ClassToStruct ||
+            x.m_kind == ASR::cast_kindType::ClassToClass ||
+            x.m_kind == ASR::cast_kindType::ClassToIntrinsic) {
             return;
         }
 
