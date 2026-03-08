@@ -2224,12 +2224,29 @@ public:
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        std::string r = "[";
+        bool needs_reshape = false;
+        ASR::Array_t* arr_type = nullptr;
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
+            needs_reshape = (arr_type->n_dims > 1);
+        }
+        std::string r = "";
+        if (needs_reshape) r += "reshape(";
+        r += "[";
         for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
             r += ASRUtils::fetch_ArrayConstant_value(x, i);
             if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
         }
         r += "]";
+        if (needs_reshape) {
+            r += ", [";
+            for (size_t i = 0; i < arr_type->n_dims; i++) {
+                if (i > 0) r += ", ";
+                visit_expr(*arr_type->m_dims[i].m_length);
+                r += src;
+            }
+            r += "])";
+        }
         src = r;
         last_expr_precedence = Precedence::Ext;
     }
