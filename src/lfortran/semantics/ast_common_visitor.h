@@ -11346,6 +11346,41 @@ public:
                 value = ASRUtils::EXPR(
                     ASR::make_ArrayConstant_t(al, array->base.loc, n_data, data,
                         reshape_ttype, ASR::arraystorageType::ColMajor));
+            } else if (source_size < target_size && pad_expr) {
+                ASR::expr_t* pad_for_eval = pad_expr;
+                if (!ASR::is_a<ASR::ArrayConstant_t>(*pad_for_eval)) {
+                    ASR::expr_t* pv = ASRUtils::expr_value(pad_expr);
+                    if (pv && ASR::is_a<ASR::ArrayConstant_t>(*pv)) {
+                        pad_for_eval = pv;
+                    }
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*pad_for_eval)) {
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_for_eval);
+                    ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_for_eval);
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(array_for_eval));
+                    Vec<ASR::expr_t*> elements;
+                    elements.reserve(al, target_size);
+                    for (int64_t i = 0; i < source_size; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                    }
+                    int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_for_eval));
+                    int64_t diff = target_size - source_size;
+                    for (int64_t i = 0; i < diff; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                    }
+                    void *data = ASRUtils::set_ArrayConstant_data(elements.p, target_size, elem_type);
+                    int64_t n_data = target_size * ASRUtils::extract_kind_from_ttype_t(elem_type);
+                    if (ASRUtils::is_character(*elem_type)) {
+                        int64_t len;
+                        if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(elem_type)->m_len, len)) {
+                            LCOMPILERS_ASSERT(false);
+                        }
+                        n_data = target_size * len;
+                    }
+                    value = ASRUtils::EXPR(
+                        ASR::make_ArrayConstant_t(al, array->base.loc, n_data, data,
+                            reshape_ttype, ASR::arraystorageType::ColMajor));
+                }
             } else {
                 ASRUtils::ExprStmtDuplicator dup(al);
                 value = dup.duplicate_expr(array_for_eval);
