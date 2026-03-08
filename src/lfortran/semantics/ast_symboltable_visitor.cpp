@@ -2035,8 +2035,26 @@ public:
 
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*f1) && in_submodule) {
-                parent_scope->erase_symbol(sym_name);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*f1)) {
+                if (in_submodule) {
+                    parent_scope->erase_symbol(sym_name);
+                } else {
+                    ASR::symbol_t *orig = ASRUtils::symbol_get_past_external(f1);
+                    bool is_private_orig = false;
+                    if (ASR::is_a<ASR::Function_t>(*orig)) {
+                        is_private_orig = ASR::down_cast<ASR::Function_t>(
+                            orig)->m_access == ASR::accessType::Private;
+                    }
+                    if (is_private_orig) {
+                        parent_scope->erase_symbol(sym_name);
+                    } else {
+                        diag.add(diag::Diagnostic(
+                            "Function already defined",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {tmp->loc})}));
+                        throw SemanticAbort();
+                    }
+                }
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
