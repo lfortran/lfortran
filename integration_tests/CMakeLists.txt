@@ -3707,3 +3707,5 @@ RUN(NAME assumed_type_01 LABELS gfortran llvm)
 RUN(NAME sync_all_01 LABELS llvm)
 
 RUN(NAME random_init_01 LABELS gfortran llvm)
+
+RUN(NAME random_number_01 LABELS gfortran llvm)

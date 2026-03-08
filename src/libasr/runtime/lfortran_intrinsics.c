@@ -223,6 +223,12 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 
 LFORTRAN_API void _lfortran_init_random_clock()
 {
+    // The old implementation used the clock to initialize the random seed.
+    // Fortran requires random numbers to be deterministic, so we always
+    // initialize with the same seed. The old code should be refactored to
+    // some other function, possibly controllable with a compiler option or
+    // some other mechanism.
+/*
     unsigned int count;
 #if defined(_WIN32)
     count = (unsigned int)clock();
@@ -235,6 +241,8 @@ LFORTRAN_API void _lfortran_init_random_clock()
     }
 #endif
     srand(count);
+*/
+    srand(0);
 }
 
 LFORTRAN_API double _lfortran_random()
@@ -4630,13 +4638,54 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
+// Mersenne Twister (MT19937) for generating unique file IDs.
+// Separate from the C rand()/srand() used by Fortran random_number().
+#define MT_N 624
+#define MT_M 397
+#define MT_MATRIX_A   0x9908b0dfUL
+#define MT_UPPER_MASK 0x80000000UL
+#define MT_LOWER_MASK 0x7fffffffUL
+
+static uint32_t mt_state[MT_N];
+static int mt_index = MT_N + 1;
+
+static void mt_seed(uint32_t seed) {
+    mt_state[0] = seed;
+    for (int i = 1; i < MT_N; i++) {
+        mt_state[i] = 1812433253UL * (mt_state[i-1] ^ (mt_state[i-1] >> 30)) + i;
+    }
+    mt_index = MT_N;
+}
+
+static uint32_t mt_rand(void) {
+    if (mt_index >= MT_N) {
+        if (mt_index > MT_N) {
+            // Seed from clock XORed with a stack address for cross-process uniqueness
+            uintptr_t addr = (uintptr_t)&addr;
+            mt_seed((uint32_t)clock() ^ (uint32_t)(addr >> 4));
+        }
+        for (int i = 0; i < MT_N; i++) {
+            uint32_t y = (mt_state[i] & MT_UPPER_MASK) | (mt_state[(i+1) % MT_N] & MT_LOWER_MASK);
+            mt_state[i] = mt_state[(i + MT_M) % MT_N] ^ (y >> 1);
+            if (y & 1) mt_state[i] ^= MT_MATRIX_A;
+        }
+        mt_index = 0;
+    }
+    uint32_t y = mt_state[mt_index++];
+    y ^= (y >> 11);
+    y ^= (y <<  7) & 0x9d2c5680UL;
+    y ^= (y << 15) & 0xefc60000UL;
+    y ^= (y >> 18);
+    return y;
+}
+
 // Note: The length 25 was chosen to be at least as good as UUID
 //       which has 32 hex digits (36^24 < 16^32 < 36^25).
 #define ID_LEN 25
 void get_unique_ID(char buffer[ID_LEN + 1]) {
     const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     for (int i = 0; i < ID_LEN; i++) {
-        int index = rand() % 36;
+        int index = mt_rand() % 36;
         buffer[i] = v[index];
     }
     buffer[ID_LEN] = '\0';
