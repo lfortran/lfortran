@@ -12822,10 +12822,11 @@ public:
             // ASRUtils::set_ArrayConstant_value(result_array, result, i);
         }
         ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>((*result_array)->m_type);
-        (*result_array)->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
+        ASR::ttype_t* correct_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
                                     array_type, result_arr_type->m_dims,
                                     result_arr_type->n_dims, ASR::abiType::Source, false,
                                     result_arr_type->m_physical_type);
+        (*result_array)->m_type = correct_type;
         ASR::expr_t* new_expr_ = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
                                     new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format));
         if (ASR::is_a<ASR::ArrayConstant_t>(*new_expr_)) {
@@ -12833,6 +12834,9 @@ public:
         } else {
             (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(new_expr_));
         }
+        // Restore the correct multi-dimensional type; make_ArrayConstructor_t_util
+        // flattens it to 1D internally.
+        (*result_array)->m_type = correct_type;
     }
 
     std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
