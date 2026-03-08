@@ -18420,13 +18420,6 @@ public:
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
-            uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1;
-            this->visit_expr(*x.m_dt);
-            ptr_loads = ptr_loads_copy;
-            llvm::Type* func_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_dt, ASRUtils::symbol_type(x.m_name), module.get());
-            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
-
             ASR::Function_t* func = nullptr;
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
@@ -18437,6 +18430,13 @@ public:
                 func = ASR::down_cast<ASR::Function_t>(
                     ASRUtils::symbol_get_past_external(x.m_name));
             }
+
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*x.m_dt);
+            ptr_loads = ptr_loads_copy;
+            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
+            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
             bool will_prepend_self = (func && func->n_args > x.n_args);
             args = convert_call_args(x, will_prepend_self);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
