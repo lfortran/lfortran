@@ -15860,6 +15860,86 @@ public:
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
     }
 
+    void visit_Substring(const AST::Substring_t &x) {
+        int s_len = strlen(x.m_s);
+        Location loc = x.base.base.loc;
+        ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, s_len,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t *str_constant = ASRUtils::EXPR(
+            ASR::make_StringConstant_t(al, loc, x.m_s, str_type));
+
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+
+        bool is_item = true;
+        ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
+
+        if (x.m_args[0].m_start != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_start));
+            l = ASRUtils::EXPR(tmp);
+            l = CastingUtil::perform_casting(l, int_type, al, loc);
+        }
+        if (x.m_args[0].m_end != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_end));
+            r = ASRUtils::EXPR(tmp);
+            r = CastingUtil::perform_casting(r, int_type, al, loc);
+        } else {
+            if (l != nullptr) is_item = false;
+        }
+        if (x.m_args[0].m_step != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_step));
+            step = ASRUtils::EXPR(tmp);
+            step = CastingUtil::perform_casting(step, int_type, al, loc);
+            is_item = false;
+        } else {
+            if (l != nullptr && r != nullptr) is_item = false;
+        }
+
+        if (is_item) {
+            ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
+                al, loc, 1,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            tmp = ASR::make_StringItem_t(al, loc, str_constant, r,
+                char_type, nullptr);
+        } else {
+            if (l == nullptr) {
+                l = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, int_type));
+            }
+            if (r == nullptr) {
+                r = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, s_len, int_type));
+            }
+            ASR::expr_t *a_len_expr = nullptr;
+            if (ASRUtils::is_value_constant(r) &&
+                ASRUtils::is_value_constant(l)) {
+                int64_t r_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                    ASRUtils::expr_value(r))->m_n;
+                int64_t l_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                    ASRUtils::expr_value(l))->m_n;
+                int64_t a_len_value = r_val - l_val + 1;
+                a_len_expr = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
+            } else {
+                ASRUtils::ASRBuilder b(al, loc);
+                a_len_expr = b.Add(b.Sub(r, l),
+                    b.i_t(1, ASRUtils::expr_type(l)));
+            }
+            ASR::ttype_t *char_type = ASRUtils::TYPE(
+                ASR::make_String_t(al, loc, 1, a_len_expr,
+                    ASR::ExpressionLength, ASR::DescriptorString));
+            tmp = ASR::make_StringSection_t(al, loc, str_constant, l,
+                r, step, char_type, nullptr);
+        }
+    }
+
     void visit_BOZ(const AST::BOZ_t& x) {
         std::string s = std::string(x.m_s);
         int base = -1;
