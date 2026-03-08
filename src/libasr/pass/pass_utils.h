@@ -764,6 +764,12 @@ namespace LCompilers {
             replacer->result_var = nullptr;
         }
 
+        void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,
+            ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
+            ASR::expr_t* idx_var, SymbolTable* current_scope,
+            bool perform_cast, ASR::cast_kindType cast_kind,
+            ASR::ttype_t* casted_type);
+
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
         ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
@@ -835,6 +841,10 @@ namespace LCompilers {
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
                                    arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type);
+                } else if( ASR::is_a<ASR::ArrayConstructor_t>(*idoloop->m_values[i]) ) {
+                    ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(idoloop->m_values[i]);
+                    visit_ArrayConstructor(array_constructor, al, arr_var, &doloop_body,
+                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
                     ASRUtils::ExprStmtDuplicator expr_duplicator(al);

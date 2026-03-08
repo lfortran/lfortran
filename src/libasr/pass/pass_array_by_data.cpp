@@ -63,6 +63,17 @@ public:
             }
         }
     }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
+        ASR::AssociateBlockCall_t& xx = const_cast<ASR::AssociateBlockCall_t&>(x);
+        if (ASR::is_a<ASR::AssociateBlock_t>(*xx.m_m)) {
+            std::string block_name = ASR::down_cast<ASR::AssociateBlock_t>(xx.m_m)->m_name;
+            ASR::symbol_t* new_block = new_symtab->get_symbol(block_name);
+            if (new_block) {
+                xx.m_m = new_block;
+            }
+        }
+    }
 };
 
 static void remap_block_calls(Vec<ASR::stmt_t*>& body,

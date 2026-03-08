@@ -1099,7 +1099,8 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                                   llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
-                                                  llvm::Module* module) {
+                                                  llvm::Module* module, ASR::expr_t* array_expr,
+                                                  ASR::ttype_t* asr_data_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Value* reshaped = llvm_utils->CreateAlloca(*builder, arr_type, nullptr, "reshaped");
 
@@ -1111,13 +1112,72 @@ namespace LCompilers {
             builder->CreateStore(arr_first, first_ptr);
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
-            llvm::DataLayout data_layout(module->getDataLayout());
-            uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
-            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-            num_elements = builder->CreateMul(num_elements, llvm_size);
-            builder->CreateMemCpy(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr), llvm::MaybeAlign(),
-                                  llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
-                                  num_elements);
+
+            bool is_struct_type = asr_data_type != nullptr &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
+
+            if (is_struct_type && array_expr != nullptr) {
+                // For derived types with allocatable components, do element-wise
+                // deep copy to avoid sharing allocatable component pointers.
+                // Zero-initialize dest buffer so allocatable members start as null.
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t elem_size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm::Value* total_bytes = builder->CreateMul(num_elements,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, elem_size)));
+                builder->CreateMemSet(arr_first,
+                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                    total_bytes, llvm::MaybeAlign());
+
+                llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                    llvm_data_type->getPointerTo(), first_ptr);
+                llvm::Value* src_data = llvm_utils->CreateLoad2(
+                    llvm_data_type->getPointerTo(), ptr2firstptr);
+
+                llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(
+                    context, "reshape_deepcopy.head");
+                llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(
+                    context, "reshape_deepcopy.body");
+                llvm::BasicBlock *loopEnd = llvm::BasicBlock::Create(
+                    context, "reshape_deepcopy.end");
+
+                llvm::Value* idx = llvm_utils->CreateAlloca(
+                    *builder, index_type);
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context,
+                        llvm::APInt(index_bit_width, 0)), idx);
+
+                llvm_utils->start_new_block(loopHead);
+                llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
+                llvm::Value* cond = builder->CreateICmpSLT(idx_val, num_elements);
+                builder->CreateCondBr(cond, loopBody, loopEnd);
+
+                llvm_utils->start_new_block(loopBody);
+                idx_val = llvm_utils->CreateLoad2(index_type, idx);
+                llvm::Value* src_elem = builder->CreateInBoundsGEP(
+                    llvm_data_type, src_data, idx_val);
+                llvm::Value* dest_elem = builder->CreateInBoundsGEP(
+                    llvm_data_type, dest_data, idx_val);
+
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
+                llvm_utils->deepcopy(array_expr, src_elem, dest_elem,
+                    elem_type, elem_type, module);
+
+                llvm::Value* idx_next = builder->CreateAdd(idx_val,
+                    llvm::ConstantInt::get(context,
+                        llvm::APInt(index_bit_width, 1)));
+                builder->CreateStore(idx_next, idx);
+                builder->CreateBr(loopHead);
+
+                llvm_utils->start_new_block(loopEnd);
+            } else {
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                llvm::Value* total_size = builder->CreateMul(num_elements, llvm_size);
+                builder->CreateMemCpy(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr), llvm::MaybeAlign(),
+                                      llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
+                                      total_size);
+            }
 
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),

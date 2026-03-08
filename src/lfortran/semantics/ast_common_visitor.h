@@ -407,7 +407,8 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             this->visit_expr(*x.m_end);
             end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        std::string result = str.substr(start - 1, end - start + 1);
+        int len = end - start + 1;
+        std::string result = len > 0 ? str.substr(start - 1, len) : "";
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
@@ -1692,7 +1693,7 @@ public:
         {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},
         {"dshiftl", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
         {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
-        {"random_init", IntrinsicSignature({"repeatable", "image"}, 2, 2)},
+        {"random_init", IntrinsicSignature({"repeatable", "image_distinct"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
         {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
@@ -2779,7 +2780,8 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
-            if ( !dim.m_start && !dim.m_length ) {
+            if ( !dim.m_length && (!dim.m_start ||
+                    m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar) ) {
                 is_compile_time = true;
             }
             if (m_dim[i].m_end_star && is_char_type) {
@@ -6541,6 +6543,7 @@ public:
                         throw; // Re-throw to continue error reporting
                     }
                     current_variable_type_ = temp_current_variable_type_;
+                    bool type_inferred_from_initializer = false;
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
@@ -6552,10 +6555,12 @@ public:
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int_type));
                         ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int_type));
-                        temp_dim.m_start = one;
+                        temp_dim.m_start = (dims.size() > 0 && dims[0].m_start != nullptr) ? dims[0].m_start : one;
                         temp_dim.m_length = x_n_args;
                         temp_dims.push_back(al, temp_dim);
-                        type = ASRUtils::duplicate_type(al, type, &temp_dims);
+                        type = ASRUtils::duplicate_type(al, type, &temp_dims,
+                            ASR::array_physical_typeType::FixedSizeArray, true);
+                        type_inferred_from_initializer = (dims.size() > 0 && dims[0].m_start != nullptr);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
@@ -6958,7 +6963,7 @@ public:
                                     // }
                                     body.push_back(al, a_m_args);
                                 }
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
                                     type = a->m_type;
                                 }
                             }
@@ -6978,7 +6983,7 @@ public:
                                 value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                     a->base.base.loc, body.p, body.size(),
                                     a->m_type, a->m_storage_format));
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
                                     type = a->m_type;
                                 }
                             }
@@ -8213,10 +8218,12 @@ public:
                     type = instantiate_pdt(loc, derived_type_name, sym_type,
                         is_pointer, is_allocatable, dims, type_declaration,
                         abi, is_argument);
-                    // Mark as polymorphic (class) rather than concrete (type)
-                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(
-                        ASRUtils::extract_type(type));
-                    stype->m_is_cstruct = false;
+                    // Mark as polymorphic (class) rather than concrete (type).
+                    // Use make_StructType_t_util to get a duplicate with
+                    // is_cstruct=false instead of mutating in-place, which
+                    // would corrupt the struct's m_struct_signature.
+                    type = ASRUtils::make_StructType_t_util(
+                        al, loc, type_declaration, false);
                 } else {
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
