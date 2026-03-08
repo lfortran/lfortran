@@ -1409,8 +1409,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_profile:
@@ -1897,8 +1897,8 @@
                                     []
                                     (Var 5 profile)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             profile_config_t:
