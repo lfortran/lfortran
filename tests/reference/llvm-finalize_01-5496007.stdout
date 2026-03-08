@@ -276,23 +276,24 @@ define void @internal_sub() {
   br label %bl.start
 
 bl.start:                                         ; preds = %.entry
+  %8 = call i8* @llvm.stacksave()
   %arr_in_block = alloca %array*, align 8
   store %array* null, %array** %arr_in_block, align 8
   %arr_desc1 = alloca %array, align 8
-  %8 = getelementptr %array, %array* %arr_desc1, i32 0, i32 2
-  %9 = alloca i32, align 4
-  store i32 1, i32* %9, align 4
-  %10 = load i32, i32* %9, align 4
-  %11 = alloca %dimension_descriptor, i32 %10, align 8
-  %12 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 1
-  store i32 1, i32* %12, align 4
-  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 2
+  %9 = getelementptr %array, %array* %arr_desc1, i32 0, i32 2
+  %10 = alloca i32, align 4
+  store i32 1, i32* %10, align 4
+  %11 = load i32, i32* %10, align 4
+  %12 = alloca %dimension_descriptor, i32 %11, align 8
+  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 1
   store i32 1, i32* %13, align 4
-  store %dimension_descriptor* %11, %dimension_descriptor** %8, align 8
-  %14 = getelementptr %array, %array* %arr_desc1, i32 0, i32 4
+  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 2
   store i32 1, i32* %14, align 4
-  %15 = getelementptr %array, %array* %arr_desc1, i32 0, i32 0
-  store i32* null, i32** %15, align 8
+  store %dimension_descriptor* %12, %dimension_descriptor** %9, align 8
+  %15 = getelementptr %array, %array* %arr_desc1, i32 0, i32 4
+  store i32 1, i32* %15, align 4
+  %16 = getelementptr %array, %array* %arr_desc1, i32 0, i32 0
+  store i32* null, i32** %16, align 8
   store %array* %arr_desc1, %array** %arr_in_block, align 8
   br label %bl.end
 
@@ -309,8 +310,9 @@ FINALIZE_SYMTABLE_bl:                             ; preds = %bl.end
   br label %Finalize_Variable_arr_in_block
 
 Finalize_Variable_arr_in_block:                   ; preds = %FINALIZE_SYMTABLE_bl
-  %16 = load %array*, %array** %arr_in_block, align 8
-  call void @finalize_allocatable__Array_i32(%array* %16, i1 false)
+  %17 = load %array*, %array** %arr_in_block, align 8
+  call void @finalize_allocatable__Array_i32(%array* %17, i1 false)
+  call void @llvm.stackrestore(i8* %8)
   br label %loop.head
 
 loop.head:                                        ; preds = %unreachable_after_return2, %Finalize_Variable_arr_in_block
@@ -332,16 +334,22 @@ FINALIZE_SYMTABLE_internal_sub:                   ; preds = %return
   br label %Finalize_Variable_arr_real
 
 Finalize_Variable_arr_real:                       ; preds = %FINALIZE_SYMTABLE_internal_sub
-  %17 = load %array.0*, %array.0** %arr_real, align 8
-  call void @finalize_allocatable__Array_r32(%array.0* %17, i1 false)
+  %18 = load %array.0*, %array.0** %arr_real, align 8
+  call void @finalize_allocatable__Array_r32(%array.0* %18, i1 false)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr_real
-  %18 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %19 = load i8*, i8** %18, align 8
-  call void @_lfortran_free(i8* %19)
+  %19 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  call void @_lfortran_free(i8* %20)
   ret void
 }
+
+; Function Attrs: nounwind
+declare i8* @llvm.stacksave() #0
+
+; Function Attrs: nounwind
+declare void @llvm.stackrestore(i8*) #0
 
 define internal void @finalize_allocatable__Array_r32(%array.0* %0, i1 %1) {
 entry:
@@ -397,3 +405,5 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lpython_free_argv()
+
+attributes #0 = { nounwind }
