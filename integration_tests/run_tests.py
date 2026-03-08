@@ -42,17 +42,24 @@ def run_test(backend, std, test_pattern=None):
 
     cwd=f"{BASE_DIR}/test-{backend}"
 
+    # Skip CMake's Fortran compiler detection for lfortran, since it tries
+    # `-c` which requires the LLVM backend (not available for all backends).
+    if backend != "gfortran":
+        skip_fc_detection = ("-DCMAKE_Fortran_COMPILER_WORKS=1 "
+                             "-DCMAKE_Fortran_COMPILER_FORCED=1")
+    else:
+        skip_fc_detection = ""
+
     # Conditionally use Ninja or Make (default)
     if use_ninja:
         # Use Ninja generator for faster builds
-        # Add flags to skip Fortran compiler detection issues with CMake 3.29+
         # Set CMAKE_Fortran_PREPROCESS_SOURCE which is required by Ninja but missing for lfortran
-        generator_flags = ("-G Ninja -DCMAKE_Fortran_COMPILER_WORKS=1 -DCMAKE_Fortran_COMPILER_FORCED=1 "
+        generator_flags = (f"-G Ninja {skip_fc_detection} "
                           "-DCMAKE_Fortran_PREPROCESS_SOURCE=\"<CMAKE_Fortran_COMPILER> <DEFINES> <INCLUDES> <FLAGS> "
                           "-E <SOURCE> -o <PREPROCESSED_SOURCE>\"")
     else:
         # Use default Make generator
-        generator_flags = ""
+        generator_flags = skip_fc_detection
 
     common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
     if backend == "gfortran":
