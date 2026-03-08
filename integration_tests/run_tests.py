@@ -14,7 +14,7 @@ SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'target_offload', 'llvm_single_invocation']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
+LFORTRAN_PATH = f"{BASE_DIR}/../src/bin"
 
 fast_tests = "no"
 nofast_llvm16 = "no"
@@ -187,7 +187,10 @@ def main():
 
     # Setup
     global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads
-    os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
+    local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
+    if os.path.isfile(local_lfortran):
+        os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
+
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     # delete previously created directories (if any)
