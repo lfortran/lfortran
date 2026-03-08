@@ -2941,6 +2941,7 @@ RUN(NAME write_18 LABELS gfortran llvm)
 RUN(NAME write_19 LABELS gfortran llvm EXTRAFILES write_19_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME write_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME write_22 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
