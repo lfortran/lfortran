@@ -7,18 +7,18 @@ module interface_31_mod
         integer :: status = 0
     end type
 
+    abstract interface
+        subroutine callback_iface(x)
+            integer, intent(in) :: x
+        end subroutine
+    end interface
+
     interface run
         module function run_impl(cmd, callback) result(res)
             character(*), intent(in) :: cmd
             procedure(callback_iface), optional :: callback
             type(result_t) :: res
         end function
-    end interface
-
-    abstract interface
-        subroutine callback_iface(x)
-            integer, intent(in) :: x
-        end subroutine
     end interface
 end module
 
