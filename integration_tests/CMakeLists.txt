@@ -2639,6 +2639,7 @@ RUN(NAME class_124 LABELS gfortran llvm)
 RUN(NAME class_125 LABELS gfortran llvm)
 RUN(NAME class_126 LABELS gfortran llvm)
 RUN(NAME class_127 LABELS gfortran llvm)
+RUN(NAME class_128 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
