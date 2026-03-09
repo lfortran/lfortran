@@ -14163,6 +14163,16 @@ public:
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
+            // For list-directed string reads, track the current position
+            // across multiple read calls so each value reads the next token
+            llvm::Value* str_read_pos = nullptr;
+            if (is_string) {
+                str_read_pos = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt64Ty(context));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                    str_read_pos);
+            }
             for (size_t i=0; i<x.n_values; i++) {
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
@@ -14329,7 +14339,8 @@ public:
                                     character_type /*src_data*/,
                                     llvm::Type::getInt64Ty(context) /*src_length*/,
                                     character_type /*dest_data*/,
-                                    llvm::Type::getInt64Ty(context) /*dest_length*/
+                                    llvm::Type::getInt64Ty(context) /*dest_length*/,
+                                    llvm::Type::getInt64Ty(context)->getPointerTo() /*src_pos*/
                                 },
                                 false);
                         } else if (ASRUtils::is_array(type)) {
@@ -14397,7 +14408,7 @@ public:
                         llvm::Value* dest_data, *dest_len;
                         std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
                             ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
-                        builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
+                        builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len, str_read_pos });
                     } else if (ASRUtils::is_array(type)) {
                         llvm::Value* arr_data = var_to_read_into;
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
@@ -14452,7 +14463,7 @@ public:
                             builder->CreateStore(changed_size_var, iostat);
                         }
                     }
-                    return;
+                    continue;
                 } else {
                     fn = get_read_function(type);
                 }
@@ -14523,6 +14534,8 @@ public:
             // read, and anything after that will be skipped.
             // Here, we can use `_lfortran_empty_read` function to move to the
             // pointer to the next line.
+            // Skip empty_read for internal (string) units - not applicable
+            if (!is_string) {
             std::string runtime_func_name = "_lfortran_empty_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
@@ -14549,6 +14562,7 @@ public:
             } else {
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
             }
+            } // !is_string
         }
     }
 

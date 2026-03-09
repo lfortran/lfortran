@@ -8066,9 +8066,10 @@ char* remove_whitespace(char* str, int64_t* len) {
     return str;
 }
 
-LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len) {
-    int64_t pos = 0;
-    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
+LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *src_pos) {
+    int64_t pos = src_pos ? *src_pos : 0;
+    // Skip leading whitespace and commas
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t' || src_data[pos] == ',')) {
         pos++;
     }
 
@@ -8096,11 +8097,17 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
         }
         pad_with_spaces(dest_data, dest_pos, dest_len);
     } else {
-        int64_t remaining = src_len - pos;
+        //read one token until next whitespace, comma, or end of string
+        int64_t token_start = pos;
+        while (pos < src_len && src_data[pos] != ' ' && src_data[pos] != '\t' && src_data[pos] != ',') {
+            pos++;
+        }
+        int64_t token_len = pos - token_start;
         _lfortran_copy_str_and_pad(
             dest_data, dest_len,
-            src_data + pos, remaining);
+            src_data + token_start, token_len);
     }
+    if (src_pos) *src_pos = pos;
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
