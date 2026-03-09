@@ -419,7 +419,9 @@ public:
 
     void visit_Module(const ASR::Module_t &x) {
         std::string r;
-        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0 && x.m_intrinsic) {
+        if (x.m_intrinsic && (
+            strcmp(x.m_name, "lfortran_intrinsic_iso_c_binding") == 0 ||
+            strcmp(x.m_name, "lfortran_intrinsic_iso_fortran_env") == 0)) {
             return;
         }
         r = "module";
@@ -696,11 +698,23 @@ public:
         src.clear();
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
-        if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0 &&
-            sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+        if (strcmp(x.m_module_name, "lfortran_intrinsic_iso_c_binding") == 0 &&
+            sym && ASR::is_a<ASR::Module_t>(*sym) &&
+            ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
             src = indent;
             src += "use ";
             src += "iso_c_binding";
+            src += ", only: ";
+            src.append(x.m_original_name);
+            src += "\n";
+            return;
+        }
+        if (strcmp(x.m_module_name, "lfortran_intrinsic_iso_fortran_env") == 0 &&
+            sym && ASR::is_a<ASR::Module_t>(*sym) &&
+            ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+            src = indent;
+            src += "use ";
+            src += "iso_fortran_env";
             src += ", only: ";
             src.append(x.m_original_name);
             src += "\n";
@@ -936,7 +950,9 @@ public:
     void visit_Allocate(const ASR::Allocate_t &x) {
         std::string r = indent;
         r += "allocate(";
+        bool has_source_expr = x.m_source != nullptr;
         bool prefer_mold_clause = false;
+        bool has_object_type_spec = false;
         for (size_t i = 0; i < x.n_args; i ++) {
             bool emit_type_spec = x.m_args[i].m_type != nullptr;
             if (emit_type_spec) {
@@ -948,15 +964,23 @@ public:
                     prefer_mold_clause = true;
                 }
             }
+            if (emit_type_spec && has_source_expr) {
+                has_object_type_spec = true;
+                emit_type_spec = false;
+            }
             if (emit_type_spec) {
+                has_object_type_spec = true;
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
             }
             if (x.m_args[i].m_len_expr) {
-                r += "character(len=";
-                visit_expr(*x.m_args[i].m_len_expr);
-                r += src;
-                r += ") :: ";
+                has_object_type_spec = true;
+                if (!has_source_expr) {
+                    r += "character(len=";
+                    visit_expr(*x.m_args[i].m_len_expr);
+                    r += src;
+                    r += ") :: ";
+                }
             }
             visit_expr(*x.m_args[i].m_a);
             r += src;
@@ -982,7 +1006,8 @@ public:
             r += src;
         }
         if (x.m_source) {
-            r += prefer_mold_clause ? ", mold=" : ", source=";
+            bool emit_mold_clause = prefer_mold_clause || has_object_type_spec;
+            r += emit_mold_clause ? ", mold=" : ", source=";
             visit_expr(*x.m_source);
             r += src;
         }
