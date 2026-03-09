@@ -614,7 +614,7 @@ RUN(NAME functions_52 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_53 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME functions_55 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
-
+RUN(NAME functions_56 LABELS gfortran llvm EXTRAFILES functions_56_mod.f90 EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME common_01 LABELS gfortran)
 
