@@ -3919,16 +3919,30 @@ public:
                 llvm::Type* type_of_array = llvm_utils->get_type_from_ttype_t_util(
                                             x.m_array,
                                             ASRUtils::extract_type(x_m_array_type), module.get());
-                int64_t arr_size;
+                llvm::Value* llvm_arr_size = nullptr;
                 if(ASRUtils::is_fixed_size_array(x_m_array_type)){
-                    arr_size = ASRUtils::get_fixed_size_of_array(x_m_array_type);
+                    int64_t arr_size = ASRUtils::get_fixed_size_of_array(x_m_array_type);
+                    llvm_arr_size = llvm::ConstantInt::get(context, llvm::APInt(32, arr_size));
                 } else {
-                    throw LCompilersException("Not Implemented (PointerArray + Not-compile-time size)");
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, m_dims);
+                    llvm_arr_size = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    int ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    for( int i = 0; i < n_dims; i++ ) {
+                        load_array_size_deep_copy(m_dims[i].m_length);
+                        llvm::Value* dim_len = tmp;
+                        if(dim_len->getType() != llvm::Type::getInt32Ty(context)){
+                            dim_len = builder->CreateSExtOrTrunc(dim_len, llvm::Type::getInt32Ty(context));
+                        }
+                        llvm_arr_size = builder->CreateMul(llvm_arr_size, dim_len);
+                    }
+                    ptr_loads = ptr_loads_copy;
                 }
 
                 if(ASRUtils::is_character(*x_m_array_type)){
                     tmp = create_and_setup_string_for_array(x_m_array_type,
-                        llvm::ConstantInt::get(context, llvm::APInt(64, arr_size)),
+                        builder->CreateSExtOrTrunc(llvm_arr_size, llvm::Type::getInt64Ty(context)),
                         false, "StringArrayReshape");
                     builder->CreateMemCpy(
                         llvm_utils->get_stringArray_data(x_m_array_type, tmp), llvm::MaybeAlign(),
@@ -3936,14 +3950,16 @@ public:
                         llvm_utils->get_stringArray_whole_size(ASRUtils::expr_type(x.m_array))
                     );
                 } else {
-                    llvm::Value* type_alloca = builder->CreateAlloca(type_of_array,
-                                                llvm::ConstantInt::get(context, llvm::APInt(32, arr_size)));
+                    llvm::Value* type_alloca = builder->CreateAlloca(type_of_array, llvm_arr_size);
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t data_size = data_layout.getTypeAllocSize(type_of_array);
+                    llvm::Value* total_bytes = builder->CreateMul(llvm_arr_size,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                     builder->CreateMemCpy(
                         type_alloca, llvm::MaybeAlign(),
                         array, llvm::MaybeAlign(),
-                        llvm::ConstantInt::get(context, llvm::APInt(32, arr_size*data_size)));
+                        total_bytes);
+                    tmp = type_alloca;
                 }
                 break;
             }
@@ -9567,6 +9583,25 @@ public:
             } else if( is_target_descriptor_based_array && is_value_fixed_sized_array ) {
                 if( ASRUtils::is_allocatable(target_type) ) {
                     llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                    target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
+                }
+                llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
+                target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                    ASRUtils::type_get_past_allocatable_pointer(target_type),
+                    module.get()), target));
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
+                llvm_size = builder->CreateMul(llvm_size,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+            } else if( is_target_descriptor_based_array && is_value_data_only_array ) {
+                // DescriptorArray target with PointerArray value (e.g. ArrayReshape result)
+                // Get size from the target descriptor which was already allocated with the correct shape.
+                if( ASRUtils::is_allocatable(target_type) ) {
+                    llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
                 }
                 llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
