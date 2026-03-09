@@ -590,6 +590,11 @@ public:
     void fill_array_details(llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type,
                             ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
                             bool reserve_data_memory=true) {
+        // Avoid empty demnsions
+        if (ASRUtils::is_dimension_empty(m_dims, n_dims)) {
+            return;
+        }
+
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2;
@@ -3688,7 +3693,8 @@ public:
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
-            bool check_for_bounds = compiler_options.po.bounds_checking;
+            // Check for bounds only if bounds_checking is enabled, and dimensions are not empty (as descriptor array might have it's bounds empty)
+            bool check_for_bounds = compiler_options.po.bounds_checking && !ASRUtils::is_dimension_empty(m_dims, n_dims);
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
