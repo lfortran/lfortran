@@ -26,6 +26,15 @@ namespace LCompilers {
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
+        /*
+        Allocates dimension descriptor temporaries (llvm_ndims, dim_des_first)
+        in the function entry block instead of body.
+        This helps to not allocate each descriptor repeatedly for inner-loop bodies
+        in-case of nested do-loops, which helps to save stack memory. 
+        Rather, these temporaries are allocated only once at entry block.
+        */
+        llvm::Value* alloc_dim_des_at_entry(llvm::IRBuilder<>* builder,
+                llvm::LLVMContext& context, llvm::StructType* dim_des, int n_dims);
 
         /*
         * This function checks whether the

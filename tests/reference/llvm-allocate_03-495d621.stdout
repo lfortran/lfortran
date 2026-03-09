@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
-%array = type { i32*, i32, %dimension_descriptor*, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32 }
+%array = type { i32*, i32, %dimension_descriptor*, i1, i32 }
 
 @0 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @1 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/allocate_03.f90\00", align 1
@@ -235,20 +235,20 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = alloca i64, align 8
+  %3 = alloca i32, align 4
+  store i32 3, i32* %3, align 4
+  %4 = load i32, i32* %3, align 4
+  %5 = alloca %dimension_descriptor, i32 %4, align 8
+  %arr_desc = alloca %array, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %c = alloca %array*, align 8
   store %array* null, %array** %c, align 8
-  %arr_desc = alloca %array, align 8
-  %3 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
-  %4 = alloca i32, align 4
-  store i32 3, i32* %4, align 4
-  %5 = load i32, i32* %4, align 4
-  %6 = alloca %dimension_descriptor, i32 %5, align 8
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 1
+  %6 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
   store i32 1, i32* %7, align 4
-  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 2
+  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
   store i32 1, i32* %8, align 4
-  store %dimension_descriptor* %6, %dimension_descriptor** %3, align 8
+  store %dimension_descriptor* %5, %dimension_descriptor** %6, align 8
   %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
   store i32 3, i32* %9, align 4
   %10 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
