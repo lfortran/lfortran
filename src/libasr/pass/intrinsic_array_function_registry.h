@@ -5871,10 +5871,42 @@ namespace Transpose {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_Transpose(Allocator &/*al*/,
-        const Location &/*loc*/, ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
-        // TODO
-        return nullptr;
+    static inline ASR::expr_t *eval_Transpose(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *matrix = args[0];
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*matrix)) {
+            matrix = ASR::down_cast<ASR::ArrayPhysicalCast_t>(matrix)->m_arg;
+        }
+        matrix = ASRUtils::expr_value(matrix);
+        if (!matrix || !ASR::is_a<ASR::ArrayConstant_t>(*matrix)) {
+            return nullptr;
+        }
+        ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(matrix);
+        ASR::ttype_t *type_a = a->m_type;
+        ASR::dimension_t *dims = nullptr;
+        int rank = extract_dimensions_from_ttype(type_a, dims);
+        if (rank != 2) return nullptr;
+        int64_t nrows = -1, ncols = -1;
+        if (!dims[0].m_length || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[0].m_length), nrows)) return nullptr;
+        if (!dims[1].m_length || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[1].m_length), ncols)) return nullptr;
+        int64_t total = nrows * ncols;
+
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(type_a);
+        ASRBuilder builder(al, loc);
+
+        std::vector<ASR::expr_t*> values(total);
+        for (int64_t i = 0; i < nrows; i++) {
+            for (int64_t j = 0; j < ncols; j++) {
+                // Column-major: a(i,j) is at index i + j*nrows
+                // Transposed: result(j,i) is at index j + i*ncols
+                ASR::expr_t *elem = ASRUtils::fetch_ArrayConstant_value(
+                    al, a, i + j * nrows);
+                values[j + i * ncols] = elem;
+            }
+        }
+        return builder.ArrayConstant(values, elem_type, false, return_type);
     }
 
     static inline ASR::asr_t* create_Transpose(Allocator& al, const Location& loc,
@@ -5911,6 +5943,23 @@ namespace Transpose {
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(args)) {
             value = eval_Transpose(al, loc, ret_type, args, diag);
+        } else {
+            // Check if args can be evaluated after looking through casts
+            bool can_eval = true;
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::expr_t* arg = args[i];
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                    arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                }
+                ASR::expr_t* a_value = ASRUtils::expr_value(arg);
+                if (!ASRUtils::is_value_constant(a_value)) {
+                    can_eval = false;
+                    break;
+                }
+            }
+            if (can_eval) {
+                value = eval_Transpose(al, loc, ret_type, args, diag);
+            }
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::Transpose),

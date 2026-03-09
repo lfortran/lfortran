@@ -291,6 +291,12 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             return;
         }
 
+        if( !this->result_var_ ) {
+            // No result variable (e.g., parameter initialization);
+            // the value is compile-time constant, skip replacement.
+            return;
+        }
+
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x->n_args + 1);
         for( size_t i = 0; i < x->n_args; i++ ) {
@@ -366,6 +372,13 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
             m_body = body.p;
             n_body = body.size();
             pass_result.n = 0;
+        }
+
+        void visit_Variable(const ASR::Variable_t& x) {
+            if (x.m_storage == ASR::storage_typeType::Parameter) {
+                return;
+            }
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallReturningArrayVisitor>::visit_Variable(x);
         }
 
         void visit_Assignment(const ASR::Assignment_t& x) {

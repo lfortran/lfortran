@@ -151,10 +151,21 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_ArrayOp(const T& x) {
         T& xx = const_cast<T&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_left)) &&
-            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) ) {
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) &&
+            ASRUtils::is_array(xx.m_type) ) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
+    }
+
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntegerBinOp(x);
+        visit_ArrayOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_UnsignedIntegerBinOp(x);
+        visit_ArrayOp(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
@@ -1402,6 +1413,23 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             var_collector_value.call_replacer();
         } else {
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
+        }
+
+        // Collect array variables from overloaded SubroutineCall arguments
+        // so they are replaced with indexed ArrayItem nodes in generate_loop
+        if (xx.m_overloaded != nullptr &&
+                ASR::is_a<ASR::SubroutineCall_t>(*xx.m_overloaded)) {
+            ASR::SubroutineCall_t* sc = ASR::down_cast<ASR::SubroutineCall_t>(
+                xx.m_overloaded);
+            if (ASRUtils::is_elemental(sc->m_name)) {
+                for (size_t i = 0; i < sc->n_args; i++) {
+                    if (sc->m_args[i].m_value != nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(
+                                sc->m_args[i].m_value))) {
+                        vars.push_back(al, &(sc->m_args[i].m_value));
+                    }
+                }
+            }
         }
 
         if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 

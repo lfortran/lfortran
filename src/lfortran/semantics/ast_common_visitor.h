@@ -10453,10 +10453,18 @@ public:
                 if( par_der_type->m_parent != nullptr ) {
                     ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(par_der_type->m_parent);
                     par_der_type = ASR::down_cast<ASR::Struct_t>(parent_sym);
-                    if (par_der_type->m_name == var_name ||
-                        startswith(std::string(par_der_type->m_name),
-                                   var_name + "_")) {
+                    if (par_der_type->m_name == var_name) {
                         member = parent_sym;
+                    } else {
+                        // PDT monomorphized names like "parent_t_4" should
+                        // match "parent_t"; the suffix must be numeric.
+                        std::string pname = par_der_type->m_name;
+                        std::string prefix = var_name + "_";
+                        if (startswith(pname, prefix) &&
+                                pname.size() > prefix.size() &&
+                                std::isdigit(pname[prefix.size()])) {
+                            member = parent_sym;
+                        }
                     }
                 } else {
                     par_der_type = nullptr;
@@ -11363,12 +11371,19 @@ public:
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
         // Compile time value is same as the "source" ArrayConstant with multi-dimensional type instead of 1-D
         ASR::expr_t* value = nullptr;
-        if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::get_past_array_physical_cast(newshape))) {
-            int64_t source_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+        ASR::expr_t* array_for_eval = array;
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*array_for_eval)) {
+            ASR::expr_t* av = ASRUtils::expr_value(array);
+            if (av && ASR::is_a<ASR::ArrayConstant_t>(*av)) {
+                array_for_eval = av;
+            }
+        }
+        if (ASR::is_a<ASR::ArrayConstant_t>(*array_for_eval) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::get_past_array_physical_cast(newshape))) {
+            int64_t source_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array_for_eval));
             int64_t target_size = ASRUtils::get_fixed_size_of_array(reshape_ttype);
             if (target_size != -1 && source_size > target_size) {
-                ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
-                ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
+                ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_for_eval);
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(array_for_eval));
                 Vec<ASR::expr_t*> truncated;
                 truncated.reserve(al, target_size);
                 for (int64_t i = 0; i < target_size; i++) {
@@ -11386,9 +11401,44 @@ public:
                 value = ASRUtils::EXPR(
                     ASR::make_ArrayConstant_t(al, array->base.loc, n_data, data,
                         reshape_ttype, ASR::arraystorageType::ColMajor));
+            } else if (source_size < target_size && pad_expr) {
+                ASR::expr_t* pad_for_eval = pad_expr;
+                if (!ASR::is_a<ASR::ArrayConstant_t>(*pad_for_eval)) {
+                    ASR::expr_t* pv = ASRUtils::expr_value(pad_expr);
+                    if (pv && ASR::is_a<ASR::ArrayConstant_t>(*pv)) {
+                        pad_for_eval = pv;
+                    }
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*pad_for_eval)) {
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_for_eval);
+                    ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_for_eval);
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(array_for_eval));
+                    Vec<ASR::expr_t*> elements;
+                    elements.reserve(al, target_size);
+                    for (int64_t i = 0; i < source_size; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                    }
+                    int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_for_eval));
+                    int64_t diff = target_size - source_size;
+                    for (int64_t i = 0; i < diff; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                    }
+                    void *data = ASRUtils::set_ArrayConstant_data(elements.p, target_size, elem_type);
+                    int64_t n_data = target_size * ASRUtils::extract_kind_from_ttype_t(elem_type);
+                    if (ASRUtils::is_character(*elem_type)) {
+                        int64_t len;
+                        if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(elem_type)->m_len, len)) {
+                            LCOMPILERS_ASSERT(false);
+                        }
+                        n_data = target_size * len;
+                    }
+                    value = ASRUtils::EXPR(
+                        ASR::make_ArrayConstant_t(al, array->base.loc, n_data, data,
+                            reshape_ttype, ASR::arraystorageType::ColMajor));
+                }
             } else {
                 ASRUtils::ExprStmtDuplicator dup(al);
-                value = dup.duplicate_expr(array);
+                value = dup.duplicate_expr(array_for_eval);
                 ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
             }
         }
@@ -12862,10 +12912,11 @@ public:
             // ASRUtils::set_ArrayConstant_value(result_array, result, i);
         }
         ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>((*result_array)->m_type);
-        (*result_array)->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
+        ASR::ttype_t* correct_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
                                     array_type, result_arr_type->m_dims,
                                     result_arr_type->n_dims, ASR::abiType::Source, false,
                                     result_arr_type->m_physical_type);
+        (*result_array)->m_type = correct_type;
         ASR::expr_t* new_expr_ = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
                                     new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format));
         if (ASR::is_a<ASR::ArrayConstant_t>(*new_expr_)) {
@@ -12873,6 +12924,9 @@ public:
         } else {
             (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(new_expr_));
         }
+        // Restore the correct multi-dimensional type; make_ArrayConstructor_t_util
+        // flattens it to 1D internally.
+        (*result_array)->m_type = correct_type;
     }
 
     std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
