@@ -19910,7 +19910,7 @@ public:
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
