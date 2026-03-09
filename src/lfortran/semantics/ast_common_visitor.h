@@ -3919,15 +3919,10 @@ public:
 		    size_t byte_offset = 0;
 		    for (auto const &s : blk.second) {
 			AST::expr_t* expr_ = s.m_initializer;
-			this->visit_expr(*expr_);
-			ASR::Variable_t* var__ = nullptr;
-			if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
-			    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
-			    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
-			    var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-			} else {
-			    var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+			if (expr_) {
+			    this->visit_expr(*expr_);
 			}
+			ASR::Variable_t* var__ = get_symtab_var_for_common(s);
 
 			uint64_t hash = get_hash((ASR::asr_t*) var__);
 			common_variables_hash[hash] = common_block_struct_sym;
