@@ -1386,6 +1386,12 @@ public:
                     "Dimensions in ArrayPhysicalCast must be present if not inside a call",
                     x.loc);
         }
+        // Reset the flag before visiting dimension expressions so that
+        // nested types (e.g. the selector's allocatable array type
+        // referenced by ArrayBound/ArraySize nodes) are not subject
+        // to the ArrayPhysicalCast dimension check.
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
@@ -1403,6 +1409,7 @@ public:
             }
             visit_expr(*x.m_length);
         }
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
     void visit_Array(const Array_t& x) {

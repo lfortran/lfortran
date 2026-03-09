@@ -1715,6 +1715,7 @@ RUN(NAME select_type_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_type_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1797,6 +1798,7 @@ RUN(NAME implicit_interface_29 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_30 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_interface_31 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_interface_32 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_33 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -2076,6 +2078,7 @@ RUN(NAME derived_types_119 LABELS gfortran llvm)
 RUN(NAME derived_types_120 LABELS gfortran llvm)
 RUN(NAME derived_types_121 LABELS gfortran llvm
         EXTRAFILES derived_types_121_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME derived_types_122 LABELS gfortran llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2357,6 +2360,7 @@ RUN(NAME string_104 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_107 LABELS gfortran llvm)
+RUN(NAME string_108 LABELS gfortran llvm)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
@@ -3040,6 +3044,7 @@ RUN(NAME procedure_41 LABELS gfortran llvm)
 RUN(NAME procedure_42 LABELS gfortran llvm)
 
 RUN(NAME procedure_43 LABELS gfortran llvm EXTRAFILES procedure_43_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME procedure_44 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3542,6 +3547,7 @@ RUN(NAME struct_type_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_09 LABELS gfortran llvm)
 RUN(NAME struct_type_10 LABELS gfortran llvm)
+RUN(NAME struct_type_11 LABELS gfortran llvm)
 
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

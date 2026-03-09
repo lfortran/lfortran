@@ -6307,17 +6307,17 @@ public:
                     } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
                         std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
                         sym_name = to_lower(sym_name);
-                        if (sym_name == "c_null_ptr") {
+                        if (sym_name == "c_null_ptr" || sym_name == "c_null_funptr") {
                             ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                             if (sym_found == nullptr) {
                                 diag.add(Diagnostic(
-                                    "Symbol not found: `c_null_ptr`",
+                                    "Symbol not found: `" + sym_name + "`",
                                     Level::Error, Stage::Semantic, {
                                         Label("",{x.base.base.loc})
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
+                            // Check if c_null_ptr/c_null_funptr is imported from iso_c_binding (intrinsic module)
                             if (ASR::is_a<ASR::ExternalSymbol_t>(*sym_found)) {
                                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(sym_found)->m_module_name;
                                 if (startswith(m_name, "lfortran_intrinsic")) {
@@ -13320,7 +13320,18 @@ public:
         is_implicit_interface = true;
         implicit_interface_parent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        // Walk up past Block/AssociateBlock scopes so the implicit interface
+        // symbol is placed in the enclosing function scope, not inside a
+        // select type/rank block scope.
+        SymbolTable *sym_scope = current_scope;
+        while (sym_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*sym_scope->asr_owner)) {
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(sym_scope->asr_owner);
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) {
+                break;
+            }
+            sym_scope = sym_scope->parent;
+        }
+        current_scope = al.make_new<SymbolTable>(sym_scope);
 
         Vec<ASR::call_arg_t> c_args;
         visit_expr_list(x.m_args, x.n_args, c_args);
@@ -13493,7 +13504,7 @@ public:
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
-        parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        sym_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
         is_implicit_interface = false;
@@ -15847,6 +15858,86 @@ public:
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
+    }
+
+    void visit_Substring(const AST::Substring_t &x) {
+        int s_len = strlen(x.m_s);
+        Location loc = x.base.base.loc;
+        ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, s_len,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t *str_constant = ASRUtils::EXPR(
+            ASR::make_StringConstant_t(al, loc, x.m_s, str_type));
+
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+
+        bool is_item = true;
+        ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
+
+        if (x.m_args[0].m_start != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_start));
+            l = ASRUtils::EXPR(tmp);
+            l = CastingUtil::perform_casting(l, int_type, al, loc);
+        }
+        if (x.m_args[0].m_end != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_end));
+            r = ASRUtils::EXPR(tmp);
+            r = CastingUtil::perform_casting(r, int_type, al, loc);
+        } else {
+            if (l != nullptr) is_item = false;
+        }
+        if (x.m_args[0].m_step != nullptr) {
+            this->visit_expr(*(x.m_args[0].m_step));
+            step = ASRUtils::EXPR(tmp);
+            step = CastingUtil::perform_casting(step, int_type, al, loc);
+            is_item = false;
+        } else {
+            if (l != nullptr && r != nullptr) is_item = false;
+        }
+
+        if (is_item) {
+            ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
+                al, loc, 1,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            tmp = ASR::make_StringItem_t(al, loc, str_constant, r,
+                char_type, nullptr);
+        } else {
+            if (l == nullptr) {
+                l = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, int_type));
+            }
+            if (r == nullptr) {
+                r = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, s_len, int_type));
+            }
+            ASR::expr_t *a_len_expr = nullptr;
+            if (ASRUtils::is_value_constant(r) &&
+                ASRUtils::is_value_constant(l)) {
+                int64_t r_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                    ASRUtils::expr_value(r))->m_n;
+                int64_t l_val = ASR::down_cast<ASR::IntegerConstant_t>(
+                    ASRUtils::expr_value(l))->m_n;
+                int64_t a_len_value = r_val - l_val + 1;
+                a_len_expr = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
+            } else {
+                ASRUtils::ASRBuilder b(al, loc);
+                a_len_expr = b.Add(b.Sub(r, l),
+                    b.i_t(1, ASRUtils::expr_type(l)));
+            }
+            ASR::ttype_t *char_type = ASRUtils::TYPE(
+                ASR::make_String_t(al, loc, 1, a_len_expr,
+                    ASR::ExpressionLength, ASR::DescriptorString));
+            tmp = ASR::make_StringSection_t(al, loc, str_constant, l,
+                r, step, char_type, nullptr);
+        }
     }
 
     void visit_BOZ(const AST::BOZ_t& x) {
