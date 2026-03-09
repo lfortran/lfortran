@@ -423,7 +423,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
                                 array_t->m_type, dims.p, dims.size(),
-                                ASRUtils::is_character(*array_t->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
+                                (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
+                                    ? ASR::PointerArray : ASR::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
@@ -571,7 +572,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dims.push_back(al, dim);
                     }
                     ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
+                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type)) ||
+                            ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
                         phy_type = ASR::array_physical_typeType::PointerArray;
                     }
                     dummy_variable_type = ASRUtils::TYPE(
