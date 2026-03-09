@@ -5249,6 +5249,19 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         }
     }
 
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_StructInstanceMember(x);
+
+        ASR::symbol_t* m_m = x->m_m;
+        SymbolTable* m_m_scope = ASRUtils::symbol_parent_symtab(m_m);
+        if (m_m_scope->get_counter() != current_scope->get_counter()) {
+            ASR::symbol_t* imported = import_struct_instance_member(al, m_m, current_scope);
+            if (imported) {
+                x->m_m = imported;
+            }
+        }
+    }
+
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_ArraySize(x);
         if( ASR::is_a<ASR::ArraySection_t>(*x->m_v) ) {
