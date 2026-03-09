@@ -17375,6 +17375,16 @@ public:
             for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
                 ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                     ASRUtils::symbol_name(gp_ext->m_procs[i]));
+                if (m_proc != nullptr) {
+                    // Verify the resolved symbol refers to the same function
+                    // as the one in the source generic procedure, not a
+                    // different function with the same name from another module
+                    ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(m_proc);
+                    ASR::symbol_t* expected = ASRUtils::symbol_get_past_external(gp_ext->m_procs[i]);
+                    if (resolved != expected) {
+                        m_proc = nullptr;
+                    }
+                }
                 if( m_proc == nullptr ) {
                     are_all_present = false;
                     std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
