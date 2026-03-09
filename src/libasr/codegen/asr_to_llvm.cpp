@@ -16325,11 +16325,11 @@ public:
                 ptr_loads = ptr_copy;
                 llvm::Value* arr_val = tmp;
 
-                ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(val_type_fw);
+                ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable_pointer(val_type_fw);
                 llvm::Type* arr_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     m_values[i], type_past_alloc, module.get());
 
-                if (ASRUtils::is_allocatable(val_type_fw)) {
+                if (LLVM::is_llvm_pointer(*val_type_fw)) {
                     arr_val = llvm_utils->CreateLoad2(
                         arr_llvm_type->getPointerTo(), arr_val);
                 }
