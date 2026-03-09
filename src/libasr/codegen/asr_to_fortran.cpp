@@ -4,6 +4,8 @@
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
+#include <set>
+
 using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
 
@@ -49,6 +51,9 @@ public:
     // Used for importing struct type inside interface
     bool is_interface = false;
     std::vector<std::string> import_struct_type;
+
+    // Names of pass-object dummy arguments for the function currently being emitted.
+    std::set<std::string> current_pass_self_args;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -513,6 +518,36 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        current_pass_self_args.clear();
+        SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
+            (ASR::symbol_t*) &x);
+        if (parent_symtab) {
+            for (auto &item : parent_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Struct_t>(*item.second)) {
+                    continue;
+                }
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
+                for (auto &st_item : st->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*st_item.second)) {
+                        continue;
+                    }
+                    ASR::StructMethodDeclaration_t *decl =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(st_item.second);
+                    if (decl->m_is_nopass) {
+                        continue;
+                    }
+                    if (std::string(decl->m_proc_name) == std::string(x.m_name)) {
+                        if (decl->m_self_argument) {
+                            current_pass_self_args.insert(std::string(decl->m_self_argument));
+                        } else if (x.n_args > 0 && ASR::is_a<ASR::Var_t>(*x.m_args[0])) {
+                            ASR::Variable_t *self_var =
+                                ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(x.m_args[0])->m_v);
+                            current_pass_self_args.insert(std::string(self_var->m_name));
+                        }
+                    }
+                }
+            }
+        }
         if (type->m_pure) {
             r += "pure ";
         }
@@ -628,6 +663,7 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        current_pass_self_args.clear();
         src = r;
     }
 
@@ -656,6 +692,8 @@ public:
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        // Ensure no stale output leaks when this symbol does not emit a use line.
+        src.clear();
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
         if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0 &&
@@ -745,7 +783,22 @@ public:
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
-        r += get_type(x.m_type, x.m_type_declaration);
+        std::string var_type = get_type(x.m_type, x.m_type_declaration);
+        ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+        if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+            bool emit_class = current_pass_self_args.find(std::string(x.m_name))
+                != current_pass_self_args.end();
+            if (!emit_class && x.m_type_declaration) {
+                ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*decl)) {
+                    emit_class = ASR::down_cast<ASR::Struct_t>(decl)->m_is_abstract;
+                }
+            }
+            if (emit_class && var_type.rfind("type(", 0) == 0) {
+                var_type.replace(0, 5, "class(");
+            }
+        }
+        r += var_type;
         switch (x.m_intent) {
             case ASR::intentType::In : {
                 r += ", intent(in)";
