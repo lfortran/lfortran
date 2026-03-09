@@ -898,7 +898,6 @@ bool set_allocation_size(
         }
         case ASR::exprType::BitCast: {
             ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(value);
-            ASRUtils::ASRBuilder b(al, loc);
             allocate_dims.reserve(al, 1);
             ASR::dimension_t allocate_dim;
             allocate_dim.loc = loc;
@@ -907,16 +906,11 @@ bool set_allocation_size(
                 allocate_dim.m_length = bit_cast->m_size;
                 allocate_dims.push_back(al, allocate_dim);
             } else {
-                size_t mold_dims = ASRUtils::extract_n_dims_from_ttype(bit_cast->m_type);
-                if (mold_dims != 0) {
-                    ASR::ttype_t* source_type = ASRUtils::expr_type(bit_cast->m_source);
-                    ASR::ttype_t* mold_type = ASRUtils::expr_type(bit_cast->m_mold);
-                    int source_kind = ASRUtils::extract_kind_from_ttype_t(source_type);
-                    int mold_kind = ASRUtils::extract_kind_from_ttype_t(mold_type);
-                    int source_bits = source_kind * 8;
-                    int mold_elem_bits = mold_kind * 8;
-                    int n_elems = (source_bits + mold_elem_bits - 1) / mold_elem_bits;
-                    allocate_dim.m_length = b.i32(n_elems);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    bit_cast->m_type, m_dims);
+                if (n_dims > 0 && m_dims[0].m_length) {
+                    allocate_dim.m_length = m_dims[0].m_length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
             }

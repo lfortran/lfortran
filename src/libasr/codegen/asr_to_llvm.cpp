@@ -8835,6 +8835,70 @@ public:
                     return;
                 }
             }
+
+            // transfer(array_source, array_mold): memcpy source bytes into target
+            if (ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
+                ASRUtils::is_array(bc->m_type)) {
+                ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+                ASR::ttype_t* target_type_past =
+                    ASRUtils::type_get_past_allocatable_pointer(target_type);
+                ASR::array_physical_typeType target_ptype =
+                    ASRUtils::extract_physical_type(target_type_past);
+
+                // Get target pointer
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                visit_expr(*x.m_target);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* dest = tmp;
+
+                // Get source pointer
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                visit_expr_wrapper(bc->m_source, true);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* src = tmp;
+
+                llvm::Value* dest_ptr;
+                if (target_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                    visit_ArrayPhysicalCastUtil(
+                        dest, x.m_target, target_type_past, target_type_past,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASR::array_physical_typeType::PointerArray);
+                    dest_ptr = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+                } else {
+                    dest_ptr = builder->CreateBitCast(dest, llvm_utils->i8_ptr);
+                }
+
+                llvm::Value* src_ptr;
+                ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+                ASR::ttype_t* src_type_past =
+                    ASRUtils::type_get_past_allocatable_pointer(src_type);
+                ASR::array_physical_typeType src_ptype =
+                    ASRUtils::extract_physical_type(src_type_past);
+                if (src_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                    visit_ArrayPhysicalCastUtil(
+                        src, bc->m_source, src_type_past, src_type_past,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASR::array_physical_typeType::PointerArray);
+                    src_ptr = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+                } else {
+                    src_ptr = builder->CreateBitCast(src, llvm_utils->i8_ptr);
+                }
+
+                // Compute source byte count
+                int64_t src_size = ASRUtils::get_fixed_size_of_array(src_type_past);
+                int src_kind = ASRUtils::extract_kind_from_ttype_t(src_type_past);
+                int64_t nbytes = src_size * src_kind;
+                llvm::Value* nbytes_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), nbytes);
+
+                builder->CreateMemCpy(
+                    dest_ptr, llvm::MaybeAlign(1),
+                    src_ptr, llvm::MaybeAlign(1),
+                    nbytes_val);
+                return;
+            }
         }
 
         if( x.m_overloaded ) {

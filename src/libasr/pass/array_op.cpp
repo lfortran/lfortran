@@ -1366,6 +1366,22 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
 
+        // transfer(array_source, mold) with different element sizes cannot be
+        // scalarized element-by-element; the backend handles it as a memcpy.
+        // When m_size is provided, the existing scalarization path handles it.
+        if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
+            if (!bc->m_size &&
+                ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
+                !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
+                ASRUtils::is_array(bc->m_type) &&
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(bc->m_source)) !=
+                    ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::type_get_past_array(bc->m_type))) {
+                return;
+            }
+        }
+
         #define is_array_indexed_with_array_indices_check(expr) \
             ASR::is_a<ASR::ArraySection_t>(*expr) || ( \
             ASR::is_a<ASR::ArrayItem_t>(*expr) && \
