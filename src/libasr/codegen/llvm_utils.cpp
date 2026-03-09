@@ -1543,6 +1543,18 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
+#if LLVM_VERSION_MAJOR < 15
+        // Auto-fix extra pointer indirection for allocatable class(*)
+        // array members in structs with vtable bindings. When the struct
+        // stores %array* (pointer to descriptor) and we GEP to that member,
+        // ds ends up as %array** instead of %array*. Load the extra level.
+        if (ds->getType()->isPointerTy() &&
+            ds->getType()->getPointerElementType() != t &&
+            ds->getType()->getPointerElementType()->isPointerTy() &&
+            ds->getType()->getPointerElementType()->getPointerElementType() == t) {
+            ds = CreateLoad2(t->getPointerTo(), ds);
+        }
+#endif
 #if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
         // Assertion: Verify type consistency to catch bugs early
         // The GEP target type 't' should match the pointee type of 'ds'
