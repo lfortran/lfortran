@@ -17294,6 +17294,16 @@ public:
                     std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_proc_name);
+                    // If the resolved symbol is actually a GenericProcedure
+                    // (or ExternalSymbol pointing to one), it means the
+                    // local rename collided with a specific procedure name.
+                    // Treat it as not found and import the actual Function.
+                    if( m_proc != nullptr ) {
+                        ASR::symbol_t* m_proc_underlying = ASRUtils::symbol_get_past_external(m_proc);
+                        if( ASR::is_a<T>(*m_proc_underlying) ) {
+                            m_proc = nullptr;
+                        }
+                    }
                     if( m_proc == nullptr ) {
                         std::string local_sym_ = gp_proc_name + "@" + local_sym;
                         m_proc = current_scope->resolve_symbol(local_sym_);
