@@ -661,6 +661,7 @@ RUN(NAME array_08_transfer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
 RUN(NAME array_04_all LABELS gfortran fortran)
 RUN(NAME arrays_01_real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_01_complex LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
+RUN(NAME block_data_01 LABELS llvm gfortran)
 RUN(NAME block_data_complex LABELS llvm gfortran)
 RUN(NAME block_data_string_01 LABELS llvm gfortran)
 RUN(NAME arrays_01_logical LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
