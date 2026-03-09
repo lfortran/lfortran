@@ -2159,6 +2159,7 @@ public:
 
     template <typename T>
     void visit_Deallocate(const T& x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Function* free_fn = llvm_utils->_Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
@@ -5312,6 +5313,7 @@ public:
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         {
             llvm::Function *fn = module->getFunction("_lpython_free_argv");
             if(!fn) {
@@ -6928,6 +6930,7 @@ public:
     }
 
     inline void define_function_exit(const ASR::Function_t& x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if (x.m_return_var) {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
