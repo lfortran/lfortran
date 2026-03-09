@@ -3019,6 +3019,7 @@ static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
 }
 
 inline bool is_assumed_rank_array(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
     if (!ASR::is_a<ASR::Array_t>(*x)) {
         return false;
     }
@@ -3677,7 +3678,8 @@ static inline bool is_array_of_strings(ASR::ttype_t* type){
  * If the string is already of the required physical type, it returns the same string
  * PointerString -> Needs to have information about the length of the string
 */
-static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
+static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string,
+        ASR::string_physical_typeType to, bool make_allocatable = false){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(string)));
     LCOMPILERS_ASSERT(to != str_type->m_physical_type)
@@ -3685,7 +3687,10 @@ static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_
         ASR::make_String_t(al, string->base.loc,
             1, nullptr,
             ASR::ImplicitLength, to));
-            
+    if (make_allocatable) {
+        cast_expr_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, string->base.loc, cast_expr_type));
+    }
     return ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         str_type->m_physical_type, to, cast_expr_type, nullptr));
@@ -3780,6 +3785,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
 }
 
 static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
+    if (is_assumed_rank_array(type)) {
+        return ASR::make_Allocatable_t(al, loc, type);
+    }
     return ASR::make_Allocatable_t(
         al, loc, duplicate_type_with_empty_dims(al, type));
 }
@@ -5047,6 +5055,28 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
         ASR::expr_t* new_value = externalize_struct_refs_in_init(al, sc->m_value, scope);
         return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, init_expr->base.loc,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
+    } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
+        ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
+        if (pnc->m_var_expr != nullptr) {
+            // The var_expr references a symbol in the struct's scope which may
+            // not be accessible from the current scope. Replace it with the
+            // struct type symbol resolved from the current scope.
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(pnc->m_var_expr);
+            if (struct_sym != nullptr) {
+                std::string struct_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                ASR::symbol_t* resolved = scope->resolve_symbol(struct_name);
+                if (resolved != nullptr) {
+                    ASR::expr_t* new_var_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, init_expr->base.loc, resolved));
+                    return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                        al, init_expr->base.loc, pnc->m_type, new_var_expr));
+                }
+            }
+            // If we can't resolve, strip var_expr to avoid scope violations
+            return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, init_expr->base.loc, pnc->m_type, nullptr));
+        }
     }
 
     // For other expression types, return as-is (they don't contain struct references in their construction)
@@ -5450,6 +5480,18 @@ class SymbolDuplicator {
                 new_symbol_name = generic_procedure->m_name;
                 break;
             }
+            case ASR::symbolType::CustomOperator: {
+                ASR::CustomOperator_t* custom_operator = ASR::down_cast<ASR::CustomOperator_t>(symbol);
+                new_symbol = duplicate_CustomOperator(custom_operator, destination_symtab);
+                new_symbol_name = custom_operator->m_name;
+                break;
+            }
+            case ASR::symbolType::StructMethodDeclaration: {
+                ASR::StructMethodDeclaration_t* struct_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(symbol);
+                new_symbol = duplicate_StructMethodDeclaration(struct_method, destination_symtab);
+                new_symbol_name = struct_method->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -5507,7 +5549,7 @@ class SymbolDuplicator {
         new_body.reserve(al, associate_block->n_body);
         ASRUtils::ExprStmtDuplicator node_duplicator(al);
         node_duplicator.allow_procedure_calls = true;
-        node_duplicator.allow_reshape = false;
+        node_duplicator.allow_reshape = true;
         for( size_t i = 0; i < associate_block->n_body; i++ ) {
             node_duplicator.success = true;
             ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(associate_block->m_body[i]);
@@ -5634,6 +5676,25 @@ class SymbolDuplicator {
             al, genericProcedure->base.base.loc, destination_symtab,
             genericProcedure->m_name, genericProcedure->m_procs,
             genericProcedure->n_procs, genericProcedure->m_access));
+    }
+
+    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t* customOperator,
+        SymbolTable* destination_symtab) {
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
+            al, customOperator->base.base.loc, destination_symtab,
+            customOperator->m_name, customOperator->m_procs,
+            customOperator->n_procs, customOperator->m_access));
+    }
+
+    ASR::symbol_t* duplicate_StructMethodDeclaration(
+        ASR::StructMethodDeclaration_t* structMethod,
+        SymbolTable* destination_symtab) {
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
+            al, structMethod->base.base.loc, destination_symtab,
+            structMethod->m_name, structMethod->m_self_argument,
+            structMethod->m_proc_name, structMethod->m_proc,
+            structMethod->m_abi, structMethod->m_is_deferred,
+            structMethod->m_is_nopass));
     }
 
 };
@@ -7037,6 +7098,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
+        if( i + is_method >= func_type->n_arg_types ) {
+            break;
+        }
         if( a_args[i].m_value == nullptr ) {
             continue;
         }
@@ -7052,7 +7116,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !is_character_phsyical_types_matched(orig_arg_type, arg_type)){
             arg = a_args[i].m_value = 
                 create_string_physical_cast(al, arg, 
-                    get_string_type(orig_arg_type)->m_physical_type);
+                    get_string_type(orig_arg_type)->m_physical_type,
+                    is_allocatable(func_type->m_arg_types[i + is_method]));
         }
 
         if( func_type->m_abi != ASR::abiType::BindC &&

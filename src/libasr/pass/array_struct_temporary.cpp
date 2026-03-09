@@ -976,6 +976,20 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::ImpliedDoLoop: {
+            ASR::ImpliedDoLoop_t* implied_do_loop =
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+            allocate_dims.reserve(al, 1);
+            ASR::dimension_t allocate_dim;
+            allocate_dim.loc = loc;
+            allocate_dim.m_start = int32_one;
+            allocate_dim.m_length = ASRUtils::get_ImpliedDoLoop_size(al, implied_do_loop);
+            allocate_dims.push_back(al, allocate_dim);
+            break;
+        }
+        case ASR::exprType::FunctionParam: {
+            return false;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -1418,6 +1432,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       !ASR::is_a<ASR::PointerNullConstant_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
@@ -1920,6 +1936,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t& x) {
         ASR::ArrayIsContiguous_t& xx = const_cast<ASR::ArrayIsContiguous_t&>(x);
+        ASR::expr_t* m_array = x.m_array;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*m_array)) {
+            ASR::StructInstanceMember_t* sim =
+                ASR::down_cast<ASR::StructInstanceMember_t>(m_array);
+            if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v)) &&
+                    !ASRUtils::is_array(ASRUtils::symbol_type(
+                        ASRUtils::symbol_get_past_external(sim->m_m)))) {
+                xx.m_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                    al, x.base.base.loc, false, x.m_type));
+                return;
+            }
+        }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_is_contiguous_array");
     }
 

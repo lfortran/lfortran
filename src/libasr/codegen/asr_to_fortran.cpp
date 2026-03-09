@@ -1482,6 +1482,12 @@ public:
         src += "\n";
     }
 
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        src = indent;
+        src += "sync all";
+        src += "\n";
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -1838,6 +1844,8 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
+        else if(intrinsic_func_name == "ThisImage") intrinsic_func_name = "this_image";
+        else if(intrinsic_func_name == "NumImages") intrinsic_func_name = "num_images";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
         else if(intrinsic_func_name == "StringConcat") {{visit_expr(*x.m_args[0]);out+=src;} out+="//"; {visit_expr(*x.m_args[1]);out+=src;} src=std::move(out);return;}
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
@@ -2216,12 +2224,29 @@ public:
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        std::string r = "[";
+        bool needs_reshape = false;
+        ASR::Array_t* arr_type = nullptr;
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
+            needs_reshape = (arr_type->n_dims > 1);
+        }
+        std::string r = "";
+        if (needs_reshape) r += "reshape(";
+        r += "[";
         for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
             r += ASRUtils::fetch_ArrayConstant_value(x, i);
             if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
         }
         r += "]";
+        if (needs_reshape) {
+            r += ", [";
+            for (size_t i = 0; i < arr_type->n_dims; i++) {
+                if (i > 0) r += ", ";
+                visit_expr(*arr_type->m_dims[i].m_length);
+                r += src;
+            }
+            r += "])";
+        }
         src = r;
         last_expr_precedence = Precedence::Ext;
     }

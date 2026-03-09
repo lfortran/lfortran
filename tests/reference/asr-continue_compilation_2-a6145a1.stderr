@@ -404,23 +404,17 @@ semantic error: Missing actual argument 'x' in call to 'cmplx'
 312 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
     |              ^^^^^^^^^^^^ 
 
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:318:11
+semantic error: Only a literal constant or a named constant is allowed as part of a complex literal constant
+   --> tests/errors/continue_compilation_2.f90:314:20
     |
-318 |     val = this_image ()
-    |           ^^^^^^^^^^^^^ 
+314 |     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
+    |                    ^^^^^^^^^^^^^^^ 
 
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:319:5
+semantic error: Only a literal constant or a named constant is allowed as part of a complex literal constant
+   --> tests/errors/continue_compilation_2.f90:316:32
     |
-319 |     call co_sum (val, result_image=1)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:320:9
-    |
-320 |     if (this_image() == 1) then
-    |         ^^^^^^^^^^^^ 
+316 |     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
+    |                                ^^^^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
    --> tests/errors/continue_compilation_2.f90:324:5

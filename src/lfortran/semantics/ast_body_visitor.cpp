@@ -2802,6 +2802,18 @@ public:
             } else if( source_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 source = ASRUtils::EXPR(tmp);
+                if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(source)) &&
+                        ASR::is_a<ASR::Var_t>(*source)) {
+                    std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(source)->m_v);
+                    if (assumed_rank_arrays.find(var_name) != assumed_rank_arrays.end()) {
+                        size_t rank = assumed_rank_arrays[var_name];
+                        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(source));
+                        ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, rank, elem_type);
+                        source = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, source->base.loc,
+                            source, ASR::array_physical_typeType::AssumedRankArray,
+                            ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                    }
+                }
                 set_string_len_if_needed(x, alloc_args_vec, source_cond, source);
             } else if ( mold_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
@@ -2831,7 +2843,7 @@ public:
                                         )
                                     );
                                 }
-                                if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
+                                if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->n_dims > 0 && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                     ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
@@ -2844,18 +2856,35 @@ public:
                                     new_alloc_args_vec.push_back(al, new_arg);
                                 } else {
                                     int n_dims = ASRUtils::extract_n_dims_from_ttype(mold_type);
+                                    ASR::expr_t* mold_for_bounds = mold;
+                                    if (n_dims == 0 && ASRUtils::is_assumed_rank_array(mold_type) &&
+                                            ASR::is_a<ASR::Var_t>(*mold)) {
+                                        std::string var_name = ASRUtils::symbol_name(
+                                            ASR::down_cast<ASR::Var_t>(mold)->m_v);
+                                        auto it = assumed_rank_arrays.find(var_name);
+                                        if (it != assumed_rank_arrays.end()) {
+                                            n_dims = it->second;
+                                            ASR::ttype_t* elem_type = ASRUtils::extract_type(mold_type);
+                                            ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(
+                                                al, n_dims, elem_type);
+                                            mold_for_bounds = ASRUtils::EXPR(
+                                                ASRUtils::make_ArrayPhysicalCast_t_util(al, mold->base.loc,
+                                                    mold, ASR::array_physical_typeType::AssumedRankArray,
+                                                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                                        }
+                                    }
                                     Vec<ASR::dimension_t> mold_dims_vec; mold_dims_vec.reserve(al, n_dims);
                                     ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                                     for(int i=0; i<n_dims; i++) {
                                         ASR::dimension_t dim;
                                         dim.loc = x.base.base.loc;
                                         dim.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(
-                                            al, x.base.base.loc, mold,
+                                            al, x.base.base.loc, mold_for_bounds,
                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                                 al, x.base.base.loc, i+1, integer_type)),
                                             integer_type, ASR::arrayboundType::LBound, nullptr));
                                         dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                                al, x.base.base.loc, mold, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
+                                al, x.base.base.loc, mold_for_bounds, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
                                         mold_dims_vec.push_back(al, dim);
                                     }
                                     ASR::alloc_arg_t new_arg;
@@ -2912,7 +2941,7 @@ public:
                                 )
                             );
                         }
-                        if (ASR::down_cast<ASR::Array_t>(source_type)->m_dims[0].m_length != nullptr) {
+                        if (ASR::down_cast<ASR::Array_t>(source_type)->n_dims > 0 && ASR::down_cast<ASR::Array_t>(source_type)->m_dims[0].m_length != nullptr) {
                             ASR::Array_t* source_array_type = ASR::down_cast<ASR::Array_t>(source_type);
                             new_arg.loc = alloc_args_vec[i].loc;
                             new_arg.m_a = alloc_args_vec[i].m_a;
@@ -2955,7 +2984,18 @@ public:
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
-            if (!source_cond) source = mold;
+            if (!source_cond && mold_cond) {
+                // mold= only specifies shape/type, no data copy needed.
+                // For assumed-rank mold, avoid setting source since the
+                // array_op pass cannot handle assumed-rank expressions.
+                ASR::ttype_t* mold_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(mold));
+                if (!ASRUtils::is_assumed_rank_array(mold_type_)) {
+                    source = mold;
+                }
+            } else if (!source_cond) {
+                source = mold;
+            }
         }
 
         if( !cond ) {
@@ -3419,11 +3459,41 @@ public:
                 } else {
                     // Symbol not found in current scope; add an ExternalSymbol
                     // referencing the original struct from its owner scope.
+                    // Find the containing Module and build scope_names so that
+                    // deserialization can resolve this via find_scoped_symbol.
+                    ASR::Module_t* mod = ASRUtils::get_sym_module(type_decl);
+                    char* ext_module_name;
+                    char** scope_names_p = nullptr;
+                    size_t scope_names_n = 0;
+                    if (mod != nullptr) {
+                        ext_module_name = mod->m_name;
+                        // Build scope_names: path from module to type_decl's
+                        // parent scope (collected bottom-up, then reversed).
+                        Vec<char*> scope_names_vec;
+                        scope_names_vec.reserve(al, 4);
+                        const SymbolTable *s = ASRUtils::symbol_parent_symtab(type_decl);
+                        while (s != mod->m_symtab) {
+                            scope_names_vec.push_back(al,
+                                ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::symbol_t>(s->asr_owner)));
+                            s = s->parent;
+                        }
+                        // Reverse to get outermost-first order
+                        for (size_t i = 0; i < scope_names_vec.size() / 2; i++) {
+                            std::swap(scope_names_vec.p[i],
+                                scope_names_vec.p[scope_names_vec.size() - 1 - i]);
+                        }
+                        scope_names_p = scope_names_vec.p;
+                        scope_names_n = scope_names_vec.size();
+                    } else {
+                        ext_module_name = ASRUtils::symbol_name(
+                            ASRUtils::get_asr_owner(type_decl));
+                    }
                     type_decl = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                         al, x.base.base.loc, current_scope,
                         s2c(al, decl_name), type_decl,
-                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(type_decl)),
-                        nullptr, 0, s2c(al, decl_name),
+                        ext_module_name,
+                        scope_names_p, scope_names_n, s2c(al, decl_name),
                         ASR::accessType::Public));
                     current_scope->add_symbol(decl_name, type_decl);
                 }
@@ -5163,6 +5233,9 @@ public:
             if (!compiler_options.continue_compilation) throw e;
         }
         current_variable_type_ = temp_current_variable_type_;
+        if (tmp == nullptr) {
+            throw SemanticAbort();
+        }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value)) &&
                 ASR::is_a<ASR::Var_t>(*value)) {
@@ -7078,7 +7151,7 @@ public:
                         dim.m_length = nullptr;
                         dims.push_back(al, dim);
                     }
-                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(expr));
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
                     ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
                         elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
                         ASR::array_physical_typeType::DescriptorArray, false, false, true
@@ -7846,6 +7919,10 @@ public:
             code = nullptr;
         }
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
+    }
+
+    void visit_SyncAll(const AST::SyncAll_t &x) {
+        tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
     }
 
     void visit_Nullify(const AST::Nullify_t &x) {

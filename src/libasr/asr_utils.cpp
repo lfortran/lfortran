@@ -575,7 +575,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
         case ASR::exprType::GetPointer:
-        case ASR::exprType::CLoc: {
+        case ASR::exprType::CLoc:
+        case ASR::exprType::FunctionParam: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {
@@ -3214,6 +3215,14 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
                     implied_doloop_size_);
             }
+        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+            ASR::expr_t* ac_size = get_ArrayConstructor_size(al,
+                ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]));
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = ac_size;
+            } else {
+                implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
+            }
         } else {
             const_elements += 1;
         }
@@ -3767,7 +3776,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     if (ASR::is_a<ASR::Var_t>(*x) ||
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstant_t>(*x) ||
+        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
         return x;
     }
 
@@ -3856,7 +3866,6 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     } else if (inside_binop) {
         return nullptr;
     } else {
-        LCOMPILERS_ASSERT(false);
         return nullptr;
     }
 }

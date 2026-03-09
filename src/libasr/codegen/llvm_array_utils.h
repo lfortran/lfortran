@@ -319,7 +319,8 @@ namespace LCompilers {
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
-                                     llvm::Module* module) = 0;
+                                     llvm::Module* module, ASR::expr_t* array_expr = nullptr,
+                                     ASR::ttype_t* asr_data_type = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -536,7 +537,8 @@ namespace LCompilers {
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
-                                     llvm::Module* module);
+                                     llvm::Module* module, ASR::expr_t* array_expr = nullptr,
+                                     ASR::ttype_t* asr_data_type = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
