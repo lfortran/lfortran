@@ -7043,23 +7043,29 @@ typedef struct {
 // between file-based and string-based formatted reads.
 
 // blank_mode: 0 = BN (blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
-static void parse_integer_from_buffer(char* buffer, int field_len, 
-        void* int_ptr, int32_t type_code, int blank_mode)
+static void parse_integer_from_buffer(char* buffer, int field_len,
+        void* int_ptr, int32_t type_code, int blank_mode, bool* error)
 {
     // Process buffer according to blank mode
     char* processed = (char*)malloc(field_len + 1);
     int j = 0;
     for (int i = 0; i < field_len; i++) {
         if (buffer[i] == ' ') {
-            if (blank_mode == 1) {  // BZ: treat blanks as zeros
-                processed[j++] = '0';
-            }
-            // BN: skip blanks (blank_mode == 0)
+            if (blank_mode == 1) processed[j++] = '0';
         } else {
             processed[j++] = buffer[i];
         }
     }
     processed[j] = '\0';
+    char *p = processed;
+    if (*p == '+' || *p == '-') p++;
+    char *digit_start = p;
+    while (*p >= '0' && *p <= '9') p++;
+    if (p == digit_start || *p != '\0') {
+        free(processed);
+        *error = true;
+        return;
+    }
     
     if (type_code == 2) {
         *((int32_t*)int_ptr) = (int32_t)strtol(processed, NULL, 10);
@@ -7301,10 +7307,11 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
-
-    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode);
+    bool parse_error = false;
+    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode, &parse_error);
 
     free(buffer);
+    if (parse_error) { if (iostat) *iostat = 5010; return false; }
     return true;
 }
 
