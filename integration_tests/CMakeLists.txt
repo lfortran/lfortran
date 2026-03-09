@@ -1522,6 +1522,7 @@ RUN(NAME intrinsics_427 LABELS gfortran llvm) # maxval with derived-type compone
 RUN(NAME intrinsics_428 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # merge array mask in loop
 RUN(NAME intrinsics_429 LABELS gfortran llvm) # random_seed put resets RNG
 RUN(NAME intrinsics_430 LABELS gfortran llvm) # is_contiguous with struct component sections
+RUN(NAME intrinsics_432 LABELS gfortran llvm) # nested bitwise intrinsics with value args
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

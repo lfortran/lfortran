@@ -17027,7 +17027,8 @@ public:
                                         }
                                     }
                                 }
-                                if (!orig_arg->m_value_attr && arg->m_value_attr) {
+                                if (!orig_arg->m_value_attr && arg->m_value_attr
+                                        && arg->m_abi == ASR::abiType::BindC) {
                                     llvm::Type *target_type = tmp->getType();
                                     llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                                     builder->CreateStore(tmp, target);
@@ -17088,7 +17089,8 @@ public:
                                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                                 }
-                                if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr) {
+                                if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr
+                                        && arg->m_abi == ASR::abiType::BindC) {
                                     llvm::Type *target_type = tmp->getType();
                                     llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                                     builder->CreateStore(tmp, target);
