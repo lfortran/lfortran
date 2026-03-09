@@ -18013,8 +18013,14 @@ public:
                     builder->CreateCondBr(cond, loopbody, loopend);
                     builder->SetInsertPoint(loopbody);
                     llvm::Value* wrapper = builder->CreateGEP(array_data_type, array_data, idx);
-                    struct_api->store_intrinsic_type_vptr(arg_type,
-                        ASRUtils::extract_kind_from_ttype_t(arg_type), wrapper, module.get());
+                    if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+                        struct_api->store_class_vptr(struct_sym, wrapper, module.get());
+                    } else {
+                        struct_api->store_intrinsic_type_vptr(arg_type,
+                            ASRUtils::extract_kind_from_ttype_t(arg_type), wrapper, module.get());
+                    }
                     llvm::Value* elem_ptr = builder->CreateGEP(actual_array_data_type, actual_data, idx);
                     llvm::Value* data_field = llvm_utils->create_gep2(array_data_type, wrapper, 1);
                     builder->CreateStore(builder->CreateBitCast(elem_ptr, llvm_utils->i8_ptr), data_field);
