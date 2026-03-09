@@ -1649,8 +1649,14 @@ namespace Shape {
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args, int64_t,
             int index_kind) {
         declare_basic_variables("_lcompilers_shape");
-        fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
-            arg_types[0]));
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            fill_func_arg_struct_type("source", ASRUtils::duplicate_type_with_empty_dims(al,
+                arg_types[0]), new_args[0].m_value);
+        } else {
+            fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
+                arg_types[0]));
+        }
         ASR::expr_t* result = nullptr;
         result = declare(fn_name, return_type, Out);
         args.push_back(al, result);
