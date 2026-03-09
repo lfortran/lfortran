@@ -8824,16 +8824,105 @@ public:
                     visit_expr_wrapper(ai->m_args[0].m_right, true);
                     llvm::Value* idx = tmp;
 
+                    llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target,
+                        ASRUtils::type_get_past_array(bc->m_type),
+                        module.get());
+
+                    if (ASR::is_a<ASR::ArrayItem_t>(*bc->m_source)) {
+                        ASR::ArrayItem_t* source_ai =
+                            ASR::down_cast<ASR::ArrayItem_t>(bc->m_source);
+
+                        llvm::Value* source_array = nullptr;
+                        ASR::ttype_t* source_mv_type =
+                            ASRUtils::expr_type(source_ai->m_v);
+
+                        if (ASR::is_a<ASR::Var_t>(*source_ai->m_v)) {
+                            ASR::Variable_t* source_v =
+                                ASRUtils::EXPR2VAR(source_ai->m_v);
+                            uint32_t v_h = get_hash((ASR::asr_t*)source_v);
+                            source_array = llvm_symtab[v_h];
+                        } else {
+                            int64_t ptr_loads_copy = ptr_loads;
+                            ptr_loads = 0;
+                            visit_expr(*source_ai->m_v);
+                            ptr_loads = ptr_loads_copy;
+                            source_array = tmp;
+                        }
+
+                        ASR::ttype_t* source_mv_type_ =
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(source_mv_type));
+                        if (LLVM::is_llvm_pointer(*source_mv_type)) {
+                            llvm::Type* arr_llvm_type =
+                                llvm_utils->get_type_from_ttype_t_util(
+                                    source_ai->m_v, source_mv_type_,
+                                    module.get());
+                            source_array = llvm_utils->CreateLoad2(
+                                arr_llvm_type->getPointerTo(), source_array);
+                        }
+
+                        llvm::Type* source_el_type = llvm_utils->get_el_type(
+                            source_ai->m_v,
+                            ASRUtils::extract_type(source_mv_type),
+                            module.get());
+
+                        llvm::Value* source_data_ptr = nullptr;
+                        LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(
+                            *source_mv_type_));
+                        ASR::Array_t* source_arr_t =
+                            ASR::down_cast<ASR::Array_t>(source_mv_type_);
+                        if (source_arr_t->m_physical_type ==
+                                ASR::array_physical_typeType::DescriptorArray) {
+                            llvm::Type* source_arr_llvm =
+                                llvm_utils->get_type_from_ttype_t_util(
+                                    source_ai->m_v, source_mv_type_,
+                                    module.get());
+                            llvm::Value* data_ptr_ptr =
+                                arr_descr->get_pointer_to_data(
+                                    source_ai->m_v, source_mv_type,
+                                    source_array, module.get());
+                            source_data_ptr = llvm_utils->CreateLoad2(
+                                source_el_type->getPointerTo(), data_ptr_ptr);
+                            llvm::Value* offset = arr_descr->get_offset(
+                                source_arr_llvm, source_array);
+                            source_data_ptr = llvm_utils->create_ptr_gep2(
+                                source_el_type, source_data_ptr, offset);
+                        } else if (source_arr_t->m_physical_type ==
+                                ASR::array_physical_typeType::PointerArray) {
+                            if (llvm::isa<llvm::AllocaInst>(source_array)) {
+                                source_data_ptr = llvm_utils->CreateLoad2(
+                                    source_el_type->getPointerTo(), source_array);
+                            } else {
+                                source_data_ptr = source_array;
+                            }
+                        } else {
+                            source_data_ptr = builder->CreateBitCast(
+                                source_array,
+                                source_el_type->getPointerTo());
+                        }
+
+                        llvm::Value* src_as_elem_ptr =
+                            builder->CreateBitCast(
+                                source_data_ptr, elem_type->getPointerTo());
+                        llvm::Value* zero_based = builder->CreateSub(
+                            idx, llvm::ConstantInt::get(idx->getType(), 1));
+                        zero_based = builder->CreateZExtOrTrunc(
+                            zero_based, llvm::Type::getInt32Ty(context));
+                        llvm::Value* elem_ptr = builder->CreateGEP(
+                            elem_type, src_as_elem_ptr, zero_based);
+                        llvm::Value* elem_val = llvm_utils->CreateLoad2(
+                            elem_type, elem_ptr);
+                        builder->CreateStore(elem_val, dest_ptr);
+                        return;
+                    }
+
                     visit_expr_wrapper(bc->m_source, true);
                     llvm::Value* source_val = tmp;
                     llvm::Value* source_alloca = builder->CreateAlloca(
                         source_val->getType(), nullptr, "transfer_source");
                     builder->CreateStore(source_val, source_alloca);
 
-                    llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_target,
-                        ASRUtils::type_get_past_array(bc->m_type),
-                        module.get());
                     llvm::Value* src_as_elem_ptr = builder->CreateBitCast(
                         source_alloca, elem_type->getPointerTo());
                     llvm::Value* zero_based = builder->CreateSub(
