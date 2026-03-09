@@ -1,4 +1,4 @@
-program test
+program read_53
 implicit none
 
 character(20) :: input
@@ -8,7 +8,6 @@ input = "hello world"
 
 read(input, *) a, b
 
-print *, a
-print *, b
+if (b/="world") error stop
 
-end program
+end program read_53
