@@ -114,7 +114,16 @@ static std::string compute_llvm_function_name(
 
     // Determine base name based on function type
     if (is_bindc) {
-        fn_name = ftype->m_bindc_name ? ftype->m_bindc_name : sym_name;
+        if (ftype->m_bindc_name && ftype->m_bindc_name[0] != '\0') {
+            // bind(c, name='foo') — use the explicit name
+            fn_name = ftype->m_bindc_name;
+        } else if (!ftype->m_bindc_name) {
+            // bind(c) without name= — use the Fortran name
+            fn_name = sym_name;
+        } else {
+            // bind(c, name='') — empty name, use mangled name
+            fn_name = mangle_prefix + sym_name;
+        }
     } else if (is_external_interface) {
         fn_name = sym_name;
     } else {
@@ -6771,10 +6780,13 @@ public:
                     std::string fn_name;
                     std::string sym_name = v->m_name;
                     if (ASRUtils::get_FunctionType(*var)->m_abi == ASR::abiType::BindC) {
-                        if (ASRUtils::get_FunctionType(*var)->m_bindc_name) {
+                        if (ASRUtils::get_FunctionType(*var)->m_bindc_name &&
+                            ASRUtils::get_FunctionType(*var)->m_bindc_name[0] != '\0') {
                             fn_name = ASRUtils::get_FunctionType(*var)->m_bindc_name;
-                        } else {
+                        } else if (!ASRUtils::get_FunctionType(*var)->m_bindc_name) {
                             fn_name = sym_name;
+                        } else {
+                            fn_name = mangle_prefix + sym_name;
                         }
                     } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
                         ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
