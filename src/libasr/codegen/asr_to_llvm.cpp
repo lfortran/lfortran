@@ -672,7 +672,7 @@ public:
         }
         llvm::Value* string_len{};
         if(string_len_to_allocate){
-            visit_expr(*string_len_to_allocate);
+            visit_expr_wrapper(string_len_to_allocate, true);
             string_len = tmp;
             tmp = nullptr;
         }
