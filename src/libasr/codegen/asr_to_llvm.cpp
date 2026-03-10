@@ -7713,8 +7713,6 @@ public:
              ASR::array_physical_typeType::DescriptorArray, true);
         llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(
             target_section->m_v, desc_type, module.get());
-        llvm::AllocaInst *new_desc = llvm_utils->CreateAlloca(
-            target_type_llvm, nullptr, "pointer_section_descriptor");
         
         // Extract bounds from the target section
         int target_rank = 0;
@@ -7747,13 +7745,12 @@ public:
             }
         }
         
-        // Fill the descriptor with the value's data and the target's bounds
-        llvm::Value* dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(
-            target_type_llvm, new_desc, false);
-        llvm::Value* dim_des_val = llvm_utils->CreateAlloca(
-            arr_descr->get_dimension_descriptor_type(false),
-            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
-        builder->CreateStore(dim_des_val, dim_des_ptr);
+        // Allocate descriptor and dimension descriptors on the heap so they
+        // survive after this function returns (the caller holds a pointer).
+        llvm::Value* new_desc = arr_descr->allocate_descriptor_on_heap(
+            target_type_llvm, target_rank);
+        llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(
+            target_type_llvm, new_desc, true);
         
         // Get value data pointer
         llvm::Value* value_data = nullptr;
@@ -7833,11 +7830,6 @@ public:
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
-        
-        // Set rank
-        builder->CreateStore(
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, target_rank)),
-            arr_descr->get_rank(target_type_llvm, new_desc, true));
         
         llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
         // Set dimension descriptors with the target bounds
@@ -9501,7 +9493,8 @@ public:
                     *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::get_contained_type(asr_target->m_type)) &&
-                !ASRUtils::is_character(*asr_target->m_type)) {
+                !ASRUtils::is_character(*asr_target->m_type) &&
+                !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
                 llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
                 target = llvm_utils->CreateLoad2(target_load_type, target);
             }
@@ -9641,7 +9634,7 @@ public:
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_target_descriptor_based_array && is_value_fixed_sized_array ) {
-                if( ASRUtils::is_allocatable(target_type) ) {
+                if( ASRUtils::is_allocatable(target_type) || ASRUtils::is_pointer(target_type) ) {
                     llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
                 }
@@ -9659,7 +9652,7 @@ public:
             } else if( is_target_descriptor_based_array && is_value_data_only_array ) {
                 // DescriptorArray target with PointerArray value (e.g. ArrayReshape result)
                 // Get size from the target descriptor which was already allocated with the correct shape.
-                if( ASRUtils::is_allocatable(target_type) ) {
+                if( ASRUtils::is_allocatable(target_type) || ASRUtils::is_pointer(target_type) ) {
                     llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
