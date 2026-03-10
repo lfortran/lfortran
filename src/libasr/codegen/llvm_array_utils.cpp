@@ -1461,6 +1461,79 @@ namespace LCompilers {
             return data_buffer;
         }
 
+        void SimpleCMODescriptor::copy_contiguous_data_to_descriptor(
+            llvm::Value* source_data,
+            llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
+            llvm::Type* elem_type, int rank, llvm::Module* /*module*/) {
+            unsigned index_bit_width = index_type->getIntegerBitWidth();
+
+            llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
+                dest_llvm_type, dest_desc, true);
+
+            std::vector<llvm::Value*> extents(rank);
+            llvm::Value* num_elements = llvm::ConstantInt::get(
+                context, llvm::APInt(index_bit_width, 1));
+            for (int d = 0; d < rank; d++) {
+                llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                    dim_des_array,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                llvm::Value* lb = get_lower_bound(dim_des_elem);
+                llvm::Value* ub = get_upper_bound(dim_des_elem);
+                extents[d] = builder->CreateAdd(
+                    builder->CreateSub(ub, lb),
+                    llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
+                num_elements = builder->CreateMul(num_elements, extents[d]);
+            }
+
+            llvm::Value* dest_data = get_pointer_to_data(dest_llvm_type, dest_desc);
+            dest_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), dest_data);
+
+            llvm::Value* iter_ptr = builder->CreateAlloca(
+                index_type, nullptr, "strided_copy_iter");
+            builder->CreateStore(
+                llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+                iter_ptr);
+            llvm_utils->create_loop("copy_to_strided",
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(index_type, iter_ptr);
+                    return builder->CreateICmpSLT(iter, num_elements);
+                },
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(index_type, iter_ptr);
+                    llvm::Value* linear_offset = llvm::ConstantInt::get(
+                        context, llvm::APInt(index_bit_width, 0));
+                    llvm::Value* remaining = iter;
+                    for (int d = 0; d < rank; d++) {
+                        llvm::Value* dim_idx = builder->CreateSRem(
+                            remaining, extents[d]);
+                        remaining = builder->CreateSDiv(remaining, extents[d]);
+                        llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                            dim_des_array,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                        llvm::Value* stride = get_stride(dim_des_elem);
+                        llvm::Value* dim_offset = builder->CreateMul(dim_idx, stride);
+                        linear_offset = builder->CreateAdd(linear_offset, dim_offset);
+                    }
+                    llvm::Value* base_offset = get_offset(dest_llvm_type, dest_desc);
+                    linear_offset = builder->CreateAdd(linear_offset, base_offset);
+
+                    // Read from contiguous source
+                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(
+                        elem_type, source_data, iter);
+                    llvm::Value* elem_val = llvm_utils->CreateLoad2(elem_type, src_ptr);
+
+                    // Write to strided destination
+                    llvm::Value* dest_ptr = llvm_utils->create_ptr_gep2(
+                        elem_type, dest_data, linear_offset);
+                    builder->CreateStore(elem_val, dest_ptr);
+
+                    llvm::Value* new_iter = builder->CreateAdd(iter,
+                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
+                    builder->CreateStore(new_iter, iter_ptr);
+                }
+            );
+        }
+
     } // LLVMArrUtils
 
 } // namespace LCompilers
