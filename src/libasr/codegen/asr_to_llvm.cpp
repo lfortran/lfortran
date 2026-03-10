@@ -12659,7 +12659,8 @@ public:
                             current_der_type_name = get_type_key(
                                 ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, (ASR::symbol_t*) x))));
                         }
-                        if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, (ASR::symbol_t*)x)))) {
+                        if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, (ASR::symbol_t*)x)))
+                                && !ASRUtils::is_array(x->m_type)) {
                             uint32_t h = get_hash((ASR::asr_t*)x);
                             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                                 tmp = llvm_symtab[h];
