@@ -2216,7 +2216,8 @@ public:
                         module.get());
                     llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v) &&
+                           ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(sm->m_v))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
 
