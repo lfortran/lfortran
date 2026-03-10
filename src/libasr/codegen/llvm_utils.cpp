@@ -8876,6 +8876,24 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateStore(gep, v_ptr);
     }
 
+    llvm::Constant* LLVMStruct::get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module)
+    {
+        ttype = ASRUtils::type_get_past_allocatable_pointer(ttype);
+        kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        std::string key = ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
+        if (intrinsic_type_vtab.find(key) == intrinsic_type_vtab.end()) {
+            create_vtab_for_intrinsic_type(ttype, kind, module);
+        }
+        llvm::Constant* vtable = intrinsic_type_vtab.at(key);
+        llvm::Type* vtab_type = intrinsic_type_vtabtype.at(key);
+        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* two = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
+        llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(vtab_type,
+            vtable, { zero, zero, two });
+        gep = llvm::ConstantExpr::getBitCast(gep, llvm_utils->vptr_type);
+        return gep;
+    }
+
     void LLVMStruct::collect_vtable_function_impls(ASR::symbol_t *struct_sym, 
         std::vector<llvm::Constant*>& impls, llvm::Module* module)
     {
@@ -9507,18 +9525,46 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
             // For unlimited polymorphic, handle specially
             if (is_upoly) {
-                // Get copy function from each element's vptr
-                llvm::Value* vptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->vptr_type->getPointerTo());
-                vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                // Copy vptr from source to dest element
+                llvm::Value* src_vptr_ptr = builder->CreateBitCast(
+                    src_elem_ptr, llvm_utils->vptr_type->getPointerTo());
+                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, src_vptr_ptr);
+                builder->CreateStore(vptr, builder->CreateBitCast(
+                    dest_elem_ptr, llvm_utils->vptr_type->getPointerTo()));
+
+                // Get copy function from vptr[0]
                 llvm::Value* elem_fn = llvm_utils->CreateLoad2(
                     llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
                 elem_fn = builder->CreateBitCast(elem_fn, fnPtrTy);
-                // Get actual data pointers from offset 1 in the wrapper struct
+
+                // Get data size from type info: vptr[-1] points to type_info,
+                // type_info[1] holds the element size as inttoptr
+                llvm::Value* vptr_as_i8pp = builder->CreateBitCast(
+                    vptr, llvm_utils->i8_ptr->getPointerTo());
+                llvm::Value* type_info_slot = builder->CreateGEP(
+                    llvm_utils->i8_ptr, vptr_as_i8pp,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1));
+                llvm::Value* type_info_ptr = llvm_utils->CreateLoad2(
+                    llvm_utils->i8_ptr, type_info_slot);
+                llvm::Type* type_info_type = llvm::StructType::get(context,
+                    {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm_utils->i8_ptr});
+                llvm::Value* type_info = builder->CreateBitCast(
+                    type_info_ptr, type_info_type->getPointerTo());
+                llvm::Value* size_field = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(type_info_type, type_info, 1));
+                llvm::Value* data_size = builder->CreatePtrToInt(
+                    size_field, llvm::Type::getInt64Ty(context));
+
+                // Allocate data buffer for dest element
+                llvm::Value* dest_data = LLVMArrUtils::lfortran_malloc(
+                    context, *module, *builder, data_size);
+                builder->CreateStore(dest_data,
+                    llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
+
+                // Get source data pointer and call copy function
                 llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                     llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
-                llvm::Value* dest_data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
-                builder->CreateCall(fnTy, elem_fn, {src_data_ptr, dest_data_ptr});
+                builder->CreateCall(fnTy, elem_fn, {src_data_ptr, dest_data});
             } else {
                 if (!is_src_class && !is_dest_class) {
                     // Elements are plain structs (declared as type(), not

@@ -9091,6 +9091,7 @@ public:
                 }
             }
 
+            llvm::Value* target_data_gep = nullptr;
             if (is_target_unlimited_polymorphic) {
                 if (ASRUtils::is_allocatable(asr_target_type)) {
                     // When target is an unallocated class(*), the wrapper
@@ -9116,8 +9117,8 @@ public:
                     target_struct = llvm_utils->CreateLoad2(
                         target_llvm_type->getPointerTo(), ptr_to_target_struct);
                 }
-                target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
-                target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_struct);
+                target_data_gep = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
+                target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_data_gep);
             } else if (is_target_class) {
                 target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
                 llvm::Type* target_cstruct_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
@@ -9190,6 +9191,112 @@ public:
                     } else {
                         target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr_to_target_struct);
                     }
+                }
+
+                // For non-allocatable unlimited polymorphic targets (e.g.
+                // elements of a freshly allocated class(*) array), the data
+                // buffer may be NULL. On first NULL encounter, allocate one
+                // contiguous buffer for ALL elements so that select type can
+                // treat the data as a typed array.
+                if (is_target_unlimited_polymorphic &&
+                        !ASRUtils::is_allocatable(asr_target_type) &&
+                        target_data_gep != nullptr &&
+                        ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    llvm::Value* is_data_null = builder->CreateICmpEQ(
+                        target_struct,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(target_struct->getType())));
+                    llvm_utils->create_if_else(is_data_null, [&]() {
+                        // Get element size from source vptr -> type_info
+                        llvm::Value* src_vptr = builder->CreateBitCast(
+                            copy_source, llvm_utils->i8_ptr->getPointerTo()->getPointerTo());
+                        src_vptr = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr->getPointerTo(), src_vptr);
+                        llvm::Value* type_info_slot = builder->CreateGEP(
+                            llvm_utils->i8_ptr, src_vptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1));
+                        llvm::Value* type_info_raw = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr, type_info_slot);
+                        llvm::Type* type_info_ty = llvm::StructType::get(context,
+                            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm_utils->i8_ptr});
+                        llvm::Value* type_info = builder->CreateBitCast(
+                            type_info_raw, type_info_ty->getPointerTo());
+                        llvm::Value* size_as_ptr = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr,
+                            llvm_utils->create_gep2(type_info_ty, type_info, 1));
+                        llvm::Value* elem_size = builder->CreatePtrToInt(
+                            size_as_ptr, llvm::Type::getInt64Ty(context));
+
+                        // Get target array descriptor to find total element count
+                        ASR::ArrayItem_t* target_ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                        ASR::ttype_t* target_arr_type = ASRUtils::expr_type(target_ai->m_v);
+                        llvm::Value* saved_tmp = tmp;
+                        int saved_ptr_loads = ptr_loads;
+                        ptr_loads = LLVM::is_llvm_pointer(*target_arr_type);
+                        this->visit_expr_wrapper(target_ai->m_v, true);
+                        ptr_loads = saved_ptr_loads;
+                        llvm::Value* target_arr = tmp;
+                        tmp = saved_tmp;
+
+                        llvm::Type* arr_desc_type = arr_descr->get_array_type(
+                            target_ai->m_v,
+                            ASRUtils::type_get_past_allocatable_pointer(target_arr_type),
+                            llvm_utils->get_el_type(target_ai->m_v,
+                                ASRUtils::extract_type(target_arr_type), module.get()),
+                            false);
+                        llvm::Value* num_elems = arr_descr->get_array_size(
+                            arr_desc_type, target_arr, nullptr, 4);
+                        llvm::Value* num_elems_64 = builder->CreateSExtOrTrunc(
+                            num_elems, llvm::Type::getInt64Ty(context));
+
+                        // Allocate one contiguous buffer for all elements
+                        llvm::Value* total_bytes = builder->CreateMul(num_elems_64, elem_size);
+                        llvm::Value* data_buf = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, total_bytes);
+
+                        // Get wrapper array base from descriptor
+                        llvm::Value* wrapper_base_ptr = arr_descr->get_pointer_to_data(
+                            target_ai->m_v, target_arr_type, target_arr, module.get());
+                        llvm::Value* wrapper_base = llvm_utils->CreateLoad2(
+                            target_llvm_type->getPointerTo(), wrapper_base_ptr);
+
+                        // Loop: set wrapper[j].field1 = data_buf + j * elem_size
+                        llvm::Value* j_var = llvm_utils->CreateAlloca(
+                            llvm::Type::getInt64Ty(context));
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0), j_var);
+                        llvm::BasicBlock* init_head = llvm::BasicBlock::Create(
+                            context, "upoly_init.head");
+                        llvm::BasicBlock* init_body = llvm::BasicBlock::Create(
+                            context, "upoly_init.body");
+                        llvm::BasicBlock* init_end = llvm::BasicBlock::Create(
+                            context, "upoly_init.end");
+                        builder->CreateBr(init_head);
+                        llvm_utils->start_new_block(init_head);
+                        llvm::Value* j_val = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context), j_var);
+                        llvm::Value* init_cond = builder->CreateICmpSLT(j_val, num_elems_64);
+                        builder->CreateCondBr(init_cond, init_body, init_end);
+                        llvm_utils->start_new_block(init_body);
+                        j_val = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), j_var);
+                        llvm::Value* j_i32 = builder->CreateTrunc(j_val,
+                            llvm::Type::getInt32Ty(context));
+                        llvm::Value* wrapper_j = builder->CreateInBoundsGEP(
+                            target_llvm_type, wrapper_base, j_i32);
+                        llvm::Value* data_offset = builder->CreateMul(j_val, elem_size);
+                        llvm::Value* data_j = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), data_buf, data_offset);
+                        llvm::Value* field1_ptr = llvm_utils->create_gep2(
+                            target_llvm_type, wrapper_j, 1);
+                        builder->CreateStore(data_j, field1_ptr);
+                        llvm::Value* j_next = builder->CreateAdd(j_val,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1));
+                        builder->CreateStore(j_next, j_var);
+                        builder->CreateBr(init_head);
+                        llvm_utils->start_new_block(init_end);
+                    }, []() {});
+                    target_struct = llvm_utils->CreateLoad2(
+                        llvm_utils->i8_ptr, target_data_gep);
                 }
 
                 llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
@@ -17941,12 +18048,22 @@ public:
                         arg_expr, ASRUtils::extract_type(arg_type), module.get());
                     llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                         s_m_args0, s_m_args0_type, module.get());
-                    llvm::Value* unlimited_polymorphic_type_array = llvm_utils->CreateAlloca(*builder, array_type);
                     llvm::Type* array_data_type = llvm_utils->get_el_type(
                         s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
-                    llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
+
+                    // Compute total number of elements from source array
+                    llvm::Value* num_elements = arr_descr->get_array_size(
+                        actual_array_type, dt, nullptr, 4);
+
+                    // Allocate N polymorphic wrapper elements (one per array element)
+                    llvm::Value* wrapper_array = builder->CreateAlloca(
+                        array_data_type, num_elements);
+
+                    // Create polymorphic array descriptor
+                    llvm::Value* unlimited_polymorphic_type_array =
+                        llvm_utils->CreateAlloca(*builder, array_type);
                     builder->CreateStore(
-                        array_data, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
+                        wrapper_array, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
                     arr_descr->fill_array_details(arg_expr,
                                                 s_m_args0,
                                                 dt,
@@ -17955,21 +18072,103 @@ public:
                                                 s_m_args0_type,
                                                 module.get(),
                                                 true);
-                    llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateLoad2(
-                        array_data_type->getPointerTo(),
-                        arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
 
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(array_data_type, unlimited_polymorphic_struct, 1);
+                    // Get the raw source data pointer
                     llvm::Value* actual_data = llvm_utils->CreateLoad2(
                         actual_array_data_type->getPointerTo(), llvm_utils->create_gep2(actual_array_type, dt, 0));
-                    arg_type = ASRUtils::extract_type(arg_type);
 
-                    // Store intrinsic type vptr
-                    struct_api->store_intrinsic_type_vptr(arg_type,
-                        ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct, module.get());
-                    // Store inrinsic type data ptr
-                    builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
-                                        data_ptr);
+                    // Determine vptr for the element type
+                    arg_type = ASRUtils::extract_type(arg_type);
+                    llvm::Constant* vptr;
+                    if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                        if (ASRUtils::is_class_type(arg_type)) {
+                            // For class types, the vptr is at the beginning of the descriptor
+                            // We need to load it from the first element
+                            llvm::Value* v = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
+                            llvm::Value* loaded_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, v);
+                            // Store vptr into wrapper[0] for class type (non-constant)
+                            llvm::Value* w0 = builder->CreateBitCast(
+                                wrapper_array, llvm_utils->vptr_type->getPointerTo());
+                            builder->CreateStore(loaded_vptr, w0);
+                            // Store data for element 0
+                            llvm::Value* data_slot = llvm_utils->create_gep2(
+                                array_data_type, wrapper_array, 1);
+                            llvm::Value* data_elem = builder->CreateBitCast(actual_data, llvm_utils->i8_ptr);
+                            builder->CreateStore(data_elem, data_slot);
+                            // For remaining elements, loop
+                            llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "poly_wrap.head");
+                            llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "poly_wrap.body");
+                            llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "poly_wrap.end");
+                            llvm::Value* idx = builder->CreateAlloca(llvm::Type::getInt32Ty(context));
+                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), idx);
+                            builder->CreateBr(loophead);
+                            llvm_utils->start_new_block(loophead);
+                            llvm::Value* idx_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+                            llvm::Value* cond = builder->CreateICmpSLT(idx_val, num_elements);
+                            builder->CreateCondBr(cond, loopbody, loopend);
+                            llvm_utils->start_new_block(loopbody);
+                            idx_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+                            llvm::Value* wrapper_elem = builder->CreateInBoundsGEP(
+                                array_data_type, wrapper_array, idx_val);
+                            llvm::Value* vptr_slot = builder->CreateBitCast(
+                                wrapper_elem, llvm_utils->vptr_type->getPointerTo());
+                            builder->CreateStore(loaded_vptr, vptr_slot);
+                            llvm::Value* de = builder->CreateInBoundsGEP(
+                                actual_array_data_type, actual_data, idx_val);
+                            llvm::Value* di8 = builder->CreateBitCast(de, llvm_utils->i8_ptr);
+                            llvm::Value* ds = llvm_utils->create_gep2(
+                                array_data_type, wrapper_elem, 1);
+                            builder->CreateStore(di8, ds);
+                            llvm::Value* next_idx = builder->CreateAdd(
+                                idx_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                            builder->CreateStore(next_idx, idx);
+                            builder->CreateBr(loophead);
+                            llvm_utils->start_new_block(loopend);
+                            return unlimited_polymorphic_type_array;
+                        }
+                        vptr = struct_api->get_pointer_to_method(ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), module.get());
+                    } else {
+                        vptr = struct_api->get_intrinsic_type_vptr(arg_type,
+                            ASRUtils::extract_kind_from_ttype_t(arg_type), module.get());
+                    }
+
+                    // Loop: fill each wrapper element with {vptr, &data[i]}
+                    llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "poly_wrap.head");
+                    llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "poly_wrap.body");
+                    llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "poly_wrap.end");
+
+                    llvm::Value* idx = builder->CreateAlloca(llvm::Type::getInt32Ty(context));
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx);
+                    builder->CreateBr(loophead);
+
+                    llvm_utils->start_new_block(loophead);
+                    llvm::Value* idx_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+                    llvm::Value* cond = builder->CreateICmpSLT(idx_val, num_elements);
+                    builder->CreateCondBr(cond, loopbody, loopend);
+
+                    llvm_utils->start_new_block(loopbody);
+                    idx_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+                    // wrapper[i].vptr = vptr
+                    llvm::Value* wrapper_elem = builder->CreateInBoundsGEP(
+                        array_data_type, wrapper_array, idx_val);
+                    llvm::Value* vptr_slot = builder->CreateBitCast(
+                        wrapper_elem, llvm_utils->vptr_type->getPointerTo());
+                    builder->CreateStore(vptr, vptr_slot);
+                    // wrapper[i].data = &actual_data[i] as i8*
+                    llvm::Value* data_elem = builder->CreateInBoundsGEP(
+                        actual_array_data_type, actual_data, idx_val);
+                    llvm::Value* data_as_i8 = builder->CreateBitCast(data_elem, llvm_utils->i8_ptr);
+                    llvm::Value* data_slot = llvm_utils->create_gep2(
+                        array_data_type, wrapper_elem, 1);
+                    builder->CreateStore(data_as_i8, data_slot);
+                    // i++
+                    llvm::Value* next_idx = builder->CreateAdd(
+                        idx_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                    builder->CreateStore(next_idx, idx);
+                    builder->CreateBr(loophead);
+
+                    llvm_utils->start_new_block(loopend);
                     return unlimited_polymorphic_type_array;
                 } else {
                     llvm::Type* unlimited_polymorphic_type = llvm_utils->get_type_from_ttype_t_util(

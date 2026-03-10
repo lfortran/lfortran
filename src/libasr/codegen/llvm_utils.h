@@ -1971,6 +1971,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
+            llvm::Constant* get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module);
 
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
                                             std::vector<llvm::Constant*>& impls,
