@@ -4431,6 +4431,12 @@ public:
         std::vector<llvm::Constant*> arr_elements;
         size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
         arr_elements.reserve(arr_const_size);
+        llvm::ArrayType* arr_type = nullptr;
+        llvm::Type* elem_type = type;
+        if (type->isArrayTy()) {
+            arr_type = llvm::cast<llvm::ArrayType>(type);
+            elem_type = arr_type->getElementType();
+        }
         int a_kind;
         for (size_t i = 0; i < arr_const_size; i++) {
             ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
@@ -4454,7 +4460,9 @@ public:
                     context, llvm::APInt(1, logical_const->m_value)));
             }
         }
-        llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
+        if (!arr_type) {
+            arr_type = llvm::ArrayType::get(elem_type, arr_const_size);
+        }
         llvm::Constant* initializer = nullptr;
         if (isNullValueArray(arr_elements)) {
             initializer = llvm::ConstantArray::getNullValue(arr_type);
@@ -11733,10 +11741,16 @@ public:
         if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
             source = llvm_utils->CreateLoad2(type, source);
         }
-        llvm::Value *ftarget = builder->CreateSIToFP(target,
-                type);
-        llvm::Value *fsource = builder->CreateSIToFP(source,
-                type);
+        llvm::Value *ftarget = target;
+        llvm::Value *fsource = source;
+        if (ftarget->getType() != type) {
+            if (ftarget->getType()->isIntegerTy()) ftarget = builder->CreateSIToFP(ftarget, type);
+            else if (ftarget->getType()->isFloatingPointTy()) ftarget = builder->CreateFPCast(ftarget, type);
+        }
+        if (fsource->getType() != type) {
+            if (fsource->getType()->isIntegerTy()) fsource = builder->CreateSIToFP(fsource, type);
+            else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
+        }
         std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
         llvm::Function *fn_copysign = module->getFunction(func_name);
         if (!fn_copysign) {
@@ -16952,7 +16966,8 @@ public:
                                                     // tmp is {float, float}*
                                                     // type_fx2 is i64
                                                     llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
-                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
+                                                    llvm::Value* c32_as_i64_ptr = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, c32_as_i64_ptr);
                                                 } else if (compiler_options.platform == Platform::macOS_ARM) {
                                                     // tmp is {float, float}*
                                                     // type_fx2 is [2 x float]
@@ -16964,7 +16979,8 @@ public:
                                                     // tmp is {float, float}*
                                                     // type_fx2 is <2 x float>
                                                     llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
+                                                    llvm::Value* c32_as_vec2_ptr = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, c32_as_vec2_ptr);
                                                 }
                                             } else {
                                                 LCOMPILERS_ASSERT(c_kind == 8)
