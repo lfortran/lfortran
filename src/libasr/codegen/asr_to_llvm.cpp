@@ -8846,7 +8846,7 @@ public:
                     src_data = source_ptr;
                 }
                 src_data = builder->CreateBitCast(
-                    src_data, builder->getInt8PtrTy());
+                    src_data, llvm::Type::getInt8Ty(context)->getPointerTo());
 
                 ASR::ttype_t* tgt_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(target_type));
@@ -8887,7 +8887,7 @@ public:
                     dest_data = target_ptr;
                 }
                 dest_data = builder->CreateBitCast(
-                    dest_data, builder->getInt8PtrTy());
+                    dest_data, llvm::Type::getInt8Ty(context)->getPointerTo());
 
                 visit_expr_wrapper(bc->m_size, true);
                 llvm::Value* size_val = tmp;
