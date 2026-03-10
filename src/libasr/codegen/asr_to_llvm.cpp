@@ -9168,6 +9168,10 @@ public:
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value)) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_value);
                 ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(array_item->m_v));
+                if (ASRUtils::is_unlimited_polymorphic_type(
+                        ASRUtils::expr_type(array_item->m_v)) && ptr_loads > 0) {
+                    ptr_loads--;
+                }
                 this->visit_expr_wrapper(array_item->m_v, true);
                 ptr_loads = ptr_loads_copy;
                 llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -9324,6 +9328,9 @@ public:
                         llvm::Value* saved_tmp = tmp;
                         int saved_ptr_loads = ptr_loads;
                         ptr_loads = LLVM::is_llvm_pointer(*target_arr_type);
+                        if (ASRUtils::is_unlimited_polymorphic_type(target_arr_type) && ptr_loads > 0) {
+                            ptr_loads--;
+                        }
                         this->visit_expr_wrapper(target_ai->m_v, true);
                         ptr_loads = saved_ptr_loads;
                         llvm::Value* target_arr = tmp;
@@ -9472,13 +9479,18 @@ public:
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
             this->visit_expr(*x.m_value);
             llvm::Value* value = tmp;
-            ptr_loads = LLVM::is_llvm_pointer(*asr_target_type);
+            ptr_loads = 0;
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
-            this->visit_expr_wrapper(x.m_target, true);
+            this->visit_expr(*x.m_target);
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target = tmp;
             ptr_loads = ptr_loads_copy;
+            if (LLVM::is_llvm_pointer(*asr_target_type)) {
+                llvm::Type* target_llvm_type_load = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
+                target = llvm_utils->CreateLoad2(target_llvm_type_load->getPointerTo(), target);
+            }
 
             if (is_value_unlimited_polymorphic) {
                 llvm_utils->deepcopy(x.m_value, value, target,
@@ -9490,9 +9502,22 @@ public:
                     x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
-                target = llvm_utils->create_gep2(target_llvm_type, target, 1);
-                target = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target);
-                target = builder->CreateBitCast(target, value_llvm_type->getPointerTo());
+                llvm::Value* data_field_ptr = llvm_utils->create_gep2(target_llvm_type, target, 1);
+                llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field_ptr);
+                llvm::Value* is_data_null = builder->CreateICmpEQ(data_ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(data_ptr->getType())));
+                llvm_utils->create_if_else(is_data_null, [&]() {
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t sz = data_layout.getTypeAllocSize(value_llvm_type);
+                    llvm::Value* alloc_size = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), sz);
+                    llvm::Value* new_buf = LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, alloc_size);
+                    builder->CreateStore(new_buf, data_field_ptr);
+                }, []() {});
+                data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field_ptr);
+                target = builder->CreateBitCast(data_ptr, value_llvm_type->getPointerTo());
                 // With ptr_loads=0, variables produce a pointer while
                 // constants produce a value directly.  deepcopy for scalar
                 // intrinsic types expects a loaded value, so load only when
