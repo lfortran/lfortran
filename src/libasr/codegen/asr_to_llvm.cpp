@@ -2216,7 +2216,8 @@ public:
                         module.get());
                     llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v) &&
+                           ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(sm->m_v))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
 
@@ -9790,6 +9791,19 @@ public:
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
                 if (x.m_move_allocation) {
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
+                } else if (ASRUtils::is_pointer(target_type)) {
+                    // Pointer targets may be associated with non-contiguous
+                    // array sections (e.g. output(seq, 1:4) in a 3x4 array has
+                    // stride 3). Use element-wise copy that respects the target
+                    // descriptor's strides instead of a flat memcpy.
+                    llvm::Value* src_data = llvm_utils->CreateLoad2(
+                        target_el_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(source_array_type, value));
+                    int rank = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::type_get_past_allocatable_pointer(target_type));
+                    arr_descr->copy_contiguous_data_to_descriptor(
+                        src_data, target_array_type, target,
+                        target_el_type, rank, module.get());
                 } else {
                     arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, false);
                 }

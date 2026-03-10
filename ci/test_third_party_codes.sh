@@ -144,7 +144,7 @@ time_section "🧪 Testing neural-fortran" '
   micromamba install -c conda-forge fpm
 
   git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
-  fpm build --compiler=lfortran --flag --cpp --flag --separate-compilation
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with neural-fortran"
   cd ..
