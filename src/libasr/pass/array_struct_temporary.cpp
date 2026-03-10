@@ -1414,7 +1414,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
-                     orig_variable->m_intent == ASRUtils::intent_inout)) {
+                     orig_variable->m_intent == ASRUtils::intent_inout ||
+                     ASRUtils::is_pointer(orig_variable->m_type))) {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
@@ -2976,7 +2977,8 @@ class VerifySimplifierASROutput:
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
-                     orig_variable->m_intent == ASRUtils::intent_inout)) {
+                     orig_variable->m_intent == ASRUtils::intent_inout ||
+                     ASRUtils::is_pointer(orig_variable->m_type))) {
                     continue;
                 }
             }
