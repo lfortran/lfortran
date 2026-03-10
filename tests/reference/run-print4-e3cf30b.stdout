@@ -8,7 +8,7 @@ HelloLComp
 20000000000000000
 20000000000000000
 HelloLFortran
-HelloLFortran    HelloLFortran
+HelloLFortranHelloLFortran
 med
 med
 med
@@ -25,7 +25,7 @@ T    T    T    T    T    T    T    T    T    F
 10.3000002
 F
 232
-string    string
+stringstring
 1  1
 1  1
 1  1
@@ -34,5 +34,5 @@ string    string
 1    1    1    1    1    1    1    1    1    1
 33    1    1    1    1    1    1    1    1    1
 here
-HelloLFortran    HelloLFortran
+HelloLFortranHelloLFortran
 F

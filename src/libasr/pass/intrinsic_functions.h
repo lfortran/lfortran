@@ -145,6 +145,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Sign,
     CompilerVersion,
     CommandArgumentCount,
+    ThisImage,
+    NumImages,
     SignFromValue,
     Logical,
     Nint,
@@ -1412,6 +1414,62 @@ namespace CommandArgumentCount {
         return b.Call(new_symbol, new_args, return_type);
     }
 } // namespace CommandArgumentCount
+
+namespace ThisImage {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "this_image() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_ThisImage(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+    }
+
+    static inline ASR::asr_t* create_ThisImage(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_ThisImage(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+                nullptr, 0, 0, return_type, m_value);
+    }
+
+} // namespace ThisImage
+
+namespace NumImages {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "num_images() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_NumImages(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+    }
+
+    static inline ASR::asr_t* create_NumImages(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_NumImages(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+                nullptr, 0, 0, return_type, m_value);
+    }
+
+} // namespace NumImages
 
 namespace Sign {
 
@@ -2941,7 +2999,12 @@ namespace Exponent {
             }
             int32_t ix;
             std::memcpy(&ix, &x, sizeof(ix));
-            int32_t exponent = ((ix >> 23) & 0xff) - 126;
+            int32_t exponent_bits = (ix >> 23) & 0xff;
+            if (exponent_bits == 0xff) {
+                return make_ConstantWithType(make_IntegerConstant_t,
+                    std::numeric_limits<int32_t>::max(), arg_type, loc);
+            }
+            int32_t exponent = exponent_bits - 126;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
         else if (kind == 8) {
@@ -2951,7 +3014,12 @@ namespace Exponent {
             }
             int64_t ix;
             std::memcpy(&ix, &x, sizeof(ix));
-            int64_t exponent = ((ix >> 52) & 0x7ff) - 1022;
+            int64_t exponent_bits = (ix >> 52) & 0x7ff;
+            if (exponent_bits == 0x7ff) {
+                return make_ConstantWithType(make_IntegerConstant_t,
+                    std::numeric_limits<int32_t>::max(), arg_type, loc);
+            }
+            int64_t exponent = exponent_bits - 1022;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
         return nullptr;
@@ -2977,15 +3045,25 @@ namespace Exponent {
                 body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
                 b.Assignment(result, b.i32(0))
             }, {
-                b.Assignment(result, b.i2i_t(b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
-                    b.i64(52), int64), b.i64(0x7FF)), b.i64(1022)), int32))
+                b.If(b.Eq(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
+                    b.i64(52), int64), b.i64(0x7FF)), b.i64(0x7FF)), {
+                    b.Assignment(result, b.i32(std::numeric_limits<int32_t>::max()))
+                }, {
+                    b.Assignment(result, b.i2i_t(b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr)),
+                        b.i64(52), int64), b.i64(0x7FF)), b.i64(1022)), int32))
+                })
             }));
         } else {
                 body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
                 b.Assignment(result, b.i32(0))
             }, {
-                b.Assignment(result, b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
-                b.i32(23), int32), b.i32(0x0FF)), b.i32(126)))
+                b.If(b.Eq(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
+                    b.i32(23), int32), b.i32(0x0FF)), b.i32(0x0FF)), {
+                    b.Assignment(result, b.i32(std::numeric_limits<int32_t>::max()))
+                }, {
+                    b.Assignment(result, b.Sub(b.And(b.BitRshift(ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr)),
+                        b.i32(23), int32), b.i32(0x0FF)), b.i32(126)))
+                })
             }));
         }
 
@@ -5692,13 +5770,38 @@ namespace Char {
     static ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        char str = i;
+        int kind = ASR::down_cast<ASR::String_t>(
+            ASRUtils::extract_type(t1))->m_kind;
         std::string svalue;
-        svalue += str;
+        if (kind <= 1 || i <= 0x7F) {
+            svalue += (char)i;
+        } else if (i <= 0x7FF) {
+            svalue += (char)(0xC0 | (i >> 6));
+            svalue += (char)(0x80 | (i & 0x3F));
+        } else if (i <= 0xFFFF) {
+            svalue += (char)(0xE0 | (i >> 12));
+            svalue += (char)(0x80 | ((i >> 6) & 0x3F));
+            svalue += (char)(0x80 | (i & 0x3F));
+        } else if (i <= 0x10FFFF) {
+            svalue += (char)(0xF0 | (i >> 18));
+            svalue += (char)(0x80 | ((i >> 12) & 0x3F));
+            svalue += (char)(0x80 | ((i >> 6) & 0x3F));
+            svalue += (char)(0x80 | (i & 0x3F));
+        }
         Str s;
         s.from_str_view(svalue);
         char *result = s.c_str(al);
-        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+        ASR::ttype_t* result_type = t1;
+        if (kind > 1 && (int64_t)svalue.size() != 1) {
+            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            result_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, kind,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, (int64_t)svalue.size(), int_type)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+        }
+        return make_ConstantWithType(make_StringConstant_t, result, result_type, loc);
     }
 
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
@@ -5747,27 +5850,40 @@ namespace Achar {
 
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
 
-        /* Declare Arguments + Return Variable */
-        fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", character(1), ReturnVar);
+        ASR::expr_t* result;
+        ASR::ttype_t* call_return_type = return_type;
 
-        /* Body */
-        /*
-            function _lcompilers_achar_#####(i) result(result)
-                integer, intent(in) :: i
-                character(1) :: result
-                result = transfer(i, result)
-            end function
-        */
-        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+        if (ASRUtils::is_array(arg_types[0])) {
+            fill_func_arg("codes", arg_types[0]);
 
-        /* Create Function + Add Into SymTable*/
+            ASR::expr_t* n = b.ArraySize(args[0], b.i32(1), int32);
+            ASR::ttype_t* result_str_type = b.String(n,
+                ASR::string_length_kindType::ExpressionLength);
+            result = declare("result", result_str_type, ReturnVar);
+            auto j = declare("j", int32, Local);
+            auto tmp_char = declare("tmp_char", character(1), Local);
+
+            body.push_back(al, b.DoLoop(j, b.i32(1), n, {
+                b.Assignment(tmp_char, b.BitCast(
+                    b.ArrayItem_01(args[0], {j}), tmp_char)),
+                b.Assignment(b.StringSection(result, j, j), tmp_char)
+            }));
+
+            ASR::expr_t* n_caller = b.ArraySize(
+                new_args[0].m_value, b.i32(1), int32);
+            call_return_type = b.String(n_caller,
+                ASR::string_length_kindType::ExpressionLength);
+        } else {
+            fill_func_arg("i", arg_types[0]);
+            result = declare("result", character(1), ReturnVar);
+            body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+        }
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
 
-        /* Return Call To The Function */
-        return b.Call(f_sym, new_args, return_type, nullptr);
+        return b.Call(f_sym, new_args, call_return_type, nullptr);
     }
 
 } // namespace Achar

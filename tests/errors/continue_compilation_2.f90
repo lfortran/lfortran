@@ -82,44 +82,44 @@ module continue_compilation_2_mod
         integer :: x(.., 5)
     end subroutine arank
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     
 end module continue_compilation_2_mod
+
+module intent_out_array_bounds_mod
+    type :: bar
+        integer :: n
+    end type
+contains
+    subroutine init_bar(this, n)
+        type(bar), intent(out) :: this
+        integer, intent(in) :: n
+        this%n = n
+        block
+            real :: array(this%n)
+            integer :: i
+            array = [ (i,i = 1,this%n) ]
+            print *, array
+        end block
+    end subroutine
+
+    subroutine optional_bound(n)
+        integer, optional, intent(in) :: n
+        real :: arr(n)
+        arr = 0.0
+        print *, arr
+    end subroutine
+end module intent_out_array_bounds_mod
+
+
+
+
+
+
+
+
+
+
+
 
 
 

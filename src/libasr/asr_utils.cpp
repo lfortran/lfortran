@@ -575,7 +575,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
         case ASR::exprType::GetPointer:
-        case ASR::exprType::CLoc: {
+        case ASR::exprType::CLoc:
+        case ASR::exprType::FunctionParam: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {
@@ -1160,21 +1161,28 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     }
 
     if (mod->m_has_submodules) {
-        std::vector<ASR::TranslationUnit_t*> submods;
-        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
-            = ASRUtils::find_and_load_submodules(al, std::string(mod->m_name), *symtab, pass_options, lm);
-        if (res.ok) {
-            submods = res.result;
-        } else {
-            std::string error_message = res.error.message;
-            err(error_message, loc);
-        }
-        for (size_t i=0;i<submods.size();i++) {
-            ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
-            if (symtab->get_symbol(std::string(submod->m_name)) == nullptr) {
-                symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-                submod->m_symtab->parent = symtab;
-                submod->m_loaded_from_mod = true;
+        std::vector<ASR::Module_t*> pending;
+        pending.push_back(mod);
+        while (!pending.empty()) {
+            ASR::Module_t* current = pending.back();
+            pending.pop_back();
+            std::vector<ASR::TranslationUnit_t*> submods;
+            Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
+                = ASRUtils::find_and_load_submodules(al, std::string(current->m_name), *symtab, pass_options, lm);
+            if (res.ok) {
+                submods = res.result;
+            } else {
+                std::string error_message = res.error.message;
+                err(error_message, loc);
+            }
+            for (size_t i=0;i<submods.size();i++) {
+                ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
+                if (symtab->get_symbol(std::string(submod->m_name)) == nullptr) {
+                    symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+                    submod->m_symtab->parent = symtab;
+                    submod->m_loaded_from_mod = true;
+                    pending.push_back(submod);
+                }
             }
         }
     }
@@ -1309,10 +1317,15 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                           pass_options.include_dirs.begin(),
                           pass_options.include_dirs.end());
 
+    bool found_empty_mod = false;
     for (auto path : mod_files_dirs) {
         std::string modfile;
         std::filesystem::path full_path = path / filename;
         if (read_file(full_path.string(), modfile)) {
+            if (modfile.empty()) {
+                found_empty_mod = true;
+                continue;
+            }
             Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
             if (res.ok) {
                 ASR::TranslationUnit_t* asr = res.result;
@@ -1325,6 +1338,35 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
             }
         }
     }
+
+    if (found_empty_mod) {
+        std::string smod_suffix = "@" + msym + ".smod";
+        for (auto &path : mod_files_dirs) {
+            std::filesystem::path search_dir = path.empty() ? std::filesystem::path(".") : path;
+            if (!std::filesystem::is_directory(search_dir)) continue;
+            for (auto &entry : std::filesystem::directory_iterator(search_dir)) {
+                std::string fname = entry.path().filename().string();
+                if (fname.size() > smod_suffix.size() &&
+                    fname.compare(fname.size() - smod_suffix.size(),
+                                  smod_suffix.size(), smod_suffix) == 0) {
+                    std::string smodfile;
+                    if (read_file(entry.path().string(), smodfile) && !smodfile.empty()) {
+                        Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, smodfile, false, symtab, lm);
+                        if (res.ok) {
+                            ASR::TranslationUnit_t* asr = res.result;
+                            if (intrinsic) {
+                                set_intrinsic(asr);
+                            }
+                            return asr;
+                        } else {
+                            return res.error;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return ErrorMessage("Module '" + msym + "' modfile was not found");
 }
 
@@ -1342,13 +1384,15 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
                           pass_options.include_dirs.begin(),
                           pass_options.include_dirs.end());
 
+    std::string smod_prefix = parent_module_name + "@";
     for (auto &path : mod_files_dirs) {
         if (path.empty()) path = ".";
+        if (!std::filesystem::is_directory(path)) continue;
         for (auto &file : std::filesystem::directory_iterator(path)) {
             std::string submod_filename = file.path().filename().string();
-            if (startswith(submod_filename, parent_module_name) && endswith(submod_filename, ".smod")) {
+            if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, ".smod")) {
                 std::string submodfile;
-                if (read_file(file.path().string(), submodfile)) {
+                if (read_file(file.path().string(), submodfile) && !submodfile.empty()) {
                     Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
                     if (sub_res.ok) {
                         ASR::TranslationUnit_t* asr = sub_res.result;
@@ -1544,16 +1588,20 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
 
                         not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type) ||
-                                       (right_arg_type2->type != right_type2->type)));
+                                       ((left_arg_type2->type != left_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
+                                        (right_arg_type2->type != right_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
 
                         left_type2 = ASRUtils::type_get_past_array(left_type2);
                         left_arg_type2 = ASRUtils::type_get_past_array(left_arg_type2);
                         right_type2 = ASRUtils::type_get_past_array(right_type2);
                         right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
 
-                        if( !not_matching && (left_arg_type2->type == left_type2->type &&
-                                                right_arg_type2->type == right_type2->type) ) {
+                        if( !not_matching && ((left_arg_type2->type == left_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
+                                               (right_arg_type2->type == right_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
                             // If all are StructTypes then the Struct symbols should match
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*right_type2) &&
@@ -2205,8 +2253,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
 
                         // Check for array type
                         not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type) ||
-                                       (right_arg_type2->type != right_type2->type)));
+                                       ((left_arg_type2->type != left_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
+                                        (right_arg_type2->type != right_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
 
                         // Get element type and compare
                         left_type2 = ASRUtils::type_get_past_array(left_type2);
@@ -2214,8 +2264,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         right_type2 = ASRUtils::type_get_past_array(right_type2);
                         right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
 
-                        if( !not_matching && (left_arg_type2->type == left_type2->type &&
-                                                right_arg_type2->type == right_type2->type) ) {
+                        if( !not_matching && ((left_arg_type2->type == left_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
+                                               (right_arg_type2->type == right_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
                             // If all are StructTypes then the Struct symbols should match
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*right_type2) &&
@@ -2363,8 +2415,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
 
                         // Check for array type
                         not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type) ||
-                                       (right_arg_type2->type != right_type2->type)));
+                                       ((left_arg_type2->type != left_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
+                                        (right_arg_type2->type != right_type2->type &&
+                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
 
                         // Get element type and compare
                         left_type2 = ASRUtils::type_get_past_array(left_type2);
@@ -2372,8 +2426,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         right_type2 = ASRUtils::type_get_past_array(right_type2);
                         right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
 
-                        if ( !not_matching && (left_arg_type2->type == left_type2->type &&
-                                                right_arg_type2->type == right_type2->type) ) {
+                        if ( !not_matching && ((left_arg_type2->type == left_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
+                                               (right_arg_type2->type == right_type2->type ||
+                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
                             if (ASR::is_a<ASR::StructType_t>(*left_type2)
                                 && ASR::is_a<ASR::StructType_t>(*right_type2)
                                 && ASR::is_a<ASR::StructType_t>(*left_arg_type2)
@@ -2597,7 +2653,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     // continue to next argument.
                     continue;
                 }
-                // Otherwise this should not be nullptr
+                if (args[i].m_value == nullptr) {
+                    // Required argument is not provided — overload doesn't match.
+                    return false;
+                }
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = v->m_type;
                 ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
@@ -2606,7 +2665,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 bool is_elemental = ASRUtils::get_FunctionType(sub)->m_elemental;
                 if (ASR::is_a<ASR::StructType_t>(*arg2_ext)) {
                     if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
-                            (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1)) ||
+                            (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1) && !ASRUtils::is_assumed_rank_array(arg2)) ||
                             (!is_elemental && !ASRUtils::is_array(arg2) && ASRUtils::is_array(arg1))) {
                         return false;
                     }
@@ -2625,6 +2684,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
+                if (args[i].m_value == nullptr) {
+                    // Required procedure argument is not provided — overload doesn't match.
+                    return false;
+                }
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sub_arg_sym);
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
@@ -2853,13 +2916,13 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym_past_ext = ASRUtils::symbol_get_past_external(original_sym);
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym_past_ext) ||
             (ASR::is_a<ASR::Variable_t>(*original_sym_past_ext) &&
-             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym_past_ext)))) {
+             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(original_sym_past_ext))))) {
             original_sym = original_sym_past_ext;
         }
     }
     if( original_sym && (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym) ||
         (ASR::is_a<ASR::Variable_t>(*original_sym) &&
-         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
+         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(original_sym))))) ) {
         std::string class_proc_name;
         // StructMethodDeclaration name might be same if the procedure is overridden, use proc_name instead
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym)) {
@@ -3152,24 +3215,56 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
                     implied_doloop_size_);
             }
+        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+            ASR::expr_t* ac_size = get_ArrayConstructor_size(al,
+                ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]));
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = ac_size;
+            } else {
+                implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
+            }
         } else {
             const_elements += 1;
         }
     }
-    // Include scalar elements in the implied-do body so mixed forms compute correctly per iteration.
-    if( const_elements > 0 ) {
-        if( implied_doloop_size_ == nullptr ) {
-            implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                make_Integer_t, const_elements, kind, loc);
-        } else {
-            implied_doloop_size_ = builder.Add(
+
+    ASR::symbol_t* loop_var_sym = nullptr;
+    if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
+        loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
+    }
+    bool inner_depends_on_var = (loop_var_sym != nullptr &&
+        implied_doloop_size_ != nullptr && d == nullptr &&
+        expr_references_symbol(implied_doloop_size_, loop_var_sym));
+
+    if (inner_depends_on_var) {
+        ASR::expr_t* two = make_ConstantWithKind(
+            make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
+        ASR::expr_t* arith_sum = builder.Div(
+            builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
+        if (const_elements > 0) {
+            ASR::expr_t* const_total = builder.Mul(
                 make_ConstantWithKind(make_IntegerConstant_t,
                     make_Integer_t, const_elements, kind, loc),
-                implied_doloop_size_);
+                implied_doloop_size);
+            implied_doloop_size = builder.Add(arith_sum, const_total);
+        } else {
+            implied_doloop_size = arith_sum;
         }
-    }
-    if( implied_doloop_size_ ) {
-        implied_doloop_size = builder.Mul(implied_doloop_size_, implied_doloop_size);
+    } else {
+        if( const_elements > 0 ) {
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
+                    make_Integer_t, const_elements, kind, loc);
+            } else {
+                implied_doloop_size_ = builder.Add(
+                    make_ConstantWithKind(make_IntegerConstant_t,
+                        make_Integer_t, const_elements, kind, loc),
+                    implied_doloop_size_);
+            }
+        }
+        if( implied_doloop_size_ ) {
+            implied_doloop_size = builder.Mul(implied_doloop_size_, implied_doloop_size);
+        }
     }
     return implied_doloop_size;
 }
@@ -3681,7 +3776,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     if (ASR::is_a<ASR::Var_t>(*x) ||
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstant_t>(*x) ||
+        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
         return x;
     }
 
@@ -3770,7 +3866,6 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     } else if (inside_binop) {
         return nullptr;
     } else {
-        LCOMPILERS_ASSERT(false);
         return nullptr;
     }
 }

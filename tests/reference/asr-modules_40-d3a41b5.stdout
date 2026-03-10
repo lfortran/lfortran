@@ -421,6 +421,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -456,6 +457,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_40_tomlf_de_tokenizer

@@ -126,6 +126,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_1:
                                 (Variable
@@ -232,6 +233,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_2:
                                 (Variable
@@ -338,6 +340,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_3:
                                 (Variable
@@ -422,6 +425,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_4:
                                 (Variable
@@ -528,6 +532,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_5:
                                 (Variable

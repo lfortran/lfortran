@@ -202,6 +202,47 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         current_expr = current_expr_copy;
     }
     
+    void visit_FileRead(const ASR::FileRead_t& x) {
+        ASR::FileRead_t& xx = const_cast<ASR::FileRead_t&>(x);
+        ASR::expr_t** current_expr_copy = current_expr;
+
+        // Visit unit, iomsg, iostat, id normally
+        if (xx.m_unit) {
+            current_expr = &(xx.m_unit);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_iomsg) {
+            current_expr = &(xx.m_iomsg);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_iostat) {
+            current_expr = &(xx.m_iostat);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_id) {
+            current_expr = &(xx.m_id);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        for (size_t i = 0; i < xx.n_values; i++) {
+            bool inside_copy = replacer.inside_prohibited_expression;
+            replacer.inside_prohibited_expression = true;
+            current_expr = &(xx.m_values[i]);
+            replacer.current_expr = current_expr;
+            this->visit_expr(*xx.m_values[i]);
+            replacer.inside_prohibited_expression = inside_copy;
+        }
+        if (xx.m_fmt) {
+            current_expr = &(xx.m_fmt);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        current_expr = current_expr_copy;
+    }
+    
 };
 
 void pass_replace_with_compile_time_values(

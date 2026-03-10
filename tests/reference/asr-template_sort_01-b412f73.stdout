@@ -7,16 +7,6 @@
                     (SymbolTable
                         18
                         {
-                            lt_my_type:
-                                (ExternalSymbol
-                                    18
-                                    lt_my_type
-                                    2 lt_my_type
-                                    template_sort_01_type
-                                    []
-                                    lt_my_type
-                                    Public
-                                ),
                             my_type:
                                 (ExternalSymbol
                                     18
@@ -189,7 +179,7 @@
                                     template_sort_01_type
                                     []
                                     lt_my_type
-                                    Public
+                                    Private
                                 ),
                             lt_real:
                                 (Function
@@ -3179,6 +3169,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     template_sort_01_type

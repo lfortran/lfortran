@@ -223,6 +223,12 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 
 LFORTRAN_API void _lfortran_init_random_clock()
 {
+    // The old implementation used the clock to initialize the random seed.
+    // Fortran requires random numbers to be deterministic, so we always
+    // initialize with the same seed. The old code should be refactored to
+    // some other function, possibly controllable with a compiler option or
+    // some other mechanism.
+/*
     unsigned int count;
 #if defined(_WIN32)
     count = (unsigned int)clock();
@@ -235,6 +241,8 @@ LFORTRAN_API void _lfortran_init_random_clock()
     }
 #endif
     srand(count);
+*/
+    srand(0);
 }
 
 LFORTRAN_API double _lfortran_random()
@@ -408,16 +416,24 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
             width = atoi(format + 1);
         }
         const char* special_str;
+        const char* short_str = NULL;
         if (isnan(val)) {
             special_str = "NaN";
         } else if (val < 0) {
             special_str = "-Infinity";
+            short_str = "-Inf";
         } else if (use_sign_plus) {
             special_str = "+Infinity";
+            short_str = "+Inf";
         } else {
             special_str = "Infinity";
+            short_str = "Inf";
         }
         int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
         if (width == 0 || special_len <= width) {
             if (width > special_len) {
                 for (int i = 0; i < width - special_len; i++) {
@@ -577,10 +593,39 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     double abs_val = fabs(val);
 
     // Handle special values (Infinity, NaN) before any log10 calculations
-    if (isnan(val)) {
-        snprintf(formatted_value, sizeof(formatted_value), "NaN");
-    } else if (isinf(val)) {
-        snprintf(formatted_value, sizeof(formatted_value), "%sInfinity", (val < 0) ? "-" : "");
+    if (isnan(val) || isinf(val)) {
+        const char* special_str;
+        const char* short_str = NULL;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+            short_str = "-Inf";
+        } else if (sign_plus_exist) {
+            special_str = "+Infinity";
+            short_str = "+Inf";
+        } else {
+            special_str = "Infinity";
+            short_str = "Inf";
+        }
+        int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
     } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
@@ -684,8 +729,25 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     // Handle special values (Infinity, NaN) before any log10 calculations
     if (isnan(val) || isinf(val)) {
-        const char* special_str = isnan(val) ? "NaN" : ((val < 0) ? "-Infinity" : "Infinity");
+        const char* special_str;
+        const char* short_str = NULL;
+        if (isnan(val)) {
+            special_str = "NaN";
+        } else if (val < 0) {
+            special_str = "-Infinity";
+            short_str = "-Inf";
+        } else if (is_signed_plus) {
+            special_str = "+Infinity";
+            short_str = "+Inf";
+        } else {
+            special_str = "Infinity";
+            short_str = "Inf";
+        }
         int special_len = strlen(special_str);
+        if (width > 0 && special_len > width && short_str != NULL) {
+            special_str = short_str;
+            special_len = strlen(special_str);
+        }
         if (width == 0 || special_len <= width) {
             if (width > special_len) {
                 for (int i = 0; i < width - special_len; i++) {
@@ -2064,11 +2126,13 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
     const char* default_spacing = "    ";
     ASSERT(default_spacing_len == strlen(default_spacing));
     *result = realloc(*result, result_capacity + 1 /*Null Character*/ );
+    bool prev_is_char = false;
 
     while(move_to_next_element(s_info, false)){
+        bool curr_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
+                             s_info->current_element_type == STRING_DESCRIPTOR_TYPE);
         int size_to_allocate;
-        if((s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE) && 
+        if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
             size_to_allocate = (s_info->current_arg_info.current_string_len
                                  + default_spacing_len + 1) * sizeof(char);
@@ -2084,12 +2148,13 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
             }
         }
         if(result_capacity != old_capacity){*result = (char*)realloc(*result, result_capacity + 1);}
-        if(result_size > 0){
+        if(result_size > 0 && !(prev_is_char && curr_is_char)){
             strcpy((*result)+result_size, default_spacing);
             result_size+=default_spacing_len;
         }
         int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
         result_size += printed_arg_size;
+        prev_is_char = curr_is_char;
     }
 
     (*result_size_ptr) = result_size;
@@ -2532,7 +2597,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         if (isnan(double_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(double_val)) {
-                            snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                            const char* inf_long = (double_val < 0) ? "-Infinity" : "Infinity";
+                            const char* inf_short = (double_val < 0) ? "-Inf" : "Inf";
+                            if (width > 0 && (int)strlen(inf_long) > width) {
+                                snprintf(formatted, sizeof(formatted), "%s", inf_short);
+                            } else {
+                                snprintf(formatted, sizeof(formatted), "%s", inf_long);
+                            }
                         } else if (width == 0 && !has_dot) {
                             if (s_info.current_element_type == FLOAT_32_TYPE) {
                                 format_float_fortran(formatted, (float)double_val);
@@ -3903,16 +3974,15 @@ LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx) {
 
 // Specific For Fortran Strings
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end){
-    if( (start<=0) || (end <=0) ){
-        char* empty = malloc(1*sizeof(char));
-        empty = "";
+    if( (start<=0) || (end <=0) || (end < start) ){
+        char* empty = (char*)malloc(1*sizeof(char));
+        empty[0] = '\0';
         return empty;
     }
     char* return_str = (char*)malloc(end - start + 1 + 1 /*Null Char*/);
     memcpy(return_str, s + start - 1, end - start + 1);
     return_str[end - start + 1] = '\0';
     return return_str;
-
 }
 
 LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int64_t idx2, int64_t step,
@@ -4568,13 +4638,54 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
+// Mersenne Twister (MT19937) for generating unique file IDs.
+// Separate from the C rand()/srand() used by Fortran random_number().
+#define MT_N 624
+#define MT_M 397
+#define MT_MATRIX_A   0x9908b0dfUL
+#define MT_UPPER_MASK 0x80000000UL
+#define MT_LOWER_MASK 0x7fffffffUL
+
+static uint32_t mt_state[MT_N];
+static int mt_index = MT_N + 1;
+
+static void mt_seed(uint32_t seed) {
+    mt_state[0] = seed;
+    for (int i = 1; i < MT_N; i++) {
+        mt_state[i] = 1812433253UL * (mt_state[i-1] ^ (mt_state[i-1] >> 30)) + i;
+    }
+    mt_index = MT_N;
+}
+
+static uint32_t mt_rand(void) {
+    if (mt_index >= MT_N) {
+        if (mt_index > MT_N) {
+            // Seed from clock XORed with a stack address for cross-process uniqueness
+            uintptr_t addr = (uintptr_t)&addr;
+            mt_seed((uint32_t)clock() ^ (uint32_t)(addr >> 4));
+        }
+        for (int i = 0; i < MT_N; i++) {
+            uint32_t y = (mt_state[i] & MT_UPPER_MASK) | (mt_state[(i+1) % MT_N] & MT_LOWER_MASK);
+            mt_state[i] = mt_state[(i + MT_M) % MT_N] ^ (y >> 1);
+            if (y & 1) mt_state[i] ^= MT_MATRIX_A;
+        }
+        mt_index = 0;
+    }
+    uint32_t y = mt_state[mt_index++];
+    y ^= (y >> 11);
+    y ^= (y <<  7) & 0x9d2c5680UL;
+    y ^= (y << 15) & 0xefc60000UL;
+    y ^= (y >> 18);
+    return y;
+}
+
 // Note: The length 25 was chosen to be at least as good as UUID
 //       which has 32 hex digits (36^24 < 16^32 < 36^25).
 #define ID_LEN 25
 void get_unique_ID(char buffer[ID_LEN + 1]) {
     const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     for (int i = 0; i < ID_LEN; i++) {
-        int index = rand() % 36;
+        int index = mt_rand() % 36;
         buffer[i] = v[index];
     }
     buffer[ID_LEN] = '\0';
@@ -5182,7 +5293,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -5272,8 +5384,14 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *size = ftell(fp);
             fseek(fp, current_pos, SEEK_SET);
         }
-        if (recl != NULL && access_id == 2) {
-            *recl = unit_recl;
+        if (recl != NULL) {
+            if (access_id == 1) {
+                *recl = -2;
+            } else if (access_id == 2) {
+                *recl = unit_recl;
+            } else {
+                *recl = -1;
+            }
         }
         if (sequential != NULL) {
             if (access_id == 0) {
@@ -5312,7 +5430,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (nextrec != NULL && access_id == 2 && fp != NULL) {
             long current_pos = ftell(fp);
-            *nextrec = (int32_t)(current_pos / unit_recl) + 1;
+            long long nextrec_ll = ((long long)current_pos + (long long)unit_recl - 1) / (long long)unit_recl + 1;
+            *nextrec = (int32_t)nextrec_ll;
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -6924,23 +7043,29 @@ typedef struct {
 // between file-based and string-based formatted reads.
 
 // blank_mode: 0 = BN (blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
-static void parse_integer_from_buffer(char* buffer, int field_len, 
-        void* int_ptr, int32_t type_code, int blank_mode)
+static void parse_integer_from_buffer(char* buffer, int field_len,
+        void* int_ptr, int32_t type_code, int blank_mode, bool* error)
 {
     // Process buffer according to blank mode
     char* processed = (char*)malloc(field_len + 1);
     int j = 0;
     for (int i = 0; i < field_len; i++) {
         if (buffer[i] == ' ') {
-            if (blank_mode == 1) {  // BZ: treat blanks as zeros
-                processed[j++] = '0';
-            }
-            // BN: skip blanks (blank_mode == 0)
+            if (blank_mode == 1) processed[j++] = '0';
         } else {
             processed[j++] = buffer[i];
         }
     }
     processed[j] = '\0';
+    char *p = processed;
+    if (*p == '+' || *p == '-') p++;
+    char *digit_start = p;
+    while (*p >= '0' && *p <= '9') p++;
+    if (p == digit_start || *p != '\0') {
+        free(processed);
+        *error = true;
+        return;
+    }
     
     if (type_code == 2) {
         *((int32_t*)int_ptr) = (int32_t)strtol(processed, NULL, 10);
@@ -7182,10 +7307,11 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
-
-    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode);
+    bool parse_error = false;
+    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode, &parse_error);
 
     free(buffer);
+    if (parse_error) { if (iostat) *iostat = 5010; return false; }
     return true;
 }
 
@@ -7665,6 +7791,26 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 }
 
+LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len) {
+    if (iomsg == NULL || iomsg_len <= 0 || iostat == 0) return;
+
+    const char* msg;
+    if (iostat > 0) {
+        msg = "Invalid input in READ statement";
+    } else if (iostat == -1) {
+        msg = "End of file reached in READ statement";
+    } else if (iostat == -2) {
+        msg = "End of record reached in READ statement";
+    } else {
+        msg = "End of file reached in READ statement";
+    }
+
+    int64_t msg_len = (int64_t)strlen(msg);
+    if (msg_len > iomsg_len) msg_len = iomsg_len;
+    memcpy(iomsg, msg, (size_t)msg_len);
+    pad_with_spaces(iomsg, msg_len, iomsg_len);
+}
+
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
@@ -7996,9 +8142,40 @@ char* remove_whitespace(char* str, int64_t* len) {
 }
 
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len) {
-    _lfortran_copy_str_and_pad(
-        dest_data, dest_len,
-        src_data, src_len);
+    int64_t pos = 0;
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
+        pos++;
+    }
+
+    if (pos < src_len && (src_data[pos] == '\'' || src_data[pos] == '"')) {
+        char delim = src_data[pos];
+        pos++;
+        int64_t dest_pos = 0;
+        while (pos < src_len) {
+            if (src_data[pos] == delim) {
+                pos++;
+                if (pos < src_len && src_data[pos] == delim) {
+                    if (dest_pos < dest_len) {
+                        dest_data[dest_pos++] = delim;
+                    }
+                    pos++;
+                } else {
+                    break;
+                }
+            } else {
+                if (dest_pos < dest_len) {
+                    dest_data[dest_pos++] = src_data[pos];
+                }
+                pos++;
+            }
+        }
+        pad_with_spaces(dest_data, dest_pos, dest_len);
+    } else {
+        int64_t remaining = src_len - pos;
+        _lfortran_copy_str_and_pad(
+            dest_data, dest_len,
+            src_data + pos, remaining);
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
@@ -8461,12 +8638,11 @@ char *get_base_name(char *filename) {
     char *slash_idx_ptr = strrchr(filename, '/');
     const char *base_start = slash_idx_ptr ? (slash_idx_ptr + 1) : filename;
     const char *dot_idx_ptr = strrchr(base_start, '.');
-
-    if (dot_idx_ptr == NULL || dot_idx_ptr == base_start) {
+    size_t base_len = dot_idx_ptr == NULL ? strlen(base_start)
+                                          : (size_t)(dot_idx_ptr - base_start);
+    if (base_len == 0) {
         return NULL;
     }
-
-    size_t base_len = (size_t)(dot_idx_ptr - base_start);
     char *base_name = malloc(base_len + 1);
     if (base_name == NULL) {
         return NULL;
