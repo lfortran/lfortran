@@ -2654,6 +2654,7 @@ RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_03 LABELS gfortran llvm)
 RUN(NAME class_allocate_04 LABELS gfortran llvm)
+RUN(NAME class_allocate_05 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
