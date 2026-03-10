@@ -7427,6 +7427,13 @@ public:
                 // uint32_t t_h = get_hash((ASR::asr_t*)t);
                 // nptr = llvm_symtab[t_h];
                 nptr = tmp;
+                ASR::ttype_t* tgt_type = ASRUtils::expr_type(x.m_tgt);
+                if( !ASRUtils::is_array(tgt_type) &&
+                    ASR::is_a<ASR::Pointer_t>(*tgt_type) ) {
+                    llvm::Type* tgt_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_tgt, tgt_type, module.get());
+                    nptr = llvm_utils->CreateLoad2(tgt_llvm_type, nptr);
+                }
                 if( ASRUtils::is_array(ASRUtils::expr_type(x.m_tgt)) ) {
                     ASR::array_physical_typeType tgt_ptype = ASRUtils::extract_physical_type(
                         ASRUtils::expr_type(x.m_tgt));
