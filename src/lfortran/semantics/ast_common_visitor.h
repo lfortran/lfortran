@@ -14384,9 +14384,17 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
-            && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
-            && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
+
+        // Try resolve to a function call (explicit or implicit)
+        // by changing the variable symbol into function. 
+        const bool not_resolvable_to_fncall = [v, x](){
+            const bool is_array = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_array(ASRUtils::symbol_type(v));
+            const bool string_section_or_item = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_character(*ASRUtils::symbol_type(v)) 
+                                                && (x.n_args == 1) && x.m_args[0].m_start != nullptr
+                                                && x.m_args[0].m_end != nullptr; // str(i:i)
+            return is_array || string_section_or_item;
+        }();
+        if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure ) && !not_resolvable_to_fncall) {
             bool is_v_dummy_arg = ASR::is_a<ASR::Variable_t>(*v) &&
                 ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(v)->m_intent);
             if (!is_v_dummy_arg && (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name))) {
