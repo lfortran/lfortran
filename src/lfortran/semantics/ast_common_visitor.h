@@ -1568,6 +1568,7 @@ public:
         {AST::operatorType::Add, "~add"},
         {AST::operatorType::Sub, "~sub"},
         {AST::operatorType::Div, "~div"},
+        {AST::operatorType::Pow, "~pow"},
     };
 
     std::map<AST::boolopType, std::string> boolop2str = {
