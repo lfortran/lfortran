@@ -3412,6 +3412,8 @@ RUN(NAME transfer_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME transfer_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
