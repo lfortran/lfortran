@@ -17880,8 +17880,11 @@ public:
                 class_value = llvm_utils->CreateLoad2(arg_llvm_type->getPointerTo(), class_value);
             }
             if (is_unlimited_polymorphic) {
-                class_value = llvm_utils->CreateLoad2(
-                    llvm_utils->i8_ptr, llvm_utils->create_gep2(arg_llvm_type, class_value, 1));
+                class_value = llvm_utils->create_gep2(arg_llvm_type, class_value, 1);
+                if (!LLVM::is_llvm_pointer(*dest_type)) {
+                    class_value = llvm_utils->CreateLoad2(
+                        llvm_utils->i8_ptr, class_value);
+                }
             } else {
                 ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
                     al, arg_type->base.loc, ASRUtils::symbol_get_past_external(
