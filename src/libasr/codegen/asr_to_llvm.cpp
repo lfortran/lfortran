@@ -7336,8 +7336,10 @@ public:
             ASR::ttype_t* const fptr_type = ASRUtils::expr_type(fptr);
             if (ASRUtils::is_string_only(fptr_type)) {
                 llvm::Value* const cptr_to_charPTR = builder->CreateBitCast(llvm_cptr, llvm_utils->character_type);
-                llvm::Value* const charPTR_ref = llvm_utils->get_string_data(ASRUtils::get_string_type(fptr_type), llvm_fptr, true);
+                ASR::String_t* str_type = ASRUtils::get_string_type(fptr_type);
+                llvm::Value* const charPTR_ref = llvm_utils->get_string_data(str_type, llvm_fptr, true);
                 builder->CreateStore(cptr_to_charPTR, charPTR_ref);
+                setup_string_length(llvm_fptr, str_type, str_type->m_len);
             } else {
                 ASR::ttype_t* fptr_asr_type = ASRUtils::expr_type(fptr);
                 ASR::ttype_t* fptr_contained = ASRUtils::type_get_past_pointer(fptr_asr_type);
