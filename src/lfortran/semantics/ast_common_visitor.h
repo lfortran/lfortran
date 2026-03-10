@@ -17294,13 +17294,13 @@ public:
                     std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_proc_name);
-                    // If the resolved symbol is actually a GenericProcedure
-                    // (or ExternalSymbol pointing to one), it means the
-                    // local rename collided with a specific procedure name.
-                    // Treat it as not found and import the actual Function.
-                    if( m_proc != nullptr ) {
-                        ASR::symbol_t* m_proc_underlying = ASRUtils::symbol_get_past_external(m_proc);
-                        if( ASR::is_a<T>(*m_proc_underlying) ) {
+                    if (m_proc != nullptr) {
+                        // Verify the resolved symbol refers to the same function
+                        // as the one in the source generic procedure, not a
+                        // different function with the same name from another module
+                        ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(m_proc);
+                        ASR::symbol_t* expected = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
+                        if (resolved != expected) {
                             m_proc = nullptr;
                         }
                     }
