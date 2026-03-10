@@ -8546,13 +8546,9 @@ public:
                                                 llvm::Type::getInt64Ty(context),
                                                 llvm_utils->create_gep2(str_desc_type, str_desc_0, 1));
 
-                                            // Get extent from dimension descriptor
-                                            llvm::Value* dim_desc_ptr_loc = builder->CreateLoad(
-                                                dim_desc_type->getPointerTo(),
-                                                llvm_utils->create_gep2(value_array_desc_type, llvm_value, 2));
-                                            llvm::Value* n_elems = llvm_utils->CreateLoad2(
-                                                arr_descr->get_index_type(),
-                                                llvm_utils->create_gep2(dim_desc_type, dim_desc_ptr_loc, 2));
+                                            // Get total element count across all dimensions
+                                            llvm::Value* n_elems = arr_descr->get_array_size(
+                                                value_array_desc_type, llvm_value, nullptr, 4);
                                             llvm::Value* n_elems_i64 = builder->CreateSExt(
                                                 n_elems, llvm::Type::getInt64Ty(context));
 
@@ -17946,14 +17942,9 @@ public:
                         llvm::Type::getInt64Ty(context),
                         llvm_utils->create_gep2(str_desc_type, str_desc_0, 1));
 
-                    // Get extent from dimension descriptor (field 2)
-                    llvm::Value* dim_desc_ptr = llvm_utils->CreateLoad2(
-                        arr_descr->get_dimension_descriptor_type(true),
-                        llvm_utils->create_gep2(src_arr_type, class_value, 2));
-                    llvm::Value* n_elems = llvm_utils->CreateLoad2(
-                        llvm_utils->getIntType(4),
-                        llvm_utils->create_gep2(
-                            arr_descr->get_dimension_descriptor_type(), dim_desc_ptr, 2));
+                    // Get total element count across all dimensions
+                    llvm::Value* n_elems = arr_descr->get_array_size(
+                        src_arr_type, class_value, nullptr, 4);
                     llvm::Value* n_elems_i64 = builder->CreateSExt(
                         n_elems, llvm::Type::getInt64Ty(context));
 
