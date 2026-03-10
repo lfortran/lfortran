@@ -9667,14 +9667,26 @@ public:
                 llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
-                target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                    ASRUtils::type_get_past_allocatable_pointer(target_type),
-                    module.get()), target));
-                llvm::DataLayout data_layout(module->getDataLayout());
-                uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
-                llvm_size = builder->CreateMul(llvm_size,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+                if( ASRUtils::is_character(*target_type) ) {
+                    // For character arrays, PointerArray stores a string_descriptor
+                    // pointing to contiguous char data. Copy the raw character data
+                    // into the target's data buffer using the character length.
+                    llvm::Value* src_data = llvm_utils->get_stringArray_data(value_type, value);
+                    llvm::Value* dst_data = llvm_utils->get_stringArray_data(target_type, target);
+                    llvm::Value* char_len = llvm_utils->get_stringArray_length(target_type, target);
+                    char_len = builder->CreateTrunc(char_len, llvm::Type::getInt32Ty(context));
+                    llvm_size = builder->CreateMul(llvm_size, char_len);
+                    builder->CreateMemCpy(dst_data, llvm::MaybeAlign(), src_data, llvm::MaybeAlign(), llvm_size);
+                } else {
+                    target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type),
+                        module.get()), target));
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
+                    llvm_size = builder->CreateMul(llvm_size,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                    builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+                }
             } else if( is_target_data_only_array || is_value_data_only_array ) {
                 if( is_value_fixed_sized_array ) {
                     is_value_data_only_array = true;
