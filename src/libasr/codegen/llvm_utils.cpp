@@ -9296,10 +9296,25 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(type, nullptr, module);
         llvm::Value *src = builder->CreateBitCast(argsVec[0], llvm_type->getPointerTo());
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], llvm_type->getPointerTo());
-        if (!ASRUtils::is_character(*type)) {
+        if (ASRUtils::is_character(*type)) {
+            // The destination string descriptor is freshly allocated and zeroed
+            // by the VTable allocate function, so its data pointer is NULL.
+            // Use deferred+allocatable flags so _lfortran_strcpy allocates the
+            // destination buffer instead of asserting it is non-NULL.
+            llvm::Value* lhs_data = llvm_utils->create_gep2(llvm_type, dst, 0);
+            llvm::Value* lhs_len = llvm_utils->create_gep2(llvm_type, dst, 1);
+            llvm::Value* rhs_data = llvm_utils->CreateLoad2(
+                llvm_utils->character_type,
+                llvm_utils->create_gep2(llvm_type, src, 0));
+            llvm::Value* rhs_len = llvm_utils->CreateLoad2(
+                llvm::Type::getInt64Ty(context),
+                llvm_utils->create_gep2(llvm_type, src, 1));
+            llvm_utils->lfortran_str_copy_with_data(
+                lhs_data, lhs_len, rhs_data, rhs_len, true, true);
+        } else {
             src = llvm_utils->CreateLoad2(llvm_type, src);
+            llvm_utils->deepcopy(nullptr, src, dst, type, type, module);
         }
-        llvm_utils->deepcopy(nullptr, src, dst, type, type, module);
         builder->CreateRetVoid();
 
         if (savedBB) {
