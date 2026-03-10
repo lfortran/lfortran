@@ -9097,6 +9097,30 @@ public:
             }
 
             if (is_target_unlimited_polymorphic) {
+                if (ASRUtils::is_allocatable(asr_target_type)) {
+                    // When target is an unallocated class(*), the wrapper
+                    // struct is null. Allocate it before accessing its fields.
+                    llvm::Value* is_wrapper_null = builder->CreateICmpEQ(
+                        target_struct,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(target_struct->getType())));
+                    llvm_utils->create_if_else(is_wrapper_null, [&]() {
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        uint64_t sz = data_layout.getTypeAllocSize(target_llvm_type);
+                        llvm::Value* wrapper_size = llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context), sz);
+                        llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, wrapper_size);
+                        builder->CreateMemSet(wrapper_ptr,
+                            llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                            wrapper_size, llvm::MaybeAlign());
+                        wrapper_ptr = builder->CreateBitCast(wrapper_ptr,
+                            target_llvm_type->getPointerTo());
+                        builder->CreateStore(wrapper_ptr, ptr_to_target_struct);
+                    }, []() {});
+                    target_struct = llvm_utils->CreateLoad2(
+                        target_llvm_type->getPointerTo(), ptr_to_target_struct);
+                }
                 target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
                 target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_struct);
             } else if (is_target_class) {
