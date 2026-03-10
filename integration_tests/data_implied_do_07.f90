@@ -5,7 +5,7 @@ module data_implied_do_07_mod
 end module data_implied_do_07_mod
 
 program data_implied_do_07
-    use mod
+    use data_implied_do_07_mod
     implicit none
     print *, iarx
     if (iarx(1) /= -2) error stop
