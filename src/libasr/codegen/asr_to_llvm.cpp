@@ -4559,6 +4559,10 @@ public:
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
         bool external = (x.m_abi != ASR::abiType::Source);
+        // BindC variables with an explicit initializer are definitions
+        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value != nullptr) {
+            external = false;
+        }
         llvm::Constant* init_value = nullptr;
         if (x.m_symbolic_value != nullptr &&
             !ASRUtils::is_string_only(x.m_type)){
