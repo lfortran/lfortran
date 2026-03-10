@@ -18126,6 +18126,24 @@ public:
                         actual_array_data_type->getPointerTo(), llvm_utils->create_gep2(actual_array_type, dt, 0));
                     arg_type = ASRUtils::extract_type(arg_type);
 
+                    bool is_char_array = ASR::is_a<ASR::String_t>(*arg_type);
+                    // For character arrays, actual_data is a single string_descriptor
+                    // whose data pointer holds contiguous character data for all elements.
+                    // We must build per-element string_descriptors for the class(*) wrappers.
+                    llvm::Value* char_descs = nullptr;
+                    llvm::Value* char_data_base = nullptr;
+                    llvm::Value* char_len = nullptr;
+                    if (is_char_array) {
+                        char_descs = builder->CreateAlloca(
+                            actual_array_data_type, total_elements);
+                        char_data_base = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr,
+                            llvm_utils->create_gep2(actual_array_data_type, actual_data, 0));
+                        char_len = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(actual_array_data_type, actual_data, 1));
+                    }
+
                     // Populate each wrapper with vptr and element data pointer
                     llvm::Value* zero_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
                     llvm::Value* one_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
@@ -18153,7 +18171,21 @@ public:
                         struct_api->store_intrinsic_type_vptr(arg_type,
                             ASRUtils::extract_kind_from_ttype_t(arg_type), wrapper, module.get());
                     }
-                    llvm::Value* elem_ptr = builder->CreateGEP(actual_array_data_type, actual_data, idx);
+                    llvm::Value* elem_ptr;
+                    if (is_char_array) {
+                        // Build a per-element string_descriptor: {data_base + idx*len, len}
+                        elem_ptr = builder->CreateGEP(actual_array_data_type, char_descs, idx);
+                        llvm::Value* idx_i64 = builder->CreateSExt(idx, llvm::Type::getInt64Ty(context));
+                        llvm::Value* byte_offset = builder->CreateMul(idx_i64, char_len);
+                        llvm::Value* elem_char_ptr = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), char_data_base, byte_offset);
+                        builder->CreateStore(elem_char_ptr,
+                            llvm_utils->create_gep2(actual_array_data_type, elem_ptr, 0));
+                        builder->CreateStore(char_len,
+                            llvm_utils->create_gep2(actual_array_data_type, elem_ptr, 1));
+                    } else {
+                        elem_ptr = builder->CreateGEP(actual_array_data_type, actual_data, idx);
+                    }
                     llvm::Value* data_field = llvm_utils->create_gep2(array_data_type, wrapper, 1);
                     builder->CreateStore(builder->CreateBitCast(elem_ptr, llvm_utils->i8_ptr), data_field);
                     builder->CreateStore(builder->CreateAdd(idx, one_val), idx_ptr);
