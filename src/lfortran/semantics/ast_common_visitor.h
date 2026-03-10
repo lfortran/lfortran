@@ -5041,6 +5041,8 @@ public:
                           ASR::Variable_t* anchor_variable = nullptr;
                           ASR::Array_t* anchor_arr_saved = nullptr;
                           ASR::expr_t* anchor_var_ref_saved = nullptr;
+                          ASR::expr_t* common_block_source = nullptr;
+                          ASR::ttype_t* common_block_source_type = nullptr;
                           for (int eq_idx = 0; eq_idx < n_set - 1; eq_idx++) {
                             AST::expr_t *eq1 = eq->m_args[i].m_set_list[eq_idx];
                             AST::expr_t *eq2 = anchor;
@@ -5707,12 +5709,26 @@ public:
                                             pointer_var = ASR::down_cast<ASR::Variable_t>(
                                                 ASR::down_cast<ASR::Var_t>(asr_eq2)->m_v);
                                             source_type = arg_type1;
+                                            // Track that the anchor was aliased to this
+                                            // common block source so subsequent variables
+                                            // in the same equivalence set can use it.
+                                            common_block_source = asr_eq1;
+                                            common_block_source_type = arg_type1;
                                         } else if (eq2_is_common) {
                                             source_expr = asr_eq2;
                                             pointer_expr = asr_eq1;
                                             pointer_var = ASR::down_cast<ASR::Variable_t>(
                                                 ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
                                             source_type = arg_type2;
+                                        } else if (common_block_source != nullptr) {
+                                            // The anchor was previously aliased to a
+                                            // common block variable.  Point this variable
+                                            // directly at the common block storage.
+                                            source_expr = common_block_source;
+                                            pointer_expr = asr_eq1;
+                                            pointer_var = ASR::down_cast<ASR::Variable_t>(
+                                                ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
+                                            source_type = common_block_source_type;
                                         } else {
                                             // Default: source=eq2, pointer=eq1.
                                             // If eq2 is already a source from a prior
