@@ -1,4 +1,4 @@
-program deallocate_03
+program deallocate_01
     implicit none
     integer, allocatable :: a(:)
 
@@ -6,4 +6,4 @@ program deallocate_03
     deallocate(a)
 
     print *, "This line should not execute"
-end program deallocate_03
+end program deallocate_01

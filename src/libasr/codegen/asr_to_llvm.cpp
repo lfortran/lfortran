@@ -2297,14 +2297,13 @@ public:
                             var_name = ASRUtils::symbol_name(sym);
                         }
                         // Skip runtime check for compiler-generated temporaries
-                            llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
-                            llvm_utils->generate_runtime_error(builder->CreateNot(cond),
-                                "Attempting to deallocate unallocated variable '%s'",
-                                {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
-                                infile,
-                                location_manager,
-                                var_name_llvm);
-                        
+                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                        llvm_utils->generate_runtime_error(builder->CreateNot(cond),
+                            "Attempting to deallocate unallocated variable '%s'",
+                            {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
+                            infile,
+                            location_manager,
+                            var_name_llvm);
                     }
                     llvm_utils->create_if_else(cond, [=]() {
                         // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
@@ -2381,15 +2380,13 @@ public:
                             var_name = ASRUtils::symbol_name(sym);
                         }
                         // Skip runtime check for compiler-generated temporaries
-                        
-                            llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
-                            llvm_utils->generate_runtime_error(builder->CreateNot(cond),
-                                "Attempting to deallocate unallocated variable '%s'",
-                                {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
-                                infile,
-                                location_manager,
-                                var_name_llvm);
-                        
+                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                        llvm_utils->generate_runtime_error(builder->CreateNot(cond),
+                            "Attempting to deallocate unallocated variable '%s'",
+                            {LLVMUtils::RuntimeLabel("Cannot deallocate '%s' because it is not allocated", {tmp_expr->base.loc}, {var_name_llvm})},
+                            infile,
+                            location_manager,
+                            var_name_llvm);
                     }
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
