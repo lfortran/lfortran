@@ -401,6 +401,24 @@ public :
 
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
+        // Elemental functions returning primitive scalars are not converted
+        // to subroutines, but the call expression type is an array (due to
+        // elemental expansion with array args). Extract the call into a
+        // temporary assignment so that the later array_op pass can expand
+        // it element-wise.
+        if (func && ASRUtils::is_elemental(x->m_name) && !was_converted
+                && PassUtils::is_aggregate_or_array_type(x->m_type)) {
+            ASR::expr_t* result_var = PassUtils::create_var(
+                result_counter++, "return_slot", x->base.base.loc,
+                create_type_for_return_slot_var(x->m_type), al,
+                current_scope, nullptr);
+            ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, x->base.base.loc, result_var,
+                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false));
+            *current_expr = result_var;
+            pass_result.push_back(al, assign);
+            return;
+        }
         if(PassUtils::is_non_primitive_return_type(x->m_type)
             || PassUtils::is_aggregate_or_array_type(x->m_type)){
 
