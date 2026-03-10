@@ -375,6 +375,17 @@ bool set_allocation_size(
             allocate_dim.m_length = m_dims[i].m_length;
             allocate_dims.push_back(al, allocate_dim);
         }
+        // Set len_allocte_expr for deferred-length character arrays
+        if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+            ASR::String_t* str_type = ASRUtils::get_string_type(
+                ASRUtils::expr_type(value));
+            if( str_type->m_len ) {
+                len_allocte_expr = str_type->m_len;
+            } else {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(value);
+            }
+        }
         return true;
     }
     switch( value->type ) {
@@ -873,6 +884,11 @@ bool set_allocation_size(
                     allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
                 }
                 allocate_dims.push_back(al, allocate_dim);
+            }
+            // Set len_allocte_expr for deferred-length character arrays
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(array_reshape_t->m_array);
             }
             break;
         }
