@@ -2149,17 +2149,28 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
-            // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            // if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
-            //     res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
-            // } else {
-            //     res = symbol_name(d->m_derived_type);
-            // }
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
+                ASR::symbol_t* sym = symbol_get_past_external(
+                    get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
+                // Scope-qualify the name to distinguish identically-named
+                // types in different scopes (e.g., sub1.point vs sub2.point).
+                // Skip internal sentinel types (names starting with '~').
+                if (ASR::is_a<ASR::Struct_t>(*sym) &&
+                    !res.empty() && res[0] != '~') {
+                    ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(sym);
+                    if (st->m_symtab && st->m_symtab->parent &&
+                        st->m_symtab->parent->asr_owner &&
+                        ASR::is_a<ASR::symbol_t>(
+                            *st->m_symtab->parent->asr_owner)) {
+                        ASR::symbol_t* parent_sym = ASR::down_cast<
+                            ASR::symbol_t>(
+                            st->m_symtab->parent->asr_owner);
+                        res = std::string(symbol_name(parent_sym)) + "."
+                            + res;
+                    }
+                }
             } else {
                 res = "StructType";
             }

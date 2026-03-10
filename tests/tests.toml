@@ -5032,6 +5032,10 @@ filename = "../integration_tests/select_type_13.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/select_type_35.f90"
+llvm = true
+
+[[test]]
 filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
 llvm = true
 

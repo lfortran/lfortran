@@ -201,9 +201,10 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
         value_m_dims, value_n_dims);
     bool is_allocatable = ASRUtils::is_allocatable(value_type);
+    bool is_pointer = ASRUtils::is_pointer(value_type);
     bool is_compile_time = ASRUtils::is_value_constant(ASRUtils::expr_value(value));
     ASR::ttype_t* var_type = nullptr;
-    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
+    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable || is_pointer) &&
         !is_pointer_required ) {
         if( is_fixed_sized_array && override_physical_type ) {
             value_type = ASRUtils::duplicate_type(al, value_type, nullptr,
@@ -374,13 +375,24 @@ bool set_allocation_size(
             allocate_dim.m_length = m_dims[i].m_length;
             allocate_dims.push_back(al, allocate_dim);
         }
+        // Set len_allocte_expr for deferred-length character arrays
+        if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+            ASR::String_t* str_type = ASRUtils::get_string_type(
+                ASRUtils::expr_type(value));
+            if( str_type->m_len ) {
+                len_allocte_expr = str_type->m_len;
+            } else {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(value);
+            }
+        }
         return true;
     }
     switch( value->type ) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
             ASR::ttype_t* type = function_call->m_type;
-            if( ASRUtils::is_allocatable(type) ) {
+            if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
                 return false;
             }
             if (ASRUtils::is_elemental(function_call->m_name)) {
@@ -873,6 +885,11 @@ bool set_allocation_size(
                 }
                 allocate_dims.push_back(al, allocate_dim);
             }
+            // Set len_allocte_expr for deferred-length character arrays
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(array_reshape_t->m_array);
+            }
             break;
         }
         case ASR::exprType::ArrayConstructor: {
@@ -897,7 +914,6 @@ bool set_allocation_size(
         }
         case ASR::exprType::BitCast: {
             ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(value);
-            ASRUtils::ASRBuilder b(al, loc);
             allocate_dims.reserve(al, 1);
             ASR::dimension_t allocate_dim;
             allocate_dim.loc = loc;
@@ -906,16 +922,11 @@ bool set_allocation_size(
                 allocate_dim.m_length = bit_cast->m_size;
                 allocate_dims.push_back(al, allocate_dim);
             } else {
-                size_t mold_dims = ASRUtils::extract_n_dims_from_ttype(bit_cast->m_type);
-                if (mold_dims != 0) {
-                    ASR::ttype_t* source_type = ASRUtils::expr_type(bit_cast->m_source);
-                    ASR::ttype_t* mold_type = ASRUtils::expr_type(bit_cast->m_mold);
-                    int source_kind = ASRUtils::extract_kind_from_ttype_t(source_type);
-                    int mold_kind = ASRUtils::extract_kind_from_ttype_t(mold_type);
-                    int source_bits = source_kind * 8;
-                    int mold_elem_bits = mold_kind * 8;
-                    int n_elems = (source_bits + mold_elem_bits - 1) / mold_elem_bits;
-                    allocate_dim.m_length = b.i32(n_elems);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    bit_cast->m_type, m_dims);
+                if (n_dims > 0 && m_dims[0].m_length) {
+                    allocate_dim.m_length = m_dims[0].m_length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
             }
@@ -1409,7 +1420,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
-                     orig_variable->m_intent == ASRUtils::intent_inout)) {
+                     orig_variable->m_intent == ASRUtils::intent_inout ||
+                     ASRUtils::is_pointer(orig_variable->m_type))) {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
@@ -2971,7 +2983,8 @@ class VerifySimplifierASROutput:
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
-                     orig_variable->m_intent == ASRUtils::intent_inout)) {
+                     orig_variable->m_intent == ASRUtils::intent_inout ||
+                     ASRUtils::is_pointer(orig_variable->m_type))) {
                     continue;
                 }
             }
