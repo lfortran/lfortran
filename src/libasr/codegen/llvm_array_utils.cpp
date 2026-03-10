@@ -444,6 +444,27 @@ namespace LCompilers {
                     llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)),
                         struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
+                } else if (struct_type->m_is_unlimited_polymorphic) {
+                    // Unlimited polymorphic array without explicit type spec
+                    // (e.g., from polymorphic array assignment lhs%value = rhs%value).
+                    // Allocate raw memory for class wrapper elements.
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    llvm::Type* ptr_type = llvm_data_type->getPointerTo();
+                    uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, size));
+                    prod = builder->CreateMul(prod, llvm_size);
+                    llvm::Value* arg_size = builder->CreateSExtOrTrunc(prod, llvm::Type::getInt64Ty(context));
+                    llvm::Value* ptr_as_char_ptr = nullptr;
+                    if( realloc ) {
+                        ptr_as_char_ptr = lfortran_realloc(context, *module,
+                            *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
+                            arg_size);
+                    } else {
+                        ptr_as_char_ptr = lfortran_malloc(context, *module,
+                            *builder, arg_size);
+                    }
+                    llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
+                    builder->CreateStore(first_ptr, ptr2firstptr);
                 } else {
                     llvm_utils->struct_api->allocate_array_of_classes(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration))
