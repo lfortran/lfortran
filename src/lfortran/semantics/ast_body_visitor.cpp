@@ -8,6 +8,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/exception.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
@@ -19,103 +20,13 @@
 
 namespace LCompilers::LFortran {
 
-class SideEffectFinder : public ASR::BaseWalkVisitor<SideEffectFinder> {
-public:
-    bool found = false;
-    Location loc;
-    std::string description;
-
-    void mark_found(const Location &l, const std::string &desc) {
-        found = true;
-        loc = l;
-        description = desc;
-    }
-
-    void visit_Print(const ASR::Print_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "PRINT statement");
-    }
-
-    void visit_FileOpen(const ASR::FileOpen_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "OPEN statement");
-    }
-
-    void visit_FileClose(const ASR::FileClose_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "CLOSE statement");
-    }
-
-    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "BACKSPACE statement");
-    }
-
-    void visit_FileRewind(const ASR::FileRewind_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "REWIND statement");
-    }
-
-    void visit_FileEndfile(const ASR::FileEndfile_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "ENDFILE statement");
-    }
-
-    void visit_FileInquire(const ASR::FileInquire_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "INQUIRE statement");
-    }
-
-    void visit_Flush(const ASR::Flush_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "FLUSH statement");
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        if (found) return;
-        if (x.m_name) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
-            if (ASR::is_a<ASR::Function_t>(*sym)) {
-                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
-                if (!f->m_side_effect_free) {
-                    mark_found(x.base.base.loc, "Call to impure procedure '" +
-                        std::string(f->m_name) + "'");
-                    return;
-                }
-            }
-        }
-        BaseWalkVisitor::visit_SubroutineCall(x);
-    }
-
-    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
-        if (found) return;
-        mark_found(x.base.base.loc, "Call to impure intrinsic subroutine");
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        if (found) return;
-        if (x.m_name) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
-            if (ASR::is_a<ASR::Function_t>(*sym)) {
-                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
-                if (!f->m_side_effect_free) {
-                    mark_found(x.base.base.loc, "Call to impure procedure '" +
-                        std::string(f->m_name) + "'");
-                    return;
-                }
-            }
-        }
-        BaseWalkVisitor::visit_FunctionCall(x);
-    }
-};
-
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
     if (!fn_type->m_pure || v->m_side_effect_free) {
         return;
     }
-    SideEffectFinder finder;
+    ASR::SideEffectFinder finder;
     for (size_t i = 0; i < n_stmts && !finder.found; i++) {
         finder.visit_stmt(*stmts[i]);
     }
@@ -6375,8 +6286,14 @@ public:
                 if (ASR::is_a<ASR::stmt_t>(*intrinsic_subroutine) &&
                         ASR::is_a<ASR::IntrinsicImpureSubroutine_t>(
                             *ASR::down_cast<ASR::stmt_t>(intrinsic_subroutine))) {
-                    current_function_deterministic = false;
-                    current_function_side_effect_free = false;
+                    ASR::IntrinsicImpureSubroutine_t &iis =
+                        *ASR::down_cast<ASR::IntrinsicImpureSubroutine_t>(
+                            ASR::down_cast<ASR::stmt_t>(intrinsic_subroutine));
+                    if (!ASR::is_side_effect_free_intrinsic_impure_subroutine(
+                            iis.m_sub_intrinsic_id)) {
+                        current_function_deterministic = false;
+                        current_function_side_effect_free = false;
+                    }
                 }
                 tmp = intrinsic_subroutine;
                 return;
