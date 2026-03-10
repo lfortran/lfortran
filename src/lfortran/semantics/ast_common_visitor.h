@@ -16957,7 +16957,7 @@ public:
             }
             if(tmp2->m_v->type == ASR::exprType::Var){
                 ASR::ttype_t* var_type = ASRUtils::expr_type(tmp2->m_v);
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(var_type))){
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(var_type))){
                     if(array_found){
                         diag.add(Diagnostic(
                             "The expression with derived types contains two or more arrays.",
@@ -17005,6 +17005,10 @@ public:
                     } else {
                         tmp2->m_type = ASRUtils::type_get_past_allocatable(array_type);
                     }
+                }
+                if(ASR::is_a<ASR::Pointer_t>(*array_type)){
+                    ASR::down_cast<ASR::Array_t>(ASR::down_cast<ASR::Pointer_t>(array_type)->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(tmp2->m_type));
+                    tmp2->m_type = ASRUtils::type_get_past_pointer(array_type);
                 }
 
             } else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
