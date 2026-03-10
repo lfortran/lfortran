@@ -14390,8 +14390,7 @@ public:
         const bool not_resolvable_to_fncall = [v, x](){
             const bool is_array = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_array(ASRUtils::symbol_type(v));
             const bool string_section_or_item = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_character(*ASRUtils::symbol_type(v)) 
-                                                && (x.n_args == 1) && x.m_args[0].m_start != nullptr
-                                                && x.m_args[0].m_end != nullptr; // str(i:i)
+                                                && (x.n_args == 1) && x.m_args[0].m_step != nullptr; // str(:), str(i:i), .etc.
             return is_array || string_section_or_item;
         }();
         if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure ) && !not_resolvable_to_fncall) {
