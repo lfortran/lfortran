@@ -2680,6 +2680,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     } else if (!ASRUtils::check_class_assignment_compatibility(s2, s1)) {
                         return false;
                     }
+                    if (!is_elemental) {
+                        int rank1 = ASRUtils::extract_n_dims_from_ttype(arg1);
+                        int rank2 = ASRUtils::extract_n_dims_from_ttype(arg2);
+                        if (rank1 != rank2
+                                && !ASRUtils::is_assumed_rank_array(arg2)) {
+                            return false;
+                        }
+                    }
                 } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }
