@@ -4559,6 +4559,10 @@ public:
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
         bool external = (x.m_abi != ASR::abiType::Source);
+        // BindC variables with an explicit initializer are definitions
+        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value != nullptr) {
+            external = false;
+        }
         llvm::Constant* init_value = nullptr;
         if (x.m_symbolic_value != nullptr &&
             !ASRUtils::is_string_only(x.m_type)){
@@ -8843,6 +8847,55 @@ public:
                     builder->CreateStore(elem_val, dest_ptr);
                     return;
                 }
+            }
+
+            // Whole-array BitCast with different element sizes (e.g.,
+            // transfer(int32_array, int8_mold)).  The array_op pass left this
+            // assignment un-scalarised because the source and result have
+            // different element counts.  Lower it as a memcpy.
+            ASR::ttype_t* bc_src_type = ASRUtils::expr_type(bc->m_source);
+            ASR::ttype_t* bc_tgt_type = ASRUtils::expr_type(x.m_target);
+            if (ASRUtils::is_array(bc_src_type) && ASRUtils::is_array(bc_tgt_type) &&
+                !ASRUtils::is_string_only(bc_src_type) &&
+                ASRUtils::is_fixed_size_array(bc_src_type) &&
+                ASRUtils::is_fixed_size_array(bc_tgt_type)) {
+                // Get pointer to source array data
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                visit_expr_wrapper(bc->m_source, true);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* src_ptr = tmp;
+                if (!src_ptr->getType()->isPointerTy()) {
+                    llvm::Value* alloca_ = llvm_utils->CreateAlloca(
+                        src_ptr->getType(), nullptr, "transfer_src");
+                    builder->CreateStore(src_ptr, alloca_);
+                    src_ptr = alloca_;
+                }
+
+                // Get pointer to target array
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                visit_expr(*x.m_target);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* dest_ptr = tmp;
+
+                llvm::Value* src_i8 = builder->CreateBitCast(
+                    src_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+                llvm::Value* dest_i8 = builder->CreateBitCast(
+                    dest_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                // Compute source byte count (= source_elements * source_kind)
+                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(bc_src_type));
+                int64_t src_n = ASRUtils::get_fixed_size_of_array(bc_src_type);
+                int64_t nbytes = src_kind * src_n;
+
+                builder->CreateMemCpy(
+                    dest_i8, llvm::MaybeAlign(1),
+                    src_i8, llvm::MaybeAlign(1),
+                    llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), nbytes));
+                return;
             }
         }
 
