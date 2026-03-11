@@ -460,15 +460,7 @@ namespace LCompilers {
                     // will copy data from the source wrapper.
                     llvm::Type* const class_type = llvm_utils->getClassType(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)));
-                    llvm::DataLayout data_layout(module->getDataLayout());
-                    int64_t wrapper_size = data_layout.getTypeAllocSize(class_type);
-                    llvm::Value* wrapper_mem = lfortran_malloc(context, *module, *builder,
-                        llvm::ConstantInt::get(context, llvm::APInt(64, wrapper_size)));
-                    builder->CreateMemSet(wrapper_mem,
-                        llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                        wrapper_size, llvm::MaybeAlign());
-                    llvm::Value* wrapper_ptr = builder->CreateBitCast(
-                        wrapper_mem, class_type->getPointerTo());
+                    llvm::Value* wrapper_ptr = llvm_utils->alloc_zeroed_type(class_type);
                     builder->CreateStore(wrapper_ptr, ptr2firstptr);
                 } else {
                     llvm_utils->struct_api->allocate_array_of_classes(

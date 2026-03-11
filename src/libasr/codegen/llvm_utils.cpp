@@ -1657,12 +1657,32 @@ namespace LCompilers {
         return malloc_ptr;
     }
 
-    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(llvm::Type* string_desc_type) {
+    llvm::Value* LLVMUtils::alloc_zeroed_type(llvm::Type* type) {
         llvm::DataLayout data_layout(module->getDataLayout());
-        int64_t str_desc_size = data_layout.getTypeAllocSize(string_desc_type);
-        llvm::Value* str_desc_mem = allocate_zeroed_bytes(llvm::ConstantInt::get(
-            context, llvm::APInt(64, str_desc_size)));
-        return builder->CreateBitCast(str_desc_mem, string_desc_type->getPointerTo());
+        uint64_t type_size = data_layout.getTypeAllocSize(type);
+        llvm::Value* mem = allocate_zeroed_bytes(
+            llvm::ConstantInt::get(context, llvm::APInt(64, type_size)));
+        return builder->CreateBitCast(mem, type->getPointerTo());
+    }
+
+    LLVMUtils::UpolyWrapperFields LLVMUtils::extract_upoly_wrapper(
+            llvm::Value* wrapper, llvm::Type* wrapper_type) {
+        UpolyWrapperFields f;
+        f.vptr = CreateLoad2(vptr_type,
+            builder->CreateBitCast(wrapper, vptr_type->getPointerTo()));
+        f.data = CreateLoad2(i8_ptr, create_gep2(wrapper_type, wrapper, 1));
+        f.elem_size = get_class_type_size_from_vptr(f.vptr);
+        llvm::FunctionType* fnTy = struct_copy_functype;
+        llvm::PointerType* fnPtrTy = llvm::PointerType::get(fnTy, 0);
+        f.copy_fn = CreateLoad2(
+            llvm::FunctionType::get(getIntType(4), {}, true)->getPointerTo(),
+            f.vptr);
+        f.copy_fn = builder->CreateBitCast(f.copy_fn, fnPtrTy);
+        return f;
+    }
+
+    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(llvm::Type* string_desc_type) {
+        return alloc_zeroed_type(string_desc_type);
     }
 
     void LLVMUtils::ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
@@ -3078,28 +3098,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* flat_buf = LLVMArrUtils::lfortran_malloc(
             context, *module, *builder, total_bytes);
 
-        llvm::BasicBlock* pre_bb = builder->GetInsertBlock();
-        llvm::BasicBlock* head = llvm::BasicBlock::Create(context, "char_consolidate.head");
-        llvm::BasicBlock* body = llvm::BasicBlock::Create(context, "char_consolidate.body");
-        llvm::BasicBlock* end  = llvm::BasicBlock::Create(context, "char_consolidate.end");
-        builder->CreateBr(head);
-        start_new_block(head);
-        llvm::PHINode* idx = builder->CreatePHI(i64_ty, 2, "ci");
-        idx->addIncoming(llvm::ConstantInt::get(i64_ty, 0), pre_bb);
-        builder->CreateCondBr(builder->CreateICmpSLT(idx, n_elems_i64), body, end);
-        start_new_block(body);
-        llvm::Value* src_desc = create_ptr_gep2(str_desc_ty, descs, idx);
-        llvm::Value* src_chars = CreateLoad2(character_type,
-            create_gep2(str_desc_ty, src_desc, 0));
-        llvm::Value* dst_off = builder->CreateMul(idx, char_len);
-        llvm::Value* dst_chars = builder->CreateGEP(i8_ty, flat_buf, dst_off);
-        builder->CreateMemCpy(dst_chars, llvm::MaybeAlign(),
-            src_chars, llvm::MaybeAlign(), char_len);
-        llvm::Value* next = builder->CreateAdd(idx,
-            llvm::ConstantInt::get(i64_ty, 1));
-        idx->addIncoming(next, builder->GetInsertBlock());
-        builder->CreateBr(head);
-        start_new_block(end);
+        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
+        create_loop("char_consolidate", [&]() {
+            return builder->CreateICmpSLT(
+                CreateLoad2(i64_ty, idx), n_elems_i64);
+        }, [&]() {
+            llvm::Value* i = CreateLoad2(i64_ty, idx);
+            llvm::Value* src_desc = create_ptr_gep2(str_desc_ty, descs, i);
+            llvm::Value* src_chars = CreateLoad2(character_type,
+                create_gep2(str_desc_ty, src_desc, 0));
+            llvm::Value* dst_off = builder->CreateMul(i, char_len);
+            llvm::Value* dst_chars = builder->CreateGEP(i8_ty, flat_buf, dst_off);
+            builder->CreateMemCpy(dst_chars, llvm::MaybeAlign(),
+                src_chars, llvm::MaybeAlign(), char_len);
+            builder->CreateStore(
+                builder->CreateAdd(i, llvm::ConstantInt::get(i64_ty, 1)), idx);
+        });
 
         llvm::Value* result = CreateAlloca(*builder, str_desc_ty,
             nullptr, "consolidated_str");
@@ -3123,26 +3138,21 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* descs = builder->CreateBitCast(
             descs_buf, str_desc_ty->getPointerTo());
 
-        llvm::BasicBlock* pre_bb = builder->GetInsertBlock();
-        llvm::BasicBlock* head = llvm::BasicBlock::Create(context, "str_expand.head");
-        llvm::BasicBlock* body = llvm::BasicBlock::Create(context, "str_expand.body");
-        llvm::BasicBlock* end  = llvm::BasicBlock::Create(context, "str_expand.end");
-        builder->CreateBr(head);
-        start_new_block(head);
-        llvm::PHINode* idx = builder->CreatePHI(i64_ty, 2, "str_i");
-        idx->addIncoming(llvm::ConstantInt::get(i64_ty, 0), pre_bb);
-        builder->CreateCondBr(builder->CreateICmpSLT(idx, n_elems_i64), body, end);
-        start_new_block(body);
-        llvm::Value* offset = builder->CreateMul(idx, char_len);
-        llvm::Value* elem_char = builder->CreateGEP(i8_ty, flat_data, offset);
-        llvm::Value* desc_i = create_ptr_gep2(str_desc_ty, descs, idx);
-        builder->CreateStore(elem_char, create_gep2(str_desc_ty, desc_i, 0));
-        builder->CreateStore(char_len, create_gep2(str_desc_ty, desc_i, 1));
-        llvm::Value* next = builder->CreateAdd(idx,
-            llvm::ConstantInt::get(i64_ty, 1));
-        idx->addIncoming(next, builder->GetInsertBlock());
-        builder->CreateBr(head);
-        start_new_block(end);
+        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
+        create_loop("str_expand", [&]() {
+            return builder->CreateICmpSLT(
+                CreateLoad2(i64_ty, idx), n_elems_i64);
+        }, [&]() {
+            llvm::Value* i = CreateLoad2(i64_ty, idx);
+            llvm::Value* offset = builder->CreateMul(i, char_len);
+            llvm::Value* elem_char = builder->CreateGEP(i8_ty, flat_data, offset);
+            llvm::Value* desc_i = create_ptr_gep2(str_desc_ty, descs, i);
+            builder->CreateStore(elem_char, create_gep2(str_desc_ty, desc_i, 0));
+            builder->CreateStore(char_len, create_gep2(str_desc_ty, desc_i, 1));
+            builder->CreateStore(
+                builder->CreateAdd(i, llvm::ConstantInt::get(i64_ty, 1)), idx);
+        });
 
         return builder->CreateBitCast(descs, i8_ptr);
     }
@@ -9498,6 +9508,38 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
     }
 
+    void LLVMStruct::copy_dimension_descriptors(
+            llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
+            llvm::Module* module) {
+        llvm::DataLayout data_layout(module->getDataLayout());
+        llvm::Type* i32_ty = llvm_utils->getIntType(4);
+        llvm::Value* src_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(
+            llvm_array_type, src, true);
+        llvm::Value* n_dims = llvm_utils->arr_api->get_rank(llvm_array_type, src, false);
+        llvm::Value* dest_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(
+            llvm_array_type, dest, true);
+        llvm::Type* dim_des = llvm_utils->arr_api->get_dimension_descriptor_type(false);
+        uint64_t dim_des_size = data_layout.getTypeAllocSize(dim_des);
+        unsigned index_bit_width = llvm_utils->arr_api->get_index_type()->getIntegerBitWidth();
+
+        llvm::Value* r = llvm_utils->CreateAlloca(*builder, i32_ty);
+        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
+        llvm_utils->create_loop("copy_dim_desc", [&]() {
+            return builder->CreateICmpSLT(
+                llvm_utils->CreateLoad2(i32_ty, r), n_dims);
+        }, [&]() {
+            llvm::Value* r_val = llvm_utils->CreateLoad2(i32_ty, r);
+            llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
+            llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
+            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
+                src_dim_val, llvm::MaybeAlign(),
+                llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, dim_des_size)));
+            builder->CreateStore(
+                builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
+        });
+        builder->CreateStore(n_dims, llvm_utils->arr_api->get_rank(llvm_array_type, dest, true));
+    }
+
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                                     ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                                     bool use_defined_assignment)
@@ -9582,112 +9624,49 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             if (is_upoly) {
                 // ONE-wrapper layout: src_data and dest_data each point to a single
                 // wrapper {vptr, i8* data_ptr}. Data is contiguous at data_ptr.
-                llvm::Value* src_wrapper = src_data;
-
-                // Extract vptr and data pointer from source wrapper
-                llvm::Value* src_vptr_ptr = builder->CreateBitCast(
-                    src_wrapper, llvm_utils->vptr_type->getPointerTo());
-                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, src_vptr_ptr);
-                llvm::Value* src_raw_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(llvm_data_type, src_wrapper, 1));
-
-                // Get element size from vptr type_info
-                llvm::Value* elem_size = llvm_utils->get_class_type_size_from_vptr(vptr);
-
-                // Get copy function from vptr[0]
-                llvm::Value* elem_fn = llvm_utils->CreateLoad2(
-                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
-                elem_fn = builder->CreateBitCast(elem_fn, fnPtrTy);
+                LLVMUtils::UpolyWrapperFields src_w =
+                    llvm_utils->extract_upoly_wrapper(src_data, llvm_data_type);
 
                 // Allocate dest data buffer = num_elements * elem_size
-                llvm::Value* num_elems_64 = builder->CreateSExtOrTrunc(
-                    num_elements, llvm::Type::getInt64Ty(context));
-                llvm::Value* total_bytes = builder->CreateMul(num_elems_64, elem_size);
-                llvm::Value* dest_raw_data = LLVMArrUtils::lfortran_malloc(
-                    context, *module, *builder, total_bytes);
-                builder->CreateMemSet(dest_raw_data,
-                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                    total_bytes, llvm::MaybeAlign());
+                llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                llvm::Value* num_elems_64 = builder->CreateSExtOrTrunc(num_elements, i64_ty);
+                llvm::Value* total_bytes = builder->CreateMul(num_elems_64, src_w.elem_size);
+                llvm::Value* dest_raw_data = llvm_utils->allocate_zeroed_bytes(total_bytes);
 
                 // Ensure dest has a wrapper allocated
                 llvm::Value* dest_wrapper = dest_data;
                 if (ASRUtils::is_allocatable(src_expr)) {
-                    uint64_t wrapper_size = data_layout.getTypeAllocSize(llvm_data_type);
-                    llvm::Value* wrapper_mem = LLVMArrUtils::lfortran_malloc(
-                        context, *module, *builder,
-                        llvm::ConstantInt::get(context, llvm::APInt(64, wrapper_size)));
-                    builder->CreateMemSet(wrapper_mem,
-                        llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                        wrapper_size, llvm::MaybeAlign());
-                    dest_wrapper = builder->CreateBitCast(wrapper_mem, llvm_data_type->getPointerTo());
+                    dest_wrapper = llvm_utils->alloc_zeroed_type(llvm_data_type);
                     builder->CreateStore(dest_wrapper,
                         llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
                 }
 
                 // Copy vptr to dest wrapper and store data pointer
-                builder->CreateStore(vptr, builder->CreateBitCast(
+                builder->CreateStore(src_w.vptr, builder->CreateBitCast(
                     dest_wrapper, llvm_utils->vptr_type->getPointerTo()));
                 builder->CreateStore(dest_raw_data,
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 // Loop: copy each data element using byte offsets
-                llvm::BasicBlock *uLoopHead = llvm::BasicBlock::Create(context, "upoly_deepcopy.head");
-                llvm::BasicBlock *uLoopBody = llvm::BasicBlock::Create(context, "upoly_deepcopy.body");
-                llvm::BasicBlock *uLoopEnd  = llvm::BasicBlock::Create(context, "upoly_deepcopy.end");
-
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
-                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0), ui);
-                builder->CreateBr(uLoopHead);
-
-                llvm_utils->start_new_block(uLoopHead);
-                llvm::Value* ui_val = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), ui);
-                llvm::Value* ucond = builder->CreateICmpSLT(ui_val, num_elems_64);
-                builder->CreateCondBr(ucond, uLoopBody, uLoopEnd);
-
-                llvm_utils->start_new_block(uLoopBody);
-                ui_val = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), ui);
-                llvm::Value* byte_offset = builder->CreateMul(ui_val, elem_size);
-                llvm::Value* src_elem = builder->CreateGEP(
-                    llvm::Type::getInt8Ty(context), src_raw_data, byte_offset);
-                llvm::Value* dest_elem = builder->CreateGEP(
-                    llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
-                builder->CreateCall(fnTy, elem_fn, {src_elem, dest_elem});
-
-                llvm::Value* ui_next = builder->CreateAdd(ui_val,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1));
-                builder->CreateStore(ui_next, ui);
-                builder->CreateBr(uLoopHead);
-
-                llvm_utils->start_new_block(uLoopEnd);
-
-                // Copy dimension descriptors from src to dest
-                if (is_descriptor_array) {
-                    llvm::Value* src_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, src, true);
-                    llvm::Value* n_dims = llvm_utils->arr_api->get_rank(llvm_array_type, src, false);
-                    llvm::Value* dest_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, dest, true);
-                    llvm::BasicBlock *dimHead = llvm::BasicBlock::Create(context, "upoly_dim.head");
-                    llvm::BasicBlock *dimBody = llvm::BasicBlock::Create(context, "upoly_dim.body");
-                    llvm::BasicBlock *dimEnd = llvm::BasicBlock::Create(context, "upoly_dim.end");
-                    llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
-                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
-                    builder->CreateBr(dimHead);
-                    llvm_utils->start_new_block(dimHead);
-                    llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
-                    builder->CreateCondBr(builder->CreateICmpSLT(r_val, n_dims), dimBody, dimEnd);
-                    llvm_utils->start_new_block(dimBody);
-                    r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
-                    llvm::Type* dim_des = llvm_utils->arr_api->get_dimension_descriptor_type(false);
-                    llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
-                    llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
-                    builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
-                        src_dim_val, llvm::MaybeAlign(),
-                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width,
-                            data_layout.getTypeAllocSize(dim_des))));
+                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
+                llvm_utils->create_loop("upoly_deepcopy", [&]() {
+                    return builder->CreateICmpSLT(
+                        llvm_utils->CreateLoad2(i64_ty, ui), num_elems_64);
+                }, [&]() {
+                    llvm::Value* ui_val = llvm_utils->CreateLoad2(i64_ty, ui);
+                    llvm::Value* byte_offset = builder->CreateMul(ui_val, src_w.elem_size);
+                    llvm::Value* src_elem = builder->CreateGEP(
+                        llvm::Type::getInt8Ty(context), src_w.data, byte_offset);
+                    llvm::Value* dest_elem = builder->CreateGEP(
+                        llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
+                    builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem});
                     builder->CreateStore(
-                        builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
-                    builder->CreateBr(dimHead);
-                    llvm_utils->start_new_block(dimEnd);
-                    builder->CreateStore(n_dims, llvm_utils->arr_api->get_rank(llvm_array_type, dest, true));
+                        builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
+                });
+
+                if (is_descriptor_array) {
+                    copy_dimension_descriptors(llvm_array_type, src, dest, module);
                 }
                 return;
             }
@@ -9782,42 +9761,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->start_new_block(loopEnd);
 
             if (is_descriptor_array) {
-                llvm::Value* src_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, src, true);
-                llvm::Value* n_dims = llvm_utils->arr_api->get_rank(llvm_array_type, src, false);
-                llvm::Value* dest_dim_des_val = nullptr;
-                dest_dim_des_val = llvm_utils->arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, dest, true);
-                llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-                llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-                llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-
-
-                // Loop to copy `dimension_descriptor` from src to dest
-                llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
-                // head
-                llvm_utils->start_new_block(loophead);
-                cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
-                builder->CreateCondBr(cond, loopbody, loopend);
-
-                // body
-                llvm_utils->start_new_block(loopbody);
-                llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
-                llvm::Type* dim_des = llvm_utils->arr_api->get_dimension_descriptor_type(false);
-                llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
-                llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
-                builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
-                                        src_dim_val, llvm::MaybeAlign(),
-                                        llvm::ConstantInt::get(
-                                        context, llvm::APInt(index_bit_width, data_layout.getTypeAllocSize(dim_des))));
-                r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-                builder->CreateStore(r_val, r);
-                builder->CreateBr(loophead);
-
-                // end
-                llvm_utils->start_new_block(loopend);
-
-                // Copy Rank
-                builder->CreateStore(n_dims, llvm_utils->arr_api->get_rank(llvm_array_type, dest, true));
+                copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
             if (ASRUtils::is_class_type(ASRUtils::extract_type(dest_ty)) &&
