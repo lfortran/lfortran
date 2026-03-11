@@ -440,11 +440,7 @@ public:
 
         // Allocate zero-initialized contiguous data buffer
         llvm::Value* total_bytes = builder->CreateMul(num_elems_64, elem_size);
-        llvm::Value* data_buf = LLVMArrUtils::lfortran_malloc(
-            context, *module, *builder, total_bytes);
-        builder->CreateMemSet(data_buf,
-            llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-            total_bytes, llvm::MaybeAlign());
+        llvm::Value* data_buf = llvm_utils->allocate_zeroed_bytes(total_bytes);
 
         // Store data in the ACTUAL ONE-wrapper (descriptor.field0)
         llvm::Value* wrapper_ptr_ptr = arr_descr->get_pointer_to_data(

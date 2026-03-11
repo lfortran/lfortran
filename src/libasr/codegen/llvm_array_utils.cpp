@@ -984,31 +984,20 @@ namespace LCompilers {
                                 // Allocate temp wrapper on stack
                                 llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, class_type);
 
+                                // Store vptr in field 0 (same for both cases)
+                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
+
                                 // If vptr is non-NULL, compute element via byte offset
                                 // If vptr is NULL (empty wrapper for assignment target),
-                                // return wrapper with NULL data (assignment will initialize it)
-                                llvm::BasicBlock* vptr_ok = llvm::BasicBlock::Create(
-                                    context, "vptr_ok");
-                                llvm::BasicBlock* vptr_null = llvm::BasicBlock::Create(
-                                    context, "vptr_null");
-                                llvm::BasicBlock* merge = llvm::BasicBlock::Create(
-                                    context, "merge_elem");
-                                builder->CreateCondBr(vptr_is_null, vptr_null, vptr_ok);
-
-                                llvm_utils->start_new_block(vptr_ok);
-                                llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
-                                builder->CreateStore(element_ptr_i8, llvm_utils->create_gep2(class_type, temp_wrapper, 1));
-                                builder->CreateBr(merge);
-
-                                llvm_utils->start_new_block(vptr_null);
-                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
-                                builder->CreateStore(
-                                    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_field_type)),
-                                    llvm_utils->create_gep2(class_type, temp_wrapper, 1));
-                                builder->CreateBr(merge);
-
-                                llvm_utils->start_new_block(merge);
+                                // store NULL data (assignment will initialize it)
+                                llvm_utils->create_if_else(vptr_is_null, [&]() {
+                                    builder->CreateStore(
+                                        llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_field_type)),
+                                        llvm_utils->create_gep2(class_type, temp_wrapper, 1));
+                                }, [&]() {
+                                    llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
+                                    builder->CreateStore(element_ptr_i8, llvm_utils->create_gep2(class_type, temp_wrapper, 1));
+                                });
 
                                 if (polymorphic_type != nullptr) {
                                     tmp = builder->CreateBitCast(
