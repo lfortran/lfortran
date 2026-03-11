@@ -7489,9 +7489,14 @@ public:
                 // Load the pointer value for simple Var targets.
                 // StructInstanceMember/ArrayItem targets are already
                 // loaded by visit_expr_wrapper with load_ref=true.
+                // For class types with new_classes, visit_expr_wrapper
+                // already loaded the struct pointer, so skip the
+                // extra Pointer_t load to avoid reading the vtable.
                 if( !ASRUtils::is_array(tgt_type) &&
                     ASR::is_a<ASR::Pointer_t>(*tgt_type) &&
-                    ASR::is_a<ASR::Var_t>(*x.m_tgt) ) {
+                    ASR::is_a<ASR::Var_t>(*x.m_tgt) &&
+                    !(compiler_options.new_classes &&
+                      ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) ) {
                     llvm::Type* tgt_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_tgt, tgt_type, module.get());
                     nptr = llvm_utils->CreateLoad2(tgt_llvm_type, nptr);
@@ -7511,6 +7516,24 @@ public:
                         nptr = builder->CreateLoad(array_type, nptr);
                         nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), arr_descr->get_pointer_to_data(x.m_tgt, ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
                     }
+                }
+                // For polymorphic (class) types, compare the data
+                // pointers (field 1) instead of struct wrapper addresses
+                if (compiler_options.new_classes &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
+                    llvm::Type* p_class_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_ptr, ASRUtils::type_get_past_allocatable_pointer(p_type),
+                        module.get());
+                    ptr = llvm_utils->create_gep2(p_class_type, ptr, 1);
+                    ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr);
+                }
+                if (compiler_options.new_classes &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) {
+                    llvm::Type* tgt_class_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_tgt, ASRUtils::extract_type(tgt_type),
+                        module.get());
+                    nptr = llvm_utils->create_gep2(tgt_class_type, nptr, 1);
+                    nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, nptr);
                 }
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
                 ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
