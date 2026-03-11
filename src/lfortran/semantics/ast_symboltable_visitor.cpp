@@ -2913,6 +2913,7 @@ public:
         }
 
         for (size_t i = 0; i < x.n_decl; i++) {
+            if (is_equivalence_declaration(x.m_decl[i])) continue;
             if (is_common_declaration(x.m_decl[i])) continue;
             this->visit_unit_decl2(*x.m_decl[i]);
         }
@@ -2920,6 +2921,10 @@ public:
             if (!is_common_declaration(x.m_decl[i])) continue;
             this->visit_unit_decl2(*x.m_decl[i]);
         }
+        // NOTE: Equivalence declarations are intentionally skipped in
+        // BlockData. The common block struct already provides storage
+        // association, and BlockData has no local scope or body where
+        // equivalence CPtrToPointer statements could be emitted.
 
         SymbolTable* old_scope = current_scope;
         Vec<ASR::stmt_t*> block_data_body;
