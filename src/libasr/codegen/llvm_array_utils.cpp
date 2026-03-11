@@ -995,7 +995,6 @@ namespace LCompilers {
                                 // If vptr is non-NULL, compute element via byte offset
                                 // If vptr is NULL (empty wrapper for assignment target),
                                 // return wrapper with NULL data (assignment will initialize it)
-                                llvm::Value* element_ptr_result = nullptr;
                                 llvm::BasicBlock* vptr_ok = llvm::BasicBlock::Create(
                                     context, "vptr_ok");
                                 llvm::BasicBlock* vptr_null = llvm::BasicBlock::Create(
