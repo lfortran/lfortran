@@ -4543,6 +4543,19 @@ static void _lfortran_init_standard_units(void) {
     last_index_used = 2;
 }
 
+static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
+    long saved = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    int32_t count = 0;
+    for (long i = 0; i < end_pos; i++) {
+        int ch = fgetc(fp);
+        if (ch == EOF) break;
+        if (ch == '\n') count++;
+    }
+    fseek(fp, saved, SEEK_SET);
+    return count;
+}
+
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode) {
     _lfortran_init_standard_units();
     for( int i = 0; i <= last_index_used; i++ ) {
@@ -5245,7 +5258,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
-            *pos = (int32_t)p + 1;
+            if (!unit_file_bin && access_id == 0) {
+                int32_t nl = count_newlines_up_to(fp, p);
+                if (nl > 0) {
+                    *pos = (int32_t)(p - nl);
+                } else {
+                    *pos = (int32_t)p + 1;
+                }
+            } else {
+                *pos = (int32_t)p + 1;
+            }
         }
         if (size != NULL && fp != NULL) {
             long current_pos = ftell(fp);
@@ -5376,7 +5398,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
-            *pos = (int32_t)p + 1;
+            if (!unit_file_bin && access_id == 0) {
+                int32_t nl = count_newlines_up_to(fp, p);
+                if (nl > 0) {
+                    *pos = (int32_t)(p - nl);
+                } else {
+                    *pos = (int32_t)p + 1;
+                }
+            } else {
+                *pos = (int32_t)p + 1;
+            }
         }
         if (size != NULL && fp != NULL) {
             long current_pos = ftell(fp);
