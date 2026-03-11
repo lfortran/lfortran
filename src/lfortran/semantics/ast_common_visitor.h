@@ -2915,7 +2915,7 @@ public:
             // association). First try direct name lookup, then fall back to
             // byte offset range matching.
             std::string actual_member_name = target_var_name;
-            ASR::symbol_t* struct_member_sym = struct_type->m_symtab->resolve_symbol(target_var_name);
+            ASR::symbol_t* struct_member_sym = struct_type->m_symtab->get_symbol(target_var_name);
             if (!struct_member_sym) {
                 // Name lookup failed - match by byte offset instead. Find the
                 // struct member whose storage range [offset, offset+size) contains

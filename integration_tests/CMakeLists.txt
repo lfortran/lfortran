@@ -3385,7 +3385,7 @@ RUN(NAME equivalence_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_24 LABELS gfortran llvm)
 RUN(NAME equivalence_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
+RUN(NAME equivalence_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
