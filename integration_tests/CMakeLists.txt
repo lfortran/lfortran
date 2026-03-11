@@ -1071,7 +1071,7 @@ RUN(NAME submodule_41 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME submodule_42 LABELS gfortran llvm)
 RUN(NAME submodule_43 LABELS gfortran llvm)
 RUN(NAME submodule_44a LABELS gfortran llvm_submodule EXTRAFILES submodule_44b.f90)
-RUN(NAME submodule_45 LABELS gfortran llvm_submodule)
+RUN(NAME submodule_45 LABELS gfortran llvm)
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
@@ -3833,7 +3833,7 @@ RUN(NAME allocatable_cchar_01 LABELS gfortran llvm)
 RUN(NAME allocatable_nested_types_01 LABELS gfortran llvm)
 RUN(NAME allocatable_derived_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_assign_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=bounds)
+RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm NO_FAST GFORTRAN_ARGS -fcheck=bounds)
 
 RUN(NAME sync_all_01 LABELS llvm)
 
