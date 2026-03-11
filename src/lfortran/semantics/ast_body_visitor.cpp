@@ -1934,6 +1934,18 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             // For READ: expand implied-do loops to individual elements or array section
+            // Reject polymorphic (class(*)) variables in unformatted I/O
+            if (!formatted && _type == AST::stmtType::Read) {
+                ASR::ttype_t* expr_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(ASRUtils::expr_type(expr)));
+                if (ASR::is_a<ASR::StructType_t>(*expr_t)) {ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(expr_t);
+                    if (st->m_is_unlimited_polymorphic) {
+                        diag.add(Diagnostic("Data transfer element cannot be polymorphic unless "
+                            "processed by a defined input/output procedure",
+                            Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+            }
             if (_type == AST::stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec);
