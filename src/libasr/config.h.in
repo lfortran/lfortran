@@ -39,4 +39,7 @@
 /* Define if we should use binary modfiles */
 #cmakedefine WITH_LFORTRAN_BINARY_MODFILES
 
+/* Define if memory debug tracking is enabled */
+#cmakedefine MEMORY_DEBUG
+
 #endif // LFORTRAN_CONFIG_H

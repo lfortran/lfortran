@@ -5431,6 +5431,18 @@ public:
             }
             builder->CreateCall(fn_finalize, {});
         }
+#ifdef MEMORY_DEBUG
+        {
+            llvm::Function *fn = module->getFunction("dbg_report");
+            if(!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {}, false);
+                fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            }
+            builder->CreateCall(fn, {});
+        }
+#endif
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);

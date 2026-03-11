@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "mem_debug.h"
 #include <math.h>
 #include <complex.h>
 #include <string.h>
