@@ -7109,6 +7109,44 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         }
     }
 
+    if (!has_exponent) {
+        int len = (int)strlen(buffer);
+        for (int i = 1; i < len; i++) {
+            if (buffer[i] == '+' || buffer[i] == '-') {
+                char prev = buffer[i - 1];
+                if (prev == 'E' || prev == 'e' || prev == 'D' || prev == 'd') {
+                    continue;
+                }
+                bool has_digit_before = false;
+                bool has_digit_after = false;
+                for (int j = 0; j < i; j++) {
+                    if (isdigit((unsigned char)buffer[j])) {
+                        has_digit_before = true;
+                        break;
+                    }
+                }
+                for (int j = i + 1; j < len; j++) {
+                    if (isdigit((unsigned char)buffer[j])) {
+                        has_digit_after = true;
+                        break;
+                    }
+                }
+                if (has_digit_before && has_digit_after) {
+                    char *expanded = (char*)malloc((size_t)len + 2);
+                    if (expanded) {
+                        memcpy(expanded, buffer, (size_t)i);
+                        expanded[i] = 'E';
+                        memcpy(expanded + i + 1, buffer + i, (size_t)(len - i + 1));
+                        strcpy(buffer, expanded);
+                        free(expanded);
+                        has_exponent = true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     double v = strtod(buffer, NULL);
     if (!has_exponent) {
         v = v / pow(10.0, scale_factor);
