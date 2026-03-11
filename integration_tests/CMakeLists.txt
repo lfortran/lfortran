@@ -2668,6 +2668,7 @@ RUN(NAME class_135 LABELS gfortran llvm)
 RUN(NAME class_137 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_138 LABELS gfortran llvm)
 RUN(NAME class_139 LABELS gfortran llvm)
+RUN(NAME class_140 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 

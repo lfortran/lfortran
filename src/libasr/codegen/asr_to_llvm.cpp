@@ -7509,25 +7509,41 @@ public:
                     if( tgt_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
                         nptr = llvm_utils->create_gep2(array_type, nptr, 0);
                     } else if( tgt_ptype == ASR::array_physical_typeType::DescriptorArray ) {
-                        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
-                            ASRUtils::expr_type(x.m_tgt), module.get());
-                        llvm::Type *array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
-                            ASRUtils::extract_type(p_type), module.get());
-                        nptr = builder->CreateLoad(array_type, nptr);
-                        nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), arr_descr->get_pointer_to_data(x.m_tgt, ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
+                        llvm::Type *array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
+                            ASRUtils::extract_type(tgt_type), module.get());
+                        if (compiler_options.new_classes &&
+                            ASRUtils::is_unlimited_polymorphic_type(x.m_tgt)) {
+                            // For class(*) targets, visit_expr_wrapper already
+                            // loaded the descriptor pointer, so nptr is at
+                            // descriptor level — use same pattern as ptr path.
+                            nptr = arr_descr->get_pointer_to_data(x.m_tgt,
+                                ASRUtils::type_get_past_allocatable_pointer(tgt_type), nptr, module.get());
+                            nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), nptr);
+                        } else {
+                            llvm::Type* array_type_desc = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
+                                ASRUtils::expr_type(x.m_tgt), module.get());
+                            nptr = builder->CreateLoad(array_type_desc, nptr);
+                            nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(),
+                                arr_descr->get_pointer_to_data(x.m_tgt,
+                                    ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
+                        }
                     }
                 }
-                // For polymorphic (class) types, compare the data
-                // pointers (field 1) instead of struct wrapper addresses
+                // For scalar polymorphic (class) types, compare the data
+                // pointers (field 1) instead of struct wrapper addresses.
+                // For array class pointers, the descriptor data pointers
+                // already identify the target and can be compared directly.
                 if (compiler_options.new_classes &&
+                    !ASRUtils::is_array(p_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
                     llvm::Type* p_class_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_ptr, ASRUtils::type_get_past_allocatable_pointer(p_type),
+                        x.m_ptr, ASRUtils::extract_type(p_type),
                         module.get());
                     ptr = llvm_utils->create_gep2(p_class_type, ptr, 1);
                     ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr);
                 }
                 if (compiler_options.new_classes &&
+                    !ASRUtils::is_array(tgt_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) {
                     llvm::Type* tgt_class_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_tgt, ASRUtils::extract_type(tgt_type),
