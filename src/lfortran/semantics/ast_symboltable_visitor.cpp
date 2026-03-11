@@ -1275,6 +1275,7 @@ public:
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
+            if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1308,6 +1309,16 @@ public:
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
+            }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_common_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
             is_Function = false;
         }
@@ -1734,6 +1745,7 @@ public:
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
+            if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1763,6 +1775,12 @@ public:
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_common_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
         for (size_t i=0; i<x.n_decl; i++) {
