@@ -137,8 +137,8 @@
                                     )]
                                     (Var 7 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             cast_r:
@@ -218,8 +218,8 @@
                                                     []
                                                     (Var 6 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -328,8 +328,8 @@
                                     )]
                                     (Var 8 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             generic_sum:
@@ -440,8 +440,8 @@
                                                     []
                                                     (Var 10 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             cast:
@@ -516,8 +516,8 @@
                                                     []
                                                     (Var 11 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             generic_sum:
@@ -739,8 +739,8 @@
                                                     )]
                                                     (Var 12 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -890,8 +890,8 @@
                                                     []
                                                     (Var 4 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1179,8 +1179,8 @@
                                                     )]
                                                     (Var 16 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_generic_sum1:
@@ -1386,8 +1386,8 @@
                                                     )]
                                                     (Var 18 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_generic_sum2:
@@ -1593,8 +1593,8 @@
                                                     )]
                                                     (Var 19 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             a_i:

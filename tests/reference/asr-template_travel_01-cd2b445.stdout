@@ -277,8 +277,8 @@
                                                     )]
                                                     (Var 23 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_real_s_from_s:
@@ -450,8 +450,8 @@
                                                     )]
                                                     (Var 21 avg)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_real_s_from_t:
@@ -621,8 +621,8 @@
                                                     )]
                                                     (Var 20 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s1:
@@ -907,8 +907,8 @@
                                     )]
                                     (Var 3 total)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             slash_real:
@@ -1014,8 +1014,8 @@
                                     )]
                                     (Var 4 total)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1172,8 +1172,8 @@
                                                     []
                                                     (Var 10 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d_divided_by_t:
@@ -1279,8 +1279,8 @@
                                                     []
                                                     (Var 9 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_d:
@@ -1386,8 +1386,8 @@
                                                     []
                                                     (Var 7 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -1493,8 +1493,8 @@
                                                     []
                                                     (Var 8 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s:
@@ -1765,8 +1765,8 @@
                                                     )]
                                                     (Var 17 avg)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_s_from_t:
@@ -1964,8 +1964,8 @@
                                                     )]
                                                     (Var 16 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d:
@@ -2094,8 +2094,8 @@
                                                     []
                                                     (Var 15 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d_divided_by_t:
@@ -2201,8 +2201,8 @@
                                                     []
                                                     (Var 14 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_d:
@@ -2308,8 +2308,8 @@
                                                     []
                                                     (Var 12 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -2415,8 +2415,8 @@
                                                     []
                                                     (Var 13 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s:
