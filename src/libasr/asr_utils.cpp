@@ -1989,10 +1989,20 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
         if( ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type) ) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
             sym = target_struct->m_symtab->resolve_symbol("~assign");
+            while (sym == nullptr && target_struct->m_parent != nullptr) {
+                target_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(target_struct->m_parent));
+                sym = target_struct->m_symtab->resolve_symbol("~assign");
+            }
             expr_dt = target;
         } else if( ASR::is_a<ASR::StructType_t>(*value_type) && !ASRUtils::is_class_type(value_type) ) {
             ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
             sym = value_struct->m_symtab->resolve_symbol("~assign");
+            while (sym == nullptr && value_struct->m_parent != nullptr) {
+                value_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(value_struct->m_parent));
+                sym = value_struct->m_symtab->resolve_symbol("~assign");
+            }
             expr_dt = value;
         }
     }
