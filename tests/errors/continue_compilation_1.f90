@@ -48,11 +48,11 @@ module continue_compilation_1_mod
     type :: type_t
     end type type_t
 
-
-
-
-
-
+    type, abstract :: abstract_non_overridable_t
+    contains
+        procedure, non_overridable :: abstract_assign
+        generic :: assignment(=) => abstract_assign
+    end type abstract_non_overridable_t
 
 
 
