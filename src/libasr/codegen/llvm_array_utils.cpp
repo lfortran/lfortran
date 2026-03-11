@@ -441,36 +441,35 @@ namespace LCompilers {
                         && !ASR::is_a<ASR::StructType_t>(*alloc_type)) {
                     // Unlimited polymorphic array with intrinsic type spec
                     // (e.g., allocate(integer :: arr(5)))
+                    // Uses ONE-wrapper layout: single {vptr, i8* → contiguous data}
                     llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)),
                         struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
+                } else if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
+                        && ASR::is_a<ASR::StructType_t>(*alloc_type)) {
+                    // Unlimited polymorphic array with struct type spec
+                    // (e.g., allocate(type(point) :: arr(5)))
+                    // Route through allocate_array_of_classes which already does ONE-wrapper
+                    llvm_utils->struct_api->allocate_array_of_classes(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)),
+                        struct_type, ptr2firstptr, prod, allocated_subclass, realloc);
                 } else if (struct_type->m_is_unlimited_polymorphic) {
                     // Unlimited polymorphic array without explicit type spec
                     // (e.g., from polymorphic array assignment lhs%value = rhs%value).
-                    // Allocate raw memory for class wrapper elements.
+                    // Allocate ONE wrapper with NULL data; the assignment handler
+                    // will copy data from the source wrapper.
+                    llvm::Type* const class_type = llvm_utils->getClassType(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)));
                     llvm::DataLayout data_layout(module->getDataLayout());
-                    llvm::Type* ptr_type = llvm_data_type->getPointerTo();
-                    uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
-                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, size));
-                    prod = builder->CreateMul(prod, llvm_size);
-                    llvm::Value* arg_size = builder->CreateSExtOrTrunc(prod, llvm::Type::getInt64Ty(context));
-                    llvm::Value* ptr_as_char_ptr = nullptr;
-                    if( realloc ) {
-                        ptr_as_char_ptr = lfortran_realloc(context, *module,
-                            *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
-                            arg_size);
-                    } else {
-                        ptr_as_char_ptr = lfortran_malloc(context, *module,
-                            *builder, arg_size);
-                    }
-                    llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
-                    builder->CreateStore(first_ptr, ptr2firstptr);
-                    // Zero the wrapper array so all data pointers start as NULL.
-                    // The per-element assignment loop will allocate contiguous
-                    // data on first access.
-                    builder->CreateMemSet(ptr_as_char_ptr,
+                    int64_t wrapper_size = data_layout.getTypeAllocSize(class_type);
+                    llvm::Value* wrapper_mem = lfortran_malloc(context, *module, *builder,
+                        llvm::ConstantInt::get(context, llvm::APInt(64, wrapper_size)));
+                    builder->CreateMemSet(wrapper_mem,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                        arg_size, llvm::MaybeAlign());
+                        wrapper_size, llvm::MaybeAlign());
+                    llvm::Value* wrapper_ptr = builder->CreateBitCast(
+                        wrapper_mem, class_type->getPointerTo());
+                    builder->CreateStore(wrapper_ptr, ptr2firstptr);
                 } else {
                     llvm_utils->struct_api->allocate_array_of_classes(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration))
@@ -947,8 +946,24 @@ namespace LCompilers {
                 } else {
                     if( polymorphic ) {
                         if (variable_type_decl == nullptr) {
+                            // ONE-wrapper layout: data pointer holds a single
+                            // wrapper {vptr, i8* data}. Compute the element
+                            // at byte offset idx * elem_size from data.
                             full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
-                            tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
+                            // Read vptr and data from the single wrapper
+                            llvm::Value* vptr_ptr = builder->CreateBitCast(
+                                full_array, llvm_utils->vptr_type->getPointerTo());
+                            llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
+                            llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                                llvm_utils->create_gep2(type, full_array, 1));
+                            llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
+                            // Allocate temp wrapper on stack, fill with vptr + element ptr
+                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, type);
+                            builder->CreateStore(vptr, builder->CreateBitCast(
+                                temp_wrapper, llvm_utils->vptr_type->getPointerTo()));
+                            builder->CreateStore(element_ptr,
+                                llvm_utils->create_gep2(type, temp_wrapper, 1));
+                            tmp = temp_wrapper;
                         } else {
                             ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(variable_type_decl);
                             if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) {
@@ -957,24 +972,61 @@ namespace LCompilers {
                             } else {
                                 ASR::Struct_t* class_sym = ASR::down_cast<ASR::Struct_t>(decl_sym);
 
-                                // In a `select type` block, the selector's ASR type can be narrowed
-                                // (e.g., `integer(:)`), while the underlying data may still be stored
-                                // as boxed values (class wrapper). Reload the data pointer as
-                                // `class_type*`, then unwrap `.data`.
                                 llvm::Type* class_type = llvm_utils->getClassType(class_sym, false);
                                 llvm::Type* class_type_ptr = class_type->getPointerTo();
                                 llvm::Value* casted_ptr_to_data_ptr = builder->CreateBitCast(
                                     ptr_to_data_ptr, class_type_ptr->getPointerTo());
                                 full_array = llvm_utils->CreateLoad2(class_type_ptr, casted_ptr_to_data_ptr);
 
+                                // Check if vptr is NULL (freshly allocated empty wrapper)
+                                llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
+                                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
+                                llvm::Value* vptr_is_null = builder->CreateICmpEQ(
+                                    builder->CreatePtrToInt(vptr, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+
                                 llvm::Value* data_field_ptr = llvm_utils->create_gep2(class_type, full_array, 1);
                                 llvm::Type* data_field_type = class_type->getStructElementType(1);
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
-                                
-                                llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
-                                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
+
+                                // Allocate temp wrapper on stack
+                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, class_type);
+
+                                // If vptr is non-NULL, compute element via byte offset
+                                // If vptr is NULL (empty wrapper for assignment target),
+                                // return wrapper with NULL data (assignment will initialize it)
+                                llvm::Value* element_ptr_result = nullptr;
+                                llvm::BasicBlock* vptr_ok = llvm::BasicBlock::Create(
+                                    context, "vptr_ok");
+                                llvm::BasicBlock* vptr_null = llvm::BasicBlock::Create(
+                                    context, "vptr_null");
+                                llvm::BasicBlock* merge = llvm::BasicBlock::Create(
+                                    context, "merge_elem");
+                                builder->CreateCondBr(vptr_is_null, vptr_null, vptr_ok);
+
+                                llvm_utils->start_new_block(vptr_ok);
                                 llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                                tmp = builder->CreateBitCast(element_ptr_i8, polymorphic_type->getPointerTo());
+                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
+                                builder->CreateStore(element_ptr_i8, llvm_utils->create_gep2(class_type, temp_wrapper, 1));
+                                builder->CreateBr(merge);
+
+                                llvm_utils->start_new_block(vptr_null);
+                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
+                                builder->CreateStore(
+                                    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_field_type)),
+                                    llvm_utils->create_gep2(class_type, temp_wrapper, 1));
+                                builder->CreateBr(merge);
+
+                                llvm_utils->start_new_block(merge);
+
+                                if (polymorphic_type != nullptr) {
+                                    tmp = builder->CreateBitCast(
+                                        llvm_utils->CreateLoad2(data_field_type,
+                                            llvm_utils->create_gep2(class_type, temp_wrapper, 1)),
+                                        polymorphic_type->getPointerTo());
+                                } else {
+                                    tmp = temp_wrapper;
+                                }
                             }
                         }
                     } else {
