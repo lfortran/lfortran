@@ -17482,7 +17482,9 @@ public:
                         } else {
                             if( orig_arg &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                                LLVM::is_llvm_pointer(*arg->m_type) ) {
+                                LLVM::is_llvm_pointer(*arg->m_type) &&
+                                !(ASRUtils::is_unlimited_polymorphic_type(arg->m_type) &&
+                                  ASRUtils::is_unlimited_polymorphic_type(orig_arg->m_type)) ) {
                                 llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                 tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
@@ -18518,7 +18520,7 @@ public:
         }
 
         if( ASRUtils::is_unlimited_polymorphic_type(s_m_args0) ) {
-            if (ASRUtils::is_class_type(arg_type)) {
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))) {
                 if( ASRUtils::is_array(s_m_args0_type) ) {
                     // TODO: Handle this case
                     return dt;
