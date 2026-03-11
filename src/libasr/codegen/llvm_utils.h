@@ -1241,8 +1241,6 @@ class ASRToLLVMVisitor;
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
                 if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
 
-// Remove once we start using per-type-finalization function -- as we can't handle recursive type declaration with our current iterative-instruction approach.
-if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){continue;}
 
                 if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
                     auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"

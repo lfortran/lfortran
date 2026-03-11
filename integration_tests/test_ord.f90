@@ -15,8 +15,8 @@ program test_ord
     x = "Hello,World"
 
 
-    if (_lfortran_ord(x(1)) /= 72) error stop
-    if (_lfortran_ord(x(6)) /= 44) error stop
+    if (_lfortran_ord(x(1:1)) /= 72) error stop
+    if (_lfortran_ord(x(6:6)) /= 44) error stop
 
 end program test_ord
 
