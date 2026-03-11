@@ -696,6 +696,23 @@ class ASRToLLVMVisitor;
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
+
+            // Consolidate per-element string_descriptors into a single
+            // string_descriptor with a flat contiguous char buffer.
+            // descs_i8: i8* pointing to array of string_descriptor structs
+            // n_elems_i64: i64 element count
+            // Returns: stack-allocated string_descriptor* {flat_buf, char_len}
+            llvm::Value* consolidate_char_descriptors(
+                llvm::Value* descs_i8, llvm::Value* n_elems_i64);
+
+            // Expand a flat char buffer into per-element string_descriptors.
+            // flat_data: i8* to contiguous character data
+            // char_len: i64 length of each string element
+            // n_elems_i64: i64 element count
+            // Returns: i8* pointing to heap-allocated array of string_descriptor
+            llvm::Value* expand_flat_to_char_descriptors(
+                llvm::Value* flat_data, llvm::Value* char_len,
+                llvm::Value* n_elems_i64);
             
 
             void set_module(llvm::Module* module_);

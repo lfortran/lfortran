@@ -3063,6 +3063,90 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* base_ptr_i8 = builder->CreateBitCast(base_ptr, i8_type->getPointerTo());
         return CreateInBoundsGEP2(i8_type, base_ptr_i8, {byte_offset});
     }
+    llvm::Value* LLVMUtils::consolidate_char_descriptors(
+            llvm::Value* descs_i8, llvm::Value* n_elems_i64) {
+        llvm::Type* str_desc_ty = string_descriptor;
+        llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+        llvm::Type* i8_ty = llvm::Type::getInt8Ty(context);
+
+        llvm::Value* descs = builder->CreateBitCast(
+            descs_i8, str_desc_ty->getPointerTo());
+        llvm::Value* char_len = CreateLoad2(i64_ty,
+            create_gep2(str_desc_ty, descs, 1));
+
+        llvm::Value* total_bytes = builder->CreateMul(n_elems_i64, char_len);
+        llvm::Value* flat_buf = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, total_bytes);
+
+        llvm::BasicBlock* pre_bb = builder->GetInsertBlock();
+        llvm::BasicBlock* head = llvm::BasicBlock::Create(context, "char_consolidate.head");
+        llvm::BasicBlock* body = llvm::BasicBlock::Create(context, "char_consolidate.body");
+        llvm::BasicBlock* end  = llvm::BasicBlock::Create(context, "char_consolidate.end");
+        builder->CreateBr(head);
+        start_new_block(head);
+        llvm::PHINode* idx = builder->CreatePHI(i64_ty, 2, "ci");
+        idx->addIncoming(llvm::ConstantInt::get(i64_ty, 0), pre_bb);
+        builder->CreateCondBr(builder->CreateICmpSLT(idx, n_elems_i64), body, end);
+        start_new_block(body);
+        llvm::Value* src_desc = create_ptr_gep2(str_desc_ty, descs, idx);
+        llvm::Value* src_chars = CreateLoad2(character_type,
+            create_gep2(str_desc_ty, src_desc, 0));
+        llvm::Value* dst_off = builder->CreateMul(idx, char_len);
+        llvm::Value* dst_chars = builder->CreateGEP(i8_ty, flat_buf, dst_off);
+        builder->CreateMemCpy(dst_chars, llvm::MaybeAlign(),
+            src_chars, llvm::MaybeAlign(), char_len);
+        llvm::Value* next = builder->CreateAdd(idx,
+            llvm::ConstantInt::get(i64_ty, 1));
+        idx->addIncoming(next, builder->GetInsertBlock());
+        builder->CreateBr(head);
+        start_new_block(end);
+
+        llvm::Value* result = CreateAlloca(*builder, str_desc_ty,
+            nullptr, "consolidated_str");
+        builder->CreateStore(flat_buf, create_gep2(str_desc_ty, result, 0));
+        builder->CreateStore(char_len, create_gep2(str_desc_ty, result, 1));
+        return result;
+    }
+
+    llvm::Value* LLVMUtils::expand_flat_to_char_descriptors(
+            llvm::Value* flat_data, llvm::Value* char_len,
+            llvm::Value* n_elems_i64) {
+        llvm::Type* str_desc_ty = string_descriptor;
+        llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+        llvm::Type* i8_ty = llvm::Type::getInt8Ty(context);
+
+        llvm::Value* desc_size = llvm::ConstantInt::get(i64_ty,
+            module->getDataLayout().getTypeAllocSize(str_desc_ty));
+        llvm::Value* total_bytes = builder->CreateMul(n_elems_i64, desc_size);
+        llvm::Value* descs_buf = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, total_bytes);
+        llvm::Value* descs = builder->CreateBitCast(
+            descs_buf, str_desc_ty->getPointerTo());
+
+        llvm::BasicBlock* pre_bb = builder->GetInsertBlock();
+        llvm::BasicBlock* head = llvm::BasicBlock::Create(context, "str_expand.head");
+        llvm::BasicBlock* body = llvm::BasicBlock::Create(context, "str_expand.body");
+        llvm::BasicBlock* end  = llvm::BasicBlock::Create(context, "str_expand.end");
+        builder->CreateBr(head);
+        start_new_block(head);
+        llvm::PHINode* idx = builder->CreatePHI(i64_ty, 2, "str_i");
+        idx->addIncoming(llvm::ConstantInt::get(i64_ty, 0), pre_bb);
+        builder->CreateCondBr(builder->CreateICmpSLT(idx, n_elems_i64), body, end);
+        start_new_block(body);
+        llvm::Value* offset = builder->CreateMul(idx, char_len);
+        llvm::Value* elem_char = builder->CreateGEP(i8_ty, flat_data, offset);
+        llvm::Value* desc_i = create_ptr_gep2(str_desc_ty, descs, idx);
+        builder->CreateStore(elem_char, create_gep2(str_desc_ty, desc_i, 0));
+        builder->CreateStore(char_len, create_gep2(str_desc_ty, desc_i, 1));
+        llvm::Value* next = builder->CreateAdd(idx,
+            llvm::ConstantInt::get(i64_ty, 1));
+        idx->addIncoming(next, builder->GetInsertBlock());
+        builder->CreateBr(head);
+        start_new_block(end);
+
+        return builder->CreateBitCast(descs, i8_ptr);
+    }
+
     llvm::Value* LLVMUtils::get_class_element_from_array(ASR::Struct_t* const class_symbol,[[maybe_unused]] ASR::StructType_t* const struct_type, 
                                 llvm::Value* const array_data_ptr, llvm::Value* const idx){
         LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && idx)
@@ -9507,22 +9591,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::Value* src_raw_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                     llvm_utils->create_gep2(llvm_data_type, src_wrapper, 1));
 
-                // Get element size from vptr's type_info: vptr[-1] → type_info, field 1 = size
-                llvm::Value* vptr_as_i8pp = builder->CreateBitCast(
-                    vptr, llvm_utils->i8_ptr->getPointerTo());
-                llvm::Value* type_info_slot = builder->CreateGEP(
-                    llvm_utils->i8_ptr, vptr_as_i8pp,
-                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1));
-                llvm::Value* type_info_ptr = llvm_utils->CreateLoad2(
-                    llvm_utils->i8_ptr, type_info_slot);
-                llvm::Type* type_info_type = llvm::StructType::get(context,
-                    {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm_utils->i8_ptr});
-                llvm::Value* type_info = builder->CreateBitCast(
-                    type_info_ptr, type_info_type->getPointerTo());
-                llvm::Value* size_field = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(type_info_type, type_info, 1));
-                llvm::Value* elem_size = builder->CreatePtrToInt(
-                    size_field, llvm::Type::getInt64Ty(context));
+                // Get element size from vptr type_info
+                llvm::Value* elem_size = llvm_utils->get_class_type_size_from_vptr(vptr);
 
                 // Get copy function from vptr[0]
                 llvm::Value* elem_fn = llvm_utils->CreateLoad2(
