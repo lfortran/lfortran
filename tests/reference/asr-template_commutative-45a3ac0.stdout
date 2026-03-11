@@ -103,8 +103,8 @@
                                                     []
                                                     (Var 11 bin)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             commutative_p:
@@ -252,8 +252,8 @@
                                                     )]
                                                     (Var 13 prop)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -347,8 +347,8 @@
                                                     []
                                                     (Var 12 equal)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             integer:
@@ -498,8 +498,8 @@
                                                     []
                                                     (Var 7 bin)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             commutative_p:
@@ -663,8 +663,8 @@
                                                     )]
                                                     (Var 9 prop)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -766,8 +766,8 @@
                                                     []
                                                     (Var 8 equal)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -920,8 +920,8 @@
                                                     []
                                                     (Var 4 bin)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -1023,8 +1023,8 @@
                                                     []
                                                     (Var 5 equal)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1235,8 +1235,8 @@
                                     )]
                                     (Var 21 prop)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             int_plus_comm:
@@ -1384,8 +1384,8 @@
                                     )]
                                     (Var 18 prop)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             magma_r:
@@ -1543,8 +1543,8 @@
                                     )]
                                     (Var 20 prop)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             plus_comm:
@@ -1692,8 +1692,8 @@
                                     )]
                                     (Var 17 prop)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~add:
@@ -1786,7 +1786,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 15 arg0)
@@ -1806,7 +1806,7 @@
                                     )]
                                     (Var 15 ret)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1900,7 +1900,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 16 arg0)
@@ -1920,7 +1920,7 @@
                                     )]
                                     (Var 16 ret)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -2014,7 +2014,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 19 arg0)
@@ -2034,7 +2034,7 @@
                                     )]
                                     (Var 19 ret)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 )

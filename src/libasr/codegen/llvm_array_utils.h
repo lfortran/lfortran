@@ -359,6 +359,17 @@ namespace LCompilers {
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                /*
+                * Copies contiguous data into a potentially-strided descriptor array.
+                * The inverse of create_contiguous_copy_from_descriptor.
+                * Uses element-wise copy respecting the target descriptor's strides.
+                */
+                virtual
+                void copy_contiguous_data_to_descriptor(
+                    llvm::Value* source_data,
+                    llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
+                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
@@ -562,6 +573,12 @@ namespace LCompilers {
                 virtual
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                void copy_contiguous_data_to_descriptor(
+                    llvm::Value* source_data,
+                    llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
 
         };

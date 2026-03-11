@@ -7057,6 +7057,10 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
         }
     }
     processed[j] = '\0';
+    if (blank_mode == 0 && j == 0) {
+        processed[0] = '0';
+        processed[1] = '\0';
+    }
     char *p = processed;
     if (*p == '+' || *p == '-') p++;
     char *digit_start = p;

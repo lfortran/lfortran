@@ -305,7 +305,8 @@ public:
             func_abi, func_access, func_deftype, bindc_name,
             func_elemental, func_pure, func_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
-            ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
+            ASRUtils::get_FunctionType(x)->n_restrictions, false,
+            x->m_deterministic, x->m_side_effect_free);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
@@ -1142,7 +1143,8 @@ public:
             ASRUtils::get_FunctionType(x)->m_elemental, ASRUtils::get_FunctionType(x)->m_pure,
             ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
-            ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
+            ASRUtils::get_FunctionType(x)->n_restrictions, false,
+            x->m_deterministic, x->m_side_effect_free);
 
         ASR::symbol_t *f = ASR::down_cast<ASR::symbol_t>(result);
         target_scope->add_symbol(new_sym_name, f);

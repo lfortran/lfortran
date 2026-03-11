@@ -243,9 +243,9 @@ class ASRToLLVMVisitor;
             llvm::IRBuilder<>* builder;
             llvm::AllocaInst *str_cmp_itr;
 
-            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
-
         public:
+
+            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
 
             LLVMTuple* tuple_api;
             LLVMList* list_api;
@@ -696,6 +696,31 @@ class ASRToLLVMVisitor;
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
+
+            // Allocate zero-initialized memory for the given LLVM type.
+            // Returns a typed pointer (bitcast of malloc+memset result).
+            llvm::Value* alloc_zeroed_type(llvm::Type* type);
+
+            // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
+            // Also derives elem_size and copy_fn from the vptr.
+            struct UpolyWrapperFields {
+                llvm::Value* vptr;
+                llvm::Value* data;
+                llvm::Value* elem_size;
+                llvm::Value* copy_fn;
+            };
+            UpolyWrapperFields extract_upoly_wrapper(
+                llvm::Value* wrapper, llvm::Type* wrapper_type);
+
+            // Consolidate per-element string_descriptors into a single
+            // string_descriptor with a flat contiguous char buffer.
+            llvm::Value* consolidate_char_descriptors(
+                llvm::Value* descs_i8, llvm::Value* n_elems_i64);
+
+            // Expand a flat char buffer into per-element string_descriptors.
+            llvm::Value* expand_flat_to_char_descriptors(
+                llvm::Value* flat_data, llvm::Value* char_len,
+                llvm::Value* n_elems_i64);
             
 
             void set_module(llvm::Module* module_);
@@ -1241,8 +1266,6 @@ class ASRToLLVMVisitor;
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
                 if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
 
-// Remove once we start using per-type-finalization function -- as we can't handle recursive type declaration with our current iterative-instruction approach.
-if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){continue;}
 
                 if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
                     auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
@@ -1376,9 +1399,9 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
             if(is_class_type){
                 auto const class_type_llvm = llvm_utils_->getClassType(struct_sym);
-                auto const struct_type_llvm = llvm_utils_->getStructType(struct_sym, llvm_utils_->module);
-                auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
-                                                             llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1));
+                auto const consecutive_field_ptr = llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1);
+                auto const consecutive_field_type = class_type_llvm->getStructElementType(1);
+                auto const allocated_cosecutive_structs = builder_->CreateLoad(consecutive_field_type, consecutive_field_ptr);
                 llvm_utils_->lfortran_free_nocheck(allocated_cosecutive_structs);
                 // deallocate class wrapper 
                 llvm_utils_->lfortran_free_nocheck(data_ptr);
@@ -1971,6 +1994,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
+            llvm::Constant* get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module);
 
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
                                             std::vector<llvm::Constant*>& impls,
@@ -2006,6 +2030,11 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false);
+
+            // Copy dimension descriptors and rank from src to dest array descriptor.
+            void copy_dimension_descriptors(
+                llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
+                llvm::Module* module);
             
             /**
              * Class => `{VTable*, struct_t*}`

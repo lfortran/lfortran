@@ -1716,6 +1716,23 @@ namespace LCompilers {
                     }
                 } else {
                     if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) ) {
+                        ASR::ttype_t* element_type = ASRUtils::expr_type(curr_init);
+                        int n_dims = ASRUtils::extract_n_dims_from_ttype(element_type);
+                        if( n_dims > 1 || ASR::is_a<ASR::StructInstanceMember_t>(*curr_init) ) {
+                            // For multi-dimensional arrays or StructInstanceMember expressions,
+                            // use element-by-element do-loops to flatten into the 1D result
+                            Vec<ASR::expr_t*> idx_vars_local;
+                            Vec<ASR::stmt_t*> doloop_body;
+                            create_do_loop(al, loc, n_dims, curr_init, idx_vars_local, doloop_body,
+                                [=, &idx_vars_local, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type] () {
+                                ASR::expr_t* ref = PassUtils::create_array_ref(curr_init, idx_vars_local, al,
+                                    current_scope, perform_cast, cast_kind, casted_type);
+                                ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
+                                ASR::stmt_t* assign = builder.Assignment(res, ref);
+                                doloop_body.push_back(al, assign);
+                                increment_by_one(idx_var, (&doloop_body))
+                            }, current_scope, result_vec);
+                        } else {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                             al, loc, 1, ASRUtils::expr_type(idx_var)));
@@ -1773,6 +1790,7 @@ namespace LCompilers {
                         result_vec->push_back(al, assign);
                         ASR::stmt_t* inc_stmt = builder.Assignment(idx_var, expr_duplicator.duplicate_expr(start_plus_size));
                         result_vec->push_back(al, inc_stmt);
+                        }
                     } else {
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
                             al, current_scope);

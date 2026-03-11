@@ -110,13 +110,13 @@ contains
     end subroutine
 end module intent_out_array_bounds_mod
 
-
-
-
-
-
-
-
+module pure_io_mod
+contains
+    pure subroutine pure_print_sub(b)
+        integer, intent(in) :: b
+        print "(A,I0)", 'b = ', b
+    end subroutine pure_print_sub
+end module pure_io_mod
 
 
 

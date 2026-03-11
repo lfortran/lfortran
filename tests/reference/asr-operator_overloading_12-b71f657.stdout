@@ -110,8 +110,8 @@
                                     )]
                                     (Var 4 diagnosis)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~and:

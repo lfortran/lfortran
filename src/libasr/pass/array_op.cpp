@@ -1468,10 +1468,50 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Don't generate a loop for a move assignment
         // The assignment should be handled in the backend
         if (x.m_move_allocation) {
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) && vars.size() != 1) {
+                // ReAlloc was inserted for an allocatable target in previous part,
+                // but the move assignment overwrites target.data
+                // with value.data — leaking the buffer ReAlloc just allocated.
+                // Free it first to avoid this memory leak. 
+                // Note: This fix is temporary. This fix should be in backend, where 
+                // while assigning to any allocatable variable target, backend should 
+                // deallocate target first to free any heap allocation (malloc) used
+                // to store in the target variable
+                Vec<ASR::expr_t*> dealloc_vars;
+                dealloc_vars.reserve(al, 1); 
+                dealloc_vars.push_back(al, const_cast<ASR::expr_t*>(x.m_target));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
+                    dealloc_vars.p, dealloc_vars.size())));
+            } 
             ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
             pass_result.push_back(al, stmt);
             debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
             return;
+        }
+
+        // Don't generate an element-wise loop for transfer() (BitCast) when
+        // source and result are fixed-size arrays with different element byte
+        // sizes. The element counts differ so the loop indices would go out
+        // of bounds on the source array. Leave the whole-array BitCast for
+        // the LLVM backend to lower as a memcpy.
+        if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
+            ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type) &&
+                ASRUtils::is_fixed_size_array(src_type) &&
+                ASRUtils::is_fixed_size_array(bc->m_type)) {
+                int src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(src_type));
+                int res_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(bc->m_type));
+                if (src_kind != res_kind) {
+                    // Keep the original assignment (pass_result may
+                    // already contain a DebugCheckArrayBounds).
+                    pass_result.push_back(al,
+                        const_cast<ASR::stmt_t*>(&(x.base)));
+                    return;
+                }
+            }
         }
 
         Vec<ASR::expr_t**> fix_type_args;

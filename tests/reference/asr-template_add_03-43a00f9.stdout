@@ -177,8 +177,8 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             f:
@@ -284,8 +284,8 @@
                                                     []
                                                     (Var 6 z)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -429,8 +429,8 @@
                                                     []
                                                     (Var 4 z)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -572,8 +572,8 @@
                                                     )]
                                                     (Var 10 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             x:
@@ -708,7 +708,7 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        .false.
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 9 arg0)
@@ -728,7 +728,7 @@
                                                     )]
                                                     (Var 9 ret)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 )
