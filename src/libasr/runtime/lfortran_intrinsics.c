@@ -3756,7 +3756,10 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* rhs, int64_t rhs_len){
 
     lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string.")
-    if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
+    if(rhs == NULL) {
+        memset(lhs, ' ', lhs_len * sizeof(char));
+        return;
+    }
 
     int64_t data_amount_to_copy = MIN(lhs_len, rhs_len);
     memcpy(lhs, rhs, data_amount_to_copy * sizeof(char));
@@ -7247,8 +7250,9 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
 
     char* str_data = str_data_ptr ? *str_data_ptr : NULL;
     if (str_data == NULL) {
-        printf("Runtime Error: Unallocated string in formatted read\n");
-        exit(1);
+        str_data = (char*)malloc(str_len > 0 ? str_len : 1);
+        memset(str_data, ' ', str_len);
+        if (str_data_ptr) *str_data_ptr = str_data;
     }
 
     int read_width = (width > 0) ? width : (int)str_len;

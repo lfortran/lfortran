@@ -3790,6 +3790,28 @@ public:
                         ASRUtils::is_fixed_size_array(x_mv_type)
                     )
                 );
+
+                if (ASRUtils::is_character(*x_mv_type) && array_t->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                    // Lazy allocate the entire array buffer for common block zero-initialized descriptors
+                    ASR::String_t* str_type = ASRUtils::get_string_type(x_mv_type);
+                    llvm::Value* data_ptr_ptr = llvm_utils->get_string_data(str_type, array, true);
+                    llvm::Value* data_ptr = builder->CreateLoad(llvm_utils->character_type, data_ptr_ptr);
+                    llvm::Value* is_null = builder->CreateICmpEQ(data_ptr, llvm::ConstantPointerNull::get(llvm_utils->character_type));
+                    
+                    llvm_utils->create_if_else(is_null, [&]() {
+                        // Calculate fixed array size from ASR
+                        int64_t fixed_array_size = ASRUtils::get_fixed_size_of_array(x_mv_type);
+                        llvm::Value* array_size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), fixed_array_size);
+                        
+                        llvm::Value* elem_len = llvm_utils->get_string_length(str_type, array);
+                        llvm::Value* total_size = builder->CreateMul(array_size, builder->CreateSExtOrTrunc(elem_len, llvm::Type::getInt64Ty(context)));
+                        llvm::Value* alloc = LLVMArrUtils::lfortran_malloc(context, *module, *builder, total_size);
+                        builder->CreateStore(alloc, data_ptr_ptr);
+                    }, [&]() {
+                        // Already allocated
+                    });
+                }
+
                 if (is_fixed_size) {
                     type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
                 } else {
@@ -15087,6 +15109,29 @@ public:
             llvm::Type *llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
                 val_expr, val_type, module.get());
 
+            // For PointerArray strings (e.g. common block character arrays),
+            // the data pointer may be NULL from zeroinitializer. Allocate it
+            // before we start GEP-ing into it for the read loop.
+            if (ASR::is_a<ASR::String_t>(*val_type) &&
+                arr_type->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                llvm::Value* data_ptr_ptr = llvm_utils->get_string_data(str_type, var_ptr, true);
+                llvm::Value* data_ptr = builder->CreateLoad(character_type, data_ptr_ptr);
+                llvm::Value* is_null = builder->CreateICmpEQ(data_ptr,
+                    llvm::ConstantPointerNull::get(character_type));
+                llvm_utils->create_if_else(is_null, [&]() {
+                    // Allocate array_size * elem_len bytes
+                    llvm::Value* elem_len = llvm_utils->get_string_length(str_type, var_ptr);
+                    llvm::Value* total_size = builder->CreateMul(
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), array_size),
+                        elem_len);
+                    llvm::Value* alloc = LLVM::lfortran_malloc(context, *module, *builder, total_size);
+                    builder->CreateStore(alloc, data_ptr_ptr);
+                }, [&]() {
+                    // Data already allocated, nothing to do
+                });
+            }
+
             for (int64_t elem_idx = 0; elem_idx < array_size; elem_idx++) {
                 llvm::Value *elem_ptr;
                 if (arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
@@ -15385,6 +15430,28 @@ public:
                     val_expr, ASRUtils::type_get_past_allocatable_pointer(expr_type_full), module.get());
                 llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
                     val_expr, val_type, module.get());
+
+                // For PointerArray strings (e.g. common block character arrays),
+                // the data pointer may be NULL from zeroinitializer. Allocate it
+                // before we start GEP-ing into it for the read loop.
+                if (ASR::is_a<ASR::String_t>(*val_type) &&
+                    arr_type->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                    llvm::Value* data_ptr_ptr = llvm_utils->get_string_data(str_type, var_ptr, true);
+                    llvm::Value* data_ptr = builder->CreateLoad(character_type, data_ptr_ptr);
+                    llvm::Value* is_null = builder->CreateICmpEQ(data_ptr,
+                        llvm::ConstantPointerNull::get(character_type));
+                    llvm_utils->create_if_else(is_null, [&]() {
+                        llvm::Value* elem_len = llvm_utils->get_string_length(str_type, var_ptr);
+                        llvm::Value* total_size = builder->CreateMul(
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), array_size),
+                            elem_len);
+                        llvm::Value* alloc = LLVM::lfortran_malloc(context, *module, *builder, total_size);
+                        builder->CreateStore(alloc, data_ptr_ptr);
+                    }, [&]() {
+                        // Data already allocated, nothing to do
+                    });
+                }
 
                 for (int64_t elem_idx = 0; elem_idx < array_size; elem_idx++) {
                     llvm::Value* elem_ptr;
