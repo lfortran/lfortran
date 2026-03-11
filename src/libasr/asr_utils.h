@@ -2149,17 +2149,21 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
-            // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            // if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
-            //     res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
-            // } else {
-            //     res = symbol_name(d->m_derived_type);
-            // }
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
+                if (sym != nullptr && !res.empty() && res[0] != '~' &&
+                        ASR::is_a<ASR::Struct_t>(*sym)) {
+                    ASR::Struct_t* struct_decl = ASR::down_cast<ASR::Struct_t>(sym);
+                    if (struct_decl->m_symtab && struct_decl->m_symtab->parent &&
+                            struct_decl->m_symtab->parent->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*struct_decl->m_symtab->parent->asr_owner)) {
+                        ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                            struct_decl->m_symtab->parent->asr_owner);
+                        res = std::string(symbol_name(parent_sym)) + "." + res;
+                    }
+                }
             } else {
                 res = "StructType";
             }
