@@ -6699,8 +6699,10 @@ public:
                         emit_fortran_slash_init_warning(s);
                     }
                     // Defer procedure pointer initialization when the target
-                    // procedure is not yet in scope (e.g. module contains)
-                    if (is_derived_type && is_pointer
+                    // procedure is not yet in scope (e.g. module contains).
+                    // This applies both to derived-type components and to
+                    // regular scope-level procedure pointer declarations.
+                    if (is_pointer
                             && AST::is_a<AST::Name_t>(*s.m_initializer)
                             && type && ASR::is_a<ASR::Pointer_t>(
                                 *ASRUtils::type_get_past_allocatable(type))
@@ -6711,9 +6713,13 @@ public:
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
                         if (!init_sym && variable_added_to_symtab) {
+                            SymbolTable* init_resolve_scope = current_scope;
+                            if (is_derived_type && current_scope->parent) {
+                                init_resolve_scope = current_scope->parent;
+                            }
                             pending_proc_ptr_inits.push_back({
                                 init_name, variable_added_to_symtab,
-                                current_scope->parent,
+                                init_resolve_scope,
                                 s.m_initializer->base.loc});
                             continue;
                         }
