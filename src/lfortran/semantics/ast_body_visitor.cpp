@@ -3799,6 +3799,25 @@ public:
                 }
                 case AST::type_stmtType::TypeStmtType: {
                     AST::TypeStmtType_t* type_stmt_type = AST::down_cast<AST::TypeStmtType_t>(x.m_body[i]);
+                    // If the guard is `type is (real(k))` with an unavailable
+                    // kind (negative value from iso_fortran_env such as real128=-1),
+                    // this branch can never match at runtime. Skip this type-guard
+                    // case instead of failing semantic analysis.
+                    if (type_stmt_type->m_vartype &&
+                        AST::is_a<AST::AttrType_t>(*type_stmt_type->m_vartype)) {
+                        AST::AttrType_t* guard_attr = AST::down_cast<AST::AttrType_t>(type_stmt_type->m_vartype);
+                        if (guard_attr->m_type == AST::decl_typeType::TypeReal &&
+                            guard_attr->m_kind != nullptr &&
+                            guard_attr->m_kind->m_value != nullptr) {
+                            this->visit_expr(*guard_attr->m_kind->m_value);
+                            ASR::expr_t* guard_kind_expr = ASRUtils::EXPR(tmp);
+                            int guard_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                guard_kind_expr, guard_attr->m_kind->loc, diag);
+                            if (guard_kind < 0) {
+                                break;
+                            }
+                        }
+                    }
                     ASR::ttype_t* selector_type = nullptr;
                     ASR::ttype_t* selector_ttype = nullptr;
                     // view_type is the guard type wrapped with array/pointer/allocatable
