@@ -1044,8 +1044,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         };
         
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            ASR::expr_t* start = idl->m_start;
-            ASR::expr_t* end = idl->m_end;
+            ASR::expr_t* start_raw = ASRUtils::expr_value(idl->m_start);
+            ASR::expr_t* start = (start_raw != nullptr) ? start_raw : idl->m_start;
+            ASR::expr_t* end_raw = ASRUtils::expr_value(idl->m_end);
+            ASR::expr_t* end = (end_raw != nullptr) ? end_raw : idl->m_end;
             ASR::expr_t* step = idl->m_increment;
             
             if (!ASR::is_a<ASR::IntegerConstant_t>(*start) ||
@@ -1056,8 +1058,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
             int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end)->m_n;
             int64_t step_val = 1;
-            if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
-                step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+            if (step) {
+                ASR::expr_t* step_v = ASRUtils::expr_value(step);
+                if (step_v == nullptr) step_v = step;
+                if (ASR::is_a<ASR::IntegerConstant_t>(*step_v)) {
+                    step_val = ASR::down_cast<ASR::IntegerConstant_t>(step_v)->m_n;
+                }
             }
             
             if (step_val == 0 || (step_val > 0 && start_val > end_val) || 
