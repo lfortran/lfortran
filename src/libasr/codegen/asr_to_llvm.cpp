@@ -8877,6 +8877,107 @@ public:
                 }
             }
 
+            if (bc->m_size != nullptr &&
+                ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
+                !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source))) {
+                int64_t ptr_loads_copy = ptr_loads;
+
+                ASR::ttype_t* source_type = ASRUtils::expr_type(bc->m_source);
+                ASR::ttype_t* source_type_ = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(source_type));
+                ASR::array_physical_typeType source_ptype =
+                    ASRUtils::extract_physical_type(source_type_);
+
+                ptr_loads = (source_ptype ==
+                    ASR::array_physical_typeType::DescriptorArray) ? 1 : 0;
+                visit_expr(*bc->m_source);
+                llvm::Value* source_ptr = tmp;
+
+                llvm::Value* src_data = nullptr;
+                if (source_ptype == ASR::array_physical_typeType::FixedSizeArray) {
+                    llvm::Type* src_llvm = llvm_utils->get_type_from_ttype_t_util(
+                        bc->m_source, source_type_, module.get());
+                    src_data = llvm_utils->create_gep2(src_llvm, source_ptr, 0);
+                } else if (source_ptype ==
+                        ASR::array_physical_typeType::DescriptorArray) {
+                    llvm::Type* src_el = llvm_utils->get_type_from_ttype_t_util(
+                        bc->m_source, ASRUtils::extract_type(source_type_),
+                        module.get());
+                    llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                        bc->m_source, source_type, source_ptr, module.get());
+                    src_data = llvm_utils->CreateLoad2(
+                        src_el->getPointerTo(), data_ptr_ptr);
+                    llvm::Type* src_desc = llvm_utils->get_type_from_ttype_t_util(
+                        bc->m_source, source_type_, module.get());
+                    llvm::Value* offset = arr_descr->get_offset(
+                        src_desc, source_ptr);
+                    src_data = llvm_utils->create_ptr_gep2(
+                        src_el, src_data, offset);
+                } else {
+                    src_data = source_ptr;
+                }
+                src_data = builder->CreateBitCast(
+                    src_data, llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                ASR::ttype_t* tgt_type_ = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(target_type));
+                ASR::array_physical_typeType tgt_ptype =
+                    ASRUtils::extract_physical_type(tgt_type_);
+
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                ptr_loads = (tgt_ptype ==
+                    ASR::array_physical_typeType::DescriptorArray) ? 1 : 0;
+                visit_expr(*x.m_target);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* target_ptr = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                llvm::Value* dest_data = nullptr;
+                if (tgt_ptype == ASR::array_physical_typeType::FixedSizeArray) {
+                    llvm::Type* tgt_llvm = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, tgt_type_, module.get());
+                    dest_data = llvm_utils->create_gep2(
+                        tgt_llvm, target_ptr, 0);
+                } else if (tgt_ptype ==
+                        ASR::array_physical_typeType::DescriptorArray) {
+                    llvm::Type* tgt_el = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, ASRUtils::extract_type(tgt_type_),
+                        module.get());
+                    llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                        x.m_target, target_type, target_ptr, module.get());
+                    dest_data = llvm_utils->CreateLoad2(
+                        tgt_el->getPointerTo(), data_ptr_ptr);
+                    llvm::Type* tgt_desc = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, tgt_type_, module.get());
+                    llvm::Value* offset = arr_descr->get_offset(
+                        tgt_desc, target_ptr);
+                    dest_data = llvm_utils->create_ptr_gep2(
+                        tgt_el, dest_data, offset);
+                } else {
+                    dest_data = target_ptr;
+                }
+                dest_data = builder->CreateBitCast(
+                    dest_data, llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                visit_expr_wrapper(bc->m_size, true);
+                llvm::Value* size_val = tmp;
+                int target_elem_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(tgt_type_));
+                llvm::Value* nbytes = builder->CreateMul(
+                    size_val,
+                    llvm::ConstantInt::get(
+                        size_val->getType(), target_elem_kind));
+                nbytes = builder->CreateZExtOrTrunc(
+                    nbytes, llvm::Type::getInt64Ty(context));
+
+                builder->CreateMemCpy(
+                    dest_data, llvm::MaybeAlign(1),
+                    src_data, llvm::MaybeAlign(1),
+                    nbytes);
+                return;
+            }
+
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
                 ASRUtils::is_array(bc->m_type) &&
                 !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
