@@ -1122,8 +1122,19 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     if (!overloaded) {
          check_logical_type(left_type, left, "Left");
          check_logical_type(right_type, right, "Right");
-         LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
-            ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
+         if (!ASRUtils::check_equal_type(
+                ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right)) {
+             // Cast to the larger logical kind
+             int left_kind = ASRUtils::extract_kind_from_ttype_t(left_type);
+             int right_kind = ASRUtils::extract_kind_from_ttype_t(right_type);
+             if (left_kind < right_kind) {
+                 ImplicitCastRules::set_converted_value(al, left->base.loc,
+                     &left, left_type, right_type, diag);
+             } else {
+                 ImplicitCastRules::set_converted_value(al, right->base.loc,
+                     &right, right_type, left_type, diag);
+             }
+         }
      }
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
@@ -7947,10 +7958,7 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            // currently we change the kind's of all logical's to
-            // 'default_integer_kind'. GFortran support's logical's of
-            // different kind's, we need to think about this
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {

@@ -1734,6 +1734,7 @@ RUN(NAME select_type_40 LABELS gfortran llvm)
 RUN(NAME select_type_41 LABELS gfortran llvm)
 
 RUN(NAME select_type_42 LABELS gfortran llvm)
+RUN(NAME select_type_43 LABELS gfortran llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1953,6 +1954,9 @@ RUN(NAME logical3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME logical4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME logical_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
     EXTRA_ARGS --logical-casting NO_STD_F23)
+
+RUN(NAME logical_kind_01 LABELS gfortran llvm)
+RUN(NAME logical_kind_02 LABELS gfortran llvm)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2511,6 +2515,7 @@ RUN(NAME file_54 LABELS gfortran llvm)
 RUN(NAME file_55 LABELS gfortran llvm)
 RUN(NAME file_56 LABELS gfortran llvm)
 RUN(NAME file_57 LABELS gfortran llvm)
+RUN(NAME file_58 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

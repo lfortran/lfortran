@@ -14,7 +14,9 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 5, i32* getelementptr inbounds (%file_common_block_blk.blk, %file_common_block_blk.blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
   %2 = load i32, i32* getelementptr inbounds (%file_common_block_blk.blk, %file_common_block_blk.blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
   %3 = icmp ne i32 %2, 5
-  br i1 %3, label %then, label %else
+  %4 = zext i1 %3 to i32
+  %5 = icmp ne i32 %4, 0
+  br i1 %5, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
