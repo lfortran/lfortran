@@ -275,6 +275,12 @@ public:
     Vec<llvm::Value*> strings_to_be_deallocated;
     Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
     bool in_block_context = false;  // Flag to track if we're inside a BLOCK construct
+    struct CharConsolidationWriteback {
+        llvm::Value* original_descs_i8;
+        llvm::Value* consolidated_desc;
+        llvm::Value* n_elems_i64;
+    };
+    std::vector<CharConsolidationWriteback> pending_char_writebacks;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -8563,8 +8569,11 @@ public:
                                                     value_array_desc_type, llvm_value, nullptr, 4);
                                                 llvm::Value* n_elems_i64 = builder->CreateSExt(
                                                     n_elems, llvm::Type::getInt64Ty(context));
+                                                llvm::Value* orig_descs = loaded_data_ptr;
                                                 loaded_data_ptr = llvm_utils->consolidate_char_descriptors(
                                                     loaded_data_ptr, n_elems_i64);
+                                                pending_char_writebacks.push_back(
+                                                    {orig_descs, loaded_data_ptr, n_elems_i64});
                                             } else {
                                                 loaded_data_ptr = builder->CreateBitCast(
                                                     loaded_data_ptr, target_el_type->getPointerTo());
@@ -10852,6 +10861,7 @@ public:
         // BLOCK arrays always use heap allocation (can be in loops)
         // Track allocations separately for cleanup at BLOCK exit
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
+        size_t wb_before = pending_char_writebacks.size();
         in_block_context = true;
         declare_vars(*block);
         in_block_context = false;
@@ -10860,6 +10870,15 @@ public:
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+
+        // Write back consolidated character data to original polymorphic
+        // per-element string descriptors (select type char array fix).
+        for (size_t i = wb_before; i < pending_char_writebacks.size(); i++) {
+            auto& wb = pending_char_writebacks[i];
+            llvm_utils->writeback_char_to_polymorphic_descriptors(
+                wb.original_descs_i8, wb.consolidated_desc, wb.n_elems_i64);
+        }
+        pending_char_writebacks.resize(wb_before);
 
         start_new_block(blockend);
         // Finalize struct members before freeing the backing array memory
