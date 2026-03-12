@@ -5062,7 +5062,9 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
+        statement_function_parent_scope = parent_scope;
         this->visit_expr(*x.m_value);
+        statement_function_parent_scope = nullptr;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
