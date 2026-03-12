@@ -1525,6 +1525,8 @@ RUN(NAME intrinsics_430 LABELS gfortran llvm) # is_contiguous with struct compon
 RUN(NAME intrinsics_431 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #char
 RUN(NAME intrinsics_432 LABELS gfortran llvm) # nested bitwise intrinsics with value args
 
+RUN(NAME intrinsics_434 LABELS gfortran llvm) # selected_int_kind
+
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

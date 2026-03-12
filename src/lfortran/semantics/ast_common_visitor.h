@@ -1680,6 +1680,7 @@ public:
         {"maskl", IntrinsicSignature({"i", "kind"}, 1, 2)},
         {"dim", IntrinsicSignature({"X", "Y"}, 2, 2)},
         {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
+        {"selected_int_kind", IntrinsicSignature({"r"}, 1, 1)},
         {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
