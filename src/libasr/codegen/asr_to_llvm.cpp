@@ -14826,6 +14826,7 @@ public:
 
         llvm::Value *unit_val, *iostat, *iostat_for_empty_read, *read_size;
         llvm::Value *advance, *advance_length;
+        llvm::Value *iostat_user = nullptr; // User's iostat variable 
         int iostat_kind = 4; // kind of iostat variable (default INT32)
         bool is_string = false;
         if (x.m_unit == nullptr) {
@@ -14848,11 +14849,21 @@ public:
             this->visit_expr_wrapper(x.m_iostat, false);
             ptr_loads = ptr_copy;
             iostat_kind = ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_iostat))->m_kind;
-            iostat = tmp;
-            iostat_for_empty_read = iostat;
+            iostat_user = tmp;
             llvm::Value* zero_val = llvm::ConstantInt::get(
                 llvm::Type::getIntNTy(context, iostat_kind * 8), 0);
-            builder->CreateStore(zero_val, iostat);
+            builder->CreateStore(zero_val, iostat_user);
+            if (iostat_kind != 4) {
+                // use temporary i32 for iostat
+                iostat = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                    iostat);
+            } else {
+                iostat = iostat_user;
+            }
+            iostat_for_empty_read = iostat;
         } else {
             // Pass NULL to read functions so runtime prints specific error messages
             iostat = llvm::ConstantPointerNull::get(
@@ -14874,11 +14885,7 @@ public:
         auto emit_set_read_iomsg = [&]() {
             if (!x.m_iomsg || !x.m_iostat) return;
             llvm::Value* iostat_val = builder->CreateLoad(
-                llvm::Type::getIntNTy(context, iostat_kind * 8), iostat);
-            if (iostat_kind != 4) {
-                iostat_val = builder->CreateIntCast(
-                    iostat_val, llvm::Type::getInt32Ty(context), true);
-            }
+                llvm::Type::getInt32Ty(context), iostat);
             std::string func_name = "_lfortran_set_read_iomsg";
             llvm::Function *iomsg_fn = module->getFunction(func_name);
             if (!iomsg_fn) {
@@ -15221,21 +15228,15 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        // If iostat variable is of different kind(bytes)
-                        // Store the iostat result in correct variable size
-                        llvm::Value* iostat_arg = iostat;
-                        bool tmp_iostat = 0;
-                        if (iostat_kind != 4) {
-                            iostat_arg = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
-                            tmp_iostat = 1;
-                        }
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat_arg });
-                        if (tmp_iostat) {
-                            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat_arg);
-                            llvm::Value* changed_size_var = builder->CreateIntCast(i32_val, 
-                                llvm::Type::getIntNTy(context, iostat_kind * 8), true);
-                            builder->CreateStore(changed_size_var, iostat);
-                        }
+                        // iostat is already i32*
+                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
+                    }
+                    // Copy temporary i32 iostat back to user's variable
+                    if (iostat_user && iostat_kind != 4) {
+                        llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat);
+                        llvm::Value* extended = builder->CreateIntCast(i32_val,
+                            llvm::Type::getIntNTy(context, iostat_kind * 8), true);
+                        builder->CreateStore(extended, iostat_user);
                     }
                     emit_set_read_iomsg();
                     return;
@@ -15335,6 +15336,13 @@ public:
             } else {
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
             }
+        }
+        // Copy temporary i32 iostat back to user's variable if needed
+        if (iostat_user && iostat_kind != 4) {
+            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat);
+            llvm::Value* extended = builder->CreateIntCast(i32_val,
+                llvm::Type::getIntNTy(context, iostat_kind * 8), true);
+            builder->CreateStore(extended, iostat_user);
         }
         emit_set_read_iomsg();
     }
