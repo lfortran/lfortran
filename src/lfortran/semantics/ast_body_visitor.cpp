@@ -3649,7 +3649,7 @@ public:
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, !compiler_options.new_classes);
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, false);
                             // Apply array wrapper if selector is an array
                             if (selector_variable_type && ASRUtils::is_array(selector_variable_type)) {
                                 // Use the guard type (selector_type) as element type, preserving array structure from selector

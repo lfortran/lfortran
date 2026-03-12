@@ -1029,8 +1029,7 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
                 case(ASR::StructType) :  {
-                    if (llvm_utils_->compiler_options.new_classes && struct_sym != nullptr
-                            && ASRUtils::is_class_type(t)
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
                         // be decided from the ASR class flag, not the LLVM pointer type.
@@ -1247,8 +1246,7 @@ class ASRToLLVMVisitor;
             const auto checkPoint_BB = 
             START_CACHE(cache_key, ptr);
 
-            if (llvm_utils_->compiler_options.new_classes &&
-                    ASRUtils::is_class_type(t) &&
+            if (ASRUtils::is_class_type(t) &&
                     !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
                 ptr = llvm_utils_->CreateLoad2(
