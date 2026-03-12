@@ -229,7 +229,7 @@
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -239,7 +239,7 @@
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()

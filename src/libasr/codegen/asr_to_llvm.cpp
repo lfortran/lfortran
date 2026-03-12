@@ -1875,7 +1875,14 @@ public:
 
                         if (ASRUtils::is_class_type(ASRUtils::extract_type(curr_arg_m_a_type))) {
                             // Store vptr after allocation
-                            if (dest_class_sym) {
+                            if (is_arg_unlimited_poly && curr_arg.m_type
+                                    && !ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)) {
+                                // Unlimited poly with intrinsic type-spec
+                                struct_api->store_intrinsic_type_vptr(
+                                    curr_arg.m_type,
+                                    ASRUtils::extract_kind_from_ttype_t(curr_arg.m_type),
+                                    bitcasted_malloc_ptr, module.get());
+                            } else if (dest_class_sym) {
                                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr, module.get());
                             } else if (ASRUtils::is_unlimited_polymorphic_type(&src_struct_sym->base)
                                    && !dest_class_sym) {
@@ -1886,6 +1893,30 @@ public:
                             } else {
                                 struct_api->store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr, module.get());
                             }
+                        }
+
+                        // For unlimited poly with character type-spec, initialize the
+                        // string descriptor in the data buffer with proper length and data.
+                        if (is_arg_unlimited_poly && curr_arg.m_type
+                                && ASR::is_a<ASR::String_t>(*curr_arg.m_type)
+                                && curr_arg.m_len_expr) {
+                            int saved_ptr = ptr_loads;
+                            ptr_loads = 2;
+                            visit_expr_wrapper(curr_arg.m_len_expr, true);
+                            ptr_loads = saved_ptr;
+                            llvm::Value* str_len = builder->CreateSExtOrTrunc(
+                                tmp, llvm::Type::getInt64Ty(context));
+                            llvm::Value* char_data = LLVM::lfortran_malloc(
+                                context, *module, *builder, str_len);
+                            builder->CreateMemSet(char_data,
+                                llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
+                                str_len, llvm::MaybeAlign());
+                            llvm::Value* str_desc = builder->CreateBitCast(
+                                malloc_ptr, llvm_utils->string_descriptor->getPointerTo());
+                            builder->CreateStore(char_data,
+                                llvm_utils->create_gep2(llvm_utils->string_descriptor, str_desc, 0));
+                            builder->CreateStore(str_len,
+                                llvm_utils->create_gep2(llvm_utils->string_descriptor, str_desc, 1));
                         }
 
                         if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
@@ -1995,12 +2026,63 @@ public:
                         tmp_expr, ASRUtils::extract_type(array_type), module.get());
                     llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                 }
+                // Check if this is a mold-based allocation for unlimited polymorphic arrays.
+                // When the mold is also unlimited polymorphic (class(*)),
+                // we need to allocate a zeroed wrapper first, then patch it
+                // with type info from the mold at runtime.
+                bool is_mold_unlimited_poly = m_source && curr_arg.m_type
+                    && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)
+                    && ASR::down_cast<ASR::StructType_t>(curr_arg.m_type)->m_is_unlimited_polymorphic
+                    && ASRUtils::is_unlimited_polymorphic_type(
+                        ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
+                // For the mold case, pass nullptr as alloc_type so
+                // fill_malloc_array_details creates a zeroed wrapper.
+                ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
+                    ? nullptr : curr_arg.m_type;
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                         curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
-                                        curr_arg.m_sym_subclass, realloc, curr_arg.m_type);
+                                        curr_arg.m_sym_subclass, realloc, effective_alloc_type);
+                if (is_mold_unlimited_poly) {
+                    ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a));
+                    llvm::Type* class_type = llvm_utils->getClassType(
+                        ASR::down_cast<ASR::Struct_t>(class_sym));
+
+                    // Load the array descriptor and get the wrapper
+                    llvm::Value* arr_val = (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val;
+                    llvm::Value* desc = llvm_utils->CreateLoad2(type->getPointerTo(), arr_val);
+                    llvm::Value* wrapper = llvm_utils->CreateLoad2(
+                        class_type->getPointerTo(),
+                        llvm_utils->create_gep2(type, desc, 0));
+
+                    // Visit the mold expression to get mold's wrapper pointer
+                    int saved = ptr_loads;
+                    ptr_loads = 0;
+                    this->visit_expr(*m_source);
+                    llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
+                        class_type->getPointerTo(), tmp);
+                    tmp = nullptr;
+                    ptr_loads = saved;
+
+                    // Compute total number of elements from dimensions
+                    llvm::Value* num_elements = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), 1);
+                    for (int d = 0; d < (int)curr_arg.n_dims; d++) {
+                        int saved2 = ptr_loads;
+                        ptr_loads = 2;
+                        visit_expr_wrapper(curr_arg.m_dims[d].m_length, true);
+                        ptr_loads = saved2;
+                        llvm::Value* dim_size = builder->CreateSExtOrTrunc(
+                            tmp, llvm::Type::getInt64Ty(context));
+                        num_elements = builder->CreateMul(num_elements, dim_size);
+                    }
+
+                    llvm_utils->init_mold_upoly_array_data(
+                        wrapper, mold_wrapper, class_type, num_elements);
+                }
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                     && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
