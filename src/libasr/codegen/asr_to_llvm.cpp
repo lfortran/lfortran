@@ -16464,7 +16464,15 @@ public:
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
                         m_values[i], nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);
-                    args.push_back(builder->CreateMul(kind_val, tmp));
+                    llvm::Value* total_size = builder->CreateMul(kind_val, tmp);
+                    if (ASR::is_a<ASR::String_t>(*value_type_base)) {
+                        llvm::Value* array_size_val = tmp;
+                        ASR::StringLen_t* str_len = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
+                            m_values[i]->base.loc, m_values[i], type32, nullptr));
+                        visit_StringLen(*str_len);
+                        total_size = builder->CreateMul(array_size_val, tmp);
+                    }
+                    args.push_back(total_size);
                     {
                         int64_t ptr_loads_save = ptr_loads;
                         int reduce_loads = 0;
@@ -16496,6 +16504,9 @@ public:
                                 tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), data_ptr);
                             }
                         }
+                    }
+                    if (ASR::is_a<ASR::String_t>(*value_type_base)) {
+                        tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
                     }
                     args.push_back(tmp);
                     continue;
