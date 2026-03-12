@@ -134,7 +134,8 @@ public:
         if ( ASRUtils::is_array(ASRUtils::expr_type(expr) ) &&
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
-            return cast->m_new == ASR::array_physical_typeType::PointerArray &&
+            return (cast->m_new == ASR::array_physical_typeType::PointerArray ||
+                    cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
                    cast->m_old == ASR::array_physical_typeType::DescriptorArray;
         }
         return false;
@@ -809,7 +810,7 @@ public:
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg))); // TODO : remove -- Look `class_95.f90`  
                 if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) && !unhandled_case ) {
                     ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
-                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerArray,
+                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, array_physical_cast->m_new,
                         array_physical_cast->m_type, nullptr));
                     array_var_temporary_arg.m_value = casted_array_var_temporary_arg;
                     x_m_args_vec.push_back(al, array_var_temporary_arg);
