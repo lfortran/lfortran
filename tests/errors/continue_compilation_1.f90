@@ -627,6 +627,8 @@ program continue_compilation_1
     type(container) :: obj2
 
     arr_idl = (i, i = 1, 4)
+    integer :: minloc_shape_mismatch = minloc([2, 1], 1, [.true.])
+    integer :: maxloc_shape_mismatch = maxloc([2, 1], 1, [.true.])
 
 
 
