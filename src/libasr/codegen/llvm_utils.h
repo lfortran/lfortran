@@ -696,6 +696,7 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
+            llvm::Value* get_class_type_tag_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
 
             // Allocate zero-initialized memory for the given LLVM type.
@@ -712,6 +713,19 @@ class ASRToLLVMVisitor;
             };
             UpolyWrapperFields extract_upoly_wrapper(
                 llvm::Value* wrapper, llvm::Type* wrapper_type);
+
+            // Initialize an unlimited-polymorphic array wrapper from a
+            // mold wrapper: copies vptr, allocates data, and if the mold
+            // is a string type, initializes string descriptors.
+            void init_mold_upoly_array_data(
+                llvm::Value* wrapper, llvm::Value* mold_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements);
+
+            // Initialize string descriptors in a pre-allocated data buffer.
+            // Allocates contiguous char data (filled with spaces) and sets
+            // each descriptor's pointer and length.
+            void init_string_descriptors(llvm::Value* data_mem,
+                llvm::Value* num_elements, llvm::Value* str_len);
 
             // Consolidate per-element string_descriptors into a single
             // string_descriptor with a flat contiguous char buffer.
@@ -2087,7 +2101,8 @@ class ASRToLLVMVisitor;
             void allocate_array_of_unlimited_polymorphic_type(
                 ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
                 llvm::Value* array_data_ptr, llvm::Value* size,
-                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
+                llvm::Value* string_len = nullptr);
     };
 
     class LLVMTuple {

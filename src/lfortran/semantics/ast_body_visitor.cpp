@@ -2693,6 +2693,10 @@ public:
                                 }
                             }
                         }
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                            x.base.base.loc, 1, new_arg.m_len_expr,
+                            ASR::string_length_kindType::ExpressionLength,
+                            ASR::string_physical_typeType::DescriptorString));
                     } else if( type_name == "integer" || type_name == "real"
                             || type_name == "complex" || type_name == "logical" ) {
                         int kind = 4;
@@ -3016,7 +3020,24 @@ public:
                         new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                     }
                 } else {
-                    new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                    // n_dims > 0: explicit bounds provided in the allocate statement.
+                    // For mold with unlimited polymorphic target, record the mold type
+                    // so the codegen can copy type info from the mold at runtime.
+                    if (mold_cond) {
+                        ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if (ASRUtils::is_unlimited_polymorphic_type(a_type)) {
+                            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(mold));
+                            ASR::alloc_arg_t new_arg = alloc_args_vec[i];
+                            new_arg.m_type = mold_type;
+                            new_alloc_args_vec.push_back(al, new_arg);
+                        } else {
+                            new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                        }
+                    } else {
+                        new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                    }
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
