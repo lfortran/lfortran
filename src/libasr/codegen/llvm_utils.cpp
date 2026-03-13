@@ -9945,9 +9945,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
                     if (!ASRUtils::is_pointer(member_type) && 
                             ASR::is_a<ASR::StructType_t>(
-                                *ASRUtils::type_get_past_allocatable(member_type)) &&
-                            !ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
-                                ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
+                                *ASRUtils::type_get_past_allocatable(member_type))) {
                         llvm::Value* dest_member_ptr = dest_member;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
