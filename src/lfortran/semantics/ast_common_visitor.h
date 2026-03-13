@@ -9041,6 +9041,151 @@ public:
                 }
             }
 
+            if (ASRUtils::is_character(*v_type) && n_subargs > 0) {
+                // Character array section with substring: e.g., s1(:)(1:4)
+                // Decompose into an ArrayConstructor with ImpliedDoLoop:
+                //   [(s1(i)(1:4), i=lbound(s1,1), ubound(s1,1))]
+                LCOMPILERS_ASSERT(n_subargs == 1);
+                LCOMPILERS_ASSERT(n_args >= 1);
+
+                // Fill in missing left bounds for full-range dimensions
+                for (size_t i = 0; i < n_args; i++) {
+                    if (args.p[i].m_step != nullptr && args.p[i].m_left == nullptr) {
+                        args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(
+                            v_Var, i + 1, "lbound", al, diag);
+                    }
+                    if (args.p[i].m_step != nullptr && args.p[i].m_right == nullptr) {
+                        args.p[i].m_right = ASRUtils::get_bound<SemanticAbort>(
+                            v_Var, i + 1, "ubound", al, diag);
+                    }
+                }
+
+                // Create a temporary loop variable
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, loc, compiler_options.po.default_integer_kind));
+                std::string loop_var_name = current_scope->get_unique_name(
+                    "__implied_do_i");
+                Vec<char*> variable_dependencies_vec;
+                variable_dependencies_vec.reserve(al, 1);
+                ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                        s2c(al, loop_var_name), variable_dependencies_vec.p,
+                        variable_dependencies_vec.size(),
+                        ASRUtils::intent_local, nullptr, nullptr,
+                        ASR::storage_typeType::Default, int_type, nullptr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                current_scope->add_symbol(loop_var_name, loop_var_sym);
+                ASR::expr_t* loop_var = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, loop_var_sym));
+
+                // Build ArrayItem(s1, [loop_var]) for each dimension
+                Vec<ASR::array_index_t> item_args;
+                item_args.reserve(al, n_args);
+                ASR::expr_t* do_lb = nullptr;
+                ASR::expr_t* do_ub = nullptr;
+                ASR::expr_t* do_step = nullptr;
+                for (size_t i = 0; i < n_args; i++) {
+                    ASR::array_index_t ai;
+                    ai.loc = loc;
+                    if (args.p[i].m_step != nullptr) {
+                        // This is a range dimension — use the loop variable
+                        ai.m_left = nullptr;
+                        ai.m_right = loop_var;
+                        ai.m_step = nullptr;
+                        do_lb = args.p[i].m_left;
+                        do_ub = args.p[i].m_right;
+                        do_step = args.p[i].m_step;
+                    } else {
+                        // Scalar index — pass through
+                        ai.m_left = args.p[i].m_left;
+                        ai.m_right = args.p[i].m_right;
+                        ai.m_step = args.p[i].m_step;
+                    }
+                    item_args.push_back(al, ai);
+                }
+
+                ASR::ttype_t* element_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(type));
+                ASR::expr_t* array_item = ASRUtils::EXPR(
+                    ASRUtils::make_ArrayItem_t_util(al, loc, v_Var,
+                        item_args.p, item_args.size(), element_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+
+                // Process substring arguments
+                ASR::ttype_t* sub_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, loc, compiler_options.po.default_integer_kind));
+                ASR::expr_t* const_1 = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, 1, sub_int_type));
+                ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
+                if (m_subargs[0].m_start) {
+                    this->visit_expr(*(m_subargs[0].m_start));
+                    l = ASRUtils::EXPR(tmp);
+                    l = CastingUtil::perform_casting(l, sub_int_type, al, loc);
+                } else {
+                    l = const_1;
+                }
+                if (m_subargs[0].m_end) {
+                    this->visit_expr(*(m_subargs[0].m_end));
+                    r = ASRUtils::EXPR(tmp);
+                    r = CastingUtil::perform_casting(r, sub_int_type, al, loc);
+                } else {
+                    r = ASRUtils::EXPR(ASR::make_StringLen_t(
+                        al, loc, v_Var,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                            compiler_options.po.default_integer_kind)),
+                        ASRUtils::get_string_type(root_v_type)->m_len));
+                }
+                this->visit_expr(*(m_subargs[0].m_step));
+                step = ASRUtils::EXPR(tmp);
+                step = CastingUtil::perform_casting(
+                    step, sub_int_type, al, loc);
+
+                // Create substring type: String(r - l + 1)
+                ASR::ttype_t *string_tt;
+                {
+                    ASRUtils::ASRBuilder b(al, loc);
+                    string_tt = ASRUtils::TYPE(ASR::make_String_t(
+                        al, loc, 1,
+                        b.Add(b.Sub(r, l), b.i_t(1, ASRUtils::expr_type(r))),
+                        ASR::ExpressionLength,
+                        ASR::DescriptorString));
+                }
+
+                // StringSection(ArrayItem(s1, [i]), l, r, step, String(len))
+                ASR::expr_t* string_section = ASRUtils::EXPR(
+                    ASR::make_StringSection_t(al, loc, array_item,
+                        l, r, step, string_tt, nullptr));
+
+                // ImpliedDoLoop
+                Vec<ASR::expr_t*> values;
+                values.reserve(al, 1);
+                values.push_back(al, string_section);
+                ASR::expr_t* implied_do = ASRUtils::EXPR(
+                    ASR::make_ImpliedDoLoop_t(al, loc, values.p, values.size(),
+                        loop_var, do_lb, do_ub, do_step, string_tt, nullptr));
+
+                // ArrayConstructor with the implied do loop
+                Vec<ASR::expr_t*> ctor_args;
+                ctor_args.reserve(al, 1);
+                ctor_args.push_back(al, implied_do);
+
+                // Result type: Array(String(len), [:])
+                Vec<ASR::dimension_t> result_dims;
+                result_dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+                result_dims.push_back(al, dim);
+                ASR::ttype_t* result_type = ASRUtils::duplicate_type(
+                    al, string_tt, &result_dims);
+
+                return ASR::make_ArrayConstructor_t(al, loc,
+                    ctor_args.p, ctor_args.size(), result_type, nullptr,
+                    ASR::arraystorageType::ColMajor, nullptr);
+            }
+
             Vec<ASR::dimension_t> array_section_dims;
             array_section_dims.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
