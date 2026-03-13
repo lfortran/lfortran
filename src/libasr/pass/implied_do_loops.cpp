@@ -27,6 +27,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
     bool realloc_lhs, allocate_target;
     const LCompilers::PassOptions& pass_options;
+    bool skip_idl_save_restore;
 
     int get_index_kind() const {
         return pass_options.descriptor_index_64 ? 8 : 4;
@@ -155,7 +156,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     result_var(nullptr), result_counter(0),
     resultvar2value(resultvar2value_),
     realloc_lhs(realloc_lhs_), allocate_target(allocate_target_),
-    pass_options(pass_options_) {}
+    pass_options(pass_options_), skip_idl_save_restore(false) {}
 
     // Given an array expression (e.g. elemental function call, binop on
     // arrays), return the size of the array without referencing the
@@ -713,7 +714,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
         PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var,
-            result_vec, current_scope);
+            result_vec, current_scope, false, ASR::cast_kindType::IntegerToInteger,
+            nullptr, skip_idl_save_restore);
         result_var = result_var_copy;
     }
 
@@ -1160,11 +1162,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
+                bool prev_skip = replacer.skip_idl_save_restore;
+                if (pass_options.use_loop_variable_after_loop) {
+                    replacer.skip_idl_save_restore = true;
+                }
                 this->call_replacer();
                 current_expr = current_expr_copy_9;
                 if( !remove_original_statement ) {
                     this->visit_expr(*print_stmt->m_text);
                 }
+                replacer.skip_idl_save_restore = prev_skip;
                 print = false;
             } else {
                 LCOMPILERS_ASSERT_MSG(false, "print should support stringFormat or single string");
@@ -1269,6 +1276,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 write(*,*) [(i, i=1, 10)]
             */
+            bool prev_skip = replacer.skip_idl_save_restore;
+            if (pass_options.use_loop_variable_after_loop) {
+                replacer.skip_idl_save_restore = true;
+            }
             ASR::FileWrite_t* write_stmt = const_cast<ASR::FileWrite_t*>(&x);
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
@@ -1296,6 +1307,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     }
                 }
             }
+            replacer.skip_idl_save_restore = prev_skip;
             file_write = false;
         }
 

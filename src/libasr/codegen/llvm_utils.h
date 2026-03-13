@@ -10,6 +10,7 @@
 #include <libasr/asr.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <tuple>
@@ -243,9 +244,9 @@ class ASRToLLVMVisitor;
             llvm::IRBuilder<>* builder;
             llvm::AllocaInst *str_cmp_itr;
 
-            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
-
         public:
+
+            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
 
             LLVMTuple* tuple_api;
             LLVMList* list_api;
@@ -695,7 +696,46 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
+            llvm::Value* get_class_type_tag_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
+
+            // Allocate zero-initialized memory for the given LLVM type.
+            // Returns a typed pointer (bitcast of malloc+memset result).
+            llvm::Value* alloc_zeroed_type(llvm::Type* type);
+
+            // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
+            // Also derives elem_size and copy_fn from the vptr.
+            struct UpolyWrapperFields {
+                llvm::Value* vptr;
+                llvm::Value* data;
+                llvm::Value* elem_size;
+                llvm::Value* copy_fn;
+            };
+            UpolyWrapperFields extract_upoly_wrapper(
+                llvm::Value* wrapper, llvm::Type* wrapper_type);
+
+            // Initialize an unlimited-polymorphic array wrapper from a
+            // mold wrapper: copies vptr, allocates data, and if the mold
+            // is a string type, initializes string descriptors.
+            void init_mold_upoly_array_data(
+                llvm::Value* wrapper, llvm::Value* mold_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements);
+
+            // Initialize string descriptors in a pre-allocated data buffer.
+            // Allocates contiguous char data (filled with spaces) and sets
+            // each descriptor's pointer and length.
+            void init_string_descriptors(llvm::Value* data_mem,
+                llvm::Value* num_elements, llvm::Value* str_len);
+
+            // Consolidate per-element string_descriptors into a single
+            // string_descriptor with a flat contiguous char buffer.
+            llvm::Value* consolidate_char_descriptors(
+                llvm::Value* descs_i8, llvm::Value* n_elems_i64);
+
+            // Expand a flat char buffer into per-element string_descriptors.
+            llvm::Value* expand_flat_to_char_descriptors(
+                llvm::Value* flat_data, llvm::Value* char_len,
+                llvm::Value* n_elems_i64);
             
 
             void set_module(llvm::Module* module_);
@@ -1003,8 +1043,7 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
                 case(ASR::StructType) :  {
-                    if (llvm_utils_->compiler_options.new_classes && struct_sym != nullptr
-                            && ASRUtils::is_class_type(t)
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
                         // be decided from the ASR class flag, not the LLVM pointer type.
@@ -1221,8 +1260,7 @@ class ASRToLLVMVisitor;
             const auto checkPoint_BB = 
             START_CACHE(cache_key, ptr);
 
-            if (llvm_utils_->compiler_options.new_classes &&
-                    ASRUtils::is_class_type(t) &&
+            if (ASRUtils::is_class_type(t) &&
                     !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
                 ptr = llvm_utils_->CreateLoad2(
@@ -1815,15 +1853,44 @@ class ASRToLLVMVisitor;
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
+        /// Collect symbols that are targets of Associate statements in a block body.
+        /// These are aliases and must not be finalized (they don't own the data).
+        static std::set<ASR::symbol_t*> collect_associate_targets(
+                ASR::stmt_t** body, size_t n_body) {
+            std::set<ASR::symbol_t*> targets;
+            for (size_t i = 0; i < n_body; i++) {
+                if (ASR::is_a<ASR::Associate_t>(*body[i])) {
+                    auto& assoc = *ASR::down_cast<ASR::Associate_t>(body[i]);
+                    if (ASR::is_a<ASR::Var_t>(*assoc.m_target)) {
+                        targets.insert(ASR::down_cast<ASR::Var_t>(assoc.m_target)->m_v);
+                    }
+                }
+            }
+            return targets;
+        }
+
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
             auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
             insert_BB_for_readability(finalize_str.c_str());
+
+            // Collect associate targets from block body — these are aliases
+            // (e.g. typed views in select type) and must not be finalized.
+            std::set<ASR::symbol_t*> assoc_targets;
+            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
+            if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
+                auto& block = *ASR::down_cast<ASR::Block_t>(owner_sym);
+                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                auto& block = *ASR::down_cast<ASR::AssociateBlock_t>(owner_sym);
+                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
+            }
+
             auto MAP = symtab->get_scope();
             for(auto &str_sym_pair : MAP){
                 ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym)){
+                if (is_variable(sym) && assoc_targets.find(sym) == assoc_targets.end()){
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }
@@ -1969,6 +2036,7 @@ class ASRToLLVMVisitor;
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
+            llvm::Constant* get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module);
 
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
                                             std::vector<llvm::Constant*>& impls,
@@ -2004,6 +2072,11 @@ class ASRToLLVMVisitor;
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false);
+
+            // Copy dimension descriptors and rank from src to dest array descriptor.
+            void copy_dimension_descriptors(
+                llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
+                llvm::Module* module);
             
             /**
              * Class => `{VTable*, struct_t*}`
@@ -2028,7 +2101,8 @@ class ASRToLLVMVisitor;
             void allocate_array_of_unlimited_polymorphic_type(
                 ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
                 llvm::Value* array_data_ptr, llvm::Value* size,
-                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
+                llvm::Value* string_len = nullptr);
     };
 
     class LLVMTuple {

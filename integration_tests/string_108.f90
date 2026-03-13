@@ -9,4 +9,4 @@ program string_108
     end do
     if (result /= '0123') error stop
     print *, result
-end program
+end program string_108

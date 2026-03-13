@@ -1271,6 +1271,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     continue;
                 }
+                // Skip mold-based allocations: m_type being set indicates
+                // the allocate uses mold= (type/shape only, no data copy).
+                if (x.m_args[i].m_type != nullptr) {
+                    continue;
+                }
                 ASRUtils::ExprStmtDuplicator duplicator(al);
                 ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
@@ -1489,14 +1494,26 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return;
         }
 
-        // Don't generate an element-wise loop for transfer() (BitCast) when
-        // source and result are fixed-size arrays with different element byte
-        // sizes. The element counts differ so the loop indices would go out
-        // of bounds on the source array. Leave the whole-array BitCast for
-        // the LLVM backend to lower as a memcpy.
         if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
             ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+
+            if (bc->m_size != nullptr &&
+                ASRUtils::is_array(src_type) &&
+                !ASRUtils::is_string_only(src_type)) {
+                ASR::stmt_t* stmt = ASRUtils::STMT(
+                    ASRUtils::make_Assignment_t_util(al, loc,
+                        x.m_target, x.m_value, x.m_overloaded,
+                        x.m_realloc_lhs, x.m_move_allocation));
+                pass_result.push_back(al, stmt);
+                return;
+            }
+
+            // Don't generate an element-wise loop for transfer() (BitCast) when
+            // source and result are fixed-size arrays with different element byte
+            // sizes. The element counts differ so the loop indices would go out
+            // of bounds on the source array. Leave the whole-array BitCast for
+            // the LLVM backend to lower as a memcpy.
             if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type) &&
                 ASRUtils::is_fixed_size_array(src_type) &&
                 ASRUtils::is_fixed_size_array(bc->m_type)) {
@@ -1505,8 +1522,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 int res_kind = ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::extract_type(bc->m_type));
                 if (src_kind != res_kind) {
-                    // Keep the original assignment (pass_result may
-                    // already contain a DebugCheckArrayBounds).
                     pass_result.push_back(al,
                         const_cast<ASR::stmt_t*>(&(x.base)));
                     return;

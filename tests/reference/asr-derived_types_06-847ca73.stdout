@@ -148,7 +148,7 @@
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         ()
-                                        ())]
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                         ()
                                         ()
                                         ()
@@ -197,8 +197,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             datetime_to_string:
@@ -609,8 +609,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_toml_time:
@@ -967,8 +967,8 @@
                                     )]
                                     (Var 13 self)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             time_to_string:
@@ -1181,7 +1181,7 @@
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1241,7 +1241,7 @@
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1338,8 +1338,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_date:
@@ -2170,8 +2170,8 @@
                                     )]
                                     (Var 5 stat)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_time:
