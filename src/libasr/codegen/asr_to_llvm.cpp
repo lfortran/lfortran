@@ -16464,7 +16464,52 @@ public:
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
                         m_values[i], nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);
-                    args.push_back(builder->CreateMul(kind_val, tmp));
+                    llvm::Value* total_size = builder->CreateMul(kind_val, tmp);
+                    if (ASR::is_a<ASR::String_t>(*value_type_base)) {
+                        llvm::Value* array_size_val = tmp;
+                        ASR::StringLen_t* str_len = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
+                            m_values[i]->base.loc, m_values[i], type32, nullptr));
+                        visit_StringLen(*str_len);
+                        total_size = builder->CreateMul(array_size_val, tmp);
+                    }
+                    args.push_back(total_size);
+                    {
+                        int64_t ptr_loads_save = ptr_loads;
+                        int reduce_loads = 0;
+                        ptr_loads = 2;
+                        if (ASR::is_a<ASR::Var_t>(*m_values[i])) {
+                            ASR::Variable_t* var = ASRUtils::EXPR2VAR(m_values[i]);
+                            reduce_loads = var->m_intent == ASRUtils::intent_in;
+                            if (LLVM::is_llvm_pointer(*var->m_type)) {
+                                ptr_loads = 1;
+                            }
+                        }
+                        ptr_loads = ptr_loads - reduce_loads;
+                        ASR::ttype_t *arr_t = ASRUtils::expr_type(m_values[i]);
+                        this->visit_expr_load_wrapper(m_values[i], ptr_loads, true);
+                        ptr_loads = ptr_loads_save;
+                        load_non_array_non_character_pointers(m_values[i], arr_t, tmp);
+                        if (ASRUtils::is_array(arr_t) && ASRUtils::is_allocatable(arr_t)) {
+                            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(m_values[i],
+                                ASRUtils::extract_type(arr_t), module.get());
+                            tmp = llvm_utils->CreateLoad2(llvm_type->getPointerTo(), tmp);
+                        } else {
+                            ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(arr_t);
+                            if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                                llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
+                                    m_values[i], ASRUtils::type_get_past_allocatable_pointer(arr_t),
+                                    tmp, module.get());
+                                llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                                    m_values[i], ASRUtils::extract_type(arr_t), module.get());
+                                tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), data_ptr);
+                            }
+                        }
+                    }
+                    if (ASR::is_a<ASR::String_t>(*value_type_base)) {
+                        tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
+                    }
+                    args.push_back(tmp);
+                    continue;
                 } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
                     ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
                         m_values[i]->base.loc, m_values[i], type32, nullptr));
