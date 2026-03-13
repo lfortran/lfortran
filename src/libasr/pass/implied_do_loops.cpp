@@ -588,6 +588,104 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         bool is_allocatable = false;
         ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
 
+        // Check if any ImpliedDoLoop has array-valued elements.
+        // If so, the size computed by get_ArrayConstructor_size is wrong
+        // (it counts each array-valued element as 1 instead of its actual size).
+        // Generate a size-computation loop to get the correct total size.
+        bool has_array_valued_idoloop = false;
+        for (size_t k = 0; k < x->n_args && !has_array_valued_idoloop; k++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_args[k])) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_args[k]);
+                for (size_t v = 0; v < idl->n_values; v++) {
+                    if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[v]) &&
+                        ASRUtils::is_array(ASRUtils::expr_type(idl->m_values[v]))) {
+                        has_array_valued_idoloop = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (has_array_valued_idoloop) {
+            is_allocatable = true;
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, get_index_kind()));
+
+            // Create total_size variable initialized to 0
+            static int idl_size_counter = 0;
+            ASR::expr_t* total_size_var = PassUtils::create_var(idl_size_counter++,
+                "_idl_total_size_", loc, int_type, al, current_scope);
+            ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, total_size_var, zero, nullptr, false, false)));
+
+            // Generate size-computation code for each element
+            for (size_t k = 0; k < x->n_args; k++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_args[k])) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_args[k]);
+
+                    // Save loop variable
+                    static int idl_size_save_counter = 0;
+                    ASR::expr_t* save_var = PassUtils::create_var(idl_size_save_counter++,
+                        "_idl_size_save_", loc, ASRUtils::expr_type(idl->m_var), al, current_scope);
+                    pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, save_var, idl->m_var, nullptr, false, false)));
+
+                    // Create size-computation loop
+                    ASR::do_loop_head_t head;
+                    head.m_v = idl->m_var;
+                    head.m_start = idl->m_start;
+                    head.m_end = idl->m_end;
+                    head.m_increment = idl->m_increment;
+                    head.loc = idl->m_var->base.loc;
+
+                    Vec<ASR::stmt_t*> loop_body;
+                    loop_body.reserve(al, idl->n_values);
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+
+                    for (size_t v = 0; v < idl->n_values; v++) {
+                        ASR::expr_t* add_val = nullptr;
+                        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[v])) {
+                            add_val = one;
+                        } else if (ASRUtils::is_array(ASRUtils::expr_type(idl->m_values[v]))) {
+                            ASRUtils::ExprStmtDuplicator duplicator(al);
+                            ASR::expr_t* val_copy = duplicator.duplicate_expr(idl->m_values[v]);
+                            add_val = ASRUtils::get_size(val_copy, al, false);
+                        } else {
+                            add_val = one;
+                        }
+                        ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, total_size_var, ASR::binopType::Add, add_val, int_type, nullptr));
+                        loop_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, loc, total_size_var, increment, nullptr, false, false)));
+                    }
+
+                    ASR::stmt_t* size_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                        nullptr, head, loop_body.p, loop_body.size(), nullptr, 0));
+                    pass_result.push_back(al, size_loop);
+
+                    // Restore loop variable
+                    pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, idl->m_var, save_var, nullptr, false, false)));
+                } else {
+                    ASR::ttype_t* elem_type_k = ASRUtils::expr_type(x->m_args[k]);
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                    ASR::expr_t* add_val = nullptr;
+                    if (ASRUtils::is_array(elem_type_k)) {
+                        add_val = ASRUtils::get_size(x->m_args[k], al, false);
+                    } else {
+                        add_val = one;
+                    }
+                    ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, loc, total_size_var, ASR::binopType::Add, add_val, int_type, nullptr));
+                    pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, total_size_var, increment, nullptr, false, false)));
+                }
+            }
+
+            // Use total_size_var as the dimension length
+            array_constructor = total_size_var;
+        }
+
         // Case: `keywords = [character(len=ii) :: value]`
         // For runtime-dependent string lengths, defer evaluation and use allocatable results with per-element runtime allocation.
         ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
