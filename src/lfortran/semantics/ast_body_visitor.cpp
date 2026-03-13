@@ -4570,13 +4570,6 @@ public:
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         collect_labels();
-        // if (!t) {
-        //     if (compiler_options.continue_compilation) {
-        //         return;
-        //         LCOMPILERS_ASSERT(t);
-        //     } else {
-        //     }
-        // }
         if( t && t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
