@@ -12804,14 +12804,19 @@ public:
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* ptr_type = ASRUtils::expr_type(ptr_);
         bool is_fortran_pointer = ASRUtils::is_pointer(ptr_type);
-        bool is_c_associated = false;
+        bool is_cptr = ASR::is_a<ASR::CPtr_t>(*ptr_type);
         std::string fname = to_lower(std::string(x.m_func));
-        if (fname == "c_associated") {
-            is_c_associated = true;
-        }
-        if (!is_c_associated && !is_fortran_pointer) {
+        if (fname == "associated" && !is_fortran_pointer) {
             diag.add(Diagnostic(
-                "associated() argument must be a POINTER",
+                "associated() argument must be a pointer",
+                Level::Error, Stage::Semantic,
+                { Label("", {ptr_->base.loc}) }
+            ));
+            throw SemanticAbort();
+        }
+        if (fname == "c_associated" && !is_cptr) {
+            diag.add(Diagnostic(
+                "c_associated() argument must be of type c_ptr",
                 Level::Error, Stage::Semantic,
                 { Label("", {ptr_->base.loc}) }
             ));
