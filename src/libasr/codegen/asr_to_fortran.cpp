@@ -881,8 +881,7 @@ public:
             if (x.m_args[i].m_type) {
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
-            }
-            if (x.m_args[i].m_len_expr) {
+            } else if (x.m_args[i].m_len_expr) {
                 r += "character(len=";
                 visit_expr(*x.m_args[i].m_len_expr);
                 r += src;
