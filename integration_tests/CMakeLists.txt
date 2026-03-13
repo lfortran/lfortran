@@ -1656,6 +1656,8 @@ RUN(NAME modules_72 LABELS gfortran llvm
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
+RUN(NAME module_namespaces_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+
 RUN(NAME lfortran_intrinsic_sin LABELS gfortran llvm EXTRAFILES lfortran_intrinsic_sin_c.c)
 
 RUN(NAME bindc1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
