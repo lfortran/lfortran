@@ -4,7 +4,7 @@ program read_fmt8
   integer :: i1, i2, i3, i4
 
 ! Default is blank='null'
-  open (10, file='fort.10', status='replace', form='formatted')
+  open (10, file='file_55_fort.10', status='replace', form='formatted')
   write (10,'(a20)') ' '
 
   rewind (10)
