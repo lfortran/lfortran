@@ -1239,6 +1239,21 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         extract_value(expr_value(args[3]), kind);
     }
     ASR::ttype_t* kind_type = TYPE(ASR::make_Integer_t(al, loc, kind));
+    for (int i = 1; i <= 2; i++) {
+        if (args[i] && is_logical(*expr_type(args[i])) && is_array(expr_type(args[i]))) {
+            if (ASR::is_a<ASR::ArrayConstructor_t>(*args[i])) {
+                auto* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(args[i]);
+                if (ctor->n_args == 1) {
+                    args.p[i] = ctor->m_args[0];
+                }
+            } else if (ASR::is_a<ASR::ArrayConstant_t>(*args[i])) {
+                auto* arr = ASR::down_cast<ASR::ArrayConstant_t>(args[i]);
+                if (get_fixed_size_of_array(arr->m_type) == 1) {
+                    args.p[i] = fetch_ArrayConstant_value(al, arr, 0);
+                }
+            }
+        }
+    }
     ASR::expr_t* const mask_expr = [&args](){
         if((args[1] && is_logical(*expr_type(args[1])))) return args[1];
         else if(args[2]) return args[2];
@@ -3664,6 +3679,22 @@ namespace FindLoc {
         int dim = 0, kind = 4; // default kind
         ASR::expr_t *dim_expr = nullptr;
         ASR::expr_t *mask_expr = nullptr;
+
+        for (int i = 2; i <= 3; i++) {
+            if (args[i] && is_logical(*expr_type(args[i])) && is_array(expr_type(args[i]))) {
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*args[i])) {
+                    auto* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(args[i]);
+                    if (ctor->n_args == 1) {
+                        args.p[i] = ctor->m_args[0];
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*args[i])) {
+                    auto* arr = ASR::down_cast<ASR::ArrayConstant_t>(args[i]);
+                    if (get_fixed_size_of_array(arr->m_type) == 1) {
+                        args.p[i] = fetch_ArrayConstant_value(al, arr, 0);
+                    }
+                }
+            }
+        }
 
         // Checking for type findLoc(Array, value, mask)
         if( args[2] && !args[3] && is_logical(*expr_type(args[2])) ){
