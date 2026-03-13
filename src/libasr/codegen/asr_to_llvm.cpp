@@ -5573,6 +5573,20 @@ public:
                         fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
                             al, v->base.base.loc, &v->base)), ptr_member, nullptr, m_dims, n_dims, false, true, false, symbol_type, is_data_only);
                     }
+                    if (ASRUtils::is_character(*symbol_type) &&
+                            phy_type == ASR::array_physical_typeType::PointerArray &&
+                            ASRUtils::is_fixed_size_array(symbol_type)) {
+                        ASR::String_t* str_type = ASRUtils::get_string_type(symbol_type);
+                        builder->CreateStore(llvm::Constant::getNullValue(string_descriptor), ptr_member);
+                        setup_string_length(ptr_member, str_type, str_type->m_len);
+                        int64_t array_size = ASRUtils::get_fixed_size_of_array(symbol_type);
+                        llvm::Value* array_size_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(64, array_size));
+                        llvm_utils->set_array_of_strings_memory_on_heap(
+                            str_type, ptr_member,
+                            llvm_utils->get_string_length(str_type, ptr_member),
+                            array_size_val, false);
+                    }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type))
                         && !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
                         allocate_array_members_of_struct_arrays(ASRUtils::get_expr_from_sym(al, sym), ptr_member, symbol_type);
