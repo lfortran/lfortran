@@ -35,9 +35,7 @@ define i32 @_lcompilers_index_str(%string_descriptor* %str, %string_descriptor* 
   %4 = load i64, i64* %3, align 4
   %5 = trunc i64 %4 to i32
   %6 = icmp slt i32 %2, %5
-  %7 = zext i1 %6 to i32
-  %8 = icmp ne i32 %7, 0
-  br i1 %8, label %then, label %else
+  br i1 %6, label %then, label %else
 
 then:                                             ; preds = %.entry
   store i32 0, i32* %found, align 4
@@ -50,19 +48,16 @@ ifcont:                                           ; preds = %else, %then
   br label %loop.head
 
 loop.head:                                        ; preds = %ifcont10, %ifcont
-  %9 = load i32, i32* %i, align 4
-  %10 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
-  %11 = load i64, i64* %10, align 4
-  %12 = trunc i64 %11 to i32
-  %13 = add i32 %12, 1
-  %14 = icmp slt i32 %9, %13
-  %15 = zext i1 %14 to i32
-  %16 = load i32, i32* %found, align 4
-  %17 = icmp eq i32 %16, 1
-  %18 = zext i1 %17 to i32
-  %19 = and i32 %15, %18
-  %20 = icmp ne i32 %19, 0
-  br i1 %20, label %loop.body, label %loop.end11
+  %7 = load i32, i32* %i, align 4
+  %8 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
+  %9 = load i64, i64* %8, align 4
+  %10 = trunc i64 %9 to i32
+  %11 = add i32 %10, 1
+  %12 = icmp slt i32 %7, %11
+  %13 = load i32, i32* %found, align 4
+  %14 = icmp eq i32 %13, 1
+  %15 = and i1 %12, %14
+  br i1 %15, label %loop.body, label %loop.end11
 
 loop.body:                                        ; preds = %loop.head
   store i32 0, i32* %k, align 4
@@ -70,73 +65,68 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head1
 
 loop.head1:                                       ; preds = %ifcont7, %loop.body
-  %21 = load i32, i32* %j, align 4
-  %22 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 1
-  %23 = load i64, i64* %22, align 4
-  %24 = trunc i64 %23 to i32
-  %25 = icmp sle i32 %21, %24
-  %26 = zext i1 %25 to i32
-  %27 = load i32, i32* %found, align 4
-  %28 = icmp eq i32 %27, 1
-  %29 = zext i1 %28 to i32
-  %30 = and i32 %26, %29
-  %31 = icmp ne i32 %30, 0
-  br i1 %31, label %loop.body2, label %loop.end
+  %16 = load i32, i32* %j, align 4
+  %17 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 1
+  %18 = load i64, i64* %17, align 4
+  %19 = trunc i64 %18 to i32
+  %20 = icmp sle i32 %16, %19
+  %21 = load i32, i32* %found, align 4
+  %22 = icmp eq i32 %21, 1
+  %23 = and i1 %20, %22
+  br i1 %23, label %loop.body2, label %loop.end
 
 loop.body2:                                       ; preds = %loop.head1
-  %32 = load i32, i32* %i, align 4
-  %33 = load i32, i32* %k, align 4
-  %34 = add i32 %32, %33
-  store i32 %34, i32* %pos, align 4
-  %35 = load i32, i32* %pos, align 4
-  %36 = load i32, i32* %pos, align 4
-  %37 = sext i32 %35 to i64
-  %38 = sext i32 %36 to i64
-  %39 = sub i64 %38, %37
-  %40 = add i64 %39, 1
-  %41 = icmp slt i64 %40, 0
-  %42 = select i1 %41, i64 0, i64 %40
-  %43 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %44 = load i8*, i8** %43, align 8
-  %45 = sext i32 %35 to i64
-  %46 = sub i64 %45, 1
-  %StrSliceGEP = getelementptr i8, i8* %44, i64 %46
+  %24 = load i32, i32* %i, align 4
+  %25 = load i32, i32* %k, align 4
+  %26 = add i32 %24, %25
+  store i32 %26, i32* %pos, align 4
+  %27 = load i32, i32* %pos, align 4
+  %28 = load i32, i32* %pos, align 4
+  %29 = sext i32 %27 to i64
+  %30 = sext i32 %28 to i64
+  %31 = sub i64 %30, %29
+  %32 = add i64 %31, 1
+  %33 = icmp slt i64 %32, 0
+  %34 = select i1 %33, i64 0, i64 %32
+  %35 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %36 = load i8*, i8** %35, align 8
+  %37 = sext i32 %27 to i64
+  %38 = sub i64 %37, 1
+  %StrSliceGEP = getelementptr i8, i8* %36, i64 %38
   %StrSlice_StrView = alloca %string_descriptor, align 8
-  %47 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  store i8* %StrSliceGEP, i8** %47, align 8
-  %48 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  store i64 %42, i64* %48, align 4
-  %49 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  %50 = load i8*, i8** %49, align 8
-  %51 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  %52 = load i64, i64* %51, align 4
-  %53 = load i32, i32* %j, align 4
-  %54 = load i32, i32* %j, align 4
-  %55 = sext i32 %53 to i64
-  %56 = sext i32 %54 to i64
-  %57 = sub i64 %56, %55
-  %58 = add i64 %57, 1
-  %59 = icmp slt i64 %58, 0
-  %60 = select i1 %59, i64 0, i64 %58
-  %61 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 0
-  %62 = load i8*, i8** %61, align 8
-  %63 = sext i32 %53 to i64
-  %64 = sub i64 %63, 1
-  %StrSliceGEP3 = getelementptr i8, i8* %62, i64 %64
+  %39 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %39, align 8
+  %40 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 %34, i64* %40, align 4
+  %41 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %42 = load i8*, i8** %41, align 8
+  %43 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %44 = load i64, i64* %43, align 4
+  %45 = load i32, i32* %j, align 4
+  %46 = load i32, i32* %j, align 4
+  %47 = sext i32 %45 to i64
+  %48 = sext i32 %46 to i64
+  %49 = sub i64 %48, %47
+  %50 = add i64 %49, 1
+  %51 = icmp slt i64 %50, 0
+  %52 = select i1 %51, i64 0, i64 %50
+  %53 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 0
+  %54 = load i8*, i8** %53, align 8
+  %55 = sext i32 %45 to i64
+  %56 = sub i64 %55, 1
+  %StrSliceGEP3 = getelementptr i8, i8* %54, i64 %56
   %StrSlice_StrView4 = alloca %string_descriptor, align 8
-  %65 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
-  store i8* %StrSliceGEP3, i8** %65, align 8
-  %66 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
-  store i64 %60, i64* %66, align 4
-  %67 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
-  %68 = load i8*, i8** %67, align 8
-  %69 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
-  %70 = load i64, i64* %69, align 4
-  %71 = call i32 @str_compare(i8* %50, i64 %52, i8* %68, i64 %70)
-  %72 = icmp ne i32 %71, 0
-  %73 = zext i1 %72 to i32
-  %74 = icmp ne i32 %73, 0
-  br i1 %74, label %then5, label %else6
+  %57 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
+  store i8* %StrSliceGEP3, i8** %57, align 8
+  %58 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
+  store i64 %52, i64* %58, align 4
+  %59 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
+  %60 = load i8*, i8** %59, align 8
+  %61 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
+  %62 = load i64, i64* %61, align 4
+  %63 = call i32 @str_compare(i8* %42, i64 %44, i8* %60, i64 %62)
+  %64 = icmp ne i32 %63, 0
+  br i1 %64, label %then5, label %else6
 
 then5:                                            ; preds = %loop.body2
   store i32 0, i32* %found, align 4
@@ -146,26 +136,24 @@ else6:                                            ; preds = %loop.body2
   br label %ifcont7
 
 ifcont7:                                          ; preds = %else6, %then5
-  %75 = load i32, i32* %j, align 4
-  %76 = add i32 %75, 1
-  store i32 %76, i32* %j, align 4
-  %77 = load i32, i32* %k, align 4
-  %78 = add i32 %77, 1
-  store i32 %78, i32* %k, align 4
+  %65 = load i32, i32* %j, align 4
+  %66 = add i32 %65, 1
+  store i32 %66, i32* %j, align 4
+  %67 = load i32, i32* %k, align 4
+  %68 = add i32 %67, 1
+  store i32 %68, i32* %k, align 4
   br label %loop.head1
 
 loop.end:                                         ; preds = %loop.head1
-  %79 = load i32, i32* %found, align 4
-  %80 = icmp eq i32 %79, 1
-  %81 = zext i1 %80 to i32
-  %82 = icmp ne i32 %81, 0
-  br i1 %82, label %then8, label %else9
+  %69 = load i32, i32* %found, align 4
+  %70 = icmp eq i32 %69, 1
+  br i1 %70, label %then8, label %else9
 
 then8:                                            ; preds = %loop.end
-  %83 = load i32, i32* %i, align 4
-  store i32 %83, i32* %_lcompilers_index_str, align 4
-  %84 = load i32, i32* %back, align 4
-  store i32 %84, i32* %found, align 4
+  %71 = load i32, i32* %i, align 4
+  store i32 %71, i32* %_lcompilers_index_str, align 4
+  %72 = load i32, i32* %back, align 4
+  store i32 %72, i32* %found, align 4
   br label %ifcont10
 
 else9:                                            ; preds = %loop.end
@@ -173,9 +161,9 @@ else9:                                            ; preds = %loop.end
   br label %ifcont10
 
 ifcont10:                                         ; preds = %else9, %then8
-  %85 = load i32, i32* %i, align 4
-  %86 = add i32 %85, 1
-  store i32 %86, i32* %i, align 4
+  %73 = load i32, i32* %i, align 4
+  %74 = add i32 %73, 1
+  store i32 %74, i32* %i, align 4
   br label %loop.head
 
 loop.end11:                                       ; preds = %loop.head
@@ -185,8 +173,8 @@ return:                                           ; preds = %loop.end11
   br label %FINALIZE_SYMTABLE__lcompilers_index_str
 
 FINALIZE_SYMTABLE__lcompilers_index_str:          ; preds = %return
-  %87 = load i32, i32* %_lcompilers_index_str, align 4
-  ret i32 %87
+  %75 = load i32, i32* %_lcompilers_index_str, align 4
+  ret i32 %75
 }
 
 define i32 @_lcompilers_index_str1(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
@@ -207,9 +195,7 @@ define i32 @_lcompilers_index_str1(%string_descriptor* %str, %string_descriptor*
   %4 = load i64, i64* %3, align 4
   %5 = trunc i64 %4 to i32
   %6 = icmp slt i32 %2, %5
-  %7 = zext i1 %6 to i32
-  %8 = icmp ne i32 %7, 0
-  br i1 %8, label %then, label %else
+  br i1 %6, label %then, label %else
 
 then:                                             ; preds = %.entry
   store i32 0, i32* %found, align 4
@@ -222,19 +208,16 @@ ifcont:                                           ; preds = %else, %then
   br label %loop.head
 
 loop.head:                                        ; preds = %ifcont10, %ifcont
-  %9 = load i32, i32* %i, align 4
-  %10 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
-  %11 = load i64, i64* %10, align 4
-  %12 = trunc i64 %11 to i32
-  %13 = add i32 %12, 1
-  %14 = icmp slt i32 %9, %13
-  %15 = zext i1 %14 to i32
-  %16 = load i32, i32* %found, align 4
-  %17 = icmp eq i32 %16, 1
-  %18 = zext i1 %17 to i32
-  %19 = and i32 %15, %18
-  %20 = icmp ne i32 %19, 0
-  br i1 %20, label %loop.body, label %loop.end11
+  %7 = load i32, i32* %i, align 4
+  %8 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
+  %9 = load i64, i64* %8, align 4
+  %10 = trunc i64 %9 to i32
+  %11 = add i32 %10, 1
+  %12 = icmp slt i32 %7, %11
+  %13 = load i32, i32* %found, align 4
+  %14 = icmp eq i32 %13, 1
+  %15 = and i1 %12, %14
+  br i1 %15, label %loop.body, label %loop.end11
 
 loop.body:                                        ; preds = %loop.head
   store i32 0, i32* %k, align 4
@@ -242,73 +225,68 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head1
 
 loop.head1:                                       ; preds = %ifcont7, %loop.body
-  %21 = load i32, i32* %j, align 4
-  %22 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 1
-  %23 = load i64, i64* %22, align 4
-  %24 = trunc i64 %23 to i32
-  %25 = icmp sle i32 %21, %24
-  %26 = zext i1 %25 to i32
-  %27 = load i32, i32* %found, align 4
-  %28 = icmp eq i32 %27, 1
-  %29 = zext i1 %28 to i32
-  %30 = and i32 %26, %29
-  %31 = icmp ne i32 %30, 0
-  br i1 %31, label %loop.body2, label %loop.end
+  %16 = load i32, i32* %j, align 4
+  %17 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 1
+  %18 = load i64, i64* %17, align 4
+  %19 = trunc i64 %18 to i32
+  %20 = icmp sle i32 %16, %19
+  %21 = load i32, i32* %found, align 4
+  %22 = icmp eq i32 %21, 1
+  %23 = and i1 %20, %22
+  br i1 %23, label %loop.body2, label %loop.end
 
 loop.body2:                                       ; preds = %loop.head1
-  %32 = load i32, i32* %i, align 4
-  %33 = load i32, i32* %k, align 4
-  %34 = add i32 %32, %33
-  store i32 %34, i32* %pos, align 4
-  %35 = load i32, i32* %pos, align 4
-  %36 = load i32, i32* %pos, align 4
-  %37 = sext i32 %35 to i64
-  %38 = sext i32 %36 to i64
-  %39 = sub i64 %38, %37
-  %40 = add i64 %39, 1
-  %41 = icmp slt i64 %40, 0
-  %42 = select i1 %41, i64 0, i64 %40
-  %43 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %44 = load i8*, i8** %43, align 8
-  %45 = sext i32 %35 to i64
-  %46 = sub i64 %45, 1
-  %StrSliceGEP = getelementptr i8, i8* %44, i64 %46
+  %24 = load i32, i32* %i, align 4
+  %25 = load i32, i32* %k, align 4
+  %26 = add i32 %24, %25
+  store i32 %26, i32* %pos, align 4
+  %27 = load i32, i32* %pos, align 4
+  %28 = load i32, i32* %pos, align 4
+  %29 = sext i32 %27 to i64
+  %30 = sext i32 %28 to i64
+  %31 = sub i64 %30, %29
+  %32 = add i64 %31, 1
+  %33 = icmp slt i64 %32, 0
+  %34 = select i1 %33, i64 0, i64 %32
+  %35 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %36 = load i8*, i8** %35, align 8
+  %37 = sext i32 %27 to i64
+  %38 = sub i64 %37, 1
+  %StrSliceGEP = getelementptr i8, i8* %36, i64 %38
   %StrSlice_StrView = alloca %string_descriptor, align 8
-  %47 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  store i8* %StrSliceGEP, i8** %47, align 8
-  %48 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  store i64 %42, i64* %48, align 4
-  %49 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  %50 = load i8*, i8** %49, align 8
-  %51 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  %52 = load i64, i64* %51, align 4
-  %53 = load i32, i32* %j, align 4
-  %54 = load i32, i32* %j, align 4
-  %55 = sext i32 %53 to i64
-  %56 = sext i32 %54 to i64
-  %57 = sub i64 %56, %55
-  %58 = add i64 %57, 1
-  %59 = icmp slt i64 %58, 0
-  %60 = select i1 %59, i64 0, i64 %58
-  %61 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 0
-  %62 = load i8*, i8** %61, align 8
-  %63 = sext i32 %53 to i64
-  %64 = sub i64 %63, 1
-  %StrSliceGEP3 = getelementptr i8, i8* %62, i64 %64
+  %39 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %39, align 8
+  %40 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 %34, i64* %40, align 4
+  %41 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %42 = load i8*, i8** %41, align 8
+  %43 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %44 = load i64, i64* %43, align 4
+  %45 = load i32, i32* %j, align 4
+  %46 = load i32, i32* %j, align 4
+  %47 = sext i32 %45 to i64
+  %48 = sext i32 %46 to i64
+  %49 = sub i64 %48, %47
+  %50 = add i64 %49, 1
+  %51 = icmp slt i64 %50, 0
+  %52 = select i1 %51, i64 0, i64 %50
+  %53 = getelementptr %string_descriptor, %string_descriptor* %substr, i32 0, i32 0
+  %54 = load i8*, i8** %53, align 8
+  %55 = sext i32 %45 to i64
+  %56 = sub i64 %55, 1
+  %StrSliceGEP3 = getelementptr i8, i8* %54, i64 %56
   %StrSlice_StrView4 = alloca %string_descriptor, align 8
-  %65 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
-  store i8* %StrSliceGEP3, i8** %65, align 8
-  %66 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
-  store i64 %60, i64* %66, align 4
-  %67 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
-  %68 = load i8*, i8** %67, align 8
-  %69 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
-  %70 = load i64, i64* %69, align 4
-  %71 = call i32 @str_compare(i8* %50, i64 %52, i8* %68, i64 %70)
-  %72 = icmp ne i32 %71, 0
-  %73 = zext i1 %72 to i32
-  %74 = icmp ne i32 %73, 0
-  br i1 %74, label %then5, label %else6
+  %57 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
+  store i8* %StrSliceGEP3, i8** %57, align 8
+  %58 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
+  store i64 %52, i64* %58, align 4
+  %59 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 0
+  %60 = load i8*, i8** %59, align 8
+  %61 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView4, i32 0, i32 1
+  %62 = load i64, i64* %61, align 4
+  %63 = call i32 @str_compare(i8* %42, i64 %44, i8* %60, i64 %62)
+  %64 = icmp ne i32 %63, 0
+  br i1 %64, label %then5, label %else6
 
 then5:                                            ; preds = %loop.body2
   store i32 0, i32* %found, align 4
@@ -318,26 +296,24 @@ else6:                                            ; preds = %loop.body2
   br label %ifcont7
 
 ifcont7:                                          ; preds = %else6, %then5
-  %75 = load i32, i32* %j, align 4
-  %76 = add i32 %75, 1
-  store i32 %76, i32* %j, align 4
-  %77 = load i32, i32* %k, align 4
-  %78 = add i32 %77, 1
-  store i32 %78, i32* %k, align 4
+  %65 = load i32, i32* %j, align 4
+  %66 = add i32 %65, 1
+  store i32 %66, i32* %j, align 4
+  %67 = load i32, i32* %k, align 4
+  %68 = add i32 %67, 1
+  store i32 %68, i32* %k, align 4
   br label %loop.head1
 
 loop.end:                                         ; preds = %loop.head1
-  %79 = load i32, i32* %found, align 4
-  %80 = icmp eq i32 %79, 1
-  %81 = zext i1 %80 to i32
-  %82 = icmp ne i32 %81, 0
-  br i1 %82, label %then8, label %else9
+  %69 = load i32, i32* %found, align 4
+  %70 = icmp eq i32 %69, 1
+  br i1 %70, label %then8, label %else9
 
 then8:                                            ; preds = %loop.end
-  %83 = load i32, i32* %i, align 4
-  store i32 %83, i32* %_lcompilers_index_str1, align 4
-  %84 = load i32, i32* %back, align 4
-  store i32 %84, i32* %found, align 4
+  %71 = load i32, i32* %i, align 4
+  store i32 %71, i32* %_lcompilers_index_str1, align 4
+  %72 = load i32, i32* %back, align 4
+  store i32 %72, i32* %found, align 4
   br label %ifcont10
 
 else9:                                            ; preds = %loop.end
@@ -345,9 +321,9 @@ else9:                                            ; preds = %loop.end
   br label %ifcont10
 
 ifcont10:                                         ; preds = %else9, %then8
-  %85 = load i32, i32* %i, align 4
-  %86 = add i32 %85, 1
-  store i32 %86, i32* %i, align 4
+  %73 = load i32, i32* %i, align 4
+  %74 = add i32 %73, 1
+  store i32 %74, i32* %i, align 4
   br label %loop.head
 
 loop.end11:                                       ; preds = %loop.head
@@ -357,8 +333,8 @@ return:                                           ; preds = %loop.end11
   br label %FINALIZE_SYMTABLE__lcompilers_index_str1
 
 FINALIZE_SYMTABLE__lcompilers_index_str1:         ; preds = %return
-  %87 = load i32, i32* %_lcompilers_index_str1, align 4
-  ret i32 %87
+  %75 = load i32, i32* %_lcompilers_index_str1, align 4
+  ret i32 %75
 }
 
 declare i32 @str_compare(i8*, i64, i8*, i64)
@@ -394,40 +370,38 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 4, i32* %call_arg_value1, align 4
   %14 = call i32 @_lcompilers_index_str(%string_descriptor* %mystring, %string_descriptor* %teststring, i32* %call_arg_value, i32* %call_arg_value1)
   %15 = icmp eq i32 %14, 0
-  %16 = zext i1 %15 to i32
-  %17 = icmp ne i32 %16, 0
-  br i1 %17, label %then, label %else
+  br i1 %15, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %18, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %16 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %16, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %19 = alloca i64, align 8
+  %17 = alloca i64, align 8
   store i32 0, i32* %call_arg_value, align 4
   store i32 4, i32* %call_arg_value1, align 4
-  %20 = call i32 @_lcompilers_index_str1(%string_descriptor* %mystring, %string_descriptor* %teststring, i32* %call_arg_value, i32* %call_arg_value1)
-  %21 = alloca i32, align 4
-  store i32 %20, i32* %21, align 4
-  %22 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %19, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %21)
-  %23 = load i64, i64* %19, align 4
+  %18 = call i32 @_lcompilers_index_str1(%string_descriptor* %mystring, %string_descriptor* %teststring, i32* %call_arg_value, i32* %call_arg_value1)
+  %19 = alloca i32, align 4
+  store i32 %18, i32* %19, align 4
+  %20 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %17, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %19)
+  %21 = load i64, i64* %17, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
+  %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %20, i8** %22, align 8
+  %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %21, i64* %23, align 4
   %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %22, i8** %24, align 8
-  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %23, i64* %25, align 4
-  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %27 = load i8*, i8** %26, align 8
-  %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %29 = load i64, i64* %28, align 4
-  %30 = trunc i64 %29 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
-  %31 = icmp eq i8* %22, null
-  br i1 %31, label %free_done, label %free_nonnull
+  %25 = load i8*, i8** %24, align 8
+  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %27 = load i64, i64* %26, align 4
+  %28 = trunc i64 %27 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %25, i32 %28, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %29 = icmp eq i8* %20, null
+  br i1 %29, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %else
-  call void @_lfortran_free(i8* %22)
+  call void @_lfortran_free(i8* %20)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %else
@@ -444,15 +418,15 @@ FINALIZE_SYMTABLE_string_11:                      ; preds = %return
   br label %Finalize_Variable_mystring
 
 Finalize_Variable_mystring:                       ; preds = %FINALIZE_SYMTABLE_string_11
-  %32 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
-  %33 = load i8*, i8** %32, align 8
-  call void @_lfortran_free(i8* %33)
+  %30 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
+  %31 = load i8*, i8** %30, align 8
+  call void @_lfortran_free(i8* %31)
   br label %Finalize_Variable_teststring
 
 Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_mystring
-  %34 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
-  %35 = load i8*, i8** %34, align 8
-  call void @_lfortran_free(i8* %35)
+  %32 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
+  %33 = load i8*, i8** %32, align 8
+  call void @_lfortran_free(i8* %33)
   ret i32 0
 }
 

@@ -8738,8 +8738,17 @@ public:
         this->visit_expr(*x.m_overloaded);
     }
 
-    // With full-width logical types, no conversion is needed for stores.
-    llvm::Value* logical_store_val(llvm::Value* v) {
+    // Widen an i1 comparison result to the full logical kind width before
+    // storing into a logical variable.  When the value is already the right
+    // width (or not i1) this is a no-op.
+    llvm::Value* logical_store_val(llvm::Value* v, ASR::expr_t* target) {
+        if (v && v->getType()->isIntegerTy(1) && target) {
+            ASR::ttype_t* t = ASRUtils::expr_type(target);
+            if (ASRUtils::is_logical(*t)) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                return builder->CreateZExt(v, llvm_utils->getIntType(kind));
+            }
+        }
         return v;
     }
 
@@ -9878,8 +9887,7 @@ public:
         }
         value = tmp;
         load_non_array_non_character_pointers(m_value, value_type, value);
-        if (x.m_target->type == ASR::exprType::ArrayItem)
-            value = logical_store_val(value);
+        value = logical_store_val(value, x.m_target);
 
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
@@ -10905,17 +10913,6 @@ public:
 
         this->visit_expr(*x);
 
-        // Comparison operators (icmp) return i1, but logical variables are now
-        // stored at their full kind width (i8/i16/i32/i64). Widen the result
-        // so that stores to logical targets match in type.
-        if (tmp && !tmp->getType()->isPointerTy() && tmp->getType()->isIntegerTy(1)) {
-            ASR::ttype_t* etype = ASRUtils::expr_type(x);
-            if (ASRUtils::is_logical(*etype)) {
-                int kind = ASRUtils::extract_kind_from_ttype_t(etype);
-                tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(kind));
-            }
-        }
-
         if (load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
@@ -10952,13 +10949,6 @@ public:
             this->visit_expr_wrapper(x, true);
         } else {
             this->visit_expr(*x);
-            if (tmp && !tmp->getType()->isPointerTy() && tmp->getType()->isIntegerTy(1)) {
-                ASR::ttype_t* etype = ASRUtils::expr_type(x);
-                if (ASRUtils::is_logical(*etype)) {
-                    int kind = ASRUtils::extract_kind_from_ttype_t(etype);
-                    tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(kind));
-                }
-            }
         }
         ptr_loads = ptr_loads_copy;
     }
@@ -11790,7 +11780,18 @@ public:
                 comp_res,
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
         } else if (ASRUtils::is_logical(*x.m_type)) {
-            // Use direct iW bitwise ops for logical types
+            // Use direct iW bitwise ops for logical types.
+            // Operands may be i1 (from comparisons) or iW (from variables).
+            // Unify to the wider type before the bitwise op.
+            if (left_val->getType() != right_val->getType()) {
+                unsigned lw = left_val->getType()->getIntegerBitWidth();
+                unsigned rw = right_val->getType()->getIntegerBitWidth();
+                if (lw < rw) {
+                    left_val = builder->CreateZExt(left_val, right_val->getType());
+                } else {
+                    right_val = builder->CreateZExt(right_val, left_val->getType());
+                }
+            }
             switch (x.m_op) {
                 case ASR::logicalbinopType::And: {
                     tmp = builder->CreateAnd(left_val, right_val);
@@ -17617,6 +17618,11 @@ public:
                     if (orig_arg &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                         !LLVM::is_llvm_pointer(*arg->m_type)) {
+                        if (tmp->getType()->isIntegerTy(1) &&
+                            ASRUtils::is_logical(*arg->m_type)) {
+                            int kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
+                            tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(kind));
+                        }
                         llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
@@ -20333,6 +20339,7 @@ public:
                 }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
+                    tmp = logical_store_val(tmp, x.m_args[i]);
                     llvm::Value* tmp_ptr = builder->CreateAlloca(tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;

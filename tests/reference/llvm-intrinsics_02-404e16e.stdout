@@ -88,9 +88,7 @@ free_done:                                        ; preds = %free_nonnull, %.ent
   %14 = fsub float %13, 0x3FEFEB7AA0000000
   %15 = call float @llvm.fabs.f32(float %14)
   %16 = fcmp ogt float %15, 0x3EB0C6F7A0000000
-  %17 = zext i1 %16 to i32
-  %18 = icmp ne i32 %17, 0
-  br i1 %18, label %then, label %else
+  br i1 %16, label %then, label %else
 
 then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
@@ -101,13 +99,11 @@ else:                                             ; preds = %free_done
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %19 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
-  %20 = fsub float %19, 0x3FEAE238A0000000
-  %21 = call float @llvm.fabs.f32(float %20)
-  %22 = fcmp ogt float %21, 0x3EB0C6F7A0000000
-  %23 = zext i1 %22 to i32
-  %24 = icmp ne i32 %23, 0
-  br i1 %24, label %then1, label %else2
+  %17 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %18 = fsub float %17, 0x3FEAE238A0000000
+  %19 = call float @llvm.fabs.f32(float %18)
+  %20 = fcmp ogt float %19, 0x3EB0C6F7A0000000
+  br i1 %20, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
@@ -118,13 +114,11 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %25 = load double, double* %y, align 8
-  %26 = fsub double %25, 0x3FEFEB7AA0000000
-  %27 = call double @llvm.fabs.f64(double %26)
-  %28 = fcmp ogt double %27, 0x3E7AD7F2A0000000
-  %29 = zext i1 %28 to i32
-  %30 = icmp ne i32 %29, 0
-  br i1 %30, label %then4, label %else5
+  %21 = load double, double* %y, align 8
+  %22 = fsub double %21, 0x3FEFEB7AA0000000
+  %23 = call double @llvm.fabs.f64(double %22)
+  %24 = fcmp ogt double %23, 0x3E7AD7F2A0000000
+  br i1 %24, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
@@ -146,22 +140,20 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %31 = call double @_lcompilers_sin_f64(double* %y)
-  %32 = load float, float* @intrinsics_02.x, align 4
-  %33 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
-  %34 = fadd float %32, %33
-  store float %34, float* %call_arg_value, align 4
-  %35 = call float @_lcompilers_sin_f32(float* %call_arg_value)
-  %36 = fpext float %35 to double
-  %37 = fadd double %31, %36
-  store double %37, double* %call_arg_value10, align 8
-  %38 = call double @_lcompilers_sin_f64(double* %call_arg_value10)
-  %39 = fsub double %38, 0x3FEF20DD80000000
-  %40 = call double @llvm.fabs.f64(double %39)
-  %41 = fcmp ogt double %40, 0x3E7AD7F2A0000000
-  %42 = zext i1 %41 to i32
-  %43 = icmp ne i32 %42, 0
-  br i1 %43, label %then11, label %else12
+  %25 = call double @_lcompilers_sin_f64(double* %y)
+  %26 = load float, float* @intrinsics_02.x, align 4
+  %27 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %28 = fadd float %26, %27
+  store float %28, float* %call_arg_value, align 4
+  %29 = call float @_lcompilers_sin_f32(float* %call_arg_value)
+  %30 = fpext float %29 to double
+  %31 = fadd double %25, %30
+  store double %31, double* %call_arg_value10, align 8
+  %32 = call double @_lcompilers_sin_f64(double* %call_arg_value10)
+  %33 = fsub double %32, 0x3FEF20DD80000000
+  %34 = call double @llvm.fabs.f64(double %33)
+  %35 = fcmp ogt double %34, 0x3E7AD7F2A0000000
+  br i1 %35, label %then11, label %else12
 
 then11:                                           ; preds = %ifcont9
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
