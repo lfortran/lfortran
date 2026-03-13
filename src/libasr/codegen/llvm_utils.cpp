@@ -3188,6 +3188,39 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return result;
     }
 
+    void LLVMUtils::writeback_char_to_polymorphic_descriptors(
+            llvm::Value* original_descs_i8, llvm::Value* consolidated_desc,
+            llvm::Value* n_elems_i64) {
+        llvm::Type* str_desc_ty = string_descriptor;
+        llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+        llvm::Type* i8_ty = llvm::Type::getInt8Ty(context);
+
+        llvm::Value* descs = builder->CreateBitCast(
+            original_descs_i8, str_desc_ty->getPointerTo());
+        llvm::Value* flat_buf = CreateLoad2(character_type,
+            create_gep2(str_desc_ty, consolidated_desc, 0));
+        llvm::Value* char_len = CreateLoad2(i64_ty,
+            create_gep2(str_desc_ty, consolidated_desc, 1));
+
+        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
+        create_loop("char_writeback", [&]() {
+            return builder->CreateICmpSLT(
+                CreateLoad2(i64_ty, idx), n_elems_i64);
+        }, [&]() {
+            llvm::Value* i = CreateLoad2(i64_ty, idx);
+            llvm::Value* src_off = builder->CreateMul(i, char_len);
+            llvm::Value* src_chars = builder->CreateGEP(i8_ty, flat_buf, src_off);
+            llvm::Value* dst_desc = create_ptr_gep2(str_desc_ty, descs, i);
+            llvm::Value* dst_chars = CreateLoad2(character_type,
+                create_gep2(str_desc_ty, dst_desc, 0));
+            builder->CreateMemCpy(dst_chars, llvm::MaybeAlign(),
+                src_chars, llvm::MaybeAlign(), char_len);
+            builder->CreateStore(
+                builder->CreateAdd(i, llvm::ConstantInt::get(i64_ty, 1)), idx);
+        });
+    }
+
     llvm::Value* LLVMUtils::expand_flat_to_char_descriptors(
             llvm::Value* flat_data, llvm::Value* char_len,
             llvm::Value* n_elems_i64) {

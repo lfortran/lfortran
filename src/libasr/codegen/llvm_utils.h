@@ -732,6 +732,12 @@ class ASRToLLVMVisitor;
             llvm::Value* consolidate_char_descriptors(
                 llvm::Value* descs_i8, llvm::Value* n_elems_i64);
 
+            // Write back consolidated flat char buffer to original
+            // per-element string_descriptors in a polymorphic array.
+            void writeback_char_to_polymorphic_descriptors(
+                llvm::Value* original_descs_i8, llvm::Value* consolidated_desc,
+                llvm::Value* n_elems_i64);
+
             // Expand a flat char buffer into per-element string_descriptors.
             llvm::Value* expand_flat_to_char_descriptors(
                 llvm::Value* flat_data, llvm::Value* char_len,
