@@ -410,6 +410,12 @@ semantic error: Interface mismatch in procedure pointer assignment at (1): 'dumm
 183 |         pf2 => dummy_func
     |         ^^^^^^^^^^^^^^^^^ (1)
 
+semantic error: Function 'c_associated' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:195:18
+    |
+195 |         print *, c_associated(p)
+    |                  ^^^^^^^^^^^^^^^ 
+
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:268:14
     |

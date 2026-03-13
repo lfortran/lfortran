@@ -189,11 +189,11 @@ contains
         y = x
     end function op_clash_f
 
-
-
-
-
-
+    subroutine test_c_associated_errors()
+        use iso_c_binding
+        integer, pointer :: p
+        print *, c_associated(p)
+    end subroutine test_c_associated_errors
 
 
 
