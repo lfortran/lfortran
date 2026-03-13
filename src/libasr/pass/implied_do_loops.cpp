@@ -1044,8 +1044,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         };
         
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            ASR::expr_t* start = idl->m_start;
-            ASR::expr_t* end = idl->m_end;
+            ASR::expr_t* start_raw = ASRUtils::expr_value(idl->m_start);
+            ASR::expr_t* start = (start_raw != nullptr) ? start_raw : idl->m_start;
+            ASR::expr_t* end_raw = ASRUtils::expr_value(idl->m_end);
+            ASR::expr_t* end = (end_raw != nullptr) ? end_raw : idl->m_end;
             ASR::expr_t* step = idl->m_increment;
             
             if (!ASR::is_a<ASR::IntegerConstant_t>(*start) ||
@@ -1056,8 +1058,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
             int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end)->m_n;
             int64_t step_val = 1;
-            if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
-                step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+            if (step) {
+                ASR::expr_t* step_v = ASRUtils::expr_value(step);
+                if (step_v == nullptr) step_v = step;
+                if (ASR::is_a<ASR::IntegerConstant_t>(*step_v)) {
+                    step_val = ASR::down_cast<ASR::IntegerConstant_t>(step_v)->m_n;
+                }
             }
             
             if (step_val == 0 || (step_val > 0 && start_val > end_val) || 
@@ -1192,6 +1198,25 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     if ( (x.m_fmt != nullptr) &&  // Only for formatted I/O, not list-directed (print *)
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
                           implied_do_loop_has_string_trim(implied_do_loop)) ) {
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (!ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) &&
+                            expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            break;
+                        }
                         remove_original_statement = true;
                         pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
                         continue;
