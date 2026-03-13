@@ -216,7 +216,8 @@ public:
                     ASR::ttype_t *type = nullptr;
                     //convert the ast_type to asr_type
                     int i_kind = compiler_options.po.default_integer_kind;
-                    int a_kind = 4;
+                    int a_kind = (ast_type == AST::decl_typeType::TypeLogical)
+                        ? compiler_options.po.default_integer_kind : 4;
                     int a_len = -10;
                     if (attr_type->m_kind != nullptr) {
                        if (attr_type->n_kind == 1) {
@@ -1870,7 +1871,8 @@ public:
             }
             ASR::ttype_t *type = nullptr;
             int i_kind = compiler_options.po.default_integer_kind;
-            int a_kind = 4;
+            int a_kind = (return_type->m_type == AST::decl_typeType::TypeLogical)
+                ? compiler_options.po.default_integer_kind : 4;
             int a_len = 1;
             ASR::expr_t* len_expr = nullptr;
 

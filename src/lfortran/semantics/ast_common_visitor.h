@@ -7872,7 +7872,8 @@ public:
         type_declaration = nullptr;
 
         int a_kind = 4;
-        if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+        if (sym_type->m_type == AST::decl_typeType::TypeInteger ||
+            sym_type->m_type == AST::decl_typeType::TypeLogical) {
             a_kind = compiler_options.po.default_integer_kind;
         }
 
