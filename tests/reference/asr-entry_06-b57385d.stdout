@@ -270,8 +270,8 @@
                     )]
                     (Var 2 mvndfn)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             mvndfn_main__lcompilers:
@@ -721,8 +721,8 @@
                     )]
                     (Var 4 mvndfn_main__lcompilers)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             mvndnt:
@@ -835,8 +835,8 @@
                     )]
                     (Var 3 mvndnt)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })

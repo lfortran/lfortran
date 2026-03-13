@@ -59,7 +59,7 @@
                         []
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()

@@ -4543,6 +4543,19 @@ static void _lfortran_init_standard_units(void) {
     last_index_used = 2;
 }
 
+static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
+    long saved = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    int32_t count = 0;
+    for (long i = 0; i < end_pos; i++) {
+        int ch = fgetc(fp);
+        if (ch == EOF) break;
+        if (ch == '\n') count++;
+    }
+    fseek(fp, saved, SEEK_SET);
+    return count;
+}
+
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode) {
     _lfortran_init_standard_units();
     for( int i = 0; i <= last_index_used; i++ ) {
@@ -5245,7 +5258,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
-            *pos = (int32_t)p + 1;
+            if (!unit_file_bin && access_id == 0) {
+                int32_t nl = count_newlines_up_to(fp, p);
+                if (nl > 0) {
+                    *pos = (int32_t)(p - nl);
+                } else {
+                    *pos = (int32_t)p + 1;
+                }
+            } else {
+                *pos = (int32_t)p + 1;
+            }
         }
         if (size != NULL && fp != NULL) {
             long current_pos = ftell(fp);
@@ -5376,7 +5398,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
-            *pos = (int32_t)p + 1;
+            if (!unit_file_bin && access_id == 0) {
+                int32_t nl = count_newlines_up_to(fp, p);
+                if (nl > 0) {
+                    *pos = (int32_t)(p - nl);
+                } else {
+                    *pos = (int32_t)p + 1;
+                }
+            } else {
+                *pos = (int32_t)p + 1;
+            }
         }
         if (size != NULL && fp != NULL) {
             long current_pos = ftell(fp);
@@ -7113,6 +7144,44 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         }
     }
 
+    if (!has_exponent) {
+        int len = (int)strlen(buffer);
+        for (int i = 1; i < len; i++) {
+            if (buffer[i] == '+' || buffer[i] == '-') {
+                char prev = buffer[i - 1];
+                if (prev == 'E' || prev == 'e' || prev == 'D' || prev == 'd') {
+                    continue;
+                }
+                bool has_digit_before = false;
+                bool has_digit_after = false;
+                for (int j = 0; j < i; j++) {
+                    if (isdigit((unsigned char)buffer[j])) {
+                        has_digit_before = true;
+                        break;
+                    }
+                }
+                for (int j = i + 1; j < len; j++) {
+                    if (isdigit((unsigned char)buffer[j])) {
+                        has_digit_after = true;
+                        break;
+                    }
+                }
+                if (has_digit_before && has_digit_after) {
+                    char *expanded = (char*)malloc((size_t)len + 2);
+                    if (expanded) {
+                        memcpy(expanded, buffer, (size_t)i);
+                        expanded[i] = 'E';
+                        memcpy(expanded + i + 1, buffer + i, (size_t)(len - i + 1));
+                        strcpy(buffer, expanded);
+                        free(expanded);
+                        has_exponent = true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     double v = strtod(buffer, NULL);
     if (!has_exponent) {
         v = v / pow(10.0, scale_factor);
@@ -7722,7 +7791,19 @@ static void common_formatted_read(InputSource *inputSource,
         }
         inner_len = pos - start_pos;
     }
-
+    int64_t reversion_pos = start_pos;
+    // After first cycle ends, the start position should be the last parenthesized group
+    for (int64_t i = start_pos + inner_len - 1; i >= start_pos; i--) {
+        if (fmt[i] == '(') {
+            int64_t rp = i;
+            while (rp > start_pos && isdigit((char)fmt[rp - 1])) {
+                rp--;
+            }
+            reversion_pos = rp;
+            break;
+        }
+    }
+    bool first_cycle = true;
     bool consumed_newline = false;
     int arg_idx = 0;
     int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
@@ -7734,8 +7815,17 @@ static void common_formatted_read(InputSource *inputSource,
 
     while (arg_idx < no_of_args && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;
+        fchar *cycle_fmt;
+        int64_t cycle_len;
+        if (first_cycle) {
+            cycle_fmt = (fchar*)(fmt + start_pos);
+            cycle_len = inner_len;
+        } else {
+            cycle_fmt = fmt + reversion_pos;
+            cycle_len = start_pos + inner_len - reversion_pos;
+        }
         process_fmt_items_read(inputSource, iostat, chunk, advance_no,
-            fmt + start_pos, inner_len, no_of_args, args,
+            cycle_fmt, cycle_len, no_of_args, args,
             &arg_idx, &blank_mode, &scale_factor, &consumed_newline);
         if (arg_idx > args_before && arg_idx < no_of_args && (!iostat || *iostat == 0)) {
             if (!consumed_newline) {
@@ -7751,6 +7841,7 @@ static void common_formatted_read(InputSource *inputSource,
             if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
                 inputSource->record_start_pos = ftell(inputSource->file);
             }
+            first_cycle = false;
             consumed_newline = false;
         } else {
             break;
