@@ -625,6 +625,8 @@ program continue_compilation_1
 
     type(container(4)) :: obj1
     type(container) :: obj2
+    integer, allocatable :: ppp(:)
+    print *, associated(ppp)
 
 
 

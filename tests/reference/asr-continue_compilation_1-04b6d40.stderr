@@ -1305,3 +1305,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
+
+semantic error: associated() argument must be a POINTER
+   --> tests/errors/continue_compilation_1.f90:629:25
+    |
+629 |     print *, associated(ppp)
+    |                         ^^^ 

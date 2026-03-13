@@ -12802,6 +12802,21 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        ASR::ttype_t* ptr_type = ASRUtils::expr_type(ptr_);
+        bool is_fortran_pointer = ASRUtils::is_pointer(ptr_type);
+        bool is_c_associated = false;
+        std::string fname = to_lower(std::string(x.m_func));
+        if (fname == "c_associated") {
+            is_c_associated = true;
+        }
+        if (!is_c_associated && !is_fortran_pointer) {
+            diag.add(Diagnostic(
+                "associated() argument must be a POINTER",
+                Level::Error, Stage::Semantic,
+                { Label("", {ptr_->base.loc}) }
+            ));
+            throw SemanticAbort();
+        }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
