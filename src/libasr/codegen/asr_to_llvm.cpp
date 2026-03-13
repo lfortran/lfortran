@@ -5374,7 +5374,7 @@ public:
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
-            ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
+            ptr_ = llvm_utils->CreateAlloca(type_, nullptr, "arr_desc");
             if(ASRUtils::is_character(*m_type)){
                 llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
                 builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
@@ -19955,7 +19955,7 @@ public:
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -20127,7 +20127,11 @@ public:
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);
 
-            tmp = llvm_utils->create_string_descriptor(tmp, result_size,"stringFormat_desc");
+            llvm::Value* str_fmt_desc = llvm_utils->CreateAlloca(
+                llvm_utils->string_descriptor, nullptr, "stringFormat_desc");
+            builder->CreateStore(tmp, llvm_utils->CreateGEP2(llvm_utils->string_descriptor, str_fmt_desc, 0));
+            builder->CreateStore(result_size, llvm_utils->CreateGEP2(llvm_utils->string_descriptor, str_fmt_desc, 1));
+            tmp = str_fmt_desc;
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
         }

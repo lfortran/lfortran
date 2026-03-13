@@ -493,14 +493,21 @@ namespace LCompilers {
             }
         }
 
+        llvm::Value* alloc_dim_des_at_entry(llvm::IRBuilder<>* builder,
+                llvm::LLVMContext& context, llvm::StructType* dim_des, int n_dims) {
+            llvm::BasicBlock& entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+            llvm::IRBuilder<> builder0(context);
+            builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+            llvm::Value* llvm_ndims = builder0.CreateAlloca(llvm::Type::getInt32Ty(context));
+            builder0.CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
+            return builder0.CreateAlloca(dim_des,
+                builder0.CreateLoad(llvm::Type::getInt32Ty(context), llvm_ndims));
+        }
+
         void SimpleCMODescriptor::fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Value* dim_des_val = llvm_utils->create_gep2(type, arr, 2);
-            llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first;
-            dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                    llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
+            llvm::Value* dim_des_first = alloc_dim_des_at_entry(builder, context, dim_des, n_dims);
 
             // If unallocated, set lower bound and size to 1.
             // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
@@ -519,10 +526,7 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep2(type, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), offset_val);
             llvm::Value* dim_des_val = this->get_pointer_to_dimension_descriptor_array(type, arr, false);
-            llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                                            llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
+            llvm::Value* dim_des_first = alloc_dim_des_at_entry(builder, context, dim_des, n_dims);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(type, arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
             dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
@@ -557,10 +561,7 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep2(type, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), offset_val);
             llvm::Value* dim_des_val = llvm_utils->create_gep2(type, arr, 2);
-            llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                                               llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
+            llvm::Value* dim_des_first = alloc_dim_des_at_entry(builder, context, dim_des, n_dims);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(type, arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
             dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);

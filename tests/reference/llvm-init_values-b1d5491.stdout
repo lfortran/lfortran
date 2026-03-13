@@ -18,6 +18,8 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %2 = alloca i64, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %i = alloca i32, align 4
   store i32 1, i32* %i, align 4
@@ -35,7 +37,6 @@ define i32 @main(i32 %0, i8** %1) {
   store float 4.000000e+00, float* %r, align 4
   %r_minus = alloca float, align 4
   store float -4.000000e+00, float* %r_minus, align 4
-  %2 = alloca i64, align 8
   %3 = alloca i32, align 4
   store i32 1, i32* %3, align 4
   %4 = alloca i32, align 4
@@ -54,7 +55,6 @@ define i32 @main(i32 %0, i8** %1) {
   store float -4.000000e+00, float* %10, align 4
   %11 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, i32* %3, i32* %4, float* %5, %complex_4* %6, i32* %7, i1* %8, i1* %9, float* %10, %string_descriptor* @string_const)
   %12 = load i64, i64* %2, align 4
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %11, i8** %13, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
