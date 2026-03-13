@@ -10,7 +10,7 @@ void  *dbg_realloc(void *ptr, size_t size);
 void   dbg_free   (void *ptr);
 
 /* Print all live allocations (leaks) and summary stats. */
-void   dbg_report ();
+void dbg_report ();
 
 /*  Macro overrides — only when MEMORY_DEBUG is defined AND we are not    */
 /*  inside the debugger's own implementation file.                     */
