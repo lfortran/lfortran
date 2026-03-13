@@ -1286,6 +1286,14 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
             append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be logical", loc);
             return nullptr;
         }
+        if (is_array(expr_type(mask_expr))) {
+            ASR::expr_t* array_arg = args[0];
+            ASR::expr_t* mask_arg = mask_expr;
+            if (!is_same_shape(array_arg, mask_arg, intrinsic_name, diag,
+                    {array->base.loc, mask_expr->base.loc})) {
+                return nullptr;
+            }
+        }
         m_args.push_back(al, mask_expr);
     } else {
         m_args.push_back(al, b.ArrayConstant({b.bool_t(1, logical)}, logical, true));
@@ -3708,6 +3716,12 @@ namespace FindLoc {
             if (!is_logical(*expr_type(mask_expr))) {
                 append_error(diag, "`mask` argument of `findloc` must be logical", mask_expr->base.loc);
                 return nullptr;
+            }
+            if (is_array(expr_type(mask_expr))) {
+                if (!ArrIntrinsic::is_same_shape(array, mask_expr, std::string("findloc"), diag,
+                        {array->base.loc, mask_expr->base.loc})) {
+                    return nullptr;
+                }
             }
             m_args.push_back(al, mask_expr);
         } else {
