@@ -641,6 +641,11 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        if (fabs(atof(val_str)) >= 1000.0) {
+            exponent += 3;
+            scaled_val = val / pow(10, exponent);
+            snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        }
         snprintf(formatted_value, sizeof(formatted_value),
                 "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
     } else {
@@ -654,6 +659,14 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             scaled_val = val / pow(10, exponent);
         }
         
+        char val_str[128];
+        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        if (fabs(atof(val_str)) >= 1000.0) {
+            exponent += 3;
+            scaled_val = val / pow(10, exponent);
+            snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        }
+
         // Adjust exp_digits dynamically if no explicit Ee was given
         if (original_exp_digits <= 0) {
             int abs_exp = (exponent < 0 ? -exponent : exponent);
@@ -665,11 +678,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
                 exp_digits = 2;
             }
         }
-        
-        char val_str[128];
-        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
-        // exp_digits is the number of exponent digits, but %+0*d width includes the sign
-        // So we need exp_digits + 1 for the total width
+
         snprintf(formatted_value, sizeof(formatted_value),
                 "%s%s%+0*d", val_str, c, exp_digits + 1, exponent);
     }
@@ -924,13 +933,25 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         }
         int zeros = 0;
         while(val_str[zeros] == '0') zeros++;
-        // TODO: figure out a way to round decimals with value < 1e-15
-        if (digits + scale < strlen(val_str) && val != 0 && digits + scale - zeros<= 15) {
-            val_str[15] = '\0';
-            long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
-            sprintf(val_str, "%lld", t);
-            int index = zeros;
-            while(index--) strcat(formatted_value, "0");
+        if (digits + scale < strlen(val_str) && val != 0) {
+            if (digits + scale - zeros <= 15) {
+                val_str[15] = '\0';
+                long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
+                sprintf(val_str, "%lld", t);
+                int index = zeros;
+                while(index--) strcat(formatted_value, "0");
+            } else {
+                int round_pos = digits + scale;
+                if (round_pos < (int)strlen(val_str) && val_str[round_pos] >= '5') {
+                    int carry = 1;
+                    for (int k = round_pos - 1; k >= 0 && carry; k--) {
+                        int d = (val_str[k] - '0') + carry;
+                        val_str[k] = (d % 10) + '0';
+                        carry = d / 10;
+                    }
+                }
+                val_str[digits + scale] = '\0';
+            }
         }
         strncat(formatted_value, val_str, digits);
     } else {
@@ -941,16 +962,26 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         char* new_str = substring(val_str, scale, strlen(val_str));
         // new_str = "1230000128" case:  1.123e+10
         int zeros = 0;
-        if (digits < strlen(new_str) && digits + scale <= 15) {
-            new_str[15] = '\0';
-            zeros = strspn(new_str, "0");
-            long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
-            sprintf(new_str, "%lld", t);
-            // new_str = 12
-            int index = zeros;
-            while(index--) {
-                memmove(new_str + 1, new_str, strlen(new_str)+1);
-                new_str[0] = '0';
+        if (digits < strlen(new_str)) {
+            if (digits + scale <= 15) {
+                new_str[15] = '\0';
+                zeros = strspn(new_str, "0");
+                long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
+                sprintf(new_str, "%lld", t);
+                int index = zeros;
+                while(index--) {
+                    memmove(new_str + 1, new_str, strlen(new_str)+1);
+                    new_str[0] = '0';
+                }
+            } else {
+                if (digits < (int)strlen(new_str) && new_str[digits] >= '5') {
+                    int carry = 1;
+                    for (int k = digits - 1; k >= 0 && carry; k--) {
+                        int d = (new_str[k] - '0') + carry;
+                        new_str[k] = (d % 10) + '0';
+                        carry = d / 10;
+                    }
+                }
             }
         }
         new_str[digits] = '\0';
