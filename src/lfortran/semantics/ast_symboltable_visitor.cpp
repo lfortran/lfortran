@@ -254,7 +254,7 @@ public:
                             break;
                         }
                         case (AST::decl_typeType::TypeLogical) : {
-                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                             break;
                         }
                         case (AST::decl_typeType::TypeCharacter) : {
@@ -1921,7 +1921,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
