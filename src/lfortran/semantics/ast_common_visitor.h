@@ -3303,6 +3303,20 @@ public:
                     case ASR::binopType::Mul: result = lv * rv; break;
                     case ASR::binopType::Div: result = lv / rv; break;
                     case ASR::binopType::Pow: {
+                        int kind = ASR::down_cast<ASR::Integer_t>(
+                            ASRUtils::extract_type(binop->m_type))->m_kind;
+                        double upper_limit = std::pow(2.0, 8.0 * kind - 1);
+                        double d = std::pow((double)lv, (double)rv);
+                        if (d >= upper_limit || d < -upper_limit) {
+                            diag.add(Diagnostic(
+                                "Result of exponentiation exceeds the range of INTEGER("
+                                    + std::to_string(kind) + ")",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {expr->base.loc})
+                                })
+                            );
+                            throw SemanticAbort();
+                        }
                         result = 1;
                         for (int64_t p = 0; p < rv; p++) result *= lv;
                         break;
@@ -15195,6 +15209,23 @@ public:
                     })
                 );
                 throw SemanticAbort();
+            }
+
+            if (op == ASR::Pow) {
+                int kind = ASR::down_cast<ASR::Integer_t>(
+                    ASRUtils::extract_type(dest_type))->m_kind;
+                double upper_limit = std::pow(2.0, 8.0 * kind - 1);
+                double d = std::pow((double)left_value, (double)right_value);
+                if (d >= upper_limit || d < -upper_limit) {
+                    diag.add(Diagnostic(
+                        "Result of exponentiation exceeds the range of INTEGER("
+                            + std::to_string(kind) + ")",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        })
+                    );
+                    throw SemanticAbort();
+                }
             }
 
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
