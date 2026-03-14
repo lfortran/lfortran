@@ -1305,3 +1305,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
+
+semantic error: Data transfer element cannot be polymorphic unless processed by a defined input/output procedure
+   --> tests/errors/continue_compilation_1.f90:631:26
+    |
+631 |     read(poly_unit_read) poly_a_read(1)
+    |                          ^^^^^^^^^^^^^^ 

@@ -294,8 +294,8 @@ program continue_compilation_1
     type(Derived) :: derived_var
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
-
-
+    class(*), allocatable :: poly_a_read(:)
+    integer :: poly_unit_read
 
 
 
@@ -626,7 +626,10 @@ program continue_compilation_1
     type(container(4)) :: obj1
     type(container) :: obj2
 
-
+    allocate(integer(4) :: poly_a_read(1))
+    open(newunit=poly_unit_read, file='/tmp/poly_test.tmp', access='stream', action='read')
+    read(poly_unit_read) poly_a_read(1)
+    close(poly_unit_read)
 
 
 
