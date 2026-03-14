@@ -8043,7 +8043,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id != 2) {  // 2 = DIRECT access
+        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
             fseek(filep, 0, SEEK_END);
         }
         va_list args;
@@ -8158,8 +8158,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
-    // Do not truncate direct access files, as records may be written out of order
-    if (filep != stdout && filep != stderr && access_id != 2) {
+    // Do not truncate direct access or stream access files
+    if (filep != stdout && filep != stderr && access_id == 0) {
         (void)!ftruncate(fileno(filep), ftell(filep));
     }
 }
