@@ -2584,6 +2584,28 @@ public:
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
+            } else if (!ASRUtils::is_value_constant(dim_expr)) {
+                bool in_function_scope = in_Subroutine;
+                if (!in_function_scope) {
+                    SymbolTable* scope = current_scope;
+                    while (scope != nullptr && !in_function_scope) {
+                        if (scope->asr_owner != nullptr &&
+                                ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                                ASR::is_a<ASR::Function_t>(
+                                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                            in_function_scope = true;
+                        }
+                        scope = scope->parent;
+                    }
+                }
+                if (!in_function_scope) {
+                    diag.add(Diagnostic(
+                        "Explicit shaped array with nonconstant bounds",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{dim_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
 
