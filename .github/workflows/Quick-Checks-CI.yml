@@ -51,9 +51,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
+      - uses: mamba-org/setup-micromamba@v2.0.6
         with:
-          micromamba-version: '2.0.4-0'
+          micromamba-version: '2.5.0-2'
           environment-file: ci/environment.yml
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
