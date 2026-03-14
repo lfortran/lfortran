@@ -13463,10 +13463,13 @@ public:
                 int arg_kind = -1, dest_kind = -1;
                 extract_kinds(x, arg_kind, dest_kind);
                 if (arg_kind > 0 && dest_kind > 0 && arg_kind != dest_kind) {
-                    if (arg_kind < dest_kind) {
-                        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(dest_kind));
-                    } else {
-                        tmp = builder->CreateTrunc(tmp, llvm_utils->getIntType(dest_kind));
+                    llvm::Type* dest_type = llvm_utils->getIntType(dest_kind);
+                    unsigned src_bits = tmp->getType()->getIntegerBitWidth();
+                    unsigned dest_bits = dest_type->getIntegerBitWidth();
+                    if (src_bits < dest_bits) {
+                        tmp = builder->CreateZExt(tmp, dest_type);
+                    } else if (src_bits > dest_bits) {
+                        tmp = builder->CreateTrunc(tmp, dest_type);
                     }
                 }
                 break;
