@@ -16307,7 +16307,56 @@ public:
     }
 
     void visit_Logical(const AST::Logical_t &x) {
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        int ikind = compiler_options.po.default_integer_kind;
+        if (x.m_kind) {
+            ikind = std::atoi(x.m_kind);
+            if (ikind == 0) {
+                std::string var_name = x.m_kind;
+                ASR::symbol_t *v = nullptr;
+                SymbolTable *scope = current_scope;
+                while (scope) {
+                    v = scope->resolve_symbol(to_lower(var_name));
+                    if (v) {
+                        const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
+                        if (ASR::is_a<ASR::Variable_t>(*v3) &&
+                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                            scope = scope->parent;
+                            v = nullptr;
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                if (v) {
+                    const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
+                    if (ASR::is_a<ASR::Variable_t>(*v3)) {
+                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v3);
+                        if (v2->m_value) {
+                            if (ASR::is_a<ASR::IntegerConstant_t>(*v2->m_value)) {
+                                ikind = ASR::down_cast<ASR::IntegerConstant_t>(v2->m_value)->m_n;
+                            } else {
+                                diag.add(Diagnostic("Variable '" + var_name + "' is constant but not an integer",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                                throw SemanticAbort();
+                            }
+                        } else {
+                            diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
+                        }
+                    } else {
+                        diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
+                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
+                } else {
+                    diag.add(Diagnostic("Variable '" + var_name + "' not declared",
+                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, ikind));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 

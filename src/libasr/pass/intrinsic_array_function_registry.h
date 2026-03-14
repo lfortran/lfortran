@@ -3044,7 +3044,9 @@ namespace AnyAll {
         arg_values.push_back(al, ASRUtils::expr_value(mask));
         if( dim ) arg_values.push_back(al,  ASRUtils::expr_value(dim));
 
-        ASR::ttype_t* logical_return_type = logical;
+        int mask_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(mask));
+        ASR::ttype_t* mask_logical = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, mask_kind));
+        ASR::ttype_t* logical_return_type = mask_logical;
         if( dim ) {
             overload_id = 1;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask));
@@ -3058,7 +3060,7 @@ namespace AnyAll {
             }
             if( dims.size() > 0 ) {
                 logical_return_type = ASRUtils::make_Array_t_util(al, loc,
-                    logical, dims.p, dims.size());
+                    mask_logical, dims.p, dims.size());
             }
         }
 
@@ -3240,9 +3242,10 @@ namespace Any {
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
             int64_t overload_id, int /*index_kind*/) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         return AnyAll::instantiate_AnyAll(al, loc, scope, arg_types, return_type,
         new_args, overload_id, ASRUtils::IntrinsicArrayFunctions::Any,
-        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, false, 4, loc), &ASRBuilder::Or);
+        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, false, kind, loc), &ASRBuilder::Or);
     }
 
 } // namespace Any
@@ -3268,9 +3271,10 @@ namespace All {
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
             int64_t overload_id, int /*index_kind*/) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         return AnyAll::instantiate_AnyAll(al, loc, scope, arg_types, return_type,
         new_args, overload_id, ASRUtils::IntrinsicArrayFunctions::All,
-        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, true, 4, loc), &ASRBuilder::And);
+        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, true, kind, loc), &ASRBuilder::And);
     }
 
 } // namespace All

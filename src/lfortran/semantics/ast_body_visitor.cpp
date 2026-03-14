@@ -3098,7 +3098,12 @@ public:
                 size_t var_n_dims = alloc_args_vec.p[i].n_dims;
                 size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
 
-                if (!ASRUtils::check_equal_type(source_type, var_type, source, alloc_args_vec.p[i].m_a)) {
+                // Compare base element types (stripping Array/Allocatable/Pointer)
+                // because a scalar source is valid for array allocation per
+                // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
+                ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
+                ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
+                if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
                     diag.add(Diagnostic(
