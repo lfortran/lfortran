@@ -8257,9 +8257,19 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
-    int rc = sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8270,9 +8280,19 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
 }
 
 
-LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
-    int rc = sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%" PRId64 "%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8282,10 +8302,20 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc = sscanf(buf, format, f);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%f%n", f, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, f);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8295,10 +8325,20 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc = sscanf(buf, format, f);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%lf%n", f, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, f);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8331,9 +8371,10 @@ char* remove_whitespace(char* str, int64_t* len) {
     return str;
 }
 
-LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len) {
-    int64_t pos = 0;
-    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
+LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset) {
+    int64_t pos = offset ? *offset : 0;
+
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t' || (offset && src_data[pos] == ','))) {
         pos++;
     }
 
@@ -8360,20 +8401,41 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
             }
         }
         pad_with_spaces(dest_data, dest_pos, dest_len);
+    } else if (offset) {
+        // Multi-value read: read one token (until separator)
+        int64_t start = pos;
+        while (pos < src_len && src_data[pos] != ' ' && src_data[pos] != '\t' &&
+               src_data[pos] != ',' && src_data[pos] != '\n') {
+            pos++;
+        }
+        int64_t token_len = pos - start;
+        _lfortran_copy_str_and_pad(dest_data, dest_len, src_data + start, token_len);
     } else {
         int64_t remaining = src_len - pos;
         _lfortran_copy_str_and_pad(
             dest_data, dest_len,
             src_data + pos, remaining);
     }
+    if (offset) *offset = pos;
 }
 
-LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
-    char *buf = (char*)malloc(len + 1);
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    int64_t eff_len = len - off;
+    char *buf = (char*)malloc(eff_len + 1);
     if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    int rc = sscanf(buf, format, i);
+    memcpy(buf, str + off, eff_len);
+    buf[eff_len] = '\0';
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8393,10 +8455,20 @@ static void _lfortran_replace_d_exponent(char *buf) {
     }
 }
 
-LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     _lfortran_replace_d_exponent(buf);
-    int rc = sscanf(buf, format, &c->re, &c->im);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, " (%f,%f)%n", &c->re, &c->im, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &c->re, &c->im);
+    }
     free(buf);
     if (rc != 2) {
         if (iostat) { *iostat = 5010; return; }
@@ -8406,10 +8478,20 @@ LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     _lfortran_replace_d_exponent(buf);
-    int rc = sscanf(buf, format, &c->re, &c->im);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, " (%lf,%lf)%n", &c->re, &c->im, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &c->re, &c->im);
+    }
     free(buf);
     if (rc != 2) {
         if (iostat) { *iostat = 5010; return; }
