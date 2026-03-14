@@ -14533,22 +14533,16 @@ public:
             ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
             llvm::Function* read_fn = get_read_function(elem_type);
             llvm::Value* read_elem_ptr = elem_ptr;
-            llvm::Type* expected_param_type = read_fn->getFunctionType()->getParamType(0);
-            if (read_elem_ptr->getType() != expected_param_type) {
-                if (ASRUtils::is_logical(*elem_type)) {
-                    llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                        llvm::Type::getInt1Ty(context));
-                    builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
-                    int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                    llvm::Value* loaded = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt1Ty(context), tmp_bool);
-                    llvm::Value* widened = builder->CreateZExt(loaded,
-                        llvm_utils->getIntType(kind));
-                    builder->CreateStore(widened, elem_ptr);
-                } else {
-                    read_elem_ptr = builder->CreateBitCast(read_elem_ptr, expected_param_type);
-                    builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
-                }
+            if (ASRUtils::is_logical(*elem_type)) {
+                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt1Ty(context));
+                builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                llvm::Value* loaded = llvm_utils->CreateLoad2(
+                    llvm::Type::getInt1Ty(context), tmp_bool);
+                llvm::Value* widened = builder->CreateZExt(loaded,
+                    llvm_utils->getIntType(kind));
+                builder->CreateStore(widened, elem_ptr);
             } else {
                 builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
             }
@@ -15211,28 +15205,22 @@ public:
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
                         llvm::Value* read_ptr = var_to_read_into;
-                        llvm::Type* expected_type = fn->getFunctionType()->getParamType(0);
-                        if (read_ptr->getType() != expected_type) {
-                            // For logical types, the runtime function uses i1*
-                            // but the Fortran variable is wider (i8/i16/i32/i64).
+                        ASR::ttype_t* val_type = ASRUtils::expr_type(x.m_values[i]);
+                        if (ASRUtils::is_logical(*ASRUtils::type_get_past_allocatable_pointer(val_type))) {
+                            // The runtime _lfortran_read_logical writes a C bool (1 byte),
+                            // but the Fortran logical variable is wider (i8/i16/i32/i64).
                             // Use a temporary i1 alloca, call the function,
                             // then widen and store back.
-                            ASR::ttype_t* val_type = ASRUtils::expr_type(x.m_values[i]);
-                            if (ASRUtils::is_logical(*ASRUtils::type_get_past_allocatable_pointer(val_type))) {
-                                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                                    llvm::Type::getInt1Ty(context));
-                                builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
-                                int kind = ASRUtils::extract_kind_from_ttype_t(
-                                    ASRUtils::type_get_past_allocatable_pointer(val_type));
-                                llvm::Value* loaded = llvm_utils->CreateLoad2(
-                                    llvm::Type::getInt1Ty(context), tmp_bool);
-                                llvm::Value* widened = builder->CreateZExt(loaded,
-                                    llvm_utils->getIntType(kind));
-                                builder->CreateStore(widened, var_to_read_into);
-                            } else {
-                                read_ptr = builder->CreateBitCast(read_ptr, expected_type);
-                                builder->CreateCall(fn, {read_ptr, unit_val, iostat});
-                            }
+                            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt1Ty(context));
+                            builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
+                            int kind = ASRUtils::extract_kind_from_ttype_t(
+                                ASRUtils::type_get_past_allocatable_pointer(val_type));
+                            llvm::Value* loaded = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt1Ty(context), tmp_bool);
+                            llvm::Value* widened = builder->CreateZExt(loaded,
+                                llvm_utils->getIntType(kind));
+                            builder->CreateStore(widened, var_to_read_into);
                         } else {
                             builder->CreateCall(fn, {read_ptr, unit_val, iostat});
                         }
