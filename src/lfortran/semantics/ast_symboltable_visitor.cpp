@@ -2746,7 +2746,14 @@ public:
                         std::string new_dt_name = dt_name;
                         // Use module-qualified name
                         if (current_module_sym) {
-                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(ASRUtils::symbol_get_past_external(current_module_sym));
+                            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(current_module_sym);
+                            if (!ASR::is_a<ASR::Module_t>(*sym)) {
+                                diag.add(diag::Diagnostic(
+                                    "'" + use_sym_name + "' must be a module procedure or an external procedure with an explicit interface",
+                                    diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {use_sym->base.base.loc})}));
+                                return;
+                            }
+                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(sym);
                             new_dt_name = std::string(mod->m_name) + "_" + dt_name;
                         }
                         AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
