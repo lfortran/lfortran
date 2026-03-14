@@ -14580,7 +14580,7 @@ public:
         }();
 
         // Try resolve to a function call (explicit or implicit)
-        // by changing the variable symbol into function.
+        // by changing the variable symbol into function. 
         const bool not_resolvable_to_fncall = [v, x](){
             const bool is_array = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_array(ASRUtils::symbol_type(v));
             const bool string_section_or_item = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_character(*ASRUtils::symbol_type(v)) 
