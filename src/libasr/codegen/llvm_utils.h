@@ -696,6 +696,7 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
+            llvm::Value* get_class_type_tag_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
 
             // Allocate zero-initialized memory for the given LLVM type.
@@ -713,10 +714,29 @@ class ASRToLLVMVisitor;
             UpolyWrapperFields extract_upoly_wrapper(
                 llvm::Value* wrapper, llvm::Type* wrapper_type);
 
+            // Initialize an unlimited-polymorphic array wrapper from a
+            // mold wrapper: copies vptr, allocates data, and if the mold
+            // is a string type, initializes string descriptors.
+            void init_mold_upoly_array_data(
+                llvm::Value* wrapper, llvm::Value* mold_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements);
+
+            // Initialize string descriptors in a pre-allocated data buffer.
+            // Allocates contiguous char data (filled with spaces) and sets
+            // each descriptor's pointer and length.
+            void init_string_descriptors(llvm::Value* data_mem,
+                llvm::Value* num_elements, llvm::Value* str_len);
+
             // Consolidate per-element string_descriptors into a single
             // string_descriptor with a flat contiguous char buffer.
             llvm::Value* consolidate_char_descriptors(
                 llvm::Value* descs_i8, llvm::Value* n_elems_i64);
+
+            // Write back consolidated flat char buffer to original
+            // per-element string_descriptors in a polymorphic array.
+            void writeback_char_to_polymorphic_descriptors(
+                llvm::Value* original_descs_i8, llvm::Value* consolidated_desc,
+                llvm::Value* n_elems_i64);
 
             // Expand a flat char buffer into per-element string_descriptors.
             llvm::Value* expand_flat_to_char_descriptors(
@@ -800,10 +820,19 @@ class ASRToLLVMVisitor;
 
             llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
+            llvm::Value* to_i1(llvm::Value* cond) {
+                if (cond->getType()->isIntegerTy(1)) {
+                    return cond;
+                }
+                return builder->CreateICmpNE(
+                    cond, llvm::ConstantInt::get(cond->getType(), 0));
+            }
+
             template <typename IF, typename ELSE>
             void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, const char *name,
                                 std::vector<llvm::BasicBlock*> &loop_or_block_end,
                                 std::vector<std::string> &loop_or_block_end_names) {
+                cond = to_i1(cond);
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 std::string if_name;
@@ -863,7 +892,7 @@ class ASRToLLVMVisitor;
 
                 // head
                 start_new_block(loophead); {
-                    llvm::Value* cond = condition();
+                    llvm::Value* cond = to_i1(condition());
                     builder->CreateCondBr(cond, loopbody, loopend);
                 }
 
@@ -1029,8 +1058,7 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
                 case(ASR::StructType) :  {
-                    if (llvm_utils_->compiler_options.new_classes && struct_sym != nullptr
-                            && ASRUtils::is_class_type(t)
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
                         // be decided from the ASR class flag, not the LLVM pointer type.
@@ -1165,10 +1193,6 @@ class ASRToLLVMVisitor;
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
             llvm::Type* array_data_ptr_type = arrayType_llvm_t->getPointerTo();
-            if (arr_t->m_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                array_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             auto  const array_size_lazy  = [&]() { 
                 insert_BB_for_readability("Calculate_arraySize");
                 return llvm_utils_->get_array_size(arr, get_llvm_type(t, struct_sym), t, &asr_to_llvm_visitor_);
@@ -1247,8 +1271,7 @@ class ASRToLLVMVisitor;
             const auto checkPoint_BB = 
             START_CACHE(cache_key, ptr);
 
-            if (llvm_utils_->compiler_options.new_classes &&
-                    ASRUtils::is_class_type(t) &&
+            if (ASRUtils::is_class_type(t) &&
                     !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
                 ptr = llvm_utils_->CreateLoad2(
@@ -1425,10 +1448,6 @@ class ASRToLLVMVisitor;
         void free_array_data(llvm::Value* data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
             llvm::Type* expected_data_ptr_type = get_llvm_type(data_type, struct_sym)->getPointerTo();
-            if (data_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                expected_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType :{ // Loop and free
@@ -2089,7 +2108,8 @@ class ASRToLLVMVisitor;
             void allocate_array_of_unlimited_polymorphic_type(
                 ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
                 llvm::Value* array_data_ptr, llvm::Value* size,
-                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
+                llvm::Value* string_len = nullptr);
     };
 
     class LLVMTuple {

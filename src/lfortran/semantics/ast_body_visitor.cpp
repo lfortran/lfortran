@@ -2693,6 +2693,10 @@ public:
                                 }
                             }
                         }
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                            x.base.base.loc, 1, new_arg.m_len_expr,
+                            ASR::string_length_kindType::ExpressionLength,
+                            ASR::string_physical_typeType::DescriptorString));
                     } else if( type_name == "integer" || type_name == "real"
                             || type_name == "complex" || type_name == "logical" ) {
                         int kind = 4;
@@ -3016,7 +3020,24 @@ public:
                         new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                     }
                 } else {
-                    new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                    // n_dims > 0: explicit bounds provided in the allocate statement.
+                    // For mold with unlimited polymorphic target, record the mold type
+                    // so the codegen can copy type info from the mold at runtime.
+                    if (mold_cond) {
+                        ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if (ASRUtils::is_unlimited_polymorphic_type(a_type)) {
+                            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(mold));
+                            ASR::alloc_arg_t new_arg = alloc_args_vec[i];
+                            new_arg.m_type = mold_type;
+                            new_alloc_args_vec.push_back(al, new_arg);
+                        } else {
+                            new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                        }
+                    } else {
+                        new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                    }
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
@@ -3077,7 +3098,12 @@ public:
                 size_t var_n_dims = alloc_args_vec.p[i].n_dims;
                 size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
 
-                if (!ASRUtils::check_equal_type(source_type, var_type, source, alloc_args_vec.p[i].m_a)) {
+                // Compare base element types (stripping Array/Allocatable/Pointer)
+                // because a scalar source is valid for array allocation per
+                // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
+                ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
+                ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
+                if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
                     diag.add(Diagnostic(
@@ -3649,7 +3675,7 @@ public:
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, !compiler_options.new_classes);
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, false);
                             // Apply array wrapper if selector is an array
                             if (selector_variable_type && ASRUtils::is_array(selector_variable_type)) {
                                 // Use the guard type (selector_type) as element type, preserving array structure from selector
@@ -5070,7 +5096,9 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
+        statement_function_parent_scope = parent_scope;
         this->visit_expr(*x.m_value);
+        statement_function_parent_scope = nullptr;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
@@ -5238,6 +5266,15 @@ public:
             create_statement_function(x);
             tmp = nullptr;
             return;
+        }
+        if (AST::is_a<AST::ImpliedDoLoop_t>(*x.m_value)) {
+            diag.add(Diagnostic(
+                "Implied DO loop must be enclosed within array constructor "
+                "brackets [...]; expected '[( ... )]' in assignment",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_value->base.loc})
+                }));
+            throw SemanticAbort();
         }
         if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
             AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);

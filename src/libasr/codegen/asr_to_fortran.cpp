@@ -881,8 +881,7 @@ public:
             if (x.m_args[i].m_type) {
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
-            }
-            if (x.m_args[i].m_len_expr) {
+            } else if (x.m_args[i].m_len_expr) {
                 r += "character(len=";
                 visit_expr(*x.m_args[i].m_len_expr);
                 r += src;
@@ -2399,6 +2398,11 @@ public:
         // If the cast is from Integer to Logical, do nothing
         if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
             // Implicit conversion between integer -> logical
+            return;
+        }
+
+        if (x.m_kind == ASR::cast_kindType::LogicalToLogical) {
+            // Implicit conversion between logical kinds
             return;
         }
 

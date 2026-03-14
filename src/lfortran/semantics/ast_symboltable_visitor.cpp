@@ -216,7 +216,8 @@ public:
                     ASR::ttype_t *type = nullptr;
                     //convert the ast_type to asr_type
                     int i_kind = compiler_options.po.default_integer_kind;
-                    int a_kind = 4;
+                    int a_kind = (ast_type == AST::decl_typeType::TypeLogical)
+                        ? compiler_options.po.default_integer_kind : 4;
                     int a_len = -10;
                     if (attr_type->m_kind != nullptr) {
                        if (attr_type->n_kind == 1) {
@@ -254,7 +255,7 @@ public:
                             break;
                         }
                         case (AST::decl_typeType::TypeLogical) : {
-                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                             break;
                         }
                         case (AST::decl_typeType::TypeCharacter) : {
@@ -1277,6 +1278,7 @@ public:
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
+            if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1310,6 +1312,16 @@ public:
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
+            }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_common_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
             is_Function = false;
         }
@@ -1739,6 +1751,7 @@ public:
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
+            if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
@@ -1768,6 +1781,12 @@ public:
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (!is_common_declaration(x.m_decl[i])) continue;
+            is_Function = true;
+            visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
         for (size_t i=0; i<x.n_decl; i++) {
@@ -1852,7 +1871,8 @@ public:
             }
             ASR::ttype_t *type = nullptr;
             int i_kind = compiler_options.po.default_integer_kind;
-            int a_kind = 4;
+            int a_kind = (return_type->m_type == AST::decl_typeType::TypeLogical)
+                ? compiler_options.po.default_integer_kind : 4;
             int a_len = 1;
             ASR::expr_t* len_expr = nullptr;
 
@@ -1903,7 +1923,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {

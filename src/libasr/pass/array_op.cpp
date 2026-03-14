@@ -1271,6 +1271,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     continue;
                 }
+                // Skip mold-based allocations: m_type being set indicates
+                // the allocate uses mold= (type/shape only, no data copy).
+                if (x.m_args[i].m_type != nullptr) {
+                    continue;
+                }
                 ASRUtils::ExprStmtDuplicator duplicator(al);
                 ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
@@ -1350,6 +1355,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(xx.m_value);
             if ( iaf->m_value != nullptr ) {
                 xx.m_value = iaf->m_value;
+            }
+        }
+        if ( ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value) ) {
+            ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
+            if ( ar->m_value != nullptr ) {
+                xx.m_value = ar->m_value;
             }
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||

@@ -11,6 +11,8 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
 
+#include <set>
+
 namespace LCompilers {
 
 using ASR::down_cast;
@@ -112,6 +114,12 @@ public:
     Vec<ASR::stmt_t*>* body_after_curr_stmt;
     const LCompilers::PassOptions& pass_options;
 
+    // Variables that were associated (by pass_array_by_data) with an
+    // ArraySection whose source array is UnboundedPointerArray (assumed-size).
+    // Copy-in/copy-out must be skipped for these because the section bounds
+    // reference UBound on the assumed-size dimension, which is undefined.
+    std::set<ASR::symbol_t*> vars_from_assumed_size_sections;
+
     CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
 
     int get_index_kind() const {
@@ -134,8 +142,34 @@ public:
         if ( ASRUtils::is_array(ASRUtils::expr_type(expr) ) &&
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
-            return cast->m_new == ASR::array_physical_typeType::PointerArray &&
-                   cast->m_old == ASR::array_physical_typeType::DescriptorArray;
+            if ( !((cast->m_new == ASR::array_physical_typeType::PointerArray ||
+                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                    cast->m_old == ASR::array_physical_typeType::DescriptorArray) ) {
+                return false;
+            }
+            // Skip copy-in/copy-out when the inner expression is an ArraySection
+            // whose source array is UnboundedPointerArray (assumed-size) and has
+            // an undefined upper bound on the assumed-size dimension.
+            ASR::expr_t* inner = cast->m_arg;
+            if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
+                ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+                if ( ASRUtils::is_array(source_type) &&
+                     ASRUtils::extract_physical_type(source_type) ==
+                         ASR::array_physical_typeType::UnboundedPointerArray &&
+                     has_undefined_assumed_size_bound(section) ) {
+                    return false;
+                }
+            }
+            // Also skip when the inner Var was created by an earlier pass
+            // (pass_array_by_data) from an ArraySection of an assumed-size array.
+            if ( ASR::is_a<ASR::Var_t>(*inner) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(inner)->m_v;
+                if ( vars_from_assumed_size_sections.count(sym) ) {
+                    return false;
+                }
+            }
+            return true;
         }
         return false;
     }
@@ -809,7 +843,7 @@ public:
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg))); // TODO : remove -- Look `class_95.f90`  
                 if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) && !unhandled_case ) {
                     ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
-                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerArray,
+                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, array_physical_cast->m_new,
                         array_physical_cast->m_type, nullptr));
                     array_var_temporary_arg.m_value = casted_array_var_temporary_arg;
                     x_m_args_vec.push_back(al, array_var_temporary_arg);
@@ -999,6 +1033,54 @@ public:
             visit_Call(x, "_function_call_");
         }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_Function(const ASR::Function_t& x) {
+        vars_from_assumed_size_sections.clear();
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Function(x);
+    }
+
+    // Track Associate statements created by pass_array_by_data where the
+    // source is an ArraySection of an assumed-size (UnboundedPointerArray)
+    // array AND the section's right bound on the assumed-size dimension uses
+    // ArrayBound(var, dim, UBound), which is undefined for assumed-size arrays.
+    // Copy-in/copy-out must not be attempted for these variables because the
+    // allocation size cannot be determined.
+    void visit_Associate(const ASR::Associate_t& x) {
+        if ( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+            ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+            if ( ASRUtils::is_array(source_type) &&
+                 ASRUtils::extract_physical_type(source_type) ==
+                     ASR::array_physical_typeType::UnboundedPointerArray &&
+                 ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                 has_undefined_assumed_size_bound(section) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                vars_from_assumed_size_sections.insert(sym);
+            }
+        }
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Associate(x);
+    }
+
+    // Check if an ArraySection has a right bound that is an ArrayBound UBound
+    // on an assumed-size dimension (a dimension with no declared upper bound).
+    static bool has_undefined_assumed_size_bound(ASR::ArraySection_t* section) {
+        ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, dims);
+        for ( size_t i = 0; i < section->n_args && i < n_dims; i++ ) {
+            // Check if this dimension is assumed-size (no declared upper bound)
+            if ( dims[i].m_length != nullptr ) continue;
+            // Check if the section's right bound is ArrayBound UBound on this dim
+            ASR::expr_t* right = section->m_args[i].m_right;
+            if ( right && ASR::is_a<ASR::ArrayBound_t>(*right) ) {
+                ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(right);
+                if ( bound->m_bound == ASR::arrayboundType::UBound ) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Don't visit DebugCheckArrayBounds, m_dt in FunctionCall might be an array

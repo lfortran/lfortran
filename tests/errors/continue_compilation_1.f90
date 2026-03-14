@@ -294,7 +294,7 @@ program continue_compilation_1
     type(Derived) :: derived_var
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
-
+    integer :: arr_idl(4)
 
 
 
@@ -625,11 +625,10 @@ program continue_compilation_1
 
     type(container(4)) :: obj1
     type(container) :: obj2
+
+    arr_idl = (i, i = 1, 4)
     integer, allocatable :: ppp(:)
     print *, associated(ppp)
-
-
-
 
 
 

@@ -471,12 +471,12 @@
                 )
                 Eqv
                 (BoolOp
-                    (Logical .true.)
+                    (Logical .true. ())
                     Or
                     (BoolOp
-                        (not (Logical .false.))
+                        (not (Logical .false. ()))
                         And
-                        (Logical .true.)
+                        (Logical .true. ())
                     )
                 )
             )

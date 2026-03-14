@@ -407,7 +407,7 @@ semantic error: Invalid argument `end` supplied
 semantic error: Missing actual argument 'x' in call to 'cmplx'
    --> tests/errors/continue_compilation_2.f90:312:14
     |
-312 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+312 |     print *, cmplx(y = 2)
     |              ^^^^^^^^^^^^ 
 
 semantic error: Only a literal constant or a named constant is allowed as part of a complex literal constant
@@ -1003,3 +1003,9 @@ warning: `sleep` is a non-standard extension
     |
 538 |     call sleep(1)
     |     ^^^^^^^^^^^^^ not part of the Fortran standard
+
+semantic error: Missing actual argument 'x' in call to 'cmplx'
+   --> tests/errors/continue_compilation_2.f90:539:9
+    |
+539 |     a = cmplx(y = 2)
+    |         ^^^^^^^^^^^^ 

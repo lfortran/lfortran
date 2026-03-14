@@ -768,29 +768,35 @@ namespace LCompilers {
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind,
-            ASR::ttype_t* casted_type);
+            ASR::ttype_t* casted_type, bool skip_save_restore);
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
         ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
         ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-        ASR::ttype_t* casted_type=nullptr) {
+        ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
             // According to Fortran standard, the loop variable in an implied-DO
             // within an array constructor is local to the implied-DO and should
             // not affect any outer variable with the same name. To implement this,
             // we save the loop variable's value before the loop and restore it after.
+            // However, for I/O implied-do loops with use_loop_variable_after_loop,
+            // Section 12.6.3 of F2023 says the loop variable retains its final value,
+            // so we skip the save/restore in that case.
             ASR::ttype_t* loop_var_type = ASRUtils::expr_type(idoloop->m_var);
             const Location& loc = idoloop->m_var->base.loc;
 
-            // Create a temporary variable to save the loop variable's original value
-            static int idl_save_counter = 0;
-            ASR::expr_t* save_var = PassUtils::create_var(idl_save_counter++, "_idl_save_",
-                loc, loop_var_type, al, current_scope);
+            ASR::expr_t* save_var = nullptr;
+            if (!skip_save_restore) {
+                // Create a temporary variable to save the loop variable's original value
+                static int idl_save_counter = 0;
+                save_var = PassUtils::create_var(idl_save_counter++, "_idl_save_",
+                    loc, loop_var_type, al, current_scope);
 
-            // Save the loop variable's value before the loop
-            ASR::stmt_t* save_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                save_var, idoloop->m_var, nullptr, false, false));
-            result_vec->push_back(al, save_stmt);
+                // Save the loop variable's value before the loop
+                ASR::stmt_t* save_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                    save_var, idoloop->m_var, nullptr, false, false));
+                result_vec->push_back(al, save_stmt);
+            }
 
             ASR::do_loop_head_t head;
             head.m_v = idoloop->m_var;
@@ -840,11 +846,11 @@ namespace LCompilers {
                                             ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
-                                   arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type);
+                                   arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type, skip_save_restore);
                 } else if( ASR::is_a<ASR::ArrayConstructor_t>(*idoloop->m_values[i]) ) {
                     ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(idoloop->m_values[i]);
                     visit_ArrayConstructor(array_constructor, al, arr_var, &doloop_body,
-                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type);
+                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
                     ASRUtils::ExprStmtDuplicator expr_duplicator(al);
@@ -929,10 +935,12 @@ namespace LCompilers {
                 nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
             result_vec->push_back(al, doloop);
 
-            // Restore the loop variable's original value after the loop
-            ASR::stmt_t* restore_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                idoloop->m_var, save_var, nullptr, false, false));
-            result_vec->push_back(al, restore_stmt);
+            if (!skip_save_restore) {
+                // Restore the loop variable's original value after the loop
+                ASR::stmt_t* restore_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                    idoloop->m_var, save_var, nullptr, false, false));
+                result_vec->push_back(al, restore_stmt);
+            }
         }
 
         template <typename LOOP_BODY>
@@ -1182,7 +1190,7 @@ namespace LCompilers {
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr);
+            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false);
 
         template <typename T>
         static inline void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,
@@ -1278,7 +1286,7 @@ namespace LCompilers {
         static inline void replace_ArrayConstructor_(Allocator& al, ASR::ArrayConstructor_t* x,
             ASR::expr_t* result_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr) {
+            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
             LCOMPILERS_ASSERT(result_var != nullptr);
             const Location& loc = x->base.base.loc;
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
@@ -1295,7 +1303,7 @@ namespace LCompilers {
                                             loc, idx_var, lb, nullptr, false, false));
             result_vec->push_back(al, assign_stmt);
             visit_ArrayConstructor(x, al, result_var, result_vec,
-                idx_var, current_scope, perform_cast, cast_kind, casted_type);
+                idx_var, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
         }
 
         template <typename T>
