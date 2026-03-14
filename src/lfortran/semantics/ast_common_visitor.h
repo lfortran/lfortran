@@ -3987,7 +3987,7 @@ public:
 
 		    // Save canonical size for deferred validation (only on first encounter in this scope)
 		    if (common_block_deferred_size_check.find(common_block_name) == common_block_deferred_size_check.end()) {
-			common_block_deferred_size_check[common_block_name] = {common_block_byte_sizes[common_block_name], x.base.base.loc};
+			    common_block_deferred_size_check[common_block_name] = {common_block_byte_sizes[common_block_name], x.base.base.loc};
 		    }
 
 		    // Reset byte size and start accumulating for this scope
