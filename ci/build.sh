@@ -6,7 +6,7 @@ echo "Running SHELL"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
-
+LFORTRAN_CMAKE_GENERATOR=Ninja
 # Generate the `version` file
 bash ci/version.sh
 
