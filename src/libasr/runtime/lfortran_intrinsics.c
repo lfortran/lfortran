@@ -4447,9 +4447,21 @@ LFORTRAN_API int64_t _lfortran_int64_rand_num() {
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
-            srand(0);
+        srand(0);
     } else {
-        srand(time(NULL));
+        static unsigned int call_count = 0;
+        unsigned int seed;
+#if defined(_WIN32)
+        seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
+#else
+        struct timespec ts;
+        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+            seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
+        } else {
+            seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
+        }
+#endif
+        srand(seed);
     }
     return false;
 }
