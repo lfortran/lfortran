@@ -1,5 +1,10 @@
 program test_iso_c_binding_constants_01
-  use iso_c_binding
+  use, intrinsic :: iso_c_binding, only: c_int_least8_t, c_int_least16_t, & 
+          c_int_least32_t, c_int_least64_t, &
+          c_int_fast8_t, c_int_fast16_t, c_int_fast32_t, c_int_fast64_t, &
+          c_intmax_t, c_long_double,  c_long_double_complex, &
+          c_alert, c_backspace, c_form_feed, c_carriage_return, & 
+          c_horizontal_tab, c_vertical_tab
 
 ! References:
 ! ifx  https://www.intel.com/content/www/us/en/docs/fortran-compiler/developer-guide-reference/2025-3/named-constants-in-the-iso-c-binding-module.html
