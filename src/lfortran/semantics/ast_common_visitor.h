@@ -14265,6 +14265,23 @@ public:
             v = current_scope->resolve_symbol("~" + var_name);
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
+                ASR::symbol_t *iso_mod = current_scope->resolve_symbol("iso_c_binding");
+                if (iso_mod && intrinsic_module_procedures_as_asr_nodes.find(var_name)
+                    != intrinsic_module_procedures_as_asr_nodes.end()) {
+
+                    if (var_name == "c_loc") {
+                        tmp = create_PointerToCptr(x);
+                    } else if (var_name == "c_associated") {
+                        tmp = create_Associated(x);
+                    } else if (var_name == "c_funloc") {
+                        tmp = create_PointerToCptr(x);
+                    } else if (var_name == "c_sizeof") {
+                        tmp = create_CSizeOf(x);
+                    } else {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    return;
+                }
             }
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
