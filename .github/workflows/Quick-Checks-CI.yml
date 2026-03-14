@@ -1,7 +1,7 @@
 name: Quick checks
 
 on:
-  push:
+  workflow_dispatch:
     branches:
       - iso_c_bind
     tags:
