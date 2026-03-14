@@ -1335,3 +1335,9 @@ semantic error: Implied DO loop must be enclosed within array constructor bracke
     |
 629 |     arr_idl = (i, i = 1, 4)
     |               ^^^^^^^^^^^^^ 
+
+semantic error: ADVANCE= specifier must have value = YES or NO
+   --> tests/errors/continue_compilation_1.f90:632:30
+    |
+632 |     write (*, "(a)", advance="hello") "Dothraki culture"
+    |                              ^^^^^^^ 
