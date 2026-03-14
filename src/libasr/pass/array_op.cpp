@@ -1357,6 +1357,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 xx.m_value = iaf->m_value;
             }
         }
+        if ( ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value) ) {
+            ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
+            if ( ar->m_value != nullptr ) {
+                xx.m_value = ar->m_value;
+            }
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
             std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
