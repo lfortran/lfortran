@@ -947,8 +947,7 @@ public:
                 break;
             }
             case ASR::AssumedLength:
-                LCOMPILERS_ASSERT_MSG(false,
-                    "Shouldn't define assumed length string variable (They're only arguments) ")
+                // Assumed-length strings inherit their length from the caller.
                 break;
             case ASR::DeferredLength:
                 // Do nothing, deferred length strings doesn't have information to set it up with.
@@ -972,7 +971,8 @@ public:
             ASR::String_t *t = down_cast<ASR::String_t>(ASRUtils::extract_type(type));
             setup_string_length(str, t, t->m_len);
             // Handle Memory
-            if(!ASRUtils::is_allocatable_or_pointer(type)){
+            if(!ASRUtils::is_allocatable_or_pointer(type) &&
+               t->m_len_kind != ASR::string_length_kindType::AssumedLength){
                 llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
             }
         } else {
