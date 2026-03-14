@@ -1138,6 +1138,9 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
              }
          }
      }
+    // Re-derive left_type/right_type after potential kind-promotion casts
+    left_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
+    right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
     ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
