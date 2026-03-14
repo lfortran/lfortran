@@ -4793,7 +4793,8 @@ namespace Norm2 {
                 res_idx.push_back(declare("i_" + std::to_string(i), int32, Local));
             }
             ASR::expr_t* j = declare("j", int32, Local);
-            ASR::expr_t* c = declare("c", return_type, Local);
+            ASR::ttype_t* scalar_type = extract_type(return_type);
+            ASR::expr_t* c = declare("c", scalar_type, Local);
 
             std::vector<ASR::expr_t*> idx; bool dim_found = false;
             for (int i = 0; i < array_rank; i++) {
@@ -4809,14 +4810,11 @@ namespace Norm2 {
                 b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
             });
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2_dim(al, loc,
-                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
-            ASR::expr_t* res = EXPR(ASR::make_RealSqrt_t(al, loc,
-                result, return_type, nullptr));
+                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim, true);
             body.push_back(al, do_loop);
-            body.push_back(al, b.Assignment(result, res));
             body.push_back(al, b.Return());
-            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-                    body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            ASR::symbol_t *fn_sym = make_Function_Without_ReturnVar_t(fn_name, fn_symtab, dep, args,
+                    body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, fn_sym);
             return b.Call(fn_sym, m_args, return_type, nullptr);
         }
