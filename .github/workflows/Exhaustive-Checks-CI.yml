@@ -3,7 +3,7 @@ name: Exhaustive checks
 on:
   push:
     branches:
-      - main
+      - iso_c_bind
     tags:
       - 'v*'
   pull_request:
@@ -751,5 +751,5 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+          #push: ${{ github.event_name == 'push' }}
+            tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
