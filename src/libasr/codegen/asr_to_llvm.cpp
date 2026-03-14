@@ -13281,10 +13281,18 @@ public:
         // For string→int8 with array result, skip load (assignment handles it)
         // For string→int8 with scalar result, do load (element-wise transfer case)
         bool skip_string_to_int8_load = is_string_to_int8 && ASRUtils::is_array(x.m_type);
+        bool is_fixed_size_array_result = ASRUtils::is_array(x.m_type) &&
+            ASRUtils::extract_physical_type(x.m_type) == ASR::array_physical_typeType::FixedSizeArray;
         if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
              x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && !ASRUtils::is_string_only(expr_type(x.m_mold)) &&
                 !skip_string_to_int8_load ) {
-            tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            if (is_fixed_size_array_result) {
+                // For FixedSizeArray results, return a bitcasted pointer to the
+                // source data; the assignment handler will memcpy from it.
+                tmp = builder->CreateBitCast(source_ptr, target_llvm_type);
+            } else {
+                tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            }
         }
     }
 
