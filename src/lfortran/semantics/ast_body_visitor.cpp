@@ -5259,6 +5259,15 @@ public:
             tmp = nullptr;
             return;
         }
+        if (AST::is_a<AST::ImpliedDoLoop_t>(*x.m_value)) {
+            diag.add(Diagnostic(
+                "Implied DO loop must be enclosed within array constructor "
+                "brackets [...]; expected '[( ... )]' in assignment",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_value->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
             AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
             std::string var_name = to_lower(target_name->m_id);
