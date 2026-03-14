@@ -1,6 +1,9 @@
 name: Quick checks
 
 on:
+  workflow_dispatch:
+    branches:
+      - iso_c_bind
   push:
     branches:
       - iso_c_bind
