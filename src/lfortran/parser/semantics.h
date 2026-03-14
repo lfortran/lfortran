@@ -948,8 +948,8 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define POW(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Pow, EXPR(y))
 #define UNARY_MINUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::USub, EXPR(x))
 #define UNARY_PLUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::UAdd, EXPR(x))
-#define TRUE(l) make_Logical_t(p.m_a, l, true)
-#define FALSE(l) make_Logical_t(p.m_a, l, false)
+#define TRUE(x, l) make_Logical_t(p.m_a, l, true, str2str_null(p.m_a, x))
+#define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {

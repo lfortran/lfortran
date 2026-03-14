@@ -500,10 +500,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                // Use byte-backed storage for logical arrays to avoid bit-packed `i1` memory,
-                // which is fragile under some LLVM optimizations (e.g. `--fast` / O3).
-                // Scalar logical values are still represented as `i1` at the expression level.
-                el_type = llvm::Type::getInt8Ty(context);
+                el_type = getIntType(a_kind, is_pointer);
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -808,9 +805,9 @@ namespace LCompilers {
                 a_kind = v_type->m_kind;
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
-                    type = llvm::Type::getInt1Ty(context);
+                    type = getIntType(a_kind);
                 } else {
-                    type = llvm::Type::getInt1Ty(context)->getPointerTo();
+                    type = getIntType(a_kind)->getPointerTo();
                 }
                 break;
             }
@@ -1117,9 +1114,11 @@ namespace LCompilers {
                 case (ASR::ttypeType::String) :
                     return_type = get_StringType(return_var_type0);
                     break;
-                case (ASR::ttypeType::Logical) :
-                    return_type = llvm::Type::getInt1Ty(context);
+                case (ASR::ttypeType::Logical) : {
+                    int a_kind = ASR::down_cast<ASR::Logical_t>(return_var_type0)->m_kind;
+                    return_type = getIntType(a_kind);
                     break;
+                }
                 case (ASR::ttypeType::CPtr) :
                     return_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     break;
@@ -1358,7 +1357,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
-                llvm_type = llvm::Type::getInt1Ty(context);
+                llvm_type = getIntType(a_kind);
                 break;
             }
             case (ASR::ttypeType::StructType) : {
@@ -8990,7 +8989,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         } else if (ASR::is_a<ASR::Complex_t>(*alloc_type)) {
             llvm_element_type = llvm_utils->getComplexType(kind);
         } else if (ASR::is_a<ASR::Logical_t>(*alloc_type)) {
-            llvm_element_type = llvm::Type::getInt8Ty(context);
+            llvm_element_type = llvm_utils->getIntType(kind);
         } else if (ASR::is_a<ASR::String_t>(*alloc_type)) {
             llvm_element_type = llvm_utils->string_descriptor;
             is_string_type = true;

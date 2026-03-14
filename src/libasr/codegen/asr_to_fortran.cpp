@@ -2401,6 +2401,11 @@ public:
             return;
         }
 
+        if (x.m_kind == ASR::cast_kindType::LogicalToLogical) {
+            // Implicit conversion between logical kinds
+            return;
+        }
+
         // Mapping cast kinds to their corresponding Fortran type names and valid kinds
         std::map<ASR::cast_kindType, std::pair<std::string, std::vector<int>>> cast_map = {
             {ASR::cast_kindType::IntegerToReal, {"real", {1, 2, 4, 8}}},

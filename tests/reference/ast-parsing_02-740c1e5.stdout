@@ -42,7 +42,7 @@
             []
             []
             ()
-            (Logical .true.)
+            (Logical .true. ())
             Equal
             ())]
             ()
@@ -60,7 +60,7 @@
             []
             []
             ()
-            (Logical .false.)
+            (Logical .false. ())
             Equal
             ())]
             (TriviaNode
