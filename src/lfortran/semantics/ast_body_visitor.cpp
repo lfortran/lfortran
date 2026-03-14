@@ -5560,6 +5560,61 @@ public:
                             array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
                         }
                     }
+                    // Warn if a single precision real literal is implicitly
+                    // converted to double precision
+                    if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                        ASR::ttype_t *src_real = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(value_type));
+                        ASR::ttype_t *dst_real = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(target_type));
+                        if (ASR::is_a<ASR::Real_t>(*src_real) &&
+                                ASR::is_a<ASR::Real_t>(*dst_real)) {
+                            int src_kind = ASRUtils::extract_kind_from_ttype_t(src_real);
+                            int dst_kind = ASRUtils::extract_kind_from_ttype_t(dst_real);
+                            if (src_kind == 4 && dst_kind == 8) {
+                                ASR::RealConstant_t *rc =
+                                    ASR::down_cast<ASR::RealConstant_t>(value);
+                                double single_val = rc->m_r;
+                                // Find kind parameter name in scope
+                                std::string kind_suffix = std::to_string(dst_kind);
+                                SymbolTable *scope = current_scope;
+                                while (scope) {
+                                    bool found = false;
+                                    for (auto &it : scope->get_scope()) {
+                                        ASR::symbol_t *sym = it.second;
+                                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                                            ASR::Variable_t *var =
+                                                ASR::down_cast<ASR::Variable_t>(sym);
+                                            if (var->m_storage == ASR::storage_typeType::Parameter &&
+                                                    var->m_value &&
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*var->m_value)) {
+                                                int64_t val = ASR::down_cast<
+                                                    ASR::IntegerConstant_t>(var->m_value)->m_n;
+                                                if (val == dst_kind) {
+                                                    kind_suffix = it.first;
+                                                    found = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (found) break;
+                                    scope = scope->parent;
+                                }
+                                std::ostringstream oss;
+                                oss.precision(17);
+                                oss << single_val;
+                                diag.semantic_warning_label(
+                                    "This implies single precision; use a "
+                                    "kind suffix to make precision explicit",
+                                    {value->base.loc},
+                                    "hint: this is " + oss.str() +
+                                    " in single precision, use _" + kind_suffix +
+                                    " suffix for double precision"
+                                );
+                            }
+                        }
+                    }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
                     }
