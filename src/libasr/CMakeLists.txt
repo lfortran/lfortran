@@ -145,6 +145,11 @@ if (WITH_LLVM)
     target_link_libraries(lfortran_utils p::llvm)
 endif()
 
+# _GNU_SOURCE is required for dl_phdr_info and feenableexcept on Linux
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_compile_definitions(lfortran_utils PRIVATE _GNU_SOURCE)
+endif()
+
 # Install the dwarf_convert.py and dat_convert.py
 install(
     FILES dwarf_convert.py dat_convert.py

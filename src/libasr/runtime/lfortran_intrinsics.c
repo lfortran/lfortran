@@ -1,6 +1,3 @@
-#if defined(__linux__) && !defined(_GNU_SOURCE)
-#define _GNU_SOURCE
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,16 +103,6 @@ static int _lfortran_use_runtime_colors = 0;  // disabled by default
 #ifdef HAVE_LFORTRAN_LINK
 // For dl_iterate_phdr() functionality
 #  include <link.h>
-#ifndef _GNU_SOURCE
-struct dl_phdr_info {
-    ElfW(Addr) dlpi_addr;
-    const char *dlpi_name;
-    const ElfW(Phdr) *dlpi_phdr;
-    ElfW(Half) dlpi_phnum;
-};
-extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
-    size_t, void *), void *__data);
-#endif
 #endif
 
 #ifdef HAVE_LFORTRAN_UNWIND
