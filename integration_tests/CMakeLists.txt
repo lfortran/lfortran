@@ -1958,6 +1958,7 @@ RUN(NAME logical_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 RUN(NAME logical_kind_01 LABELS gfortran llvm)
 RUN(NAME logical_kind_02 LABELS gfortran llvm)
 RUN(NAME logical_kind_03 LABELS gfortran llvm)
+RUN(NAME logical_kind_04 LABELS gfortran llvm)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
