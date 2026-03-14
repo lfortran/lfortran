@@ -531,7 +531,7 @@ class CommonVisitorMethods {
 public:
 
 
-static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc, diag::Diagnostics &diag) {
+static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, ASR::ttype_t* logical_type, const Location loc, diag::Diagnostics &diag) {
     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::IntegerConstant_t>(*left_value) ||
             !ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
@@ -556,7 +556,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::RealConstant_t>(*left_value) ||
@@ -582,7 +582,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::ComplexConstant_t>(*left_value) ||
@@ -617,7 +617,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::LogicalConstant_t>(*left_value) ||
@@ -645,7 +645,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::StringConstant_t>(*left_value) ||
             !ASR::is_a<ASR::StringConstant_t>(*right_value)) {
@@ -687,7 +687,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             default: LCOMPILERS_ASSERT(false); // should never happen
         }
         return ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
     } else {
         diag.add(diag::Diagnostic(
             "Comparison operator not implemented",
@@ -703,13 +703,15 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
                             ASR::expr_t* left, ASR::expr_t* right, ASR::cmpopType asr_op, ASR::ttype_t* type, const Location loc, diag::Diagnostics &diag) {
 
     if (compiletime_values.size() == 0) {
-        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, loc, diag);
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
+        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
         Vec<ASR::expr_t*> args; args.reserve(al, compiletime_values.size());
         for (size_t i = 0; i < compiletime_values.size(); i++) {
             ASR::expr_t* left_val = compiletime_values[i].first;
             ASR::expr_t* right_val = compiletime_values[i].second;
-            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, loc, diag));
+            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
         }
         return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
     }

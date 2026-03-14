@@ -376,6 +376,7 @@ RUN(NAME ilp64_stop_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORT
 RUN(NAME ilp64_file_ops_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
 RUN(NAME print_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp llvm2 wasm fortran mlir)
 RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortran)
