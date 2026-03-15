@@ -9009,10 +9009,11 @@ public:
             ASR::ttype_t* bc_src_type = ASRUtils::expr_type(bc->m_source);
             ASR::ttype_t* bc_tgt_type = ASRUtils::expr_type(x.m_target);
             if (ASRUtils::is_array(bc_src_type) && ASRUtils::is_array(bc_tgt_type) &&
-                !ASRUtils::is_string_only(bc_src_type) &&
-                ASRUtils::is_fixed_size_array(bc_src_type) &&
-                ASRUtils::is_fixed_size_array(bc_tgt_type)) {
-                // Get pointer to source array data
+                !ASRUtils::is_string_only(bc_src_type)) {
+                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(bc_src_type));
+
+                // Visit the source to get both the descriptor and data pointer
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 visit_expr_wrapper(bc->m_source, true);
@@ -9024,6 +9025,25 @@ public:
                     builder->CreateStore(src_ptr, alloca_);
                     src_ptr = alloca_;
                 }
+                llvm::Value* src_desc = src_ptr;
+
+                // Extract data pointer from descriptor arrays
+                ASR::ttype_t* bc_src_type_unwrapped = ASRUtils::type_get_past_allocatable_pointer(bc_src_type);
+                bool is_descriptor_src = false;
+                llvm::Type* llvm_src_arr_type = nullptr;
+                if (ASR::is_a<ASR::Array_t>(*bc_src_type_unwrapped)) {
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(bc_src_type_unwrapped);
+                    if (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        is_descriptor_src = true;
+                        llvm_src_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, bc_src_type_unwrapped, module.get());
+                        llvm::Type* llvm_src_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, ASRUtils::extract_type(bc_src_type), module.get());
+                        src_ptr = llvm_utils->create_gep2(llvm_src_arr_type, src_ptr, 0);
+                        src_ptr = builder->CreateLoad(
+                            llvm_src_elem_type->getPointerTo(), src_ptr);
+                    }
+                }
 
                 // Get pointer to target array
                 bool is_assignment_target_copy = is_assignment_target;
@@ -9032,22 +9052,104 @@ public:
                 is_assignment_target = is_assignment_target_copy;
                 llvm::Value* dest_ptr = tmp;
 
+                // Extract data pointer from descriptor target arrays
+                ASR::ttype_t* bc_tgt_type_unwrapped = ASRUtils::type_get_past_allocatable_pointer(bc_tgt_type);
+                if (ASR::is_a<ASR::Array_t>(*bc_tgt_type_unwrapped)) {
+                    ASR::Array_t* tgt_arr = ASR::down_cast<ASR::Array_t>(bc_tgt_type_unwrapped);
+                    if (tgt_arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        if (!dest_ptr->getType()->isPointerTy()) {
+                            llvm::Value* alloca_ = llvm_utils->CreateAlloca(
+                                dest_ptr->getType(), nullptr, "transfer_dest");
+                            builder->CreateStore(dest_ptr, alloca_);
+                            dest_ptr = alloca_;
+                        }
+                        llvm::Type* llvm_tgt_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_target, ASRUtils::extract_type(bc_tgt_type), module.get());
+                        llvm::Type* llvm_tgt_arr_type = arr_descr->get_array_type(
+                            x.m_target, bc_tgt_type_unwrapped,
+                            llvm_tgt_elem_type, false);
+                        // Handle extra indirection for allocatable members
+                        llvm::Type* pointee = dest_ptr->getType()->getPointerElementType();
+                        if (pointee->isPointerTy() && pointee->getPointerElementType()->isStructTy()) {
+                            dest_ptr = builder->CreateLoad(pointee, dest_ptr);
+                        }
+                        dest_ptr = arr_descr->get_pointer_to_data(llvm_tgt_arr_type, dest_ptr);
+                        dest_ptr = builder->CreateLoad(
+                            llvm_tgt_elem_type->getPointerTo(), dest_ptr);
+                    }
+                }
+
                 llvm::Value* src_i8 = builder->CreateBitCast(
                     src_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
                 llvm::Value* dest_i8 = builder->CreateBitCast(
                     dest_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
 
-                // Compute source byte count (= source_elements * source_kind)
-                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::extract_type(bc_src_type));
+                // Compute byte count
                 int64_t src_n = ASRUtils::get_fixed_size_of_array(bc_src_type);
-                int64_t nbytes = src_kind * src_n;
-
-                builder->CreateMemCpy(
-                    dest_i8, llvm::MaybeAlign(1),
-                    src_i8, llvm::MaybeAlign(1),
-                    llvm::ConstantInt::get(
-                        llvm::Type::getInt64Ty(context), nbytes));
+                if (src_n > 0) {
+                    // Fixed-size source: constant byte count
+                    int64_t nbytes = src_kind * src_n;
+                    builder->CreateMemCpy(
+                        dest_i8, llvm::MaybeAlign(1),
+                        src_i8, llvm::MaybeAlign(1),
+                        llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context), nbytes));
+                } else if (is_descriptor_src && llvm_src_arr_type) {
+                    // Runtime-sized descriptor source: get size from descriptor
+                    llvm::Value* num_elements = llvm_utils->arr_api->get_array_size(
+                        llvm_src_arr_type, src_desc, nullptr, 4);
+                    llvm::Value* nbytes = builder->CreateMul(
+                        builder->CreateZExtOrTrunc(num_elements,
+                            llvm::Type::getInt64Ty(context)),
+                        llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context), src_kind));
+                    builder->CreateMemCpy(
+                        dest_i8, llvm::MaybeAlign(1),
+                        src_i8, llvm::MaybeAlign(1),
+                        nbytes);
+                } else {
+                    // Source is FixedSizeArray with runtime dimensions
+                    // (e.g., after pass_array_by_data converted descriptor to
+                    // data pointer). Evaluate the result type upper bound
+                    // to get element count, then compute byte count.
+                    ASR::ttype_t* bc_result_type = bc->m_type;
+                    ASR::ttype_t* bc_result_unwrapped = ASRUtils::type_get_past_allocatable_pointer(bc_result_type);
+                    int64_t result_kind = ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::extract_type(bc_result_type));
+                    bool emitted = false;
+                    if (ASR::is_a<ASR::Array_t>(*bc_result_unwrapped)) {
+                        ASR::Array_t* res_arr = ASR::down_cast<ASR::Array_t>(bc_result_unwrapped);
+                        if (res_arr->n_dims > 0 && res_arr->m_dims[0].m_length) {
+                            // Evaluate the dimension length expression
+                            visit_expr_wrapper(res_arr->m_dims[0].m_length, true);
+                            llvm::Value* n_elements = tmp;
+                            llvm::Value* nbytes = builder->CreateMul(
+                                builder->CreateZExtOrTrunc(n_elements,
+                                    llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(
+                                    llvm::Type::getInt64Ty(context), result_kind));
+                            builder->CreateMemCpy(
+                                dest_i8, llvm::MaybeAlign(1),
+                                src_i8, llvm::MaybeAlign(1),
+                                nbytes);
+                            emitted = true;
+                        }
+                    }
+                    if (!emitted) {
+                        // Last resort: use target size if fixed
+                        int64_t tgt_kind = ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::extract_type(bc_tgt_type));
+                        int64_t tgt_n = ASRUtils::get_fixed_size_of_array(bc_tgt_type);
+                        if (tgt_n > 0) {
+                            int64_t nbytes = tgt_kind * tgt_n;
+                            builder->CreateMemCpy(
+                                dest_i8, llvm::MaybeAlign(1),
+                                src_i8, llvm::MaybeAlign(1),
+                                llvm::ConstantInt::get(
+                                    llvm::Type::getInt64Ty(context), nbytes));
+                        }
+                    }
+                }
                 return;
             }
         }

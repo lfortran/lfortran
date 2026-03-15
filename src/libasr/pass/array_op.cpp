@@ -1516,13 +1516,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
 
             // Don't generate an element-wise loop for transfer() (BitCast) when
-            // source and result are fixed-size arrays with different element byte
-            // sizes. The element counts differ so the loop indices would go out
+            // source and result are arrays with different element byte sizes.
+            // The element counts differ so the loop indices would go out
             // of bounds on the source array. Leave the whole-array BitCast for
             // the LLVM backend to lower as a memcpy.
-            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type) &&
-                ASRUtils::is_fixed_size_array(src_type) &&
-                ASRUtils::is_fixed_size_array(bc->m_type)) {
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
                 int src_kind = ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::extract_type(src_type));
                 int res_kind = ASRUtils::extract_kind_from_ttype_t(

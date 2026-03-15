@@ -12761,7 +12761,30 @@ public:
                 // Else, mold-size is set to default(64) for runtime-sized sources or dynamically calculated
                 if( ASRUtils::is_array(src_type) ) {
                     int64_t n_elem = ASRUtils::get_fixed_size_of_array(src_type);
-                    src_bytes = (n_elem > 0 && src_bytes > 0) ? n_elem * src_bytes : -1;
+                    if( n_elem > 0 && src_bytes > 0 ) {
+                        src_bytes = n_elem * src_bytes;
+                    } else {
+                        // Runtime-sized array: compute total bytes as
+                        // element_kind * size(source) at runtime
+                        int64_t elem_kind = src_bytes;
+                        src_bytes = -1;
+                        if( elem_kind > 0 ) {
+                            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            ASR::expr_t* array_size = ASRUtils::EXPR(
+                                ASRUtils::make_ArraySize_t_util(
+                                    al, x.base.base.loc, source, nullptr,
+                                    int_type, nullptr, false));
+                            ASR::expr_t* elem_kind_expr = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(
+                                    al, x.base.base.loc, elem_kind, int_type));
+                            src_len_expr = ASRUtils::EXPR(
+                                ASR::make_IntegerBinOp_t(
+                                    al, x.base.base.loc, elem_kind_expr,
+                                    ASR::binopType::Mul, array_size,
+                                    int_type, nullptr));
+                        }
+                    }
                 } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
                     // For scalar strings: use string length as mold size
                     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
