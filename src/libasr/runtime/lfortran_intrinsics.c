@@ -8480,6 +8480,11 @@ static void process_fmt_items_read(InputSource *inputSource,
             fmt_pos++;
         }
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
+        bool is_unlimited = false;
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '*'){
+            is_unlimited = true;
+            fmt_pos++;  // add '*'
+        }
 
         int repeat_count = 0;
         bool has_repeat_count = false;
@@ -8490,7 +8495,7 @@ static void process_fmt_items_read(InputSource *inputSource,
         }
         if (!has_repeat_count) repeat_count = 1;
         if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
-            // Parenthesized group: N(...)
+            // Parenthesized group: N(...) or *(...)
             int64_t group_start = fmt_pos + 1; // position after '('
             // Find matching ')'
             int paren_depth = 1;
@@ -8503,14 +8508,24 @@ static void process_fmt_items_read(InputSource *inputSource,
             int64_t group_end = pos - 1; // position of matching ')'
             int64_t group_len = group_end - group_start;
             fmt_pos = pos; // advance past ')'
-
-            for (int rep = 0; rep < repeat_count; rep++) {
-                process_fmt_items_read(inputSource, iostat, chunk,
-                    advance_no, fmt + group_start, group_len,
-                    no_of_args, args, arg_idx, blank_mode,
-                    scale_factor, consumed_newline, decimal_mode);
-                if (iostat && *iostat != 0) return;
-                if (*arg_idx >= no_of_args) return;
+            if (is_unlimited) {
+                // Repeat group for all remaining args in one record — no newline advance
+                while (*arg_idx < no_of_args) {
+                    process_fmt_items_read(inputSource, iostat, chunk,
+                        advance_no, fmt + group_start, group_len,
+                        no_of_args, args, arg_idx, blank_mode,
+                        scale_factor, consumed_newline, decimal_mode);
+                    if (iostat && *iostat != 0) return;
+                }
+            } else {
+                for (int rep = 0; rep < repeat_count; rep++) {
+                    process_fmt_items_read(inputSource, iostat, chunk,
+                        advance_no, fmt + group_start, group_len,
+                        no_of_args, args, arg_idx, blank_mode,
+                        scale_factor, consumed_newline, decimal_mode);
+                    if (iostat && *iostat != 0) return;
+                    if (*arg_idx >= no_of_args) return;
+                }
             }
             continue;
         }
