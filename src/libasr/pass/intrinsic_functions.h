@@ -3952,7 +3952,8 @@ namespace Merge {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
 
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]));
+        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]))
+            + "_" + get_type_code(ASRUtils::extract_type(arg_types[2]));
         declare_basic_variables(new_name);
         
         mask_type = ASRUtils::duplicate_type(al,
