@@ -819,8 +819,8 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
                 fn_body.push_back(al, builder.Assignment(return_var, tmp));
             } else {
                 ASR::expr_t* initial_val = get_initial_value(al, element_type);
-                ASR::expr_t* return_var_unit = builder.Assignment(return_var, initial_val)
-                fn_body.push_back(al, return_var_unit);
+                ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
+                fn_body.push_back(al, return_var_init);
             }
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
