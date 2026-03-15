@@ -761,6 +761,10 @@ struct FixedFormRecursiveDescent {
                 char* unescaped = str_unescape_fortran(m_a, s, quote_char);
                 y2.string.p = unescaped;
                 y2.string.n = strlen(unescaped);
+            } else if (token == yytokentype::TK_TRUE
+                    || token == yytokentype::TK_FALSE) {
+                // token_logical_kind() already extracted the kind suffix
+                // into y2.string; preserve it.
             } else {
                 std::string tk{tostr(t.tok, t.tok + len)};
                 y2.string.from_str(m_a, tk);

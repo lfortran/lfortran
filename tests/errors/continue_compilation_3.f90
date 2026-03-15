@@ -71,9 +71,9 @@ program continue_compilation_3
     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
     call check_incompatible_type(i)  ! Error: incompatible type passed
 
-
-
+    print *, iachar(s1)
     
+
 
 
 
@@ -202,6 +202,7 @@ program continue_compilation_3
     print *, "8356" .eqv. 8356.00
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
+    print *,  [( '*',i , i = 1, 10 )] 
     call ss("hello")
     contains 
     subroutine bpe()

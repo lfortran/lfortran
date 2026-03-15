@@ -338,8 +338,8 @@
                                     []
                                     (Var 17 s)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -424,8 +424,8 @@
                                     []
                                     (Var 14 f_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:

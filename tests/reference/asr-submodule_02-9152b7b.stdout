@@ -548,8 +548,8 @@
                                     )]
                                     (Var 12 distance)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             point_dist_subrout:
@@ -751,8 +751,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             rkind:
