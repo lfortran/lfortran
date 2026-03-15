@@ -1698,6 +1698,7 @@ public:
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        {"rand", IntrinsicSignature({"flag"}, 0, 1)},
         {"this_image", IntrinsicSignature({}, 0, 0)},
         {"num_images", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
@@ -3745,7 +3746,9 @@ public:
                 }
             } else {
                 // This is the second and third case:
-                // data x / 1 /             ! x must be a scalar (integer)
+                // data x / 1 /             ! x can be a scalar (integer)
+                // Note: x can also be a unit length array
+                
                 // data x, y, z / 1, 2, 3 / ! x, y, z must be a scalar (integer)
 
                 // Note: this also happens for a case like:
@@ -3758,7 +3761,14 @@ public:
                     // x(2) / 2 /
                     //
                     size_t j = i;
-                    handle_scalar_data_stmt(x, a, i, j);
+                    this->visit_expr(*a->m_object[i]);
+                    ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                    ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                    if (ASRUtils::is_array(obj_type)) {
+                        handle_array_data_stmt(x, a, obj_type, object, j);
+                    } else {
+                        handle_scalar_data_stmt(x, a, i, j);
+                    }
                 }
             }
         }
@@ -8295,8 +8305,20 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star
                 );
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+                }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+                }
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
                 type_declaration = v;
                 type = ASRUtils::get_union_type(al, loc, v);
@@ -12846,6 +12868,9 @@ public:
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 }
+            } else if (ASR::is_a<ASR::StringConstant_t>(*source_value)) {
+                std::string val = ASR::down_cast<ASR::StringConstant_t>(source_value)->m_s;
+                source_bits.assign(val.begin(), val.end());
             } else if (ASRUtils::is_array(ASRUtils::expr_type(source)) && ASRUtils::is_value_constant(source_value)) {
                 ASR::ArrayConstant_t* const_source = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(source_value));
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source_value);
@@ -17259,9 +17284,9 @@ public:
             }
 
             if(check_m_m){
-                ASR::ExternalSymbol_t* tmp2_m_m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m);
-                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) &&
-                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
+                ASR::symbol_t* m_m_underlying = ASRUtils::symbol_get_past_external(tmp2->m_m);
+                if(ASR::is_a<ASR::Variable_t>(*m_m_underlying) &&
+                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(m_m_underlying)))){
                     if(array_found){
                         diag.add(Diagnostic(
                             "The expression with derived types contains two or more arrays.",

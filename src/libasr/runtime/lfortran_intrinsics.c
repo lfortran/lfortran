@@ -641,6 +641,11 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        if (fabs(atof(val_str)) >= 1000.0) {
+            exponent += 3;
+            scaled_val = val / pow(10, exponent);
+            snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        }
         snprintf(formatted_value, sizeof(formatted_value),
                 "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
     } else {
@@ -654,6 +659,14 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             scaled_val = val / pow(10, exponent);
         }
         
+        char val_str[128];
+        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        if (fabs(atof(val_str)) >= 1000.0) {
+            exponent += 3;
+            scaled_val = val / pow(10, exponent);
+            snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        }
+
         // Adjust exp_digits dynamically if no explicit Ee was given
         if (original_exp_digits <= 0) {
             int abs_exp = (exponent < 0 ? -exponent : exponent);
@@ -665,11 +678,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
                 exp_digits = 2;
             }
         }
-        
-        char val_str[128];
-        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
-        // exp_digits is the number of exponent digits, but %+0*d width includes the sign
-        // So we need exp_digits + 1 for the total width
+
         snprintf(formatted_value, sizeof(formatted_value),
                 "%s%s%+0*d", val_str, c, exp_digits + 1, exponent);
     }
@@ -924,13 +933,25 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         }
         int zeros = 0;
         while(val_str[zeros] == '0') zeros++;
-        // TODO: figure out a way to round decimals with value < 1e-15
-        if (digits + scale < strlen(val_str) && val != 0 && digits + scale - zeros<= 15) {
-            val_str[15] = '\0';
-            long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
-            sprintf(val_str, "%lld", t);
-            int index = zeros;
-            while(index--) strcat(formatted_value, "0");
+        if (digits + scale < strlen(val_str) && val != 0) {
+            if (digits + scale - zeros <= 15) {
+                val_str[15] = '\0';
+                long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
+                sprintf(val_str, "%lld", t);
+                int index = zeros;
+                while(index--) strcat(formatted_value, "0");
+            } else {
+                int round_pos = digits + scale;
+                if (round_pos < (int)strlen(val_str) && val_str[round_pos] >= '5') {
+                    int carry = 1;
+                    for (int k = round_pos - 1; k >= 0 && carry; k--) {
+                        int d = (val_str[k] - '0') + carry;
+                        val_str[k] = (d % 10) + '0';
+                        carry = d / 10;
+                    }
+                }
+                val_str[digits + scale] = '\0';
+            }
         }
         strncat(formatted_value, val_str, digits);
     } else {
@@ -941,16 +962,26 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         char* new_str = substring(val_str, scale, strlen(val_str));
         // new_str = "1230000128" case:  1.123e+10
         int zeros = 0;
-        if (digits < strlen(new_str) && digits + scale <= 15) {
-            new_str[15] = '\0';
-            zeros = strspn(new_str, "0");
-            long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
-            sprintf(new_str, "%lld", t);
-            // new_str = 12
-            int index = zeros;
-            while(index--) {
-                memmove(new_str + 1, new_str, strlen(new_str)+1);
-                new_str[0] = '0';
+        if (digits < strlen(new_str)) {
+            if (digits + scale <= 15) {
+                new_str[15] = '\0';
+                zeros = strspn(new_str, "0");
+                long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
+                sprintf(new_str, "%lld", t);
+                int index = zeros;
+                while(index--) {
+                    memmove(new_str + 1, new_str, strlen(new_str)+1);
+                    new_str[0] = '0';
+                }
+            } else {
+                if (digits < (int)strlen(new_str) && new_str[digits] >= '5') {
+                    int carry = 1;
+                    for (int k = digits - 1; k >= 0 && carry; k--) {
+                        int d = (new_str[k] - '0') + carry;
+                        new_str[k] = (d % 10) + '0';
+                        carry = d / 10;
+                    }
+                }
             }
         }
         new_str[digits] = '\0';
@@ -4497,9 +4528,21 @@ LFORTRAN_API int64_t _lfortran_int64_rand_num() {
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
-            srand(0);
+        srand(0);
     } else {
-        srand(time(NULL));
+        static unsigned int call_count = 0;
+        unsigned int seed;
+#if defined(_WIN32)
+        seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
+#else
+        struct timespec ts;
+        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+            seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
+        } else {
+            seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
+        }
+#endif
+        srand(seed);
     }
     return false;
 }
@@ -8043,7 +8086,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id != 2) {  // 2 = DIRECT access
+        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
             fseek(filep, 0, SEEK_END);
         }
         va_list args;
@@ -8158,8 +8201,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
-    // Do not truncate direct access files, as records may be written out of order
-    if (filep != stdout && filep != stderr && access_id != 2) {
+    // Do not truncate direct access or stream access files
+    if (filep != stdout && filep != stderr && access_id == 0) {
         (void)!ftruncate(fileno(filep), ftell(filep));
     }
 }
@@ -8214,9 +8257,19 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
-    int rc = sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8227,9 +8280,19 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
 }
 
 
-LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
-    int rc = sscanf(buf, format, i);
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%" PRId64 "%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8239,10 +8302,20 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc = sscanf(buf, format, f);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%f%n", f, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, f);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8252,10 +8325,20 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc = sscanf(buf, format, f);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%lf%n", f, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, f);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8288,9 +8371,10 @@ char* remove_whitespace(char* str, int64_t* len) {
     return str;
 }
 
-LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len) {
-    int64_t pos = 0;
-    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
+LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset) {
+    int64_t pos = offset ? *offset : 0;
+
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t' || (offset && src_data[pos] == ','))) {
         pos++;
     }
 
@@ -8317,20 +8401,41 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
             }
         }
         pad_with_spaces(dest_data, dest_pos, dest_len);
+    } else if (offset) {
+        // Multi-value read: read one token (until separator)
+        int64_t start = pos;
+        while (pos < src_len && src_data[pos] != ' ' && src_data[pos] != '\t' &&
+               src_data[pos] != ',' && src_data[pos] != '\n') {
+            pos++;
+        }
+        int64_t token_len = pos - start;
+        _lfortran_copy_str_and_pad(dest_data, dest_len, src_data + start, token_len);
     } else {
         int64_t remaining = src_len - pos;
         _lfortran_copy_str_and_pad(
             dest_data, dest_len,
             src_data + pos, remaining);
     }
+    if (offset) *offset = pos;
 }
 
-LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat) {
-    char *buf = (char*)malloc(len + 1);
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    int64_t eff_len = len - off;
+    char *buf = (char*)malloc(eff_len + 1);
     if (!buf) return;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
-    int rc = sscanf(buf, format, i);
+    memcpy(buf, str + off, eff_len);
+    buf[eff_len] = '\0';
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", i, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, i);
+    }
     free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -8350,10 +8455,20 @@ static void _lfortran_replace_d_exponent(char *buf) {
     }
 }
 
-LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     _lfortran_replace_d_exponent(buf);
-    int rc = sscanf(buf, format, &c->re, &c->im);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, " (%f,%f)%n", &c->re, &c->im, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &c->re, &c->im);
+    }
     free(buf);
     if (rc != 2) {
         if (iostat) { *iostat = 5010; return; }
@@ -8363,10 +8478,20 @@ LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat) {
-    char *buf = to_c_string((const fchar*)str, len);
+LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     _lfortran_replace_d_exponent(buf);
-    int rc = sscanf(buf, format, &c->re, &c->im);
+    int rc;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, " (%lf,%lf)%n", &c->re, &c->im, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &c->re, &c->im);
+    }
     free(buf);
     if (rc != 2) {
         if (iostat) { *iostat = 5010; return; }

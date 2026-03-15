@@ -2021,11 +2021,41 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
+                    ASR::symbol_t* proc_func = class_proc->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
                         expr_dt, err, class_proc->m_self_argument);
+                    if (found && expr_dt && ASRUtils::is_class_type(
+                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)))) {
+                        // For polymorphic (class) types, create a type-bound call
+                        // referencing the StructMethodDeclaration with m_dt set,
+                        // so codegen can use vtable dispatch.
+                        std::string method_name = std::string(class_proc->m_name) + "@~assign";
+                        ASR::symbol_t* ext_sym = curr_scope->get_symbol(method_name);
+                        if (ext_sym == nullptr) {
+                            ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, curr_scope, s2c(al, method_name), proc,
+                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                nullptr, 0, class_proc->m_name, ASR::accessType::Public));
+                            curr_scope->add_symbol(method_name, ext_sym);
+                        }
+                        if (ASRUtils::symbol_parent_symtab(ext_sym)->get_counter() != curr_scope->get_counter()) {
+                            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, ext_sym, current_function_dependencies, s2c(al, method_name));
+                        }
+                        ASRUtils::insert_module_dependency(ext_sym, al, current_module_dependencies);
+
+                        ASR::expr_t* non_pass_arg = (expr_dt == target) ? value : target;
+                        Vec<ASR::call_arg_t> a_args;
+                        a_args.reserve(al, 1);
+                        ASR::call_arg_t arg;
+                        arg.loc = non_pass_arg->base.loc;
+                        arg.m_value = non_pass_arg;
+                        a_args.push_back(al, arg);
+
+                        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, ext_sym, ext_sym,
+                            a_args.p, 1, expr_dt, nullptr, false);
+                    }
                     break;
                 }
                 default: {

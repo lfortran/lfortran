@@ -1239,6 +1239,21 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         extract_value(expr_value(args[3]), kind);
     }
     ASR::ttype_t* kind_type = TYPE(ASR::make_Integer_t(al, loc, kind));
+    for (int i = 1; i <= 2; i++) {
+        if (args[i] && is_logical(*expr_type(args[i])) && is_array(expr_type(args[i]))) {
+            if (ASR::is_a<ASR::ArrayConstructor_t>(*args[i])) {
+                auto* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(args[i]);
+                if (ctor->n_args == 1) {
+                    args.p[i] = ctor->m_args[0];
+                }
+            } else if (ASR::is_a<ASR::ArrayConstant_t>(*args[i])) {
+                auto* arr = ASR::down_cast<ASR::ArrayConstant_t>(args[i]);
+                if (get_fixed_size_of_array(arr->m_type) == 1) {
+                    args.p[i] = fetch_ArrayConstant_value(al, arr, 0);
+                }
+            }
+        }
+    }
     ASR::expr_t* const mask_expr = [&args](){
         if((args[1] && is_logical(*expr_type(args[1])))) return args[1];
         else if(args[2]) return args[2];
@@ -1285,6 +1300,14 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         if (!is_logical(*expr_type(mask_expr))) {
             append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be logical", loc);
             return nullptr;
+        }
+        if (is_array(expr_type(mask_expr))) {
+            ASR::expr_t* array_arg = args[0];
+            ASR::expr_t* mask_arg = mask_expr;
+            if (!is_same_shape(array_arg, mask_arg, intrinsic_name, diag,
+                    {array->base.loc, mask_expr->base.loc})) {
+                return nullptr;
+            }
         }
         m_args.push_back(al, mask_expr);
     } else {
@@ -1471,28 +1494,12 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b, &result_kind, &index_kind] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
-                if (ASRUtils::is_array(arg_types[2])) {
-                    // Use index_kind for loop variable to match array bounds
-                    ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
-                    ASR::expr_t *i = declare("i", idx_type, Local);
-                    ASR::expr_t *maskval = ASRUtils::is_array_t(args[2]) ? b.ArrayItem_01(args[2], {i}) : args[2];
-                    // Cast i to result type if needed when assigning to result
-                    ASR::expr_t *i_result = (result_kind != index_kind) ? b.i2i_t(i, type) : i;
-                    body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1, index_kind), b.GetUBound(args[0], 1, index_kind), {
-                        b.If(b.Eq(maskval, b.bool_t(1, logical)), {
-                            b.Assignment(result, i_result),
-                            b.Exit()
-                        }, {})
-                    }, nullptr));
-                } else {
-                    // Cast LBound to result type if needed
+                if (overload_id != 3) {
                     ASR::expr_t *lb = b.GetLBound(args[0], dim, index_kind);
                     if (result_kind != index_kind) {
                         lb = b.i2i_t(lb, type);
                     }
-                    body.push_back(al, b.If(b.Eq(args[2], b.bool_t(1, logical)), {
-                        b.Assignment(result, lb)
-                    }, {}));
+                    body.push_back(al, b.Assignment(result, lb));
                 }
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind] () {
                 ASR::expr_t *result_ref, *array_ref_02;
@@ -1553,7 +1560,15 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }
                 }
                 std::vector<ASR::stmt_t*> guard_stmts_dim(comparison_body_dim.p, comparison_body_dim.p + comparison_body_dim.size());
-                doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
+                if (overload_id == 3) {
+                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {
+                        b.If(b.Eq(mask_val, b.bool_t(1, logical)), {
+                            b.Assignment(result_ref, res_idx)
+                        }, {})
+                    }));
+                } else {
+                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
+                }
             }, index_kind);
     }
     body.push_back(al, b.Return());
@@ -3665,6 +3680,22 @@ namespace FindLoc {
         ASR::expr_t *dim_expr = nullptr;
         ASR::expr_t *mask_expr = nullptr;
 
+        for (int i = 2; i <= 3; i++) {
+            if (args[i] && is_logical(*expr_type(args[i])) && is_array(expr_type(args[i]))) {
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*args[i])) {
+                    auto* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(args[i]);
+                    if (ctor->n_args == 1) {
+                        args.p[i] = ctor->m_args[0];
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*args[i])) {
+                    auto* arr = ASR::down_cast<ASR::ArrayConstant_t>(args[i]);
+                    if (get_fixed_size_of_array(arr->m_type) == 1) {
+                        args.p[i] = fetch_ArrayConstant_value(al, arr, 0);
+                    }
+                }
+            }
+        }
+
         // Checking for type findLoc(Array, value, mask)
         if( args[2] && !args[3] && is_logical(*expr_type(args[2])) ){
             dim_expr = nullptr;
@@ -3716,6 +3747,12 @@ namespace FindLoc {
             if (!is_logical(*expr_type(mask_expr))) {
                 append_error(diag, "`mask` argument of `findloc` must be logical", mask_expr->base.loc);
                 return nullptr;
+            }
+            if (is_array(expr_type(mask_expr))) {
+                if (!ArrIntrinsic::is_same_shape(array, mask_expr, std::string("findloc"), diag,
+                        {array->base.loc, mask_expr->base.loc})) {
+                    return nullptr;
+                }
             }
             m_args.push_back(al, mask_expr);
         } else {

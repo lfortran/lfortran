@@ -9809,8 +9809,6 @@ public:
             h = get_hash((ASR::asr_t*)asr_target);
             target = llvm_symtab[h];
             if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASR::is_a<ASR::CPtr_t>(
-                    *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASRUtils::is_character(*asr_target->m_type) &&
@@ -14846,6 +14844,18 @@ public:
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
+            // For multi-value list-directed internal reads, track position
+            llvm::Value *str_offset = nullptr;
+            llvm::Value *str_src_data = nullptr, *str_src_len = nullptr;
+            if (is_string) {
+                str_offset = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                    str_offset);
+                std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), unit_val);
+            }
             for (size_t i=0; i<x.n_values; i++) {
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
@@ -15008,7 +15018,6 @@ public:
                     var_to_read_into = llvm_symtab[h];
                 }
                 if (is_string) {
-                    // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read_" +
                                             ASRUtils::type_to_str_python_expr(ASRUtils::extract_type(type), x.m_values[i]);
                     if (ASRUtils::is_array(type)) {
@@ -15024,7 +15033,8 @@ public:
                                     character_type /*src_data*/,
                                     llvm::Type::getInt64Ty(context) /*src_length*/,
                                     character_type /*dest_data*/,
-                                    llvm::Type::getInt64Ty(context) /*dest_length*/
+                                    llvm::Type::getInt64Ty(context) /*dest_length*/,
+                                    llvm::Type::getInt64Ty(context)->getPointerTo() /*offset*/
                                 },
                                 false);
                         } else if (ASRUtils::is_array(type)) {
@@ -15051,7 +15061,8 @@ public:
                                         ASRUtils::type_get_past_allocatable_pointer(type),
                                         module.get()
                                     )->getPointerTo(),
-                                    llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
+                                    llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/,
+                                    llvm::Type::getInt64Ty(context)->getPointerTo() /*offset*/
                                 },
                                 false);
                         }
@@ -15084,15 +15095,12 @@ public:
                         fmt = complex_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, " (%f,%f)")
                                                        : LCompilers::create_global_string_ptr(context, *module, *builder, " (%lf,%lf)");
                     }
-                    llvm::Value *src_data, *src_len;
-                    std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
-                        ASRUtils::get_string_type(x.m_unit), unit_val);
 
                     if(ASRUtils::is_string_only(type)){
                         llvm::Value* dest_data, *dest_len;
                         std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
                             ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
-                        builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
+                        builder->CreateCall(fn, { str_src_data, str_src_len, dest_data, dest_len, str_offset });
                     } else if (ASRUtils::is_array(type)) {
                         llvm::Value* arr_data = var_to_read_into;
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
@@ -15121,7 +15129,7 @@ public:
                                 arr_data = builder->CreateBitCast(arr_data, fn_param_type);
                             }
                         }
-                        builder->CreateCall(fn, { src_data, src_len, fmt, arr_data });
+                        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
                                 ASR::is_a<ASR::Pointer_t>(*type)) {
@@ -15131,8 +15139,7 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        // iostat is already i32*
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into, iostat });
+                        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, var_to_read_into, iostat, str_offset });
                     }
                     // Copy temporary i32 iostat back to user's variable
                     if (iostat_user && iostat_kind != 4) {
@@ -15142,7 +15149,7 @@ public:
                         builder->CreateStore(extended, iostat_user);
                     }
                     emit_set_read_iomsg();
-                    return;
+                    continue;
                 } else {
                     fn = get_read_function(type);
                 }
@@ -15235,6 +15242,8 @@ public:
             // read, and anything after that will be skipped.
             // Here, we can use `_lfortran_empty_read` function to move to the
             // pointer to the next line.
+            // Skip for internal (string) reads — no file position to advance.
+            if (!is_string) {
             std::string runtime_func_name = "_lfortran_empty_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
@@ -15260,6 +15269,7 @@ public:
                 }, [](){});
             } else {
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+            }
             }
         }
         // Copy temporary i32 iostat back to user's variable if needed
@@ -16605,6 +16615,27 @@ public:
         
         if (x.m_rec && !is_string) {
             emit_seek_record_from_rec(x.m_rec, unit, iostat);
+        }
+
+        if (x.m_pos && !is_string) {
+            this->visit_expr_wrapper(x.m_pos, true);
+            llvm::Value* pos_val = tmp;
+            pos_val = builder->CreateIntCast(pos_val, llvm::Type::getInt64Ty(context), true);
+
+            std::string runtime_func_name = "_lfortran_file_seek";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt64Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name,
+                            module.get());
+            }
+            builder->CreateCall(fn, {unit, pos_val, iostat});
         }
 
         if (x.m_separator) {
