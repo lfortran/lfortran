@@ -13,10 +13,8 @@ integer, parameter :: c_int = 4, c_short = 2, c_long = 8, c_long_long = 8
 integer, parameter :: c_signed_char = 1
 integer, parameter :: c_size_t = 8
 integer, parameter :: c_int8_t = 1, c_int16_t = 2, c_int32_t = 4, c_int64_t = 8
-integer, parameter :: c_int_least8_t = c_int8_t, c_int_least16_t = c_int16_t, & 
-  c_int_least32_t = c_int32_t, c_int_least64_t = c_int64_t
-integer, parameter :: c_int_fast8_t = c_int8_t, c_int_fast16_t = c_int16_t, & 
-  c_int_fast32_t = c_int32_t, c_int_fast64_t = c_int64_t
+integer, parameter :: c_int_least8_t = 1, c_int_least16_t = 2, c_int_least32_t = 4, c_int_least64_t = 8
+integer, parameter :: c_int_fast8_t = 1, c_int_fast16_t = 2, c_int_fast32_t = 4, c_int_fast64_t = 8
 integer, parameter :: c_intmax_t = 8
 integer, parameter :: c_intptr_t = 8, c_ptrdiff_t = 8
 integer, parameter :: c_float = 4, c_double = 8, c_float_complex = 4, c_double_complex = 8 

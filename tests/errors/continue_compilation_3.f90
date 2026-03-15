@@ -71,9 +71,9 @@ program continue_compilation_3
     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
     call check_incompatible_type(i)  ! Error: incompatible type passed
 
-
-
+    print *, iachar(s1)
     
+
 
 
 
