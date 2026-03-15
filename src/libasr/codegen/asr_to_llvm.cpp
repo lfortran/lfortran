@@ -9015,7 +9015,8 @@ public:
 
                 // Visit the source to get both the descriptor and data pointer
                 int64_t ptr_loads_copy = ptr_loads;
-                ptr_loads = 0;
+                ptr_loads = (ASRUtils::extract_physical_type(bc_src_type) ==
+                    ASR::array_physical_typeType::DescriptorArray) ? 1 : 0;
                 visit_expr_wrapper(bc->m_source, true);
                 ptr_loads = ptr_loads_copy;
                 llvm::Value* src_ptr = tmp;
