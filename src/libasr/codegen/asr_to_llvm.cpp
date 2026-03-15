@@ -8960,7 +8960,6 @@ public:
             }
 
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
-                ASRUtils::is_array(bc->m_type) &&
                 !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(bc->m_source)) !=
