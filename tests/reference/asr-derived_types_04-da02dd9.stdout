@@ -148,7 +148,7 @@
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         ()
-                                        ())]
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                         ()
                                         ()
                                         ()
@@ -192,6 +192,7 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
                                         ()
                                         ()
                                     )]
@@ -1181,7 +1182,7 @@
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1235,13 +1236,14 @@
                                             .true.
                                             ()
                                             ()
+                                            ()
                                         )]
                                         [(Allocate
                                             [((Var 7 lhs)
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1285,6 +1287,7 @@
                                             ()
                                             ()
                                             .true.
+                                            ()
                                             ()
                                             ()
                                         )]

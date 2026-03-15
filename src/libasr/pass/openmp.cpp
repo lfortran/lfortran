@@ -2829,7 +2829,7 @@ class ParallelRegionVisitor :
                 // Declare loop iteration variables
                 ASR::expr_t* start_iter = b.Variable(current_scope, current_scope->get_unique_name("start_iter"), long_type, ASR::intentType::Local);
                 ASR::expr_t* end_iter = b.Variable(current_scope, current_scope->get_unique_name("end_iter"), long_type, ASR::intentType::Local);
-                ASR::expr_t* while_condition = b.Variable(current_scope, current_scope->get_unique_name("while_condition"), ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), ASR::intentType::Local);
+                ASR::expr_t* while_condition = b.Variable(current_scope, current_scope->get_unique_name("while_condition"), ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), ASR::intentType::Local);
                 // Calculate total iterations for collapsed loops
                 ASR::expr_t* total_iterations = b.i32(1);
                 std::vector<ASR::expr_t*> dimension_lengths;
@@ -2894,7 +2894,7 @@ class ParallelRegionVisitor :
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc, while_condition, 
                     ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                         current_scope->get_symbol(gomp_start_func), nullptr, start_args.p, start_args.n,
-                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr,  nullptr)), nullptr, 0, false)));
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr,  nullptr)), nullptr, 0, false)));
                 
                 // Create the scheduled loop using GOMP_loop_*_next
                 Vec<ASR::stmt_t*> while_body;
@@ -2978,7 +2978,7 @@ class ParallelRegionVisitor :
                 // Create the while loop: while (GOMP_loop_*_next(&start_iter, &end_iter))
                 ASR::expr_t* loop_condition = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                     current_scope->get_symbol(gomp_next_func), current_scope->get_symbol(gomp_next_func),
-                    next_args.p, next_args.n, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr, nullptr));
+                    next_args.p, next_args.n, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr, nullptr));
                 while_body.push_back(al, b.Assignment(while_condition, loop_condition));
                 ASR::stmt_t* while_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, while_condition, 
                     while_body.p, while_body.n, nullptr, 0));
@@ -3189,7 +3189,7 @@ class ParallelRegionVisitor :
             // Constants for GOMP_task call
             ASR::expr_t* data_size = b.i64(compute_task_data_size(task_data_module.second));
             ASR::expr_t* data_align = b.i64(8);
-            ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))); // Always create task
+            ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))); // Always create task (c_bool kind)
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
             task_call_args.reserve(al, 8);

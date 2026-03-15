@@ -2195,6 +2195,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
+            case (ASR::cast_kindType::LogicalToLogical) : {
+                // No conversion needed for logical-to-logical in C
+                break;
+            }
             case (ASR::cast_kindType::LogicalToString) : {
                 src = "(" + src + " ? \"True\" : \"False\")";
                 last_expr_precedence = 2;

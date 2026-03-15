@@ -46,6 +46,20 @@ public:
         s.n = cur-tok;
     }
 
+    // Extract kind suffix from a logical literal (.true._kind or .false._kind)
+    // base_len is the length of the base part (7 for .true., 8 for .false.)
+    void token_logical_kind(Str &s, size_t base_len) const
+    {
+        size_t total = cur - tok;
+        if (total > base_len + 1 && tok[base_len] == '_') {
+            s.p = (char*)(tok + base_len + 1);
+            s.n = total - base_len - 1;
+        } else {
+            s.p = nullptr;
+            s.n = 0;
+        }
+    }
+
     // Return the current token as YYSTYPE::Str, strips first and last character
     void token_str(Allocator &al, Str &s, char ch) const
     {

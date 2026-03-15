@@ -123,18 +123,16 @@ else14:                                           ; preds = %ifcont12
   %20 = icmp eq i64 %19, 2
   %21 = load i64, i64* %i, align 4
   %22 = icmp eq i64 %21, 3
-  %23 = icmp eq i1 %20, false
-  %24 = select i1 %23, i1 %22, i1 %20
-  %25 = load i64, i64* %i, align 4
-  %26 = icmp eq i64 %25, 4
-  %27 = icmp eq i1 %24, false
-  %28 = select i1 %27, i1 %26, i1 %24
-  br i1 %28, label %then15, label %else16
+  %23 = or i1 %20, %22
+  %24 = load i64, i64* %i, align 4
+  %25 = icmp eq i64 %24, 4
+  %26 = or i1 %23, %25
+  br i1 %26, label %then15, label %else16
 
 then15:                                           ; preds = %else14
   store i64 22, i64* %out, align 4
-  %29 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %29, i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  %27 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %27, i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
   br label %ifcont17
 
 else16:                                           ; preds = %else14
@@ -144,9 +142,9 @@ ifcont17:                                         ; preds = %else16, %then15
   br label %ifcont18
 
 ifcont18:                                         ; preds = %ifcont17, %then13
-  %30 = load i64, i64* %out, align 4
-  %31 = icmp ne i64 %30, 22
-  br i1 %31, label %then19, label %else20
+  %28 = load i64, i64* %out, align 4
+  %29 = icmp ne i64 %28, 22
+  br i1 %29, label %then19, label %else20
 
 then19:                                           ; preds = %ifcont18
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))

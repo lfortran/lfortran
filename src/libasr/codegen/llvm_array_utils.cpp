@@ -444,7 +444,8 @@ namespace LCompilers {
                     // Uses ONE-wrapper layout: single {vptr, i8* → contiguous data}
                     llvm_utils->struct_api->allocate_array_of_unlimited_polymorphic_type(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)),
-                        struct_type, ptr2firstptr, prod, alloc_type, realloc, module);
+                        struct_type, ptr2firstptr, prod, alloc_type, realloc, module,
+                        string_len);
                 } else if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
                         && ASR::is_a<ASR::StructType_t>(*alloc_type)) {
                     // Unlimited polymorphic array with struct type spec
