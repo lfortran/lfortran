@@ -3169,6 +3169,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
+            case (ASR::cast_kindType::LogicalToLogical): {
+                // No conversion needed for logical-to-logical in WASM
+                break;
+            }
             case (ASR::cast_kindType::LogicalToReal): {
                 int arg_kind = -1, dest_kind = -1;
                 extract_kinds(x, arg_kind, dest_kind);

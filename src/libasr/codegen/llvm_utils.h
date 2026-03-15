@@ -820,10 +820,19 @@ class ASRToLLVMVisitor;
 
             llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
+            llvm::Value* to_i1(llvm::Value* cond) {
+                if (cond->getType()->isIntegerTy(1)) {
+                    return cond;
+                }
+                return builder->CreateICmpNE(
+                    cond, llvm::ConstantInt::get(cond->getType(), 0));
+            }
+
             template <typename IF, typename ELSE>
             void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, const char *name,
                                 std::vector<llvm::BasicBlock*> &loop_or_block_end,
                                 std::vector<std::string> &loop_or_block_end_names) {
+                cond = to_i1(cond);
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 std::string if_name;
@@ -883,7 +892,7 @@ class ASRToLLVMVisitor;
 
                 // head
                 start_new_block(loophead); {
-                    llvm::Value* cond = condition();
+                    llvm::Value* cond = to_i1(condition());
                     builder->CreateCondBr(cond, loopbody, loopend);
                 }
 
@@ -1184,10 +1193,6 @@ class ASRToLLVMVisitor;
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
             llvm::Type* array_data_ptr_type = arrayType_llvm_t->getPointerTo();
-            if (arr_t->m_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                array_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             auto  const array_size_lazy  = [&]() { 
                 insert_BB_for_readability("Calculate_arraySize");
                 return llvm_utils_->get_array_size(arr, get_llvm_type(t, struct_sym), t, &asr_to_llvm_visitor_);
@@ -1443,10 +1448,6 @@ class ASRToLLVMVisitor;
         void free_array_data(llvm::Value* data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
             llvm::Type* expected_data_ptr_type = get_llvm_type(data_type, struct_sym)->getPointerTo();
-            if (data_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                expected_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType :{ // Loop and free

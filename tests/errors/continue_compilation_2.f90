@@ -309,7 +309,7 @@ program continue_compilation_2
     ! close_invalid_kwarg1
     CLOSE(end=200)
     ! cmplx_01
-    print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+    print *, cmplx(y = 2)
     ! cmplx_02
     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
     ! cmplx_03
@@ -536,8 +536,8 @@ program continue_compilation_2
     ax = "xx"
     print "(aai6)", a,"hi",15
     call sleep(1)
-
-
+    a = cmplx(y = 2)
+    
 
 
 

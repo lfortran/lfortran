@@ -146,8 +146,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_EQV ".eqv."
 %token TK_NEQV ".neqv."
 
-%token TK_TRUE ".true."
-%token TK_FALSE ".false."
+%token <string> TK_TRUE ".true."
+%token <string> TK_FALSE ".false."
 
 %token <string> TK_FORMAT
 
@@ -1488,8 +1488,8 @@ data_stmt_constant
     | signed_numeric_constant { $$ = $1; }
     | TK_STRING { $$ = STRING($1, @$); }
     | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
-    | ".true."  { $$ = TRUE(@$); }
-    | ".false." { $$ = FALSE(@$); }
+    | ".true."  { $$ = TRUE($1, @$); }
+    | ".false." { $$ = FALSE($1, @$); }
     | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
 
     ;
@@ -2453,8 +2453,8 @@ def_unary_operand
     | TK_REAL           { $$ = REAL($1, @$); }
     | TK_STRING         { $$ = STRING($1, @$); }
     | TK_BOZ_CONSTANT   { $$ = BOZ($1, @$); }
-    | ".true."          { $$ = TRUE(@$); }
-    | ".false."         { $$ = FALSE(@$); }
+    | ".true."          { $$ = TRUE($1, @$); }
+    | ".false."         { $$ = FALSE($1, @$); }
     | "(" expr ")"      { $$ = PAREN($2, @$); }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
@@ -2471,8 +2471,8 @@ expr
     | TK_REAL { $$ = REAL($1, @$); }
     | TK_STRING { $$ = STRING($1, @$); }
     | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
-    | ".true."  { $$ = TRUE(@$); }
-    | ".false." { $$ = FALSE(@$); }
+    | ".true."  { $$ = TRUE($1, @$); }
+    | ".false." { $$ = FALSE($1, @$); }
     | "(" expr ")" { $$ = PAREN($2, @$); }
     | "(" expr "," expr ")" { $$ = COMPLEX($2, $4, @$); }
     | "(" expr "," id "=" expr "," expr ")" {
