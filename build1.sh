@@ -9,7 +9,6 @@ cmake \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_STACKTRACE=yes \
     -DWITH_RUNTIME_STACKTRACE=yes \
-    -DMEMORY_DEBUG=ON \
     -DWITH_LSP=no \
     -DWITH_INTERNAL_ALLOC_CHECK=yes \
     -DUSE_DYNAMIC_ZSTD=no \

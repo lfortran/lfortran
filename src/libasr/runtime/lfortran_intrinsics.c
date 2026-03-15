@@ -4429,7 +4429,11 @@ LFORTRAN_API void* _lfortran_string_malloc_alloc(lfortran_allocator_t* al, int64
     if(length < 0) lfortran_error("Allocating string with length < 0");
     return ALLOCATOR_ALLOC(al, MAX(length, 1));
 }
-
+// Same as above but uses dbg_malloc
+LFORTRAN_API void* _lfortran_string_dbg_malloc(int64_t length) {
+    if(length < 0) lfortran_error("Allocating string with length < 0");
+    return dbg_malloc(MAX((size_t)length, (size_t)1));
+}
 LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* ptr, int64_t size) {
     if (size == 0) {
         size = 1;
@@ -4437,7 +4441,7 @@ LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* p
     return (int8_t*) ALLOCATOR_REALLOC(al, ptr, size);
 }
 
-LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int32_t count, int32_t size) {
+LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int64_t count, int64_t size) {
     void* ptr = ALLOCATOR_ALLOC(al, (int64_t)count * size);
     if (ptr) memset(ptr, 0, (size_t)count * size);
     return (int8_t*) ptr;

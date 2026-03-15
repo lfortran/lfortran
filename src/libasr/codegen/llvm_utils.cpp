@@ -9,6 +9,8 @@ namespace LCompilers {
 
     namespace LLVM {
 
+        static bool memory_debug_enabled = false;
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
             return builder.CreateStore(x, y);
@@ -24,6 +26,14 @@ namespace LCompilers {
                 fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
             }
             return builder.CreateCall(fn, {});
+        }
+
+        void set_memory_debug(bool state) {
+            memory_debug_enabled = state;
+        }
+
+        bool use_memory_debug() {
+            return memory_debug_enabled;
         }
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -97,13 +107,15 @@ namespace LCompilers {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         i8_ptr_type, {
                             i8_ptr_type,
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context),
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
             llvm::Value* allocator = get_default_allocator(context, module, builder);
+            count     = builder.CreateSExt(count, llvm::Type::getInt64Ty(context));
+            type_size = builder.CreateSExt(type_size, llvm::Type::getInt64Ty(context));
             return builder.CreateCall(fn, {allocator, count, type_size});
         }
 

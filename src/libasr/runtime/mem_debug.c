@@ -19,7 +19,7 @@ unsigned long mem_debugger_HASH(void* const ptr) { // Thomas Wang hash
     return v;
 }
 
-inline int mem_debugger_EQUAL(void *a, void *b){
+int mem_debugger_EQUAL(void *a, void *b){
     return (a == b);
 }
 
@@ -108,7 +108,8 @@ void dbg_free(void *ptr) {
 }
 
 void dbg_report() {
-    size_t leaks = 0, total_bytes = 0;
+    size_t leaks = 0;
+    size_t total_bytes = 0;
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;
         Alloc_info *a = &mem_dbg_hashTable.buckets[i].value;
