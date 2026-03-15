@@ -1411,7 +1411,7 @@ typedef enum primitive_types{
     FLOAT_64_TYPE = 4,
     FLOAT_32_TYPE = 5,
     CHAR_PTR_TYPE = 6,
-    LOGICAL_TYPE = 7,
+    LOGICAL_8_TYPE = 7,
     CPTR_VOID_PTR_TYPE = 8,
     NONE_TYPE = 9,
     STRING_DESCRIPTOR_TYPE = 10,
@@ -1419,7 +1419,25 @@ typedef enum primitive_types{
     UNSIGNED_INTEGER_32_TYPE = 12,
     UNSIGNED_INTEGER_16_TYPE = 13,
     UNSIGNED_INTEGER_8_TYPE = 14,
+    LOGICAL_32_TYPE = 15,
+    LOGICAL_16_TYPE = 16,
+    LOGICAL_64_TYPE = 17,
 } Primitive_Types;
+
+static inline bool is_logical_type(Primitive_Types t) {
+    return t == LOGICAL_8_TYPE || t == LOGICAL_16_TYPE ||
+           t == LOGICAL_32_TYPE || t == LOGICAL_64_TYPE;
+}
+
+static inline bool logical_value_from_ptr(void *arg, Primitive_Types t) {
+    switch (t) {
+        case LOGICAL_8_TYPE:  return *(int8_t*)arg != 0;
+        case LOGICAL_16_TYPE: return *(int16_t*)arg != 0;
+        case LOGICAL_32_TYPE: return *(int32_t*)arg != 0;
+        case LOGICAL_64_TYPE: return *(int64_t*)arg != 0;
+        default: return *(int8_t*)arg != 0;
+    }
+}
 
 
 char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
@@ -1442,7 +1460,10 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
         case STRING_DESCRIPTOR_TYPE:
             return 'a';
             break;
-        case LOGICAL_TYPE:
+        case LOGICAL_8_TYPE:
+        case LOGICAL_16_TYPE:
+        case LOGICAL_32_TYPE:
+        case LOGICAL_64_TYPE:
             return 'l';
             break;
         case CPTR_VOID_PTR_TYPE:
@@ -1747,8 +1768,11 @@ void move_containing_ptr_next(Serialization_Info* s_info){
     static const int primitive_type_sizes[] = 
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float), 
-        sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/,
-        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/ };
+        sizeof(char*), sizeof(int8_t), sizeof(void*), 0 /*Important to be zero*/,
+        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
+        sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
+        sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
+        sizeof(int64_t)/*LOGICAL_64*/};
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -1834,9 +1858,23 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             break;
         }
         break;
-    case 'L':
-        *PrimitiveType = LOGICAL_TYPE;
+    case 'L': {
+        // Parse bit width: L8, L16, L32, L64
+        int bits = 0;
+        while (s_info->serialization_string[s_info->current_stop] >= '0' &&
+               s_info->serialization_string[s_info->current_stop] <= '9') {
+            bits = bits * 10 + (s_info->serialization_string[s_info->current_stop] - '0');
+            s_info->current_stop++;
+        }
+        switch (bits) {
+            case 8:  *PrimitiveType = LOGICAL_8_TYPE; break;
+            case 16: *PrimitiveType = LOGICAL_16_TYPE; break;
+            case 32: *PrimitiveType = LOGICAL_32_TYPE; break;
+            case 64: *PrimitiveType = LOGICAL_64_TYPE; break;
+            default: *PrimitiveType = LOGICAL_32_TYPE; break;
+        }
         break;
+    }
     case 'S':{
         Primitive_Types str_phys_type = get_string_primitive_type(s_info);
         set_string_length(s_info);
@@ -2062,8 +2100,11 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_float_fortran(result, *(float*)arg);
             }
             break;
-        case LOGICAL_TYPE:
-            sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
+        case LOGICAL_8_TYPE:
+        case LOGICAL_16_TYPE:
+        case LOGICAL_32_TYPE:
+        case LOGICAL_64_TYPE:
+            sprintf(result, "%c", logical_value_from_ptr(arg, s_info->current_element_type) ? 'T' : 'F');
             break;
         case CHAR_PTR_TYPE:
         case STRING_DESCRIPTOR_TYPE:{
@@ -2424,17 +2465,24 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     case STRING_DESCRIPTOR_TYPE:
                         char_val = *(char**)s_info.current_arg_info.current_arg;
                         break;
-                    case LOGICAL_TYPE:
-                        bool_val = *(bool*)s_info.current_arg_info.current_arg;
+                    case LOGICAL_8_TYPE:
+                    case LOGICAL_16_TYPE:
+                    case LOGICAL_32_TYPE:
+                    case LOGICAL_64_TYPE:
+                        bool_val = logical_value_from_ptr(
+                            s_info.current_arg_info.current_arg,
+                            s_info.current_element_type);
                         break;
                     default:
                         break;
                 }
                 if (tolower(value[0]) == 'a') {
                     // Handle if argument is actually logical (allowed in Fortran).
-                    if(s_info.current_element_type==LOGICAL_TYPE){
+                    if(is_logical_type(s_info.current_element_type)){
                         char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                        handle_logical("l",*(bool*)s_info.current_arg_info.current_arg, &temp_buf);
+                        handle_logical("l",logical_value_from_ptr(
+                            s_info.current_arg_info.current_arg,
+                            s_info.current_element_type), &temp_buf);
                         int64_t temp_len = strlen(temp_buf);
                         result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
                         result_len += temp_len;
@@ -2653,7 +2701,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         s_info.current_element_type == STRING_DESCRIPTOR_TYPE) {
                         result = append_to_string_NTI(result, result_len, char_val, s_info.current_arg_info.current_string_len);
                         result_len += s_info.current_arg_info.current_string_len;
-                    } else if (s_info.current_element_type == LOGICAL_TYPE) {
+                    } else if (is_logical_type(s_info.current_element_type)) {
                         result = append_to_string_NTI(result, result_len, bool_val ? "T" : "F", 1);
                         result_len += 1;
                     } else {
@@ -2704,7 +2752,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     result_len += temp_len;
                     free(temp_buf);
                 } else if (tolower(value[0]) == 'l') {
-                    bool val = *(bool*)s_info.current_arg_info.current_arg;
+                    bool val = logical_value_from_ptr(
+                        s_info.current_arg_info.current_arg,
+                        s_info.current_element_type);
                     char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
                     handle_logical(value, val, &temp_buf);
                     int64_t temp_len = strlen(temp_buf);
@@ -6039,16 +6089,19 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 }
 
-LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t unit_num, int32_t *iostat)
+LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
         for (int i = 0; i < array_size; i++) {
-            _lfortran_read_logical(&p[i], unit_num, iostat);
+            bool val;
+            _lfortran_read_logical(&val, unit_num, iostat);
             if (iostat && *iostat != 0) {
                 return;
             }
+            memset((char*)p + i * kind, 0, kind);
+            *((char*)p + i * kind) = val ? 1 : 0;
         }
         return;
     }
@@ -6072,22 +6125,21 @@ LFORTRAN_API void _lfortran_read_array_logical(bool *p, int array_size, int32_t 
                 exit(1);
             }
         }
-        // Each logical element is stored as int32_t (4 bytes) in binary files
-        for (int i = 0; i < array_size; i++) {
-            int32_t temp = 0;
-            if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
-                exit(1);
-            }
-            p[i] = (temp != 0);
+        // Binary: read raw bytes directly (same format as written)
+        if (fread(p, kind, array_size, filep) != (size_t)array_size) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+            exit(1);
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            _lfortran_read_logical(&p[i], unit_num, iostat);
+            bool val;
+            _lfortran_read_logical(&val, unit_num, iostat);
             if (iostat && *iostat != 0) {
                 return;
             }
+            memset((char*)p + i * kind, 0, kind);
+            *((char*)p + i * kind) = val ? 1 : 0;
         }
     }
 }
@@ -7991,7 +8043,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id != 2) {  // 2 = DIRECT access
+        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
             fseek(filep, 0, SEEK_END);
         }
         va_list args;
@@ -8106,8 +8158,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
-    // Do not truncate direct access files, as records may be written out of order
-    if (filep != stdout && filep != stderr && access_id != 2) {
+    // Do not truncate direct access or stream access files
+    if (filep != stdout && filep != stderr && access_id == 0) {
         (void)!ftruncate(fileno(filep), ftell(filep));
     }
 }
