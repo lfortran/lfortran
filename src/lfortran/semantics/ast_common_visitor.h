@@ -17222,9 +17222,9 @@ public:
             }
 
             if(check_m_m){
-                ASR::ExternalSymbol_t* tmp2_m_m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m);
-                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) &&
-                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
+                ASR::symbol_t* m_m_underlying = ASRUtils::symbol_get_past_external(tmp2->m_m);
+                if(ASR::is_a<ASR::Variable_t>(*m_m_underlying) &&
+                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(m_m_underlying)))){
                     if(array_found){
                         diag.add(Diagnostic(
                             "The expression with derived types contains two or more arrays.",
