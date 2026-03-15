@@ -108,42 +108,6 @@ std::string get_runtime_library_c_header_dir()
     }
 }
 
-std::string get_dwarf_scripts_dir()
-{
-    char *env_p = std::getenv("LFORTRAN_DWARF_SCRIPTS_DIR");
-    if (env_p) return std::string(env_p);
-
-    switch (execution_mode)
-    {
-        case ExecutionMode::LFortranDevelopment: {
-            std::string scripts_dir = lfortran_exec_path_dir + "/../libasr";
-            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
-                return scripts_dir;
-            }
-            scripts_dir = lfortran_exec_path_dir + "/../../../src/libasr";
-            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
-                return scripts_dir;
-            }
-            return lfortran_exec_path_dir + "/../libasr";
-        }
-        case ExecutionMode::LFortranCtest: {
-            std::string scripts_dir = lfortran_exec_path_dir + "/../../libasr";
-            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
-                return scripts_dir;
-            }
-            scripts_dir = lfortran_exec_path_dir + "/../../../../src/libasr";
-            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
-                return scripts_dir;
-            }
-            return lfortran_exec_path_dir + "/../../libasr";
-        }
-        case ExecutionMode::LFortranInstalled:
-            return lfortran_exec_path_dir + "/../share/lfortran";
-        default:
-            return "";
-    }
-}
-
 // Decodes the exit status code of the process (in Unix)
 // See `WEXITSTATUS` for more information.
 // https://stackoverflow.com/a/27117435/15913193

@@ -2051,26 +2051,30 @@ int link_executable(const std::vector<std::string> &infiles,
 
 #ifdef HAVE_RUNTIME_STACKTRACE
         if (compiler_options.emit_debug_info) {
-            // TODO: Replace the following hardcoded part
-            std::string cmd = "";
+            // Build the runtime debug line map directly from DWARF info.
+            size_t dot_index = outfile.find_last_of(".");
+            std::string lines_dat = outfile.substr(0, dot_index) + "_lines.dat";
+            std::string debug_map_source = outfile;
+
 #ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
-                + outfile + ".dSYM > ";
-#else
-            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
-#endif
-            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                + file_name + "_lines.dat)";
+            std::string cmd = "dsymutil " + outfile;
             int status = system(cmd.c_str());
-            if ( status != 0 ) {
-                std::cerr << "Error in creating the files used to generate "
-                    "the debug information. This might be caused because either"
-                    " `llvm-dwarfdump` or `Python` are not available. "
-                    "Please activate the CONDA environment and compile again.\n";
+            if (status != 0) {
+                std::cerr << "Error while generating dSYM for '" << outfile
+                    << "': command failed: " << cmd << "\n";
                 return status;
+            }
+            std::filesystem::path outfile_path(outfile);
+            debug_map_source = outfile + ".dSYM/Contents/Resources/DWARF/"
+                + outfile_path.filename().string();
+#endif
+
+            std::string error_message;
+            if (!LCompilers::write_runtime_debug_map(debug_map_source,
+                    lines_dat, error_message)) {
+                std::cerr << "Error while generating runtime debug map for '"
+                    << debug_map_source << "': " << error_message << "\n";
+                return 12;
             }
         }
 #endif
