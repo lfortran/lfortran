@@ -9057,21 +9057,25 @@ public:
                 if (ASR::is_a<ASR::Array_t>(*bc_tgt_type_unwrapped)) {
                     ASR::Array_t* tgt_arr = ASR::down_cast<ASR::Array_t>(bc_tgt_type_unwrapped);
                     if (tgt_arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        bool created_alloca = false;
                         if (!dest_ptr->getType()->isPointerTy()) {
                             llvm::Value* alloca_ = llvm_utils->CreateAlloca(
                                 dest_ptr->getType(), nullptr, "transfer_dest");
                             builder->CreateStore(dest_ptr, alloca_);
                             dest_ptr = alloca_;
+                            created_alloca = true;
                         }
                         llvm::Type* llvm_tgt_elem_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_target, ASRUtils::extract_type(bc_tgt_type), module.get());
                         llvm::Type* llvm_tgt_arr_type = arr_descr->get_array_type(
                             x.m_target, bc_tgt_type_unwrapped,
                             llvm_tgt_elem_type, false);
-                        // Handle extra indirection for allocatable members
-                        llvm::Type* pointee = dest_ptr->getType()->getPointerElementType();
-                        if (pointee->isPointerTy() && pointee->getPointerElementType()->isStructTy()) {
-                            dest_ptr = builder->CreateLoad(pointee, dest_ptr);
+                        // Handle extra indirection for allocatable/pointer members.
+                        // Skip when we created an alloca from a loaded struct value:
+                        // the alloca already points to the descriptor, so dereferencing
+                        // through the allocatable pointer would double-dereference.
+                        if (LLVM::is_llvm_pointer(*bc_tgt_type) && !created_alloca) {
+                            dest_ptr = builder->CreateLoad(llvm_tgt_arr_type->getPointerTo(), dest_ptr);
                         }
                         dest_ptr = arr_descr->get_pointer_to_data(llvm_tgt_arr_type, dest_ptr);
                         dest_ptr = builder->CreateLoad(
