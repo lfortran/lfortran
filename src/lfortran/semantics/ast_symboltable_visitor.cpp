@@ -2640,17 +2640,48 @@ public:
         // `build_target_ptr`.
         if (vars_with_deferred_struct_declaration.find(to_lower(x.m_name))
             != vars_with_deferred_struct_declaration.end()) {
+            auto rewrap_deferred_struct_type = [&](auto&& self,
+                    ASR::ttype_t* original_type,
+                    ASR::ttype_t* new_base_type,
+                    const Location& type_loc) -> ASR::ttype_t* {
+                switch (original_type->type) {
+                    case ASR::ttypeType::Pointer: {
+                        ASR::Pointer_t* pointer_type =
+                            ASR::down_cast<ASR::Pointer_t>(original_type);
+                        return ASRUtils::TYPE(ASR::make_Pointer_t(al, type_loc,
+                            self(self, pointer_type->m_type, new_base_type, type_loc)));
+                    }
+                    case ASR::ttypeType::Allocatable: {
+                        ASR::Allocatable_t* alloc_type =
+                            ASR::down_cast<ASR::Allocatable_t>(original_type);
+                        return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, type_loc,
+                            self(self, alloc_type->m_type, new_base_type, type_loc)));
+                    }
+                    case ASR::ttypeType::Array: {
+                        ASR::Array_t* array_type =
+                            ASR::down_cast<ASR::Array_t>(original_type);
+                        ASR::dimension_t* copied_dims = ASRUtils::duplicate_dimensions(
+                            al, array_type->m_dims, array_type->n_dims);
+                        return ASRUtils::make_Array_t_util(al, type_loc,
+                            self(self, array_type->m_type, new_base_type, type_loc),
+                            copied_dims, array_type->n_dims,
+                            ASR::abiType::Source, false,
+                            array_type->m_physical_type, true);
+                    }
+                    default: {
+                        return new_base_type;
+                    }
+                }
+            };
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
                 ASR::ttype_t* var_type = var->m_type;
-                if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var_type))) {
                     ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var_type));
-                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                    ASR::ttype_t* updated_base_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
                          ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
-                    if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
-                        var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
-                    } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
-                        var->m_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
-                    }
+                    var->m_type = rewrap_deferred_struct_type(
+                        rewrap_deferred_struct_type, var_type,
+                        updated_base_type, x.base.base.loc);
                     if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
                         ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
                         ptr_null->m_type = var->m_type;
