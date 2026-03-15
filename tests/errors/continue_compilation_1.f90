@@ -629,6 +629,8 @@ program continue_compilation_1
     arr_idl = (i, i = 1, 4)
 
 
+    integer(8) :: pow_overflow_mask
+    pow_overflow_mask = 2_8**63
 
 
 

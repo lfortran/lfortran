@@ -587,7 +587,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     if (exp_digits == 0) exp_digits = 2;
     else if (exp_digits == -1) exp_digits = 2;
 
-    bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
+    bool sign_plus_exist = (is_signed_plus && !signbit(val));
 
     char formatted_value[256];
     double abs_val = fabs(val);
@@ -773,8 +773,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     int digits = decimal_digits;
-    int sign_width = (val < 0) ? 1 : 0;
-    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
+    int sign_width = signbit(val) ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && !signbit(val));
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -801,8 +801,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
     // val_str = "11230000128"
 
-    if (val < 0) {
-        // removes `-` (negative) sign
+    if (signbit(val)) {
         memmove(val_str, val_str + 1, strlen(val_str));
     }
 
@@ -836,35 +835,54 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         }
     }
 
-    // For ES format with 0 decimal places, we need to round properly
-    // and adjust the exponent if rounding causes overflow
-    if (is_s_format && digits == 0 && val != 0.0) {
-        // Calculate the mantissa for ES format (scale = 1)
-        double abs_val = fabs(val);
-        double mantissa = abs_val / pow(10, exponent_value);
-        // Round to nearest integer
-        double rounded_mantissa = round(mantissa);
-        // If rounding causes mantissa >= 10, adjust exponent
-        if (rounded_mantissa >= 10.0) {
-            exponent_value++;
-            rounded_mantissa = 1.0;
+    // Pre-round val_str to (scale + digits) significant digits.
+    // If rounding causes carry (e.g., 999 → 1000), increment exponent_value.
+    if (val != 0.0) {
+        int total_sig = scale + digits;
+        int val_len = strlen(val_str);
+        if (total_sig > 0 && total_sig <= 15 && val_len > total_sig) {
+            int round_digit = val_str[total_sig] - '0';
+            val_str[total_sig] = '\0';
+            if (round_digit >= 5) {
+                int carry = 1;
+                for (int k = total_sig - 1; k >= 0 && carry; k--) {
+                    int d = (val_str[k] - '0') + carry;
+                    val_str[k] = '0' + (d % 10);
+                    carry = d / 10;
+                }
+                if (carry) {
+                    exponent_value++;
+                    memmove(val_str + 1, val_str, total_sig + 1);
+                    val_str[0] = '1';
+                    val_str[total_sig] = '\0';
+                }
+            }
+        } else if (total_sig == 0 && is_s_format) {
+            double abs_val = fabs(val);
+            double mantissa = abs_val / pow(10, exponent_value);
+            double rounded_mantissa = round(mantissa);
+            if (rounded_mantissa >= 10.0) {
+                exponent_value++;
+                rounded_mantissa = 1.0;
+            }
+            sprintf(val_str, "%d", (int)rounded_mantissa);
+            integer_length = strlen(val_str);
         }
-        // Reconstruct val_str with the rounded mantissa (unsigned)
-        sprintf(val_str, "%d", (int)rounded_mantissa);
-        integer_length = strlen(val_str);
     }
 
     int exp = 2;
     if (exp_digits > 0) {
         exp = exp_digits;
+    } else if (exp_digits == 0) {
+        int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
+        exp = (abs_exp == 0) ? 1 : (int)log10(abs_exp) + 1;
     } else if (is_s_format && (exponent_value < 0 ? -exponent_value : exponent_value) >= 10) {
         int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
     } else if ((exponent_value < 0 ? -exponent_value : exponent_value) >= 100) {
         exp = 3;
     }
-    // exp = 2;
-    if (exp != -1 && exponent_value >= (pow(10, exp))) {
+    if (exp != -1 && exp_digits != 0 && exponent_value >= (pow(10, exp))) {
         goto overflow;
     }
 
@@ -885,7 +903,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
     // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
     // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
-    bool drop_e = (exp_digits <= 0 && (exponent_value < 0 ? -exponent_value : exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    bool drop_e = (exp_digits < 0 && (exponent_value < 0 ? -exponent_value : exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
     int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {

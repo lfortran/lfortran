@@ -1311,3 +1311,9 @@ semantic error: Implied DO loop must be enclosed within array constructor bracke
     |
 629 |     arr_idl = (i, i = 1, 4)
     |               ^^^^^^^^^^^^^ 
+
+semantic error: Result of exponentiation exceeds the range of INTEGER(8)
+   --> tests/errors/continue_compilation_1.f90:633:25
+    |
+633 |     pow_overflow_mask = 2_8**63
+    |                         ^^^^^^^ 
