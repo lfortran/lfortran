@@ -1536,6 +1536,7 @@ RUN(NAME intrinsics_433 LABELS gfortran llvm)
 RUN(NAME intrinsics_434 LABELS gfortran llvm) # selected_int_kind
 RUN(NAME intrinsics_435 LABELS gfortran llvm) # minloc/maxloc with dim and array mask
 
+RUN(NAME intrinsics_436 LABELS gfortran llvm) # norm2 with variable dim argument
 RUN(NAME intrinsics_437 LABELS gfortran llvm) # norm2 with dim argument
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants

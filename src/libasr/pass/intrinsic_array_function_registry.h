@@ -4594,7 +4594,6 @@ namespace Parity {
                     end do
                 end do
             */
-            int dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
             ASR::dimension_t* array_dims = nullptr;
             int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
             std::vector<ASR::expr_t*> res_idx;
@@ -4604,23 +4603,57 @@ namespace Parity {
             ASR::expr_t* j = declare("j", int32, Local);
             ASR::expr_t* c = declare("c", logical, Local);
 
-            std::vector<ASR::expr_t*> idx; bool dim_found = false;
-            for (int i = 0; i < array_rank; i++) {
-                if (i == dim - 1) {
-                    idx.push_back(j);
-                    dim_found = true;
-                } else {
-                    dim_found ? idx.push_back(res_idx[i-1]):
-                                idx.push_back(res_idx[i]);
+            auto generate_parity_dim_loop = [&](int dim_val) -> ASR::stmt_t* {
+                std::vector<ASR::expr_t*> idx; bool dim_found = false;
+                for (int i = 0; i < array_rank; i++) {
+                    if (i == dim_val - 1) {
+                        idx.push_back(j);
+                        dim_found = true;
+                    } else {
+                        dim_found ? idx.push_back(res_idx[i-1]):
+                                    idx.push_back(res_idx[i]);
+                    }
+                }
+                ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim_val), b.GetUBound(args[0], dim_val), {
+                    b.Assignment(c, b.Xor(c, b.ArrayItem_01(args[0], idx)))
+                });
+                return PassUtils::create_do_loop_helper_parity_dim(al, loc,
+                                        idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim_val);
+            };
+
+            ASR::expr_t* dim_expr = m_args[1].m_value;
+            int const_dim = -1;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*dim_expr)) {
+                const_dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_expr)->m_n;
+            } else {
+                ASR::expr_t* dim_value = ASRUtils::expr_value(dim_expr);
+                if (dim_value && ASR::is_a<ASR::IntegerConstant_t>(*dim_value)) {
+                    const_dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_value)->m_n;
                 }
             }
-            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim), b.GetUBound(args[0], dim), {
-                b.Assignment(c, b.Xor(c, b.ArrayItem_01(args[0], idx)))
-            });
 
-            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_parity_dim(al, loc,
-                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
-            body.push_back(al, do_loop);
+            if (const_dim > 0) {
+                body.push_back(al, generate_parity_dim_loop(const_dim));
+            } else {
+                ASR::stmt_t** else_ = nullptr;
+                size_t else_n = 0;
+                for (int i = 1; i <= array_rank; i++) {
+                    ASR::expr_t* test_expr = b.Eq(args[1], b.i32(i));
+                    ASR::stmt_t* do_loop = generate_parity_dim_loop(i);
+                    Vec<ASR::stmt_t*> if_body;
+                    if_body.reserve(al, 1);
+                    if_body.push_back(al, do_loop);
+                    ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test_expr,
+                                                if_body.p, if_body.size(), else_, else_n));
+                    Vec<ASR::stmt_t*> if_else_if;
+                    if_else_if.reserve(al, 1);
+                    if_else_if.push_back(al, if_);
+                    else_ = if_else_if.p;
+                    else_n = if_else_if.size();
+                }
+                body.push_back(al, else_[0]);
+            }
+
             body.push_back(al, b.Return());
             ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                     body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4785,7 +4818,6 @@ namespace Norm2 {
                     end do
                 end do
             */
-            int64_t dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
             ASR::dimension_t* array_dims = nullptr;
             int64_t array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
             std::vector<ASR::expr_t*> res_idx;
@@ -4796,22 +4828,56 @@ namespace Norm2 {
             ASR::ttype_t* scalar_type = extract_type(return_type);
             ASR::expr_t* c = declare("c", scalar_type, Local);
 
-            std::vector<ASR::expr_t*> idx; bool dim_found = false;
-            for (int i = 0; i < array_rank; i++) {
-                if (i == dim - 1) {
-                    idx.push_back(j);
-                    dim_found = true;
-                } else {
-                    dim_found ? idx.push_back(res_idx[i-1]):
-                                idx.push_back(res_idx[i]);
+            auto generate_norm2_dim_loop = [&](int64_t dim_val) -> ASR::stmt_t* {
+                std::vector<ASR::expr_t*> idx; bool dim_found = false;
+                for (int i = 0; i < array_rank; i++) {
+                    if (i == dim_val - 1) {
+                        idx.push_back(j);
+                        dim_found = true;
+                    } else {
+                        dim_found ? idx.push_back(res_idx[i-1]):
+                                    idx.push_back(res_idx[i]);
+                    }
+                }
+                ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim_val), b.GetUBound(args[0], dim_val), {
+                    b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
+                });
+                return PassUtils::create_do_loop_helper_norm2_dim(al, loc,
+                                        idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim_val, true);
+            };
+
+            ASR::expr_t* dim_expr = m_args[1].m_value;
+            int64_t const_dim = -1;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*dim_expr)) {
+                const_dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_expr)->m_n;
+            } else {
+                ASR::expr_t* dim_value = ASRUtils::expr_value(dim_expr);
+                if (dim_value && ASR::is_a<ASR::IntegerConstant_t>(*dim_value)) {
+                    const_dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_value)->m_n;
                 }
             }
-            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim), b.GetUBound(args[0], dim), {
-                b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
-            });
-            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2_dim(al, loc,
-                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim, true);
-            body.push_back(al, do_loop);
+
+            if (const_dim > 0) {
+                body.push_back(al, generate_norm2_dim_loop(const_dim));
+            } else {
+                ASR::stmt_t** else_ = nullptr;
+                size_t else_n = 0;
+                for (int i = 1; i <= array_rank; i++) {
+                    ASR::expr_t* test_expr = b.Eq(args[1], b.i32(i));
+                    ASR::stmt_t* do_loop = generate_norm2_dim_loop(i);
+                    Vec<ASR::stmt_t*> if_body;
+                    if_body.reserve(al, 1);
+                    if_body.push_back(al, do_loop);
+                    ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test_expr,
+                                                if_body.p, if_body.size(), else_, else_n));
+                    Vec<ASR::stmt_t*> if_else_if;
+                    if_else_if.reserve(al, 1);
+                    if_else_if.push_back(al, if_);
+                    else_ = if_else_if.p;
+                    else_n = if_else_if.size();
+                }
+                body.push_back(al, else_[0]);
+            }
             body.push_back(al, b.Return());
             ASR::symbol_t *fn_sym = make_Function_Without_ReturnVar_t(fn_name, fn_symtab, dep, args,
                     body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
