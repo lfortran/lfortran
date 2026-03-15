@@ -1,4 +1,4 @@
-program intrinsics_436
+program intrinsics_438
 ! Test norm2 with variable (non-constant) dim argument
 implicit none
 
