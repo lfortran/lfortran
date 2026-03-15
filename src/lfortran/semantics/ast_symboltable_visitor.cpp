@@ -1135,6 +1135,8 @@ public:
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
         is_Function = true;
+        bool old_in_Subroutine = in_Subroutine;
+        in_Subroutine = true;
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
@@ -1144,6 +1146,7 @@ public:
                 }
             }
         }
+        in_Subroutine = old_in_Subroutine;
         is_Function = false;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
