@@ -2952,6 +2952,22 @@ public:
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
+                            } else if ( ASRUtils::is_character(*mold_type) && ASRUtils::is_character(*a_type)) {
+                                ASR::alloc_arg_t new_arg;
+                                new_arg.loc = alloc_args_vec[i].loc;
+                                new_arg.m_a = alloc_args_vec[i].m_a;
+                                new_arg.m_len_expr = ASRUtils::EXPR(
+                                    ASR::make_StringLen_t(al, x.base.base.loc, mold,
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            compiler_options.po.default_integer_kind)),
+                                        nullptr
+                                    )
+                                );
+                                new_arg.m_type = nullptr;
+                                new_arg.m_sym_subclass = nullptr;
+                                new_arg.m_dims = nullptr;
+                                new_arg.n_dims = 0;
+                                new_alloc_args_vec.push_back(al, new_arg);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
                                     Level::Error, Stage::Semantic, {
