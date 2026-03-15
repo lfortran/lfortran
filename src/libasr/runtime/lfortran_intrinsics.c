@@ -7989,15 +7989,22 @@ static void common_formatted_read(InputSource *inputSource,
         inner_len = pos - start_pos;
     }
     int64_t reversion_pos = start_pos;
-    // After first cycle ends, the start position should be the last parenthesized group
-    for (int64_t i = start_pos + inner_len - 1; i >= start_pos; i--) {
+    // For format reversion, use the rightmost top-level parenthesized group.
+    // This avoids landing on nested groups like `2(E10.3)` inside `(2(E10.3))`,
+    // which would leave an unmatched `)` and skip trailing descriptors.
+    int paren_depth = 0;
+    for (int64_t i = start_pos; i < start_pos + inner_len; i++) {
         if (fmt[i] == '(') {
-            int64_t rp = i;
-            while (rp > start_pos && isdigit((char)fmt[rp - 1])) {
-                rp--;
+            if (paren_depth == 0) {
+                int64_t rp = i;
+                while (rp > start_pos && isdigit((unsigned char)fmt[rp - 1])) {
+                    rp--;
+                }
+                reversion_pos = rp;
             }
-            reversion_pos = rp;
-            break;
+            paren_depth++;
+        } else if (fmt[i] == ')' && paren_depth > 0) {
+            paren_depth--;
         }
     }
     bool first_cycle = true;
