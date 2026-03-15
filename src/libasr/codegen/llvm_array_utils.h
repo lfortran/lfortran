@@ -319,7 +319,8 @@ namespace LCompilers {
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
-                                     llvm::Module* module) = 0;
+                                     llvm::Module* module, ASR::expr_t* array_expr = nullptr,
+                                     ASR::ttype_t* asr_data_type = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -356,6 +357,17 @@ namespace LCompilers {
                 virtual
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
+
+                /*
+                * Copies contiguous data into a potentially-strided descriptor array.
+                * The inverse of create_contiguous_copy_from_descriptor.
+                * Uses element-wise copy respecting the target descriptor's strides.
+                */
+                virtual
+                void copy_contiguous_data_to_descriptor(
+                    llvm::Value* source_data,
+                    llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
         };
@@ -536,7 +548,8 @@ namespace LCompilers {
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
-                                     llvm::Module* module);
+                                     llvm::Module* module, ASR::expr_t* array_expr = nullptr,
+                                     ASR::ttype_t* asr_data_type = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -560,6 +573,12 @@ namespace LCompilers {
                 virtual
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                void copy_contiguous_data_to_descriptor(
+                    llvm::Value* source_data,
+                    llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
 
         };

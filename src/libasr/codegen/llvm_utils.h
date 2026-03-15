@@ -10,6 +10,7 @@
 #include <libasr/asr.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <tuple>
@@ -243,9 +244,9 @@ class ASRToLLVMVisitor;
             llvm::IRBuilder<>* builder;
             llvm::AllocaInst *str_cmp_itr;
 
-            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
-
         public:
+
+            llvm::Value* allocate_zeroed_bytes(llvm::Value* size);
 
             LLVMTuple* tuple_api;
             LLVMList* list_api;
@@ -299,6 +300,8 @@ class ASRToLLVMVisitor;
                 std::map<uint64_t, llvm::Value*> &llvm_symtab_);
                 
             llvm::Value* lfortran_free(llvm::Value* ptr);
+            // lfortran_free_nocheck is a variant of lfortran_free that does not check for null pointers before freeing.
+            llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
@@ -693,7 +696,52 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
+            llvm::Value* get_class_type_tag_from_vptr(llvm::Value* vptr);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
+
+            // Allocate zero-initialized memory for the given LLVM type.
+            // Returns a typed pointer (bitcast of malloc+memset result).
+            llvm::Value* alloc_zeroed_type(llvm::Type* type);
+
+            // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
+            // Also derives elem_size and copy_fn from the vptr.
+            struct UpolyWrapperFields {
+                llvm::Value* vptr;
+                llvm::Value* data;
+                llvm::Value* elem_size;
+                llvm::Value* copy_fn;
+            };
+            UpolyWrapperFields extract_upoly_wrapper(
+                llvm::Value* wrapper, llvm::Type* wrapper_type);
+
+            // Initialize an unlimited-polymorphic array wrapper from a
+            // mold wrapper: copies vptr, allocates data, and if the mold
+            // is a string type, initializes string descriptors.
+            void init_mold_upoly_array_data(
+                llvm::Value* wrapper, llvm::Value* mold_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements);
+
+            // Initialize string descriptors in a pre-allocated data buffer.
+            // Allocates contiguous char data (filled with spaces) and sets
+            // each descriptor's pointer and length.
+            void init_string_descriptors(llvm::Value* data_mem,
+                llvm::Value* num_elements, llvm::Value* str_len);
+
+            // Consolidate per-element string_descriptors into a single
+            // string_descriptor with a flat contiguous char buffer.
+            llvm::Value* consolidate_char_descriptors(
+                llvm::Value* descs_i8, llvm::Value* n_elems_i64);
+
+            // Write back consolidated flat char buffer to original
+            // per-element string_descriptors in a polymorphic array.
+            void writeback_char_to_polymorphic_descriptors(
+                llvm::Value* original_descs_i8, llvm::Value* consolidated_desc,
+                llvm::Value* n_elems_i64);
+
+            // Expand a flat char buffer into per-element string_descriptors.
+            llvm::Value* expand_flat_to_char_descriptors(
+                llvm::Value* flat_data, llvm::Value* char_len,
+                llvm::Value* n_elems_i64);
             
 
             void set_module(llvm::Module* module_);
@@ -772,10 +820,19 @@ class ASRToLLVMVisitor;
 
             llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
+            llvm::Value* to_i1(llvm::Value* cond) {
+                if (cond->getType()->isIntegerTy(1)) {
+                    return cond;
+                }
+                return builder->CreateICmpNE(
+                    cond, llvm::ConstantInt::get(cond->getType(), 0));
+            }
+
             template <typename IF, typename ELSE>
             void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, const char *name,
                                 std::vector<llvm::BasicBlock*> &loop_or_block_end,
                                 std::vector<std::string> &loop_or_block_end_names) {
+                cond = to_i1(cond);
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 std::string if_name;
@@ -835,7 +892,7 @@ class ASRToLLVMVisitor;
 
                 // head
                 start_new_block(loophead); {
-                    llvm::Value* cond = condition();
+                    llvm::Value* cond = to_i1(condition());
                     builder->CreateCondBr(cond, loopbody, loopend);
                 }
 
@@ -896,11 +953,13 @@ class ASRToLLVMVisitor;
      */
     class LLVMFinalize final {
     private:
+
         std::unique_ptr<LLVMUtils>                                  &llvm_utils_;
         std::unique_ptr<llvm::IRBuilder<>>                          &builder_;
         Allocator                                                   &al_;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
         std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
+        std::unordered_map<std::string, llvm::Function*>            type_finalizer_cache_;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
@@ -910,16 +969,19 @@ class ASRToLLVMVisitor;
             llvm_symtab_fn_(llvm_symtab_fn){}
 
     private:
+
+
         /**
-         * Finalizes a type
+         * Finalizes type by directly dispatching to the corresponding finalizer.
+         *
          * @param ptr llvm ptr to the type (instance) we're finalizing.
          * @param t ASR type
          * @param struct_sym Struct symbol that could be related to `t` (if it contains structType), nullptr otherwise.
-         * @param in_struct This type (instance) is inside a struct type or not -- Useful for arrays. 
-         */ 
-        void finalize(llvm::Value* const ptr, ASR::ttype_t* t, ASR::Struct_t* const struct_sym, bool in_struct){
+         * @param in_struct This type (instance) is inside a struct type or not -- Useful for arrays.
+         */
+        void finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
+                llvm::Value* const in_struct){
             if(!is_finalizable_type(t, struct_sym)) { return; }
-
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
             } else {
@@ -958,35 +1020,77 @@ class ASRToLLVMVisitor;
                 }
             }
 
-            finalize(llvm_var, v->m_type, get_struct_sym(v), false);
+            finalize(llvm_var, v->m_type, get_struct_sym(v), get_bool_constant(false));
         }
         
-        void finalize_allocatable(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
+        void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
+                llvm::Value* in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
-            if(t_past->type == ASR::StructType){
-                check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        finalize_type(ptr, t_past, struct_sym, in_struct);
-                        free_allocatable_ptr(ptr, t, in_struct);
-                });
-            } else if (t_past->type == ASR::Array) {
-                check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() {
-                    finalize_type(ptr, t_past, struct_sym, in_struct);
-                    free_allocatable_ptr(ptr, t, in_struct);
-                });
-            } else {
-                finalize_type(ptr, t_past, struct_sym, in_struct);
-                free_allocatable_ptr(ptr, t, in_struct);
-
+            switch (t_past->type) {
+                case ASR::StructType:
+                case ASR::Array:{
+                    std::string cache_key = get_type_key(t, struct_sym);
+                    if(is_cached(cache_key)) {
+                        call_cached_finalizer(cache_key, {ptr, in_struct});
+                        return;
+                    }
+                    auto const checkPoint_BB = 
+                    START_CACHE(cache_key, ptr, in_struct);
+                    check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
+                        finalize(ptr, t_past, struct_sym, in_struct);
+                        free_allocatable_ptr(ptr, t, struct_sym, in_struct);
+                        
+                    });
+                    END_CACHE(checkPoint_BB);
+                }
+                break;
+                default:
+                    finalize(ptr, t_past, struct_sym, in_struct);
+                    free_allocatable_ptr(ptr, t, struct_sym, in_struct);
+                break;
             }
         }
 
         /// Frees pointer to allocatable type ( e.g `i32*`, `{i64, i8}*` )
-        void free_allocatable_ptr(llvm::Value* const var_ptr, ASR::ttype_t* const t, bool in_struct){
+        void free_allocatable_ptr(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, llvm::Value* const in_struct){
             LCOMPILERS_ASSERT(ASRUtils::is_allocatable(t))
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
-                case(ASR::StructType) :  
+                case(ASR::StructType) :  {
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
+                            && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                        // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
+                        // be decided from the ASR class flag, not the LLVM pointer type.
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                        auto const struct_ptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                            llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
+                        check_if_allocated_then_finalize(struct_ptr, struct_sym->m_struct_signature, struct_sym,
+                            [this, struct_ptr](){llvm_utils_->lfortran_free_nocheck(struct_ptr);});
+                    } else if(ASRUtils::is_class_type(t)){ // {VTable*, struct*} -- Free struct
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                        auto const struct_ptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                            llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
+                        check_if_allocated_then_finalize(struct_ptr, struct_sym->m_struct_signature, struct_sym,
+                            [this, struct_ptr](){llvm_utils_->lfortran_free_nocheck(struct_ptr);});
+                    }
+                    llvm_utils_->lfortran_free_nocheck(var_ptr);
+                }
+                break;
+                case(ASR::Array) : {
+                    // Free based on array physical type + in_struct or not.
+                    auto const arr_physical_t = ASRUtils::extract_physical_type(t_past);
+                    bool const need_free = ( arr_physical_t == ASR::DescriptorArray
+                                              || arr_physical_t == ASR::PointerArray);
+                    if(need_free) {
+                        llvm_utils_->create_if_else(in_struct, [&]() {
+                            llvm_utils_->lfortran_free_nocheck(var_ptr);
+                        }, [](){}, "allocatableArray_in_struct");
+                    }
+                }
+                break;
                 case(ASR::Integer):
                 case(ASR::Real):
                 case(ASR::Complex):
@@ -997,14 +1101,7 @@ class ASRToLLVMVisitor;
                 case(ASR::Tuple):
                 case(ASR::UnionType):
                 case(ASR::Set):
-                    llvm_utils_->lfortran_free(var_ptr);
-                break;
-                case(ASR::Array) : {
-                    auto const arr_physical_t = ASRUtils::extract_physical_type(t_past);
-                    bool const need_to_free = in_struct && ( arr_physical_t == ASR::DescriptorArray 
-                                                          || arr_physical_t == ASR::PointerArray);
-                    if(need_to_free) {llvm_utils_->lfortran_free(var_ptr);}
-                }
+                    llvm_utils_->lfortran_free_nocheck(var_ptr);
                 break;
                 case(ASR::FunctionType):
                 case(ASR::CPtr):
@@ -1018,7 +1115,8 @@ class ASRToLLVMVisitor;
         }
 
         /// Dispatches to the correct finalizer based on type.
-        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
+        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
+                llvm::Value* const in_struct){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
                 case(ASR::String):
@@ -1061,7 +1159,7 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_string(llvm::Value* const str, ASR::ttype_t* const t){
-            ASR::ttype_t* const type_past = ASRUtils::type_get_past_allocatable_pointer(t);
+            ASR::ttype_t* const  type_past = ASRUtils::type_get_past_allocatable_pointer(t);
             ASR::String_t* const str_t = ASR::down_cast<ASR::String_t>(type_past);
 
             verify(str, get_llvm_type(t, nullptr)->getPointerTo());
@@ -1070,13 +1168,11 @@ class ASRToLLVMVisitor;
             switch(str_t->m_physical_type){
                 case ASR::DescriptorString: { // Operates on ` { i8*, i64 }* `
                     llvm::Value* const ptr_to_I8_ptr = llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str, 0);
-                    llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(llvm_utils_->character_type, ptr_to_I8_ptr));
-                    // insert_null(llvm_utils_->character_type, ptr_to_I8_ptr);
+                    llvm_utils_->lfortran_free_nocheck(llvm_utils_->CreateLoad2(llvm_utils_->character_type, ptr_to_I8_ptr));
                 break;
                 }
                 case ASR::CChar:{ // Operates on ` i8** `
-                    llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(llvm_utils_->character_type, str));
-                    // insert_null(llvm_utils_->character_type, str_adjusted);
+                    llvm_utils_->lfortran_free_nocheck(llvm_utils_->CreateLoad2(llvm_utils_->character_type, str));
                 break;
                 }
                 default:
@@ -1091,15 +1187,12 @@ class ASRToLLVMVisitor;
          * @param struct_sym if it's an array of struct. nullptr otherwise.
          * @param in_struct is this array in some struct `(StructType(Array()))`.
          */ 
-        void finalize_array(llvm::Value* const arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
+        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* struct_sym,
+                llvm::Value* in_struct){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
             llvm::Type* array_data_ptr_type = arrayType_llvm_t->getPointerTo();
-            if (arr_t->m_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                array_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             auto  const array_size_lazy  = [&]() { 
                 insert_BB_for_readability("Calculate_arraySize");
                 return llvm_utils_->get_array_size(arr, get_llvm_type(t, struct_sym), t, &asr_to_llvm_visitor_);
@@ -1107,6 +1200,13 @@ class ASRToLLVMVisitor;
 
             switch(arr_t->m_physical_type){
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
+                    std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym);
+                    if(is_cached(cache_key)){
+                        call_cached_finalizer(cache_key, {arr, in_struct});
+                        return;
+                    }
+                    auto const checkpoint_BB =
+                    START_CACHE(cache_key, arr, in_struct);
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
@@ -1117,14 +1217,19 @@ class ASRToLLVMVisitor;
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
 
-                    // (struct(array())) -- Need to finalize dimension descriptor in this case
-                    if(in_struct) {
-                        auto const dim_desc_ptr = builder_->CreateLoad(llvm_utils_->dim_descr_type_->getPointerTo(),
-                                                                    llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
-                        llvm_utils_->lfortran_free(dim_desc_ptr);
-                    }
+                    // IF (struct(array())) --> Finalize dimension descriptor in this case
+                    llvm_utils_->create_if_else(in_struct, 
+                        [&]() {
+                        auto const dim_desc_ptr = builder_->CreateLoad(
+                            llvm_utils_->dim_descr_type_->getPointerTo(),
+                            llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
+                            llvm_utils_->lfortran_free_nocheck(dim_desc_ptr);
+                        }
+                        , [](){}
+                        , "dimDesc_in_struct");
 
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
+                    END_CACHE(checkpoint_BB);
                 break;
                 }
                 case ASR::PointerArray :{
@@ -1155,16 +1260,28 @@ class ASRToLLVMVisitor;
             (void)ptr; (void)t; (void) struct_sym;
         }
 
-        void finalize_struct(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+        void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
+            const std::string cache_key = get_type_key(t, struct_sym);
+            if(is_cached(cache_key)){
+                builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
+                return;
+            }
 
-            // TODO: handle class wrapper correctly
-            llvm::Value* ptr_ = ptr;
-            if (ASRUtils::is_class_type(t)) {
-                // For class types, we need to get the actual derived type
+            const auto checkPoint_BB = 
+            START_CACHE(cache_key, ptr);
+
+            if (ASRUtils::is_class_type(t) &&
+                    !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
-                ptr_ = llvm_utils_->CreateLoad2(get_llvm_type(
-                    struct_sym->m_struct_signature, struct_sym)->getPointerTo(), 
+                ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+            } else if (ASRUtils::is_class_type(t)) {
+                // {VTable*, struct*} -- Fetch struct
+                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                     llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
             }
 
@@ -1173,8 +1290,6 @@ class ASRToLLVMVisitor;
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
                 if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
 
-// Remove once we start using per-type-finalization function -- as we can't handle recursive type declaration with our current iterative-instruction approach.
-if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){continue;}
 
                 if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
                     auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
@@ -1182,7 +1297,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     insert_BB_for_readability(BB_str_label.c_str());
                 } 
 
-                llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr_, struct_sym, i);
+                llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
 
                 // Call user-defined FINAL procedures on finalizable components
@@ -1205,19 +1320,21 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     }
                 }
 
-                finalize(member_ptr, member_asr_type, member_struct_sym, true);
+                finalize(member_ptr, member_asr_type, member_struct_sym, get_bool_constant(true));
             }
 
             // Finalize Parent
             if(struct_sym->m_parent){
                 ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-                if(!is_finalizable_type(parent_struct->m_struct_signature, parent_struct)) { return; }
-                insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
-                llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
-                    get_llvm_type(struct_sym->m_struct_signature, struct_sym), ptr_, 0);
-                finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct);
+                if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct)) {
+                    insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
+                    llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
+                        llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
+                        finalize(parent_ptr, parent_struct->m_struct_signature, parent_struct, get_bool_constant(true));
+                }
                 /// Parent is inlined -- Not allocated separately.
             }
+            END_CACHE(checkPoint_BB);
         }
 
         void finalize_list(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -1298,7 +1415,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
                     struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 }
-                finalize_struct(struct_element, &struct_t->base, struct_sym);
+                finalize(struct_element, &struct_t->base, struct_sym, get_bool_constant(false));
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
@@ -1306,17 +1423,19 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
             if(is_class_type){
                 auto const class_type_llvm = llvm_utils_->getClassType(struct_sym);
-                auto const struct_type_llvm = llvm_utils_->getStructType(struct_sym, llvm_utils_->module);
-                auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
-                                                             llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1));
-                llvm_utils_->lfortran_free(allocated_cosecutive_structs);
+                auto const consecutive_field_ptr = llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1);
+                auto const consecutive_field_type = class_type_llvm->getStructElementType(1);
+                auto const allocated_cosecutive_structs = builder_->CreateLoad(consecutive_field_type, consecutive_field_ptr);
+                llvm_utils_->lfortran_free_nocheck(allocated_cosecutive_structs);
                 // deallocate class wrapper 
-                llvm_utils_->lfortran_free(data_ptr);
+                llvm_utils_->lfortran_free_nocheck(data_ptr);
             }
         }
             
         /**
-         * @details It's responsbile of deallocating each element within the array.
+         * @details It's responsbile of deallocating each element within the array;
+         * It's main job is to properly free aggregate types (e.g. struct, class, array of strings, etc.).
+         *
          * You should expect a loop and a call to type finalizer.
          * Example : finalize each {i32, i64*} within the array.
          * Notice: it's a utility for `finalize_array`, not meant to be used by other finalizers.
@@ -1326,20 +1445,26 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
          * @param array_size is lambda object returning array's size. Lazy evaluate as only array of structs requires looping on each element (for now).
          */
         template<typename LazyEval>
-        void free_array_data(llvm::Value* const data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
+        void free_array_data(llvm::Value* data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
             llvm::Type* expected_data_ptr_type = get_llvm_type(data_type, struct_sym)->getPointerTo();
-            if (data_type->type == ASR::ttypeType::Logical) {
-                // Logical arrays are stored as byte-backed `i8` in memory.
-                expected_data_ptr_type = llvm_utils_->i8_ptr;
-            }
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
-                case ASR::StructType : // Loop and free
-                    free_array_structs(data_ptr, ASR::down_cast<ASR::StructType_t>(data_type), struct_sym, array_size());
+                case ASR::StructType :{ // Loop and free
+                    const std::string cache_key = "array_data_"+get_type_key(data_type, struct_sym);
+                    llvm::Value* arr_size  = array_size();
+                    if(is_cached(cache_key)){
+                        builder_->CreateCall(type_finalizer_cache_[cache_key], {data_ptr, arr_size});
+                        return;
+                    }
+                    auto const checkPoint_BB =
+                    START_CACHE("array_data_"+get_type_key(data_type, struct_sym), data_ptr, arr_size);
+                    free_array_structs(data_ptr, ASR::down_cast<ASR::StructType_t>(data_type), struct_sym, arr_size);
+                    END_CACHE(checkPoint_BB);
+                }
                 break;
                 case ASR::String : // Force string finalization on this single string. -- Don't loop, One string holds all.
-                    finalize_string(data_ptr, data_type); 
+                    finalize(data_ptr, data_type, struct_sym, get_bool_constant(false)); 
                 break; 
                 case ASR::Integer :
                 case ASR::Real :
@@ -1368,10 +1493,110 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 return;
             }
             
-            llvm_utils_->lfortran_free(ptr);
+            llvm_utils_->lfortran_free_nocheck(ptr);
         }
 
 /*>>>>>>>>>>>>>>>>>>>>> Utilities <<<<<<<<<<<<<<<<<<<<<<< */
+
+        // Returns LLVM `i1` constant
+        llvm::Value* get_bool_constant(bool const b) {
+            return llvm::ConstantInt::get(llvm::Type::getInt1Ty(builder_->getContext()), b);
+        }
+
+        // Get a unique string key for finalizable ASR types
+        std::string get_type_key(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym) {
+            LCOMPILERS_ASSERT(!ASRUtils::is_pointer(t))
+            std::string key {};
+            if(ASRUtils::is_allocatable(t)) {key += "allocatable__";}
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(t); 
+            if(ASRUtils::is_array_t(t_past)){
+                key += "Array_";
+                key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
+            } else if(struct_sym != nullptr) { // StructType or structType Class
+                key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
+                if(auto module = ASRUtils::get_sym_module(&struct_sym->base)) {
+                    key += "_of_"; 
+                    key += module->m_name;
+                }
+            } else {
+                key += ASRUtils::get_type_code(t_past, false, false, false);
+            }
+            return key; 
+        }
+
+        bool is_cached(const std::string& cache_key) {
+            return type_finalizer_cache_.find(cache_key) != type_finalizer_cache_.end();
+        }
+
+        /**
+         * Starts CACHE mode for the following set of instructions until `END_CACHE` is called.
+         * In CACHE mode, we create a finalizer function for the type we're finalizing,
+         * 
+         * How to use ?
+         * - Pass a unqiue cache for the following set of instructions (mainly tagged by the type we're finalizing)
+         * - Pass the signature of the finalizer function. Those are caught by reference, We direct them to the parameters of the finalizer function.
+         * - Use returned BasicBlock as the revert point to jump back to after finishing the finalizer function.
+         */
+        template <typename... SignatureArgs>
+        llvm::BasicBlock* START_CACHE(const std::string &cache_key, SignatureArgs&&... signature_args) {
+            static_assert((std::is_same_v<llvm::Value*, std::decay_t<SignatureArgs>> && ...));
+
+            LCOMPILERS_ASSERT_MSG(type_finalizer_cache_.find(cache_key) == type_finalizer_cache_.end(),
+                                "Cache already exists, Please use it.")
+
+            std::vector<llvm::Value**> args {&signature_args...};
+
+            // Fetch function signature
+            std::vector<llvm::Type*> arg_types;
+            for (llvm::Value** arg: args) {
+                LCOMPILERS_ASSERT(*arg)
+                arg_types.push_back((*arg)->getType());
+            }
+
+            auto *const finalizer_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(builder_->getContext()),
+                arg_types, false);
+            auto *const finalizer_fn = llvm::Function::Create(finalizer_fn_type,
+                llvm::Function::InternalLinkage, "finalize_"+cache_key, llvm_utils_->module);
+
+            type_finalizer_cache_[cache_key] = finalizer_fn;
+            builder_->CreateCall(finalizer_fn, {signature_args...}); // Insert call to the finalizer in the current block
+            
+            llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
+            LCOMPILERS_ASSERT(saved_BB)
+            // We don't jump between insert points, No need to save insertpoint.
+
+            llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
+                builder_->getContext(), "entry", finalizer_fn);
+            builder_->SetInsertPoint(entry);
+            
+            {// Direct passed arg to function's args
+            int i = 0;
+            for(auto &fn_arg : finalizer_fn->args()) {
+                *(args[i++]) = &fn_arg;
+            }
+            LCOMPILERS_ASSERT(i == (int)args.size())
+            }
+
+            return saved_BB;
+        }
+
+        /**
+         * Finishes `START_CACHE` job by reverting back to the passed BasicBlock.
+         * It also terminates the function body with `return void`
+         */
+        void END_CACHE(llvm::BasicBlock* revert_bb) {
+            LCOMPILERS_ASSERT(revert_bb)
+            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+                "`END CACHE` adds the terminator, not expected to be added by other utility")
+            builder_->CreateRetVoid();
+            builder_->SetInsertPoint(revert_bb);
+        }
+
+        llvm::Value* call_cached_finalizer(const std::string& cache_key,
+                const std::vector<llvm::Value*>& call_args) {
+            return builder_->CreateCall(type_finalizer_cache_[cache_key], call_args);
+        }
 
         /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.
         template <typename finProcess>
@@ -1458,15 +1683,17 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
          *
          * @param ptr pointer to the struct.
          * @param struct_ The struct symbol we're working with.
-         * @param idx Index (zero based) of the member within the struct we want to get a ptr to. 
+         * @param idx Index (zero based) of the member within the struct we want to get a ptr to.
          */
         llvm::Value* get_ptr_to_struct_variable_member(llvm::Value* const ptr, ASR::Struct_t* const struct_, const int idx) {
-            verify(ptr, get_llvm_type(struct_->m_struct_signature, struct_)->getPointerTo());
+            // finalize_struct() unwraps any class wrapper before visiting members.
+            verify(ptr, llvm_utils_->getStructType(struct_, llvm_utils_->module, true));
             LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&struct_->base),
                               "This utility shouldn't be called on unlimited polymorphic struct type")
 
             bool is_extended = struct_->m_parent != nullptr;
-            llvm::Value* const fetched_member = llvm_utils_->create_gep2(get_llvm_type(struct_->m_struct_signature, struct_), ptr, idx + is_extended);
+            llvm::Value* const fetched_member = llvm_utils_->create_gep2(
+                llvm_utils_->getStructType(struct_, llvm_utils_->module), ptr, idx + is_extended);
             auto const fetched_member_variable = ASR::down_cast<ASR::Variable_t>(struct_->m_symtab->get_symbol(struct_->m_members[idx]));
             auto const fetched_member_asr_type = fetched_member_variable->m_type;
             if(LLVM::is_llvm_pointer(*fetched_member_asr_type)) {
@@ -1493,6 +1720,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     return false;
                 case ASR::StructType:{
                     if(is_allocatable) { return true; }
+                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t_past);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
@@ -1518,6 +1746,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 case ASR::Tuple:
                 case ASR::UnionType:
                 case ASR::Set:
+                    return false; // >>>>> TO DO <<<<<
                 case ASR::String:
                     return true;
                 case ASR::FunctionType:
@@ -1580,6 +1809,17 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(null_type)), ptr);
         }
 
+        void check_all_caches_done_properly(){
+            for(auto const& cache_pair : type_finalizer_cache_){
+                if(cache_pair.second->back().getTerminator() != nullptr){
+                    LCOMPILERS_ASSERT(("Cache function" + 
+                            cache_pair.second->getName().str() +
+                            "Not properly created").c_str())
+                }
+                
+            }
+        }
+
     public:
 
 /*>>>>>>>>>>>>>>>>>>>>> Entry <<<<<<<<<<<<<<<<<<<<<<< */
@@ -1611,7 +1851,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 }
                 case ASR::StructType: {
                     if (!is_finalizable_type(t_past, struct_sym)) { return; }
-                    finalize_struct(ptr, t_past, struct_sym);
+                    finalize(ptr, t_past, struct_sym, get_bool_constant(in_struct));
                     return;
                 }
                 default:
@@ -1620,18 +1860,48 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
+        /// Collect symbols that are targets of Associate statements in a block body.
+        /// These are aliases and must not be finalized (they don't own the data).
+        static std::set<ASR::symbol_t*> collect_associate_targets(
+                ASR::stmt_t** body, size_t n_body) {
+            std::set<ASR::symbol_t*> targets;
+            for (size_t i = 0; i < n_body; i++) {
+                if (ASR::is_a<ASR::Associate_t>(*body[i])) {
+                    auto& assoc = *ASR::down_cast<ASR::Associate_t>(body[i]);
+                    if (ASR::is_a<ASR::Var_t>(*assoc.m_target)) {
+                        targets.insert(ASR::down_cast<ASR::Var_t>(assoc.m_target)->m_v);
+                    }
+                }
+            }
+            return targets;
+        }
+
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
             auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
             insert_BB_for_readability(finalize_str.c_str());
+
+            // Collect associate targets from block body — these are aliases
+            // (e.g. typed views in select type) and must not be finalized.
+            std::set<ASR::symbol_t*> assoc_targets;
+            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
+            if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
+                auto& block = *ASR::down_cast<ASR::Block_t>(owner_sym);
+                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                auto& block = *ASR::down_cast<ASR::AssociateBlock_t>(owner_sym);
+                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
+            }
+
             auto MAP = symtab->get_scope();
             for(auto &str_sym_pair : MAP){
                 ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym)){
+                if (is_variable(sym) && assoc_targets.find(sym) == assoc_targets.end()){
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }
+            check_all_caches_done_properly();
         }
     };
 
@@ -1773,6 +2043,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
+            llvm::Constant* get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module);
 
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
                                             std::vector<llvm::Constant*>& impls,
@@ -1808,6 +2079,11 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false);
+
+            // Copy dimension descriptors and rank from src to dest array descriptor.
+            void copy_dimension_descriptors(
+                llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
+                llvm::Module* module);
             
             /**
              * Class => `{VTable*, struct_t*}`
@@ -1832,7 +2108,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void allocate_array_of_unlimited_polymorphic_type(
                 ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type,
                 llvm::Value* array_data_ptr, llvm::Value* size,
-                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module);
+                ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
+                llvm::Value* string_len = nullptr);
     };
 
     class LLVMTuple {

@@ -145,6 +145,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Sign,
     CompilerVersion,
     CommandArgumentCount,
+    ThisImage,
+    NumImages,
     SignFromValue,
     Logical,
     Nint,
@@ -200,7 +202,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Present,
     And,
     Or,
-    Xor
+    Xor,
+    Rand
     // ...
 };
 
@@ -1412,6 +1415,144 @@ namespace CommandArgumentCount {
         return b.Call(new_symbol, new_args, return_type);
     }
 } // namespace CommandArgumentCount
+
+namespace Rand {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args <= 1,
+            "rand() takes at most 1 argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Rand(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`rand` is an LFortran extension", { loc }, "Use `random_number` instead");
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+        int overload_id = 0;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        if (args.n > 0 && args[0] != nullptr) {
+            overload_id = 1;
+            m_args.push_back(al, args[0]);
+        }
+        return_type = ASRUtils::extract_type(return_type);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
+                m_args.p, m_args.n, overload_id, return_type, nullptr);
+    }
+
+    static inline ASR::expr_t* instantiate_Rand(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int /*index_kind*/) {
+        std::string c_func_name = "_lfortran_sp_rand_num";
+        std::string new_name = "_lcompilers_rand_" + std::to_string(overload_id) + "_";
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        auto result = declare(new_name, return_type, ReturnVar);
+
+        if (overload_id == 1) {
+            fill_func_arg("flag", arg_types[0]);
+
+            std::string c_seed_name = "_lfortran_init_random_seed";
+            SymbolTable *seed_symtab = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> seed_args; seed_args.reserve(al, 1);
+            ASR::expr_t *seed_arg = b.Variable(seed_symtab, "n", arg_types[0],
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+            seed_args.push_back(al, seed_arg);
+            ASR::expr_t *seed_ret = b.Variable(seed_symtab, c_seed_name, arg_types[0],
+                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+            SetChar seed_dep; seed_dep.reserve(al, 1);
+            Vec<ASR::stmt_t*> seed_body; seed_body.reserve(al, 1);
+            ASR::symbol_t *seed_sym = make_ASR_Function_t(c_seed_name, seed_symtab,
+                seed_dep, seed_args, seed_body, seed_ret,
+                ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_seed_name));
+            fn_symtab->add_symbol(c_seed_name, seed_sym);
+            dep.push_back(al, s2c(al, c_seed_name));
+
+            Vec<ASR::expr_t*> seed_call_args; seed_call_args.reserve(al, 1);
+            seed_call_args.push_back(al, args[0]);
+            ASR::expr_t *discard = declare("_lcompilers_rand_seed_result", arg_types[0], Local);
+            body.push_back(al, b.Assignment(discard, b.Call(seed_sym, seed_call_args, arg_types[0])));
+        }
+
+        {
+            Vec<ASR::ttype_t*> rand_arg_types; rand_arg_types.reserve(al, 0);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 0, rand_arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+            body.push_back(al, b.Assignment(result, b.Call(s, call_args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+} // namespace Rand
+
+namespace ThisImage {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "this_image() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_ThisImage(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+    }
+
+    static inline ASR::asr_t* create_ThisImage(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_ThisImage(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+                nullptr, 0, 0, return_type, m_value);
+    }
+
+} // namespace ThisImage
+
+namespace NumImages {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "num_images() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_NumImages(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+    }
+
+    static inline ASR::asr_t* create_NumImages(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_NumImages(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+                nullptr, 0, 0, return_type, m_value);
+    }
+
+} // namespace NumImages
 
 namespace Sign {
 
@@ -3894,7 +4035,8 @@ namespace Merge {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
 
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]));
+        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]))
+            + "_" + get_type_code(ASRUtils::extract_type(arg_types[2]));
         declare_basic_variables(new_name);
         
         mask_type = ASRUtils::duplicate_type(al,

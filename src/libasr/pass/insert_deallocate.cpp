@@ -21,7 +21,7 @@ class CollectTempVarsVisitor : public ASR::BaseWalkVisitor<CollectTempVarsVisito
         void visit_Assignment(const ASR::Assignment_t &x) {
             ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
             if (target_variable &&
-                ASRUtils::is_allocatable_or_pointer(target_variable->m_type) &&
+                ASRUtils::is_allocatable(target_variable->m_type) &&
                 ASRUtils::symbol_StorageType((ASR::symbol_t *)target_variable) == ASR::storage_typeType::Default) {
                 if (std::string(target_variable->m_name).rfind("__libasr_created") != std::string::npos) {
                     res.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.m_target->base.loc, (ASR::symbol_t *)target_variable)));

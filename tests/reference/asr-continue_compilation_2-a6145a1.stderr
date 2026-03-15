@@ -341,6 +341,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 100 |             array = [ (i,i = 1,this%n) ]
     |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (integer and integer[:])
 
+semantic error: PRINT statement is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_2.f90:117:9
+    |
+117 |         print "(A,I0)", 'b = ', b
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Deferred-length CHARACTER variable must be allocated with a character length `character(..)`
    --> tests/errors/continue_compilation_2.f90:295:14
     |
@@ -401,26 +407,20 @@ semantic error: Invalid argument `end` supplied
 semantic error: Missing actual argument 'x' in call to 'cmplx'
    --> tests/errors/continue_compilation_2.f90:312:14
     |
-312 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+312 |     print *, cmplx(y = 2)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:318:11
+semantic error: Only a literal constant or a named constant is allowed as part of a complex literal constant
+   --> tests/errors/continue_compilation_2.f90:314:20
     |
-318 |     val = this_image ()
-    |           ^^^^^^^^^^^^^ 
+314 |     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
+    |                    ^^^^^^^^^^^^^^^ 
 
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:319:5
+semantic error: Only a literal constant or a named constant is allowed as part of a complex literal constant
+   --> tests/errors/continue_compilation_2.f90:316:32
     |
-319 |     call co_sum (val, result_image=1)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Coarrays are not supported yet
-   --> tests/errors/continue_compilation_2.f90:320:9
-    |
-320 |     if (this_image() == 1) then
-    |         ^^^^^^^^^^^^ 
+316 |     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
+    |                                ^^^^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
    --> tests/errors/continue_compilation_2.f90:324:5
@@ -1003,3 +1003,9 @@ warning: `sleep` is a non-standard extension
     |
 538 |     call sleep(1)
     |     ^^^^^^^^^^^^^ not part of the Fortran standard
+
+semantic error: Missing actual argument 'x' in call to 'cmplx'
+   --> tests/errors/continue_compilation_2.f90:539:9
+    |
+539 |     a = cmplx(y = 2)
+    |         ^^^^^^^^^^^^ 

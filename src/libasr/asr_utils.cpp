@@ -575,7 +575,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
         case ASR::exprType::GetPointer:
-        case ASR::exprType::CLoc: {
+        case ASR::exprType::CLoc:
+        case ASR::exprType::FunctionParam: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {
@@ -1985,13 +1986,23 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if(!sym) {
-        if( ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type) ) {
+        if( ASR::is_a<ASR::StructType_t>(*target_type) ) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
             sym = target_struct->m_symtab->resolve_symbol("~assign");
+            while (sym == nullptr && target_struct->m_parent != nullptr) {
+                target_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(target_struct->m_parent));
+                sym = target_struct->m_symtab->resolve_symbol("~assign");
+            }
             expr_dt = target;
-        } else if( ASR::is_a<ASR::StructType_t>(*value_type) && !ASRUtils::is_class_type(value_type) ) {
+        } else if( ASR::is_a<ASR::StructType_t>(*value_type) ) {
             ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
             sym = value_struct->m_symtab->resolve_symbol("~assign");
+            while (sym == nullptr && value_struct->m_parent != nullptr) {
+                value_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(value_struct->m_parent));
+                sym = value_struct->m_symtab->resolve_symbol("~assign");
+            }
             expr_dt = value;
         }
     }
@@ -2010,11 +2021,41 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
+                    ASR::symbol_t* proc_func = class_proc->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
                         expr_dt, err, class_proc->m_self_argument);
+                    if (found && expr_dt && ASRUtils::is_class_type(
+                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)))) {
+                        // For polymorphic (class) types, create a type-bound call
+                        // referencing the StructMethodDeclaration with m_dt set,
+                        // so codegen can use vtable dispatch.
+                        std::string method_name = std::string(class_proc->m_name) + "@~assign";
+                        ASR::symbol_t* ext_sym = curr_scope->get_symbol(method_name);
+                        if (ext_sym == nullptr) {
+                            ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, curr_scope, s2c(al, method_name), proc,
+                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                nullptr, 0, class_proc->m_name, ASR::accessType::Public));
+                            curr_scope->add_symbol(method_name, ext_sym);
+                        }
+                        if (ASRUtils::symbol_parent_symtab(ext_sym)->get_counter() != curr_scope->get_counter()) {
+                            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, ext_sym, current_function_dependencies, s2c(al, method_name));
+                        }
+                        ASRUtils::insert_module_dependency(ext_sym, al, current_module_dependencies);
+
+                        ASR::expr_t* non_pass_arg = (expr_dt == target) ? value : target;
+                        Vec<ASR::call_arg_t> a_args;
+                        a_args.reserve(al, 1);
+                        ASR::call_arg_t arg;
+                        arg.loc = non_pass_arg->base.loc;
+                        arg.m_value = non_pass_arg;
+                        a_args.push_back(al, arg);
+
+                        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, ext_sym, ext_sym,
+                            a_args.p, 1, expr_dt, nullptr, false);
+                    }
                     break;
                 }
                 default: {
@@ -2679,6 +2720,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     } else if (!ASRUtils::check_class_assignment_compatibility(s2, s1)) {
                         return false;
                     }
+                    if (!is_elemental) {
+                        int rank1 = ASRUtils::extract_n_dims_from_ttype(arg1);
+                        int rank2 = ASRUtils::extract_n_dims_from_ttype(arg2);
+                        if (rank1 != rank2
+                                && !ASRUtils::is_assumed_rank_array(arg2)) {
+                            return false;
+                        }
+                    }
                 } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }
@@ -3213,6 +3262,14 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
                 implied_doloop_size_ = builder.Add(get_ImpliedDoLoop_size(al,
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
                     implied_doloop_size_);
+            }
+        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+            ASR::expr_t* ac_size = get_ArrayConstructor_size(al,
+                ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]));
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = ac_size;
+            } else {
+                implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
             }
         } else {
             const_elements += 1;
@@ -3767,7 +3824,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     if (ASR::is_a<ASR::Var_t>(*x) ||
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstant_t>(*x) ||
+        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
         return x;
     }
 
@@ -3856,7 +3914,6 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     } else if (inside_binop) {
         return nullptr;
     } else {
-        LCOMPILERS_ASSERT(false);
         return nullptr;
     }
 }

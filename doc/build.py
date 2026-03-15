@@ -148,6 +148,7 @@ def build_docs(language: str) -> None:
             f"-Dlanguage={language}",
         ],
         cwd=root,
+        check=True,
     )
 
 

@@ -197,8 +197,8 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             f:
@@ -304,8 +304,8 @@
                                                     []
                                                     (Var 6 z)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -444,8 +444,8 @@
                                     )]
                                     (Var 9 z)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             func_arg_real:
@@ -551,8 +551,8 @@
                                     )]
                                     (Var 8 z)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             r:
@@ -663,8 +663,8 @@
                                                     []
                                                     (Var 4 z)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -806,8 +806,8 @@
                                                     )]
                                                     (Var 12 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             x:
@@ -942,7 +942,7 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        .false.
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 11 arg0)
@@ -962,7 +962,7 @@
                                                     )]
                                                     (Var 11 ret)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 )

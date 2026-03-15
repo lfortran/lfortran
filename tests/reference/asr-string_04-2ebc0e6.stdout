@@ -312,7 +312,7 @@
                         []
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()

@@ -16,8 +16,21 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 () AssumedLength DescriptorString)
-                                    ()
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (String 1 () AssumedLength DescriptorString)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    2 ~implicit_interface_mess_3
                                     Source
                                     Public
                                     Required
@@ -27,11 +40,96 @@
                                     ()
                                     .false.
                                     .false.
+                                ),
+                            ~implicit_interface_mess_3:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ~implicit_interface_mess_3_arg_0:
+                                                (Variable
+                                                    3
+                                                    ~implicit_interface_mess_3_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ~implicit_interface_mess_3_return_var:
+                                                (Variable
+                                                    3
+                                                    ~implicit_interface_mess_3_return_var
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    ~implicit_interface_mess_3
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (String 1 () AssumedLength DescriptorString)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 ~implicit_interface_mess_3_arg_0)]
+                                    []
+                                    (Var 3 ~implicit_interface_mess_3_return_var)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     xerror
                     (FunctionType
-                        [(String 1 () AssumedLength DescriptorString)]
+                        [(FunctionType
+                            [(Integer 4)]
+                            (String 1 () AssumedLength DescriptorString)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                        )]
                         ()
                         Source
                         Implementation
@@ -47,10 +145,12 @@
                     []
                     [(Var 2 mess)]
                     [(Print
-                        (StringItem
-                            (Var 2 mess)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        (FunctionCall
+                            2 mess
+                            ()
+                            [((IntegerConstant 1 (Integer 4) Decimal))]
+                            (String 1 () AssumedLength DescriptorString)
+                            ()
                             ()
                         )
                     )
