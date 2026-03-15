@@ -1570,6 +1570,10 @@ public:
                 last_expr_precedence = julia_prec::Base;
                 break;
             }
+            case (ASR::cast_kindType::LogicalToLogical): {
+                // No conversion needed for logical-to-logical in Julia
+                break;
+            }
             case (ASR::cast_kindType::IntegerToLogical): {
                 src = "Bool" + broadcast + "(" + src + ")";
                 last_expr_precedence = julia_prec::Base;

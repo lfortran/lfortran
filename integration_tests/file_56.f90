@@ -4,7 +4,7 @@ program read_fmt9
   real :: r1, r2, r3
   double precision :: d1, d2, d3, d4
 
-  open (10, file='fort.10', status='replace', form='formatted')
+  open (10, file='file_56_fort.10', status='replace', form='formatted')
 
 ! Test E format
   write (10,'(a13)') '+0.339567E+02'
