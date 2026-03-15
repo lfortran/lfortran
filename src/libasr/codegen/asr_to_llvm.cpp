@@ -15170,12 +15170,12 @@ public:
                             if (ASRUtils::extract_value(str_type->m_len, elem_len_val)) {
                                 llvm::Value* elem_len_llvm = llvm::ConstantInt::get(
                                     llvm::Type::getInt64Ty(context), elem_len_val);
-                                builder->CreateCall(fn, { src_data, src_len, fmt, arr_data, elem_len_llvm });
+                                builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data, elem_len_llvm });
                             } else {
                                 throw LCompilersException("Dynamic element length in string array read not yet supported");
                             }
                         } else {
-                            builder->CreateCall(fn, { src_data, src_len, fmt, arr_data });
+                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
                         }
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
