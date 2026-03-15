@@ -16108,23 +16108,29 @@ public:
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
 
+        // Scalar arg: prepend is_descriptor_array=0 before type_code
+        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         if (ASR::is_a<ASR::String_t>(*val_type)) {
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
             auto [str_data, str_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(val_type), elem_ptr, true);
             args.push_back(str_data);
             args.push_back(str_len);
         } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Integer_t>(*val_type)) {
             ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
             int32_t type_code = (int_type->m_kind <= 4) ? kInt32 : kInt64;
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Real_t>(*val_type)) {
             ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
             int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
@@ -16220,6 +16226,7 @@ public:
         single_args.push_back(fmt_len);
 
         if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+            // Fixed-size array: unroll into N scalar args (is_descriptor_array=0 each)
             int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
             int64_t single_arg_count = array_size * get_formatted_read_arg_count(val_type);
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, single_arg_count)));
@@ -16250,7 +16257,13 @@ public:
                 }
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
+        } else if (ASRUtils::is_array(expr_type_full)) {
+        // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
+                    val_type, var_ptr, module.get(), single_args);
         } else {
+            // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
                 get_formatted_read_arg_count(val_type))));
             add_formatted_read_arg(single_args, val_type, var_ptr);
@@ -16483,6 +16496,7 @@ public:
             if (ASRUtils::is_array(expr_type) && ASRUtils::is_fixed_size_array(expr_type)) {
                 total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type) * arg_count;
             } else {
+                // scalars and descriptor arrays each count as one read target
                 total_scalar_values += arg_count;
             }
         }
@@ -16553,6 +16567,10 @@ public:
                     }
                     add_formatted_read_arg(args, val_type, elem_ptr);
                 }
+            } else if (ASRUtils::is_array(expr_type_full)) {
+        // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+                arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
+                            val_type, var_ptr, module.get(), args);
             } else {
                 add_formatted_read_arg(args, val_type, var_ptr);
             }

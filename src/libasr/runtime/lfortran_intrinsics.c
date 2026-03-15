@@ -8113,6 +8113,10 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
 static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    // descriptor-array path for A not yet supported
+    // TODO: Add support for read into descriptor-arrays for character reads
+    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
     (void)type_code;
     char** str_data_ptr = va_arg(*args, char**);
@@ -8144,6 +8148,10 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
 static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    // descriptor-array path for L not yet supported
+    // TODO: Add support for read into descriptor-arrays for logical reads
+    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
     (void)type_code;
     int32_t* log_ptr = va_arg(*args, int32_t*);
@@ -8168,6 +8176,27 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        int32_t elem_tc  = va_arg(*args, int32_t);
+        void*   data_ptr = va_arg(*args, void*);
+        int32_t n_elems  = va_arg(*args, int32_t);
+        int32_t stride   = va_arg(*args, int32_t);
+        (*arg_idx)++;
+        size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
+        int read_width = (width > 0) ? width : 10;
+        for (int32_t i = 0; i < n_elems; i++) {
+            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * esz;
+            char* buffer = NULL; int field_len = 0;
+            if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                            consumed_newline, &buffer, &field_len)) break;
+            bool parse_error = false;
+            parse_integer_from_buffer(buffer, field_len, elem_ptr, elem_tc, blank_mode, &parse_error);
+            internal_free(buffer);
+            if (parse_error) { if (iostat) *iostat = 5010; break; }
+        }
+        return true;
+    }
     int32_t type_code = va_arg(*args, int32_t);
     void* int_ptr = va_arg(*args, void*);
     (*arg_idx)++;
@@ -8206,6 +8235,26 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode, int scale_factor, int decimal_mode)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        int32_t elem_tc  = va_arg(*args, int32_t);
+        void*   data_ptr = va_arg(*args, void*);
+        int32_t n_elems  = va_arg(*args, int32_t);
+        int32_t stride   = va_arg(*args, int32_t);
+        (*arg_idx)++;
+        size_t esz = (elem_tc == 5) ? sizeof(double) : sizeof(float);
+        int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
+        int read_width = (width > 0) ? width : 15;
+        for (int32_t i = 0; i < n_elems; i++) {
+            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * esz;
+            char* buffer = NULL; int field_len = 0;
+            if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                            consumed_newline, &buffer, &field_len)) break;
+            parse_real_from_buffer(buffer, field_len, elem_ptr, elem_tc, scale_factor, decimal_places);
+            internal_free(buffer);
+        }
+        return true;
+    }
     int32_t type_code = va_arg(*args, int32_t);
     void* real_ptr = va_arg(*args, void*);
     (*arg_idx)++;
@@ -8422,6 +8471,21 @@ LFORTRAN_API void _lfortran_string_formatted_read(
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
+// Variadic protocol for _lfortran_formatted_read / _lfortran_string_formatted_read:
+// Each read target is introduced by a bool flag `is_descriptor_array` (passed as int32_t):
+//
+// Scalar (is_descriptor_array == 0):
+//     int32_t is_descriptor_array = 0
+//     int32_t type_code   (0=char/ptr+len, 1=logical, 2=int32, 3=int64, 4=float, 5=double,
+//                          6=complex4, 7=complex8)
+//     void*   ptr          (char** + int64_t str_len for type_code 0)
+//
+// Descriptor array (is_descriptor_array == 1):
+//     int32_t is_descriptor_array = 1
+//     int32_t elem_type_code  (same codes as above, non-char)
+//     void*   data_ptr        (i8* / void* to first element)
+//     int32_t n_elems         (total number of elements)
+//     int32_t stride_elems    (stride in elements between consecutive items)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
