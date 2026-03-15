@@ -813,7 +813,7 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
                 first_idx.push_back(al, one);
                 ASR::expr_t* first_elem = PassUtils::create_array_ref(array, first_idx, al);
                 ASR::expr_t* tmp =
-                    builder.Variable(fn_scope, "_lcompilers_minval_tmp", element_type,
+                    builder.Variable(fn_scope, "_lcompilers_string_tmp", element_type,
                         ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
                 fn_body.push_back(al, builder.Assignment(tmp, first_elem));
                 fn_body.push_back(al, builder.Assignment(return_var, tmp));
@@ -828,7 +828,12 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             if (ASR::is_a<ASR::String_t>(*element_type)) {
-                ASR::expr_t* cond = builder.Lt(array_ref, return_var);
+                ASR::expr_t* cond = nullptr;
+                if (elemental_operation == &ASRBuilder::Min) {
+                    cond = builder.Lt(array_ref, return_var);
+                } else {
+                    cond = builder.Gt(array_ref, return_var);
+                }
                 std::vector<ASR::stmt_t*> if_body;
                 if_body.push_back(builder.Assignment(return_var, array_ref));
                 doloop_body.push_back(al, builder.If(cond, if_body, {}));
