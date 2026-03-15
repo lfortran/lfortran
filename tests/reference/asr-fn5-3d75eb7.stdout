@@ -227,8 +227,8 @@
                                     )]
                                     (Var 3 strout)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             print_dictionary:
@@ -593,6 +593,7 @@
                                         .true.
                                         ()
                                         ()
+                                        ()
                                     )
                                     (FileWrite
                                         0
@@ -852,11 +853,12 @@
                                         .true.
                                         ()
                                         ()
+                                        ()
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

@@ -2082,7 +2082,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             break;
         }
         case ASR::ttypeType::Logical: {
-            res = "i1";
+            ASR::Logical_t *logical = ASR::down_cast<ASR::Logical_t>(t);
+            res = "l" + std::to_string(logical->m_kind * 8);
             break;
         }
         case ASR::ttypeType::String: {
@@ -2149,17 +2150,21 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
-            // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            // if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
-            //     res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
-            // } else {
-            //     res = symbol_name(d->m_derived_type);
-            // }
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
+                if (sym != nullptr && !res.empty() && res[0] != '~' &&
+                        ASR::is_a<ASR::Struct_t>(*sym)) {
+                    ASR::Struct_t* struct_decl = ASR::down_cast<ASR::Struct_t>(sym);
+                    if (struct_decl->m_symtab && struct_decl->m_symtab->parent &&
+                            struct_decl->m_symtab->parent->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*struct_decl->m_symtab->parent->asr_owner)) {
+                        ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                            struct_decl->m_symtab->parent->asr_owner);
+                        res = std::string(symbol_name(parent_sym)) + "." + res;
+                    }
+                }
             } else {
                 res = "StructType";
             }
@@ -6456,7 +6461,18 @@ static inline void import_struct_t(Allocator& al,
                     ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
                 current_scope->add_symbol(unique_name, der_sym);
             } else {
-                der_sym = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved_underlying = ASRUtils::symbol_get_past_external(resolved);
+                if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+                    der_sym = resolved;
+                } else {
+                    std::string unique_name = current_scope->get_unique_name(sym_name);
+                    der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                    current_scope->add_symbol(unique_name, der_sym);
+                }
             }
             var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym, true);
             if( is_array ) {
@@ -6503,7 +6519,18 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
             s2c(al, struct_name), ASR::accessType::Public));
         current_scope->add_symbol(struct_name, struct_sym);
     } else {
-        struct_sym = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved_underlying = symbol_get_past_external(resolved);
+        if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+            struct_sym = resolved;
+        } else {
+            std::string unique_name = current_scope->get_unique_name(struct_name);
+            struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, loc, current_scope, s2c(al, unique_name), struct_sym,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+                s2c(al, struct_name), ASR::accessType::Public));
+            current_scope->add_symbol(unique_name, struct_sym);
+        }
     }
     return struct_sym;
 }

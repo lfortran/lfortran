@@ -518,7 +518,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitAnd, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::And, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::And, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -537,7 +537,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitOr, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -556,7 +556,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitXor, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Xor, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Xor, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -573,7 +573,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr));
+                return EXPR(ASR::make_LogicalNot_t(al, loc, x, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +

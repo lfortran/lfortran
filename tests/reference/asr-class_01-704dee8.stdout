@@ -300,8 +300,8 @@
                                     )]
                                     (Var 4 area)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             circle_print:
