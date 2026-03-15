@@ -12867,6 +12867,9 @@ public:
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 }
+            } else if (ASR::is_a<ASR::StringConstant_t>(*source_value)) {
+                std::string val = ASR::down_cast<ASR::StringConstant_t>(source_value)->m_s;
+                source_bits.assign(val.begin(), val.end());
             } else if (ASRUtils::is_array(ASRUtils::expr_type(source)) && ASRUtils::is_value_constant(source_value)) {
                 ASR::ArrayConstant_t* const_source = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(source_value));
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source_value);

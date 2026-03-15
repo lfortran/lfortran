@@ -3141,6 +3141,7 @@ RUN(NAME procedure_43 LABELS gfortran llvm EXTRAFILES procedure_43_module.f90 EX
 RUN(NAME procedure_44 LABELS gfortran llvm)
 RUN(NAME procedure_45 LABELS gfortran llvm)
 RUN(NAME procedure_46 LABELS gfortran llvm)
+RUN(NAME procedure_47 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_abstract_01 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3487,6 +3488,8 @@ RUN(NAME transfer_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME transfer_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME transfer_20 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
