@@ -1331,7 +1331,7 @@ semantic error: Implied DO loop must be enclosed within array constructor bracke
     |               ^^^^^^^^^^^^^ 
 
 semantic error: associated() argument must be a pointer
-   --> tests/errors/continue_compilation_1.f90:631:25
+   --> tests/errors/continue_compilation_1.f90:634:25
     |
-631 |     print *, associated(ppp)
+634 |     print *, associated(ppp)
     |                         ^^^ 

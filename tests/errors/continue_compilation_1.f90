@@ -629,6 +629,7 @@ program continue_compilation_1
     arr_idl = (i, i = 1, 4)
     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
+    
     integer, allocatable :: ppp(:)
     print *, associated(ppp)
 
