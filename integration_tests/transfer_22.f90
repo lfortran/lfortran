@@ -1,4 +1,4 @@
-program transfer_20
+program transfer_22
 use iso_fortran_env, only: int8, int64
 implicit none
 
