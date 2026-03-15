@@ -13389,9 +13389,23 @@ public:
         if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
              x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && !ASRUtils::is_string_only(expr_type(x.m_mold)) &&
                 !skip_string_to_int8_load ) {
+            bool need_pointer_for_memcpy = false;
             if (is_fixed_size_array_result) {
-                // For FixedSizeArray results, return a bitcasted pointer to the
-                // source data; the assignment handler will memcpy from it.
+                // Only return a pointer (for memcpy) when source and target
+                // element sizes differ; otherwise load the scalar value.
+                ASR::ttype_t* source_elem_asr = ASRUtils::extract_type(
+                    ASRUtils::expr_type(x.m_source));
+                llvm::Type* source_elem_llvm =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        x.m_source, source_elem_asr, module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
+                need_pointer_for_memcpy =
+                    data_layout.getTypeAllocSize(source_elem_llvm) !=
+                    data_layout.getTypeAllocSize(target_base_type);
+            }
+            if (need_pointer_for_memcpy) {
+                // Source and target element sizes differ: return a bitcasted
+                // pointer so the assignment handler can memcpy from it.
                 tmp = builder->CreateBitCast(source_ptr, target_llvm_type);
             } else {
                 tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));

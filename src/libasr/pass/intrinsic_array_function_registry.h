@@ -2995,7 +2995,11 @@ namespace AnyAll {
         bool init_logical_val, std::function<bool(bool,bool)> logical_operation) {
         ASR::expr_t *mask = args[0];
         ASR::expr_t* value = nullptr;
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        int mask_kind = 4;
+        if (mask) {
+            mask_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(mask));
+        }
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, mask_kind));
         if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
             ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
             bool result = init_logical_val;

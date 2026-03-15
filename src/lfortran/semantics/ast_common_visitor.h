@@ -1029,7 +1029,8 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
                                                         size_t arr_size,
                                                         ASR::ArrayConstant_t* left,
                                                         T right,
-                                                        bool is_right_logical_constant, diag::Diagnostics &diag) {
+                                                        bool is_right_logical_constant, diag::Diagnostics &diag,
+                                                        ASR::ttype_t* result_type = nullptr) {
     void* arr_data = nullptr;
     bool* array = al.allocate<bool>(arr_size);
 
@@ -1039,11 +1040,15 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
     }
 
     arr_data = array;
+    if (!result_type) {
+        result_type = left->m_type;
+    }
+    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
     ASR::expr_t* result_arr_const = ASRUtils::EXPR(
                                         ASR::make_ArrayConstant_t(
                                                 al, loc,
-                                                left->m_n_data,arr_data,
-                                                left->m_type,
+                                                arr_size * kind, arr_data,
+                                                result_type,
                                                 left->m_storage_format));
     return result_arr_const;
 }
@@ -1165,7 +1170,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag, left_type);
 
         } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* arr_const;
@@ -1174,7 +1179,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(right_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag, right_type);
 
         } else if (ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
@@ -1192,7 +1197,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             }
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false, diag, left_type);
 
         } else {
             bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
