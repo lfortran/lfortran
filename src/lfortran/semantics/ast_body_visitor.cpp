@@ -5523,11 +5523,16 @@ public:
         check_ArrayAssignmentCompatibility(target, value, x);
 
         if( overloaded_stmt == nullptr ) {
-            if ((target->type == ASR::exprType::Var ||
+            bool lhs_supports_implicit_cast = (
+                target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
                 target->type == ASR::exprType::StructInstanceMember ||
-                target->type == ASR::exprType::UnionInstanceMember) &&
+                target->type == ASR::exprType::UnionInstanceMember ||
+                (target->type == ASR::exprType::Cast &&
+                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
+            );
+            if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
