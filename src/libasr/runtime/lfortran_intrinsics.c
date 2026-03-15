@@ -8966,15 +8966,26 @@ LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%d%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    }
+    int n = 0;
+    int32_t tmp_i;
+    int rc = sscanf(buf + skip, "%d%n", &tmp_i, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *i = tmp_i;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -8985,19 +8996,29 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%" PRId64 "%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    }
+    int n = 0;
+    int64_t tmp_i;
+    int rc = sscanf(buf + skip, "%" PRId64 "%n", &tmp_i, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *i = tmp_i;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -9012,15 +9033,26 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%f%n", f, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, f);
+    }
+    int n = 0;
+    float tmp_f;
+    int rc = sscanf(buf + skip, "%f%n", &tmp_f, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *f = tmp_f;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -9035,15 +9067,26 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     convert_fortran_d_exponent(buf);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%lf%n", f, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, f);
+    }
+    int n = 0;
+    double tmp_f;
+    int rc = sscanf(buf + skip, "%lf%n", &tmp_f, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *f = tmp_f;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
