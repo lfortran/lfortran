@@ -4028,15 +4028,16 @@ namespace MatMul {
                 int matrix_a_dim_1 = -1, matrix_b_dim_1 = -1;
                 extract_value(matrix_a_dims[0].m_length, matrix_a_dim_1);
                 extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
-                append_error(diag, "The argument `matrix_b` must be of dimension "
-                    + std::to_string(matrix_a_dim_1) + ", provided an array "
-                    "with dimension " + std::to_string(matrix_b_dim_1) +
-                    " in `matrix_b('n', m)`", matrix_b->base.loc);
-                return nullptr;
-            } else {
-                result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
-                    matrix_b_dims[1].m_length));
+                if (matrix_a_dim_1 != -1 && matrix_b_dim_1 != -1) {
+                    append_error(diag, "The argument `matrix_b` must be of dimension "
+                        + std::to_string(matrix_a_dim_1) + ", provided an array "
+                        "with dimension " + std::to_string(matrix_b_dim_1) +
+                        " in `matrix_b('n', m)`", matrix_b->base.loc);
+                    return nullptr;
+                }
             }
+            result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
+                matrix_b_dims[1].m_length));
         } else if (matrix_a_rank == 2) {
             overload_id = 2;
             if (!dimension_expr_equal(matrix_a_dims[1].m_length,
@@ -4044,13 +4045,15 @@ namespace MatMul {
                 int matrix_a_dim_2 = -1, matrix_b_dim_1 = -1;
                 extract_value(matrix_a_dims[1].m_length, matrix_a_dim_2);
                 extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
-                std::string err_dims = "('n', m)";
-                if (matrix_b_rank == 1) err_dims = "('n')";
-                append_error(diag, "The argument `matrix_b` must be of dimension "
-                    + std::to_string(matrix_a_dim_2) + ", provided an array "
-                    "with dimension " + std::to_string(matrix_b_dim_1) +
-                    " in matrix_b" + err_dims, matrix_b->base.loc);
-                return nullptr;
+                if (matrix_a_dim_2 != -1 && matrix_b_dim_1 != -1) {
+                    std::string err_dims = "('n', m)";
+                    if (matrix_b_rank == 1) err_dims = "('n')";
+                    append_error(diag, "The argument `matrix_b` must be of dimension "
+                        + std::to_string(matrix_a_dim_2) + ", provided an array "
+                        "with dimension " + std::to_string(matrix_b_dim_1) +
+                        " in matrix_b" + err_dims, matrix_b->base.loc);
+                    return nullptr;
+                }
             }
             result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
                 matrix_a_dims[0].m_length));
@@ -5857,11 +5860,15 @@ namespace DotProduct {
         int overload_id = 1;
         int matrix_a_dim_1 = -1, matrix_b_dim_1 = -1;
         if ( !dimension_expr_equal(matrix_a_dims[0].m_length, matrix_b_dims[0].m_length) ) {
-            append_error(diag, "The argument `matrix_b` must be of dimension "
-                + std::to_string(matrix_a_dim_1) + ", provided an array "
-                "with dimension " + std::to_string(matrix_b_dim_1) +
-                " in `matrix_b('n')`", matrix_b->base.loc);
-            return nullptr;
+            extract_value(matrix_a_dims[0].m_length, matrix_a_dim_1);
+            extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
+            if (matrix_a_dim_1 != -1 && matrix_b_dim_1 != -1) {
+                append_error(diag, "The argument `matrix_b` must be of dimension "
+                    + std::to_string(matrix_a_dim_1) + ", provided an array "
+                    "with dimension " + std::to_string(matrix_b_dim_1) +
+                    " in `matrix_b('n')`", matrix_b->base.loc);
+                return nullptr;
+            }
         }
 
         ASR::expr_t *value = nullptr;
