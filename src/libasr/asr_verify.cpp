@@ -883,7 +883,23 @@ public:
                 + std::string(x.m_original_name)
                 + "') + scope_names not found in a module '"
                 + asr_owner_name + "'");
-            require(s == x.m_external,
+            ASR::symbol_t* s_resolved = ASRUtils::symbol_get_past_external(s);
+            ASR::symbol_t* external_resolved = ASRUtils::symbol_get_past_external(x.m_external);
+            bool same_symbol = (s_resolved == external_resolved);
+            if (!same_symbol && s_resolved != nullptr && external_resolved != nullptr) {
+                ASR::symbol_t* s_owner = ASRUtils::get_asr_owner(s_resolved);
+                ASR::symbol_t* external_owner = ASRUtils::get_asr_owner(external_resolved);
+                if (s_owner != nullptr) {
+                    s_owner = ASRUtils::symbol_get_past_external(s_owner);
+                }
+                if (external_owner != nullptr) {
+                    external_owner = ASRUtils::symbol_get_past_external(external_owner);
+                }
+                same_symbol = (std::string(ASRUtils::symbol_name(s_resolved))
+                               == std::string(ASRUtils::symbol_name(external_resolved)))
+                              && (s_owner == external_owner);
+            }
+            require(same_symbol,
                 std::string("ExternalSymbol::m_name + scope_names found but not equal to m_external, ") +
                 "original_name " + std::string(x.m_original_name) + ".");
         }
