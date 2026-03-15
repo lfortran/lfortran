@@ -1305,3 +1305,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
+
+semantic error: Implied DO loop must be enclosed within array constructor brackets [...]; expected '[( ... )]' in assignment
+   --> tests/errors/continue_compilation_1.f90:629:15
+    |
+629 |     arr_idl = (i, i = 1, 4)
+    |               ^^^^^^^^^^^^^ 

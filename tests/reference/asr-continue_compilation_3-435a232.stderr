@@ -82,6 +82,12 @@ semantic error: Type mismatch in argument `i`: expected `real(4)` but got `integ
 72 |     call check_incompatible_type(i)  ! Error: incompatible type passed
    |                                  ^ 
 
+semantic error: Argument 1 to Iachar must have length 1
+  --> tests/errors/continue_compilation_3.f90:74:14
+   |
+74 |     print *, iachar(s1)
+   |              ^^^^^^^^^^ 
+
 semantic error: Empty array constructor is not allowed
   --> tests/errors/continue_compilation_3.f90:91:9
    |

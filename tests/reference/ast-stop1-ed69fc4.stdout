@@ -159,7 +159,7 @@
             [(Stop
                 0
                 ()
-                (Logical .true.)
+                (Logical .true. ())
                 ()
             )]
             [(If
@@ -169,7 +169,7 @@
                 [(ErrorStop
                     0
                     ()
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )]
                 []
@@ -192,7 +192,7 @@
             [(Stop
                 0
                 1
-                (Logical .false.)
+                (Logical .false. ())
                 ()
             )]
             [(If
@@ -202,7 +202,7 @@
                 [(ErrorStop
                     0
                     1
-                    (Logical .false.)
+                    (Logical .false. ())
                     ()
                 )]
                 []
