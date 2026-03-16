@@ -14,7 +14,7 @@ program implicit_interface_35
   call sub_assumed(x, a)
   call sub_fixed(x, a)
 
-end program implicit_deallocate_35
+end program implicit_interface_35
 
 subroutine sub_assumed(F, Y)
 
