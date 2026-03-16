@@ -945,6 +945,7 @@ class ASRToLLVMVisitor;
 
         }
 
+        /// Dispatches to the correct finalizer based on type.
         void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
@@ -1012,6 +1013,11 @@ class ASRToLLVMVisitor;
             }
         }
 
+        /**
+         * @param arr llvm ptr to the array (descriptorArray, PointerArray, etc.)
+         * @param t array ASR type
+         * @param struct_sym if it's an array of struct. nullptr otherwise.
+         */
         void finalize_array(llvm::Value* const arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
