@@ -972,11 +972,15 @@ public:
                 has_object_type_spec = true;
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
-            } else if (x.m_args[i].m_len_expr) {
-                r += "character(len=";
-                visit_expr(*x.m_args[i].m_len_expr);
-                r += src;
-                r += ") :: ";
+            }
+            if (x.m_args[i].m_len_expr) {
+                has_object_type_spec = true;
+                if (!has_source_expr) {
+                    r += "character(len=";
+                    visit_expr(*x.m_args[i].m_len_expr);
+                    r += src;
+                    r += ") :: ";
+                }
             }
             visit_expr(*x.m_args[i].m_a);
             r += src;
