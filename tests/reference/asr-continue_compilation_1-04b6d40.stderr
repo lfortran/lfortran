@@ -332,6 +332,18 @@ semantic error: Result of `erfc` underflows its kind
 296 |     real(8), parameter :: erfc_param = erfc(40.12_8)
     |                                        ^^^^^^^^^^^^^ 
 
+semantic error: Contiguous attribute can only be applied to declared variables
+   --> tests/errors/continue_compilation_1.f90:298:19
+    |
+298 |     contiguous :: contig_not_declared
+    |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Contiguous attribute can only be applied to variables
+   --> tests/errors/continue_compilation_1.f90:299:19
+    |
+299 |     contiguous :: MyClass
+    |                   ^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |

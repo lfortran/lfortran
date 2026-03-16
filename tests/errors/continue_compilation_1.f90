@@ -295,8 +295,8 @@ program continue_compilation_1
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
     integer :: arr_idl(4)
-
-
+    contiguous :: contig_not_declared
+    contiguous :: MyClass
 
 
 

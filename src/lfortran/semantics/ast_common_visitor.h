@@ -4792,6 +4792,30 @@ public:
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrContiguous) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        diag.add(Diagnostic(
+                                            "Contiguous attribute can only be applied to declared variables",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {x.m_syms[i].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                    ASR::symbol_t* sym_past_external =
+                                        ASRUtils::symbol_get_past_external(sym_);
+                                    if (!ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                        diag.add(Diagnostic(
+                                            "Contiguous attribute can only be applied to variables",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {x.m_syms[i].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                        sym_past_external);
+                                    v->m_contiguous_attr = true;
+                                } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     // Skip common block references (save /block/) they are handled in common block processing
                                     if (s.m_sym == AST::symbolType::Slash) {
