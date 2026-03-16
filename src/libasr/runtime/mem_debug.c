@@ -40,7 +40,7 @@ static void register_ptr(void* const ptr, size_t size){
 
 void* dbg_malloc(size_t size) {
     void *ptr = malloc(size);
-    if(size && !ptr) fprintf(stderr, "Unexpected error at dbg_malloc");
+    if(size && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_malloc\n");
     register_ptr(ptr, size);
     return ptr;
 
@@ -48,7 +48,7 @@ void* dbg_malloc(size_t size) {
 
 void* dbg_calloc(size_t nmemb, size_t size) {
     void *ptr = calloc(nmemb, size);
-    if((size * nmemb) && !ptr) fprintf(stderr, "Unexpected error at dbg_calloc");
+    if((size * nmemb) && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_calloc\n");
     register_ptr(ptr, size * nmemb);
     return ptr;
 }
@@ -64,19 +64,19 @@ void  *dbg_realloc(void *ptr, size_t size){
 
     void *new_ptr = realloc(ptr, size);
     if (size && !new_ptr) {
-        fprintf(stderr, "Unexpected error at dbg_realloc");
+        fprintf(stderr, "ERROR : Unexpected error at dbg_realloc\n");
         return NULL;
     }
     
     if(!mem_dbg_hashTable.buckets){
-        fprintf(stderr, "Unexpected error at dbg_realloc:hashtable not initialized");
+        fprintf(stderr, "ERROR : Unexpected error at dbg_realloc:hashtable not initialized\n");
         return NULL;
     }
 
 
     Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
     if(!found){
-        fprintf(stderr, "ERROR : Not registered ptr");
+        fprintf(stderr, "ERROR : Not registered ptr\n");
         exit(1);
     }
 
@@ -95,12 +95,12 @@ void  *dbg_realloc(void *ptr, size_t size){
 void dbg_free(void *ptr) {
     if (!ptr) return;
     if(!mem_dbg_hashTable.buckets){
-        fprintf(stderr, "Error: at dbg_free -- hastable not initialized");
+        fprintf(stderr, "Error: at dbg_free -- hastable not initialized\n");
         exit(1);
     }
     Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
     if (!found) {
-        fprintf(stderr, "Error: at dbg_free -- ptr not found");
+        fprintf(stderr, "Error: at dbg_free -- ptr not found\n");
         exit(1);
     }
     free(ptr);

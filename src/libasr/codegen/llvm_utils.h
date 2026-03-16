@@ -952,9 +952,20 @@ class ASRToLLVMVisitor;
                     return_val = val;
                 }
 
-                void free() {
+                void free() { // This is runtime lib allocated memory -- Isolate away from compiler's memory debug path
                     if(!return_val) return;
-                    llvmUtils_instance_->lfortran_free(return_val);
+                    std::string func_name = "_lfortran_free";
+                    llvm::Function *fn =  llvmUtils_instance_->module->getFunction(func_name);
+                    if (!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(llvmUtils_instance_->context), {
+                                    llvm::Type::getInt8Ty(llvmUtils_instance_->context)->getPointerTo()
+                                }, false);
+                        fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage,
+                                                    func_name, llvmUtils_instance_->module);
+                    }
+                    llvm::Type* const i8PtrTy = llvm::Type::getInt8Ty(llvmUtils_instance_->context)->getPointerTo();
+                    llvmUtils_instance_->builder->CreateCall(fn, {llvmUtils_instance_->builder->CreateBitCast(return_val, i8PtrTy)});
                     return_val = nullptr;
                 }
             };
