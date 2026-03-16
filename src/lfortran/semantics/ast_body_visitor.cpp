@@ -359,6 +359,7 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr;
+        int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -783,9 +784,34 @@ public:
                         )
                     );
                 }
+            } else if (m_arg_str == std::string("err")) {
+                if (err_label != -1) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `err` found, `err` has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                ASR::expr_t* label_expr = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                if (!ASR::is_a<ASR::IntegerConstant_t>(*label_expr)) {
+                    diag.add(Diagnostic(
+                        "`err` must be a constant integer label",
+                        Level::Error, Stage::Semantic, {Label("", {diag_loc})}));
+                    throw SemanticAbort();
+                }
+                err_label = ASR::down_cast<ASR::IntegerConstant_t>(label_expr)->m_n;
+                if (labels.find(std::to_string(err_label)) == labels.end()) {
+                    Location diag_loc = kwarg.loc;
+                    diag.add(Diagnostic(
+                        "err= label " + std::to_string(err_label) + " is not defined",
+                        Level::Error, Stage::Semantic, {Label("", {diag_loc})}));
+                    throw SemanticAbort();
+                }
             }
             else {
-                const std::unordered_set<std::string> unsupported_args {"err", "fileopt", "pad"};
+                const std::unordered_set<std::string> unsupported_args {"fileopt", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -824,9 +850,21 @@ public:
                 }));
             throw SemanticAbort();
         }
+        // If no iostat variable and err label is present
+        if (err_label != -1 && a_iostat == nullptr) {
+            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, x.base.base.loc, 4));
+            std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
+            ASR::symbol_t* iostat_sym = declare_implicit_variable2(
+                x.base.base.loc, iostat_name, ASRUtils::intent_local, int_type);
+            a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
+        }
         tmp = ASR::make_FileOpen_t(
             al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign);
         tmp_vec.push_back(tmp);
+        if (err_label != -1) {
+            emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);
+        }
         tmp = nullptr;
     }
 
@@ -1202,6 +1240,24 @@ public:
             tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                 body.p, body.size(), nullptr, 0));
         }
+    }
+
+    void emit_err_label_jump(int64_t err_label, ASR::expr_t* a_iostat,
+            const Location& loc, std::vector<ASR::asr_t*>& tmp_vec) {
+        if (err_label == -1) return;
+        ASR::ttype_t* iostat_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::expr_type(a_iostat));
+        ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, 0, iostat_type));
+        ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
+            al, loc, compiler_options.po.default_integer_kind));
+        ASR::expr_t* err_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+            al, loc, a_iostat, ASR::cmpopType::Gt, zero, cmp_type, nullptr));
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(
+            al, loc, err_label, s2c(al, std::to_string(err_label)))));
+        tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
+            body.p, body.size(), nullptr, 0));
     }
 
     void collect_labels() {
