@@ -964,6 +964,9 @@ public:
                     prefer_mold_clause = true;
                 }
             }
+            if (emit_type_spec && x.m_args[i].m_len_expr && !has_source_expr) {
+                emit_type_spec = false;
+            }
             if (emit_type_spec && has_source_expr) {
                 has_object_type_spec = true;
                 emit_type_spec = false;
