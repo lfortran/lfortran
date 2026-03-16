@@ -6308,6 +6308,9 @@ public:
             } else { // Alloca for rest of types (not its internals if exist).
                 if (v->m_storage == ASR::storage_typeType::Save) {
                     std::string parent_function_name = std::string(x.m_name);
+                    if (x.class_type == ASR::symbolType::Block) {
+                        parent_function_name += "_" + x.m_symtab->get_counter();
+                    }
                     std::string global_name = parent_function_name+ "." + v->m_name;
                     ptr = module->getOrInsertGlobal(global_name, type);
                     llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
