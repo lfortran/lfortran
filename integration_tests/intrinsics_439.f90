@@ -1,5 +1,4 @@
 program intrinsics_439
-<<<<<<< HEAD
 character(len=1) :: mn, mx
 
 mn = minval(['x','y'])
