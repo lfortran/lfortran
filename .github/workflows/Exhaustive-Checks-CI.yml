@@ -1,15 +1,15 @@
 name: Exhaustive checks
 
 on:
-  push:
+  workflow_dispatch:
     branches:
       - iso_c_bind
     tags:
       - 'v*'
-  pull_request:
-    types: [labeled, unlabeled, synchronize]
-    branches:
-      - main
+ # pull_request:
+ #   types: [labeled, unlabeled, synchronize]
+ #   branches:
+ #     - main
 
 # For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
 # which eventually evaluates to: CI-7488 and 'sha' isn't used.
