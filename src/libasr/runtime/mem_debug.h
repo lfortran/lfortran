@@ -12,13 +12,15 @@ void   dbg_free   (void *ptr);
 void dbg_report ();
 
 /*  Macro overrides — only when MEMORY_DEBUG is defined AND we are not    */
-/*  inside the debugger's own implementation file.                     */
+/*  inside the debugger's own implementation file. */
+/*  Use it when forcing memory debug (compiler's side and runtime-lib's side)  */
+/*  Notice : --detect-leaks flag will have no effect -- always ON */
 
-// #if defined(OVERRIDE_MEM_FUNCTIONS) && !defined(MEM_DEBUG_IMPL)
+#if !defined(MEM_DEBUG_IMPL)
 // #  define malloc(s)      dbg_malloc (s)
 // #  define calloc(n, s)   dbg_calloc (n, s)
 // #  define realloc(p, s)  dbg_realloc(p, s)
 // #  define free(p)        dbg_free   (p)
-// #endif
+#endif
 
 #endif /* MEM_DEBUG_HEADER */

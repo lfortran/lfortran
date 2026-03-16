@@ -110,9 +110,6 @@ set(WITH_LCOMPILERS_FAST_ALLOC yes
 
 set(WITH_CCACHE no CACHE BOOL "Build with ccache support")
 
-# MEMORY_DEBUG
-set(MEMORY_DEBUG no CACHE BOOL "Enable MEMORY_DEBUG allocation tracking")
-
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
@@ -452,7 +449,6 @@ message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("WITH_KOKKOS: ${WITH_KOKKOS}")
 message("WITH_CCACHE: ${WITH_CCACHE}")
-message("MEMORY_DEBUG: ${MEMORY_DEBUG}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 message("CFLAGS: ${CMAKE_C_FLAGS}")
 
