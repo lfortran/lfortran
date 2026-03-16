@@ -3600,6 +3600,18 @@ public:
             ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
             ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var->m_type_declaration == placeholder_sym) {
+                        var->m_type_declaration = real_sym;
+                        if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                        } else {
+                            var->m_type = real_func_type;
+                        }
+                    }
+                }
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
                     for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {
