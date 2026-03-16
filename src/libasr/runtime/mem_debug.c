@@ -107,21 +107,26 @@ void dbg_free(void *ptr) {
     mem_debugger_remove(&mem_dbg_hashTable, ptr);
 }
 
+// Called to report any leaks
 void dbg_report() {
     size_t leaks = 0;
     size_t total_bytes = 0;
+    fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;
         Alloc_info *a = &mem_dbg_hashTable.buckets[i].value;
-        fprintf(stderr, "LEAK: %zu bytes\n", a->size);
+        fprintf(stderr, "   ==> LEAK: %zu bytes\n", a->size);
         leaks++;
         total_bytes += a->size;
     }
+    fprintf(stdout, "----------------------------------------------------\n");
     if (leaks){
-        fprintf(stderr, "Total Leaks Found : %zu, %zu bytes total\n", leaks, total_bytes);
+        fprintf(stderr, "\n----------------------------------------------------\n");
+        fprintf(stderr, "TOTAL LEAKS FOUND : %zu, %zu bytes total\n", leaks, total_bytes);
+        fprintf(stderr, "----------------------------------------------------\n");
         exit(1);
     }
     else {
-        fprintf(stderr, "no leaks\n");
+        fprintf(stdout, "NO LEAKS FOUND\n");
     }
 }
