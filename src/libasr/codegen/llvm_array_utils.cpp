@@ -511,10 +511,15 @@ namespace LCompilers {
             dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
                                     llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
 
-            // If unallocated, set lower bound and size to 1.
-            // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 1));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 2));
+            // Initialize all dimensions with default values (stride=0, lower_bound=1, size=1).
+            // This ensures no uninitialized memory is read when the array_op pass
+            // generates code to check array dimensions before the array is allocated.
+            for (int i = 0; i < n_dims; i++) {
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_first, i);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), llvm_utils->create_gep2(dim_des, dim_val, 0));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 1));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 2));
+            }
 
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(type, arr, true));
