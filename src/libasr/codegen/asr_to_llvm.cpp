@@ -18487,14 +18487,45 @@ public:
                         actual_array_data_type->getPointerTo(), llvm_utils->create_gep2(actual_array_type, dt, 0));
                     arg_type = ASRUtils::extract_type(arg_type);
 
-                    // Store intrinsic type vptr (skip for struct types which have their own vtable)
-                    if (!ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                    // Store vptr in wrapper field 0
+                    if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                        if (ASRUtils::is_class_type(arg_type)) {
+                            llvm::Value* v = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
+                            llvm::Value* loaded_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, v);
+                            llvm::Value* w = builder->CreateBitCast(
+                                unlimited_polymorphic_struct, llvm_utils->vptr_type->getPointerTo());
+                            builder->CreateStore(loaded_vptr, w);
+                        } else {
+                            struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
+                                unlimited_polymorphic_struct, module.get());
+                        }
+                    } else {
                         struct_api->store_intrinsic_type_vptr(arg_type,
                             ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct, module.get());
                     }
-                    // Store inrinsic type data ptr
-                    builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
-                                        data_ptr);
+                    // Store intrinsic type data ptr
+                    if (ASR::is_a<ASR::String_t>(*arg_type)) {
+                        // Character arrays: source has ONE string_descriptor with flat
+                        // char buffer, but class(*) expects per-element string_descriptors.
+                        llvm::Type* str_desc_ty = llvm_utils->string_descriptor;
+                        llvm::Value* src_char_data = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr,
+                            llvm_utils->create_gep2(str_desc_ty, actual_data, 0));
+                        llvm::Value* char_len = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(str_desc_ty, actual_data, 1));
+                        llvm::Value* n_elems = arr_descr->get_array_size(
+                            actual_array_type, dt, nullptr, 4);
+                        llvm::Value* n_elems_i64 = builder->CreateSExtOrTrunc(
+                            n_elems, llvm::Type::getInt64Ty(context));
+                        llvm::Value* descs_i8 = llvm_utils->expand_flat_to_char_descriptors(
+                            src_char_data, char_len, n_elems_i64);
+                        builder->CreateStore(descs_i8, data_ptr);
+                    } else {
+                        builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
+                                            data_ptr);
+                    }
                     return unlimited_polymorphic_type_array;
                 } else {
                     llvm::Type* unlimited_polymorphic_type = llvm_utils->get_type_from_ttype_t_util(
