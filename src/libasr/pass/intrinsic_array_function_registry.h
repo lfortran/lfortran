@@ -741,17 +741,27 @@ static inline ASR::asr_t* create_ArrIntrinsic(
 
     ASR::expr_t *value = nullptr;
     bool runtime_dim = false;
+    bool can_eval_compile_time = true;
     Vec<ASR::expr_t*> arg_values;
     arg_values.reserve(al, 3);
     ASR::expr_t *array_value = ASRUtils::expr_value(array);
+    if (!array_value) {
+        can_eval_compile_time = false;
+    }
     arg_values.push_back(al, array_value);
     if( dim ) {
         ASR::expr_t *dim_value = ASRUtils::expr_value(dim);
         runtime_dim = dim_value == nullptr;
+        if (!dim_value) {
+            can_eval_compile_time = false;
+        }
         arg_values.push_back(al, dim_value);
     }
     if( mask ) {
         ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
+        if (!mask_value) {
+            can_eval_compile_time = false;
+        }
         arg_values.push_back(al, mask_value);
     }
 
@@ -776,7 +786,9 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(return_type)));
         }
     }
-    value = eval_ArrIntrinsic(al, loc, return_type, arg_values, diag, intrinsic_func_id);
+    if (can_eval_compile_time) {
+        value = eval_ArrIntrinsic(al, loc, return_type, arg_values, diag, intrinsic_func_id);
+    }
 
     Vec<ASR::expr_t*> arr_intrinsic_args;
     arr_intrinsic_args.reserve(al, 3);

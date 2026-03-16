@@ -796,6 +796,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 ASR::expr_t* label_expr = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
                 if (!ASR::is_a<ASR::IntegerConstant_t>(*label_expr)) {
+                    Location diag_loc = kwarg.loc;
                     diag.add(Diagnostic(
                         "`err` must be a constant integer label",
                         Level::Error, Stage::Semantic, {Label("", {diag_loc})}));
