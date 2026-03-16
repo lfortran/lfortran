@@ -19294,15 +19294,12 @@ public:
                         if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
                             if (ASRUtils::is_array(expected_arg_type) &&
                                 !ASRUtils::is_array(passed_arg_type)) {
-                                ASR::dimension_t* expected_dims = nullptr;
-                                int expected_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                    expected_arg_type, expected_dims);
-                                bool is_assumed_size = expected_n_dims > 0 &&
-                                    expected_dims[expected_n_dims - 1].m_length == nullptr;
                                 ASR::ttype_t* expected_elem_type = ASRUtils::type_get_past_array(expected_arg_type);
-                                if (is_assumed_size &&
-                                    ASRUtils::types_equal(expected_elem_type, passed_arg_type,
+                                if (ASRUtils::types_equal(expected_elem_type, passed_arg_type,
                                         expected_arg, passed_arg, true)) {
+                                    // Sequence association (F2018 15.5.2.11):
+                                    // an array element may be passed to an
+                                    // explicit-shape or assumed-size array dummy.
                                     continue;
                                 }
                             }
