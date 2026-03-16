@@ -208,6 +208,16 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         visit_ArrayOp(x);
     }
 
+    void visit_BitCast(const ASR::BitCast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_BitCast(x);
+        ASR::BitCast_t& xx = const_cast<ASR::BitCast_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_mold)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StructInstanceMember(x);
         if( !ASRUtils::is_array(x.m_type) ) {
@@ -1516,13 +1526,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
 
             // Don't generate an element-wise loop for transfer() (BitCast) when
-            // source and result are fixed-size arrays with different element byte
-            // sizes. The element counts differ so the loop indices would go out
+            // source and result are arrays with different element byte sizes.
+            // The element counts differ so the loop indices would go out
             // of bounds on the source array. Leave the whole-array BitCast for
             // the LLVM backend to lower as a memcpy.
-            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type) &&
-                ASRUtils::is_fixed_size_array(src_type) &&
-                ASRUtils::is_fixed_size_array(bc->m_type)) {
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
                 int src_kind = ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::extract_type(src_type));
                 int res_kind = ASRUtils::extract_kind_from_ttype_t(

@@ -1539,6 +1539,9 @@ RUN(NAME intrinsics_434 LABELS gfortran llvm) # selected_int_kind
 RUN(NAME intrinsics_435 LABELS gfortran llvm) # minloc/maxloc with dim and array mask
 RUN(NAME intrinsics_436 LABELS gfortran llvm) # rand
 
+RUN(NAME intrinsics_437 LABELS gfortran llvm) # norm2 with dim argument
+RUN(NAME intrinsics_438 LABELS gfortran llvm) # norm2 with variable dim argument
+
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1972,6 +1975,7 @@ RUN(NAME logical_kind_02 LABELS gfortran llvm)
 RUN(NAME logical_kind_03 LABELS gfortran llvm)
 RUN(NAME logical_kind_04 LABELS gfortran llvm)
 RUN(NAME logical_kind_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form)
+RUN(NAME logical_kind_06 LABELS gfortran llvm)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3379,6 +3383,7 @@ RUN(NAME matmul_02 LABELS gfortran)
 RUN(NAME matmul_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME matmul_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME matmul_05 LABELS gfortran llvm)
+RUN(NAME matmul_06 LABELS gfortran llvm)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
@@ -3488,8 +3493,10 @@ RUN(NAME transfer_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME transfer_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
 RUN(NAME transfer_20 LABELS gfortran llvm)
+RUN(NAME transfer_21 LABELS gfortran llvm)
+RUN(NAME transfer_22 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3870,4 +3877,5 @@ RUN(NAME char_param_reshape_01 LABELS gfortran llvm)
 RUN(NAME insertion_sort_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME iachar_achar_01 LABELS gfortran llvm)
 RUN(NAME stdlib_bitsets_01 LABELS gfortran llvm)
+RUN(NAME pure_side_effects_03 LABELS gfortran llvm)
 RUN(NAME merge_str_01 LABELS gfortran llvm)
