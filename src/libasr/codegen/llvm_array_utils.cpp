@@ -1181,7 +1181,8 @@ namespace LCompilers {
 
                 llvm_utils->start_new_block(loopHead);
                 llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
-                llvm::Value* cond = builder->CreateICmpSLT(idx_val, num_elements);
+                llvm::Value* cond = builder->CreateICmpSLT(idx_val,
+                    builder->CreateSExtOrTrunc(num_elements, index_type));
                 builder->CreateCondBr(cond, loopBody, loopEnd);
 
                 llvm_utils->start_new_block(loopBody);
@@ -1252,7 +1253,9 @@ namespace LCompilers {
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
                 // head
                 llvm_utils->start_new_block(loophead);
-                llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
+                llvm::Value *cond = builder->CreateICmpSLT(
+                    builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims->getType()),
+                    n_dims);
                 builder->CreateCondBr(cond, loopbody, loopend);
 
                 // body
