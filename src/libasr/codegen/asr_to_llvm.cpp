@@ -18866,6 +18866,10 @@ public:
                             // Convert user dimension expression to i32 to match descriptor format
                             llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
                                 tmp, llvm::Type::getInt32Ty(context));
+                            // Fortran standard: negative extent means zero-size array
+                            llvm::Value* zero_i32 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                            pointer_length = builder->CreateSelect(
+                                builder->CreateICmpSLT(pointer_length, zero_i32), zero_i32, pointer_length);
                             llvm::Value* cond = nullptr;
                             if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                 cond = builder->CreateICmpNE(descriptor_length, pointer_length);

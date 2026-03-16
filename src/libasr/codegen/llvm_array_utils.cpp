@@ -341,6 +341,10 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
+                // Fortran standard: negative extent means zero-size array
+                llvm::Value* zero = llvm::ConstantInt::get(dim_size->getType(), 0);
+                dim_size = builder->CreateSelect(
+                    builder->CreateICmpSLT(dim_size, zero), zero, dim_size);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -419,6 +423,10 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
+                // Fortran standard: negative extent means zero-size array
+                llvm::Value* zero = llvm::ConstantInt::get(dim_size->getType(), 0);
+                dim_size = builder->CreateSelect(
+                    builder->CreateICmpSLT(dim_size, zero), zero, dim_size);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
