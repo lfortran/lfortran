@@ -8257,6 +8257,54 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_i8(char *str, int64_t len, char *format, int8_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    int32_t tmp;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", &tmp, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &tmp);
+    }
+    free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    *i = (int8_t)tmp;
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format, int16_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    int32_t tmp;
+    if (offset) {
+        int skip = 0;
+        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        int n = 0;
+        rc = sscanf(buf + skip, "%d%n", &tmp, &n);
+        *offset = off + skip + n;
+    } else {
+        rc = sscanf(buf, format, &tmp);
+    }
+    free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    *i = (int16_t)tmp;
+    if (iostat) *iostat = 0;
+}
+
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
