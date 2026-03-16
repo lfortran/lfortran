@@ -1,4 +1,4 @@
-program intrinsics_436
+program intrinsics_439
 <<<<<<< HEAD
 character(len=1) :: mn, mx
 
@@ -11,4 +11,4 @@ if (mx /= 'y') error stop "maxval incorrect"
 print *, mn
 print *, mx
 
-end program intrinsics_436
+end program intrinsics_439
