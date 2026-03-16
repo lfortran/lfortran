@@ -322,7 +322,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.10
-            binutils
+            binutils=2.45.1
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
@@ -741,14 +741,14 @@ jobs:
 
       - name: Log in to the Container registry
         if: ${{ github.event_name == 'push' }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.USER }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name == 'push' }}

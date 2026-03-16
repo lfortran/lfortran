@@ -790,8 +790,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fpm_build_settings:

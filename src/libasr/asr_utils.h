@@ -2082,7 +2082,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             break;
         }
         case ASR::ttypeType::Logical: {
-            res = "i1";
+            ASR::Logical_t *logical = ASR::down_cast<ASR::Logical_t>(t);
+            res = "l" + std::to_string(logical->m_kind * 8);
             break;
         }
         case ASR::ttypeType::String: {
@@ -2149,17 +2150,21 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
-            // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            // if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
-            //     res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
-            // } else {
-            //     res = symbol_name(d->m_derived_type);
-            // }
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
+                if (sym != nullptr && !res.empty() && res[0] != '~' &&
+                        ASR::is_a<ASR::Struct_t>(*sym)) {
+                    ASR::Struct_t* struct_decl = ASR::down_cast<ASR::Struct_t>(sym);
+                    if (struct_decl->m_symtab && struct_decl->m_symtab->parent &&
+                            struct_decl->m_symtab->parent->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*struct_decl->m_symtab->parent->asr_owner)) {
+                        ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
+                            struct_decl->m_symtab->parent->asr_owner);
+                        res = std::string(symbol_name(parent_sym)) + "." + res;
+                    }
+                }
             } else {
                 res = "StructType";
             }
@@ -3678,7 +3683,8 @@ static inline bool is_array_of_strings(ASR::ttype_t* type){
  * If the string is already of the required physical type, it returns the same string
  * PointerString -> Needs to have information about the length of the string
 */
-static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
+static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string,
+        ASR::string_physical_typeType to, bool make_allocatable = false){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(string)));
     LCOMPILERS_ASSERT(to != str_type->m_physical_type)
@@ -3686,7 +3692,10 @@ static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_
         ASR::make_String_t(al, string->base.loc,
             1, nullptr,
             ASR::ImplicitLength, to));
-            
+    if (make_allocatable) {
+        cast_expr_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, string->base.loc, cast_expr_type));
+    }
     return ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         str_type->m_physical_type, to, cast_expr_type, nullptr));
@@ -5051,6 +5060,28 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
         ASR::expr_t* new_value = externalize_struct_refs_in_init(al, sc->m_value, scope);
         return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, init_expr->base.loc,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
+    } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
+        ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
+        if (pnc->m_var_expr != nullptr) {
+            // The var_expr references a symbol in the struct's scope which may
+            // not be accessible from the current scope. Replace it with the
+            // struct type symbol resolved from the current scope.
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(pnc->m_var_expr);
+            if (struct_sym != nullptr) {
+                std::string struct_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                ASR::symbol_t* resolved = scope->resolve_symbol(struct_name);
+                if (resolved != nullptr) {
+                    ASR::expr_t* new_var_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, init_expr->base.loc, resolved));
+                    return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                        al, init_expr->base.loc, pnc->m_type, new_var_expr));
+                }
+            }
+            // If we can't resolve, strip var_expr to avoid scope violations
+            return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, init_expr->base.loc, pnc->m_type, nullptr));
+        }
     }
 
     // For other expression types, return as-is (they don't contain struct references in their construction)
@@ -5220,6 +5251,19 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             *current_expr = orig_args[arg_idx].m_value;
         }  else if (ASRUtils::expr_value((ASR::expr_t*)x)){ //  Replace Constant args 
             *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
+        }
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_StructInstanceMember(x);
+
+        ASR::symbol_t* m_m = x->m_m;
+        SymbolTable* m_m_scope = ASRUtils::symbol_parent_symtab(m_m);
+        if (m_m_scope->get_counter() != current_scope->get_counter()) {
+            ASR::symbol_t* imported = import_struct_instance_member(al, m_m, current_scope);
+            if (imported) {
+                x->m_m = imported;
+            }
         }
     }
 
@@ -6417,7 +6461,18 @@ static inline void import_struct_t(Allocator& al,
                     ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
                 current_scope->add_symbol(unique_name, der_sym);
             } else {
-                der_sym = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved_underlying = ASRUtils::symbol_get_past_external(resolved);
+                if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+                    der_sym = resolved;
+                } else {
+                    std::string unique_name = current_scope->get_unique_name(sym_name);
+                    der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                    current_scope->add_symbol(unique_name, der_sym);
+                }
             }
             var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym, true);
             if( is_array ) {
@@ -6464,7 +6519,18 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
             s2c(al, struct_name), ASR::accessType::Public));
         current_scope->add_symbol(struct_name, struct_sym);
     } else {
-        struct_sym = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved_underlying = symbol_get_past_external(resolved);
+        if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+            struct_sym = resolved;
+        } else {
+            std::string unique_name = current_scope->get_unique_name(struct_name);
+            struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, loc, current_scope, s2c(al, unique_name), struct_sym,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+                s2c(al, struct_name), ASR::accessType::Public));
+            current_scope->add_symbol(unique_name, struct_sym);
+        }
     }
     return struct_sym;
 }
@@ -7090,7 +7156,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !is_character_phsyical_types_matched(orig_arg_type, arg_type)){
             arg = a_args[i].m_value = 
                 create_string_physical_cast(al, arg, 
-                    get_string_type(orig_arg_type)->m_physical_type);
+                    get_string_type(orig_arg_type)->m_physical_type,
+                    is_allocatable(func_type->m_arg_types[i + is_method]));
         }
 
         if( func_type->m_abi != ASR::abiType::BindC &&

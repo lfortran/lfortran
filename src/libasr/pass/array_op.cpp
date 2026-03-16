@@ -151,10 +151,21 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_ArrayOp(const T& x) {
         T& xx = const_cast<T&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_left)) &&
-            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) ) {
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) &&
+            ASRUtils::is_array(xx.m_type) ) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
+    }
+
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntegerBinOp(x);
+        visit_ArrayOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_UnsignedIntegerBinOp(x);
+        visit_ArrayOp(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
@@ -195,6 +206,16 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalBinOp(x);
         visit_ArrayOp(x);
+    }
+
+    void visit_BitCast(const ASR::BitCast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_BitCast(x);
+        ASR::BitCast_t& xx = const_cast<ASR::BitCast_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_mold)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
@@ -596,7 +617,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             x.m_iomsg, x.m_iostat, x.m_id,
             inner_vals.p, 1,
             x.m_separator, x.m_end, x.m_overloaded,
-            x.m_is_formatted, x.m_nml, x.m_rec));
+            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos));
 
         // Wrap Scalar FileWrites in DoLoop
         Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
@@ -1260,6 +1281,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     continue;
                 }
+                // Skip mold-based allocations: m_type being set indicates
+                // the allocate uses mold= (type/shape only, no data copy).
+                if (x.m_args[i].m_type != nullptr) {
+                    continue;
+                }
                 ASRUtils::ExprStmtDuplicator duplicator(al);
                 ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
@@ -1341,6 +1367,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 xx.m_value = iaf->m_value;
             }
         }
+        if ( ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value) ) {
+            ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
+            if ( ar->m_value != nullptr ) {
+                xx.m_value = ar->m_value;
+            }
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
             std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
@@ -1404,6 +1436,23 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
         }
 
+        // Collect array variables from overloaded SubroutineCall arguments
+        // so they are replaced with indexed ArrayItem nodes in generate_loop
+        if (xx.m_overloaded != nullptr &&
+                ASR::is_a<ASR::SubroutineCall_t>(*xx.m_overloaded)) {
+            ASR::SubroutineCall_t* sc = ASR::down_cast<ASR::SubroutineCall_t>(
+                xx.m_overloaded);
+            if (ASRUtils::is_elemental(sc->m_name)) {
+                for (size_t i = 0; i < sc->n_args; i++) {
+                    if (sc->m_args[i].m_value != nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(
+                                sc->m_args[i].m_value))) {
+                        vars.push_back(al, &(sc->m_args[i].m_value));
+                    }
+                }
+            }
+        }
+
         if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
             ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
         ) {
@@ -1440,10 +1489,58 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Don't generate a loop for a move assignment
         // The assignment should be handled in the backend
         if (x.m_move_allocation) {
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) && vars.size() != 1) {
+                // ReAlloc was inserted for an allocatable target in previous part,
+                // but the move assignment overwrites target.data
+                // with value.data — leaking the buffer ReAlloc just allocated.
+                // Free it first to avoid this memory leak. 
+                // Note: This fix is temporary. This fix should be in backend, where 
+                // while assigning to any allocatable variable target, backend should 
+                // deallocate target first to free any heap allocation (malloc) used
+                // to store in the target variable
+                Vec<ASR::expr_t*> dealloc_vars;
+                dealloc_vars.reserve(al, 1); 
+                dealloc_vars.push_back(al, const_cast<ASR::expr_t*>(x.m_target));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
+                    dealloc_vars.p, dealloc_vars.size())));
+            } 
             ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
             pass_result.push_back(al, stmt);
             debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
             return;
+        }
+
+        if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
+            ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+
+            if (bc->m_size != nullptr &&
+                ASRUtils::is_array(src_type) &&
+                !ASRUtils::is_string_only(src_type)) {
+                ASR::stmt_t* stmt = ASRUtils::STMT(
+                    ASRUtils::make_Assignment_t_util(al, loc,
+                        x.m_target, x.m_value, x.m_overloaded,
+                        x.m_realloc_lhs, x.m_move_allocation));
+                pass_result.push_back(al, stmt);
+                return;
+            }
+
+            // Don't generate an element-wise loop for transfer() (BitCast) when
+            // source and result are arrays with different element byte sizes.
+            // The element counts differ so the loop indices would go out
+            // of bounds on the source array. Leave the whole-array BitCast for
+            // the LLVM backend to lower as a memcpy.
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
+                int src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(src_type));
+                int res_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(bc->m_type));
+                if (src_kind != res_kind) {
+                    pass_result.push_back(al,
+                        const_cast<ASR::stmt_t*>(&(x.base)));
+                    return;
+                }
+            }
         }
 
         Vec<ASR::expr_t**> fix_type_args;

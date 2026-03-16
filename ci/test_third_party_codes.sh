@@ -137,6 +137,19 @@ time_section "🧪 Testing splpak" '
   rm -rf splpak
 '
 
+time_section "🧪 Testing neural-fortran" '
+  git clone https://github.com/modern-fortran/neural-fortran
+  cd neural-fortran
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with neural-fortran"
+  cd ..
+'
+
 time_section "🧪 Testing Fiats" '
   git clone https://github.com/BerkeleyLab/fiats
   cd fiats
@@ -144,7 +157,7 @@ time_section "🧪 Testing Fiats" '
   micromamba install -c conda-forge fpm
 
   git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
-  fpm build --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Fiats"
   cd ..

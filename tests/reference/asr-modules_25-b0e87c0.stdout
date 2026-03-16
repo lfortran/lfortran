@@ -116,8 +116,8 @@
                                     []
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_character_tokenizer:
@@ -449,8 +449,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_table:

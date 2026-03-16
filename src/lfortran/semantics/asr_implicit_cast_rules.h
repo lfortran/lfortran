@@ -33,6 +33,7 @@ private:
   static const int complex_to_integer = ASR::cast_kindType::ComplexToInteger;
   static const int logical_to_integer = ASR::cast_kindType::LogicalToInteger;
   static const int logical_to_real = ASR::cast_kindType::LogicalToReal;
+  static const int logical_to_logical = ASR::cast_kindType::LogicalToLogical;
 
   //! Stores the variable part of error messages to be passed to SemanticError.
   static constexpr const char *type_names[num_types][2] = {
@@ -75,7 +76,7 @@ private:
 
       // Logical
       {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
-       no_cast_required, no_cast_required, no_cast_required},
+       no_cast_required, logical_to_logical, no_cast_required},
 
       // Derived
       {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
@@ -548,6 +549,16 @@ public:
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                                 new_data, new_array_type, array->m_storage_format));
                     }
+                }
+            }
+        } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::LogicalToLogical) {
+            if (ASRUtils::expr_value(*convert_can)) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(*dest_type2))
+                value = ASRUtils::expr_value(*convert_can);
+                if (ASR::is_a<ASR::LogicalConstant_t>(*value)) {
+                    ASR::LogicalConstant_t *l = ASR::down_cast<ASR::LogicalConstant_t>(value);
+                    value = (ASR::expr_t *)ASR::make_LogicalConstant_t(al, a_loc,
+                        l->m_value, dest_type2);
                 }
             }
         }
