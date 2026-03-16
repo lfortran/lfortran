@@ -18487,9 +18487,11 @@ public:
                         actual_array_data_type->getPointerTo(), llvm_utils->create_gep2(actual_array_type, dt, 0));
                     arg_type = ASRUtils::extract_type(arg_type);
 
-                    // Store intrinsic type vptr
-                    struct_api->store_intrinsic_type_vptr(arg_type,
-                        ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct, module.get());
+                    // Store intrinsic type vptr (skip for struct types which have their own vtable)
+                    if (!ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                        struct_api->store_intrinsic_type_vptr(arg_type,
+                            ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct, module.get());
+                    }
                     // Store inrinsic type data ptr
                     builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
                                         data_ptr);
