@@ -1,13 +1,22 @@
 program intrinsics_436
-character(len=1) :: mn, mx
+    implicit none
+    integer, parameter :: seed = 86456
+    real :: x, y
 
-mn = minval(['x','y'])
-mx = maxval(['x','y'])
+    call srand(seed)
+    x = rand()
+    if (x < 0.0 .or. x > 1.0) error stop
+    y = rand()
+    if (y < 0.0 .or. y > 1.0) error stop
+    if (abs(x - y) < 1e-10) error stop
 
-if (mn /= 'x') error stop "minval incorrect"
-if (mx /= 'y') error stop "maxval incorrect"
+    call srand(seed)
+    if (abs(rand() - x) > 1e-6) error stop
+    if (abs(rand() - y) > 1e-6) error stop
 
-print *, mn
-print *, mx
-
+    x = rand(seed)
+    y = rand()
+    call srand(seed)
+    if (abs(rand() - x) > 1e-6) error stop
+    if (abs(rand() - y) > 1e-6) error stop
 end program intrinsics_436
