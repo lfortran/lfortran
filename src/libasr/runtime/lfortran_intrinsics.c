@@ -1521,7 +1521,8 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     }
     // Special conditions that are allowed by gfortran.
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
-                               (lowered_format_value == 'a' && current_arg_correct_format == 'l') ||
+                               (lowered_format_value == 'a' && (current_arg_correct_format == 'l' ||
+                                                                current_arg_correct_format == 'i')) ||
                                (lowered_format_value == 'b' && (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
 
     if(lowered_format_value != current_arg_correct_format && !special_conditions){
@@ -2508,6 +2509,32 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         break;
                 }
                 if (tolower(value[0]) == 'a') {
+                    // For integer values with A editing, print corresponding byte value as a character.
+                    if (s_info.current_element_type == INTEGER_8_TYPE ||
+                        s_info.current_element_type == INTEGER_16_TYPE ||
+                        s_info.current_element_type == INTEGER_32_TYPE ||
+                        s_info.current_element_type == INTEGER_64_TYPE ) {
+                        char achar_val = (char)((unsigned char)integer_val);
+                        if (strlen(value) == 1) {
+                            result = append_to_string_NTI(result, result_len, &achar_val, 1);
+                            result_len += 1;
+                        } else {
+                            int64_t width = atoi(value + 1);
+                            int64_t pad_len = (width > 1) ? (width - 1) : 0;
+                            if (pad_len > 0) {
+                                result = (char*)realloc(result, result_len + width + 1);
+                                memset(result + result_len, ' ', pad_len);
+                                result[result_len + pad_len] = achar_val;
+                                result_len += width;
+                                result[result_len] = '\0';
+                            } else {
+                                result = append_to_string_NTI(result, result_len, &achar_val, 1);
+                                result_len += 1;
+                            }
+                        }
+                        continue;
+                    }
+
                     // Handle if argument is actually logical (allowed in Fortran).
                     if(is_logical_type(s_info.current_element_type)){
                         char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
