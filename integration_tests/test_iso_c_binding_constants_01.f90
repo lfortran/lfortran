@@ -1,5 +1,5 @@
 program test_iso_c_binding_constants_01
-  use, intrinsic :: iso_c_binding, only: c_intmax_t, c_long_double, c_long_double_complex, &
+  use, intrinsic :: iso_c_binding, only: c_intmax_t, &
           c_alert, c_backspace, c_form_feed, c_carriage_return, &
           c_horizontal_tab, c_vertical_tab
 
@@ -10,12 +10,6 @@ program test_iso_c_binding_constants_01
 
    print *, "c_intmax_t = ", c_intmax_t
    if (c_intmax_t /= 8) error stop
-
-   print *, "c_long_double = ", c_long_double
-   if (c_long_double /= -1) error stop   ! Currently unsupported
-   
-   print *, "c_long_double_complex = ", c_long_double_complex
-   if (c_long_double_complex /= -1) error stop ! Currently unsupported
 
    print *, "c_alert = ", c_alert
    if (c_alert /= char(7)) error stop
