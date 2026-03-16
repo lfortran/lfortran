@@ -2952,6 +2952,22 @@ public:
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
+                            } else if ( ASRUtils::is_character(*mold_type) && ASRUtils::is_character(*a_type)) {
+                                ASR::alloc_arg_t new_arg;
+                                new_arg.loc = alloc_args_vec[i].loc;
+                                new_arg.m_a = alloc_args_vec[i].m_a;
+                                new_arg.m_len_expr = ASRUtils::EXPR(
+                                    ASR::make_StringLen_t(al, x.base.base.loc, mold,
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            compiler_options.po.default_integer_kind)),
+                                        nullptr
+                                    )
+                                );
+                                new_arg.m_type = nullptr;
+                                new_arg.m_sym_subclass = nullptr;
+                                new_arg.m_dims = nullptr;
+                                new_arg.n_dims = 0;
+                                new_alloc_args_vec.push_back(al, new_arg);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
                                     Level::Error, Stage::Semantic, {
@@ -5081,8 +5097,8 @@ public:
             /* n_body */ 0,
             /* a_return_var */ to_return,
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            nullptr, false, true, false, false, false, nullptr, 0,
+            false, false, true);
         ASR::symbol_t* fn_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         parent_scope->add_or_overwrite_symbol(var_name, fn_sym);
 
@@ -5523,11 +5539,16 @@ public:
         check_ArrayAssignmentCompatibility(target, value, x);
 
         if( overloaded_stmt == nullptr ) {
-            if ((target->type == ASR::exprType::Var ||
+            bool lhs_supports_implicit_cast = (
+                target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
                 target->type == ASR::exprType::StructInstanceMember ||
-                target->type == ASR::exprType::UnionInstanceMember) &&
+                target->type == ASR::exprType::UnionInstanceMember ||
+                (target->type == ASR::exprType::Cast &&
+                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
+            );
+            if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
