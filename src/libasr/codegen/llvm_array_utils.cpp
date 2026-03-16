@@ -714,14 +714,14 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
-            return llvm_utils->create_gep2(type, arr, 0);
+            return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* const array_desc_type = llvm_utils->arr_api->
                 get_array_type(arr_expr, ASRUtils::type_get_past_allocatable_pointer(arr_type),
                     llvm_utils->get_el_type(arr_expr, ASRUtils::extract_type(arr_type), module), false);
-            return llvm_utils->create_gep2(array_desc_type, arr, 0);
+            return llvm_utils->create_gep2(array_desc_type, arr, FIELD_BASE_ADDR);
         }
 
 
