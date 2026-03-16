@@ -6,7 +6,6 @@ echo "Running SHELL"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
-LFORTRAN_CMAKE_GENERATOR=Ninja
 # Generate the `version` file
 bash ci/version.sh
 
@@ -47,15 +46,15 @@ cd test-bld
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
 if [[ $WIN == "1" ]]; then # Windows
-    BUILD_TYPE="Release"
+  BUILD_TYPE="Release"
 else # Linux or macOS
-    BUILD_TYPE="Debug"
+  BUILD_TYPE="Debug"
 fi
 
 cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
-./src/bin/lfortran < ../src/bin/example_input.txt
+./src/bin/lfortran <../src/bin/example_input.txt
 ctest --output-on-failure
 cpack -V
 cd ../..
@@ -73,10 +72,10 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
-    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe src/bin
-    cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
+  cp lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe src/bin
+  cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else # Linux or macOS
-    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-    cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
+  cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
+  cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
 fi
 cp lfortran-$lfortran_version/test-bld/src/runtime/*.mod src/runtime/
