@@ -151,10 +151,21 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_ArrayOp(const T& x) {
         T& xx = const_cast<T&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_left)) &&
-            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) ) {
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) &&
+            ASRUtils::is_array(xx.m_type) ) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
+    }
+
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntegerBinOp(x);
+        visit_ArrayOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_UnsignedIntegerBinOp(x);
+        visit_ArrayOp(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
@@ -195,6 +206,16 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalBinOp(x);
         visit_ArrayOp(x);
+    }
+
+    void visit_BitCast(const ASR::BitCast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_BitCast(x);
+        ASR::BitCast_t& xx = const_cast<ASR::BitCast_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_mold)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
@@ -596,7 +617,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             x.m_iomsg, x.m_iostat, x.m_id,
             inner_vals.p, 1,
             x.m_separator, x.m_end, x.m_overloaded,
-            x.m_is_formatted, x.m_nml, x.m_rec));
+            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos));
 
         // Wrap Scalar FileWrites in DoLoop
         Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
@@ -971,7 +992,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     template <typename T>
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
                        Vec<ASR::expr_t**>& fix_types_args,
-                       const Location& loc) {
+                       const Location& loc,
+                       const std::vector<ASR::expr_t*>* scalar_targets = nullptr) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
         var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
@@ -1008,7 +1030,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::array_index_t array_index;
                 array_index.loc = loc;
                 array_index.m_left = nullptr;
-                array_index.m_right = var2indices[i][j];
+                array_index.m_right = get_singleton_safe_index(*vars[i],
+                    var2indices[i][j], j + 1, loc, scalar_targets);
                 array_index.m_step = nullptr;
                 indices.push_back(al, array_index);
             }
@@ -1095,7 +1118,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         ASRUtils::ExprStmtDuplicator d(al);
-        ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(value));
+        ASR::expr_t* size_expr = ASRUtils::get_expr_size_expr(value);
+        if (size_expr == nullptr) {
+            return;
+        }
+        ASR::expr_t* realloc_var = d.duplicate_expr(size_expr);
 
         Location loc; loc.first = 1, loc.last = 1;
         ASRUtils::ASRBuilder builder(al, loc);
@@ -1107,7 +1134,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( size_t i = 0; i < target_rank; i++ ) {
             ASR::dimension_t realloc_dim;
             realloc_dim.loc = loc;
-            realloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, idx_kind, loc);
+            realloc_dim.m_start = PassUtils::get_bound(realloc_var, i + 1, "lbound", al, idx_kind);
             ASR::expr_t* dim_expr = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, i + 1, idx_kind, loc);
             realloc_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                 al, loc, realloc_var, dim_expr, idx_type, nullptr));
@@ -1115,14 +1142,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         ASR::expr_t* realloc_str_len {};
         if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
-            ASR::expr_t* len_value{}; // Compile-Time Length
-            int64_t len {};
-            if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
-                ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
-                len_value = builder.i32(len);
+            if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat)) {
+                realloc_str_len = ASRUtils::StringConcat::get_safe_string_len(
+                    al, loc, value, ASRUtils::expr_type(value), builder);
+            } else {
+                ASR::expr_t* len_value{}; // Compile-Time Length
+                int64_t len {};
+                if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                    len_value = builder.i32(len);
+                }
+                realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                    al, loc, realloc_var, int32, len_value));
             }
-            realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
-                al, loc, realloc_var, int32, len_value));
         }
 
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
@@ -1183,18 +1217,79 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             base_var->m_intent == ASR::intentType::ReturnVar;
     }
 
+    void collect_array_if_scalar_targets(ASR::stmt_t** body, size_t n_body,
+            std::vector<ASR::expr_t*>& scalar_targets) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t* stmt = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                ASR::Assignment_t& assignment = *ASR::down_cast<ASR::Assignment_t>(stmt);
+                ASR::expr_t* value = ASRUtils::get_past_array_broadcast(assignment.m_value);
+                if (assignment.m_move_allocation ||
+                    !ASRUtils::is_array(ASRUtils::expr_type(assignment.m_target)) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                    continue;
+                }
+
+                if (std::find(scalar_targets.begin(), scalar_targets.end(),
+                        assignment.m_target) != scalar_targets.end()) {
+                    continue;
+                }
+                scalar_targets.push_back(assignment.m_target);
+            } else if (ASR::is_a<ASR::If_t>(*stmt)) {
+                ASR::If_t& if_stmt = *ASR::down_cast<ASR::If_t>(stmt);
+                collect_array_if_scalar_targets(if_stmt.m_body,
+                    if_stmt.n_body, scalar_targets);
+                collect_array_if_scalar_targets(if_stmt.m_orelse,
+                    if_stmt.n_orelse, scalar_targets);
+            }
+        }
+    }
+
+    ASR::expr_t* get_singleton_safe_index(ASR::expr_t* expr, ASR::expr_t* index_expr,
+            size_t dim, const Location& loc,
+            const std::vector<ASR::expr_t*>* scalar_targets) {
+        if (!scalar_targets ||
+                std::find(scalar_targets->begin(), scalar_targets->end(), expr) ==
+                    scalar_targets->end()) {
+            return index_expr;
+        }
+
+        ASRUtils::ASRBuilder builder(al, loc);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        int idx_kind = get_index_kind();
+        ASR::expr_t* dim_expr = make_ConstantWithKind(make_IntegerConstant_t,
+            make_Integer_t, dim, idx_kind, loc);
+        ASR::expr_t* one = make_ConstantWithKind(make_IntegerConstant_t,
+            make_Integer_t, 1, idx_kind, loc);
+        ASR::expr_t* target_extent = ASRUtils::EXPR(ASR::make_ArraySize_t(
+            al, loc, expr, dim_expr, idx_type, nullptr));
+        ASR::expr_t* is_singleton_extent = builder.Eq(target_extent, one);
+        ASR::expr_t* lower_bound = PassUtils::get_bound(expr, dim,
+            "lbound", al, idx_kind);
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, is_singleton_extent,
+            lower_bound, index_expr, idx_type, nullptr));
+    }
+
     void visit_Allocate(const ASR::Allocate_t& x) {
         ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
         if (xx.m_source) {
             pass_result.push_back(al, &(xx.base));
+            bool generated_loop = false;
             // Pushing assignment statements to source
             for (size_t i = 0; i < x.n_args ; i++) {
                 if( !ASRUtils::is_array(
                         ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     continue;
                 }
+                // Skip mold-based allocations: m_type being set indicates
+                // the allocate uses mold= (type/shape only, no data copy).
+                if (x.m_args[i].m_type != nullptr) {
+                    continue;
+                }
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs, false));
+                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, source_copy, nullptr, realloc_lhs, false));
                 ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
                 Vec<ASR::expr_t**> fix_type_args;
                 fix_type_args.reserve(al, 2);
@@ -1203,26 +1298,35 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
                 Vec<ASR::expr_t**> vars1;
                 vars1.reserve(al, 1);
-                if( ASRUtils::is_array(
-                        ASRUtils::expr_type(assignment_t->m_value)) ) {
-                    vars1.push_back(al, &(assignment_t->m_value));
-                }
-                vars1.push_back(al, &(assignment_t->m_target));
+                ArrayVarAddressCollector var_collector_target(al, vars1);
+                var_collector_target.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_target));
+                var_collector_target.call_replacer();
+                ArrayVarAddressCollector var_collector_value(al, vars1);
+                var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_value));
+                var_collector_value.call_replacer();
 
                 // TODO: Remove the following. Instead directly handle
                 // allocate with source in the backend.
                 if( xx.m_args[i].n_dims == 0 ) {
                     Vec<ASR::expr_t**> vars2;
                     vars2.reserve(al, 1);
-                    vars2.push_back(al, &(assignment_t->m_target));
-                    if( ASRUtils::is_array(
-                            ASRUtils::expr_type(assignment_t->m_value)) ) {
-                        vars2.push_back(al, &(assignment_t->m_value));
-                    }
+                    ArrayVarAddressCollector var_collector2_target(al, vars2);
+                    var_collector2_target.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_target));
+                    var_collector2_target.call_replacer();
+                    ArrayVarAddressCollector var_collector2_value(al, vars2);
+                    var_collector2_value.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_value));
+                    var_collector2_value.call_replacer();
                     insert_realloc_for_target(
                         xx.m_args[i].m_a, xx.m_source, vars2);
                 }
                 generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
+                generated_loop = true;
+            }
+            // Clear source when data copy loops were generated, since
+            // the loops handle the copy. Keeping array-typed source
+            // expressions (e.g. real(a)) would cause backend errors.
+            if (generated_loop) {
+                xx.m_source = nullptr;
             }
         }
     }
@@ -1263,6 +1367,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 xx.m_value = iaf->m_value;
             }
         }
+        if ( ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value) ) {
+            ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
+            if ( ar->m_value != nullptr ) {
+                xx.m_value = ar->m_value;
+            }
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
             std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
@@ -1289,7 +1399,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        if( call_replace_on_expr(xx.m_value->type) ) {
+        if( call_replace_on_expr(xx.m_value->type) ||
+            ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value) ) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(xx.m_value);
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 1);
+                args.push_back(al, xx.m_value);
+                xx.m_value = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(
+                    al, idl->base.base.loc, args.p, args.size(),
+                    idl->m_type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
+            }
             replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&xx.m_value);
@@ -1314,6 +1434,23 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             var_collector_value.call_replacer();
         } else {
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
+        }
+
+        // Collect array variables from overloaded SubroutineCall arguments
+        // so they are replaced with indexed ArrayItem nodes in generate_loop
+        if (xx.m_overloaded != nullptr &&
+                ASR::is_a<ASR::SubroutineCall_t>(*xx.m_overloaded)) {
+            ASR::SubroutineCall_t* sc = ASR::down_cast<ASR::SubroutineCall_t>(
+                xx.m_overloaded);
+            if (ASRUtils::is_elemental(sc->m_name)) {
+                for (size_t i = 0; i < sc->n_args; i++) {
+                    if (sc->m_args[i].m_value != nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(
+                                sc->m_args[i].m_value))) {
+                        vars.push_back(al, &(sc->m_args[i].m_value));
+                    }
+                }
+            }
         }
 
         if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
@@ -1352,10 +1489,58 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Don't generate a loop for a move assignment
         // The assignment should be handled in the backend
         if (x.m_move_allocation) {
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) && vars.size() != 1) {
+                // ReAlloc was inserted for an allocatable target in previous part,
+                // but the move assignment overwrites target.data
+                // with value.data — leaking the buffer ReAlloc just allocated.
+                // Free it first to avoid this memory leak. 
+                // Note: This fix is temporary. This fix should be in backend, where 
+                // while assigning to any allocatable variable target, backend should 
+                // deallocate target first to free any heap allocation (malloc) used
+                // to store in the target variable
+                Vec<ASR::expr_t*> dealloc_vars;
+                dealloc_vars.reserve(al, 1); 
+                dealloc_vars.push_back(al, const_cast<ASR::expr_t*>(x.m_target));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
+                    dealloc_vars.p, dealloc_vars.size())));
+            } 
             ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
             pass_result.push_back(al, stmt);
             debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
             return;
+        }
+
+        if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
+            ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+
+            if (bc->m_size != nullptr &&
+                ASRUtils::is_array(src_type) &&
+                !ASRUtils::is_string_only(src_type)) {
+                ASR::stmt_t* stmt = ASRUtils::STMT(
+                    ASRUtils::make_Assignment_t_util(al, loc,
+                        x.m_target, x.m_value, x.m_overloaded,
+                        x.m_realloc_lhs, x.m_move_allocation));
+                pass_result.push_back(al, stmt);
+                return;
+            }
+
+            // Don't generate an element-wise loop for transfer() (BitCast) when
+            // source and result are arrays with different element byte sizes.
+            // The element counts differ so the loop indices would go out
+            // of bounds on the source array. Leave the whole-array BitCast for
+            // the LLVM backend to lower as a memcpy.
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
+                int src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(src_type));
+                int res_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(bc->m_type));
+                if (src_kind != res_kind) {
+                    pass_result.push_back(al,
+                        const_cast<ASR::stmt_t*>(&(x.base)));
+                    return;
+                }
+            }
         }
 
         Vec<ASR::expr_t**> fix_type_args;
@@ -1414,10 +1599,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
+        std::vector<ASR::expr_t*> scalar_targets;
+        collect_array_if_scalar_targets(x.m_body, x.n_body, scalar_targets);
+        collect_array_if_scalar_targets(x.m_orelse, x.n_orelse, scalar_targets);
+
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
 
-        generate_loop(x, vars, fix_type_args, loc);
+        generate_loop(x, vars, fix_type_args, loc, &scalar_targets);
 
         ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
         remove_array_processing_node_visitor.visit_If(x);

@@ -227,8 +227,8 @@
                                     )]
                                     (Var 3 strout)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             print_dictionary:
@@ -337,48 +337,6 @@
                                                     ()
                                                     Default
                                                     (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            lfortran_tmp_iostat:
-                                                (Variable
-                                                    4
-                                                    lfortran_tmp_iostat
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            lfortran_tmp_iostat1:
-                                                (Variable
-                                                    4
-                                                    lfortran_tmp_iostat1
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -633,6 +591,7 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
                                         ()
                                         ()
                                     )
@@ -894,11 +853,12 @@
                                         .true.
                                         ()
                                         ()
+                                        ()
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

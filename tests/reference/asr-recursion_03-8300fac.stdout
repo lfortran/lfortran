@@ -482,8 +482,8 @@
                                     )]
                                     (Var 3 solver_caller)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             sub1:

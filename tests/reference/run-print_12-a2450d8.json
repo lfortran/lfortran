@@ -1,0 +1,13 @@
+{
+    "basename": "run-print_12-a2450d8",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/print_12.f90",
+    "infile_hash": "287e0dfc85f6da9fa31789b0458119a40f3b84c3d43c0a9365aeb3df",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print_12-a2450d8.stdout",
+    "stdout_hash": "480bf8473b4a1ddaa2f81a261074b09a3b57b1948c8d423bbe1d7a4c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

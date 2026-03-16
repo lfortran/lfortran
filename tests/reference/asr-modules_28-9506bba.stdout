@@ -165,8 +165,8 @@
                                     )]
                                     (Var 13 self)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             git_target_t:
@@ -244,6 +244,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_git
@@ -380,6 +381,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -429,6 +431,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             git_target_branch:
                                 (ExternalSymbol
@@ -654,8 +657,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_dependency:
@@ -907,8 +910,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_table:
@@ -961,6 +964,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_dependency

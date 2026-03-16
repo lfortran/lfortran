@@ -104,7 +104,7 @@
                     a
                     (FunctionType
                         [(FunctionType
-                            []
+                            [(Real 4)]
                             (Real 4)
                             BindC
                             Interface
@@ -269,8 +269,8 @@
                     )]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             external_03:

@@ -198,8 +198,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             child_value:
@@ -246,6 +246,7 @@
                                     []
                                     ()
                                     4 toml_value
+                                    []
                                 ),
                             default_class:
                                 (Function
@@ -374,6 +375,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     derived_types_module_19
@@ -421,8 +423,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             check_proc:

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_walrus-f3d9bd0",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_walrus.f90",
+    "infile_hash": "672fb70521a3deb2dbe36c76dc53e5b8c89ddd7cd63d75e1285544a9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_walrus-f3d9bd0.stderr",
+    "stderr_hash": "62da63fd8d5cc6856482383675826dec3bd0678883779c524b7247d1",
+    "returncode": 1
+}

@@ -136,6 +136,10 @@ std::string save_pycfile(const ASR::TranslationUnit_t &m, LCompilers::LocationMa
 
 inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
                                 LCompilers::LocationManager &lm, std::string& error_message) {
+    if (s.empty()) {
+        error_message = "Modfile is empty";
+        return false;
+    }
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryReader b(s);
 #else

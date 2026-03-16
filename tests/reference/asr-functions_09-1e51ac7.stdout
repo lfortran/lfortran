@@ -181,8 +181,8 @@
                                     []
                                     (Var 3 w)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             simps38_weights_dp_use:

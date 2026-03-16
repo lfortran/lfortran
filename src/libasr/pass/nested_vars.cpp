@@ -269,14 +269,40 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 if(is_module_variable(v)) return;
                 visit_ttype(*v->m_type);
-                // If the variable is not defined in the current scope, it is a
-                // "needed global" since we need to be able to access it from the
-                // nested procedure.
+                // If the variable is not defined in the current scope
+                // (or a child scope such as an associate block), it is a
+                // "needed global" since we need to be able to access it
+                // from the nested procedure.
                 if ( current_scope && par_func_sym &&
-                    v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
+                    !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
                     nesting_map[par_func_sym].insert(x.m_v);
                 }
             }
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        // Do NOT change current_scope here — the associate block is
+        // within the same function.  The scope-chain check in visit_Var
+        // correctly handles variables from child scopes.
+        // Visit selector expressions (m_symbolic_value / m_value) to
+        // detect host-associated variables used in associate selectors.
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_symbolic_value) {
+                    visit_expr(*v->m_symbolic_value);
+                }
+                if (v->m_value) {
+                    visit_expr(*v->m_value);
+                }
+            }
+        }
+        // Visit body statements.
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
         }
     }
 
@@ -473,6 +499,48 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASRUtils::SymbolDuplicator sd(al);
                     ASR::Variable_t* dup_var = ASR::down_cast<ASR::Variable_t>(sd.duplicate_Variable(var, current_scope));
                     dup_var->m_name = s2c(al, new_ext_var);
+                    // Clear initialization expressions since they may
+                    // reference symbols outside this module scope
+                    // (e.g., `procedure(...), pointer :: p => f` where
+                    // f lives in the program scope). The nested_vars
+                    // pass synchronises the value via assignments.
+                    dup_var->m_symbolic_value = nullptr;
+                    dup_var->m_value = nullptr;
+                    // Import m_type_declaration into the module scope
+                    // when it lives in a different scope
+                    ASR::symbol_t* type_decl = var->m_type_declaration;
+                    if (type_decl && current_scope->get_counter() !=
+                            ASRUtils::symbol_parent_symtab(type_decl)->get_counter()) {
+                        std::string td_name = std::string(ASRUtils::symbol_name(type_decl));
+                        ASR::symbol_t* existing_td = current_scope->get_symbol(td_name);
+                        if (existing_td == nullptr) {
+                            ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
+                            ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original);
+                            if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
+                                // Cannot create ExternalSymbol pointing into
+                                // a Program; duplicate the abstract interface
+                                // into the module scope instead.
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(original, current_scope);
+                                existing_td = current_scope->get_symbol(td_name);
+                            } else {
+                                std::string owner_name = std::string(ASRUtils::symbol_name(owner_sym));
+                                ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
+                                    al, type_decl->base.loc,
+                                    current_scope,
+                                    s2c(al, td_name),
+                                    original,
+                                    s2c(al, owner_name),
+                                    nullptr, 0,
+                                    ASRUtils::symbol_name(original),
+                                    ASR::accessType::Public
+                                );
+                                existing_td = ASR::down_cast<ASR::symbol_t>(ext);
+                                current_scope->add_symbol(td_name, existing_td);
+                            }
+                        }
+                        dup_var->m_type_declaration = existing_td;
+                    }
                     ASR::symbol_t* dup_sym = (ASR::symbol_t*) dup_var;
                     current_scope->add_symbol(new_ext_var, dup_sym);
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);

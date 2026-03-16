@@ -763,6 +763,10 @@ filename = "../integration_tests/write_12.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/write_22.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/submodule_01.f90"
 ast = true
 
@@ -2028,7 +2032,19 @@ filename = "../integration_tests/format_58.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_66.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_09.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/print_12.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/read_40.f90"
 run = true
 
 [[test]]
@@ -4537,6 +4553,10 @@ filename = "warnings/doloop_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/rand_01.f90"
+asr = true
+
+[[test]]
 filename = "char_arr_assignment.f90"
 asr = true
 
@@ -5040,3 +5060,42 @@ options = "--mangle-underscore-external"
 [[test]]
 filename = "../integration_tests/file_open_06.f90"
 run = true
+
+[[test]]
+filename = "infer_mode_smoke_01.f90"
+run = true
+options = "--infer"
+
+[[test]]
+filename = "infer_global_scope_file_01.f90"
+ast = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_realloc_disabled_01.f90"
+run = true
+options = "--infer"
+
+[[test]]
+filename = "infer_first_assignment_01.f90"
+asr = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_first_assignment_conflict_01.f90"
+asr = true
+options = "--infer"
+
+[[test]]
+filename = "errors/infer_mode_conflict_01.f90"
+run = true
+options = "--infer --std=f23"
+
+[[test]]
+filename = "../integration_tests/file_53.f90"
+run = true
+
+[[test]]
+filename = "errors/continue_compilation_walrus.f90"
+semantics_only_cc = true
+options = "--infer"

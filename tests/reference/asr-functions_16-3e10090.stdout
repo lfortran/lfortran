@@ -178,8 +178,8 @@
                                     )]
                                     (Var 8 less)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             compare_less:
@@ -302,7 +302,7 @@
                                     (Var 4 less)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             quicksort:
@@ -884,8 +884,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             sort:
@@ -1388,8 +1388,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             swap:
@@ -1503,8 +1503,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_key:
@@ -1555,6 +1555,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_utils_sort

@@ -76,6 +76,21 @@ syntax error: Newline is unexpected here
 119 |       CALL FUNC( 5, 6,
     |                       ^ 
 
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_ff_1.f:106:17
+    |
+106 |       INTEGER*4 VAR/5/
+    |                 ^^^^^^ Use modern syntax instead: integer :: var = 5
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_ff_1.f:107:17
+    |
+107 |       INTEGER*4 VAR/5/
+    |                 ^^^^^^ redeclaration
+    |
+106 |       INTEGER*4 VAR/5/
+    |                 ~~~~~~ original declaration
+
 warning: This equivalence statement is not implemented yet, for now we will ignore it
    --> tests/errors/continue_compilation_ff_1.f:108:7
     |

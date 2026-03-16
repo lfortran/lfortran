@@ -151,6 +151,7 @@ public:
                 READ_SYMBOL_CASE(Module)
                 READ_SYMBOL_CASE(Function)
                 READ_SYMBOL_CASE(GenericProcedure)
+                READ_SYMBOL_CASE(CustomOperator)
                 READ_SYMBOL_CASE(ExternalSymbol)
                 READ_SYMBOL_CASE(Struct)
                 READ_SYMBOL_CASE(Variable)
@@ -176,6 +177,7 @@ public:
                 INSERT_SYMBOL_CASE(Module)
                 INSERT_SYMBOL_CASE(Function)
                 INSERT_SYMBOL_CASE(GenericProcedure)
+                INSERT_SYMBOL_CASE(CustomOperator)
                 INSERT_SYMBOL_CASE(ExternalSymbol)
                 INSERT_SYMBOL_CASE(Struct)
                 INSERT_SYMBOL_CASE(Variable)
@@ -343,15 +345,30 @@ public:
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
         current_scope = current_scope_copy;
     }
+
+    void visit_Block(const Block_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Block(x);
+        current_scope = current_scope_copy;
+    }
     /**
-     * Searches for an enum symbol by name across all loaded modules in the global symbol table.
-     * Enum symbols are defined within module scopes; returns the symbol if found, otherwise nullptr.
+     * Searches for an enum containing a specific enumerator across all loaded
+     * modules.  When multiple modules define an enum with the same name (e.g.
+     * lcompilers__nameless_enum) the caller needs the one that actually holds
+     * the requested enumerator, so we match on the member name.
      */
-    ASR::symbol_t* enum_in_module(const std::string &ext_sym_enum_name){
+    ASR::symbol_t* enum_in_module(const std::string &ext_sym_enum_name,
+                                  const std::string &member_name){
         for(auto &sym : global_symtab->get_scope()){
             if(ASR::is_a<ASR::Module_t>(*sym.second)){
                 ASR::symbol_t* enum_sym = ASR::down_cast<ASR::Module_t>(sym.second)->m_symtab->get_symbol(ext_sym_enum_name);
-                if(enum_sym) { return enum_sym; }
+                if(enum_sym && ASR::is_a<ASR::Enum_t>(*enum_sym)) {
+                    ASR::Enum_t* e = ASR::down_cast<ASR::Enum_t>(enum_sym);
+                    if(e->m_symtab->get_symbol(member_name)) {
+                        return enum_sym;
+                    }
+                }
             }
         }
         return nullptr;
@@ -421,12 +438,25 @@ public:
                 // FIXME: this is a hack, we need to pass in a non-const `x`.
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
                 xx.m_external = sym;
+            } else if(ASR::symbol_t* enum_sym = enum_in_module(module_name, original_name)) {
+                // The symbol was not in the locally resolved enum (e.g. a
+                // module has its own nameless enum but re-exports an
+                // enumerator from a different module's nameless enum).
+                // Fall through to search all loaded modules.
+                ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(enum_sym);
+                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+                xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);
+                if(!xx.m_external) {
+                    throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
+                        + original_name + "' was not found in the module '"
+                        + module_name + "' (but the module was found)");
+                }
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"
                     + module_name + "' (but the module was found)");
             }
-        } else if(ASR::symbol_t* enum_sym = enum_in_module(module_name)){ // External -> External in module -> points to internal enum symboltable
+        } else if(ASR::symbol_t* enum_sym = enum_in_module(module_name, original_name)){ // External -> External in module -> points to internal enum symboltable
             ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(enum_sym);
             ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
             xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);;

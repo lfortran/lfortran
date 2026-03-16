@@ -1,12 +1,12 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%foo_c = type { %foo_b, %bar_c }
-%foo_b = type { %foo_a, %bar_b }
-%foo_a = type { %bar_a }
-%bar_a = type { i32 }
-%bar_b = type { %bar_a, i32 }
-%bar_c = type { %bar_b, i32 }
+%main.foo_c = type { %main.foo_b, %main.bar_c }
+%main.foo_b = type { %main.foo_a, %main.bar_b }
+%main.foo_a = type { %main.bar_a }
+%main.bar_a = type { i32 }
+%main.bar_b = type { %main.bar_a, i32 }
+%main.bar_c = type { %main.bar_b, i32 }
 %string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -25,38 +25,38 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %foo = alloca %foo_c, align 8
-  %2 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %3 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 1
-  %4 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 0
-  %5 = getelementptr %bar_b, %bar_b* %4, i32 0, i32 1
-  %6 = getelementptr %bar_b, %bar_b* %4, i32 0, i32 0
-  %7 = getelementptr %bar_a, %bar_a* %6, i32 0, i32 0
-  %8 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %9 = getelementptr %foo_b, %foo_b* %8, i32 0, i32 1
-  %10 = getelementptr %bar_b, %bar_b* %9, i32 0, i32 1
-  %11 = getelementptr %bar_b, %bar_b* %9, i32 0, i32 0
-  %12 = getelementptr %bar_a, %bar_a* %11, i32 0, i32 0
-  %13 = getelementptr %foo_b, %foo_b* %8, i32 0, i32 0
-  %14 = getelementptr %foo_a, %foo_a* %13, i32 0, i32 0
-  %15 = getelementptr %bar_a, %bar_a* %14, i32 0, i32 0
-  %16 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %17 = getelementptr %foo_b, %foo_b* %16, i32 0, i32 0
-  %18 = getelementptr %foo_a, %foo_a* %17, i32 0, i32 0
-  %19 = getelementptr %bar_a, %bar_a* %18, i32 0, i32 0
+  %foo = alloca %main.foo_c, align 8
+  %2 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 1
+  %3 = getelementptr %main.bar_c, %main.bar_c* %2, i32 0, i32 1
+  %4 = getelementptr %main.bar_c, %main.bar_c* %2, i32 0, i32 0
+  %5 = getelementptr %main.bar_b, %main.bar_b* %4, i32 0, i32 1
+  %6 = getelementptr %main.bar_b, %main.bar_b* %4, i32 0, i32 0
+  %7 = getelementptr %main.bar_a, %main.bar_a* %6, i32 0, i32 0
+  %8 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %9 = getelementptr %main.foo_b, %main.foo_b* %8, i32 0, i32 1
+  %10 = getelementptr %main.bar_b, %main.bar_b* %9, i32 0, i32 1
+  %11 = getelementptr %main.bar_b, %main.bar_b* %9, i32 0, i32 0
+  %12 = getelementptr %main.bar_a, %main.bar_a* %11, i32 0, i32 0
+  %13 = getelementptr %main.foo_b, %main.foo_b* %8, i32 0, i32 0
+  %14 = getelementptr %main.foo_a, %main.foo_a* %13, i32 0, i32 0
+  %15 = getelementptr %main.bar_a, %main.bar_a* %14, i32 0, i32 0
+  %16 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %17 = getelementptr %main.foo_b, %main.foo_b* %16, i32 0, i32 0
+  %18 = getelementptr %main.foo_a, %main.foo_a* %17, i32 0, i32 0
+  %19 = getelementptr %main.bar_a, %main.bar_a* %18, i32 0, i32 0
   store i32 -20, i32* %19, align 4
-  %20 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %21 = getelementptr %foo_b, %foo_b* %20, i32 0, i32 1
-  %22 = getelementptr %bar_b, %bar_b* %21, i32 0, i32 1
+  %20 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %21 = getelementptr %main.foo_b, %main.foo_b* %20, i32 0, i32 1
+  %22 = getelementptr %main.bar_b, %main.bar_b* %21, i32 0, i32 1
   store i32 9, i32* %22, align 4
-  %23 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %24 = getelementptr %bar_c, %bar_c* %23, i32 0, i32 1
+  %23 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 1
+  %24 = getelementptr %main.bar_c, %main.bar_c* %23, i32 0, i32 1
   store i32 11, i32* %24, align 4
   %25 = alloca i64, align 8
-  %26 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %27 = getelementptr %foo_b, %foo_b* %26, i32 0, i32 0
-  %28 = getelementptr %foo_a, %foo_a* %27, i32 0, i32 0
-  %29 = getelementptr %bar_a, %bar_a* %28, i32 0, i32 0
+  %26 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %27 = getelementptr %main.foo_b, %main.foo_b* %26, i32 0, i32 0
+  %28 = getelementptr %main.foo_a, %main.foo_a* %27, i32 0, i32 0
+  %29 = getelementptr %main.bar_a, %main.bar_a* %28, i32 0, i32 0
   %30 = load i32, i32* %29, align 4
   %31 = alloca i32, align 4
   store i32 %30, i32* %31, align 4
@@ -82,9 +82,9 @@ free_nonnull:                                     ; preds = %.entry
 
 free_done:                                        ; preds = %free_nonnull, %.entry
   %42 = alloca i64, align 8
-  %43 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %44 = getelementptr %foo_b, %foo_b* %43, i32 0, i32 1
-  %45 = getelementptr %bar_b, %bar_b* %44, i32 0, i32 1
+  %43 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %44 = getelementptr %main.foo_b, %main.foo_b* %43, i32 0, i32 1
+  %45 = getelementptr %main.bar_b, %main.bar_b* %44, i32 0, i32 1
   %46 = load i32, i32* %45, align 4
   %47 = alloca i32, align 4
   store i32 %46, i32* %47, align 4
@@ -110,8 +110,8 @@ free_nonnull2:                                    ; preds = %free_done
 
 free_done3:                                       ; preds = %free_nonnull2, %free_done
   %58 = alloca i64, align 8
-  %59 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %60 = getelementptr %bar_c, %bar_c* %59, i32 0, i32 1
+  %59 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 1
+  %60 = getelementptr %main.bar_c, %main.bar_c* %59, i32 0, i32 1
   %61 = load i32, i32* %60, align 4
   %62 = alloca i32, align 4
   store i32 %61, i32* %62, align 4
@@ -136,18 +136,18 @@ free_nonnull5:                                    ; preds = %free_done3
   br label %free_done6
 
 free_done6:                                       ; preds = %free_nonnull5, %free_done3
-  %73 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %74 = getelementptr %foo_b, %foo_b* %73, i32 0, i32 0
-  %75 = getelementptr %foo_a, %foo_a* %74, i32 0, i32 0
-  %76 = getelementptr %bar_a, %bar_a* %75, i32 0, i32 0
+  %73 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %74 = getelementptr %main.foo_b, %main.foo_b* %73, i32 0, i32 0
+  %75 = getelementptr %main.foo_a, %main.foo_a* %74, i32 0, i32 0
+  %76 = getelementptr %main.bar_a, %main.bar_a* %75, i32 0, i32 0
   %77 = load i32, i32* %76, align 4
-  %78 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %79 = getelementptr %foo_b, %foo_b* %78, i32 0, i32 1
-  %80 = getelementptr %bar_b, %bar_b* %79, i32 0, i32 1
+  %78 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 0
+  %79 = getelementptr %main.foo_b, %main.foo_b* %78, i32 0, i32 1
+  %80 = getelementptr %main.bar_b, %main.bar_b* %79, i32 0, i32 1
   %81 = load i32, i32* %80, align 4
   %82 = add i32 %77, %81
-  %83 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %84 = getelementptr %bar_c, %bar_c* %83, i32 0, i32 1
+  %83 = getelementptr %main.foo_c, %main.foo_c* %foo, i32 0, i32 1
+  %84 = getelementptr %main.bar_c, %main.bar_c* %83, i32 0, i32 1
   %85 = load i32, i32* %84, align 4
   %86 = add i32 %82, %85
   %87 = icmp ne i32 %86, 0

@@ -1,0 +1,5 @@
+runtime error: Array 'x' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+ --> tests/errors/infer_realloc_disabled_01.f90:3:5
+  |
+3 |     x = [1, 2, 3]
+  |     ^ 'x' not allocated here

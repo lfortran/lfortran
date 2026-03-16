@@ -1,0 +1,13 @@
+{
+    "basename": "run-infer_mode_conflict_01-0752705",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/infer_mode_conflict_01.f90",
+    "infile_hash": "f1d7b5c4f9ac34c2e5fd3d9f2689daa8b1d1d926ddd8ffa9f509ac6b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-infer_mode_conflict_01-0752705.stderr",
+    "stderr_hash": "5244456f590a25462bb39f97303aa64543b89a0f01722cec1505de6f",
+    "returncode": 1
+}

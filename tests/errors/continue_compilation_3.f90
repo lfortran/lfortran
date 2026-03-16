@@ -64,16 +64,16 @@ program continue_compilation_3
     type(t) :: y
     integer :: merge_i = 4, merge_j = 5
     integer(8) :: merge_k = 8
-
+    integer :: arr_nc(minval(abs(a)))
     call intent_out_test(1)  ! Error: literal constant with intent(out)
     call intent_out_test(x + 1)  ! Error: expression with intent(out)
     call intent_inout_test(2)  ! Error: literal constant with intent(inout)
     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
     call check_incompatible_type(i)  ! Error: incompatible type passed
 
-
-
+    print *, iachar(s1)
     
+
 
 
 
@@ -202,6 +202,7 @@ program continue_compilation_3
     print *, "8356" .eqv. 8356.00
     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
+    print *,  [( '*',i , i = 1, 10 )] 
     call ss("hello")
     contains 
     subroutine bpe()

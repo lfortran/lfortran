@@ -117,6 +117,7 @@ stmt
     = Allocate(int label, fnarg* args, keyword* keywords, trivia? trivia)
     | Assign(int label, int assign_label, identifier variable, trivia? trivia)
     | Assignment(int label, expr target, expr value, trivia? trivia)
+    | InferAssignment(int label, expr target, expr value, trivia? trivia)
     | Associate(int label, expr target, expr value, trivia? trivia)
     | Backspace(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Close(int label, expr* args, keyword* kwargs, trivia? trivia)
@@ -220,7 +221,7 @@ expr
     | Substring(string s, fnarg* args)
     | BOZ(string s)
     | Name(identifier id, struct_member* member)
-    | Logical(bool value)
+    | Logical(bool value, string? kind)
     | DataImpliedDo(expr* object_list, decl_attribute? type,
         identifier var, expr start, expr end, expr? increment)
     | Parenthesis(expr operand)
@@ -367,7 +368,7 @@ dimension_type = DimensionExpr | DimensionStar | AssumedRank
 codimension = (expr? start, expr? end, codimension_type end_star)
 codimension_type = CodimensionExpr | CodimensionStar
 
-symbol = None | Arrow | Equal | Asterisk | DoubleAsterisk | Slash
+symbol = None | Arrow | Equal | Asterisk | DoubleAsterisk | Slash | SlashInit
 
 equi = (expr* set_list)
 

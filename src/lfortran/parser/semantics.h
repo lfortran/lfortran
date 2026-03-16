@@ -298,6 +298,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             nullptr, 0, nullptr, \
             name2char(name), None)
 
+#define ATTR_TYPE_NAME_KIND(x, name, kind, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            kind.p, kind.size(), nullptr, \
+            name2char(name), None)
+
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
@@ -660,6 +666,20 @@ static inline var_sym_t* VARSYM(Allocator &al, Location &l,
     return r;
 }
 
+static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<ast_t*> &values) {
+    if (values.size() == 1) {
+        return values[0];
+    } else {
+        expr_t** exprs = al.allocate<expr_t*>(values.size());
+        for (size_t i = 0; i < values.size(); i++) {
+            exprs[i] = down_cast<expr_t>(values[i]);
+        }
+        return make_ArrayInitializer_t(al, l,
+            nullptr, nullptr, exprs, values.size());
+    }
+}
+#define SLASH_INIT_EXPR(values, l) slash_init_to_expr(p.m_a, l, values)
+
 #define VAR_SYM_NAME(name, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), nullptr, 0, nullptr, 0, nullptr, nullptr, sym, nullptr)
 #define VAR_SYM_EMPTY(loc) VARSYM(p.m_a, loc, \
@@ -928,8 +948,8 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define POW(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Pow, EXPR(y))
 #define UNARY_MINUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::USub, EXPR(x))
 #define UNARY_PLUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::UAdd, EXPR(x))
-#define TRUE(l) make_Logical_t(p.m_a, l, true)
-#define FALSE(l) make_Logical_t(p.m_a, l, false)
+#define TRUE(x, l) make_Logical_t(p.m_a, l, true, str2str_null(p.m_a, x))
+#define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {
@@ -1069,6 +1089,7 @@ char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
 #define BOZ(x, l) make_BOZ_t(p.m_a, l, x.c_str(p.m_a))
 #define ASSIGN(label, variable, l) make_Assign_t(p.m_a, l, 0, label, name2char(variable), nullptr)
 #define ASSIGNMENT(x, y, l) make_Assignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
+#define INFER_ASSIGNMENT(x, y, l) make_InferAssignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
 #define ASSOCIATE(x, y, l) make_Associate_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
 #define GOTO(x, l) make_GoTo_t(p.m_a, l, 0, nullptr, \
         EXPR(INTEGER(x, l)), nullptr, 0, nullptr)

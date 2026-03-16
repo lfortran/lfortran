@@ -35,6 +35,8 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Mvbits,
     Abort,
     System,
+    Sleep,
+    CoSum,
     // ...
 };
 
@@ -76,17 +78,27 @@ namespace RandomInit {
     static inline ASR::stmt_t* instantiate_RandomInit(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        
         std::string c_func_name = "_lfortran_random_init";
         std::string new_name = "_lcompilers_random_init_";
 
         declare_basic_variables(new_name);
-        fill_func_arg_sub("repeatable", arg_types[0], InOut);
-        fill_func_arg_sub("image_distinct", arg_types[1], InOut);
+        fill_func_arg_sub("repeatable", arg_types[0], In);
+        fill_func_arg_sub("image_distinct", arg_types[1], In);
+
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 2);
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(arg_types[0]));
+        {
+            ASR::expr_t *rep_arg = b.Variable(fn_symtab_1, "repeatable_c",
+                logical_type, ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+            args_1.push_back(al, rep_arg);
+            ASR::expr_t *img_arg = b.Variable(fn_symtab_1, "image_distinct_c",
+                logical_type, ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+            args_1.push_back(al, img_arg);
+        }
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           logical_type,
            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -94,9 +106,11 @@ namespace RandomInit {
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
-        body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 2);
+        call_args.push_back(al, args[0]);
+        call_args.push_back(al, args[1]);
+        ASR::expr_t* discard = declare("_lcompilers_random_init_result", logical_type, Local);
+        body.push_back(al, b.Assignment(discard, b.Call(s, call_args, logical_type)));
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
@@ -140,7 +154,7 @@ namespace RandomSeed {
         declare_basic_variables(new_name);
         int flag = 0;
         if (!is_real(*arg_types[0])) {
-            fill_func_arg_sub("size", arg_types[0], InOut);
+            fill_func_arg_sub("size", arg_types[0], Out);
             ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 1, arg_types[0]);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
@@ -148,19 +162,34 @@ namespace RandomSeed {
             call_args.push_back(al, b.i32(8));
             body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
         } else {
-            fill_func_arg_sub("size", real32, InOut);
-            body.push_back(al, b.Assignment(args[0], b.f32(0)));
+            fill_func_arg_sub("size", real32, In);
         }
         if (!is_real(*arg_types[1])) {
             flag = 1;
-            fill_func_arg_sub("put", arg_types[1], InOut);
-            body.push_back(al, b.Assignment(args[1], args[1]));
+            fill_func_arg_sub("put", arg_types[1], In);
+            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(arg_types[1]));
+            if (fn_symtab->get_symbol(c_func_name_1) == nullptr) {
+                ASR::symbol_t *s_seed = b.create_c_func_subroutines(
+                    c_func_name_1, fn_symtab, 1, elem_type);
+                fn_symtab->add_symbol(c_func_name_1, s_seed);
+                dep.push_back(al, s2c(al, c_func_name_1));
+            }
+            std::vector<ASR::expr_t*> idx = {b.i32(1)};
+            auto seed_elem = declare("_seed_elem", elem_type, Local);
+            body.push_back(al, b.Assignment(seed_elem,
+                b.ArrayItem_01(args[1], idx)));
+            Vec<ASR::expr_t*> put_call_args; put_call_args.reserve(al, 1);
+            put_call_args.push_back(al, seed_elem);
+            auto seed_discard = declare("_seed_val", elem_type, Local);
+            body.push_back(al, b.Assignment(seed_discard,
+                b.Call(fn_symtab->get_symbol(c_func_name_1),
+                    put_call_args, elem_type)));
         } else {
-            fill_func_arg_sub("put", real32, InOut);
-            body.push_back(al, b.Assignment(args[1], b.f32(0)));
+            fill_func_arg_sub("put", real32, In);
         }
         if (!is_real(*arg_types[2])) {
-            fill_func_arg_sub("get", arg_types[2], InOut);
+            fill_func_arg_sub("get", arg_types[2], Out);
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
             } else {
@@ -193,10 +222,9 @@ namespace RandomSeed {
                 body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, extract_type(arg_types[2]), false)));
             }
         } else {
-            fill_func_arg_sub("get", real32, InOut);
-            body.push_back(al, b.Assignment(args[2], b.f32(0)));
+            fill_func_arg_sub("get", real32, In);
         }
-       
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
@@ -228,7 +256,9 @@ namespace Srand {
         std::string c_func_name = "_lfortran_init_random_seed";
         std::string new_name = "_lcompilers_srand_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("r", arg_types[0], InOut);
+        fill_func_arg_sub("r", arg_types[0], In);
+        ASR::ttype_t* seed_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(arg_types[0]));
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
         ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
@@ -236,9 +266,9 @@ namespace Srand {
         args_1.push_back(al, arg);
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           seed_type,
            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
-           
+
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -248,8 +278,9 @@ namespace Srand {
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
         call_args.push_back(al, args[0]);
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
-        
+        ASR::expr_t* discard = declare("_lcompilers_srand_result", seed_type, Local);
+        body.push_back(al, b.Assignment(discard, b.Call(s, call_args, seed_type)));
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
@@ -287,7 +318,7 @@ namespace RandomNumber {
         std::string new_name = "_lcompilers_random_number_";
 
         declare_basic_variables(new_name);
-        fill_func_arg_sub("r", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]), InOut);
+        fill_func_arg_sub("r", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]), Out);
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
@@ -431,18 +462,18 @@ namespace GetCommand {
             body.push_back(al, b.SubroutineCall(lfortran_get_command_command, call_args_to_lfortran_get_command_command));
 
             // Assign `string_holder` to `command` + deallocate
-            fill_func_arg_sub("command", arg_types[0], InOut);
+            fill_func_arg_sub("command", arg_types[0], Out);
 
             body.push_back(al, b.Assignment(args[0], string_holder));
             body.push_back(al, b.Deallocate(string_holder));
         }
         if(arg_types.size() > 1){
-            fill_func_arg_sub("length", arg_types[1], InOut);
+            fill_func_arg_sub("length", arg_types[1], Out);
             // `length = length_to_allocate` (Reuse the variable)
             body.push_back(al, b.Assignment(args[1], b.Var(fn_symtab->get_symbol("length_to_allocate"))));
         }
         if(arg_types.size() > 2){
-            fill_func_arg_sub("status", arg_types[2], InOut);
+            fill_func_arg_sub("status", arg_types[2], Out);
             ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
             fn_symtab->add_symbol(c_func_name_3, s_3);
             dep.push_back(al, s2c(al, c_func_name_3));
@@ -543,7 +574,11 @@ namespace GetCommandArgument {
             b.Call(_lfortran_get_command_argument_length_interface, call_args, int32)));
             
         if (overload_id & VALUE_BIT) {
-            fill_func_arg_sub("value", arg_types[optional_arg_index], InOut);
+            ASR::ttype_t* value_type = arg_types[optional_arg_index];
+            if (!ASRUtils::is_allocatable(value_type)) {
+                value_type = b.String(nullptr, ASR::AssumedLength);
+            }
+            fill_func_arg_sub("value", value_type, Out);
             ASR::expr_t* command_argument_holder = 
                 declare("command_argument_holder", b.allocatable(b.String(nullptr, ASR::DeferredLength)), Local);
             body.push_back(al, b.Allocate(command_argument_holder, nullptr, 0, length_to_allocate));
@@ -570,12 +605,12 @@ namespace GetCommandArgument {
             optional_arg_index++;
         }
         if (overload_id & LENGTH_BIT) {
-            fill_func_arg_sub("length", arg_types[optional_arg_index], InOut);
+            fill_func_arg_sub("length", arg_types[optional_arg_index], Out);
             body.push_back(al, b.Assignment(args[optional_arg_index], b.Var(fn_symtab->resolve_symbol("length_to_allocate"))));
             optional_arg_index++;
         }
         if (overload_id & STATUS_BIT) {
-            fill_func_arg_sub("status", arg_types[optional_arg_index], InOut);
+            fill_func_arg_sub("status", arg_types[optional_arg_index], Out);
             {
                 ASR::symbol_t* _lfortran_get_command_argument_status = 
                     b.create_c_func_subroutines( c_func_name_3, fn_symtab, 3, int32);
@@ -650,14 +685,13 @@ namespace SystemClock {
             if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
                 c_func_name_1 = "_lfortran_i64sys_clock_count";
             }
-            fill_func_arg_sub("count", arg_types[0], InOut);
+            fill_func_arg_sub("count", arg_types[0], Out);
             ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
             body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
         } else {
-            fill_func_arg_sub("count", int32, InOut);
-            body.push_back(al, b.Assignment(args[0], b.i32(0)));
+            fill_func_arg_sub("count", int32, In);
         }
         if (overload_id == 1 || overload_id == 3 || overload_id == 5 || overload_id == 6) {
             if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 8) {
@@ -669,27 +703,25 @@ namespace SystemClock {
             } else if (is_real(*arg_types[1])) {
                 c_func_name_2 = "_lfortran_i32r32sys_clock_count_rate";
             }
-            fill_func_arg_sub("count_rate", arg_types[1], InOut);
+            fill_func_arg_sub("count_rate", arg_types[1], Out);
             ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
             fn_symtab->add_symbol(c_func_name_2, s_2);
             dep.push_back(al, s2c(al, c_func_name_2));
             body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
         } else {
-            fill_func_arg_sub("count_rate", int32, InOut);
-            body.push_back(al, b.Assignment(args[1], b.i32(0)));
+            fill_func_arg_sub("count_rate", int32, In);
         }
         if (overload_id == 2 || overload_id == 4 || overload_id == 5 || overload_id == 6) {
             if (ASRUtils::extract_kind_from_ttype_t(arg_types[2]) == 8) {
                 c_func_name_3 = "_lfortran_i64sys_clock_count_max";
             }
-            fill_func_arg_sub("count_max", arg_types[2], InOut);
+            fill_func_arg_sub("count_max", arg_types[2], Out);
             ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
             fn_symtab->add_symbol(c_func_name_3, s_3);
             dep.push_back(al, s2c(al, c_func_name_3));
             body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
         } else {
-            fill_func_arg_sub("count_max", int32, InOut);
-            body.push_back(al, b.Assignment(args[2], b.i32(0)));
+            fill_func_arg_sub("count_max", int32, In);
         }
 
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -773,12 +805,11 @@ namespace DateAndTime {
             body.push_back(al, b.SubroutineCall(_lfortran_date, call_to_lfortran_date));
 
             // Declare func_arg `date` + assign `date_string_holder` into func arg `date`
-            fill_func_arg_sub("date", arg_types[0], InOut);
+            fill_func_arg_sub("date", arg_types[0], Out);
             body.push_back(al, b.Assignment(args[0], date_string_holder));
 
         } else {
-            fill_func_arg_sub("date", real32, InOut);
-            body.push_back(al, b.Assignment(args[0], b.f32(0)));
+            fill_func_arg_sub("date", real32, In);
         }
         if (!is_real(*arg_types[1])) {
             /*
@@ -807,12 +838,11 @@ namespace DateAndTime {
             call_to_lfortran_time.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, time_string_holder, ASR::CChar)});
             body.push_back(al, b.SubroutineCall(_lfortran_time, call_to_lfortran_time));
 
-            // Declare func_arg `date` + assign `string_holder` into func arg `date`
-            fill_func_arg_sub("time", arg_types[1], InOut);
+            // Declare func_arg `time` + assign `string_holder` into func arg `time`
+            fill_func_arg_sub("time", arg_types[1], Out);
             body.push_back(al, b.Assignment(args[1], time_string_holder));
         }  else {
-            fill_func_arg_sub("time", real32, InOut);
-            body.push_back(al, b.Assignment(args[1], b.f32(0)));
+            fill_func_arg_sub("time", real32, In);
         }
         if (!is_real(*arg_types[2])) {
             /*
@@ -842,14 +872,13 @@ namespace DateAndTime {
             body.push_back(al, b.SubroutineCall(_lfortran_zone, call_to_lfortran_zone));
 
             // Declare func_arg `zone` + assign `string_holder` into func arg `zone`
-            fill_func_arg_sub("zone", arg_types[2], InOut);
+            fill_func_arg_sub("zone", arg_types[2], Out);
             body.push_back(al, b.Assignment(args[2], zone_string_holder));
         } else {
-            fill_func_arg_sub("zone", real32, InOut);
-            body.push_back(al, b.Assignment(args[2], b.f32(0)));
+            fill_func_arg_sub("zone", real32, In);
         }
         if (!is_real(*arg_types[3])) {
-            fill_func_arg_sub("values", arg_types[3], InOut);
+            fill_func_arg_sub("values", arg_types[3], Out);
             std::vector<LCompilers::ASR::expr_t *> vals;
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
@@ -863,8 +892,7 @@ namespace DateAndTime {
             }
             body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
         } else {
-            fill_func_arg_sub("values", real32, InOut);
-            body.push_back(al, b.Assignment(args[3], b.f32(0)));
+            fill_func_arg_sub("values", real32, In);
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -987,7 +1015,7 @@ namespace GetEnvironmentVariable {
             body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
 
             // Declare `value` +  Assign `envVar_string_holder` into func arg `value`
-            fill_func_arg_sub("value", arg_types[1], InOut);
+            fill_func_arg_sub("value", arg_types[1], Out);
             body.push_back(al, b.Assignment(args[1], envVar_string_holder));
             // Deallocate `envVar_string_holder`
             body.push_back(al, b.Deallocate(envVar_string_holder));
@@ -995,12 +1023,12 @@ namespace GetEnvironmentVariable {
             // Handle optional parameters based on which ones are present
             int arg_idx = 2; // Start after name and value
             if (has_length) {
-                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("length", arg_types[arg_idx], Out);
                 body.push_back(al, b.Assignment(args[arg_idx], length_to_allocate));
                 arg_idx++;
             }
             if (has_status) {
-                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("status", arg_types[arg_idx], Out);
                 // Declare interface `_lfortran_get_environment_variable_status`
                 std::string status_func_name = "_lfortran_get_environment_variable_status";
                 ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
@@ -1018,7 +1046,7 @@ namespace GetEnvironmentVariable {
                 arg_idx++;
             }
             if (has_trim_name) {
-                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], In);
             }
         } else if ( !has_value && arg_types.size() >= 2 ) {
             // this is the case where value is not provided
@@ -1027,7 +1055,7 @@ namespace GetEnvironmentVariable {
 
             if (has_length) {
                 c_func_name = "_lfortran_get_length_of_environment_variable";
-                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("length", arg_types[arg_idx], Out);
                 ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2,
                     {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
                     int32},
@@ -1042,7 +1070,7 @@ namespace GetEnvironmentVariable {
             }
 
             if (has_status) {
-                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("status", arg_types[arg_idx], Out);
                 // Declare interface `_lfortran_get_environment_variable_status`
                 std::string status_func_name = "_lfortran_get_environment_variable_status";
                 ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
@@ -1061,7 +1089,7 @@ namespace GetEnvironmentVariable {
             }
 
             if (has_trim_name) {
-                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], In);
             }
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1106,19 +1134,19 @@ namespace ExecuteCommandLine {
         ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString));
         declare_basic_variables(new_name);
-        fill_func_arg_sub("command", str_type, InOut);
+        fill_func_arg_sub("command", str_type, In);
         ASR::expr_t* exit_status_local = declare("_lcompilers_exit_status", ret_type, Local);
         constexpr int WAIT_BIT     = 1 << 0;
         constexpr int EXITSTAT_BIT = 1 << 1;
         constexpr int CMDSTAT_BIT  = 1 << 2;
         constexpr int CMDMSG_BIT   = 1 << 3;
         int optional_arg_index = 1;
-        fill_func_arg_sub("wait", arg_types[optional_arg_index++], InOut);
+        fill_func_arg_sub("wait", arg_types[optional_arg_index++], In);
         if (overload_id & EXITSTAT_BIT) {
             fill_func_arg_sub("exitstat", arg_types[optional_arg_index++], InOut);
         }
         if (overload_id & CMDSTAT_BIT) {
-            fill_func_arg_sub("cmdstat", arg_types[optional_arg_index++], InOut);
+            fill_func_arg_sub("cmdstat", arg_types[optional_arg_index++], Out);
         }
         if (overload_id & CMDMSG_BIT) {
             fill_func_arg_sub("cmdmsg", arg_types[optional_arg_index], InOut);
@@ -1130,11 +1158,11 @@ namespace ExecuteCommandLine {
         {
             ASR::expr_t *str_arg = b.Variable(fn_symtab_1, "m",
                 b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, str_arg);
 
             ASR::expr_t *len_arg = b.Variable(fn_symtab_1, "n", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                    ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, len_arg);
         }
 
@@ -1171,11 +1199,20 @@ namespace ExecuteCommandLine {
             ASR::expr_t *cmdstat_arg = args[optional_arg_index];
             ASR::ttype_t *cmdstat_type = ASRUtils::expr_type(cmdstat_arg);
             body.push_back(al, b.Assignment(cmdstat_arg, b.i_t(0, cmdstat_type)));
-            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(1, cmdstat_type)));
+            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(3, cmdstat_type)));
+            optional_arg_index++;
+        }
+        if (overload_id & CMDMSG_BIT) {
+            ASR::expr_t *cmdmsg_arg = args[optional_arg_index];
+            failure_handlers.push_back(b.Assignment(cmdmsg_arg,
+                b.StringConstant("Invalid command line", character(20))));
             optional_arg_index++;
         }
         if (!failure_handlers.empty()) {
-            ASR::expr_t *system_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            ASR::expr_t *cmd_not_found = b.Eq(exit_status_local, b.i_t(127, ret_type));
+            ASR::expr_t *cmd_not_exec = b.Eq(exit_status_local, b.i_t(126, ret_type));
+            ASR::expr_t *system_call_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            ASR::expr_t *system_failed = b.Or(b.Or(cmd_not_found, cmd_not_exec), system_call_failed);
             body.push_back(al, b.If(system_failed, failure_handlers, {}));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1211,7 +1248,7 @@ namespace CpuTime {
         }
         std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
-        fill_func_arg_sub("time", arg_types[0], InOut);
+        fill_func_arg_sub("time", arg_types[0], Out);
 
         ASR::symbol_t *s = b.create_c_func_subroutines(c_func_name, fn_symtab, 0, arg_types[0]);
         fn_symtab->add_symbol(c_func_name, s);
@@ -1558,7 +1595,7 @@ namespace System {
         ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString));
         declare_basic_variables(new_name);
-        fill_func_arg_sub("command", str_type, InOut);
+        fill_func_arg_sub("command", str_type, In);
 
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 2);
@@ -1566,11 +1603,11 @@ namespace System {
         {
             ASR::expr_t *str_arg = b.Variable(fn_symtab_1, "m",
                 b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, str_arg);
 
             ASR::expr_t *len_arg = b.Variable(fn_symtab_1, "n", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                    ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, len_arg);
         }
 
@@ -1600,6 +1637,140 @@ namespace System {
     }
 
 } // namespace System
+
+namespace Sleep {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1, "Unexpected number of args, sleep takes 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Argument to sleep must be of integer type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Sleep(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`sleep` is a non-standard extension", { loc }, "not part of the Fortran standard");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Sleep), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Sleep(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        const std::string c_func_name = "_lfortran_sleep";
+        const std::string new_name = "_lcompilers_sleep_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("seconds", arg_types[0], In);
+
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n",
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+        args_1.push_back(al, arg);
+
+        SetChar dep_1; dep_1.reserve(al, 0);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 0);
+        ASR::symbol_t *c_sym = make_ASR_Function_t(
+            s2c(al, c_func_name),
+            fn_symtab_1,
+            dep_1,
+            args_1,
+            body_1,
+            nullptr,
+            ASR::abiType::BindC,
+            ASR::deftypeType::Interface,
+            s2c(al, c_func_name)
+        );
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+        {
+            ASR::call_arg_t arg0; arg0.loc = loc; arg0.m_value = CastingUtil::perform_casting(args[0],
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), al, loc);
+            call_args.push_back(al, arg0);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace Sleep
+
+namespace CoSum {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 4,
+            "Unexpected number of args, co_sum takes 1 to 4 arguments, found " + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_complex(*ASRUtils::expr_type(x.m_args[0])),
+            "First argument must be of integer, real, or complex type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoSum(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoSum),
+            m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_CoSum(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // co_sum is a no-op in single-image (non-coarray) mode
+        const std::string new_name = "_lcompilers_co_sum_"
+            + std::to_string(arg_types.n);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("a", arg_types[0], InOut);
+        if (arg_types.n >= 2) {
+            fill_func_arg_sub("result_image", arg_types[1], In);
+        }
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace CoSum
 
 } // namespace LCompilers::ASRUtils
 

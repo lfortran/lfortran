@@ -610,15 +610,13 @@
                                 [(Var 6 a)
                                 (Var 6 b)]
                                 3
-                                (Allocatable
-                                    (Array
-                                        (Real 4)
-                                        [(()
-                                        ())
-                                        (()
-                                        ())]
-                                        DescriptorArray
-                                    )
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())
+                                    (()
+                                    ())]
+                                    DescriptorArray
                                 )
                                 ()
                             )
@@ -4052,8 +4050,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             matmul1:
@@ -4412,8 +4410,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             matmul2:
@@ -4927,8 +4925,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

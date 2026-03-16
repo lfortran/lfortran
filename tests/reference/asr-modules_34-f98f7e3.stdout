@@ -148,6 +148,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             version_t:
                                 (ExternalSymbol
@@ -546,8 +547,8 @@
                                     )]
                                     (Var 15 string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             char:
@@ -655,8 +656,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             version_t:
@@ -728,6 +729,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_versioning_modules_34

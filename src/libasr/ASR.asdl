@@ -15,7 +15,7 @@ symbol
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
-    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, call_arg* initializers, expr? alignment, symbol? parent)
+    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
@@ -58,7 +58,7 @@ stmt
     | FileRewind(int label, expr? unit, expr? iostat, expr? err)
     | FileEndfile(int label, expr? unit, expr? iostat, expr? err)
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err, expr? exist, expr? opened, expr? number, expr? named, expr? name, expr? access, expr? sequential, expr? direct, expr? form, expr? formatted, expr? unformatted, expr? recl, expr? nextrec, expr? blank, expr? position, expr? action, expr? read, expr? write, expr? readwrite, expr? delim, expr? pad, expr? flen, expr? blocksize, expr? convert, expr? carriagecontrol, expr? size, expr? pos, expr? iolength, expr* iolength_vars)
-    | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec)
+    | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec, expr? pos)
     | Return()
     | Select(identifier? name, expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
@@ -69,6 +69,7 @@ stmt
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(expr* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
+    | SyncAll()
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)
@@ -224,7 +225,7 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
 
-cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToString | IntegerToString | LogicalToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
+cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified

@@ -95,6 +95,7 @@ namespace {
             case (AST::symbolType::Asterisk) : return "*";
             case (AST::symbolType::DoubleAsterisk) : return "*(*)";
             case (AST::symbolType::Slash) : return "/";
+            case (AST::symbolType::SlashInit) : return "/";
         }
         throw LCompilersException("Unknown type");
     }
@@ -1348,8 +1349,24 @@ public:
             r += symbol2str(x.m_sym) + s;
         }
         if (x.m_initializer) {
-            visit_expr(*x.m_initializer);
-            r += symbol2str(x.m_sym) + s;
+            if (x.m_sym == SlashInit) {
+                r += "/";
+                if (is_a<ArrayInitializer_t>(*x.m_initializer)) {
+                    ArrayInitializer_t *arr = down_cast<ArrayInitializer_t>(x.m_initializer);
+                    for (size_t i = 0; i < arr->n_args; i++) {
+                        visit_expr(*arr->m_args[i]);
+                        r += s;
+                        if (i < arr->n_args - 1) r += ",";
+                    }
+                } else {
+                    visit_expr(*x.m_initializer);
+                    r += s;
+                }
+                r += "/";
+            } else {
+                visit_expr(*x.m_initializer);
+                r += symbol2str(x.m_sym) + s;
+            }
         }
         if (x.m_spec) {
             this->visit_decl_attribute(*x.m_spec);
@@ -1775,6 +1792,22 @@ public:
         this->visit_expr(*x.m_target);
         r.append(s);
         r.append(" = ");
+        this->visit_expr(*x.m_value);
+        r.append(s);
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r += "\n";
+        }
+        s = r;
+    }
+
+    void visit_InferAssignment(const InferAssignment_t &x) {
+        std::string r = indent;
+        r += print_label(x);
+        this->visit_expr(*x.m_target);
+        r.append(s);
+        r.append(" := ");
         this->visit_expr(*x.m_value);
         r.append(s);
         if (x.m_trivia) {

@@ -76,8 +76,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_super_type:
@@ -124,6 +124,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             my_type:
                                 (Struct
@@ -243,7 +244,7 @@
                                     [my_super_type]
                                     [x
                                     super]
-                                    []
+                                    [finalize]
                                     Source
                                     Public
                                     .false.
@@ -251,6 +252,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             plus:
                                 (Function
@@ -364,8 +366,8 @@
                                     []
                                     (Var 9 plus)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             print_something:
@@ -721,8 +723,8 @@
                                     []
                                     (Var 8 unary)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

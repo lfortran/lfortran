@@ -63,27 +63,6 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            lfortran_tmp_iostat:
-                                                (Variable
-                                                    6
-                                                    lfortran_tmp_iostat
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
                                             lhs:
                                                 (Variable
                                                     6
@@ -169,7 +148,7 @@
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         ()
-                                        ())]
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                         ()
                                         ()
                                         ()
@@ -215,11 +194,12 @@
                                         .true.
                                         ()
                                         ()
+                                        ()
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             datetime_to_string:
@@ -630,8 +610,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_toml_time:
@@ -988,8 +968,8 @@
                                     )]
                                     (Var 9 self)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             time_to_string:
@@ -1078,48 +1058,6 @@
                                                     ()
                                                     Default
                                                     (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            lfortran_tmp_iostat:
-                                                (Variable
-                                                    7
-                                                    lfortran_tmp_iostat
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            lfortran_tmp_iostat1:
-                                                (Variable
-                                                    7
-                                                    lfortran_tmp_iostat1
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1244,7 +1182,7 @@
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1298,13 +1236,14 @@
                                             .true.
                                             ()
                                             ()
+                                            ()
                                         )]
                                         [(Allocate
                                             [((Var 7 lhs)
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
                                             ()
-                                            ())]
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                                             ()
                                             ()
                                             ()
@@ -1348,6 +1287,7 @@
                                             ()
                                             ()
                                             .true.
+                                            ()
                                             ()
                                             ()
                                         )]
@@ -1401,8 +1341,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_date:
@@ -1513,6 +1453,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_datetime:
                                 (Struct
@@ -1647,6 +1588,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_time:
                                 (Struct
@@ -1810,6 +1752,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             ~toml_time:
                                 (GenericProcedure

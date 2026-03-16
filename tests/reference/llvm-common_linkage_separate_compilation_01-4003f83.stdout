@@ -1,9 +1,9 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%blk = type { i32 }
+%file_common_block_blk.blk = type { i32 }
 
-@__module_file_common_block_blk_struct_instance_blk = common global %blk zeroinitializer
+@__module_file_common_block_blk_struct_instance_blk = common global %file_common_block_blk.blk zeroinitializer
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
@@ -11,8 +11,8 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store i32 5, i32* getelementptr inbounds (%blk, %blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
-  %2 = load i32, i32* getelementptr inbounds (%blk, %blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
+  store i32 5, i32* getelementptr inbounds (%file_common_block_blk.blk, %file_common_block_blk.blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
+  %2 = load i32, i32* getelementptr inbounds (%file_common_block_blk.blk, %file_common_block_blk.blk* @__module_file_common_block_blk_struct_instance_blk, i32 0, i32 0), align 4
   %3 = icmp ne i32 %2, 5
   br i1 %3, label %then, label %else
 

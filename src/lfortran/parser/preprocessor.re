@@ -355,6 +355,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
+            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? ')' whitespace @t3 [^\n\x00]* @t4 newline  {
+                if (!branch_enabled) continue;
+                std::string macro_name = token(t1, t2),
+                        macro_subs = token(t3, t4);
+                CPPMacro fn;
+                fn.function_like = true;
+                fn.args = {};
+                fn.expansion = macro_subs;
+                macro_definitions[macro_name] = fn;
+                interval_end_type_0(lm, output.size(), cur-string_start);
+                continue;
+            }
             "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
@@ -381,7 +393,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
+            "#" whitespace? "ifdef" whitespace @t1 name @t2 [^\n\x00]* newline {
                 ConditionalDirective ifdef;
                 ifdef.active = branch_enabled;
                 ifdef.type = DirectiveType::Ifdef;
@@ -407,7 +419,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
+            "#" whitespace? "ifndef" whitespace @t1 name @t2 [^\n\x00]* newline {
                 ConditionalDirective ifndef;
                 ifndef.active = branch_enabled;
                 ifndef.type = DirectiveType::Ifndef;

@@ -1,20 +1,21 @@
 program read_08
     ! Test reading logical values with T/F format
     implicit none
+    integer :: unit_no
     logical :: val1, val2, val3, val4
 
-    open(10, status='scratch')
-    write(10, '(A)') 'T'
-    write(10, '(A)') 'F'
-    write(10, '(A)') 't'
-    write(10, '(A)') 'f'
-    rewind(10)
+    open(newunit=unit_no, status='scratch')
+    write(unit_no, '(A)') 'T'
+    write(unit_no, '(A)') 'F'
+    write(unit_no, '(A)') 't'
+    write(unit_no, '(A)') 'f'
+    rewind(unit_no)
 
-    read(10, *) val1
-    read(10, *) val2
-    read(10, *) val3
-    read(10, *) val4
-    close(10)
+    read(unit_no, *) val1
+    read(unit_no, *) val2
+    read(unit_no, *) val3
+    read(unit_no, *) val4
+    close(unit_no)
 
     if (.not. val1) error stop "Expected T to be .true."
     if (val2) error stop "Expected F to be .false."

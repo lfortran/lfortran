@@ -22,6 +22,12 @@ semantic error: Module 'continue_compilation_3_fake_module' modfile was not foun
 48 |     use continue_compilation_3_fake_module
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Explicit shaped array with nonconstant bounds
+  --> tests/errors/continue_compilation_3.f90:67:23
+   |
+67 |     integer :: arr_nc(minval(abs(a)))
+   |                       ^^^^^^^^^^^^^^ 
+
 semantic error: Assumed-rank arrays are not supported in print statements
   --> tests/errors/continue_compilation_3.f90:30:18
    |
@@ -81,6 +87,12 @@ semantic error: Type mismatch in argument `i`: expected `real(4)` but got `integ
    |
 72 |     call check_incompatible_type(i)  ! Error: incompatible type passed
    |                                  ^ 
+
+semantic error: Argument 1 to Iachar must have length 1
+  --> tests/errors/continue_compilation_3.f90:74:14
+   |
+74 |     print *, iachar(s1)
+   |              ^^^^^^^^^^ 
 
 semantic error: Empty array constructor is not allowed
   --> tests/errors/continue_compilation_3.f90:91:9
@@ -433,26 +445,32 @@ semantic error: Different `character` lengths 7 and 2 in array constructor
 204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     |                          ^^^^ 
 
-semantic error: cannot pass unallocatable string to allocatable argument
-   --> tests/errors/continue_compilation_3.f90:205:13
+semantic error: Different types of elements found in array constructor: string and integer(4)
+   --> tests/errors/continue_compilation_3.f90:205:16
     |
-205 |     call ss("hello")
+205 |     print *,  [( '*',i , i = 1, 10 )] 
+    |                ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot pass unallocatable string to allocatable argument
+   --> tests/errors/continue_compilation_3.f90:206:13
+    |
+206 |     call ss("hello")
     |             ^^^^^^^ make this expression allocatable
 
 semantic error: Argument of 'size' must be an array
-   --> tests/errors/continue_compilation_3.f90:208:23
+   --> tests/errors/continue_compilation_3.f90:209:23
     |
-208 |         print *, size(bpe)
+209 |         print *, size(bpe)
     |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:209:15
+   --> tests/errors/continue_compilation_3.f90:210:15
     |
-209 |         bpe = d
+210 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:209:9
+   --> tests/errors/continue_compilation_3.f90:210:9
     |
-209 |         bpe = d
+210 |         bpe = d
     |         ^^^ 

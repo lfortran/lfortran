@@ -100,6 +100,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             build_target_t:
                                 (Struct
@@ -176,6 +177,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             func:
                                 (Function
@@ -266,8 +268,8 @@
                                     )]
                                     (Var 5 target_ptr)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

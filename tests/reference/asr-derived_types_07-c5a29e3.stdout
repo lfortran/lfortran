@@ -464,8 +464,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_vector:
@@ -678,8 +678,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_node:
@@ -744,6 +744,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -864,6 +865,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_structure_vector
@@ -1014,8 +1016,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_keyval:
@@ -1077,6 +1079,7 @@
                                     []
                                     ()
                                     6 toml_value
+                                    []
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -1327,8 +1330,8 @@
                                     )]
                                     (Var 5 match)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_value:
@@ -1401,6 +1404,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_type_value

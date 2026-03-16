@@ -8,13 +8,13 @@ import os
 NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'llvm_integer_8',
-                      'fortran', 'c_nopragma', 'llvm_nopragma', 'llvm_wasm',
-                      'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule', 'mlir',
-                      'mlir_omp', 'mlir_llvm_omp', 'llvm_goc', 'target_offload',
-                      'llvm_single_invocation']
+                      'llvm_infer', 'fortran', 'c_nopragma', 'llvm_nopragma',
+                      'llvm_wasm', 'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule',
+                      'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc',
+                      'target_offload', 'llvm_single_invocation']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
+LFORTRAN_PATH = f"{BASE_DIR}/../src/bin"
 
 fast_tests = "no"
 nofast_llvm16 = "no"
@@ -42,17 +42,24 @@ def run_test(backend, std, test_pattern=None):
 
     cwd=f"{BASE_DIR}/test-{backend}"
 
+    # Skip CMake's Fortran compiler detection for lfortran, since it tries
+    # `-c` which requires the LLVM backend (not available for all backends).
+    if backend != "gfortran":
+        skip_fc_detection = ("-DCMAKE_Fortran_COMPILER_WORKS=1 "
+                             "-DCMAKE_Fortran_COMPILER_FORCED=1")
+    else:
+        skip_fc_detection = ""
+
     # Conditionally use Ninja or Make (default)
     if use_ninja:
         # Use Ninja generator for faster builds
-        # Add flags to skip Fortran compiler detection issues with CMake 3.29+
         # Set CMAKE_Fortran_PREPROCESS_SOURCE which is required by Ninja but missing for lfortran
-        generator_flags = ("-G Ninja -DCMAKE_Fortran_COMPILER_WORKS=1 -DCMAKE_Fortran_COMPILER_FORCED=1 "
+        generator_flags = (f"-G Ninja {skip_fc_detection} "
                           "-DCMAKE_Fortran_PREPROCESS_SOURCE=\"<CMAKE_Fortran_COMPILER> <DEFINES> <INCLUDES> <FLAGS> "
                           "-E <SOURCE> -o <PREPROCESSED_SOURCE>\"")
     else:
         # Use default Make generator
-        generator_flags = ""
+        generator_flags = skip_fc_detection
 
     common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
     if backend == "gfortran":
@@ -187,7 +194,10 @@ def main():
 
     # Setup
     global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads
-    os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
+    local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
+    if os.path.isfile(local_lfortran):
+        os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
+
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     # delete previously created directories (if any)

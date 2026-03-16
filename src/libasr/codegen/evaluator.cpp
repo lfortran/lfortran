@@ -244,7 +244,13 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     llvm::TargetOptions opt;
 #if LLVM_VERSION_MAJOR >= 8
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
-    TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
+    TM = target->createTargetMachine(
+#if LLVM_VERSION_MAJOR >= 21
+        llvm::Triple(target_triple),
+#else
+        target_triple,
+#endif
+        CPU, features, opt, RM);
 #else
     // LLVM 7: Use EngineBuilder with setRelocationModel to avoid ABI issues
     // with Optional parameters while still specifying PIC relocation model

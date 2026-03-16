@@ -231,8 +231,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fpm_cmd_settings:
@@ -283,6 +283,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             fpm_new_settings:
                                 (Struct
@@ -332,6 +333,7 @@
                                     []
                                     ()
                                     2 fpm_cmd_settings
+                                    []
                                 ),
                             warnwrite_string____1:
                                 (ExternalSymbol

@@ -197,8 +197,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             logical_gets_integer_use:
@@ -294,8 +294,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~assign:

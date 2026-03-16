@@ -89,7 +89,7 @@ time_section "🧪 Testing assert" '
   git clone https://github.com/pranavchiku/assert.git
   cd assert
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
+  micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
   which fpm
@@ -135,6 +135,77 @@ time_section "🧪 Testing splpak" '
 
   cd ../
   rm -rf splpak
+'
+
+time_section "🧪 Testing neural-fortran" '
+  git clone https://github.com/modern-fortran/neural-fortran
+  cd neural-fortran
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with neural-fortran"
+  cd ..
+'
+
+time_section "🧪 Testing Fiats" '
+  git clone https://github.com/BerkeleyLab/fiats
+  cd fiats
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Fiats"
+  cd ..
+'
+
+time_section "🧪 Testing smart-pointers" '
+  git clone https://github.com/certik/smart-pointers.git
+  cd smart-pointers
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf2
+  git checkout 95de5105c6a469b64feb39e999567f5e2fcdd033
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with smart-pointers"
+  cd ..
+'
+
+time_section "🧪 Testing Formal" '
+  git clone https://github.com/certik/formal.git
+  cd formal
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf1
+  git checkout 671ab24c3d639b1a2fedd27f727e96dadf404c5c
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Formal"
+  cd ..
+'
+
+time_section "🧪 Testing Julienne" '
+  git clone https://github.com/BerkeleyLab/julienne.git
+  cd julienne
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Julienne"
+  cd ..
 '
 
 time_section "🧪 Testing fortran-regex" '

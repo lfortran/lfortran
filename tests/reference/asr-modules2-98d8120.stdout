@@ -125,6 +125,7 @@
                                     []
                                     ()
                                     10 toml_structure
+                                    []
                                 ),
                             toml_structure:
                                 (Struct
@@ -160,6 +161,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_structure_base
@@ -369,8 +371,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new:
@@ -451,8 +453,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_array:
@@ -524,6 +526,7 @@
                                     []
                                     ()
                                     2 toml_value
+                                    []
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -684,6 +687,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_type_value

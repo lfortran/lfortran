@@ -206,8 +206,8 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             get_snd:
@@ -325,8 +325,8 @@
                                                     )]
                                                     (Var 7 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -427,6 +427,7 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
                                                 )
                                         })
                                     struct_t
@@ -580,8 +581,8 @@
                                                     )]
                                                     (Var 10 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             get_int_snd:
@@ -683,8 +684,8 @@
                                                     )]
                                                     (Var 11 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             get_real_fst:
@@ -786,8 +787,8 @@
                                                     )]
                                                     (Var 13 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             get_real_snd:
@@ -889,8 +890,8 @@
                                                     )]
                                                     (Var 14 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             int_tuple:
@@ -959,6 +960,7 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
                                                 ),
                                             real_tuple:
                                                 (Struct
@@ -1026,6 +1028,7 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
                                                 ),
                                             ti:
                                                 (Variable

@@ -1,0 +1,5 @@
+semantic error: Only String Pointer can be assigned to String
+ --> tests/errors/infer_first_assignment_conflict_01.f90:2:1
+  |
+2 | x = 1
+  | ^^^^^ 

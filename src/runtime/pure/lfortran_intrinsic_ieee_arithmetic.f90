@@ -173,7 +173,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7F800001', kind=4), 1.0_real32)
+            y = transfer(int(z'7FA00000', kind=4), 1.0_real32)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FC00000', kind=4), 1.0_real32)
         case (3)  ! ieee_negative_inf
@@ -207,7 +207,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7FF0000000000001', kind=8), 1.0_real64)
+            y = transfer(int(z'7FF4000000000000', kind=8), 1.0_real64)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FF8000000000000', kind=8), 1.0_real64)
         case (3)  ! ieee_negative_inf
@@ -238,7 +238,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real32), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rsp_is_nan(x) bind(c, name="_lfortran_sis_nan")
+        pure logical(1) function c_rsp_is_nan(x) bind(c, name="_lfortran_sis_nan")
             import :: real32
             real(real32), intent(in), value :: x
             end function
@@ -251,7 +251,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rdp_is_nan(x) bind(c, name="_lfortran_dis_nan")
+        pure logical(1) function c_rdp_is_nan(x) bind(c, name="_lfortran_dis_nan")
             import :: real64
             real(real64), intent(in), value :: x
             end function
@@ -790,6 +790,19 @@ module lfortran_intrinsic_ieee_arithmetic
         type(ieee_flag_type), intent(in) :: flag
         logical, intent(in) :: halting
         ! TODO: Implement halting mode setting
+    end subroutine
+
+    ! IEEE_GET_UNDERFLOW_MODE
+    subroutine ieee_get_underflow_mode(gradual)
+        logical, intent(out) :: gradual
+        ! TODO: Implement using C binding to query FTZ/DAZ mode
+        gradual = .true.
+    end subroutine
+
+    ! IEEE_SET_UNDERFLOW_MODE
+    subroutine ieee_set_underflow_mode(gradual)
+        logical, intent(in) :: gradual
+        ! TODO: Implement using C binding to set FTZ/DAZ mode
     end subroutine
 
     ! IEEE_GET_STATUS

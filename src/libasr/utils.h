@@ -129,6 +129,7 @@ struct CompilerOptions {
     bool implicit_typing = false;
     bool implicit_interface = false;
     bool implicit_argument_casting = false;
+    bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
     bool use_loop_variable_after_loop = false;
@@ -145,6 +146,7 @@ struct CompilerOptions {
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;
+    int32_t fpe_traps = 0; // Bitmask of LCOMPILERS_FE_* flags
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
@@ -155,6 +157,14 @@ struct CompilerOptions {
 bool present(Vec<char*> &v, const char* name);
 bool present(char** const v, size_t n, const std::string name);
 int initialize();
+
+// Floating point exception trap flags (bitmask)
+const int32_t LCOMPILERS_FE_INVALID   = 1;
+const int32_t LCOMPILERS_FE_ZERO      = 2;
+const int32_t LCOMPILERS_FE_OVERFLOW  = 4;
+const int32_t LCOMPILERS_FE_UNDERFLOW = 8;
+const int32_t LCOMPILERS_FE_INEXACT   = 16;
+const int32_t LCOMPILERS_FE_DENORMAL  = 32;
 
 } // namespace LCompilers
 

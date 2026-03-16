@@ -73,6 +73,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_ls0001:
                                 (Variable
@@ -135,8 +136,8 @@
                     []
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })

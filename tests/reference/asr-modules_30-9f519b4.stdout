@@ -180,8 +180,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             executable_config:
@@ -286,6 +286,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_executable_modules_30
@@ -562,8 +563,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -701,6 +702,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_package_modules_30

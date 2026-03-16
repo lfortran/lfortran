@@ -216,8 +216,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             resize:
@@ -318,8 +318,8 @@
                                                     []
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -348,8 +348,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             tfc:
@@ -421,6 +421,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -456,6 +457,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_40_tomlf_de_tokenizer

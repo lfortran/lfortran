@@ -341,13 +341,17 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
-    if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+    if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
         // possible it is a `procedure(cb) :: call_back`
-        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        v->m_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
+        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
+        if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+            new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
+        }
+        v->m_type = new_type;
     }
     bool is_nopass { false };
     bool is_class_procedure { false };
@@ -419,7 +423,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
                                 array_t->m_type, dims.p, dims.size(),
-                                ASRUtils::is_character(*array_t->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
+                                (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
+                                    ? ASR::PointerArray : ASR::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
@@ -480,7 +485,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
                     const Location& loc = arg_i->base.loc;
                     LCOMPILERS_ASSERT(arg_i != nullptr);
-                    if( ASRUtils::is_pointer(ASRUtils::expr_type(arg_i)) ) {
+                    bool is_data_pointer = ASRUtils::is_pointer(ASRUtils::expr_type(arg_i));
+                    bool is_proc_pointer = ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::expr_type(arg_i)) &&
+                        ASR::is_a<ASR::Var_t>(*arg_i) &&
+                        ASR::is_a<ASR::Variable_t>(
+                            *ASR::down_cast<ASR::Var_t>(arg_i)->m_v) &&
+                        ASRUtils::EXPR2VAR(arg_i)->m_intent == ASR::intentType::Local;
+                    if( is_data_pointer || is_proc_pointer ) {
                         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(
                             ASR::make_Logical_t(al, loc, 4));
                         is_present = ASRUtils::EXPR(ASR::make_PointerAssociated_t(
@@ -560,7 +572,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dims.push_back(al, dim);
                     }
                     ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
+                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type)) ||
+                            ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
                         phy_type = ASR::array_physical_typeType::PointerArray;
                     }
                     dummy_variable_type = ASRUtils::TYPE(

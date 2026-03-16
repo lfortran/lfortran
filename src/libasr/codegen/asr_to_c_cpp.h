@@ -2195,6 +2195,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
+            case (ASR::cast_kindType::LogicalToLogical) : {
+                // No conversion needed for logical-to-logical in C
+                break;
+            }
             case (ASR::cast_kindType::LogicalToString) : {
                 src = "(" + src + " ? \"True\" : \"False\")";
                 last_expr_precedence = 2;
@@ -2894,6 +2898,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = indent + "std::cerr << \"ERROR STOP\" << std::endl;\n";
         }
         src += indent + "exit(1);\n";
+    }
+
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "// SYNC ALL\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &/*x*/) {
