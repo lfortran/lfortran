@@ -8249,7 +8249,15 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     else
         sprintf(s, "%.*s%.*s", (int)str_len, str, (int)end_len, end_data);
 
-    _lfortran_strcpy(str_holder, len, is_allocatable, is_deferred, str, str_len);
+    // Internal WRITE must not reallocate an already-allocated target string;
+    // it writes into the existing buffer and pads the remainder with spaces.
+    // If the string is not yet allocated, fall back to _lfortran_strcpy which
+    // will allocate it.
+    if (*str_holder != NULL) {
+        _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
+    } else {
+        _lfortran_strcpy(str_holder, len, is_allocatable, is_deferred, str, str_len);
+    }
 
     free(s);
 
