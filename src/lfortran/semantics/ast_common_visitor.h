@@ -531,7 +531,7 @@ class CommonVisitorMethods {
 public:
 
 
-static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc, diag::Diagnostics &diag) {
+static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, ASR::ttype_t* logical_type, const Location loc, diag::Diagnostics &diag) {
     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::IntegerConstant_t>(*left_value) ||
             !ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
@@ -556,7 +556,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::RealConstant_t>(*left_value) ||
@@ -582,7 +582,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::ComplexConstant_t>(*left_value) ||
@@ -617,7 +617,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
 
     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::LogicalConstant_t>(*left_value) ||
@@ -645,7 +645,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::StringConstant_t>(*left_value) ||
             !ASR::is_a<ASR::StringConstant_t>(*right_value)) {
@@ -687,7 +687,7 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             default: LCOMPILERS_ASSERT(false); // should never happen
         }
         return ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+            al, loc, result, logical_type));
     } else {
         diag.add(diag::Diagnostic(
             "Comparison operator not implemented",
@@ -703,13 +703,15 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
                             ASR::expr_t* left, ASR::expr_t* right, ASR::cmpopType asr_op, ASR::ttype_t* type, const Location loc, diag::Diagnostics &diag) {
 
     if (compiletime_values.size() == 0) {
-        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, loc, diag);
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
+        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
         Vec<ASR::expr_t*> args; args.reserve(al, compiletime_values.size());
         for (size_t i = 0; i < compiletime_values.size(); i++) {
             ASR::expr_t* left_val = compiletime_values[i].first;
             ASR::expr_t* right_val = compiletime_values[i].second;
-            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, loc, diag));
+            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
         }
         return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
     }
@@ -1027,7 +1029,8 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
                                                         size_t arr_size,
                                                         ASR::ArrayConstant_t* left,
                                                         T right,
-                                                        bool is_right_logical_constant, diag::Diagnostics &diag) {
+                                                        bool is_right_logical_constant, diag::Diagnostics &diag,
+                                                        ASR::ttype_t* result_type = nullptr) {
     void* arr_data = nullptr;
     bool* array = al.allocate<bool>(arr_size);
 
@@ -1037,11 +1040,15 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
     }
 
     arr_data = array;
+    if (!result_type) {
+        result_type = left->m_type;
+    }
+    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
     ASR::expr_t* result_arr_const = ASRUtils::EXPR(
                                         ASR::make_ArrayConstant_t(
                                                 al, loc,
-                                                left->m_n_data,arr_data,
-                                                left->m_type,
+                                                arr_size * kind, arr_data,
+                                                result_type,
                                                 left->m_storage_format));
     return result_arr_const;
 }
@@ -1122,9 +1129,23 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     if (!overloaded) {
          check_logical_type(left_type, left, "Left");
          check_logical_type(right_type, right, "Right");
-         LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
-            ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
+         if (!ASRUtils::check_equal_type(
+                ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right)) {
+             // Cast to the larger logical kind
+             int left_kind = ASRUtils::extract_kind_from_ttype_t(left_type);
+             int right_kind = ASRUtils::extract_kind_from_ttype_t(right_type);
+             if (left_kind < right_kind) {
+                 ImplicitCastRules::set_converted_value(al, left->base.loc,
+                     &left, left_type, right_type, diag);
+             } else {
+                 ImplicitCastRules::set_converted_value(al, right->base.loc,
+                     &right, right_type, left_type, diag);
+             }
+         }
      }
+    // Re-derive left_type/right_type after potential kind-promotion casts
+    left_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
+    right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
     ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
@@ -1149,7 +1170,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag, left_type);
 
         } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* arr_const;
@@ -1158,7 +1179,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(right_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag, right_type);
 
         } else if (ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
@@ -1176,7 +1197,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             }
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false, diag);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false, diag, left_type);
 
         } else {
             bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
@@ -1685,6 +1706,7 @@ public:
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        {"rand", IntrinsicSignature({"flag"}, 0, 1)},
         {"this_image", IntrinsicSignature({}, 0, 0)},
         {"num_images", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
@@ -3732,7 +3754,9 @@ public:
                 }
             } else {
                 // This is the second and third case:
-                // data x / 1 /             ! x must be a scalar (integer)
+                // data x / 1 /             ! x can be a scalar (integer)
+                // Note: x can also be a unit length array
+                
                 // data x, y, z / 1, 2, 3 / ! x, y, z must be a scalar (integer)
 
                 // Note: this also happens for a case like:
@@ -3745,7 +3769,14 @@ public:
                     // x(2) / 2 /
                     //
                     size_t j = i;
-                    handle_scalar_data_stmt(x, a, i, j);
+                    this->visit_expr(*a->m_object[i]);
+                    ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                    ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                    if (ASRUtils::is_array(obj_type)) {
+                        handle_array_data_stmt(x, a, obj_type, object, j);
+                    } else {
+                        handle_scalar_data_stmt(x, a, i, j);
+                    }
                 }
             }
         }
@@ -4760,6 +4791,30 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrContiguous) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        diag.add(Diagnostic(
+                                            "Contiguous attribute can only be applied to declared variables",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {x.m_syms[i].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                    ASR::symbol_t* sym_past_external =
+                                        ASRUtils::symbol_get_past_external(sym_);
+                                    if (!ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                        diag.add(Diagnostic(
+                                            "Contiguous attribute can only be applied to variables",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {x.m_syms[i].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                        sym_past_external);
+                                    v->m_contiguous_attr = true;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     // Skip common block references (save /block/) they are handled in common block processing
@@ -7861,7 +7916,8 @@ public:
         type_declaration = nullptr;
 
         int a_kind = 4;
-        if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+        if (sym_type->m_type == AST::decl_typeType::TypeInteger ||
+            sym_type->m_type == AST::decl_typeType::TypeLogical) {
             a_kind = compiler_options.po.default_integer_kind;
         }
 
@@ -7947,10 +8003,7 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            // currently we change the kind's of all logical's to
-            // 'default_integer_kind'. GFortran support's logical's of
-            // different kind's, we need to think about this
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
@@ -8284,8 +8337,20 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star
                 );
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+                }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+                }
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
                 type_declaration = v;
                 type = ASRUtils::get_union_type(al, loc, v);
@@ -12726,7 +12791,30 @@ public:
                 // Else, mold-size is set to default(64) for runtime-sized sources or dynamically calculated
                 if( ASRUtils::is_array(src_type) ) {
                     int64_t n_elem = ASRUtils::get_fixed_size_of_array(src_type);
-                    src_bytes = (n_elem > 0 && src_bytes > 0) ? n_elem * src_bytes : -1;
+                    if( n_elem > 0 && src_bytes > 0 ) {
+                        src_bytes = n_elem * src_bytes;
+                    } else {
+                        // Runtime-sized array: compute total bytes as
+                        // element_kind * size(source) at runtime
+                        int64_t elem_kind = src_bytes;
+                        src_bytes = -1;
+                        if( elem_kind > 0 ) {
+                            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            ASR::expr_t* array_size = ASRUtils::EXPR(
+                                ASRUtils::make_ArraySize_t_util(
+                                    al, x.base.base.loc, source, nullptr,
+                                    int_type, nullptr, false));
+                            ASR::expr_t* elem_kind_expr = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(
+                                    al, x.base.base.loc, elem_kind, int_type));
+                            src_len_expr = ASRUtils::EXPR(
+                                ASR::make_IntegerBinOp_t(
+                                    al, x.base.base.loc, elem_kind_expr,
+                                    ASR::binopType::Mul, array_size,
+                                    int_type, nullptr));
+                        }
+                    }
                 } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
                     // For scalar strings: use string length as mold size
                     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
@@ -12835,6 +12923,9 @@ public:
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 }
+            } else if (ASR::is_a<ASR::StringConstant_t>(*source_value)) {
+                std::string val = ASR::down_cast<ASR::StringConstant_t>(source_value)->m_s;
+                source_bits.assign(val.begin(), val.end());
             } else if (ASRUtils::is_array(ASRUtils::expr_type(source)) && ASRUtils::is_value_constant(source_value)) {
                 ASR::ArrayConstant_t* const_source = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(source_value));
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source_value);
@@ -16298,7 +16389,56 @@ public:
     }
 
     void visit_Logical(const AST::Logical_t &x) {
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        int ikind = compiler_options.po.default_integer_kind;
+        if (x.m_kind) {
+            ikind = std::atoi(x.m_kind);
+            if (ikind == 0) {
+                std::string var_name = x.m_kind;
+                ASR::symbol_t *v = nullptr;
+                SymbolTable *scope = current_scope;
+                while (scope) {
+                    v = scope->resolve_symbol(to_lower(var_name));
+                    if (v) {
+                        const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
+                        if (ASR::is_a<ASR::Variable_t>(*v3) &&
+                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                            scope = scope->parent;
+                            v = nullptr;
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                if (v) {
+                    const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
+                    if (ASR::is_a<ASR::Variable_t>(*v3)) {
+                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v3);
+                        if (v2->m_value) {
+                            if (ASR::is_a<ASR::IntegerConstant_t>(*v2->m_value)) {
+                                ikind = ASR::down_cast<ASR::IntegerConstant_t>(v2->m_value)->m_n;
+                            } else {
+                                diag.add(Diagnostic("Variable '" + var_name + "' is constant but not an integer",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                                throw SemanticAbort();
+                            }
+                        } else {
+                            diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
+                        }
+                    } else {
+                        diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
+                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
+                } else {
+                    diag.add(Diagnostic("Variable '" + var_name + "' not declared",
+                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, ikind));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 
@@ -17162,9 +17302,9 @@ public:
             }
 
             if(check_m_m){
-                ASR::ExternalSymbol_t* tmp2_m_m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m);
-                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) &&
-                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
+                ASR::symbol_t* m_m_underlying = ASRUtils::symbol_get_past_external(tmp2->m_m);
+                if(ASR::is_a<ASR::Variable_t>(*m_m_underlying) &&
+                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(m_m_underlying)))){
                     if(array_found){
                         diag.add(Diagnostic(
                             "The expression with derived types contains two or more arrays.",

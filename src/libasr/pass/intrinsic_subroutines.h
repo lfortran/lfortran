@@ -574,7 +574,11 @@ namespace GetCommandArgument {
             b.Call(_lfortran_get_command_argument_length_interface, call_args, int32)));
             
         if (overload_id & VALUE_BIT) {
-            fill_func_arg_sub("value", arg_types[optional_arg_index], Out);
+            ASR::ttype_t* value_type = arg_types[optional_arg_index];
+            if (!ASRUtils::is_allocatable(value_type)) {
+                value_type = b.String(nullptr, ASR::AssumedLength);
+            }
+            fill_func_arg_sub("value", value_type, Out);
             ASR::expr_t* command_argument_holder = 
                 declare("command_argument_holder", b.allocatable(b.String(nullptr, ASR::DeferredLength)), Local);
             body.push_back(al, b.Allocate(command_argument_holder, nullptr, 0, length_to_allocate));

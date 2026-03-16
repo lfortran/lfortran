@@ -11,6 +11,7 @@
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
+#include <libasr/asr_utils.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
@@ -127,6 +128,21 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     std::string return_type = m->get_return_type(run_fn);
 
+    // With full-width logical types, logicals are now i32/i64 in LLVM
+    // (same as integers). Check the ASR to distinguish logical from integer.
+    if (asr->m_symtab->get_symbol(run_fn) != nullptr) {
+        ASR::symbol_t *fn_sym = asr->m_symtab->get_symbol(run_fn);
+        if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+            if (fn->m_return_var) {
+                ASR::ttype_t *ret_type = ASRUtils::expr_type(fn->m_return_var);
+                if (ASRUtils::is_logical(*ret_type)) {
+                    return_type = "logical";
+                }
+            }
+        }
+    }
+
     // LLVM -> Machine code -> Execution
     e->add_module(std::move(m));
     if (return_type == "integer4") {
@@ -156,9 +172,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        bool r = e->execfn<bool>(run_fn);
+        int32_t r = e->execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
-        result.b = r;
+        result.b = (r != 0);
     } else if (return_type == "void") {
         e->execfn<void>(run_fn);
         result.type = EvalResult::statement;

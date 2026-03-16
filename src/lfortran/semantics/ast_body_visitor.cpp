@@ -1778,7 +1778,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec)));
+                        nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
@@ -2160,7 +2160,7 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if (_type == AST::stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec);
+                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos);
                     print_statements[tmp] = std::make_pair(&w->base, label);
                 } else if (_type == AST::stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
@@ -2193,7 +2193,7 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -2209,7 +2209,7 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos);
         } else if( _type == AST::stmtType::Read ) {
             if (formatted && a_fmt_constant) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -3098,7 +3098,12 @@ public:
                 size_t var_n_dims = alloc_args_vec.p[i].n_dims;
                 size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
 
-                if (!ASRUtils::check_equal_type(source_type, var_type, source, alloc_args_vec.p[i].m_a)) {
+                // Compare base element types (stripping Array/Allocatable/Pointer)
+                // because a scalar source is valid for array allocation per
+                // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
+                ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
+                ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
+                if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
                     diag.add(Diagnostic(
@@ -5076,8 +5081,8 @@ public:
             /* n_body */ 0,
             /* a_return_var */ to_return,
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            nullptr, false, true, false, false, false, nullptr, 0,
+            false, false, true);
         ASR::symbol_t* fn_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         parent_scope->add_or_overwrite_symbol(var_name, fn_sym);
 
@@ -5253,6 +5258,15 @@ public:
             create_statement_function(x);
             tmp = nullptr;
             return;
+        }
+        if (AST::is_a<AST::ImpliedDoLoop_t>(*x.m_value)) {
+            diag.add(Diagnostic(
+                "Implied DO loop must be enclosed within array constructor "
+                "brackets [...]; expected '[( ... )]' in assignment",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_value->base.loc})
+                }));
+            throw SemanticAbort();
         }
         if (compiler_options.infer_mode && AST::is_a<AST::Name_t>(*x.m_target)) {
             AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
@@ -7262,7 +7276,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {

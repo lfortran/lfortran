@@ -1800,6 +1800,42 @@ public:
         src = out;
     }
 
+    int get_default_kind_for_intrinsic(const ASR::IntrinsicElementalFunction_t &x) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        switch (static_cast<IEF>(x.m_intrinsic_id)) {
+            case IEF::Floor:
+            case IEF::Ceiling:
+            case IEF::Nint:
+            case IEF::Int:
+            case IEF::Maskl:
+            case IEF::Maskr:
+            case IEF::Ichar:
+            case IEF::Iachar:
+            case IEF::StorageSize:
+                return 4;
+            case IEF::Aint:
+            case IEF::Anint:
+            case IEF::Logical:
+                if (x.n_args > 0) {
+                    return ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(x.m_args[0]));
+                }
+                return -1;
+            case IEF::Real:
+                if (x.n_args > 0 && ASRUtils::is_complex(
+                        *ASRUtils::expr_type(x.m_args[0]))) {
+                    return ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(x.m_args[0]));
+                }
+                return 4;
+            case IEF::Char:
+            case IEF::Achar:
+                return 1;
+            default:
+                return -1;
+        }
+    }
+
     void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
         if ( x.m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CompilerVersion) ) {
             src = "";
@@ -1820,6 +1856,15 @@ public:
             out += ", ";
             visit_expr(*x.m_args[i]);
             out += src;
+        }
+        if (x.m_type != nullptr) {
+            int default_kind = get_default_kind_for_intrinsic(x);
+            if (default_kind > 0) {
+                int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                if (return_kind != default_kind) {
+                    out += ", " + std::to_string(return_kind);
+                }
+            }
         }
         out += ")";
         src = out;
@@ -1843,6 +1888,7 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
+        else if(intrinsic_func_name == "Rand") intrinsic_func_name = "rand";
         else if(intrinsic_func_name == "ThisImage") intrinsic_func_name = "this_image";
         else if(intrinsic_func_name == "NumImages") intrinsic_func_name = "num_images";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
@@ -2398,6 +2444,11 @@ public:
         // If the cast is from Integer to Logical, do nothing
         if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
             // Implicit conversion between integer -> logical
+            return;
+        }
+
+        if (x.m_kind == ASR::cast_kindType::LogicalToLogical) {
+            // Implicit conversion between logical kinds
             return;
         }
 

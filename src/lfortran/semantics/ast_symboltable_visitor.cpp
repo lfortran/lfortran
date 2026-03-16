@@ -216,7 +216,8 @@ public:
                     ASR::ttype_t *type = nullptr;
                     //convert the ast_type to asr_type
                     int i_kind = compiler_options.po.default_integer_kind;
-                    int a_kind = 4;
+                    int a_kind = (ast_type == AST::decl_typeType::TypeLogical)
+                        ? compiler_options.po.default_integer_kind : 4;
                     int a_len = -10;
                     if (attr_type->m_kind != nullptr) {
                        if (attr_type->n_kind == 1) {
@@ -254,7 +255,7 @@ public:
                             break;
                         }
                         case (AST::decl_typeType::TypeLogical) : {
-                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                             break;
                         }
                         case (AST::decl_typeType::TypeCharacter) : {
@@ -1870,7 +1871,8 @@ public:
             }
             ASR::ttype_t *type = nullptr;
             int i_kind = compiler_options.po.default_integer_kind;
-            int a_kind = 4;
+            int a_kind = (return_type->m_type == AST::decl_typeType::TypeLogical)
+                ? compiler_options.po.default_integer_kind : 4;
             int a_len = 1;
             ASR::expr_t* len_expr = nullptr;
 
@@ -1921,7 +1923,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
@@ -3598,6 +3600,18 @@ public:
             ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
             ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var->m_type_declaration == placeholder_sym) {
+                        var->m_type_declaration = real_sym;
+                        if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                        } else {
+                            var->m_type = real_func_type;
+                        }
+                    }
+                }
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
                     for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {
