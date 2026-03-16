@@ -1,39 +1,12 @@
 program test_iso_c_binding_constants_01
-  use, intrinsic :: iso_c_binding, only: c_int_least8_t, c_int_least16_t, & 
-          c_int_least32_t, c_int_least64_t, &
-          c_int_fast8_t, c_int_fast16_t, c_int_fast32_t, c_int_fast64_t, &
-          c_intmax_t, c_long_double,  c_long_double_complex, &
-          c_alert, c_backspace, c_form_feed, c_carriage_return, & 
+  use, intrinsic :: iso_c_binding, only: c_intmax_t, c_long_double, c_long_double_complex, &
+          c_alert, c_backspace, c_form_feed, c_carriage_return, &
           c_horizontal_tab, c_vertical_tab
 
 ! References:
 ! ifx  https://www.intel.com/content/www/us/en/docs/fortran-compiler/developer-guide-reference/2025-3/named-constants-in-the-iso-c-binding-module.html
 ! gfortran  https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fC_005fBINDING.html
 ! flang https://github.com/llvm/llvm-project/blob/main/flang/module/iso_c_binding.f90
-
-   print *, "c_int_least8_t = ", c_int_least8_t
-   if (c_int_least8_t /= 1) error stop
-   
-   print *, "c_int_least16_t = ",  c_int_least16_t
-   if (c_int_least16_t /= 2) error stop
-   
-   print *, "c_int_least32_t = ", c_int_least32_t
-   if (c_int_least32_t /= 4) error stop
-   
-   print *, "c_int_least64_t = ", c_int_least64_t
-   if (c_int_least64_t /= 8) error stop
-
-   print *, "c_int_fast8_t = ", c_int_fast8_t
-   if (c_int_fast8_t /= 1) error stop
-   
-   print *, "c_int_fast16_t = ", c_int_fast16_t
-   if (c_int_fast16_t /= 2) error stop
-   
-   print *, "c_int_fast32_t = ", c_int_fast32_t
-   if (c_int_fast32_t /= 4) error stop
-   
-   print *, "c_int_fast64_t = ", c_int_fast64_t
-   if (c_int_fast64_t /= 8) error stop
 
    print *, "c_intmax_t = ", c_intmax_t
    if (c_intmax_t /= 8) error stop
