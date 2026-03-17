@@ -1548,6 +1548,7 @@ RUN(NAME intrinsics_436 LABELS gfortran llvm) # rand
 
 RUN(NAME intrinsics_437 LABELS gfortran llvm) # norm2 with dim argument
 RUN(NAME intrinsics_438 LABELS gfortran llvm) # norm2 with variable dim argument
+RUN(NAME intrinsics_439 LABELS gfortran llvm) # minval/maxval for strings
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
