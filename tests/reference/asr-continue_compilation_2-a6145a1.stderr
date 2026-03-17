@@ -512,7 +512,7 @@ semantic error: Argument of intrinsic must be an integer
 353 |     print *, dfloat(y_3)
     |              ^^^^^^^^^^^ 
 
-semantic error: Invalid argument type for `dim` or `mask`
+semantic error: `dim` argument of `Sum` intrinsic must be INTEGER
    --> tests/errors/continue_compilation_2.f90:355:29
     |
 355 |     print *, sum([1, 2, 3], 1.1)
@@ -524,11 +524,11 @@ semantic error: `mask` argument to `Sum` must be a scalar or array of logical ty
 357 |     print *, sum([1, 2, 3], 1, 1.1)
     |                                ^^^ 
 
-semantic error: `dim` argument to `Sum` must be a scalar and of integer type
-   --> tests/errors/continue_compilation_2.f90:359:37
+semantic error: `dim` argument of `Sum` intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_2.f90:359:29
     |
 359 |     print *, sum([1, 2, 3], .true., 1.1)
-    |                                     ^^^ 
+    |                             ^^^^^^ 
 
 semantic error: Too many arguments to call `dint`
    --> tests/errors/continue_compilation_2.f90:361:13
