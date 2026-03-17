@@ -1205,18 +1205,20 @@ public:
         llvm::Value* left_arg, llvm::Value* left_len,
         llvm::Value* right_arg, llvm::Value* right_len)
     {
-        std::string runtime_func_name = "_lfortran_strcat";
+        std::string runtime_func_name = "_lfortran_strcat_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
+                        character_type,
                         character_type, llvm::Type::getInt64Ty(context),
                         character_type, llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        std::vector<llvm::Value*> args = {left_arg, left_len, right_arg, right_len};
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+        std::vector<llvm::Value*> args = {allocator, left_arg, left_len, right_arg, right_len};
         return builder->CreateCall(fn, args);
     }
 
@@ -1241,11 +1243,12 @@ public:
 
     llvm::Value* lfortran_strrepeat(llvm::Value* left_arg, llvm::Value* right_arg)
     {
-        std::string runtime_func_name = "_lfortran_strrepeat";
+        std::string runtime_func_name = "_lfortran_strrepeat_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
+                        character_type,
                         character_type->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         character_type->getPointerTo()
@@ -1253,10 +1256,11 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(left_arg, pleft_arg);
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, character_type);
-        std::vector<llvm::Value*> args = {pleft_arg, right_arg, presult};
+        std::vector<llvm::Value*> args = {allocator, pleft_arg, right_arg, presult};
         builder->CreateCall(fn, args);
         return llvm_utils->CreateLoad2(character_type, presult);
     }
@@ -1311,27 +1315,30 @@ public:
 
     llvm::Value* lfortran_str_chr(llvm::Value* str)
     {
-        std::string runtime_func_name = "_lfortran_str_chr";
+        std::string runtime_func_name = "_lfortran_str_chr_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
+                        character_type,
                         llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        return builder->CreateCall(fn, {str});
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+        return builder->CreateCall(fn, {allocator, str});
     }
 
     llvm::Value* lfortran_str_item(llvm::Value* str, llvm::Value* str_len, llvm::Value* idx1)
     {
-        std::string runtime_func_name = "_lfortran_str_item";
+        std::string runtime_func_name = "_lfortran_str_item_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type,
                     {
+                        character_type,
                         character_type /*str*/,
                         llvm::Type::getInt64Ty(context) /*str_len*/,
                         llvm::Type::getInt64Ty(context) /*idx*/
@@ -1340,8 +1347,9 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         idx1 = builder->CreateSExt(idx1, llvm::Type::getInt64Ty(context));
-        return builder->CreateCall(fn, {str, str_len, idx1});
+        return builder->CreateCall(fn, {allocator, str, str_len, idx1});
     }
 
     llvm::Value* lfortran_str_slice(
@@ -1349,11 +1357,12 @@ public:
         llvm::Value* idx1, llvm::Value* idx2,
         llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present)
     {
-        std::string runtime_func_name = "_lfortran_str_slice";
+        std::string runtime_func_name = "_lfortran_str_slice_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
+                        character_type,
                         character_type, llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context),
@@ -1362,22 +1371,24 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         // Make sure they're int64 integers
         idx1 = llvm_utils->convert_kind(idx1, llvm::Type::getInt64Ty(context));
         idx2 = llvm_utils->convert_kind(idx2, llvm::Type::getInt64Ty(context));
         step = llvm_utils->convert_kind(step, llvm::Type::getInt64Ty(context));
-        return builder->CreateCall(fn, {str, str_len, idx1, idx2, step, left_present, right_present});
+        return builder->CreateCall(fn, {allocator, str, str_len, idx1, idx2, step, left_present, right_present});
     }
 
     // Specific For Fortran Strings
     llvm::Value* lfortran_str_slice_fortran(
         llvm::Value* str,
         llvm::Value* start, llvm::Value* end){
-        std::string runtime_func_name = "_lfortran_str_slice_fortran";
+        std::string runtime_func_name = "_lfortran_str_slice_fortran_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
+                        character_type,
                         character_type,
                         llvm::Type::getInt64Ty(context), // Start
                         llvm::Type::getInt64Ty(context) // End
@@ -1385,26 +1396,29 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         // Make sure they're int64 integers
         start = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
         end = llvm_utils->convert_kind(end, llvm::Type::getInt64Ty(context));
-        return builder->CreateCall(fn, {str, start, end});
+        return builder->CreateCall(fn, {allocator, str, start, end});
     }
 
 
 
     llvm::Value* lfortran_type_to_str(llvm::Value* arg, llvm::Type* value_type, std::string type, int value_kind) {
-        std::string func_name = "_lfortran_" + type + "_to_str" + std::to_string(value_kind);
+        std::string func_name = "_lfortran_" + type + "_to_str" + std::to_string(value_kind) + "_alloc";
          llvm::Function *fn = module->getFunction(func_name);
          if(!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                  character_type, {
+                     character_type,
                      value_type
                  }, false);
             fn = llvm::Function::Create(function_type,
                      llvm::Function::ExternalLinkage, func_name, module.get());
          }
-         llvm::Value* res = builder->CreateCall(fn, {arg});
+         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+         llvm::Value* res = builder->CreateCall(fn, {allocator, arg});
          return res;
     }
 
@@ -2234,17 +2248,19 @@ public:
 
     inline void call_lfortran_free(llvm::Function* fn, llvm::Type* tmp_typ,  llvm::Type* llvm_data_type) {
         llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp_typ, tmp));
-        std::vector<llvm::Value*> args = { builder->CreateBitCast(arr, character_type) };
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+        std::vector<llvm::Value*> args = { allocator, builder->CreateBitCast(arr, character_type) };
         builder->CreateCall(fn, args);
         arr_descr->reset_is_allocated_flag(tmp_typ, tmp, llvm_data_type);
     }
 
     llvm::Function* _Deallocate() {
-        std::string func_name = "_lfortran_free";
+        std::string func_name = "_lfortran_free_alloc";
         llvm::Function *free_fn = module->getFunction(func_name);
         if (!free_fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
+                        character_type,
                         character_type
                     }, false);
             free_fn = llvm::Function::Create(function_type,
@@ -2274,6 +2290,7 @@ public:
     void visit_Deallocate(const T& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Function* free_fn = llvm_utils->_Deallocate();
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
@@ -2439,7 +2456,7 @@ public:
                             llvm_utils->create_if_else(cond_data, [=]() {
                                 llvm::AllocaInst *data_arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
                                 builder->CreateStore(data_ptr, data_arg_tmp);
-                                std::vector<llvm::Value*> data_args = {llvm_utils->CreateLoad2(character_type, data_arg_tmp)};
+                                std::vector<llvm::Value*> data_args = {allocator, llvm_utils->CreateLoad2(character_type, data_arg_tmp)};
                                 builder->CreateCall(free_fn, data_args);
                                 builder->CreateStore(
                                     llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
@@ -2448,7 +2465,7 @@ public:
                         }
                         llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
                         builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
-                        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad2(character_type, arg_tmp)};
+                        std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
                         builder->CreateCall(free_fn, args);
                         builder->CreateStore(
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
@@ -8698,11 +8715,12 @@ public:
 
     void handle_StringSection_Assignment(ASR::expr_t *target, ASR::expr_t *value) {
         // Handles the case when LHS of assignment is string.
-        std::string runtime_func_name = "_lfortran_str_slice_assign";
+        std::string runtime_func_name = "_lfortran_str_slice_assign_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
+                        character_type,
                         character_type, llvm::Type::getInt64Ty(context),
                         character_type, llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt32Ty(context),
@@ -8752,7 +8770,8 @@ public:
         llvm::Value* str_val_data, *str_val_len;
         std::tie(str_val_data, str_val_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(value), str_val);
 
-        tmp = builder->CreateCall(fn, {str_data, str_len, str_val_data, str_val_len, idx1, idx2, step, lp, rp});
+        llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+        tmp = builder->CreateCall(fn, {allocator, str_data, str_len, str_val_data, str_val_len, idx1, idx2, step, lp, rp});
 
         llvm::Value* str_arg_data {};
         llvm::Value* str_arg_len  {};
@@ -13841,7 +13860,8 @@ public:
                 
                 /* Free Runtime Function Return */
                 {
-                    builder->CreateCall(llvm_utils->_Deallocate(), {casted_float});
+                    llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+                    builder->CreateCall(llvm_utils->_Deallocate(), {allocator, casted_float});
                     casted_float = nullptr;
                 }
 
@@ -13886,7 +13906,8 @@ public:
                 
                 /* Free Runtime Function Return */
                 {
-                    builder->CreateCall(llvm_utils->_Deallocate(), {casted_int});
+                    llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+                    builder->CreateCall(llvm_utils->_Deallocate(), {allocator, casted_int});
                     casted_int = nullptr;
                 }
 
