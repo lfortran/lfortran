@@ -947,8 +947,7 @@ public:
                 break;
             }
             case ASR::AssumedLength:
-                LCOMPILERS_ASSERT_MSG(false,
-                    "Shouldn't define assumed length string variable (They're only arguments) ")
+                // Assumed-length strings inherit their length from the caller.
                 break;
             case ASR::DeferredLength:
                 // Do nothing, deferred length strings doesn't have information to set it up with.
@@ -972,7 +971,8 @@ public:
             ASR::String_t *t = down_cast<ASR::String_t>(ASRUtils::extract_type(type));
             setup_string_length(str, t, t->m_len);
             // Handle Memory
-            if(!ASRUtils::is_allocatable_or_pointer(type)){
+            if(!ASRUtils::is_allocatable_or_pointer(type) &&
+               t->m_len_kind != ASR::string_length_kindType::AssumedLength){
                 llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
             }
         } else {
@@ -2404,7 +2404,16 @@ public:
                                     uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                                     if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
                                         llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                        builder->CreateCall(final_fn, {tmp});
+                                        // Finalizers take type(T), not class(T). For class
+                                        // variables, load the concrete data pointer (field 1)
+                                        // from the class wrapper {vptr, data*}.
+                                        llvm::Value* final_arg = tmp;
+                                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                                            llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
+                                            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
+                                            final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
+                                        }
+                                        builder->CreateCall(final_fn, {final_arg});
                                     }
                                 }
                             }
