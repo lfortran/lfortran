@@ -2952,6 +2952,22 @@ public:
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
+                            } else if ( ASRUtils::is_character(*mold_type) && ASRUtils::is_character(*a_type)) {
+                                ASR::alloc_arg_t new_arg;
+                                new_arg.loc = alloc_args_vec[i].loc;
+                                new_arg.m_a = alloc_args_vec[i].m_a;
+                                new_arg.m_len_expr = ASRUtils::EXPR(
+                                    ASR::make_StringLen_t(al, x.base.base.loc, mold,
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            compiler_options.po.default_integer_kind)),
+                                        nullptr
+                                    )
+                                );
+                                new_arg.m_type = nullptr;
+                                new_arg.m_sym_subclass = nullptr;
+                                new_arg.m_dims = nullptr;
+                                new_arg.n_dims = 0;
+                                new_alloc_args_vec.push_back(al, new_arg);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
                                     Level::Error, Stage::Semantic, {
@@ -4134,11 +4150,16 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         if (!t) {
-            diag.add(diag::Diagnostic(
-                "Module '" + msym + "' not found",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            SymbolTable *tu_symtab = current_scope->get_global_scope();
+            std::set<std::string> loaded_submodules;
+            t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
+                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
+                [&](const std::string &msg, const Location &loc) {
+                    diag.add(diag::Diagnostic(
+                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
+            }, lm, compiler_options.separate_compilation, false));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -5523,11 +5544,16 @@ public:
         check_ArrayAssignmentCompatibility(target, value, x);
 
         if( overloaded_stmt == nullptr ) {
-            if ((target->type == ASR::exprType::Var ||
+            bool lhs_supports_implicit_cast = (
+                target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
                 target->type == ASR::exprType::StructInstanceMember ||
-                target->type == ASR::exprType::UnionInstanceMember) &&
+                target->type == ASR::exprType::UnionInstanceMember ||
+                (target->type == ASR::exprType::Cast &&
+                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
+            );
+            if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
