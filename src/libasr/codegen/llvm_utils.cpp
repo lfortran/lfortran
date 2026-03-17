@@ -30,6 +30,23 @@ namespace LCompilers {
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
         }
+
+        llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* arg_size) {
+            std::string func_name = "_lfortran_malloc_alloc";
+            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            return builder.CreateCall(fn, {allocator, arg_size});
+        }
         /* 
             -- Handles Allocation Of Strings --
 
@@ -90,6 +107,27 @@ namespace LCompilers {
                 builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))
             };
             return builder.CreateCall(fn, args);
+        }
+
+        llvm::Value* lfortran_realloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* ptr, llvm::Value* arg_size) {
+            std::string func_name = "_lfortran_realloc_alloc";
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            return builder.CreateCall(fn, {
+                allocator,
+                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
+                builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))
+            });
         }
         bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
             /*
@@ -182,6 +220,30 @@ namespace LCompilers {
         return nullptr;
     }
 
+    llvm::Value* LLVMUtils::lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr) {
+        std::string func_name = "_lfortran_free_alloc";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt8Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
+        }
+        llvm::Value* is_null = builder->CreateIsNull(ptr);
+        llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* free_bb = llvm::BasicBlock::Create(context, "free_nonnull", current_fn);
+        llvm::BasicBlock* cont_bb = llvm::BasicBlock::Create(context, "free_done", current_fn);
+        builder->CreateCondBr(is_null, cont_bb, free_bb);
+        builder->SetInsertPoint(free_bb);
+        llvm::Value* ptr_i8 = builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+        builder->CreateCall(fn, {allocator, ptr_i8});
+        builder->CreateBr(cont_bb);
+        builder->SetInsertPoint(cont_bb);
+        return nullptr;
+    }
+
     llvm::Value* LLVMUtils::lfortran_free_nocheck(llvm::Value* ptr) {
         std::string func_name = "_lfortran_free";
         llvm::Function *fn = module->getFunction(func_name);
@@ -195,6 +257,25 @@ namespace LCompilers {
         llvm::Type* const i8PtrTy = llvm::Type::getInt8Ty(context)->getPointerTo();
         builder->CreateCall(fn, {builder->CreateBitCast(ptr, i8PtrTy)});
         return nullptr;
+    }
+
+    llvm::Value* LLVMUtils::get_allocator(llvm::Module* mod) {
+        if (allocator_instance) return allocator_instance;
+
+        // The allocator is an opaque pointer (i8*) — we don't need to know the struct layout
+        llvm::Type* allocator_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+
+        // Declare _lfortran_get_default_allocator() -> i8*
+        std::string func_name = "_lfortran_get_default_allocator";
+        llvm::Function *fn = mod->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                allocator_ptr_type, {}, false);
+            fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, func_name, mod);
+        }
+        allocator_instance = builder->CreateCall(fn, {});
+        return allocator_instance;
     }
 
     llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args)

@@ -188,6 +188,36 @@ struct Stacktrace {
 #define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x < y) ? y : x)
 
+/* --- Default allocator implementation --- */
+
+static void* default_alloc(void* context, int64_t size) {
+    (void)context;
+    return malloc((size_t)size);
+}
+
+static void* default_realloc_func(void* context, void* ptr, int64_t new_size) {
+    (void)context;
+    return realloc(ptr, (size_t)new_size);
+}
+
+static void default_dealloc(void* context, void* ptr) {
+    (void)context;
+    free(ptr);
+}
+
+static lfortran_allocator_t _default_allocator = {
+    default_alloc,
+    default_realloc_func,
+    default_dealloc,
+    NULL
+};
+
+LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void) {
+    return &_default_allocator;
+}
+
+/* --- End default allocator --- */
+
 // This function performs case insensitive string comparison
 bool streql(const char *s1, const char* s2) {
 #if defined(_MSC_VER)
@@ -2821,6 +2851,20 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     return result;
 }
 
+/*
+ * Helper: copy a malloc'd buffer into allocator-managed memory and free the original.
+ * Used by the compiler codegen for functions like _lcompilers_string_format_fortran
+ * which use internal malloc for complex buffer management but whose result needs
+ * to be managed by the compiler's allocator.
+ */
+LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size) {
+    if (!malloc_buf) return NULL;
+    char* new_buf = (char*)ALLOCATOR_ALLOC(al, size);
+    memcpy(new_buf, malloc_buf, (size_t)size);
+    free(malloc_buf);
+    return new_buf;
+}
+
 static int runtime_line_num_width(unsigned int line) {
     if (line >= 10000) {
         return 5;
@@ -3011,6 +3055,31 @@ LFORTRAN_API char* _lcompilers_snprintf(const char* format, ...) {
         return NULL;
     }
     char *formatted = (char*)malloc((size_t)needed + 1);
+    if (!formatted) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    vsnprintf(formatted, (size_t)needed + 1, format, args);
+    va_end(args);
+    return formatted;
+}
+
+LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return NULL;
+    }
+    char *formatted = (char*)ALLOCATOR_ALLOC(al, (int64_t)needed + 1);
     if (!formatted) {
         vfprintf(stderr, format, args);
         fflush(stderr);
@@ -3828,6 +3897,24 @@ LFORTRAN_API char* _lfortran_strcat(
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_strcat_alloc(
+    lfortran_allocator_t* al,
+    char* s1, int64_t s1_len,
+    char* s2, int64_t s2_len)
+{
+    int cntr = 0;
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, s1_len+s2_len);
+    for (int i = 0; i < s1_len; i++) {
+        dest_char[cntr] = s1[i];
+        cntr++;
+    }
+    for (int i = 0; i < s2_len; i++) {
+        dest_char[cntr] = s2[i];
+        cntr++;
+    }
+    return dest_char;
+}
+
 /*  
     Copy from RHS into LHS and,
     pad right if LHS is longer than RHS
@@ -3885,6 +3972,46 @@ LFORTRAN_API void _lfortran_strcpy(
     }
 }
 
+LFORTRAN_API void _lfortran_strcpy_alloc(
+    lfortran_allocator_t* al,
+    char** lhs, int64_t* lhs_len,
+    bool is_lhs_allocatable, bool is_lhs_deferred,
+    char* rhs, int64_t rhs_len){
+    if(!is_lhs_deferred && !is_lhs_allocatable){
+        lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    } else if (!is_lhs_deferred && is_lhs_allocatable){
+        if (*lhs == NULL) *lhs = (char*)ALLOCATOR_ALLOC(al, MAX((*lhs_len), 1));
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    } else if (is_lhs_deferred && is_lhs_allocatable) {
+        if (*lhs != NULL && rhs != NULL) {
+            char* lhs_start = *lhs;
+            char* lhs_end = lhs_start + (*lhs_len);
+            if (rhs >= lhs_start && rhs < lhs_end) {
+                if (rhs_len <= *lhs_len) {
+                    memmove(*lhs, rhs, rhs_len * sizeof(char));
+                    *lhs_len = rhs_len;
+                    return;
+                } else {
+                    char* tmp = (char*)malloc(MAX(rhs_len, 1) * sizeof(char));
+                    memcpy(tmp, rhs, rhs_len * sizeof(char));
+                    *lhs = (char*)ALLOCATOR_REALLOC(al, *lhs, MAX(rhs_len, 1));
+                    *lhs_len = rhs_len;
+                    memcpy(*lhs, tmp, rhs_len * sizeof(char));
+                    free(tmp);
+                    return;
+                }
+            }
+        }
+        *lhs = (char*)ALLOCATOR_REALLOC(al, *lhs, MAX(rhs_len, 1));
+        *lhs_len = rhs_len;
+        for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
+    } else if(is_lhs_deferred && !is_lhs_allocatable) {
+        lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    }
+}
+
 
 
 int strlen_without_trailing_space(char *str, int64_t len) {
@@ -3916,9 +4043,23 @@ LFORTRAN_API char* _lfortran_float_to_str4(float num)
     return res;
 }
 
+LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
+    sprintf(res, "%f", num);
+    return res;
+}
+
 LFORTRAN_API char* _lfortran_float_to_str8(double num)
 {
     char* res = (char*)malloc(40);
+    sprintf(res, "%f", num);
+    return res;
+}
+
+LFORTRAN_API char* _lfortran_float_to_str8_alloc(lfortran_allocator_t* al, double num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
     sprintf(res, "%f", num);
     return res;
 }
@@ -3930,9 +4071,23 @@ LFORTRAN_API char* _lfortran_int_to_str1(int8_t num)
     return res;
 }
 
+LFORTRAN_API char* _lfortran_int_to_str1_alloc(lfortran_allocator_t* al, int8_t num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
+    sprintf(res, "%d", num);
+    return res;
+}
+
 LFORTRAN_API char* _lfortran_int_to_str2(int16_t num)
 {
     char* res = (char*)malloc(40);
+    sprintf(res, "%d", num);
+    return res;
+}
+
+LFORTRAN_API char* _lfortran_int_to_str2_alloc(lfortran_allocator_t* al, int16_t num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
     sprintf(res, "%d", num);
     return res;
 }
@@ -3944,9 +4099,24 @@ LFORTRAN_API char* _lfortran_int_to_str4(int32_t num)
     return res;
 }
 
+LFORTRAN_API char* _lfortran_int_to_str4_alloc(lfortran_allocator_t* al, int32_t num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
+    sprintf(res, "%d", num);
+    return res;
+}
+
 LFORTRAN_API char* _lfortran_int_to_str8(int64_t num)
 {
     char* res = (char*)malloc(40);
+    long long num2 = num;
+    sprintf(res, "%lld", num2);
+    return res;
+}
+
+LFORTRAN_API char* _lfortran_int_to_str8_alloc(lfortran_allocator_t* al, int64_t num)
+{
+    char* res = (char*)ALLOCATOR_ALLOC(al, 40);
     long long num2 = num;
     sprintf(res, "%lld", num2);
     return res;
@@ -4017,6 +4187,26 @@ LFORTRAN_API void _lfortran_strrepeat(char** s, int32_t n, char** dest)
     *dest = &(dest_char[0]);
 }
 
+LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char** s, int32_t n, char** dest)
+{
+    int cntr = 0;
+    char trmn = '\0';
+    int s_len = strlen(*s);
+    int trmn_size = sizeof(trmn);
+    int f_len = s_len*n;
+    if (f_len < 0)
+        f_len = 0;
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len+trmn_size);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < s_len; j++) {
+            dest_char[cntr] = (*s)[j];
+            cntr++;
+        }
+    }
+    dest_char[cntr] = trmn;
+    *dest = &(dest_char[0]);
+}
+
 LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
 {
     int cntr = 0;
@@ -4027,6 +4217,26 @@ LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
     if (f_len < 0)
         f_len = 0;
     char* dest_char = (char*)malloc(f_len+trmn_size);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < s_len; j++) {
+            dest_char[cntr] = s[j];
+            cntr++;
+        }
+    }
+    dest_char[cntr] = trmn;
+    return dest_char;
+}
+
+LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n)
+{
+    int cntr = 0;
+    char trmn = '\0';
+    int s_len = strlen(s);
+    int trmn_size = sizeof(trmn);
+    int f_len = s_len*n;
+    if (f_len < 0)
+        f_len = 0;
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len+trmn_size);
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < s_len; j++) {
             dest_char[cntr] = s[j];
@@ -4053,6 +4263,19 @@ LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx) {
     return res;
 }
 
+LFORTRAN_API char* _lfortran_str_item_alloc(lfortran_allocator_t* al, char* s, int64_t s_len, int64_t idx) {
+    int64_t original_idx = idx - 1;
+    if (idx < 1) idx += s_len;
+    if (idx < 1 || idx >= s_len + 1) {
+        printf("String index: %" PRId64 "is out of Bounds\n", original_idx);
+        exit(1);
+    }
+    char* res = (char*)ALLOCATOR_ALLOC(al, 2);
+    res[0] = s[idx-1];
+    res[1] = '\0';
+    return res;
+}
+
 // Specific For Fortran Strings
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end){
     if( (start<=0) || (end <=0) || (end < start) ){
@@ -4061,6 +4284,18 @@ LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based 
         return empty;
     }
     char* return_str = (char*)malloc(end - start + 1 + 1 /*Null Char*/);
+    memcpy(return_str, s + start - 1, end - start + 1);
+    return_str[end - start + 1] = '\0';
+    return return_str;
+}
+
+LFORTRAN_API char* _lfortran_str_slice_fortran_alloc(lfortran_allocator_t* al, char* s, int64_t start, int64_t end){
+    if( (start<=0) || (end <=0) || (end < start) ){
+        char* empty = (char*)ALLOCATOR_ALLOC(al, 1);
+        empty[0] = '\0';
+        return empty;
+    }
+    char* return_str = (char*)ALLOCATOR_ALLOC(al, end - start + 1 + 1);
     memcpy(return_str, s + start - 1, end - start + 1);
     return_str[end - start + 1] = '\0';
     return return_str;
@@ -4112,6 +4347,56 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_str_slice_alloc(lfortran_allocator_t* al, char* s, int64_t s_len,
+                        int64_t idx1, int64_t idx2, int64_t step,
+                        bool idx1_present, bool idx2_present) {
+    if (step == 0) {
+        printf("slice step cannot be zero\n");
+        exit(1);
+    }
+    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (!idx1_present) {
+        if (step > 0) {
+            idx1 = 0;
+        } else {
+            idx1 = s_len - 1;
+        }
+    }
+    if (!idx2_present) {
+        if (step > 0) {
+            idx2 = s_len;
+        } else {
+            idx2 = -1;
+        }
+    }
+    if (idx1 == idx2 ||
+        (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1))) {
+        char* empty = (char*)ALLOCATOR_ALLOC(al, 1);
+        empty[0] = '\0';
+        return empty;
+    }
+    int dest_len = 0;
+    if (step > 0) {
+        idx2 = idx2 > s_len ? s_len : idx2;
+        dest_len = (idx2-idx1+step-1)/step + 1;
+    } else {
+        idx1 = idx1 >= s_len ? s_len-1 : idx1;
+        dest_len = (idx2-idx1+step+1)/step + 1;
+    }
+
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, dest_len);
+    int s_i = idx1, d_i = 0;
+    while((step > 0 && s_i >= idx1 && s_i < idx2) ||
+        (step < 0 && s_i <= idx1 && s_i > idx2)) {
+        dest_char[d_i++] = s[s_i];
+        s_i+=step;
+    }
+    dest_char[d_i] = '\0';
+    return dest_char;
+}
+
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, int64_t r_len, int32_t idx1 /*1-Index-based*/, int32_t idx2/*1-Index-based*/, int32_t step,
                         bool idx1_present, bool idx2_present) {
     idx1--;
@@ -4153,6 +4438,48 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, i
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_str_slice_assign_alloc(lfortran_allocator_t* al, char* s, int64_t s_len,
+                        char *r, int64_t r_len, int32_t idx1, int32_t idx2, int32_t step,
+                        bool idx1_present, bool idx2_present) {
+    idx1--;
+    if (step == 0) {
+        printf("slice step cannot be zero\n");
+        exit(1);
+    }
+    s_len = (s_len < r_len) ? r_len : s_len;
+    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (!idx1_present) {
+        if (step > 0) {
+            idx1 = 0;
+        } else {
+            idx1 = s_len - 1;
+        }
+    }
+    if (!idx2_present) {
+        if (step > 0) {
+            idx2 = s_len;
+        } else {
+            idx2 = -1;
+        }
+    }
+    if (idx1 == idx2 ||
+        (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1))) {
+        return s;
+    }
+
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, s_len);
+    memcpy(dest_char, s, s_len);
+    int s_i = idx1, d_i = 0;
+    while((step > 0 && s_i >= idx1 && s_i < idx2) ||
+        (step < 0 && s_i <= idx1 && s_i > idx2)) {
+        dest_char[s_i] = r[d_i++];
+        s_i += step;
+    }
+    return dest_char;
+}
+
 LFORTRAN_API int64_t _lfortran_str_len(char* s)
 {
     return strlen(s);
@@ -4183,12 +4510,25 @@ LFORTRAN_API char* _lfortran_str_chr(uint8_t val)
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_str_chr_alloc(lfortran_allocator_t* al, uint8_t val)
+{
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, 2);
+    uint8_t extended_ascii = val;
+    dest_char[0] = extended_ascii;
+    dest_char[1] = '\0';
+    return dest_char;
+}
+
 LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size) {
     memset(s, c, size);
 }
 
 LFORTRAN_API void* _lfortran_malloc(int64_t size) {
     return malloc((size_t)size);
+}
+
+LFORTRAN_API void* _lfortran_malloc_alloc(lfortran_allocator_t* al, int64_t size) {
+    return ALLOCATOR_ALLOC(al, size);
 }
 
 /* 
@@ -4204,6 +4544,11 @@ LFORTRAN_API void* _lfortran_string_malloc(int64_t length) {
     return malloc(MAX((size_t)length, (size_t)1));
 }
 
+LFORTRAN_API void* _lfortran_string_malloc_alloc(lfortran_allocator_t* al, int64_t length) {
+    if(length < 0) lfortran_error("Allocating string with length < 0");
+    return ALLOCATOR_ALLOC(al, MAX(length, 1));
+}
+
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size) {
     // When size is 0, realloc(ptr, 0) may return NULL (implementation-defined).
     // For Fortran semantics, a size-0 allocatable array is still "allocated",
@@ -4214,12 +4559,29 @@ LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size) {
     return (int8_t*) realloc(ptr, (size_t)size);
 }
 
+LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* ptr, int64_t size) {
+    if (size == 0) {
+        size = 1;
+    }
+    return (int8_t*) ALLOCATOR_REALLOC(al, ptr, size);
+}
+
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
     return (int8_t*) calloc(count, size);
 }
 
+LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int32_t count, int32_t size) {
+    void* ptr = ALLOCATOR_ALLOC(al, (int64_t)count * size);
+    if (ptr) memset(ptr, 0, (size_t)count * size);
+    return (int8_t*) ptr;
+}
+
 LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
+}
+
+LFORTRAN_API void _lfortran_free_alloc(lfortran_allocator_t* al, char* ptr) {
+    ALLOCATOR_DEALLOC(al, (void*)ptr);
 }
 
 
@@ -8027,6 +8389,20 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
+    if (fd < 0)
+    {
+        printf("Error in reading the file!\n");
+        exit(1);
+    }
+    int x = fread(c, 1, n, (FILE*)fd);
+    c[x] = '\0';
+    return c;
+}
+
+LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n)
+{
+    char *c = (char *) ALLOCATOR_ALLOC(al, n);
+    if (c) memset(c, 0, (size_t)n);
     if (fd < 0)
     {
         printf("Error in reading the file!\n");
