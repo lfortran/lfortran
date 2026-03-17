@@ -6056,7 +6056,7 @@ public:
                     }
                     for (size_t i = 0; i < x.n_syms; i++) {
                         var_list.push_back(al,
-                                           current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                                           current_scope->resolve_symbol(to_lower(x.m_syms[i].m_name)));
                     }
                     ASR::asr_t* namelist = ASR::make_Namelist_t(al,
                                                attr_namelist->base.base.loc,
