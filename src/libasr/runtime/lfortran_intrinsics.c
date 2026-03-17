@@ -9611,42 +9611,42 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 // << Runtime Stacktrace << ----------------------------------------------------
 
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver) {
-    char* C_name = to_c_string(name , name_len); // C-Style String (Null Terminated)
+    char* C_name = to_c_string(name , name_len);
     if (C_name == NULL || ! getenv(C_name)) {
-        // When variable doesn't exist, leave receiver unchanged (Fortran standard)
-        // For backwards compatibility when status is not checked, set to blank
         receiver[0] = '\0';
+        internal_free(C_name);
         return;
     }
     int32_t len = strlen(getenv(C_name));
     memcpy(receiver, getenv(C_name), len);
     receiver[len] = '\0';
+    internal_free(C_name);
 }
 
 LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int32_t name_len) {
-    char* C_name = to_c_string(name, name_len); // C-Style String (Null Terminated)
+    char* C_name = to_c_string(name, name_len);
     if (C_name == NULL) {
-        return 2; // Error: invalid name
+        return 2;
     }
     char *value = getenv(C_name);
+    internal_free(C_name);
     if (value == NULL) {
-        return 1; // Variable does not exist
+        return 1;
     }
-    return 0; // Success: variable exists
+    return 0;
 }
 
 LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(fchar *name, int32_t name_len) {
-    char* C_name = to_c_string(name, name_len); // C-Style String (Null Terminated)
+    char* C_name = to_c_string(name, name_len);
     if (C_name == NULL) {
         return 0;
-    } else {
-        char *value = getenv(C_name);
-        if (value == NULL) {
-            return 0; // If the environment variable is not found, return 0
-        } else {
-            return strlen(value); // Return the length of the environment variable value
-        }
     }
+    char *value = getenv(C_name);
+    internal_free(C_name);
+    if (value == NULL) {
+        return 0;
+    }
+    return strlen(value);
 }
 
 LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
