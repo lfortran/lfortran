@@ -396,14 +396,15 @@ class ASRToLLVMVisitor;
                             span_type->getPointerTo(),
                             llvm::Type::getInt32Ty(context),
                         }));
-                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf");
+                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf_alloc");
                         if (!lcompilers_snprintf_fn) {
                             llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf", module);
+                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf_alloc", module);
                         }
 
                         // Allocate and populate labels and spans
@@ -435,6 +436,7 @@ class ASRToLLVMVisitor;
                             }
 
                             std::vector<llvm::Value*> snprintf_args;
+                            snprintf_args.push_back(get_allocator(module));
                             snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
                             snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
                             llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
