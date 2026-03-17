@@ -5429,7 +5429,7 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         free_heap_fixed_size_arrays();
-        if (compiler_options.internal_alloc_check) {
+        {
             llvm::Function *fn_finalize = module->getFunction(
                 "_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
@@ -17480,7 +17480,7 @@ public:
         print_error(context, *module, *builder, args);
 
         /* EXIT WITH CODE */
-        if (compiler_options.internal_alloc_check) {
+        {
             {
                 llvm::Function *fn_free_argv = module->getFunction("_lpython_free_argv");
                 if (!fn_free_argv) {
