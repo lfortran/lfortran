@@ -800,7 +800,8 @@ public:
                             !ASR::is_a<ASR::RealConstant_t>(*sym) &&
                             !ASR::is_a<ASR::LogicalConstant_t>(*sym) &&
                             !ASR::is_a<ASR::StringConstant_t>(*sym) &&
-                            !ASR::is_a<ASR::ComplexConstant_t>(*sym)) {
+                            !ASR::is_a<ASR::ComplexConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*sym)) {
                         visit_expr(*sym);
                         r += src;
                         handle_line_truncation(r, 2);
@@ -1738,7 +1739,8 @@ public:
         std::string re = src;
         visit_expr(*x.m_im);
         std::string im = src;
-        src = "cmplx(" + re + ", " + im + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "cmplx(" + re + ", " + im + ", kind=" + std::to_string(kind) + ")";
     }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
@@ -2111,8 +2113,15 @@ public:
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        std::string re = std::to_string(x.m_re);
-        std::string im = std::to_string(x.m_im);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string re, im;
+        if (kind >= 8) {
+            re = ASRUtils::to_string_with_precision(x.m_re, 16) + "_" + std::to_string(kind);
+            im = ASRUtils::to_string_with_precision(x.m_im, 16) + "_" + std::to_string(kind);
+        } else {
+            re = ASRUtils::to_string_with_precision(x.m_re, 8);
+            im = ASRUtils::to_string_with_precision(x.m_im, 8);
+        }
         src = "(" + re + ", " + im + ")";
     }
 
