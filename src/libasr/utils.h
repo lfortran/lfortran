@@ -143,6 +143,7 @@ struct CompilerOptions {
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
+    bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;

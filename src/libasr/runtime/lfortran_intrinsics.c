@@ -221,10 +221,125 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void) {
 
 /* Internal allocation wrappers — used for memory that stays within the
    runtime and is never returned to compiler-generated code. */
+
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+
+/* ---------- Leak-detector bookkeeping ---------- */
+
+typedef struct {
+    void       *ptr;
+    const char *file;
+    int         line;
+    size_t      size;
+} _internal_alloc_record;
+
+static _internal_alloc_record *_internal_alloc_table = NULL;
+static size_t _internal_alloc_count    = 0;
+static size_t _internal_alloc_capacity = 0;
+
+static void _internal_alloc_record_add(void *ptr, size_t size,
+                                       const char *file, int line)
+{
+    if (ptr == NULL) return;
+    if (_internal_alloc_count == _internal_alloc_capacity) {
+        _internal_alloc_capacity = _internal_alloc_capacity == 0
+                                   ? 256 : _internal_alloc_capacity * 2;
+        _internal_alloc_table = (_internal_alloc_record *)realloc(
+            _internal_alloc_table,
+            _internal_alloc_capacity * sizeof(_internal_alloc_record));
+    }
+    _internal_alloc_record *r = &_internal_alloc_table[_internal_alloc_count++];
+    r->ptr  = ptr;
+    r->file = file;
+    r->line = line;
+    r->size = size;
+}
+
+static int _internal_alloc_record_remove(void *ptr,
+                                          const char *file, int line)
+{
+    if (ptr == NULL) return 1;
+    for (size_t i = 0; i < _internal_alloc_count; i++) {
+        if (_internal_alloc_table[i].ptr == ptr) {
+            _internal_alloc_table[i] =
+                _internal_alloc_table[--_internal_alloc_count];
+            return 1;
+        }
+    }
+    fprintf(stderr,
+            "INTERNAL ALLOC CHECK: free of untracked pointer %p "
+            "at %s:%d\n", ptr, file, line);
+    return 0;
+}
+
+static void *_lfortran_internal_malloc_tracked(size_t size,
+                                               const char *file, int line)
+{
+    void *ptr = malloc(size);
+    _internal_alloc_record_add(ptr, size, file, line);
+    return ptr;
+}
+
+static void *_lfortran_internal_calloc_tracked(size_t count, size_t size,
+                                               const char *file, int line)
+{
+    void *ptr = calloc(count, size);
+    _internal_alloc_record_add(ptr, count * size, file, line);
+    return ptr;
+}
+
+static void *_lfortran_internal_realloc_tracked(void *old_ptr, size_t size,
+                                                const char *file, int line)
+{
+    if (old_ptr) _internal_alloc_record_remove(old_ptr, file, line);
+    void *ptr = realloc(old_ptr, size);
+    _internal_alloc_record_add(ptr, size, file, line);
+    return ptr;
+}
+
+static void _lfortran_internal_free_tracked(void *ptr,
+                                            const char *file, int line)
+{
+    if (ptr == NULL) return;
+    _internal_alloc_record_remove(ptr, file, line);
+    free(ptr);
+}
+
+#define internal_malloc(size)           _lfortran_internal_malloc_tracked(size, __FILE__, __LINE__)
+#define internal_calloc(count, size)    _lfortran_internal_calloc_tracked(count, size, __FILE__, __LINE__)
+#define internal_realloc(ptr, size)     _lfortran_internal_realloc_tracked(ptr, size, __FILE__, __LINE__)
+#define internal_free(ptr)              _lfortran_internal_free_tracked(ptr, __FILE__, __LINE__)
+
+#else /* !LFORTRAN_INTERNAL_ALLOC_CHECK */
+
 #define internal_malloc(size)           malloc(size)
 #define internal_calloc(count, size)    calloc(count, size)
 #define internal_realloc(ptr, size)     realloc(ptr, size)
 #define internal_free(ptr)              free(ptr)
+
+#endif /* LFORTRAN_INTERNAL_ALLOC_CHECK */
+
+LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
+{
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+    if (_internal_alloc_count > 0) {
+        fprintf(stderr,
+                "INTERNAL ALLOC CHECK: %zu allocation(s) still live:\n",
+                _internal_alloc_count);
+        for (size_t i = 0; i < _internal_alloc_count; i++) {
+            _internal_alloc_record *r = &_internal_alloc_table[i];
+            fprintf(stderr,
+                    "  LEAK: %zu bytes at %s:%d (ptr=%p)\n",
+                    r->size, r->file, r->line, r->ptr);
+        }
+    }
+    free(_internal_alloc_table);
+    _internal_alloc_table    = NULL;
+    _internal_alloc_count    = 0;
+    _internal_alloc_capacity = 0;
+    /* Do NOT call exit() here — let the caller decide what to do. */
+#endif
+}
 
 // This function performs case insensitive string comparison
 bool streql(const char *s1, const char* s2) {

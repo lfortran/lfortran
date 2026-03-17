@@ -92,6 +92,7 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void);
 #define ALLOCATOR_DEALLOC(a, ptr)         ((a)->dealloc((a)->context, (ptr)))
 
 LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
+LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
