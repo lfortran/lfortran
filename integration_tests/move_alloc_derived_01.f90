@@ -1,4 +1,4 @@
-module stdlib_hashmaps
+module move_alloc_derived_01_m
     implicit none
 
     type open_map_entry_ptr
@@ -8,10 +8,10 @@ module stdlib_hashmaps
     type :: open_hashmap_type
         type(open_map_entry_ptr), allocatable :: inverse(:)
     end type open_hashmap_type
-end module stdlib_hashmaps
+end module move_alloc_derived_01_m
 
-program main
-    use stdlib_hashmaps
+program move_alloc_derived_01
+    use move_alloc_derived_01_m
     implicit none
 
     type(open_hashmap_type) :: map
@@ -25,4 +25,4 @@ program main
     if (allocated(dummy_inverse)) error stop
     if (.not. allocated(map%inverse)) error stop
     if (size(map%inverse) /= 1) error stop
-end program
+end program move_alloc_derived_01

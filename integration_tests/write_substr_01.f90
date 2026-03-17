@@ -1,4 +1,4 @@
-program linetest
+program write_substr_01
   character(80) :: line
   write(line(1:3), '(I3)') 666
   
@@ -8,4 +8,4 @@ program linetest
   end if
   
   write(*, '(A)') line(1:3)
-end program linetest
+end program write_substr_01
