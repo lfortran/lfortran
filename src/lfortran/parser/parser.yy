@@ -554,6 +554,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_common_block> common_block_list_top
 %type <var_sym> common_block_start
 %type <var_sym> common_block_object
+%type <vec_ast> namelist_group_list
 %type <vec_ast> data_set_list
 %type <ast> data_set
 %type <vec_ast> data_object_list
@@ -1098,7 +1099,7 @@ fn_mod
     ;
 
 temp_decl_star
-    : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
+    : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); DRAIN_EXTRA($$); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1113,7 +1114,7 @@ temp_decl
     ;
 
 decl_star
-    : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
+    : decl_star decl { $$ = $1; LIST_ADD($$, $2); DRAIN_EXTRA($$); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1349,7 +1350,7 @@ use_modifier
 
 // var_decl*
 var_decl_star
-    : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
+    : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); DRAIN_EXTRA($$); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1374,14 +1375,25 @@ var_decl
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
-    | KW_NAMELIST "/" id "/" id_list sep {
-        LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
+    | KW_NAMELIST namelist_group_list sep {
+        LLOC(@$, @2); $$ = NAMELIST_FIRST_EXTRA_REST($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
     | TK_PRAGMA_DECL sep {
         LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
+    ;
+
+namelist_group_list
+    : "/" id "/" id {
+        NML_GROUP_1($$, $2, $4, @$); }
+    | namelist_group_list "," id {
+        NML_GROUP_ADD_VAR($$, $1, $3, @$); }
+    | namelist_group_list "/" id "/" id {
+        NML_GROUP_NEW($$, $1, $3, $5, @$); }
+    | namelist_group_list "," "/" id "/" id {
+        NML_GROUP_NEW($$, $1, $4, $6, @$); }
     ;
 
 equivalence_set_list
@@ -1711,7 +1723,7 @@ sep_one
     ;
 
 decl_statements
-    : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); DRAIN_EXTRA($$); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;
