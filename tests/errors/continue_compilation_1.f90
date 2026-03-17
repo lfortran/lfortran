@@ -630,6 +630,7 @@ program continue_compilation_1
     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
     write (*, "(a)", advance="hello") "Dothraki culture"
+    print *, sum(arr1, dim = mask1)
 
 
 

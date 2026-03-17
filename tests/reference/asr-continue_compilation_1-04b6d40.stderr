@@ -1341,3 +1341,9 @@ semantic error: ADVANCE= specifier must have value = YES or NO
     |
 632 |     write (*, "(a)", advance="hello") "Dothraki culture"
     |                              ^^^^^^^ 
+
+semantic error: 'dim' argument of 'sum' intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_1.f90:633:30
+    |
+633 |     print *, sum(arr1, dim = mask1)
+    |                              ^^^^^ 
