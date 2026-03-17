@@ -7245,6 +7245,8 @@ typedef struct {
         } str;
     };
     long record_start_pos;
+    int access_id;      // 0=sequential, 1=stream, 2=direct
+    int32_t record_len; // record length for direct access
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -7715,6 +7717,17 @@ static void handle_read_T(InputSource *inputSource, int position)
 
 static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
+    // For direct access files, advance to the next record boundary
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file &&
+        inputSource->access_id == 2 && inputSource->record_len > 0) {
+        // Calculate the next record boundary from record_start_pos
+        long next_record = inputSource->record_start_pos + inputSource->record_len;
+        fseek(inputSource->file, next_record, SEEK_SET);
+        inputSource->record_start_pos = next_record;
+        *consumed_newline = false;
+        return;
+    }
+
     if (!*consumed_newline) {
         int c = 0;
         do {
@@ -7745,7 +7758,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, ...) {
     
-    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0};
+    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0, .access_id = 0, .record_len = 0};
     
     va_list args;
     va_start(args, no_of_args);
@@ -7773,11 +7786,17 @@ LFORTRAN_API void _lfortran_formatted_read(
 {
     InputSource inputSource;
     bool unit_file_bin, blank_zero;
+    inputSource.access_id = 0;
+    inputSource.record_len = 0;
 
     if (unit_num != -1) {
+        int access_id = 0;
+        int32_t unit_recl = 0;
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-            NULL, NULL, NULL, NULL, &blank_zero, NULL, NULL);
+            &access_id, NULL, NULL, NULL, &blank_zero, &unit_recl, NULL);
+        inputSource.access_id = access_id;
+        inputSource.record_len = unit_recl;
         if (!inputSource.file) {
             printf("No file found with given unit\n");
             exit(1);
@@ -8140,7 +8159,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     int access_id;
     bool read_access, write_access;
     int delim;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, NULL, NULL);
+    int32_t unit_recl = 0;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, &unit_recl, NULL);
 
     // Check if write is allowed (action='read' sets write_access=false)
     // Only check if unit was found in table (filep != NULL); unconnected units fall through to stdout
@@ -8250,33 +8270,72 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             open_delim = close_delim = '"';
         }
 
-        // If format_data changed, we need to change the hardcoded format passed to fprintf
+        char* end = NULL;
+        int64_t end_len = 0;
         if(strcmp(format_data, "%s%s") == 0){
-            char* end = va_arg(args, char*);
-            int64_t end_len = va_arg(args, int64_t);
-
-            if(open_delim != '\0') {
-                fprintf(filep, "%c%.*s%c%.*s",
-                    open_delim, (int)str_len, str, close_delim,
-                    (int)end_len, end
-                );
-            } else {
-                fprintf(filep, "%.*s%.*s",
-                    (int)str_len, str,
-                    (int)end_len, end
-                );
-            }
-        } else if (strcmp(format_data, "%s") == 0){
-            if(open_delim != '\0') {
-                fprintf(filep, "%c%.*s%c",
-                    open_delim, (int)str_len, str, close_delim
-                );
-            } else {
-                fprintf(filep, "%.*s", (int)str_len, str);
-            }
-        } else {
+            end = va_arg(args, char*);
+            end_len = va_arg(args, int64_t);
+        } else if (strcmp(format_data, "%s") != 0){
             fprintf(stderr,"Compiler Error : Undefined Format");
             exit(1);
+        }
+
+        // For direct access formatted writes, handle record boundaries:
+        // The '/' edit descriptor produces '\n' in the formatted string.
+        // For direct access, each record must be exactly unit_recl bytes,
+        // padded with spaces, with no newline characters.
+        // The 'end' parameter (normally '\n') is not appended for direct access
+        // since records are fixed-length and don't use newline terminators.
+        if (access_id == 2 && unit_recl > 0) {
+            // Use only the formatted data string (not the end marker)
+            int64_t total_len = str_len;
+            char* combined = (char*)malloc(total_len + 1);
+            memcpy(combined, str, str_len);
+            combined[total_len] = '\0';
+
+            // Write each record segment (split at '\n')
+            char* pad = (char*)malloc(unit_recl);
+            memset(pad, ' ', unit_recl);
+
+            int64_t seg_start = 0;
+            for (int64_t pos = 0; pos <= total_len; pos++) {
+                if (pos == total_len || combined[pos] == '\n') {
+                    int64_t seg_len = pos - seg_start;
+                    if (seg_len > unit_recl) seg_len = unit_recl;
+                    fwrite(combined + seg_start, 1, seg_len, filep);
+                    // Pad the rest of the record with spaces
+                    if (seg_len < unit_recl) {
+                        fwrite(pad, 1, unit_recl - seg_len, filep);
+                    }
+                    seg_start = pos + 1;
+                }
+            }
+
+            free(pad);
+            free(combined);
+        } else {
+            // Sequential / stream access: write as before
+            if (end != NULL) {
+                if(open_delim != '\0') {
+                    fprintf(filep, "%c%.*s%c%.*s",
+                        open_delim, (int)str_len, str, close_delim,
+                        (int)end_len, end
+                    );
+                } else {
+                    fprintf(filep, "%.*s%.*s",
+                        (int)str_len, str,
+                        (int)end_len, end
+                    );
+                }
+            } else {
+                if(open_delim != '\0') {
+                    fprintf(filep, "%c%.*s%c",
+                        open_delim, (int)str_len, str, close_delim
+                    );
+                } else {
+                    fprintf(filep, "%.*s", (int)str_len, str);
+                }
+            }
         }
 
 
