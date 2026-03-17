@@ -269,7 +269,7 @@ static int _internal_alloc_record_remove(void *ptr,
     fprintf(stderr,
             "INTERNAL ALLOC CHECK: free of untracked pointer %p "
             "at %s:%d\n", ptr, file, line);
-    return 0;
+    exit(1);
 }
 
 static void *_lfortran_internal_malloc_tracked(size_t size,
