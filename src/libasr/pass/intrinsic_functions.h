@@ -272,9 +272,9 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     switch (arg_type->type) {
         case ASR::ttypeType::Complex : {
             if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_s" + new_name;
+                c_func_name = "_lfortran_c" + new_name;
             } else {
-                c_func_name = "_lfortran_d" + new_name;
+                c_func_name = "_lfortran_z" + new_name;
             }
             break;
         }
