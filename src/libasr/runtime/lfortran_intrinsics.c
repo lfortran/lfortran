@@ -322,7 +322,8 @@ static void _lfortran_internal_free_tracked(void *ptr,
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 {
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
-    if (_internal_alloc_count > 0) {
+    int has_leaks = (_internal_alloc_count > 0);
+    if (has_leaks) {
         fprintf(stderr,
                 "INTERNAL ALLOC CHECK: %zu allocation(s) still live:\n",
                 _internal_alloc_count);
@@ -337,7 +338,7 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
     _internal_alloc_table    = NULL;
     _internal_alloc_count    = 0;
     _internal_alloc_capacity = 0;
-    /* Do NOT call exit() here — let the caller decide what to do. */
+    if (has_leaks) exit(1);
 #endif
 }
 
