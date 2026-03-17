@@ -459,13 +459,14 @@ class ASRToLLVMVisitor;
                         if (!print_error_fn) {
                             llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context),
-                                {label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             print_error_fn = llvm::Function::Create(error_fn_type,
                                 llvm::Function::ExternalLinkage, "_lcompilers_runtime_error", module);
                         }
 
-                        std::vector<llvm::Value*> vec = {LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
+                        std::vector<llvm::Value*> vec = {get_allocator(module), LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
                         builder->CreateCall(print_error_fn, vec);
 
                         llvm::Function* exit_fn = module->getFunction("exit");

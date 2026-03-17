@@ -3113,7 +3113,7 @@ static void print_label_span(const Span *span, bool is_primary,
     internal_free(line_text);
 }
 
-LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
+LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -3184,7 +3184,7 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
             if (label->message != NULL)
-                free(label->message);
+                ALLOCATOR_DEALLOC(al, label->message);
             label->message = NULL;
         }
     }
