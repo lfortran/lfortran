@@ -5929,7 +5929,12 @@ public:
                                             ASR::Variable_t* candidate_ptr =
                                                 ASR::down_cast<ASR::Variable_t>(
                                                     ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
-                                            if (equiv_sources.count(candidate_ptr)) {
+
+                                            bool src_has_value = candidate_src->m_value != nullptr;
+                                            bool ptr_has_value = candidate_ptr->m_value != nullptr;
+
+                                            if (equiv_sources.count(candidate_ptr) ||
+                                                (!src_has_value && ptr_has_value)) {
                                                 source_expr = asr_eq1;
                                                 pointer_expr = asr_eq2;
                                                 pointer_var = candidate_src;
