@@ -1593,7 +1593,7 @@ RUN(NAME intrinsics_438 LABELS gfortran llvm) # norm2 with variable dim argument
 RUN(NAME intrinsics_439 LABELS gfortran llvm) # minval/maxval for strings
 RUN(NAME intrinsics_440 LABELS gfortran llvm) # atan2d
 RUN(NAME intrinsics_441 LABELS llvm) # sinpi/cospi/tanpi/asinpi/acospi/atanpi/atan2pi  <--- GFortran does not have support for these intrinsics
-
+RUN(NAME intrinsics_442 LABELS gfortran llvm) # ascii kind string literal (ascii_"...")
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2854,6 +2854,7 @@ RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME boz_02 LABELS llvm llvm_wasm llvm_wasm_emcc) #remove gfortran label, as functionality is not supported by gfortran
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_02 LABELS gfortran llvm)
+RUN(NAME cmd_03 LABELS gfortran llvm) # get_command_argument loop until empty
 
 RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME div_to_mul LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
