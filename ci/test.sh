@@ -53,7 +53,7 @@ if [[ $WIN != "1" ]]; then
     echo "NPROC: ${NPROC}"
 
     if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
-        ./run_tests.py -j${NPROC}
+        ./run_tests.py
     fi
 
     cd integration_tests
