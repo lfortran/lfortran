@@ -4150,11 +4150,16 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         if (!t) {
-            diag.add(diag::Diagnostic(
-                "Module '" + msym + "' not found",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            SymbolTable *tu_symtab = current_scope->get_global_scope();
+            std::set<std::string> loaded_submodules;
+            t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
+                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
+                [&](const std::string &msg, const Location &loc) {
+                    diag.add(diag::Diagnostic(
+                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
+            }, lm, compiler_options.separate_compilation, false));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
