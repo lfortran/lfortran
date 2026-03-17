@@ -3228,6 +3228,7 @@ RUN(NAME common_28 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME common_29 LABELS gfortran llvm)
 RUN(NAME common_30 LABELS gfortran llvm)
 RUN(NAME common_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
