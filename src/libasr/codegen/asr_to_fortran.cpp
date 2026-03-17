@@ -2566,7 +2566,23 @@ public:
         src = "null()";
     }
 
-    // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
+    void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_expr(*x.m_ptr);
+        std::string ptr = src;
+        std::string r = "associated(" + ptr;
+        if (x.m_tgt) {
+            visit_expr(*x.m_tgt);
+            std::string tgt = src;
+            r += ", " + tgt;
+        }
+        r += ")";
+        src = r;
+        last_expr_precedence = Precedence::Ext;
+    }
 
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);
