@@ -1750,7 +1750,7 @@ public:
                         diag.add(Diagnostic(
                             "ADVANCE= specifier must have value = YES or NO",
                             Level::Error, Stage::Semantic, {
-                                Label("",{kwarg.loc})
+                                Label("",{adv_val_expr->base.loc})
                             }));
                         throw SemanticAbort();
                     }
