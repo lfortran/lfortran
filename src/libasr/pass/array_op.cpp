@@ -208,6 +208,16 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         visit_ArrayOp(x);
     }
 
+    void visit_BitCast(const ASR::BitCast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_BitCast(x);
+        ASR::BitCast_t& xx = const_cast<ASR::BitCast_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_mold)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StructInstanceMember(x);
         if( !ASRUtils::is_array(x.m_type) ) {
@@ -607,7 +617,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             x.m_iomsg, x.m_iostat, x.m_id,
             inner_vals.p, 1,
             x.m_separator, x.m_end, x.m_overloaded,
-            x.m_is_formatted, x.m_nml, x.m_rec));
+            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos));
 
         // Wrap Scalar FileWrites in DoLoop
         Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
@@ -1118,13 +1128,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASRUtils::ASRBuilder builder(al, loc);
         ASR::ttype_t* idx_type = get_index_type(loc);
         int idx_kind = get_index_kind();
+        // When assigning back from function result, the LHS
+        // allocatable variable must have lower bounds reset to 1, 
+        // It should not inherit the bounds set within the function from target. 
+        // Note: Instead of string matching, a more robust approach can be using 
+        // m_move_allocation flags, but it requires parsing entire ASR to 
+        // extract those flags, which might increase time for this rare edge case.
+        // So, using string matching patterns for now.
+        bool from_function_result = false;
+        if (ASR::is_a<ASR::Var_t>(*value)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(value)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                // Temporary allocatable array for return type 
+                // Created inside pass: subroutine_from_function
+                std::string src_name = std::string(ASR::down_cast<ASR::Variable_t>(sym)->m_name);
+                from_function_result = src_name.find("__libasr_created__function_call_") == 0;
+            }
+        }
         Vec<ASR::dimension_t> realloc_dims;
         size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
         for( size_t i = 0; i < target_rank; i++ ) {
             ASR::dimension_t realloc_dim;
             realloc_dim.loc = loc;
-            realloc_dim.m_start = PassUtils::get_bound(realloc_var, i + 1, "lbound", al, idx_kind);
+            if (from_function_result) {
+                // Reset lower bound to 1, for function return assignment
+                realloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, idx_kind, loc);
+            } else {
+                // For other cases (For example, variable copy a = b) preserve source lbounds
+                realloc_dim.m_start = PassUtils::get_bound(realloc_var, i + 1, "lbound", al, idx_kind);
+            }
             ASR::expr_t* dim_expr = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, i + 1, idx_kind, loc);
             realloc_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                 al, loc, realloc_var, dim_expr, idx_type, nullptr));
@@ -1516,13 +1549,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
 
             // Don't generate an element-wise loop for transfer() (BitCast) when
-            // source and result are fixed-size arrays with different element byte
-            // sizes. The element counts differ so the loop indices would go out
+            // source and result are arrays with different element byte sizes.
+            // The element counts differ so the loop indices would go out
             // of bounds on the source array. Leave the whole-array BitCast for
             // the LLVM backend to lower as a memcpy.
-            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type) &&
-                ASRUtils::is_fixed_size_array(src_type) &&
-                ASRUtils::is_fixed_size_array(bc->m_type)) {
+            if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
                 int src_kind = ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::extract_type(src_type));
                 int res_kind = ASRUtils::extract_kind_from_ttype_t(

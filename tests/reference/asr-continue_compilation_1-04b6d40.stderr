@@ -332,6 +332,18 @@ semantic error: Result of `erfc` underflows its kind
 296 |     real(8), parameter :: erfc_param = erfc(40.12_8)
     |                                        ^^^^^^^^^^^^^ 
 
+semantic error: Contiguous attribute can only be applied to declared variables
+   --> tests/errors/continue_compilation_1.f90:298:19
+    |
+298 |     contiguous :: contig_not_declared
+    |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Contiguous attribute can only be applied to variables
+   --> tests/errors/continue_compilation_1.f90:299:19
+    |
+299 |     contiguous :: MyClass
+    |                   ^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
@@ -355,6 +367,18 @@ semantic error: Parameterized derived type 'container' parameter 'rk' has no def
     |
 627 |     type(container) :: obj2
     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The shapes of the `array` and `mask` arguments of the `MinLoc` intrinsic must be the same
+   --> tests/errors/continue_compilation_1.f90:630:47
+    |
+630 |     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
+    |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
+
+semantic error: The shapes of the `array` and `mask` arguments of the `MaxLoc` intrinsic must be the same
+   --> tests/errors/continue_compilation_1.f90:631:47
+    |
+631 |     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
+    |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
@@ -1311,3 +1335,9 @@ semantic error: Implied DO loop must be enclosed within array constructor bracke
     |
 629 |     arr_idl = (i, i = 1, 4)
     |               ^^^^^^^^^^^^^ 
+
+semantic error: ADVANCE= specifier must have value = YES or NO
+   --> tests/errors/continue_compilation_1.f90:632:30
+    |
+632 |     write (*, "(a)", advance="hello") "Dothraki culture"
+    |                              ^^^^^^^ 

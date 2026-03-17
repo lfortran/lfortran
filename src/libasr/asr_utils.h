@@ -6461,7 +6461,18 @@ static inline void import_struct_t(Allocator& al,
                     ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
                 current_scope->add_symbol(unique_name, der_sym);
             } else {
-                der_sym = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved = current_scope->resolve_symbol(sym_name);
+                ASR::symbol_t* resolved_underlying = ASRUtils::symbol_get_past_external(resolved);
+                if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+                    der_sym = resolved;
+                } else {
+                    std::string unique_name = current_scope->get_unique_name(sym_name);
+                    der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                    current_scope->add_symbol(unique_name, der_sym);
+                }
             }
             var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym, true);
             if( is_array ) {
@@ -6508,7 +6519,18 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
             s2c(al, struct_name), ASR::accessType::Public));
         current_scope->add_symbol(struct_name, struct_sym);
     } else {
-        struct_sym = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved = current_scope->resolve_symbol(struct_name);
+        ASR::symbol_t* resolved_underlying = symbol_get_past_external(resolved);
+        if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
+            struct_sym = resolved;
+        } else {
+            std::string unique_name = current_scope->get_unique_name(struct_name);
+            struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, loc, current_scope, s2c(al, unique_name), struct_sym,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+                s2c(al, struct_name), ASR::accessType::Public));
+            current_scope->add_symbol(unique_name, struct_sym);
+        }
     }
     return struct_sym;
 }
@@ -6620,8 +6642,13 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
+            int src_len = len;
+            ASR::String_t* src_type = ASR::down_cast<ASR::String_t>(
+                extract_type(expr_type((ASR::expr_t*)value)));
+            extract_value(src_type->m_len, src_len);
+            int copy_len = std::min(len, src_len);
             for (int j = 0; j < len; j++) {
-                *(((char*)x->m_data) + i*len + j) = data[j];
+                *(((char*)x->m_data) + i*len + j) = (j < copy_len) ? data[j] : ' ';
             }
             break;
         }
@@ -6888,12 +6915,19 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         case ASR::ttypeType::String: {
             int len = -1;
             ASRUtils::extract_value(
-                ASR::down_cast<ASR::String_t>(extract_type(expr_type(a_args[0])))->m_len, len);
+                ASR::down_cast<ASR::String_t>(a_type)->m_len, len);
             char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
-                char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(
+                    ASRUtils::expr_value(a_args[i]));
+                char* value = sc->m_s;
+                int src_len = len;
+                ASR::String_t* src_type = ASR::down_cast<ASR::String_t>(
+                    extract_type(expr_type((ASR::expr_t*)sc)));
+                extract_value(src_type->m_len, src_len);
+                int copy_len = std::min(len, src_len);
                 for (int j = 0; j < len; j++) {
-                    data[i*len + j] = value[j];
+                    data[i*len + j] = (j < copy_len) ? value[j] : ' ';
                 }
             }
             data[len*n_args] = '\0';

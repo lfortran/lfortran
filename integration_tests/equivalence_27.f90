@@ -17,4 +17,4 @@ program equivalence_27
 
   if (la(2)) error stop
 
-end program
+end program 

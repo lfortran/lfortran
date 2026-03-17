@@ -1602,22 +1602,20 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            // If all are StructTypes then the Struct symbols should match
+                            // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*left_arg_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
-                                    
-                                ASR::Struct_t *left_sym = left_struct;
-                                ASR::Struct_t *right_sym = right_struct;
-
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
+                                if (!is_derived_type_similar(left_struct, left_arg_sym)) {
+                                    break;
+                                }
+                            }
+                            if (ASR::is_a<ASR::StructType_t>(*right_type2) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-
-                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
-                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
+                                if (!is_derived_type_similar(right_struct, right_arg_sym)) {
                                     break;
                                 }
                             }
@@ -2021,11 +2019,41 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
+                    ASR::symbol_t* proc_func = class_proc->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
                         expr_dt, err, class_proc->m_self_argument);
+                    if (found && expr_dt && ASRUtils::is_class_type(
+                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)))) {
+                        // For polymorphic (class) types, create a type-bound call
+                        // referencing the StructMethodDeclaration with m_dt set,
+                        // so codegen can use vtable dispatch.
+                        std::string method_name = std::string(class_proc->m_name) + "@~assign";
+                        ASR::symbol_t* ext_sym = curr_scope->get_symbol(method_name);
+                        if (ext_sym == nullptr) {
+                            ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, curr_scope, s2c(al, method_name), proc,
+                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                nullptr, 0, class_proc->m_name, ASR::accessType::Public));
+                            curr_scope->add_symbol(method_name, ext_sym);
+                        }
+                        if (ASRUtils::symbol_parent_symtab(ext_sym)->get_counter() != curr_scope->get_counter()) {
+                            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, ext_sym, current_function_dependencies, s2c(al, method_name));
+                        }
+                        ASRUtils::insert_module_dependency(ext_sym, al, current_module_dependencies);
+
+                        ASR::expr_t* non_pass_arg = (expr_dt == target) ? value : target;
+                        Vec<ASR::call_arg_t> a_args;
+                        a_args.reserve(al, 1);
+                        ASR::call_arg_t arg;
+                        arg.loc = non_pass_arg->base.loc;
+                        arg.m_value = non_pass_arg;
+                        a_args.push_back(al, arg);
+
+                        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, ext_sym, ext_sym,
+                            a_args.p, 1, expr_dt, nullptr, false);
+                    }
                     break;
                 }
                 default: {
@@ -2278,22 +2306,20 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            // If all are StructTypes then the Struct symbols should match
+                            // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*left_arg_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
-                                    
-                                ASR::Struct_t *left_sym = left_struct;
-                                ASR::Struct_t *right_sym = right_struct;
-
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
+                                if (!is_derived_type_similar(left_struct, left_arg_sym)) {
+                                    break;
+                                }
+                            }
+                            if (ASR::is_a<ASR::StructType_t>(*right_type2) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-
-                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
-                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
+                                if (!is_derived_type_similar(right_struct, right_arg_sym)) {
                                     break;
                                 }
                             }
@@ -2440,23 +2466,26 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2)
-                                && ASR::is_a<ASR::StructType_t>(*right_type2)
-                                && ASR::is_a<ASR::StructType_t>(*left_arg_type2)
-                                && ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
+                                && ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
                                 ASR::Struct_t* left_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(
                                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
-                                ASR::Struct_t* right_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(right))));
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0]))));
+                                if (!is_derived_type_similar(left_sym, left_arg_sym)) {
+                                    break;
+                                }
+                            }
+                            if (ASR::is_a<ASR::StructType_t>(*right_type2)
+                                && ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
+                                ASR::Struct_t* right_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(right))));
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(
                                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1]))));
-                                        
-                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
-                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
+                                if (!is_derived_type_similar(right_sym, right_arg_sym)) {
                                     break;
                                 }
                             }

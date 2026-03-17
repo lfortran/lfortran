@@ -295,8 +295,8 @@ program continue_compilation_1
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
     integer :: arr_idl(4)
-
-
+    contiguous :: contig_not_declared
+    contiguous :: MyClass
 
 
 
@@ -627,6 +627,10 @@ program continue_compilation_1
     type(container) :: obj2
 
     arr_idl = (i, i = 1, 4)
+    integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
+    integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
+    write (*, "(a)", advance="hello") "Dothraki culture"
+
 
 
 
