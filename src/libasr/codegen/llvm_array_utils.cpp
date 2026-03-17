@@ -1250,7 +1250,8 @@ namespace LCompilers {
 
             if( ASRUtils::is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
-                builder->CreateStore(this->get_offset(arr_type, array),
+                llvm::Value* src_offset = this->get_offset(arr_type, array);
+                builder->CreateStore(src_offset,
                             this->get_offset(arr_type, reshaped, false));
 
                 // Determine n_dims and a pointer to the shape data.
