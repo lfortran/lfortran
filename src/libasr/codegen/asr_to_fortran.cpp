@@ -788,6 +788,27 @@ public:
                 r += " => ";
             } else {
                 r += " = ";
+                // For parameters, prefer the original symbolic expression over the
+                // evaluated value. Unwrap any implicit Cast nodes that the compiler
+                // added for type compatibility so the output stays readable.
+                if (x.m_storage == ASR::storage_typeType::Parameter && x.m_symbolic_value) {
+                    const ASR::expr_t* sym = x.m_symbolic_value;
+                    while (ASR::is_a<ASR::Cast_t>(*sym)) {
+                        sym = ASR::down_cast<ASR::Cast_t>(sym)->m_arg;
+                    }
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::RealConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::LogicalConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::StringConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::ComplexConstant_t>(*sym)) {
+                        visit_expr(*sym);
+                        r += src;
+                        handle_line_truncation(r, 2);
+                        r += "\n";
+                        src = r;
+                        return;
+                    }
+                }
             }
             visit_expr(*x.m_value);
             r += src;
