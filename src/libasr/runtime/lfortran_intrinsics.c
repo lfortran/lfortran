@@ -39,44 +39,7 @@ typedef enum {
 #endif
 #endif
 
-/* internal: buffer stays within the runtime */
-static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
-    if (!lineptr || !n || !stream) {
-        errno = EINVAL;
-        return -1;
-    }
-    if (*lineptr == NULL || *n == 0) {
-        *n = 128;
-        *lineptr = (char *)malloc(*n);
-        if (!*lineptr) {
-            errno = ENOMEM;
-            return -1;
-        }
-    }
-    size_t pos = 0;
-    int c = 0;
-    while ((c = fgetc(stream)) != EOF) {
-        if (pos + 1 >= *n) {
-            size_t new_n = (*n) * 2;
-            char *new_ptr = (char *)realloc(*lineptr, new_n);
-            if (!new_ptr) {
-                errno = ENOMEM;
-                return -1;
-            }
-            *lineptr = new_ptr;
-            *n = new_n;
-        }
-        (*lineptr)[pos++] = (char)c;
-        if (c == '\n') {
-            break;
-        }
-    }
-    if (pos == 0 && c == EOF) {
-        return -1;
-    }
-    (*lineptr)[pos] = '\0';
-    return (int64_t)pos;
-}
+
 
 #if defined(__APPLE__)
 #  include <sys/time.h>
@@ -340,6 +303,44 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
     _internal_alloc_capacity = 0;
     if (has_leaks) exit(1);
 #endif
+}
+
+static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
+    if (!lineptr || !n || !stream) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (*lineptr == NULL || *n == 0) {
+        *n = 128;
+        *lineptr = (char *)internal_malloc(*n);
+        if (!*lineptr) {
+            errno = ENOMEM;
+            return -1;
+        }
+    }
+    size_t pos = 0;
+    int c = 0;
+    while ((c = fgetc(stream)) != EOF) {
+        if (pos + 1 >= *n) {
+            size_t new_n = (*n) * 2;
+            char *new_ptr = (char *)internal_realloc(*lineptr, new_n);
+            if (!new_ptr) {
+                errno = ENOMEM;
+                return -1;
+            }
+            *lineptr = new_ptr;
+            *n = new_n;
+        }
+        (*lineptr)[pos++] = (char)c;
+        if (c == '\n') {
+            break;
+        }
+    }
+    if (pos == 0 && c == EOF) {
+        return -1;
+    }
+    (*lineptr)[pos] = '\0';
+    return (int64_t)pos;
 }
 
 // This function performs case insensitive string comparison
@@ -3064,7 +3065,7 @@ static char* runtime_read_line(const char *filename, unsigned int line_no) {
         current++;
     }
     fclose(file);
-    free(line);
+    internal_free(line);
     return NULL;
 }
 
@@ -3109,7 +3110,7 @@ static void print_label_span(const Span *span, bool is_primary,
     }
     fprintf(stderr, "%s\n", color_reset);
 
-    free(line_text);
+    internal_free(line_text);
 }
 
 LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
@@ -9487,7 +9488,7 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
     fclose(fp);
 
     if (read_len == -1) {
-        free(line);
+        internal_free(line);
         *out_len = 0;
         return NULL;
     }
@@ -9577,7 +9578,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
                 source_filename, d.line_numbers[index],
                 (int)line_len, trimmed);
         }
-        free(line);
+        internal_free(line);
 #ifdef HAVE_LFORTRAN_MACHO
     }
 #else
