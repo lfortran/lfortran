@@ -286,6 +286,7 @@ static void _lfortran_close_all_units(void);
 
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 {
+    _lpython_free_argv();
     _lfortran_close_all_units();
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
     int has_leaks = (_internal_alloc_count > 0);
