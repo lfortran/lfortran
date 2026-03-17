@@ -1128,13 +1128,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASRUtils::ASRBuilder builder(al, loc);
         ASR::ttype_t* idx_type = get_index_type(loc);
         int idx_kind = get_index_kind();
+        // When assigning back from function result, the LHS
+        // allocatable variable must have lower bounds reset to 1, 
+        // It should not inherit the bounds set within the function from target. 
+        // Note: Instead of string matching, a more robust approach can be using 
+        // m_move_allocation flags, but it requires parsing entire ASR to 
+        // extract those flags, which might increase time for this rare edge case.
+        // So, using string matching patterns for now.
+        bool from_function_result = false;
+        if (ASR::is_a<ASR::Var_t>(*value)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(value)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                // Temporary allocatable array for return type 
+                // Created inside pass: subroutine_from_function
+                std::string src_name = std::string(ASR::down_cast<ASR::Variable_t>(sym)->m_name);
+                from_function_result = src_name.find("__libasr_created__function_call_") == 0;
+            }
+        }
         Vec<ASR::dimension_t> realloc_dims;
         size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
         for( size_t i = 0; i < target_rank; i++ ) {
             ASR::dimension_t realloc_dim;
             realloc_dim.loc = loc;
-            realloc_dim.m_start = PassUtils::get_bound(realloc_var, i + 1, "lbound", al, idx_kind);
+            if (from_function_result) {
+                // Reset lower bound to 1, for function return assignment
+                realloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, idx_kind, loc);
+            } else {
+                // For other cases (For example, variable copy a = b) preserve source lbounds
+                realloc_dim.m_start = PassUtils::get_bound(realloc_var, i + 1, "lbound", al, idx_kind);
+            }
             ASR::expr_t* dim_expr = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, i + 1, idx_kind, loc);
             realloc_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                 al, loc, realloc_var, dim_expr, idx_type, nullptr));
