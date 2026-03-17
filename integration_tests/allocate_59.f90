@@ -1,4 +1,4 @@
-module expr2_string
+module allocate59_string
 	implicit none
 
 	type :: string
@@ -14,11 +14,11 @@ contains
 		string_len = len(self%chars)
 	end function string_len
 
-end module expr2_string
+end module allocate59_string
 
 
-module expr2_mre
-	use expr2_string, only: string
+module allocate59_mre
+	use allocate59_string, only: string
 	implicit none
 
 	abstract interface
@@ -52,11 +52,11 @@ contains
 		end select
 	end subroutine upper_caller
 
-end module expr2_mre
+end module allocate59_mre
 
 program allocate_59
-	use expr2_mre, only: upper_caller, to_upper_identity
-	use expr2_string, only: string
+	use allocate59_mre, only: upper_caller, to_upper_identity
+	use allocate59_string, only: string
 	implicit none
 
 	type(string) :: s
