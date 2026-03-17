@@ -1853,7 +1853,7 @@ public:
                 return 4;
             case IEF::Char:
             case IEF::Achar:
-                return 1;
+                return -1;
             default:
                 return -1;
         }
@@ -1881,11 +1881,18 @@ public:
             out += src;
         }
         if (x.m_type != nullptr) {
-            int default_kind = get_default_kind_for_intrinsic(x);
-            if (default_kind > 0) {
-                int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                if (return_kind != default_kind) {
-                    out += ", " + std::to_string(return_kind);
+            using IEF = ASRUtils::IntrinsicElementalFunctions;
+            if (static_cast<IEF>(x.m_intrinsic_id) == IEF::Char ||
+                    static_cast<IEF>(x.m_intrinsic_id) == IEF::Achar) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                out += ", kind=" + std::to_string(kind);
+            } else {
+                int default_kind = get_default_kind_for_intrinsic(x);
+                if (default_kind > 0) {
+                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    if (return_kind != default_kind) {
+                        out += ", " + std::to_string(return_kind);
+                    }
                 }
             }
         }
@@ -2254,7 +2261,8 @@ public:
 
     void visit_StringChr(const ASR::StringChr_t &x) {
         visit_expr(*x.m_arg);
-        src = "char(" + src + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "char(" + src + ", kind=" + std::to_string(kind) + ")";
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
