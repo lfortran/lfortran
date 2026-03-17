@@ -3329,8 +3329,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 builder->CreateStore(builder->CreateBitCast(
                                     reallocated_arr, llvm_data_type->getPointerTo()), ptr_to_data);
                                 // Store Offset
-                                llvm::Value* offset_val = create_gep2(llvm_array_type, dest, 1);
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+                                llvm::Value* offset_val = arr_api->get_offset(llvm_array_type, dest, false);
+                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                                                         offset_val);
                             }
                             llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, src_expr);
@@ -3446,7 +3446,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             llvm::ConstantInt::get(context, llvm::APInt(64, data_layout.getTypeAllocSize(dim_des))));
                         builder->CreateMemCpy(dest_dim_ptr, llvm::MaybeAlign(), src_dim_ptr, llvm::MaybeAlign(), total_dim_bytes);
                         // Copy rank
-                        builder->CreateStore(n_dims, arr_api->get_rank(llvm_array_type, dest, true));
+                        arr_api->set_rank(llvm_array_type, dest, n_dims);
                     } else {
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
@@ -9637,7 +9637,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             builder->CreateStore(
                 builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
         });
-        builder->CreateStore(n_dims, llvm_utils->arr_api->get_rank(llvm_array_type, dest, true));
+        llvm_utils->arr_api->set_rank(llvm_array_type, dest, n_dims);
     }
 
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
@@ -9709,8 +9709,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     reloaded_dest_data = builder->CreateBitCast(
                         reallocated_arr, llvm_data_type->getPointerTo());
                     builder->CreateStore(reloaded_dest_data, llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
-                    llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
-                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+                    llvm::Value* offset_val = llvm_utils->arr_api->get_offset(llvm_array_type, dest, false);
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                                             offset_val);
                 }, [&]() {});
                 // Reload dest_data after reallocation since it may have changed

@@ -985,7 +985,7 @@ class ASRToLLVMVisitor;
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
             } else {
-                finalize_type(ptr, t, struct_sym, in_struct);
+                finalize_type(ptr, t, struct_sym);
             }
         }
 
@@ -1115,15 +1115,14 @@ class ASRToLLVMVisitor;
         }
 
         /// Dispatches to the correct finalizer based on type.
-        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
-                llvm::Value* const in_struct){
+        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
                 case(ASR::String):
                     finalize_string(var_ptr, t);
                 break;
                 case(ASR::Array) :  
-                    finalize_array(var_ptr, t, struct_sym, in_struct);
+                    finalize_array(var_ptr, t, struct_sym);
                 break;
                 case(ASR::StructType) :  
                     finalize_struct(var_ptr, t, struct_sym);
@@ -1185,10 +1184,8 @@ class ASRToLLVMVisitor;
          * @param arr llvm ptr to the array (descriptorArray, PointerArray, etc.)
          * @param t array ASR type
          * @param struct_sym if it's an array of struct. nullptr otherwise.
-         * @param in_struct is this array in some struct `(StructType(Array()))`.
-         */ 
-        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* struct_sym,
-                llvm::Value* in_struct){
+         */
+        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
@@ -1202,11 +1199,11 @@ class ASRToLLVMVisitor;
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
                     std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym);
                     if(is_cached(cache_key)){
-                        call_cached_finalizer(cache_key, {arr, in_struct});
+                        call_cached_finalizer(cache_key, {arr});
                         return;
                     }
                     auto const checkpoint_BB =
-                    START_CACHE(cache_key, arr, in_struct);
+                    START_CACHE(cache_key, arr);
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
@@ -1216,17 +1213,6 @@ class ASRToLLVMVisitor;
                     } else {
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
-
-                    // IF (struct(array())) --> Finalize dimension descriptor in this case
-                    llvm_utils_->create_if_else(in_struct, 
-                        [&]() {
-                        auto const dim_desc_ptr = builder_->CreateLoad(
-                            llvm_utils_->dim_descr_type_->getPointerTo(),
-                            llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
-                            llvm_utils_->lfortran_free_nocheck(dim_desc_ptr);
-                        }
-                        , [](){}
-                        , "dimDesc_in_struct");
 
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     END_CACHE(checkpoint_BB);
