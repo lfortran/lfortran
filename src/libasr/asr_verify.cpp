@@ -861,47 +861,48 @@ public:
             require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
-            ASR::symbol_t *s = nullptr;
+            // Verify ownership using symbol pointers, not name-based lookup.
+            ASR::symbol_t *expected_owner = nullptr;
             if( m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external)) ) {
-                s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+                expected_owner = (ASR::symbol_t*)m;
             } else if( m != nullptr && x.n_scope_names > 0
                        && x_m_module_name == std::string(m->m_name) ) {
                 // m_module_name refers to the top-level module and
                 // scope_names encodes the path to the nested owner.
-                s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+                ASR::symbol_t *scoped_owner = (ASR::symbol_t*)m;
+                SymbolTable *scope = m->m_symtab;
+                bool valid_scope_path = true;
+                for (size_t i=0; i < x.n_scope_names; i++) {
+                    if (!scope) {
+                        valid_scope_path = false;
+                        break;
+                    }
+                    ASR::symbol_t *scope_sym = scope->get_symbol(x.m_scope_names[i]);
+                    if (!scope_sym) {
+                        valid_scope_path = false;
+                        break;
+                    }
+                    scoped_owner = ASRUtils::symbol_get_past_external(scope_sym);
+                    scope = ASRUtils::symbol_symtab(scope_sym);
+                }
+                if (valid_scope_path) {
+                    expected_owner = scoped_owner;
+                }
             } else if( sm ) {
-                s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+                expected_owner = (ASR::symbol_t*)sm;
             } else if( em ) {
-                s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
+                expected_owner = (ASR::symbol_t*)em;
             } else if( fm ) {
-                s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+                expected_owner = (ASR::symbol_t*)fm;
             } else if( um ) {
-                s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
+                expected_owner = (ASR::symbol_t*)um;
             }
-            require(s != nullptr,
-                "ExternalSymbol::m_original_name ('"
-                + std::string(x.m_original_name)
-                + "') + scope_names not found in a module '"
-                + asr_owner_name + "'");
-            ASR::symbol_t* s_resolved = ASRUtils::symbol_get_past_external(s);
-            ASR::symbol_t* external_resolved = ASRUtils::symbol_get_past_external(x.m_external);
-            bool same_symbol = (s_resolved == external_resolved);
-            if (!same_symbol && s_resolved != nullptr && external_resolved != nullptr) {
-                ASR::symbol_t* s_owner = ASRUtils::get_asr_owner(s_resolved);
-                ASR::symbol_t* external_owner = ASRUtils::get_asr_owner(external_resolved);
-                if (s_owner != nullptr) {
-                    s_owner = ASRUtils::symbol_get_past_external(s_owner);
-                }
-                if (external_owner != nullptr) {
-                    external_owner = ASRUtils::symbol_get_past_external(external_owner);
-                }
-                same_symbol = (std::string(ASRUtils::symbol_name(s_resolved))
-                               == std::string(ASRUtils::symbol_name(external_resolved)))
-                              && (s_owner == external_owner);
-            }
-            require(same_symbol,
-                std::string("ExternalSymbol::m_name + scope_names found but not equal to m_external, ") +
-                "original_name " + std::string(x.m_original_name) + ".");
+            require(expected_owner != nullptr,
+                "ExternalSymbol owner could not be resolved for original_name '"
+                + std::string(x.m_original_name) + "'");
+            require(ASRUtils::get_asr_owner(x.m_external) == expected_owner,
+                std::string("ExternalSymbol::m_external owner mismatch for original_name ")
+                + std::string(x.m_original_name) + ".");
         }
     }
 

@@ -74,7 +74,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
     const SymbolTable *s = this;
     for(size_t i=0; i < n_scope_names; i++) {
         std::string scope_name = m_scope_names[i];
-        if (s->scope.find(scope_name) != scope.end()) {
+        if (s->scope.find(scope_name) != s->scope.end()) {
             ASR::symbol_t *sym = s->scope.at(scope_name);
             s = ASRUtils::symbol_symtab(sym);
             if (s == nullptr) {
@@ -88,7 +88,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
             return nullptr;
         }
     }
-    if (s->scope.find(name) != scope.end()) {
+    if (s->scope.find(name) != s->scope.end()) {
         ASR::symbol_t *sym = s->scope.at(name);
         LCOMPILERS_ASSERT(sym)
         return sym;
