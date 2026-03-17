@@ -2275,11 +2275,20 @@ public:
             arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
             needs_reshape = (arr_type->n_dims > 1);
         }
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        std::string kind_suffix = "";
+        if (ASR::is_a<ASR::Real_t>(*elem_type) && kind >= 8) {
+            kind_suffix = "_8";
+        } else if (ASR::is_a<ASR::Integer_t>(*elem_type) && kind != 4) {
+            kind_suffix = "_" + std::to_string(kind);
+        }
         std::string r = "";
         if (needs_reshape) r += "reshape(";
         r += "[";
         for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            r += ASRUtils::fetch_ArrayConstant_value(x, i);
+            r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
             if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
         }
         r += "]";
