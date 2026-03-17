@@ -8999,7 +8999,9 @@ char **_argv;
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
     _argv = internal_malloc(argc_1 * sizeof(char *));
     for (size_t i = 0; i < argc_1; i++) {
-        _argv[i] = strdup(argv_1[i]);
+        size_t len = strlen(argv_1[i]) + 1;
+        _argv[i] = internal_malloc(len);
+        memcpy(_argv[i], argv_1[i], len);
     }
     _argc = argc_1;
 }
