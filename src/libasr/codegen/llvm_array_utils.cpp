@@ -321,6 +321,10 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
+                // Fortran standard: negative extent means zero-size array
+                llvm::Value* zero = llvm::ConstantInt::get(dim_size->getType(), 0);
+                dim_size = builder->CreateSelect(
+                    builder->CreateICmpSLT(dim_size, zero), zero, dim_size);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -413,6 +417,10 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
+                // Fortran standard: negative extent means zero-size array
+                llvm::Value* zero = llvm::ConstantInt::get(dim_size->getType(), 0);
+                dim_size = builder->CreateSelect(
+                    builder->CreateICmpSLT(dim_size, zero), zero, dim_size);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -491,10 +499,15 @@ namespace LCompilers {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Value* dim_des_first = get_pointer_to_dimension_descriptor_array(type, arr);
 
-            // If unallocated, set lower bound and size to 1.
-            // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 1));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 2));
+            // Initialize all dimensions with default values (stride=0, lower_bound=1, size=1).
+            // This ensures no uninitialized memory is read when the array_op pass
+            // generates code to check array dimensions before the array is allocated.
+            for (int i = 0; i < n_dims; i++) {
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_first, i);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), llvm_utils->create_gep2(dim_des, dim_val, 0));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 1));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 2));
+            }
 
             set_rank(type, arr, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
         }
