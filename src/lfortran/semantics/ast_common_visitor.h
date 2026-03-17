@@ -3392,9 +3392,9 @@ public:
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
-                                          size_t &value_index) {
+                                          size_t &value_index,
+                                          Vec<ASR::expr_t*>* collected_values = nullptr) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
-
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
         ASR::expr_t* loop_increment_expr = implied_do_loop->m_increment;
@@ -3442,6 +3442,14 @@ public:
         ASR::symbol_t* loop_var_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(implied_do_loop->m_var)->m_v);
 
+        //collect values when in top level module scope instead of runtime assignments for data stmts
+        bool top_level_module_scope = (current_module != nullptr && collected_values == nullptr);
+        Vec<ASR::expr_t*> local_collected_values;
+        if (top_level_module_scope) {
+            local_collected_values.reserve(al, data_stmt_set->n_value);
+            collected_values = &local_collected_values;
+        }
+
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
             for (size_t value_index_in_loop = 0; value_index_in_loop < implied_do_loop->n_values; value_index_in_loop++) {
@@ -3451,7 +3459,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -3462,7 +3470,6 @@ public:
                                                         loop_var, integer_type);
                         }
                     }
-                    ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type))
                         && (value_index<(data_stmt_set->n_value)) &&
@@ -3472,12 +3479,19 @@ public:
                     this->visit_expr(*data_stmt_set->m_value[value_index++]);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     current_variable_type_ = temp_current_variable_type_;
-                    ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                    ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                        target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
-                                                                 );
-                    LCOMPILERS_ASSERT(current_body != nullptr)
-                    current_body->push_back(al, assignStatement);
+                    if (collected_values) {
+                        ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                        if (!expression_value) expression_value = value;
+                        collected_values->push_back(al, expression_value);
+                    } else {
+                        ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+                        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
+                                                                     );
+                        LCOMPILERS_ASSERT(current_body != nullptr)
+                        current_body->push_back(al, assignStatement);
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Unsupported expression type in DATA implied do loop",
@@ -3485,6 +3499,49 @@ public:
                             Label("", {duplicatedExpr->base.loc})
                         }));
                     throw SemanticAbort();
+                }
+            }
+        }
+
+        //In module scope, set the collected values directly on the array variable as an ArrayConstructor
+        if (top_level_module_scope && local_collected_values.size() > 0) {
+            ASR::expr_t* first_val = implied_do_loop->m_values[0];
+            while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
+                first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
+                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
+                ASR::Variable_t* v2 = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                    v2 = ASR::down_cast<ASR::Variable_t>(
+                        ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
+                }
+                if (v2) {
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, data_stmt.base.base.loc,
+                                            compiler_options.po.default_integer_kind));
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = data_stmt.base.base.loc;
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, data_stmt.base.base.loc, 1, int_type));
+                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, data_stmt.base.base.loc, (int64_t)local_collected_values.size(), int_type));
+                    dims.push_back(al, dim);
+                    ASR::ttype_t* arr_type = ASRUtils::duplicate_type(al, v2->m_type, &dims);
+                    ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
+                        al, data_stmt.base.base.loc, local_collected_values.p,
+                        local_collected_values.size(), arr_type,
+                        ASR::arraystorageType::ColMajor);
+                    v2->m_value = ASRUtils::EXPR(arr_constructor);
+                    v2->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
+                    SetChar var_deps_vec;
+                    var_deps_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                        v2->m_symbolic_value, v2->m_value);
+                    v2->m_dependencies = var_deps_vec.p;
+                    v2->n_dependencies = var_deps_vec.size();
                 }
             }
         }
