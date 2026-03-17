@@ -155,6 +155,7 @@ FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate: ; preds = %retu
 Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
   %39 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
   call void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %39, i1 false)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -224,6 +225,8 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
 }
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_internal_alloc_finalize()
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
 attributes #1 = { nounwind }

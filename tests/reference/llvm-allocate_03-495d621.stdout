@@ -354,6 +354,8 @@ ifcont:                                           ; preds = %merge_allocated
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @167, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @166, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont2
 
@@ -771,6 +773,8 @@ ifcont24:                                         ; preds = %ifcont22
 
 then25:                                           ; preds = %ifcont24
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @201, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @200, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont27
 
@@ -982,7 +986,7 @@ ifcont38:                                         ; preds = %ifcont36
   %443 = load i32, i32* %442, align 4
   %444 = alloca i32, align 4
   store i32 %443, i32* %444, align 4
-  %445 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %317, i32 0, i32 0, i32* %444)
+  %445 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %317, i32 0, i32 0, i32* %444)
   %446 = load i64, i64* %317, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %447 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -1015,6 +1019,7 @@ FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
   %455 = load %array*, %array** %c, align 8
   call void @finalize_allocatable__Array_i32(%array* %455, i1 false)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -1589,7 +1594,7 @@ ifcont6:                                          ; preds = %ifcont4
   %127 = load i32, i32* %126, align 4
   %128 = alloca i32, align 4
   store i32 %127, i32* %128, align 4
-  %129 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32* %128)
+  %129 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32* %128)
   %130 = load i64, i64* %1, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %131 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -1816,6 +1821,8 @@ ifcont17:                                         ; preds = %ifcont15
 
 then18:                                           ; preds = %ifcont17
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @54, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont19
 
@@ -2028,7 +2035,7 @@ ifcont30:                                         ; preds = %ifcont28
   %392 = load i32, i32* %391, align 4
   %393 = alloca i32, align 4
   store i32 %392, i32* %393, align 4
-  %394 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %266, i32 0, i32 0, i32* %393)
+  %394 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %266, i32 0, i32 0, i32* %393)
   %395 = load i64, i64* %266, align 4
   %stringFormat_desc31 = alloca %string_descriptor, align 8
   %396 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc31, i32 0, i32 0
@@ -2255,6 +2262,8 @@ ifcont44:                                         ; preds = %ifcont42
 
 then45:                                           ; preds = %ifcont44
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont47
 
@@ -2549,6 +2558,8 @@ merge_allocated8:                                 ; preds = %check_data7, %ifcon
 
 then10:                                           ; preds = %merge_allocated8
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @109, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @108, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont12
 
@@ -2761,7 +2772,7 @@ ifcont23:                                         ; preds = %ifcont21
   %154 = load i32, i32* %153, align 4
   %155 = alloca i32, align 4
   store i32 %154, i32* %155, align 4
-  %156 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %28, i32 0, i32 0, i32* %155)
+  %156 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %28, i32 0, i32 0, i32* %155)
   %157 = load i64, i64* %28, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %158 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -2988,6 +2999,8 @@ ifcont34:                                         ; preds = %ifcont32
 
 then35:                                           ; preds = %ifcont34
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @145, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @144, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont37
 
@@ -3220,15 +3233,17 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 ; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
-declare void @_lpython_call_initial_functions(i32, i8**)
-
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 define internal void @finalize_allocatable__Array_i32(%array* %0, i1 %1) {
 entry:

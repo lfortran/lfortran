@@ -49,7 +49,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = load i32, i32* %9, align 4
   %11 = alloca i32, align 4
   store i32 %10, i32* %11, align 4
-  %12 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %8, i32 0, i32 0, i32* %11)
+  %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %8, i32 0, i32 0, i32* %11)
   %13 = load i64, i64* %8, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -77,6 +77,8 @@ free_done:                                        ; preds = %free_nonnull, %.ent
 
 then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
 
@@ -91,6 +93,7 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -143,7 +146,7 @@ declare i8* @_lfortran_get_default_allocator()
 ; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
@@ -151,8 +154,10 @@ declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
-declare void @exit(i32)
-
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @exit(i32)
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

@@ -283,6 +283,8 @@ ifcont21:                                         ; preds = %loop.end19
 
 then22:                                           ; preds = %ifcont21
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont24
 
@@ -330,6 +332,8 @@ ifcont26:                                         ; preds = %ifcont24
 
 then27:                                           ; preds = %ifcont26
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont29
 
@@ -509,6 +513,8 @@ loop.end49:                                       ; preds = %loop.head30
 
 then50:                                           ; preds = %loop.end49
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont52
 
@@ -533,6 +539,7 @@ free_nonnull53:                                   ; preds = %FINALIZE_SYMTABLE_s
   br label %free_done54
 
 free_done54:                                      ; preds = %free_nonnull53, %FINALIZE_SYMTABLE_static_large_array
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -550,6 +557,10 @@ declare void @exit(i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
+declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()
+
 ; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #0
 
@@ -562,8 +573,6 @@ declare void @llvm.stackrestore(i8*) #0
 declare float @llvm.fabs.f32(float) #1
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
-
-declare void @_lpython_free_argv()
 
 attributes #0 = { nounwind }
 attributes #1 = { nounwind readnone speculatable willreturn }

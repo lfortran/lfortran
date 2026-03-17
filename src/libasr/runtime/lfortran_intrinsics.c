@@ -457,8 +457,8 @@ char* append_to_string(char* str, const char* append) {
     -- Append String (Null-Termination Independent) --
     * It returns null-terminated string.
 */
-char* append_to_string_NTI(char* dest, int64_t dest_len, const char* src, int64_t src_len) {
-    dest = (char*)internal_realloc(dest, (dest_len + src_len + 1 /* \0 */) * sizeof(char));
+char* append_to_string_NTI(lfortran_allocator_t* al, char* dest, int64_t dest_len, const char* src, int64_t src_len) {
+    dest = (char*)ALLOCATOR_REALLOC(al, dest, (dest_len + src_len + 1 /* \0 */) * sizeof(char));
     memcpy(dest + dest_len, src, src_len);
     dest[dest_len + src_len] = '\0';
     return dest;
@@ -2346,13 +2346,13 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
     }
 }
 
-void default_formatting(char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
+void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
     const int default_spacing_len = 4;
     const char* default_spacing = "    ";
     ASSERT(default_spacing_len == strlen(default_spacing));
-    *result = internal_realloc(*result, result_capacity + 1 /*Null Character*/ );
+    *result = ALLOCATOR_REALLOC(al, *result, result_capacity + 1 /*Null Character*/ );
     bool prev_is_char = false;
 
     while(move_to_next_element(s_info, false)){
@@ -2374,7 +2374,7 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
                 result_capacity *=2;
             }
         }
-        if(result_capacity != old_capacity){*result = (char*)internal_realloc(*result, result_capacity + 1);}
+        if(result_capacity != old_capacity){*result = (char*)ALLOCATOR_REALLOC(al, *result, result_capacity + 1);}
         if(result_size > 0 && !(prev_is_char && curr_is_char)){
             strcpy((*result)+result_size, default_spacing);
             result_size+=default_spacing_len;
@@ -2396,12 +2396,12 @@ void free_serialization_info(Serialization_Info* s_info){
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode);
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string,
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
     int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...)
 {
     va_list args;
     va_start(args, string_lengths_cnt);
-    char* result = (char*)internal_malloc(sizeof(char)); //TODO : the consumer of this string needs to free it.
+    char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
     result[0] = '\0';
     (*result_size) = 0;
     int64_t result_len = 0;  // Track actual result length (handles embedded nulls)
@@ -2438,7 +2438,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
     if(format == NULL){
-        default_formatting(&result, result_size, &s_info);
+        default_formatting(al, &result, result_size, &s_info);
         free_serialization_info(&s_info);
         return result;
     }
@@ -2512,7 +2512,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 if (!move_to_next_element(&s_info, true)) break;
                 continue;
             } else if (value[0] == '/') {
-                result = append_to_string_NTI(result, result_len, "\n", 1);
+                result = append_to_string_NTI(al, result, result_len, "\n", 1);
                 result_len += 1;
             } else if (value[0] == '*') {
                 array = true;
@@ -2529,12 +2529,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 char* inner_value = substring(value, 1, strlen(value) - 1);
                 int64_t val_len = 0;
                 char* unescaped_value = unescape_quoted_literal(inner_value, strlen(inner_value), quote_char, &val_len);
-                result = append_to_string_NTI(result, result_len, unescaped_value, val_len);
+                result = append_to_string_NTI(al, result, result_len, unescaped_value, val_len);
                 result_len += val_len;
                 internal_free(inner_value);
                 internal_free(unescaped_value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
-                result = append_to_string_NTI(result, result_len, " ", 1);
+                result = append_to_string_NTI(al, result, result_len, " ", 1);
                 result_len += 1;
             } else if (tolower(value[0]) == 's') {
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
@@ -2570,7 +2570,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     // handle "TR" format specifier - move position right (add spaces)
                     int spaces_needed = atoi(value + 2);
                     if (spaces_needed > 0) {
-                        result = (char*)internal_realloc(result, result_len + spaces_needed + 1);
+                        result = (char*)ALLOCATOR_REALLOC(al, result, result_len + spaces_needed + 1);
                         memset(result + result_len, ' ', spaces_needed);
                         result_len += spaces_needed;
                         result[result_len] = '\0';
@@ -2580,7 +2580,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     int tab_position = atoi(value + 1);
                     int spaces_needed = tab_position - (int)result_len - 1;
                     if (spaces_needed > 0) {
-                        result = (char*)internal_realloc(result, result_len + spaces_needed + 1);
+                        result = (char*)ALLOCATOR_REALLOC(al, result, result_len + spaces_needed + 1);
                         memset(result + result_len, ' ', spaces_needed);
                         result_len += spaces_needed;
                         result[result_len] = '\0';
@@ -2612,8 +2612,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             type = "CHARACTER";
                             break;
                     }
-                    internal_free(result);
-                    result = (char*)internal_malloc(150 * sizeof(char));
+                    ALLOCATOR_DEALLOC(al, result);
+                    result = (char*)ALLOCATOR_ALLOC(al, 150 * sizeof(char));
                     sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n", type, value[0]);
                     // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
                     result[0] = '\b';
@@ -2670,19 +2670,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         s_info.current_element_type == INTEGER_64_TYPE ) {
                         char achar_val = (char)((unsigned char)integer_val);
                         if (strlen(value) == 1) {
-                            result = append_to_string_NTI(result, result_len, &achar_val, 1);
+                            result = append_to_string_NTI(al, result, result_len, &achar_val, 1);
                             result_len += 1;
                         } else {
                             int64_t width = atoi(value + 1);
                             int64_t pad_len = (width > 1) ? (width - 1) : 0;
                             if (pad_len > 0) {
-                                result = (char*)realloc(result, result_len + width + 1);
+                                result = (char*)ALLOCATOR_REALLOC(al, result, result_len + width + 1);
                                 memset(result + result_len, ' ', pad_len);
                                 result[result_len + pad_len] = achar_val;
                                 result_len += width;
                                 result[result_len] = '\0';
                             } else {
-                                result = append_to_string_NTI(result, result_len, &achar_val, 1);
+                                result = append_to_string_NTI(al, result, result_len, &achar_val, 1);
                                 result_len += 1;
                             }
                         }
@@ -2696,7 +2696,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             s_info.current_arg_info.current_arg,
                             s_info.current_element_type), &temp_buf);
                         int64_t temp_len = strlen(temp_buf);
-                        result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                        result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                         result_len += temp_len;
                         internal_free(temp_buf);
                         continue;
@@ -2705,7 +2705,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     if (arg == NULL) continue;
                     if (strlen(value) == 1) {
                         // Simple 'A' format - use full string length, preserve embedded nulls
-                        result = append_to_string_NTI(result, result_len, arg, s_info.current_arg_info.current_string_len);
+                        result = append_to_string_NTI(al, result, result_len, arg, s_info.current_arg_info.current_string_len);
                         result_len += s_info.current_arg_info.current_string_len;
                     } else {
                         // 'Aw' format with width - copy exactly w characters, preserving embedded nulls
@@ -2714,7 +2714,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         int64_t copy_len = (width < src_len) ? width : src_len;
                         int64_t pad_len = (width > src_len) ? (width - src_len) : 0;
                         // Reallocate result to fit new content
-                        result = (char*)internal_realloc(result, result_len + width + 1);
+                        result = (char*)ALLOCATOR_REALLOC(al, result, result_len + width + 1);
                         // Right-justify: add leading spaces if padding needed
                         if (pad_len > 0) {
                             memset(result + result_len, ' ', pad_len);
@@ -2729,7 +2729,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     handle_integer(value, integer_val, &temp_buf, is_SP_specifier);
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (tolower(value[0]) == 'b') {
@@ -2770,7 +2770,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             bit_size = 64;
                         }
                     } else {
-                        result = append_to_string_NTI(result, result_len, "<unsupported>", 13);
+                        result = append_to_string_NTI(al, result, result_len, "<unsupported>", 13);
                         result_len += 13;
                         break;
                     }
@@ -2796,11 +2796,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     int bin_len = strlen(binary_str);
 
                     if (width == 0) {
-                        result = append_to_string_NTI(result, result_len, binary_str, bin_len);
+                        result = append_to_string_NTI(al, result, result_len, binary_str, bin_len);
                         result_len += bin_len;
                     } else if (bin_len > width) {
                         // Output asterisks for overflow
-                        result = (char*)internal_realloc(result, result_len + width + 1);
+                        result = (char*)ALLOCATOR_REALLOC(al, result, result_len + width + 1);
                         memset(result + result_len, '*', width);
                         result_len += width;
                         result[result_len] = '\0';
@@ -2823,12 +2823,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         // Step 2: Pad with spaces to meet width
                         int padding_needed = width - bin_len;
                         if (padding_needed > 0) {
-                            result = (char*)internal_realloc(result, result_len + padding_needed + 1);
+                            result = (char*)ALLOCATOR_REALLOC(al, result, result_len + padding_needed + 1);
                             memset(result + result_len, ' ', padding_needed);
                             result_len += padding_needed;
                             result[result_len] = '\0';
                         }
-                        result = append_to_string_NTI(result, result_len, binary_str, bin_len);
+                        result = append_to_string_NTI(al, result, result_len, binary_str, bin_len);
                         result_len += bin_len;
                     }
                 } else if (tolower(value[0]) == 'z') {
@@ -2836,7 +2836,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     handle_hexadecimal(value, s_info.current_element_type,
                         s_info.current_arg_info.current_arg, &temp_buf);
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (tolower(value[0]) == 'g') {
@@ -2899,7 +2899,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             strcpy(buffer, formatted);
                         }
                         int64_t buf_len = strlen(buffer);
-                        result = append_to_string_NTI(result, result_len, buffer, buf_len);
+                        result = append_to_string_NTI(al, result, result_len, buffer, buf_len);
                         result_len += buf_len;
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
                                s_info.current_element_type == INTEGER_16_TYPE ||
@@ -2907,17 +2907,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                                s_info.current_element_type == INTEGER_64_TYPE) {
                         snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
                         int64_t buf_len = strlen(buffer);
-                        result = append_to_string_NTI(result, result_len, buffer, buf_len);
+                        result = append_to_string_NTI(al, result, result_len, buffer, buf_len);
                         result_len += buf_len;
                     } else if (s_info.current_element_type == CHAR_PTR_TYPE ||
                         s_info.current_element_type == STRING_DESCRIPTOR_TYPE) {
-                        result = append_to_string_NTI(result, result_len, char_val, s_info.current_arg_info.current_string_len);
+                        result = append_to_string_NTI(al, result, result_len, char_val, s_info.current_arg_info.current_string_len);
                         result_len += s_info.current_arg_info.current_string_len;
                     } else if (is_logical_type(s_info.current_element_type)) {
-                        result = append_to_string_NTI(result, result_len, bool_val ? "T" : "F", 1);
+                        result = append_to_string_NTI(al, result, result_len, bool_val ? "T" : "F", 1);
                         result_len += 1;
                     } else {
-                        result = append_to_string_NTI(result, result_len, "<unsupported>", 13);
+                        result = append_to_string_NTI(al, result, result_len, "<unsupported>", 13);
                         result_len += 13;
                     }
                 } else if (tolower(value[0]) == 'd') {
@@ -2925,7 +2925,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier);
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (tolower(value[0]) == 'e') {
@@ -2945,7 +2945,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
                     }
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (tolower(value[0]) == 'f') {
@@ -2960,7 +2960,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     }
                     handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (tolower(value[0]) == 'l') {
@@ -2970,7 +2970,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     handle_logical(value, val, &temp_buf);
                     int64_t temp_len = strlen(temp_buf);
-                    result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
                 } else if (strlen(value) != 0) {
@@ -2982,7 +2982,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
         if(BreakWhileLoop) break;
         if (move_to_next_element(&s_info, true)) {
             if (!array) {
-                result = append_to_string_NTI(result, result_len, "\n", 1);
+                result = append_to_string_NTI(al, result, result_len, "\n", 1);
                 result_len += 1;
             }
             item_start = item_start_idx;
@@ -3109,7 +3109,7 @@ static void print_label_span(const Span *span, bool is_primary,
     }
     fprintf(stderr, "%s\n", color_reset);
 
-    internal_free(line_text);
+    free(line_text);
 }
 
 LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
@@ -3183,7 +3183,7 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
             print_label_span(&label->spans[j], label->primary, 
                            label->message, use_colors);
             if (label->message != NULL)
-                internal_free(label->message);
+                free(label->message);
             label->message = NULL;
         }
     }
@@ -5183,6 +5183,11 @@ _lfortran_open(int32_t unit_num,
 
     // Prepare null-terminated names for C APIs
     char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
+    if (!ini_file) {
+        // f_name was allocated by us (generated temp name), free it now
+        // since f_name_c is the copy we'll use going forward
+        internal_free(f_name);
+    }
     char* status_c = to_c_string((const fchar*)status, status_len);
     char* form_c = to_c_string((const fchar*)form, form_len);
     char* action_c = to_c_string((const fchar*)action, action_len);
@@ -5367,6 +5372,15 @@ _lfortran_open(int32_t unit_num,
             // Unit is already open, but we still need to update its properties like sign_mode
             // Pass NULL for filename to preserve the existing filename
             store_unit_file(unit_num, NULL, already_open, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode);
+            internal_free(f_name_c);
+            internal_free(status_c);
+            internal_free(form_c);
+            internal_free(access_c);
+            internal_free(action_c);
+            internal_free(delim_c);
+            internal_free(blank_c);
+            internal_free(encoding_c);
+            internal_free(sign_c);
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
@@ -5383,7 +5397,16 @@ _lfortran_open(int32_t unit_num,
             }
             internal_free(position_c);
         }
+        // f_name_c is stored in the unit table, do not free it
         store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode);
+        internal_free(status_c);
+        internal_free(form_c);
+        internal_free(access_c);
+        internal_free(action_c);
+        internal_free(delim_c);
+        internal_free(blank_c);
+        internal_free(encoding_c);
+        internal_free(sign_c);
         return (int64_t) fd;
     }
     internal_free(f_name_c);
@@ -5391,7 +5414,10 @@ _lfortran_open(int32_t unit_num,
     internal_free(form_c);
     internal_free(access_c);
     internal_free(action_c);
+    internal_free(delim_c);
+    internal_free(blank_c);
     internal_free(encoding_c);
+    internal_free(sign_c);
     return 0;
 }
 
@@ -8980,7 +9006,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
         }
     }
 
-    if (is_temp_file) internal_free(file_name);
+    if (file_name != NULL) internal_free(file_name);
     remove_from_unit_to_file(unit_num);
 }
 
@@ -9461,7 +9487,7 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
     fclose(fp);
 
     if (read_len == -1) {
-        internal_free(line);
+        free(line);
         *out_len = 0;
         return NULL;
     }
@@ -9551,7 +9577,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
                 source_filename, d.line_numbers[index],
                 (int)line_len, trimmed);
         }
-        internal_free(line);
+        free(line);
 #ifdef HAVE_LFORTRAN_MACHO
     }
 #else

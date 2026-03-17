@@ -17481,6 +17481,16 @@ public:
 
         /* EXIT WITH CODE */
         if (compiler_options.internal_alloc_check) {
+            {
+                llvm::Function *fn_free_argv = module->getFunction("_lpython_free_argv");
+                if (!fn_free_argv) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {}, false);
+                    fn_free_argv = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, "_lpython_free_argv", module.get());
+                }
+                builder->CreateCall(fn_free_argv, {});
+            }
             llvm::Function *fn_finalize = module->getFunction(
                 "_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {

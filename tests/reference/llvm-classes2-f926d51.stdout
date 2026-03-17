@@ -94,6 +94,8 @@ ifcont:                                           ; preds = %else, %then
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lpython_free_argv()
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont3
 
@@ -108,6 +110,7 @@ return:                                           ; preds = %ifcont3
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -205,9 +208,11 @@ entry:
 
 declare void @_lcompilers_print_error(i8*, ...)
 
-declare void @exit(i32)
-
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @exit(i32)
 
 attributes #0 = { nounwind readnone speculatable willreturn }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

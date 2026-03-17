@@ -220,6 +220,7 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
   %97 = load %array*, %array** %arr, align 8
   call void @finalize_allocatable__Array_i32(%array* %97, i1 false)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -276,3 +277,5 @@ entry:
   call void @_lfortran_free_alloc(i8* %1, i8* %4)
   ret void
 }
+
+declare void @_lfortran_internal_alloc_finalize()

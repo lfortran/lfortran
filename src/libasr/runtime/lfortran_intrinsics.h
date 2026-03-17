@@ -446,7 +446,7 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size);
 void lfortran_error(const char *message);
 

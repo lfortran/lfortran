@@ -507,6 +507,7 @@ FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
 
 Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
   call void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %settings)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -722,5 +723,7 @@ entry:
 }
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_internal_alloc_finalize()
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
