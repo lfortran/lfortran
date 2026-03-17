@@ -34,6 +34,13 @@ detailed reference how to contribute to the project.
 - AST (syntax) ↔ ASR (semantic, valid-only). See `doc/src/design.md`.
 - Pipeline: parse → semantics → ASR passes → codegen (LLVM/C/C++/x86/WASM).
 - Prefer `src/libasr/pass` and existing utils; avoid duplicate helpers/APIs.
+- Type coercion and casting belong in AST→ASR (semantics). Insert explicit
+  Cast nodes in ASR. The LLVM/codegen backend must never infer or fix types —
+  it should only lower what ASR gives it. If codegen needs a type workaround,
+  the bug is upstream.
+- libasr is frontend-independent. Never reference `_lfortran` or any
+  frontend-specific names in libasr code. Use enums or structured types,
+  not string comparisons.
 
 ## Git Remotes & Issues
 - Upstream: `lfortran/lfortran` on GitHub (canonical repo and issues).
@@ -46,11 +53,23 @@ detailed reference how to contribute to the project.
   use 4 spaces for indentation
 - Names: lower_snake_case files; concise CMake target names.
 - No commented-out code.
+- No new C/C++ macros. Use constexpr, templates, or inline functions.
+- Error messages: lowercase, show explicit kinds (e.g., integer(4) vs integer(8)),
+  never expose internal ASR node names to users.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
   before your change and pass after. Do not merge without a full local pass of
   unit and integration suites.
+
+### Test Placement Decision Tree
+- If the test compiles and runs end-to-end → integration test (preferred).
+- If the test checks a compile-time error → `tests/errors/continue_compilation_1.f90`
+  (append at end to minimize diff).
+- If the test cannot compile end-to-end yet → reference test in `tests/tests.toml`
+  (promote to integration test once it compiles).
+- Every new test file MUST be registered in `CMakeLists.txt` or `tests.toml`.
+  An unregistered test is dead code.
 
 ### Integration Tests (`integration_tests/`)
 - Purpose: build-and-run end-to-end programs across backends/configurations via
@@ -118,6 +137,12 @@ detailed reference how to contribute to the project.
 
 ## Commit & Pull Request Guidelines
 - Commits: small, single-topic, imperative (e.g., "fix: handle BOZ constants").
+- One bug = one MRE = one PR. Do not bundle unrelated fixes.
+- Never mix refactoring or formatting with bug fixes. Send those separately.
+- Every fix PR must demonstrate: test fails on main, test passes on branch.
+  If you cannot find such a test, the fix is not understood well enough.
+- Once a PR is in review, merge upstream into it (do not rebase) —
+  rebasing forces complete re-review.
 - PRs target `upstream/main`; reference issues (`fixes #123`), explain rationale.
 - Include test evidence (commands + summary); ensure CI passes.
 - Do not commit generated artifacts, large binaries, or local configs.
