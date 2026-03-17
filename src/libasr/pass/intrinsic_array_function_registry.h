@@ -3212,7 +3212,9 @@ namespace AnyAll {
                 }
                 result_dims = dims.size();
                 if( result_dims > 0 ) {
-                    fill_func_arg_sub("result", logical_return_type, Out);
+                    ASR::ttype_t* result_type = ASRUtils::make_Array_t_util(al, loc,
+                        ASRUtils::extract_type(logical_return_type), dims.p, dims.size());
+                    fill_func_arg_sub("result", result_type, Out);
                 }
             }
         }

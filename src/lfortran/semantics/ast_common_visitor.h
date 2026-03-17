@@ -4313,14 +4313,14 @@ public:
             body.push_back(al, item);
         }
 
-        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
-                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
-        array_constant->m_n_data = array_size * lhs_len;
         {
             ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
             LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
             ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
         }
+        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+        array_constant->m_n_data = array_size * lhs_len;
 
         return (ASR::expr_t*) array_constant;
     }
@@ -13547,8 +13547,6 @@ public:
 
             for (size_t j = 0; j < args.size(); j++) {
                 if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
-                    // Current argument is an array
-
                     ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
                     ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
                     if (max_array_size != (size_t) ASRUtils::get_fixed_size_of_array(array_arg->m_type)) {
@@ -13558,9 +13556,9 @@ public:
                             diag::Label("", {loc})}));
                         throw SemanticAbort();
                     }
-                    intrinsic_args.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, array_arg, i));
+                    ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, array_arg, i);
+                    intrinsic_args.push_back(al, elem);
                 } else {
-                    // Current argument is a scalar, use as is
                     intrinsic_args.push_back(al, args[j]);
                 }
             }
