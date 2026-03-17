@@ -1285,6 +1285,25 @@ class ASRToLLVMVisitor;
                     llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
             }
 
+            if (ASRUtils::is_class_type(t)) {
+                // Guard: if the inner struct pointer is null (e.g. class wrapper
+                // was only default-initialized for an absent optional argument),
+                // skip member finalization to avoid dereferencing a null pointer.
+                llvm::BasicBlock* finalize_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_valid",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::BasicBlock* ret_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_null",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::Value* is_null = builder_->CreateICmpEQ(ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(ptr->getType())));
+                builder_->CreateCondBr(is_null, ret_bb, finalize_bb);
+                builder_->SetInsertPoint(ret_bb);
+                builder_->CreateRetVoid();
+                builder_->SetInsertPoint(finalize_bb);
+            }
+
             // Finalize members
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
