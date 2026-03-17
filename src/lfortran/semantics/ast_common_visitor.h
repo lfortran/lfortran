@@ -13644,6 +13644,22 @@ public:
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
+                {
+                    auto dim_it = std::find(signature.kwarg_names.begin(), signature.kwarg_names.end(), "dim");
+                    if (dim_it != signature.kwarg_names.end()) {
+                        int64_t dim_idx = dim_it - signature.kwarg_names.begin();
+                        for (size_t i = 0; i < x.n_keywords; i++) {
+                            if (to_lower(x.m_keywords[i].m_arg) == "dim" &&
+                                    args.p[dim_idx] && !ASRUtils::is_integer(*ASRUtils::expr_type(args.p[dim_idx]))) {
+                                diag.add(Diagnostic(
+                                    "'dim' argument of '" + var_name + "' intrinsic must be INTEGER",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {x.m_keywords[i].m_value->base.loc})}));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
