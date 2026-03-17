@@ -282,8 +282,11 @@ static void _lfortran_internal_free_tracked(void *ptr,
 
 #endif /* LFORTRAN_INTERNAL_ALLOC_CHECK */
 
+static void _lfortran_close_all_units(void);
+
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 {
+    _lfortran_close_all_units();
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
     int has_leaks = (_internal_alloc_count > 0);
     if (has_leaks) {
@@ -4942,6 +4945,23 @@ void remove_from_unit_to_file(int32_t unit_num) {
         unit_to_file[i] = unit_to_file[i + 1];
     }
     last_index_used -= 1;
+}
+
+static void _lfortran_close_all_units(void) {
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].filename != NULL) {
+            internal_free(unit_to_file[i].filename);
+            unit_to_file[i].filename = NULL;
+        }
+        // Close non-standard file pointers
+        if (unit_to_file[i].filep != NULL &&
+            unit_to_file[i].filep != stdin &&
+            unit_to_file[i].filep != stdout &&
+            unit_to_file[i].filep != stderr) {
+            fclose(unit_to_file[i].filep);
+            unit_to_file[i].filep = NULL;
+        }
+    }
 }
 
 // Mersenne Twister (MT19937) for generating unique file IDs.
