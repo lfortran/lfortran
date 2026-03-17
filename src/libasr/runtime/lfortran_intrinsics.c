@@ -3064,7 +3064,7 @@ static char* runtime_read_line(const char *filename, unsigned int line_no) {
         current++;
     }
     fclose(file);
-    internal_free(line);
+    free(line);
     return NULL;
 }
 
@@ -8431,12 +8431,12 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         if (access_id == 2 && unit_recl > 0) {
             // Use only the formatted data string (not the end marker)
             int64_t total_len = str_len;
-            char* combined = (char*)malloc(total_len + 1);
+            char* combined = (char*)internal_malloc(total_len + 1);
             memcpy(combined, str, str_len);
             combined[total_len] = '\0';
 
             // Write each record segment (split at '\n')
-            char* pad = (char*)malloc(unit_recl);
+            char* pad = (char*)internal_malloc(unit_recl);
             memset(pad, ' ', unit_recl);
 
             int64_t seg_start = 0;
@@ -8453,8 +8453,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 }
             }
 
-            free(pad);
-            free(combined);
+            internal_free(pad);
+            internal_free(combined);
         } else {
             // Sequential / stream access: write as before
             if (end != NULL) {
