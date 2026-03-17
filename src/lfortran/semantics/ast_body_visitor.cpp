@@ -5136,11 +5136,14 @@ public:
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, nullptr, nullptr, return_var_name);
+        // Statement functions return intrinsic scalar types, so
+        // m_type_declaration must be nullptr (not the variable being
+        // replaced by this function).
         ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
             current_scope, s2c(al, return_var_name),
             variable_dependencies_vec.p, variable_dependencies_vec.size(),
             ASRUtils::intent_return_var, nullptr, nullptr,
-            ASR::storage_typeType::Default, type, sym,
+            ASR::storage_typeType::Default, type, nullptr,
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));

@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 8)
-                                                    2 dfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -207,7 +207,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4)
-                                                    2 ifloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -356,7 +356,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    2 sfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
