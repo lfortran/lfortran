@@ -5598,6 +5598,16 @@ public:
                             ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                         struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member, module.get());
+                        ASR::symbol_t* sym_past = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym_past);
+                        if (!ASRUtils::is_unlimited_polymorphic_type(sym_past)) {
+                            llvm::Type* class_type = llvm_utils->getClassType(struct_t);
+                            llvm::Value* struct_ptr_field = llvm_utils->CreateGEP2(class_type, ptr_member, 1);
+                            llvm::Type* inner_ptr_type = llvm_utils->getStructType(struct_t, module.get(), true);
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(inner_ptr_type)),
+                                struct_ptr_field);
+                        }
                     } else {
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -6403,6 +6413,20 @@ public:
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
                     ptr, module.get());
+                // Null-initialize the inner struct pointer (field 1) so that
+                // finalizers do not dereference uninitialized memory when the
+                // class wrapper is only default-initialized (e.g. for absent
+                // optional class() arguments).
+                ASR::symbol_t* sym_past = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym_past);
+                if (!ASRUtils::is_unlimited_polymorphic_type(sym_past)) {
+                    llvm::Type* class_type = llvm_utils->getClassType(struct_t);
+                    llvm::Value* struct_ptr_field = llvm_utils->CreateGEP2(class_type, ptr, 1);
+                    llvm::Type* inner_ptr_type = llvm_utils->getStructType(struct_t, module.get(), true);
+                    builder->CreateStore(
+                        llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(inner_ptr_type)),
+                        struct_ptr_field);
+                }
             } else {
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
