@@ -109,19 +109,19 @@ int c_get_elem_size(CFI_cdesc_t *a) {
  *  Allocatable arrays — same sum logic, separate entry points
  * ---------------------------------------------------------------- */
 int32_t c_sum_alloc_1d(CFI_cdesc_t *a) { return sum_i32_entry(a); }
-int c_attr_alloc(CFI_cdesc_t *a) { return (int)a->attribute; }
+int c_attr_alloc(CFI_cdesc_t *a) { return a->attribute == CFI_attribute_allocatable; }
 void c_double_alloc_1d(CFI_cdesc_t *a) { dbl_i32_entry(a); }
 
 /* ----------------------------------------------------------------
  *  Pointer arrays — same sum logic, separate entry points
  * ---------------------------------------------------------------- */
 int32_t c_sum_ptr_1d(CFI_cdesc_t *a) { return sum_i32_entry(a); }
-int c_attr_ptr(CFI_cdesc_t *a) { return (int)a->attribute; }
+int c_attr_ptr(CFI_cdesc_t *a) { return a->attribute == CFI_attribute_pointer; }
 
 /* ----------------------------------------------------------------
  *  Attribute / contiguity queries for assumed-shape (other)
  * ---------------------------------------------------------------- */
-int c_attr_other(CFI_cdesc_t *a) { return (int)a->attribute; }
+int c_attr_other(CFI_cdesc_t *a) { return a->attribute == CFI_attribute_other; }
 
 int c_is_contiguous(CFI_cdesc_t *a) {
     CFI_index_t expected = (CFI_index_t)a->elem_len;
