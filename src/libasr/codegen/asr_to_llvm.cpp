@@ -20884,7 +20884,9 @@ public:
             if (compiler_options.po.bounds_checking) {
                 for (size_t i = 0; i < x.n_args; i++) {
                     ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
-                    if (ASRUtils::is_allocatable(arg_expr_type)) {
+                    bool is_alloc_string = ASRUtils::is_allocatable(arg_expr_type) &&
+                        ASRUtils::is_character(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    if (ASRUtils::is_allocatable(arg_expr_type) && !is_alloc_string) {
                         llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
                                 "Argument %d is unallocated.",
                                 {LLVMUtils::RuntimeLabel("This is unallocated", {x.m_args[i]->base.loc})},
