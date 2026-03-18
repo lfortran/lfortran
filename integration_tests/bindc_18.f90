@@ -87,6 +87,46 @@ module bindc_18_mod
             import :: c_int
             type(*), intent(in) :: a(..)
         end function
+
+        ! ---- allocatable arrays ----
+        integer(c_int32_t) function c_sum_alloc_1d(a) bind(C, name="c_sum_alloc_1d")
+            import :: c_int32_t
+            integer(c_int32_t), allocatable, intent(in) :: a(:)
+        end function
+        integer(c_int) function c_attr_alloc(a) bind(C, name="c_attr_alloc")
+            import :: c_int, c_int32_t
+            integer(c_int32_t), allocatable, intent(in) :: a(:)
+        end function
+        subroutine c_double_alloc_1d(a) bind(C, name="c_double_alloc_1d")
+            import :: c_int32_t
+            integer(c_int32_t), allocatable, intent(inout) :: a(:)
+        end subroutine
+
+        ! ---- pointer arrays ----
+        integer(c_int32_t) function c_sum_ptr_1d(a) bind(C, name="c_sum_ptr_1d")
+            import :: c_int32_t
+            integer(c_int32_t), pointer, intent(in) :: a(:)
+        end function
+        integer(c_int) function c_attr_ptr(a) bind(C, name="c_attr_ptr")
+            import :: c_int, c_int32_t
+            integer(c_int32_t), pointer, intent(in) :: a(:)
+        end function
+
+        ! ---- attribute / contiguity for assumed-shape (other) ----
+        integer(c_int) function c_attr_other(a) bind(C, name="c_attr_other")
+            import :: c_int, c_int32_t
+            integer(c_int32_t), intent(in) :: a(:)
+        end function
+        integer(c_int) function c_is_contiguous(a) bind(C, name="c_is_contiguous")
+            import :: c_int, c_int32_t
+            integer(c_int32_t), intent(in) :: a(:)
+        end function
+
+        ! ---- optional argument ----
+        integer(c_int) function c_is_present(a) bind(C, name="c_is_present")
+            import :: c_int, c_int32_t
+            integer(c_int32_t), optional, intent(in) :: a(:)
+        end function
     end interface
 end module
 
@@ -101,6 +141,10 @@ program bindc_18
     call test_sum_double()
     call test_double_inplace()
     call test_assumed_rank()
+    call test_allocatable()
+    call test_pointer()
+    call test_sections()
+    call test_optional()
 
     print *, "All bindc_18 tests passed."
 
@@ -210,6 +254,83 @@ contains
         if (c_sum_int32_ar(ai1) /= 10) error stop "FAIL: assumed-rank int32 1d"
         if (c_sum_int32_ar(ai2) /= 21) error stop "FAIL: assumed-rank int32 2d"
         if (c_sum_int32_ar(ai3) /= 78) error stop "FAIL: assumed-rank int32 3d"
+    end subroutine
+
+    subroutine test_allocatable()
+        integer(c_int32_t), allocatable :: a(:)
+
+        allocate(a(4))
+        a = [1, 2, 3, 4]
+
+        ! sum through C
+        if (c_sum_alloc_1d(a) /= 10) error stop "FAIL: alloc sum"
+
+        ! attribute == CFI_attribute_allocatable (2)
+        if (c_attr_alloc(a) /= 2) error stop "FAIL: alloc attribute"
+
+        ! in-place modification through C
+        call c_double_alloc_1d(a)
+        if (a(1) /= 2 .or. a(4) /= 8) error stop "FAIL: alloc double"
+        if (c_sum_alloc_1d(a) /= 20) error stop "FAIL: alloc double sum"
+
+        deallocate(a)
+    end subroutine
+
+    subroutine test_pointer()
+        integer(c_int32_t), target :: tgt(6)
+        integer(c_int32_t), pointer :: p(:)
+
+        tgt = [10, 20, 30, 40, 50, 60]
+        p => tgt
+
+        ! sum full pointer
+        if (c_sum_ptr_1d(p) /= 210) error stop "FAIL: ptr sum"
+
+        ! attribute == CFI_attribute_pointer (1)
+        if (c_attr_ptr(p) /= 1) error stop "FAIL: ptr attribute"
+
+        ! pointer to contiguous section
+        p => tgt(2:4)
+        if (c_sum_ptr_1d(p) /= 90) error stop "FAIL: ptr section sum"
+
+        ! pointer to strided section
+        p => tgt(1::2)
+        if (c_sum_ptr_1d(p) /= 90) error stop "FAIL: ptr stride sum"
+    end subroutine
+
+    subroutine test_sections()
+        integer(c_int32_t) :: arr(6)
+        arr = [1, 2, 3, 4, 5, 6]
+
+        ! stride-2: elements 1, 3, 5
+        if (c_sum_int32_1d(arr(::2)) /= 9) error stop "FAIL: stride-2"
+
+        ! contiguous subarray: elements 2, 3, 4
+        if (c_sum_int32_1d(arr(2:4)) /= 9) error stop "FAIL: subarray"
+
+        ! stride-3: elements 1, 4
+        if (c_sum_int32_1d(arr(1::3)) /= 5) error stop "FAIL: stride-3"
+
+        ! contiguity: full array is contiguous
+        if (c_is_contiguous(arr) /= 1) error stop "FAIL: contiguous"
+
+        ! contiguity: strided section is not contiguous
+        if (c_is_contiguous(arr(::2)) /= 0) error stop "FAIL: non-contiguous"
+
+        ! attribute: regular assumed-shape has CFI_attribute_other (0)
+        if (c_attr_other(arr) /= 0) error stop "FAIL: other attr"
+    end subroutine
+
+    subroutine test_optional()
+        integer(c_int32_t) :: arr(3)
+        arr = [1, 2, 3]
+
+        ! present argument
+        if (c_is_present(arr) /= 1) error stop "FAIL: present"
+
+        ! TODO: absent optional test requires bind(C) optional support
+        ! (skipping is_present extra parameter for bind(C) calls)
+        ! call check_absent()
     end subroutine
 
 end program
