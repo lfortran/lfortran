@@ -3,6 +3,7 @@ program separate_compilation_45
     implicit none
     type(greeter_t) :: g
     g%id = 42
+    if (g%id /= 42) error stop "expected greeter id"
     call g%greet("hello")
-    print *, "ok"
+    if (g%id /= 42) error stop "unexpected greeter id after greet"
 end program separate_compilation_45
