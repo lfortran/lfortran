@@ -18262,9 +18262,9 @@ public:
                 }
             }
 
-            // For bind(C) calls with DescriptorArray args, convert the
-            // descriptor from LFortran's internal format (element strides)
-            // to CFI format (byte strides) and set elem_len.
+            // For bind(C) calls with DescriptorArray/AssumedRankArray args,
+            // convert the descriptor from LFortran's internal format (element
+            // strides) to CFI format (byte strides) and set elem_len.
             // Only apply for explicit bind(C) functions (with bindc_name),
             // not implicit interface functions which use BindC ABI internally
             // but expect LFortran's descriptor format.
@@ -18278,23 +18278,27 @@ public:
                 ASRUtils::is_array(orig_arg->m_type)) {
                 ASR::array_physical_typeType phys_type =
                     ASRUtils::extract_physical_type(orig_arg->m_type);
-                if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
-                    ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(orig_arg->m_type);
+                if (phys_type == ASR::array_physical_typeType::DescriptorArray ||
+                    phys_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    // Use the actual argument's type to get element info and
+                    // dimensions, since the formal parameter may be type(*)
+                    // or assumed-rank (..) without concrete type/dim info.
+                    ASR::ttype_t* actual_type = ASRUtils::expr_type(x.m_args[i].m_value);
+                    ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(actual_type);
                     llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                    llvm::Type* desc_type = arr_descr->get_array_type(
-                        x.m_args[i].m_value, orig_arg->m_type, elem_llvm_type);
+                    // Get the descriptor type directly from tmp's pointee type
+                    // to avoid type mismatches with LLVM's typed pointers.
+                    llvm::Type* desc_type = tmp->getType()->getPointerElementType();
                     llvm::Value* elem_size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, elem_size));
                     // Set elem_len (field 1)
                     builder->CreateStore(elem_size_val,
                         llvm_utils->create_gep2(desc_type, tmp, 1));
                     // Convert each dim's stride from elements to bytes
-                    ASR::dimension_t* m_dims = nullptr;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        orig_arg->m_type, m_dims);
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
                     llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
                     llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
                         desc_type, tmp);
@@ -18307,6 +18311,16 @@ public:
                             llvm::Type::getInt64Ty(context), stride_ptr);
                         stride = builder->CreateMul(stride, elem_size_val);
                         builder->CreateStore(stride, stride_ptr);
+                    }
+                    // Bitcast descriptor pointer to match the formal parameter's
+                    // descriptor type when element types differ (e.g., actual
+                    // integer(c_int) passed to type(*) formal parameter).
+                    llvm::Function* fn = module->getFunction(callee_fn_type->m_bindc_name);
+                    if (fn) {
+                        llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                 }
             }
