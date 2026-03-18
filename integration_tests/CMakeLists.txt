@@ -1754,6 +1754,8 @@ RUN(NAME bindc_27 LABELS gfortran llvm flang EXTRAFILES bindc_27c.c)
 RUN(NAME bindc_28 LABELS gfortran llvm flang EXTRAFILES bindc_28c.c)
 RUN(NAME bindc_29 LABELS gfortran llvm flang EXTRAFILES bindc_29c.c)
 RUN(NAME bindc_30 LABELS gfortran flang EXTRAFILES bindc_30c.c)
+RUN(NAME bindc_31 LABELS gfortran flang EXTRAFILES bindc_31c.c)
+RUN(NAME bindc_32 LABELS gfortran flang EXTRAFILES bindc_32c.c)
 
 RUN(NAME case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
