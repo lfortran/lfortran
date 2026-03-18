@@ -18296,13 +18296,24 @@ public:
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                    // Derive the descriptor type from the actual argument's
-                    // ASR type for correct struct layout and sizing.
+                    // Derive the descriptor type. For scalar arguments
+                    // passed to assumed-rank parameters, use the formal
+                    // parameter's type (which carries the descriptor struct
+                    // layout), not the scalar's type.
+                    ASR::ttype_t* desc_asr_type;
+                    ASR::expr_t* desc_expr;
+                    if (!ASRUtils::is_array(actual_type)) {
+                        desc_asr_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(orig_arg->m_type));
+                        desc_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                            orig_arg->base.base.loc, &orig_arg->base));
+                    } else {
+                        desc_asr_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(actual_type));
+                        desc_expr = x.m_args[i].m_value;
+                    }
                     llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_args[i].m_value,
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(actual_type)),
-                        module.get());
+                        desc_expr, desc_asr_type, module.get());
 
                     // Ensure tmp is a pointer to the descriptor.
                     // For allocatable/pointer arrays the upstream Var handler
