@@ -18289,9 +18289,19 @@ public:
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                    // Get the descriptor type directly from tmp's pointee type
-                    // to avoid type mismatches with LLVM's typed pointers.
-                    llvm::Type* desc_type = tmp->getType()->getPointerElementType();
+                    // Derive the descriptor type from the formal parameter's
+                    // ASR type. We must use the formal (not actual) type
+                    // because convert_to_polymorphic_arg may have converted
+                    // tmp to the formal's descriptor type (e.g., type(*)
+                    // formal → generic %array descriptor).
+                    ASR::expr_t* orig_arg_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, orig_arg->base.base.loc,
+                            &orig_arg->base));
+                    llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        orig_arg_expr,
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(orig_arg->m_type)),
+                        module.get());
                     llvm::Value* elem_size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, elem_size));
                     // Set elem_len (field 1)
