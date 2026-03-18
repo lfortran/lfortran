@@ -18302,7 +18302,12 @@ public:
                     llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
-                    uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
+                    // For bind(C) character arrays, elem_size is the
+                    // character kind size (e.g. 1 for c_char), not the
+                    // size of the internal string_descriptor struct.
+                    uint64_t elem_size = ASRUtils::is_character(*elem_asr_type)
+                        ? ASRUtils::extract_kind_from_ttype_t(elem_asr_type)
+                        : data_layout.getTypeAllocSize(elem_llvm_type);
                     // Derive the descriptor type. For scalar arguments
                     // passed to assumed-rank parameters, use the formal
                     // parameter's type (which carries the descriptor struct
@@ -18359,6 +18364,25 @@ public:
                     builder->CreateMemCpy(desc_copy, llvm::MaybeAlign(),
                         tmp, llvm::MaybeAlign(), desc_size);
                     tmp = desc_copy;
+                    // For character arrays, the descriptor's base_addr
+                    // points to a string_descriptor struct ({i8*, i64}).
+                    // For CFI interop, replace it with the raw i8* data
+                    // pointer (field 0 of the string_descriptor).
+                    if (ASRUtils::is_character(*elem_asr_type)) {
+                        llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                            desc_type, tmp, 0);
+                        llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                            elem_llvm_type->getPointerTo(), base_addr_gep);
+                        llvm::Value* data_gep = llvm_utils->create_gep2(
+                            elem_llvm_type, str_desc, 0);
+                        llvm::Value* raw_data = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            data_gep);
+                        builder->CreateStore(
+                            builder->CreateBitCast(raw_data,
+                                elem_llvm_type->getPointerTo()),
+                            base_addr_gep);
+                    }
                     llvm::Value* elem_size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, elem_size));
                     // Set elem_len (field 1)
