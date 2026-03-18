@@ -554,7 +554,7 @@ RUN(NAME subroutines_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME subroutines_18 LABELS gfortran llvm)
 RUN(NAME subroutines_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME subroutines_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME subroutines_21 LABELS gfortran llvm)
+RUN(NAME subroutines_21 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir fortran)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
@@ -823,7 +823,7 @@ RUN(NAME arrays_103 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_104 LABELS gfortran llvm)
 RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME arrays_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --legacy-array-sections)
 RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_109 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
@@ -3334,11 +3334,11 @@ RUN(NAME array_indices_array_item_assignment_2 LABELS gfortran llvm llvm_wasm ll
 RUN(NAME array_indices_array_item_assignment_3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
-    EXTRA_ARGS --implicit-argument-casting
+    EXTRA_ARGS --implicit-argument-casting --legacy-array-sections
     GFORTRAN_ARGS -fallow-argument-mismatch)
 
 RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
-    EXTRA_ARGS --implicit-argument-casting
+    EXTRA_ARGS --implicit-argument-casting --legacy-array-sections
     GFORTRAN_ARGS -fallow-argument-mismatch)
 
 RUN(NAME implicit_argument_casting_03 LABELS gfortran llvm
