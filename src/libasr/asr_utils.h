@@ -3303,7 +3303,13 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerArray;
+            if( is_dimension_star ||
+                ASRUtils::is_fixed_size_array(m_dims, n_dims) ||
+                !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+                physical_type = ASR::array_physical_typeType::PointerArray;
+            } else {
+                physical_type = ASR::array_physical_typeType::DescriptorArray;
+            }
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument || (type && ASRUtils::is_character(*type)) ) {

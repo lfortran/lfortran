@@ -18282,6 +18282,55 @@ public:
                 }
             }
 
+            // For bind(C) calls with DescriptorArray args, convert the
+            // descriptor from LFortran's internal format (element strides)
+            // to CFI format (byte strides) and set elem_len.
+            // Only apply for explicit bind(C) functions (with bindc_name),
+            // not implicit interface functions which use BindC ABI internally
+            // but expect LFortran's descriptor format.
+            ASR::FunctionType_t* callee_fn_type = nullptr;
+            if (func_subrout->type == ASR::symbolType::Function) {
+                callee_fn_type = ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(func_subrout));
+            }
+            if (orig_arg && x_abi == ASR::abiType::BindC &&
+                callee_fn_type && callee_fn_type->m_bindc_name &&
+                ASRUtils::is_array(orig_arg->m_type)) {
+                ASR::array_physical_typeType phys_type =
+                    ASRUtils::extract_physical_type(orig_arg->m_type);
+                if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
+                    ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(orig_arg->m_type);
+                    llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+                        x.m_args[i].m_value, elem_asr_type, module.get());
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
+                    llvm::Type* desc_type = arr_descr->get_array_type(
+                        x.m_args[i].m_value, orig_arg->m_type, elem_llvm_type);
+                    llvm::Value* elem_size_val = llvm::ConstantInt::get(
+                        context, llvm::APInt(64, elem_size));
+                    // Set elem_len (field 1)
+                    builder->CreateStore(elem_size_val,
+                        llvm_utils->create_gep2(desc_type, tmp, 1));
+                    // Convert each dim's stride from elements to bytes
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        orig_arg->m_type, m_dims);
+                    llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
+                    llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                        desc_type, tmp);
+                    for (int r = 0; r < n_dims; r++) {
+                        llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
+                            dim_type, dim_arr, r);
+                        llvm::Value* stride_ptr = llvm_utils->create_gep2(
+                            dim_type, dim_ptr, 0);
+                        llvm::Value* stride = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context), stride_ptr);
+                        stride = builder->CreateMul(stride, elem_size_val);
+                        builder->CreateStore(stride, stride_ptr);
+                    }
+                }
+            }
+
             args.push_back(tmp);
         }
         convert_call_args_depth--;
