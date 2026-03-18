@@ -8663,7 +8663,8 @@ public:
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
                                     // Copy offset
-                                    builder->CreateStore(arr_descr->get_offset(value_array_desc_type, llvm_value),
+                                    llvm::Value* src_offset = arr_descr->get_offset(value_array_desc_type, llvm_value);
+                                    builder->CreateStore(src_offset,
                                         arr_descr->get_offset(target_array_desc_type, llvm_target_, false));
                                     // Other fields of the array descriptor should be already set.
                                     return;

@@ -10588,6 +10588,23 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                        ASR::expr_t* array_expr = array_item->m_v;
+
+                        // When element types differ (e.g., complex actual vs real dummy),
+                        // skip the ArrayItem→ArraySection transformation and let
+                        // implicit_argument_casting in Call_t_body handle both the
+                        // scalar-to-array and type conversion.
+                        ASR::ttype_t* actual_elem = ASRUtils::type_get_past_array(
+                            ASRUtils::expr_type(array_expr));
+                        ASR::ttype_t* expected_elem = ASRUtils::type_get_past_array(
+                            array_arg_idx[i]);
+                        if (!ASRUtils::types_equal(actual_elem, expected_elem,
+                                arg_expr, f->m_args[i], true)) {
+                            args_with_array_section.push_back(al, args[i]);
+                            continue;
+                        }
+
                         // Legacy sequence association passes the address of the first element.
                         // For externals (implicit interface), force PointerArray to match the ABI.
                         // For known/internal procedures (including recursive self-calls), do not
@@ -10599,8 +10616,6 @@ public:
                         ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(expected_arg_type));
 
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                        ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
 
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
@@ -10783,6 +10798,23 @@ public:
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
                     f_type->m_arg_types[it.first] = new_type;
                     // visit_required = true;
+                }
+            }
+        } else {
+            // Check if a scalar (ArrayItem) is passed to an array argument
+            for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        args[i].m_value &&
+                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
+                    diag.add(diag::Diagnostic(
+                        "Passing a scalar argument to an array dummy argument is not allowed. "
+                        "Use --legacy-array-sections to enable sequence association",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("scalar argument", {args[i].m_value->base.loc}),
+                            diag::Label("array dummy argument", {f->m_args[i]->base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
             }
         }
