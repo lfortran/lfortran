@@ -49,8 +49,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
-                if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
+                if( x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
+                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i])) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
                         push_to_scopes_until_symbol_scope(sym);
@@ -63,8 +64,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
-                if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
+                if( x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
+                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i])) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
                         push_to_scopes_until_symbol_scope(sym);
