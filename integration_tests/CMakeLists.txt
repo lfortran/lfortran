@@ -31,6 +31,26 @@ message("NOFAST_LLVM16: ${NOFAST_LLVM16}")
 message("STD_F23: ${STD_F23}")
 message("LLVM_GOC: ${LLVM_GOC}")
 
+# Make ISO_Fortran_binding.h available to the C compiler.
+# LFortran ships its own header in src/libasr/runtime/.
+# GFortran on macOS needs special handling: its include/ directory also
+# contains stddef.h and other headers that conflict with the system C
+# compiler (Clang), so we copy just the one header into a clean directory.
+# On Linux, GCC's C compiler can find the header automatically.
+# Flang/Clang can also find it automatically.
+if (LFORTRAN_BACKEND)
+    set(ISO_FORTRAN_BINDING_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../src/libasr/runtime")
+elseif (NOT LFORTRAN_BACKEND AND APPLE)
+    find_file(ISO_FORTRAN_BINDING_H ISO_Fortran_binding.h
+        PATHS ${CMAKE_Fortran_IMPLICIT_INCLUDE_DIRECTORIES}
+        NO_DEFAULT_PATH)
+    if (ISO_FORTRAN_BINDING_H)
+        set(ISO_FORTRAN_BINDING_INCLUDE_DIR "${CMAKE_BINARY_DIR}/fortran_c_interop")
+        file(MAKE_DIRECTORY ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+        file(COPY ${ISO_FORTRAN_BINDING_H} DESTINATION ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+    endif()
+endif()
+
 macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
@@ -160,7 +180,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
-            target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/../src/libasr/runtime)
+            if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
+                target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
@@ -237,11 +259,17 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "flang")
             add_executable(${name} ${file_name}.f90 ${extra_files})
+            if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
+                target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${gfortran_args})
             target_link_options(${name} PUBLIC ${gfortran_args})
+            if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
+                target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
