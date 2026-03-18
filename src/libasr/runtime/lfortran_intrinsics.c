@@ -189,6 +189,19 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void) {
 
 /* ---------- Leak-detector bookkeeping ---------- */
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+static SRWLOCK _internal_alloc_mutex = SRWLOCK_INIT;
+#define ALLOC_LOCK()   AcquireSRWLockExclusive(&_internal_alloc_mutex)
+#define ALLOC_UNLOCK() ReleaseSRWLockExclusive(&_internal_alloc_mutex)
+#else
+#include <pthread.h>
+static pthread_mutex_t _internal_alloc_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define ALLOC_LOCK()   pthread_mutex_lock(&_internal_alloc_mutex)
+#define ALLOC_UNLOCK() pthread_mutex_unlock(&_internal_alloc_mutex)
+#endif
+
 typedef struct {
     void       *ptr;
     const char *file;
@@ -239,7 +252,9 @@ static void *_lfortran_internal_malloc_tracked(size_t size,
                                                const char *file, int line)
 {
     void *ptr = malloc(size);
+    ALLOC_LOCK();
     _internal_alloc_record_add(ptr, size, file, line);
+    ALLOC_UNLOCK();
     return ptr;
 }
 
@@ -247,16 +262,20 @@ static void *_lfortran_internal_calloc_tracked(size_t count, size_t size,
                                                const char *file, int line)
 {
     void *ptr = calloc(count, size);
+    ALLOC_LOCK();
     _internal_alloc_record_add(ptr, count * size, file, line);
+    ALLOC_UNLOCK();
     return ptr;
 }
 
 static void *_lfortran_internal_realloc_tracked(void *old_ptr, size_t size,
                                                 const char *file, int line)
 {
+    ALLOC_LOCK();
     if (old_ptr) _internal_alloc_record_remove(old_ptr, file, line);
     void *ptr = realloc(old_ptr, size);
     _internal_alloc_record_add(ptr, size, file, line);
+    ALLOC_UNLOCK();
     return ptr;
 }
 
@@ -264,7 +283,9 @@ static void _lfortran_internal_free_tracked(void *ptr,
                                             const char *file, int line)
 {
     if (ptr == NULL) return;
+    ALLOC_LOCK();
     _internal_alloc_record_remove(ptr, file, line);
+    ALLOC_UNLOCK();
     free(ptr);
 }
 
