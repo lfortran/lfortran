@@ -1,1 +1,443 @@
-/bin/sh: 1: lfortran: not found
+syntax error: Token 'test' (of type 'identifier') is unexpected here
+   --> tests/errors/continue_compilation_1.f90:301:13
+    |
+301 |     program test
+    |             ^^^^ 
+
+semantic error: Derived type `another_undefined_type` is not defined
+  --> tests/errors/continue_compilation_1.f90:79:9
+   |
+79 |         type(another_undefined_type) :: s3_in_subroutine
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: c_char should have a length of 1
+   --> tests/errors/continue_compilation_1.f90:103:9
+    |
+103 |         character(len=2, kind=c_char), intent(in) :: c
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'c' not defined
+   --> tests/errors/continue_compilation_1.f90:101:5 - 104:20
+    |
+101 |        subroutine s(c) bind(c)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+104 |        end subroutine s
+    | ...^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-size '*' is only permitted in the last dimension
+   --> tests/errors/continue_compilation_1.f90:117:31
+    |
+117 |         real, intent(in) :: a(*, 10)
+    |                               ^ 
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_1.f90:116:5 - 118:18
+    |
+116 |        subroutine assumed_size_star_pos_1(a)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+118 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-size '*' is only permitted in the last dimension
+   --> tests/errors/continue_compilation_1.f90:121:19
+    |
+121 |         real :: a(*, 10)
+    |                   ^ 
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_1.f90:120:5 - 122:18
+    |
+120 |        subroutine assumed_size_star_pos_2(a)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+122 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:162:27
+    |
+162 |             enumerator :: red/1/
+    |                           ^^^^^^ Use modern syntax instead: integer :: red = 1
+
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:164:32
+    |
+164 |         type(MyClass), save :: slash_x/MyClass(1)/
+    |                                ^^^^^^^^^^^^^^^^^^^ Use modern syntax instead: integer :: slash_x = MyClass(1)
+
+warning: non-standard Fortran 77-style initialization (extension)
+   --> tests/errors/continue_compilation_1.f90:165:26
+    |
+165 |         integer, save :: slash_y/2/
+    |                          ^^^^^^^^^^ Use modern syntax instead: integer :: slash_y = 2
+
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+   --> tests/errors/continue_compilation_1.f90:179:9
+    |
+179 |         procedure(), pointer :: pf1
+    |         ^^^^^^^^^^^ 
+
+semantic error: Procedure 'op_clash_f' is already defined as an interface body
+   --> tests/errors/continue_compilation_1.f90:186:5 - 190:27
+    |
+186 |        function op_clash_f(x) result(y)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+190 |        end function op_clash_f
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+ 35 |            function op_clash_f(x) result(y)
+    |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+    |
+ 38 |            end function
+    | ...~~~~~~~~~~~~~~~~~~~~ is already defined here
+
+semantic error: Defined assignment procedure must not return a value
+   --> tests/errors/continue_compilation_1.f90:141:5 - 145:32
+    |
+141 |        integer function assign_func_bad(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+145 |        end function assign_func_bad
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Defined assignment procedure must have exactly two arguments
+   --> tests/errors/continue_compilation_1.f90:147:5 - 149:37
+    |
+147 |        subroutine assign_wrong_nargs(lhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+149 |        end subroutine assign_wrong_nargs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)
+   --> tests/errors/continue_compilation_1.f90:151:5 - 154:33
+    |
+151 |        subroutine assign_bad_lhs(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+154 |        end subroutine assign_bad_lhs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Second argument of defined assignment must have INTENT(IN)
+   --> tests/errors/continue_compilation_1.f90:156:5 - 159:33
+    |
+156 |        subroutine assign_bad_rhs(lhs, rhs)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+159 |        end subroutine assign_bad_rhs
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'f_missing' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:22:9
+   |
+22 |         procedure(f_missing), pointer, nopass :: fn => null()
+   |         ^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: Interface 'missing_global_interface' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:25:5
+   |
+25 |     procedure(missing_global_interface), pointer :: p => null()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: Interface 'sub_test' is referenced but not defined
+   --> tests/errors/continue_compilation_1.f90:182:9
+    |
+182 |         procedure(sub_test), pointer :: pf2
+    |         ^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+   --> tests/errors/continue_compilation_1.f90:210:5 - 212:49
+    |
+210 |        implicit integer(a-f), real(e-z)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+212 |        ! Put declarations below without empty lines
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of `repeat` intrinsic must be scalar
+   --> tests/errors/continue_compilation_1.f90:233:38
+    |
+233 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot convert LOGICAL to REAL
+   --> tests/errors/continue_compilation_1.f90:236:20
+    |
+236 |     real :: adwf = .true.
+    |                    ^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_1.f90:240:31
+    |
+240 |     integer , dimension(3) :: array
+    |                               ^^^^^ redeclaration
+    |
+239 |     double precision array
+    |                      ~~~~~ original declaration
+
+semantic error: Array members must me of the same type as the struct
+   --> tests/errors/continue_compilation_1.f90:244:53
+    |
+244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    |                                                     ^ 
+
+semantic error: Initialization of `myclass_array2` must reduce to a compile time constant.
+   --> tests/errors/continue_compilation_1.f90:245:66
+    |
+245 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
+    |                                                                  ^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters
+   --> tests/errors/continue_compilation_1.f90:246:5
+    |
+246 |     character(width=10) :: str_c_1
+    |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+   --> tests/errors/continue_compilation_1.f90:247:5
+    |
+247 |     character(len=10, len=20) :: str_c_2
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+   --> tests/errors/continue_compilation_1.f90:248:5
+    |
+248 |     character(len=10, 1) :: str_c_3
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword argument after a positional type is invalid
+   --> tests/errors/continue_compilation_1.f90:249:5
+    |
+249 |     character(1, len=20) :: str_c_4
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_1.f90:250:34
+    |
+250 |     character(:), allocatable :: x(2)
+    |                                  ^^^^ 
+
+semantic error: Expecting a scalar integer or parameter annotated integer variable 
+   --> tests/errors/continue_compilation_1.f90:252:26
+    |
+252 |     logical :: mask_size(size(arr_size))
+    |                          ^^^^^^^^^^^^^^ 
+
+semantic error: `protected` attribute is only allowed in specification part of a module
+   --> tests/errors/continue_compilation_1.f90:253:5
+    |
+253 |     integer, protected :: protected_attr_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `protected` attribute is only allowed in specification part of a module
+   --> tests/errors/continue_compilation_1.f90:254:5
+    |
+254 |     integer, parameter, protected :: protected_parameter_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable `n` cannot appear in the expression as it is not a constant
+   --> tests/errors/continue_compilation_1.f90:259:27
+    |
+259 |       integer :: elements(n)
+    |                           ^ 
+
+semantic error: Derived type `bspline_3d` is not defined
+   --> tests/errors/continue_compilation_1.f90:261:5
+    |
+261 |     type(bspline_3d) :: s3_in_program
+    |     ^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: BOZ literal constant cannot be used in binary operations
+   --> tests/errors/continue_compilation_1.f90:263:19
+    |
+263 |     integer::tt = b'01' * 3
+    |                   ^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:265:29
+    |
+265 |     integer, allocatable :: allocate_int = 1
+    |                             ^^^^^^^^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:266:34
+    |
+266 |     character(:), allocatable :: allocate_char = "H"
+    |                                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:270:42
+    |
+270 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable `uninitialized_param_local` with parameter attribute is not initialised
+   --> tests/errors/continue_compilation_1.f90:278:5
+    |
+278 |     type(MyClass), parameter :: uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol not found: `non_existent_symbol`
+   --> tests/errors/continue_compilation_1.f90:279:5
+    |
+279 |     type(MyClass) :: err_obj1 = non_existent_symbol
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Named initialization not supported with: my_func
+   --> tests/errors/continue_compilation_1.f90:280:5
+    |
+280 |     type(MyClass) :: err_obj2 = my_func
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization with non-constant variable `non_parameter_var` is not allowed
+   --> tests/errors/continue_compilation_1.f90:282:5
+    |
+282 |     type(MyClass) :: err_obj3 = non_parameter_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+281 |     integer :: non_parameter_var = 5
+    |                ~~~~~~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+   --> tests/errors/continue_compilation_1.f90:283:5
+    |
+283 |     type(MyClass) :: err_obj4 = myclass_array
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
+
+semantic error: Symbol not found: `uninitialized_param_local`
+   --> tests/errors/continue_compilation_1.f90:284:5
+    |
+284 |     type(MyClass) :: err_obj5 = uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: CLASS variable 'inst_tt' must be dummy, allocatable or pointer
+   --> tests/errors/continue_compilation_1.f90:295:5
+    |
+295 |     class(type_t) :: inst_tt
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `erfc` underflows its kind
+   --> tests/errors/continue_compilation_1.f90:296:40
+    |
+296 |     real(8), parameter :: erfc_param = erfc(40.12_8)
+    |                                        ^^^^^^^^^^^^^ 
+
+semantic error: Contiguous attribute can only be applied to declared variables
+   --> tests/errors/continue_compilation_1.f90:298:19
+    |
+298 |     contiguous :: contig_not_declared
+    |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Contiguous attribute can only be applied to variables
+   --> tests/errors/continue_compilation_1.f90:299:19
+    |
+299 |     contiguous :: MyClass
+    |                   ^^^^^^^ 
+
+semantic error: LEN parameters in parameterized derived types are not supported yet
+   --> tests/errors/continue_compilation_1.f90:303:13
+    |
+303 |             integer, len :: n
+    |             ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_1.f90:306:28
+    |
+306 |         type(matrix(5)) :: A
+    |                            ^ redeclaration
+    |
+213 |     integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i, arr1(3), arr2(2, 3), arr3(2, 1, 3)
+    |                ~~~~ original declaration
+
+semantic error: More than one main program found
+   --> tests/errors/continue_compilation_1.f90:208:1 - 307:15
+    |
+208 |    program continue_compilation_1
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+307 |        end program
+    | ...^^^^^^^^^^^^^^^ first main program defined here
+    |
+  4 |    module continue_compilation_1_mod
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+656 |    end program
+    | ...^^^^^^^^^^^^ second main program defined here
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+   --> tests/errors/continue_compilation_1.f90:111:18
+    |
+111 |         print *, ubound(a, 1)
+    |                  ^^^^^^^^^^^^ 
+
+semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:112:18
+    |
+112 |         print *, ubound(b)
+    |                  ^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+   --> tests/errors/continue_compilation_1.f90:113:18
+    |
+113 |         print *, ubound(c, 2)
+    |                  ^^^^^^^^^^^^ 
+
+semantic error: Character intrinsic 'trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:135:18
+    |
+135 |         print *, trim(generic)
+    |                  ^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'adjustl' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:136:18
+    |
+136 |         print *, adjustl(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'adjustr' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:137:18
+    |
+137 |         print *, adjustr(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'len_trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:138:18
+    |
+138 |         print *, len_trim(generic)
+    |                  ^^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Variable 'pf1' is not declared
+   --> tests/errors/continue_compilation_1.f90:180:9
+    |
+180 |         pf1 => dummy_sub
+    |         ^^^ 'pf1' is undeclared
+
+semantic error: Interface mismatch in procedure pointer assignment at (1): 'dummy_func' is not a subroutine
+   --> tests/errors/continue_compilation_1.f90:183:9
+    |
+183 |         pf2 => dummy_func
+    |         ^^^^^^^^^^^^^^^^^ (1)
+
+semantic error: Function 'sub' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:268:5
+    |
+268 |     call sub(not_real)
+    |     ^^^^^^^^^^^^^^^^^^ 
