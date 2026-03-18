@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #define MEM_DEBUG_IMPL /*Stop malloc, free, realloc, etc redirection*/
 #include "mem_debug.h"
 #include "hashtable.h"
@@ -38,32 +39,38 @@ static void register_ptr(void* const ptr, size_t size){
     mem_debugger_insert(&mem_dbg_hashTable, ptr, a);
 }
 
-void* dbg_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if(size && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_malloc\n");
-    register_ptr(ptr, size);
+void* dbg_malloc(void *context, int64_t size) {
+    (void)context;
+    size_t alloc_size = (size_t)size;
+    void *ptr = malloc(alloc_size);
+    if(alloc_size && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_malloc\n");
+    register_ptr(ptr, alloc_size);
     return ptr;
 
 }
 
-void* dbg_calloc(size_t nmemb, size_t size) {
-    void *ptr = calloc(nmemb, size);
-    if((size * nmemb) && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_calloc\n");
-    register_ptr(ptr, size * nmemb);
+void* dbg_calloc(void *context, int64_t nmemb, int64_t size) {
+    (void)context;
+    size_t count = (size_t)nmemb;
+    size_t alloc_size = (size_t)size;
+    void *ptr = calloc(count, alloc_size);
+    if((alloc_size * count) && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_calloc\n");
+    register_ptr(ptr, alloc_size * count);
     return ptr;
 }
 
-void  *dbg_realloc(void *ptr, size_t size){
+void  *dbg_realloc(void *context, void *ptr, int64_t size){
     if (!ptr) {
-        return dbg_malloc(size);
+        return dbg_malloc(context, size);
     }
     if (size == 0) {
-        dbg_free(ptr);
+        dbg_free(context, ptr);
         return NULL;
     }
 
-    void *new_ptr = realloc(ptr, size);
-    if (size && !new_ptr) {
+    size_t alloc_size = (size_t)size;
+    void *new_ptr = realloc(ptr, alloc_size);
+    if (alloc_size && !new_ptr) {
         fprintf(stderr, "ERROR : Unexpected error at dbg_realloc\n");
         return NULL;
     }
@@ -81,10 +88,10 @@ void  *dbg_realloc(void *ptr, size_t size){
     }
 
     if (new_ptr == ptr) {
-        found->size = size;
+        found->size = alloc_size;
     } else {
         mem_debugger_remove(&mem_dbg_hashTable, ptr);
-        register_ptr(new_ptr, size);
+        register_ptr(new_ptr, alloc_size);
     }
 
     return new_ptr;
@@ -92,7 +99,8 @@ void  *dbg_realloc(void *ptr, size_t size){
 
 
 
-void dbg_free(void *ptr) {
+void dbg_free(void *context, void *ptr) {
+    (void)context;
     if (!ptr) return;
     if(!mem_dbg_hashTable.buckets){
         fprintf(stderr, "Error: at dbg_free -- hastable not initialized\n");

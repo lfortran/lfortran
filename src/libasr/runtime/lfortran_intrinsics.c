@@ -177,8 +177,19 @@ static lfortran_allocator_t _default_allocator = {
     NULL
 };
 
+static lfortran_allocator_t compiler_mem_dbg_allocator = {
+    dbg_malloc,
+    dbg_realloc,
+    dbg_free,
+    NULL
+};
+
 LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void) {
     return &_default_allocator;
+}
+
+LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void) {
+    return &compiler_mem_dbg_allocator;
 }
 
 /* --- End default allocator --- */
@@ -4432,7 +4443,7 @@ LFORTRAN_API void* _lfortran_string_malloc_alloc(lfortran_allocator_t* al, int64
 // Same as above but uses dbg_malloc
 LFORTRAN_API void* _lfortran_string_dbg_malloc(int64_t length) {
     if(length < 0) lfortran_error("Allocating string with length < 0");
-    return dbg_malloc(MAX((size_t)length, (size_t)1));
+    return ALLOCATOR_ALLOC(&compiler_mem_dbg_allocator, MAX(length, 1));
 }
 LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* ptr, int64_t size) {
     if (size == 0) {

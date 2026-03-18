@@ -16,10 +16,16 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
-        static llvm::Value* get_default_allocator(llvm::LLVMContext &context,
+        const char* get_allocator_function_name() {
+            return use_memory_debug()
+                ? "_lfortran_get_compiler_mem_dbg_allocator"
+                : "_lfortran_get_default_allocator";
+        }
+
+        static llvm::Value* get_allocator(llvm::LLVMContext &context,
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            std::string func_name = "_lfortran_get_default_allocator";
+            std::string func_name = get_allocator_function_name();
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
@@ -51,7 +57,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
 
@@ -94,7 +100,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
 
@@ -113,7 +119,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             count     = builder.CreateSExt(count, llvm::Type::getInt64Ty(context));
             type_size = builder.CreateSExt(type_size, llvm::Type::getInt64Ty(context));
             return builder.CreateCall(fn, {allocator, count, type_size});
@@ -134,7 +140,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {
                 allocator,
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -299,7 +305,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::get_allocator(llvm::Module* mod) {
         // Check if the cached instance is valid for the current function.
-        // Each LLVM function needs its own call to _lfortran_get_default_allocator
+        // Each LLVM function needs its own call to the allocator getter
         // because SSA values can't cross function boundaries.
         llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
         if (allocator_instance) {
@@ -312,7 +318,7 @@ namespace LCompilers {
 
         llvm::Type* allocator_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
 
-        std::string func_name = "_lfortran_get_default_allocator";
+        std::string func_name = LLVM::get_allocator_function_name();
         llvm::Function *fn = mod->getFunction(func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
