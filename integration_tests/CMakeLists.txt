@@ -2793,6 +2793,7 @@ RUN(NAME test_iso_fortran_env LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
 RUN(NAME test_ieee_arithmetic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME test_ieee_arithmetic_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_fast_01 LABELS gfortran llvm)
 RUN(NAME iso_fortran_env_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME iso_fortran_env_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
