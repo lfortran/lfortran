@@ -36,6 +36,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
         INTRINSIC_NAME_CASE(Atan2)
+        INTRINSIC_NAME_CASE(Atan2d)
         INTRINSIC_NAME_CASE(Asinh)
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
@@ -275,6 +276,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Tanh::instantiate_Tanh, &Tanh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
             {&Atan2::instantiate_Atan2, &Atan2::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2d),
+            {&Atan2d::instantiate_Atan2d, &Atan2d::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asinh),
             {&Asinh::instantiate_Asinh, &Asinh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosh),
@@ -632,6 +635,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
+                {"atan2d", {&Atan2d::create_Atan2d, &Atan2d::eval_Atan2d}},
                 {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
                 {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
                 {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},

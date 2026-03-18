@@ -135,6 +135,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Atan2d": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Fix": [
         {
             "args": [("real",)],

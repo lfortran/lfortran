@@ -1662,6 +1662,7 @@ public:
         {"nint", IntrinsicSignature({"a", "kind"}, 1, 2)},
         {"anint", IntrinsicSignature({"a", "kind"}, 1, 2)},
         {"atan2", IntrinsicSignature({"y", "x"}, 2, 2)},
+        {"atan2d", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"shape", IntrinsicSignature({"source", "kind"}, 1, 2)},
         {"mod", IntrinsicSignature({"a", "p"}, 2, 2)},
         {"repeat", IntrinsicSignature({"string", "ncopies"}, 2, 2)},
