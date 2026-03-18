@@ -6983,6 +6983,33 @@ public:
                 arr_descr->reset_array_details(
                     desc_array_type, array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
                 ptr_loads = ptr_loads_copy;
+                // For bind(C) functions with bindc_name, the incoming
+                // descriptor uses CFI byte strides. Convert them to
+                // LFortran's internal element strides by dividing by
+                // the element size.
+                ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(x);
+                if (fn_type->m_abi == ASR::abiType::BindC &&
+                    fn_type->m_bindc_name) {
+                    llvm::DataLayout dl(module->getDataLayout());
+                    uint64_t el_size = dl.getTypeAllocSize(data_type);
+                    if (el_size > 1) {
+                        llvm::Value* el_size_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(64, el_size));
+                        llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
+                        llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            desc_array_type, array_desc);
+                        for (int r = 0; r < n_dims; r++) {
+                            llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
+                                dim_type, dim_arr, r);
+                            llvm::Value* stride_ptr = llvm_utils->create_gep2(
+                                dim_type, dim_ptr, 0);
+                            llvm::Value* stride = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt64Ty(context), stride_ptr);
+                            stride = builder->CreateSDiv(stride, el_size_val);
+                            builder->CreateStore(stride, stride_ptr);
+                        }
+                    }
+                }
                 llvm_symtab[h] = array_desc;
             }
         }
