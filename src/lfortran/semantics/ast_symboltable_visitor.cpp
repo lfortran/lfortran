@@ -2892,30 +2892,35 @@ public:
             }
 
             // Raise warning for user if variable declaration is calling its function scope recursively.
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
-            if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
-                diag.add(diag::Diagnostic(
-                    "Variable declaration is calling its function scope recursively",
-                    diag::Level::Warning, diag::Stage::Semantic, {
-                        diag::Label("", {func_call->base.base.loc})}));                
-            }
+            if (expr_holder && *expr_holder && ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
+                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
 
-            // Add called function as dependency to Variable node.
-            SetChar var_dep;var_dep.reserve(al,0);
+                if (((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name) {
+                    diag.add(diag::Diagnostic(
+                        "Recursive function call detected in variable declaration",
+                        diag::Level::Warning,
+                        diag::Stage::Semantic,
+                        {diag::Label("", {func_call->base.base.loc})},
+                        diag::WarningID::Other // Tagged for silencing
+                    ));
+                }
+
+                // Add called function as dependency to the owning-function's scope
+                // ExternalSymbol calls are not tracked as function dependencies
+                // (consistent with how the verify pass collects dependencies)
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
+                    SetChar func_dep;
+                    func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+                    func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+                    func->m_dependencies = func_dep.p;
+                    func->n_dependencies = func_dep.n;
+                }
+            }
+            SetChar var_dep; 
+            var_dep.reserve(al, 0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
-
-            // Add called function as dependency to the owning-function's scope
-            // ExternalSymbol calls are not tracked as function dependencies
-            // (consistent with how the verify pass collects dependencies)
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
-                SetChar func_dep;
-                func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
-                func->m_dependencies = func_dep.p;
-                func->n_dependencies = func_dep.n;
-            }
 
             // Revert current scope
             current_scope = current_scope_copy;
@@ -3283,11 +3288,12 @@ public:
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg = to_lower(x.m_namelist[i]);
             if (!current_scope->get_symbol(arg)) {
-                diag.add(Diagnostic(
+                diag.add(diag::Diagnostic(
                     "Parameter " + arg + " is unused in " + x.m_name,
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {x.base.base.loc})
-                    }
+                    diag::Level::Warning, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})
+                    },
+                    diag::WarningID::UnusedVariable // <--- ADD THIS LINE
                 ));
             }
             current_procedure_args.push_back(arg);
