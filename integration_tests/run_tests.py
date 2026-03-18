@@ -21,6 +21,7 @@ nofast_llvm16 = "no"
 separate_compilation = "no"
 use_ninja = False
 user_specified_threads = False
+verbose = False
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -120,8 +121,10 @@ def run_test(backend, std, test_pattern=None):
             j_flag = ""
         else:
             j_flag = f" -j{NO_OF_THREADS}"
+        v_flag = " -v" if verbose and use_ninja else ""
+        v_env = "VERBOSE=1 " if verbose and not use_ninja else ""
         for test_name in test_names:
-            run_cmd(f"{build_cmd}{j_flag} {test_name}", cwd=cwd)
+            run_cmd(f"{v_env}{build_cmd}{j_flag}{v_flag} {test_name}", cwd=cwd)
     else:
         # Build all tests
         build_cmd = "ninja" if use_ninja else "make"
@@ -129,10 +132,14 @@ def run_test(backend, std, test_pattern=None):
             j_flag = ""
         else:
             j_flag = f" -j{NO_OF_THREADS}"
-        run_cmd(f"{build_cmd}{j_flag}", cwd=cwd)
+        v_flag = " -v" if verbose and use_ninja else ""
+        v_env = "VERBOSE=1 " if verbose and not use_ninja else ""
+        run_cmd(f"{v_env}{build_cmd}{j_flag}{v_flag}", cwd=cwd)
 
     # Build ctest command with optional test pattern filter
     ctest_cmd = f"ctest -j{NO_OF_THREADS} --output-on-failure"
+    if verbose:
+        ctest_cmd += " -V"
     if test_pattern:
         ctest_cmd += f" -R {test_pattern}"
     run_cmd(ctest_cmd, cwd=cwd)
@@ -192,6 +199,8 @@ def get_args():
                 help="Use Ninja build system instead of Make (faster builds)")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
+    parser.add_argument("-v", "--verbose", action='store_true',
+                help="Show compilation commands (verbose build output)")
     return parser.parse_args()
 
 def main():
@@ -202,7 +211,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads, verbose
     local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
     if os.path.isfile(local_lfortran):
         os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
@@ -220,6 +229,7 @@ def main():
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
     use_ninja = args.ninja
+    verbose = args.verbose
     test_pattern = args.test
     for backend in args.backends:
         test_backend(backend, args.std, test_pattern)
