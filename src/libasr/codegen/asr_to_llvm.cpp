@@ -17615,8 +17615,15 @@ public:
                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, orig_arg->base.base.loc, &orig_arg->base)),
                     orig_arg->m_type, module.get());
-                llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, llvm_orig_arg_type);
-                args.push_back(llvm_arg);
+                if (x_abi == ASR::abiType::BindC) {
+                    // Per Fortran standard, absent optional bind(C) args
+                    // are passed as NULL pointers.
+                    args.push_back(llvm::ConstantPointerNull::get(
+                        llvm_orig_arg_type->getPointerTo()));
+                } else {
+                    llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, llvm_orig_arg_type);
+                    args.push_back(llvm_arg);
+                }
                 continue ;
             }
 

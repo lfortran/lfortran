@@ -216,6 +216,11 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         bool is_optional_argument_present(ASR::Function_t* s) {
+            // bind(C) functions use NULL for absent optional arguments
+            // per the Fortran standard; no is_present parameter needed.
+            if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                return false;
+            }
             for( size_t i = 0; i < s->n_args; i++ ) {
                 ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(s->m_args[i])->m_v;
                 if( is_presence_optional(arg_sym) ) {
