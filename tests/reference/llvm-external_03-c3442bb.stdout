@@ -16,7 +16,7 @@ define void @a(float (float*)* %f) {
   %1 = call float %f(float* %call_arg_value)
   store float %1, float* %r, align 4
   %2 = alloca i64, align 8
-  %3 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, float* %r)
+  %3 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, float* %r)
   %4 = load i64, i64* %2, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -62,13 +62,13 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
 
 declare float @f.1(float*)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
+
+declare i8* @_lfortran_get_default_allocator()
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
-
-declare i8* @_lfortran_get_default_allocator()
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -81,9 +81,12 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_external_03
 
 FINALIZE_SYMTABLE_external_03:                    ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()

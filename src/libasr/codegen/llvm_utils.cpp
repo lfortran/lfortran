@@ -321,7 +321,8 @@ namespace LCompilers {
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
+                    {llvm::Type::getInt8Ty(context)->getPointerTo(), // allocator
+                    llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt64Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
@@ -330,7 +331,10 @@ namespace LCompilers {
                     llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", module);
         }
 
-        auto ret = builder->CreateCall(fn_printf, args);
+        std::vector<llvm::Value*> full_args;
+        full_args.push_back(get_allocator(module));
+        full_args.insert(full_args.end(), args.begin(), args.end());
+        auto ret = builder->CreateCall(fn_printf, full_args);
         stringFormat_return.set(ret);
         return ret;
     }

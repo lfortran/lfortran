@@ -387,7 +387,7 @@ else:                                             ; preds = %.entry
   %21 = call i32 @_lcompilers_index_str1(%string_descriptor* %mystring, %string_descriptor* %teststring, i32* %call_arg_value, i32* %call_arg_value1)
   %22 = alloca i32, align 4
   store i32 %21, i32* %22, align 4
-  %23 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %20, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %22)
+  %23 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %20, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %22)
   %24 = load i64, i64* %20, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -430,6 +430,7 @@ Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_m
   %35 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
   %36 = load i8*, i8** %35, align 8
   call void @_lfortran_free_alloc(i8* %2, i8* %36)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -443,8 +444,10 @@ declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()

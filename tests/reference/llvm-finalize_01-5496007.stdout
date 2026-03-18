@@ -74,7 +74,7 @@ then:                                             ; preds = %merge_allocated
   %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %25, i32 0, i32 3
   store i32 1, i32* %30, align 4
   %31 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %16, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %31, i32 1, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %31, i32 1, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -129,7 +129,7 @@ declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
+declare void @_lcompilers_runtime_error(i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
 
 declare void @exit(i32)
 
@@ -241,6 +241,7 @@ Finalize_Variable_str:                            ; preds = %Finalize_Variable_a
   %19 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %20 = load i8*, i8** %19, align 8
   call void @_lfortran_free_alloc(i8* %2, i8* %20)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -393,5 +394,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_internal_alloc_finalize()
 
 attributes #0 = { nounwind }

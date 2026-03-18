@@ -92,6 +92,7 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void);
 #define ALLOCATOR_DEALLOC(a, ptr)         ((a)->dealloc((a)->context, (ptr)))
 
 LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
+LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
@@ -429,7 +430,7 @@ typedef struct Label {
     uint32_t n_spans;
 } Label;
 
-LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...);
+LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...);
 
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
@@ -445,7 +446,7 @@ LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, co
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size);
 void lfortran_error(const char *message);
 

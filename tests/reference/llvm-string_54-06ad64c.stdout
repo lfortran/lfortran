@@ -58,6 +58,7 @@ Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_s
   %7 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
   call void @_lfortran_free_alloc(i8* %2, i8* %8)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -70,3 +71,5 @@ declare i8* @_lfortran_get_default_allocator()
 declare void @_lpython_free_argv()
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_internal_alloc_finalize()

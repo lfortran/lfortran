@@ -5429,6 +5429,18 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         free_heap_fixed_size_arrays();
+        {
+            llvm::Function *fn_finalize = module->getFunction(
+                "_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {}, false);
+                fn_finalize = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage,
+                    "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(fn_finalize, {});
+        }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -17469,6 +17481,28 @@ public:
         print_error(context, *module, *builder, args);
 
         /* EXIT WITH CODE */
+        {
+            {
+                llvm::Function *fn_free_argv = module->getFunction("_lpython_free_argv");
+                if (!fn_free_argv) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {}, false);
+                    fn_free_argv = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, "_lpython_free_argv", module.get());
+                }
+                builder->CreateCall(fn_free_argv, {});
+            }
+            llvm::Function *fn_finalize = module->getFunction(
+                "_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {}, false);
+                fn_finalize = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage,
+                    "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(fn_finalize, {});
+        }
         if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
             this->visit_expr(*stop_code);
             exit_code = tmp;
