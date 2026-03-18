@@ -328,9 +328,8 @@ contains
         ! present argument
         if (c_is_present(arr) /= 1) error stop "FAIL: present"
 
-        ! TODO: absent optional test requires bind(C) optional support
-        ! (skipping is_present extra parameter for bind(C) calls)
-        ! call check_absent()
+        ! absent optional argument
+        if (c_is_present() /= 0) error stop "FAIL: absent"
     end subroutine
 
 end program
