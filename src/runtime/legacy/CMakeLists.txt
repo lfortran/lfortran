@@ -1,6 +1,5 @@
 set(SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libasr/runtime/lfortran_intrinsics.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libasr/runtime/mem_debug.c
 )
 
 if(WIN32)

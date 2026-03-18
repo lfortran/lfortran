@@ -210,7 +210,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             )
             add_executable(${name}
                 ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/lfortran_intrinsics.c
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/mem_debug.c
                 ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/cuda_cpu_runtime.c
                 ${c_file}
             )
