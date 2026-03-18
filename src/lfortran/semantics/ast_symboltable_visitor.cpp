@@ -2535,7 +2535,13 @@ public:
             // First pass: process only kind/len parameter declarations
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) != kind_len_decl_indices.end()) {
-                    this->visit_unit_decl2(*x.m_items[i]);
+                    try{
+                        this->visit_unit_decl2(*x.m_items[i]);
+                    } catch (const SemanticAbort &e) {
+                        current_scope = parent_scope_pdt;
+                        is_derived_type = false;
+                        throw;
+                    }
                 }
             }
 
@@ -2574,11 +2580,23 @@ public:
             // Second pass: process remaining (non-kind/len) declarations
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
-                    this->visit_unit_decl2(*x.m_items[i]);
+                    try {
+                        this->visit_unit_decl2(*x.m_items[i]);
+                    } catch (const SemanticAbort&) {
+                        current_scope = parent_scope_pdt;
+                        is_derived_type = false;
+                        throw;
+                    }                    
                 }
             }
             for (size_t i = 0; i < x.n_contains; i++) {
-                visit_procedure_decl(*x.m_contains[i]);
+                try { 
+                    visit_procedure_decl(*x.m_contains[i]);
+                } catch (const SemanticAbort&) {
+                    current_scope = parent_scope_pdt;
+                    is_derived_type = false;
+                    throw;
+                }
             }
 
             is_derived_type = false;
