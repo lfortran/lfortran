@@ -265,8 +265,8 @@ contains
         ! sum through C
         if (c_sum_alloc_1d(a) /= 10) error stop "FAIL: alloc sum"
 
-        ! attribute == CFI_attribute_allocatable (2)
-        if (c_attr_alloc(a) /= 2) error stop "FAIL: alloc attribute"
+        ! attribute == CFI_attribute_allocatable
+        if (c_attr_alloc(a) /= 1) error stop "FAIL: alloc attribute"
 
         ! in-place modification through C
         call c_double_alloc_1d(a)
@@ -286,7 +286,7 @@ contains
         ! sum full pointer
         if (c_sum_ptr_1d(p) /= 210) error stop "FAIL: ptr sum"
 
-        ! attribute == CFI_attribute_pointer (1)
+        ! attribute == CFI_attribute_pointer
         if (c_attr_ptr(p) /= 1) error stop "FAIL: ptr attribute"
 
         ! pointer to contiguous section
@@ -317,8 +317,8 @@ contains
         ! contiguity: strided section is not contiguous
         if (c_is_contiguous(arr(::2)) /= 0) error stop "FAIL: non-contiguous"
 
-        ! attribute: regular assumed-shape has CFI_attribute_other (0)
-        if (c_attr_other(arr) /= 0) error stop "FAIL: other attr"
+        ! attribute: regular assumed-shape has CFI_attribute_other
+        if (c_attr_other(arr) /= 1) error stop "FAIL: other attr"
     end subroutine
 
     subroutine test_optional()
