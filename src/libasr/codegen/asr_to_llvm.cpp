@@ -18250,7 +18250,16 @@ public:
             // For bind(C) calls with DescriptorArray args, convert the
             // descriptor from LFortran's internal format (element strides)
             // to CFI format (byte strides) and set elem_len.
+            // Only apply for explicit bind(C) functions (with bindc_name),
+            // not implicit interface functions which use BindC ABI internally
+            // but expect LFortran's descriptor format.
+            ASR::FunctionType_t* callee_fn_type = nullptr;
+            if (func_subrout->type == ASR::symbolType::Function) {
+                callee_fn_type = ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(func_subrout));
+            }
             if (orig_arg && x_abi == ASR::abiType::BindC &&
+                callee_fn_type && callee_fn_type->m_bindc_name &&
                 ASRUtils::is_array(orig_arg->m_type)) {
                 ASR::array_physical_typeType phys_type =
                     ASRUtils::extract_physical_type(orig_arg->m_type);
