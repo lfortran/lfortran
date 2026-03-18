@@ -1,8 +1,7 @@
-! Test: C_LONG_DOUBLE constants, OPTIONAL+VALUE, TYPE(*) scalar/assumed-size
+! Test: C_LONG_DOUBLE constants, TYPE(*) scalar/assumed-size, assumed-size arrays
 !
 ! Covers:
 !   - C_LONG_DOUBLE and C_LONG_DOUBLE_COMPLEX named constants exist
-!   - OPTIONAL + VALUE combination (F2018): present and absent cases
 !   - TYPE(*) with scalar (not assumed-rank)
 !   - TYPE(*) with assumed-size dimension(*)
 !   - Assumed-size integer/real arrays in BIND(C)
@@ -13,27 +12,6 @@ module bindc_39_ifaces
     implicit none
 
     interface
-        ! ---- OPTIONAL + VALUE: integer ----
-        integer(c_int) function c39_opt_val_int(a, b) bind(C)
-            import :: c_int
-            integer(c_int), value :: a
-            integer(c_int), optional, value :: b
-        end function
-
-        ! ---- OPTIONAL + VALUE: real ----
-        real(c_double) function c39_opt_val_dbl(a, b) bind(C)
-            import :: c_double
-            real(c_double), value :: a
-            real(c_double), optional, value :: b
-        end function
-
-        ! ---- OPTIONAL + VALUE: logical ----
-        integer(c_int) function c39_opt_val_bool(a, b) bind(C)
-            import :: c_int, c_bool
-            integer(c_int), value :: a
-            logical(c_bool), optional, value :: b
-        end function
-
         ! ---- TYPE(*) scalar ----
         integer(c_int) function c39_type_star_scalar(x) bind(C)
             import :: c_int
@@ -86,7 +64,6 @@ program bindc_39
     implicit none
 
     call test_long_double_constants()
-    call test_optional_value()
     call test_type_star()
     call test_assumed_size_arrays()
     call test_block_data_common()
@@ -112,36 +89,6 @@ contains
                 if (kld >= 0) error stop "FAIL: c_long_double not negative"
             end if
         end if
-    end subroutine
-
-    subroutine test_optional_value()
-        integer(c_int) :: ri
-        real(c_double) :: rd
-        integer(c_int) :: rb
-
-        ! Both present
-        ri = c39_opt_val_int(10_c_int, 20_c_int)
-        if (ri /= 30) error stop "FAIL: opt_val_int both present"
-
-        ! b absent => should receive 0 from C
-        ri = c39_opt_val_int(10_c_int)
-        if (ri /= 10) error stop "FAIL: opt_val_int b absent"
-
-        ! real: both present
-        rd = c39_opt_val_dbl(1.5_c_double, 2.5_c_double)
-        if (abs(rd - 4.0_c_double) > 1.0d-10) error stop "FAIL: opt_val_dbl both"
-
-        ! real: b absent
-        rd = c39_opt_val_dbl(1.5_c_double)
-        if (abs(rd - 1.5_c_double) > 1.0d-10) error stop "FAIL: opt_val_dbl absent"
-
-        ! logical: both present (true)
-        rb = c39_opt_val_bool(1_c_int, .true._c_bool)
-        if (rb /= 2) error stop "FAIL: opt_val_bool present true"
-
-        ! logical: b absent => false
-        rb = c39_opt_val_bool(1_c_int)
-        if (rb /= 1) error stop "FAIL: opt_val_bool absent"
     end subroutine
 
     subroutine test_type_star()

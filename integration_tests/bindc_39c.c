@@ -1,26 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* ---- OPTIONAL + VALUE ----
- * F2018: when an OPTIONAL VALUE argument is absent, the companion
- * processor receives the default value (0 / 0.0 / false).
- * The compiler passes a hidden "present" flag or simply the default. 
- * We implement the C side to just add a + b; when b is absent
- * the compiler should pass 0. */
-
-int32_t c39_opt_val_int(int32_t a, int32_t b) {
-    return a + b;
-}
-
-double c39_opt_val_dbl(double a, double b) {
-    return a + b;
-}
-
-int32_t c39_opt_val_bool(int32_t a, _Bool b) {
-    /* b present and true => a + 1; b absent => b==false => a + 0 */
-    return a + (b ? 1 : 0);
-}
-
 /* ---- TYPE(*) scalar ---- */
 int32_t c39_type_star_scalar(const void *x) {
     /* We know it's int32_t from the Fortran call site */

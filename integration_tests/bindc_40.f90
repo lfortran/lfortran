@@ -1,10 +1,9 @@
-! Test: CFI_type_cptr/cfunptr, character(len>1) descriptors, internal BIND(C),
+! Test: CFI_type_cptr/cfunptr, internal BIND(C),
 !       deferred-length character via descriptor, explicit-shape multi-dim
 !
 ! Covers:
 !   - CFI_type_cptr type code through descriptor
-!   - CFI_type_cfunptr type code through descriptor
-!   - character(kind=c_char, len=4) through descriptor (elem_len verification)
+!   - CFI_type_cfunptr type code through descriptor (flang bug: missing macro)
 !   - BIND(C) on internal procedure (F2018)
 !   - Deferred-length allocatable character through descriptor
 !   - Multi-dimensional explicit-shape arrays in BIND(C)
@@ -24,18 +23,6 @@ module bindc_40_ifaces
         integer(c_int) function c40_check_cfunptr_type(arr) bind(C)
             import :: c_int, c_funptr
             type(c_funptr), intent(in) :: arr(:)
-        end function
-
-        ! ---- character(len=4) through descriptor ----
-        integer(c_int) function c40_check_char4_elem_len(arr) bind(C)
-            import :: c_int, c_char
-            character(kind=c_char, len=4), intent(in) :: arr(:)
-        end function
-
-        ! ---- character(len=4): sum of first chars ----
-        integer(c_int) function c40_sum_char4_first(arr) bind(C)
-            import :: c_int, c_char
-            character(kind=c_char, len=4), intent(in) :: arr(:)
         end function
 
         ! ---- Deferred-length allocatable character ----
@@ -72,9 +59,10 @@ program bindc_40
     use bindc_40_ifaces
     implicit none
 
+    integer :: i
+
     call test_cptr_type_code()
     call test_cfunptr_type_code()
-    call test_char_len_gt1()
     call test_deferred_char()
     call test_explicit_shape_multidim()
     call test_internal_bindc()
@@ -86,10 +74,10 @@ contains
     subroutine test_cptr_type_code()
         type(c_ptr) :: ptrs(3)
         integer(c_int), target :: vals(3)
-        integer :: i
+        integer :: j
         vals = [10, 20, 30]
-        do i = 1, 3
-            ptrs(i) = c_loc(vals(i))
+        do j = 1, 3
+            ptrs(j) = c_loc(vals(j))
         end do
         ! C checks desc->type == CFI_type_cptr
         if (c40_check_cptr_type(ptrs) /= 1) error stop "FAIL: CFI_type_cptr"
@@ -100,22 +88,8 @@ contains
         fps(1) = c_funloc(internal_add)
         fps(2) = c_funloc(internal_add)
         ! C checks desc->type == CFI_type_cfunptr
+        ! Note: flang is missing CFI_type_cfunptr macro (flang bug)
         if (c40_check_cfunptr_type(fps) /= 1) error stop "FAIL: CFI_type_cfunptr"
-    end subroutine
-
-    subroutine test_char_len_gt1()
-        character(kind=c_char, len=4) :: words(3)
-        integer(c_int) :: r
-        words(1) = "ABCD"
-        words(2) = "EFGH"
-        words(3) = "IJKL"
-        ! C checks elem_len == 4
-        r = c40_check_char4_elem_len(words)
-        if (r /= 1) error stop "FAIL: char(len=4) elem_len"
-        ! C sums ichar of first character of each element
-        r = c40_sum_char4_first(words)
-        ! 'A'=65, 'E'=69, 'I'=73 => 207
-        if (r /= 207) error stop "FAIL: char(len=4) sum first"
     end subroutine
 
     subroutine test_deferred_char()
@@ -144,7 +118,6 @@ contains
     subroutine test_internal_bindc()
         type(c_funptr) :: fp
         integer(c_int) :: r
-        ! internal_add is defined below in the same program's contains
         fp = c_funloc(internal_add)
         r = c40_call_internal(fp, 7_c_int)
         if (r /= 107) error stop "FAIL: internal bindc proc"

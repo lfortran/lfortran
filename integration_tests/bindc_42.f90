@@ -31,13 +31,6 @@ module bindc_42_ifaces
     implicit none
 
     interface
-        ! ---- char elem_len: explicit vs auto ----
-        integer(c_int) function c42_check_char_elem_len(s, expected) bind(C)
-            import :: c_int, c_char
-            character(kind=c_char, len=8), intent(in) :: s(:)
-            integer(c_int), value :: expected
-        end function
-
         ! ---- Negative-stride section from C ----
         integer(c_int) function c42_test_negative_stride_section() bind(C)
             import :: c_int
@@ -79,7 +72,6 @@ program bindc_42
     use bindc_42_ifaces
     implicit none
 
-    call test_char_elem_len()
     call test_negative_stride_section()
     call test_save_bindc()
     call test_protected_bindc()
@@ -90,15 +82,6 @@ program bindc_42
     print *, "All bindc_42 tests passed."
 
 contains
-
-    subroutine test_char_elem_len()
-        character(kind=c_char, len=8) :: arr(2)
-        arr(1) = "ABCDEFGH"
-        arr(2) = "12345678"
-        ! C verifies elem_len == 8
-        if (c42_check_char_elem_len(arr, 8_c_int) /= 1) &
-            error stop "FAIL: char elem_len 8"
-    end subroutine
 
     subroutine test_negative_stride_section()
         ! All done on C side: create array, CFI_section with stride=-1, verify

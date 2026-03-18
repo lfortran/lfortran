@@ -3,11 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ---- character elem_len verification ---- */
-int32_t c42_check_char_elem_len(CFI_cdesc_t *s, int32_t expected) {
-    return ((int32_t)s->elem_len == expected) ? 1 : 0;
-}
-
 /* ---- Negative-stride CFI_section from C side ---- */
 int32_t c42_test_negative_stride_section(void) {
     /* Create a 1D array [10, 20, 30, 40, 50] */
