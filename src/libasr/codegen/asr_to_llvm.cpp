@@ -17618,8 +17618,15 @@ public:
                 if (x_abi == ASR::abiType::BindC) {
                     // Per Fortran standard, absent optional bind(C) args
                     // are passed as NULL pointers.
+                    // For allocatable/pointer parameters the LLVM type is
+                    // already a pointer (to the descriptor struct), so
+                    // don't add an extra pointer level.
+                    llvm::PointerType* null_ptr_type =
+                        llvm_orig_arg_type->isPointerTy()
+                        ? llvm::cast<llvm::PointerType>(llvm_orig_arg_type)
+                        : llvm_orig_arg_type->getPointerTo();
                     args.push_back(llvm::ConstantPointerNull::get(
-                        llvm_orig_arg_type->getPointerTo()));
+                        null_ptr_type));
                 } else {
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, llvm_orig_arg_type);
                     args.push_back(llvm_arg);
