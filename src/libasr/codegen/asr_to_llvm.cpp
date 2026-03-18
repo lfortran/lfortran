@@ -9040,8 +9040,24 @@ public:
                         module.get());
                     llvm::Value* src_as_elem_ptr = builder->CreateBitCast(
                         source_alloca, elem_type->getPointerTo());
+
+                    // Map target index to zero-based source chunk index using
+                    // the target array lower bound (not always 1).
+                    llvm::Value* lower_bound = llvm::ConstantInt::get(
+                        idx->getType(), 1);
+                    ASR::dimension_t* target_dims = nullptr;
+                    size_t n_target_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(ai->m_v), target_dims);
+                    if (n_target_dims > 0 && target_dims[0].m_start) {
+                        int ptr_loads_copy = ptr_loads;
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(
+                            *ASRUtils::expr_type(target_dims[0].m_start));
+                        this->visit_expr_wrapper(target_dims[0].m_start, true);
+                        ptr_loads = ptr_loads_copy;
+                        lower_bound = builder->CreateSExtOrTrunc(tmp, idx->getType());
+                    }
                     llvm::Value* zero_based = builder->CreateSub(
-                        idx, llvm::ConstantInt::get(idx->getType(), 1));
+                        idx, lower_bound);
                     zero_based = builder->CreateZExtOrTrunc(
                         zero_based, llvm::Type::getInt32Ty(context));
                     llvm::Value* elem_ptr = builder->CreateGEP(
