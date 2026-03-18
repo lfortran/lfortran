@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "mem_debug.h"
 #include "hashtable.h"
 #include <math.h>
 #include <complex.h>
@@ -94,6 +93,21 @@ void* dbg_malloc(void *context, int64_t size) {
     return ptr;
 
 }
+void dbg_free(void *context, void *ptr) {
+    (void)context;
+    if (!ptr) return;
+    if(!mem_dbg_hashTable.buckets){
+        fprintf(stderr, "Error: at dbg_free -- hastable not initialized\n");
+        exit(1);
+    }
+    Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
+    if (!found) {
+        fprintf(stderr, "Error: at dbg_free -- ptr not found\n");
+        exit(1);
+    }
+    free(ptr);
+    mem_debugger_remove(&mem_dbg_hashTable, ptr);
+}
 
 void* dbg_calloc(void *context, int64_t nmemb, int64_t size) {
     (void)context;
@@ -145,21 +159,6 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
 
 
 
-void dbg_free(void *context, void *ptr) {
-    (void)context;
-    if (!ptr) return;
-    if(!mem_dbg_hashTable.buckets){
-        fprintf(stderr, "Error: at dbg_free -- hastable not initialized\n");
-        exit(1);
-    }
-    Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
-    if (!found) {
-        fprintf(stderr, "Error: at dbg_free -- ptr not found\n");
-        exit(1);
-    }
-    free(ptr);
-    mem_debugger_remove(&mem_dbg_hashTable, ptr);
-}
 
 // Called to report any leaks
 void dbg_report() {
