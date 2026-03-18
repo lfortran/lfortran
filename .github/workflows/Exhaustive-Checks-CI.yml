@@ -423,7 +423,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk

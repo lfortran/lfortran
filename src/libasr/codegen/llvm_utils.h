@@ -214,8 +214,12 @@ class ASRToLLVMVisitor;
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
+        llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
+        llvm::Value* lfortran_realloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* ptr, llvm::Value* arg_size);
         llvm::Value* lfortran_calloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size);
         static inline bool is_llvm_struct(ASR::ttype_t* asr_type) {
@@ -281,6 +285,10 @@ class ASRToLLVMVisitor;
             llvm::Type* dim_descr_type_; // dimension_descriptor type (used with descriptorArrays)
             llvm::FunctionType* struct_copy_functype;
 
+            // Allocator support: the allocator is an opaque struct pointer
+            // passed to runtime functions for compiler-controlled allocation.
+            llvm::Value* allocator_instance = nullptr; // cached global allocator ptr
+
 #if LLVM_VERSION_MAJOR >= 17
             llvm::PointerType* i8_ptr = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
 #else
@@ -302,6 +310,11 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free(llvm::Value* ptr);
             // lfortran_free_nocheck is a variant of lfortran_free that does not check for null pointers before freeing.
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
+            llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
+
+            // Get or create the cached global allocator pointer
+            llvm::Value* get_allocator(llvm::Module* mod);
+
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
@@ -383,14 +396,15 @@ class ASRToLLVMVisitor;
                             span_type->getPointerTo(),
                             llvm::Type::getInt32Ty(context),
                         }));
-                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf");
+                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf_alloc");
                         if (!lcompilers_snprintf_fn) {
                             llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf", module);
+                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf_alloc", module);
                         }
 
                         // Allocate and populate labels and spans
@@ -422,6 +436,7 @@ class ASRToLLVMVisitor;
                             }
 
                             std::vector<llvm::Value*> snprintf_args;
+                            snprintf_args.push_back(get_allocator(module));
                             snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
                             snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
                             llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
@@ -444,13 +459,14 @@ class ASRToLLVMVisitor;
                         if (!print_error_fn) {
                             llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context),
-                                {label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             print_error_fn = llvm::Function::Create(error_fn_type,
                                 llvm::Function::ExternalLinkage, "_lcompilers_runtime_error", module);
                         }
 
-                        std::vector<llvm::Value*> vec = {LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
+                        std::vector<llvm::Value*> vec = {get_allocator(module), LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
                         builder->CreateCall(print_error_fn, vec);
 
                         llvm::Function* exit_fn = module->getFunction("exit");

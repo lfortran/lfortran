@@ -7,7 +7,7 @@ import os
 # Initialization
 NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
-                      'gfortran', 'llvmImplicit', 'llvmStackArray', 'llvm_integer_8',
+                      'gfortran', 'flang', 'llvmImplicit', 'llvmStackArray', 'llvm_integer_8',
                       'llvm_infer', 'fortran', 'c_nopragma', 'llvm_nopragma',
                       'llvm_wasm', 'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule',
                       'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc',
@@ -44,7 +44,7 @@ def run_test(backend, std, test_pattern=None):
 
     # Skip CMake's Fortran compiler detection for lfortran, since it tries
     # `-c` which requires the LLVM backend (not available for all backends).
-    if backend != "gfortran":
+    if backend not in ("gfortran", "flang"):
         skip_fc_detection = ("-DCMAKE_Fortran_COMPILER_WORKS=1 "
                              "-DCMAKE_Fortran_COMPILER_FORCED=1")
     else:
@@ -64,6 +64,15 @@ def run_test(backend, std, test_pattern=None):
     common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
+                cwd=cwd)
+    elif backend == "flang":
+        # Resolve flang to find its LLVM install prefix, then use the
+        # matching clang as CC so it can find ISO_Fortran_binding.h.
+        import shutil, pathlib
+        flang_path = pathlib.Path(shutil.which("flang")).resolve()
+        flang_prefix = flang_path.parent.parent
+        clang_bin = flang_prefix / "bin" / "clang"
+        run_cmd(f"FC=flang CC={clang_bin} cmake -DLFORTRAN_BACKEND=flang" + common,
                 cwd=cwd)
     elif backend == "cpp":
         run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "

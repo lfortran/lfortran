@@ -1662,6 +1662,7 @@ public:
         {"nint", IntrinsicSignature({"a", "kind"}, 1, 2)},
         {"anint", IntrinsicSignature({"a", "kind"}, 1, 2)},
         {"atan2", IntrinsicSignature({"y", "x"}, 2, 2)},
+        {"atan2d", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"shape", IntrinsicSignature({"source", "kind"}, 1, 2)},
         {"mod", IntrinsicSignature({"a", "p"}, 2, 2)},
         {"repeat", IntrinsicSignature({"string", "ncopies"}, 2, 2)},
@@ -1934,6 +1935,11 @@ public:
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     // Maps COMMON block name to total byte size (for validation)
     std::map<std::string, size_t> common_block_byte_sizes;
+    // Deferred size validation: maps COMMON block name to {canonical_size, location}
+    // Used when a block declared in a previous program unit is re-declared across
+    // multiple COMMON statements in the current unit; check is deferred until all
+    // statements are processed.
+    std::map<std::string, std::pair<size_t, Location>> common_block_deferred_size_check;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
     // Maps variable hash to byte offset within COMMON block storage
     // (needed for union-based access when layouts differ across program units)
@@ -3387,9 +3393,9 @@ public:
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
-                                          size_t &value_index) {
+                                          size_t &value_index,
+                                          Vec<ASR::expr_t*>* collected_values = nullptr) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
-
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
         ASR::expr_t* loop_increment_expr = implied_do_loop->m_increment;
@@ -3437,6 +3443,14 @@ public:
         ASR::symbol_t* loop_var_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(implied_do_loop->m_var)->m_v);
 
+        //collect values when in top level module scope instead of runtime assignments for data stmts
+        bool top_level_module_scope = (current_module != nullptr && collected_values == nullptr);
+        Vec<ASR::expr_t*> local_collected_values;
+        if (top_level_module_scope) {
+            local_collected_values.reserve(al, data_stmt_set->n_value);
+            collected_values = &local_collected_values;
+        }
+
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
             for (size_t value_index_in_loop = 0; value_index_in_loop < implied_do_loop->n_values; value_index_in_loop++) {
@@ -3446,7 +3460,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -3457,7 +3471,6 @@ public:
                                                         loop_var, integer_type);
                         }
                     }
-                    ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
                     if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type))
                         && (value_index<(data_stmt_set->n_value)) &&
@@ -3467,12 +3480,19 @@ public:
                     this->visit_expr(*data_stmt_set->m_value[value_index++]);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     current_variable_type_ = temp_current_variable_type_;
-                    ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                    ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                        target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
-                                                                 );
-                    LCOMPILERS_ASSERT(current_body != nullptr)
-                    current_body->push_back(al, assignStatement);
+                    if (collected_values) {
+                        ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                        if (!expression_value) expression_value = value;
+                        collected_values->push_back(al, expression_value);
+                    } else {
+                        ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+                        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
+                                                                     );
+                        LCOMPILERS_ASSERT(current_body != nullptr)
+                        current_body->push_back(al, assignStatement);
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Unsupported expression type in DATA implied do loop",
@@ -3480,6 +3500,49 @@ public:
                             Label("", {duplicatedExpr->base.loc})
                         }));
                     throw SemanticAbort();
+                }
+            }
+        }
+
+        //In module scope, set the collected values directly on the array variable as an ArrayConstructor
+        if (top_level_module_scope && local_collected_values.size() > 0) {
+            ASR::expr_t* first_val = implied_do_loop->m_values[0];
+            while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
+                first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
+                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
+                ASR::Variable_t* v2 = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                    v2 = ASR::down_cast<ASR::Variable_t>(
+                        ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
+                }
+                if (v2) {
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, data_stmt.base.base.loc,
+                                            compiler_options.po.default_integer_kind));
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = data_stmt.base.base.loc;
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, data_stmt.base.base.loc, 1, int_type));
+                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, data_stmt.base.base.loc, (int64_t)local_collected_values.size(), int_type));
+                    dims.push_back(al, dim);
+                    ASR::ttype_t* arr_type = ASRUtils::duplicate_type(al, v2->m_type, &dims);
+                    ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
+                        al, data_stmt.base.base.loc, local_collected_values.p,
+                        local_collected_values.size(), arr_type,
+                        ASR::arraystorageType::ColMajor);
+                    v2->m_value = ASRUtils::EXPR(arr_constructor);
+                    v2->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
+                    SetChar var_deps_vec;
+                    var_deps_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                        v2->m_symbolic_value, v2->m_value);
+                    v2->m_dependencies = var_deps_vec.p;
+                    v2->n_dependencies = var_deps_vec.size();
                 }
             }
         }
@@ -3806,8 +3869,26 @@ public:
     }
 
     void mark_common_blocks_as_declared() {
+        constexpr char BLANK_COMMON_BLOCK[] = "blank#block";
         for(auto &it: common_block_dictionary) {
             if(it.second.first) {
+                // Validate deferred size checks for blocks re-declared in this scope
+                auto deferred_it = common_block_deferred_size_check.find(it.first);
+                if (deferred_it != common_block_deferred_size_check.end()) {
+                    size_t canonical_size = deferred_it->second.first;
+                    size_t current_size = common_block_byte_sizes[it.first];
+                    if (current_size != canonical_size && it.first != BLANK_COMMON_BLOCK) {
+                        diag.add(Diagnostic(
+                            "COMMON block storage size mismatch: this declaration has " +
+                            std::to_string(current_size) + " bytes but previous declaration has " +
+                            std::to_string(canonical_size) + " bytes",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {deferred_it->second.second})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    common_block_deferred_size_check.erase(deferred_it);
+                }
                 it.second.first = false;
             }
         }
@@ -3981,10 +4062,17 @@ public:
 		    /* The block has already been declared in a different program unit.
 		       COMMON blocks use storage association, so different layouts are
 		       allowed as long as the total byte size matches.
-		       We track byte offsets for each variable in this declaration. */
-		    size_t canonical_size = common_block_byte_sizes[common_block_name];
+		       Multiple COMMON statements may contribute to the same block,
+		       so defer size validation until all statements are processed. */
 
-		    // Calculate total byte size for this declaration
+		    // Save canonical size for deferred validation (only on first encounter in this scope)
+		    if (common_block_deferred_size_check.find(common_block_name) == common_block_deferred_size_check.end()) {
+			    common_block_deferred_size_check[common_block_name] = {common_block_byte_sizes[common_block_name], x.base.base.loc};
+		    }
+
+		    // Reset byte size and start accumulating for this scope
+		    common_block_byte_sizes[common_block_name] = 0;
+
 		    size_t byte_offset = 0;
 		    for (auto const &s : blk.second) {
 			AST::expr_t* expr_ = s.m_initializer;
@@ -3998,18 +4086,10 @@ public:
 			common_variables_byte_offset[hash] = byte_offset;
 			byte_offset += get_type_byte_size(var__->m_type);
 		    }
-            constexpr char BLANK_COMMON_BLOCK[] = "blank#block";
-		    // Validate total byte size matches
-            if (byte_offset != canonical_size && common_block_name != BLANK_COMMON_BLOCK) {
-			diag.add(Diagnostic(
-				     "COMMON block storage size mismatch: this declaration has " +
-				     std::to_string(byte_offset) + " bytes but previous declaration has " +
-				     std::to_string(canonical_size) + " bytes",
-				     Level::Error, Stage::Semantic, {
-					 Label("",{x.base.base.loc})
-				     }));
-			throw SemanticAbort();
-		    }
+
+		    common_block_byte_sizes[common_block_name] = byte_offset;
+		    // Mark as accumulating so subsequent COMMON stmts for this block append
+		    cbd_it->second.first = true;
 		}
 	    }
 	}
@@ -4313,14 +4393,14 @@ public:
             body.push_back(al, item);
         }
 
-        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
-                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
-        array_constant->m_n_data = array_size * lhs_len;
         {
             ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
             LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
             ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
         }
+        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+        array_constant->m_n_data = array_size * lhs_len;
 
         return (ASR::expr_t*) array_constant;
     }
@@ -5929,7 +6009,12 @@ public:
                                             ASR::Variable_t* candidate_ptr =
                                                 ASR::down_cast<ASR::Variable_t>(
                                                     ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
-                                            if (equiv_sources.count(candidate_ptr)) {
+
+                                            bool src_has_value = candidate_src->m_value != nullptr;
+                                            bool ptr_has_value = candidate_ptr->m_value != nullptr;
+
+                                            if (equiv_sources.count(candidate_ptr) ||
+                                                (!src_has_value && ptr_has_value)) {
                                                 source_expr = asr_eq1;
                                                 pointer_expr = asr_eq2;
                                                 pointer_var = candidate_src;
@@ -6051,7 +6136,7 @@ public:
                     }
                     for (size_t i = 0; i < x.n_syms; i++) {
                         var_list.push_back(al,
-                                           current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                                           current_scope->resolve_symbol(to_lower(x.m_syms[i].m_name)));
                     }
                     ASR::asr_t* namelist = ASR::make_Namelist_t(al,
                                                attr_namelist->base.base.loc,
@@ -10504,6 +10589,23 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                        ASR::expr_t* array_expr = array_item->m_v;
+
+                        // When element types differ (e.g., complex actual vs real dummy),
+                        // skip the ArrayItem→ArraySection transformation and let
+                        // implicit_argument_casting in Call_t_body handle both the
+                        // scalar-to-array and type conversion.
+                        ASR::ttype_t* actual_elem = ASRUtils::type_get_past_array(
+                            ASRUtils::expr_type(array_expr));
+                        ASR::ttype_t* expected_elem = ASRUtils::type_get_past_array(
+                            array_arg_idx[i]);
+                        if (!ASRUtils::types_equal(actual_elem, expected_elem,
+                                arg_expr, f->m_args[i], true)) {
+                            args_with_array_section.push_back(al, args[i]);
+                            continue;
+                        }
+
                         // Legacy sequence association passes the address of the first element.
                         // For externals (implicit interface), force PointerArray to match the ABI.
                         // For known/internal procedures (including recursive self-calls), do not
@@ -10515,8 +10617,6 @@ public:
                         ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(expected_arg_type));
 
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                        ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
 
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
@@ -10699,6 +10799,23 @@ public:
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
                     f_type->m_arg_types[it.first] = new_type;
                     // visit_required = true;
+                }
+            }
+        } else {
+            // Check if a scalar (ArrayItem) is passed to an array argument
+            for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        args[i].m_value &&
+                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
+                    diag.add(diag::Diagnostic(
+                        "Passing a scalar argument to an array dummy argument is not allowed. "
+                        "Use --legacy-array-sections to enable sequence association",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("scalar argument", {args[i].m_value->base.loc}),
+                            diag::Label("array dummy argument", {f->m_args[i]->base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -13542,8 +13659,6 @@ public:
 
             for (size_t j = 0; j < args.size(); j++) {
                 if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
-                    // Current argument is an array
-
                     ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
                     ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
                     if (max_array_size != (size_t) ASRUtils::get_fixed_size_of_array(array_arg->m_type)) {
@@ -13553,9 +13668,9 @@ public:
                             diag::Label("", {loc})}));
                         throw SemanticAbort();
                     }
-                    intrinsic_args.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, array_arg, i));
+                    ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, array_arg, i);
+                    intrinsic_args.push_back(al, elem);
                 } else {
-                    // Current argument is a scalar, use as is
                     intrinsic_args.push_back(al, args[j]);
                 }
             }

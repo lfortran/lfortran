@@ -9,40 +9,58 @@ namespace LCompilers {
 
     namespace LLVMArrUtils {
 
+        static llvm::Value* get_default_allocator(llvm::LLVMContext &context,
+                llvm::Module &module, llvm::IRBuilder<> &builder) {
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            std::string func_name = "_lfortran_get_default_allocator";
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
+                fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            return builder.CreateCall(fn, {});
+        }
+
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size) {
-            std::string func_name = "_lfortran_malloc";
+            std::string func_name = "_lfortran_malloc_alloc";
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                        i8_ptr_type, {
+                            i8_ptr_type,
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
             arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
-            std::vector<llvm::Value*> args = {arg_size};
-            return builder.CreateCall(fn, args);
+            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            return builder.CreateCall(fn, {allocator, arg_size});
         }
 
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size) {
-            std::string func_name = "_lfortran_realloc";
+            std::string func_name = "_lfortran_realloc_alloc";
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        i8_ptr_type, {
+                            i8_ptr_type,
+                            i8_ptr_type,
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            std::vector<llvm::Value*> args = {
-                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
-                builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))};
-            return builder.CreateCall(fn, args);
+            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            return builder.CreateCall(fn, {
+                allocator,
+                builder.CreateBitCast(ptr, i8_ptr_type),
+                builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))
+            });
         }
 
         bool compile_time_dimensions_t(ASR::dimension_t* m_dims, int n_dims) {
@@ -1232,7 +1250,8 @@ namespace LCompilers {
 
             if( ASRUtils::is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
-                builder->CreateStore(this->get_offset(arr_type, array),
+                llvm::Value* src_offset = this->get_offset(arr_type, array);
+                builder->CreateStore(src_offset,
                             this->get_offset(arr_type, reshaped, false));
 
                 // Determine n_dims and a pointer to the shape data.

@@ -816,16 +816,45 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
         [=, &al, &fn_body, &builder] {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
-            ASR::expr_t* initial_val = get_initial_value(al, element_type);
-            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
-            fn_body.push_back(al, return_var_init);
+            if (ASR::is_a<ASR::String_t>(*element_type)) {
+                Vec<ASR::expr_t*> first_idx;
+                first_idx.reserve(al, 1);
+                ASR::expr_t* one = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind))));
+                first_idx.push_back(al, one);
+                ASR::expr_t* first_elem = PassUtils::create_array_ref(array, first_idx, al);
+                ASR::expr_t* tmp =
+                    builder.Variable(fn_scope, "_lcompilers_string_tmp", element_type,
+                        ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
+                fn_body.push_back(al, builder.Assignment(tmp, first_elem));
+                fn_body.push_back(al, builder.Assignment(return_var, tmp));
+            } else {
+                ASR::expr_t* initial_val = get_initial_value(al, element_type);
+                ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
+                fn_body.push_back(al, return_var_init);
+            }
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
-            ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
-            doloop_body.push_back(al, loop_invariant);
-    }, index_kind);
+            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+            ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
+            if (ASR::is_a<ASR::String_t>(*element_type)) {
+                ASR::expr_t* cond = nullptr;
+                if (elemental_operation == &ASRBuilder::Min) {
+                    cond = builder.Lt(array_ref, return_var);
+                } else {
+                    cond = builder.Gt(array_ref, return_var);
+                }
+                std::vector<ASR::stmt_t*> if_body;
+                if_body.push_back(builder.Assignment(return_var, array_ref));
+                doloop_body.push_back(al, builder.If(cond, if_body, {}));
+            } else {
+                ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
+                ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
+                doloop_body.push_back(al, loop_invariant);
+            }
+        }, index_kind);
 }
 
 static inline void generate_body_for_array_mask_input(Allocator& al, const Location& loc,
@@ -3212,7 +3241,9 @@ namespace AnyAll {
                 }
                 result_dims = dims.size();
                 if( result_dims > 0 ) {
-                    fill_func_arg_sub("result", logical_return_type, Out);
+                    ASR::ttype_t* result_type = ASRUtils::make_Array_t_util(al, loc,
+                        ASRUtils::extract_type(logical_return_type), dims.p, dims.size());
+                    fill_func_arg_sub("result", result_type, Out);
                 }
             }
         }
