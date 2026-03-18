@@ -38,9 +38,11 @@ message("LLVM_GOC: ${LLVM_GOC}")
 # compiler (Clang), so we copy just the one header into a clean directory.
 # On Linux, GCC's C compiler can find the header automatically.
 # Flang/Clang can also find it automatically.
-if (LFORTRAN_BACKEND)
+if (LFORTRAN_BACKEND AND NOT LFORTRAN_BACKEND STREQUAL "flang")
+    # LFortran
     set(ISO_FORTRAN_BINDING_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../src/libasr/runtime")
 elseif (NOT LFORTRAN_BACKEND AND APPLE)
+    # GFortran on macOS
     find_file(ISO_FORTRAN_BINDING_H ISO_Fortran_binding.h
         PATHS ${CMAKE_Fortran_IMPLICIT_INCLUDE_DIRECTORIES}
         NO_DEFAULT_PATH)
