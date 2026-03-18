@@ -18289,24 +18289,69 @@ public:
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                    // Derive the descriptor type from the formal parameter's
-                    // ASR type. We must use the formal (not actual) type
-                    // because convert_to_polymorphic_arg may have converted
-                    // tmp to the formal's descriptor type (e.g., type(*)
-                    // formal → generic %array descriptor).
-                    ASR::expr_t* orig_arg_expr = ASRUtils::EXPR(
-                        ASR::make_Var_t(al, orig_arg->base.base.loc,
-                            &orig_arg->base));
+                    // Derive the descriptor type from the actual argument's
+                    // ASR type for correct struct layout and sizing.
                     llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
-                        orig_arg_expr,
+                        x.m_args[i].m_value,
                         ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(orig_arg->m_type)),
+                            ASRUtils::type_get_past_pointer(actual_type)),
                         module.get());
+
+                    // Ensure tmp is a pointer to the descriptor.
+                    // For allocatable/pointer arrays the upstream Var handler
+                    // may have loaded the struct VALUE (which is wrong on
+                    // opaque-pointer builds where the load type loses pointer
+                    // indirection). Re-derive the descriptor pointer from
+                    // the variable when the actual arg is allocatable/pointer.
+                    if (LLVM::is_llvm_pointer(*actual_type)
+                            && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                        ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
+                        uint32_t h = get_hash((ASR::asr_t*)arg);
+                        tmp = llvm_symtab[h];
+                        // tmp is now the variable's alloca (ptr-to-ptr for
+                        // allocatable). Load once to get the descriptor ptr.
+                        tmp = llvm_utils->CreateLoad2(
+                            desc_type->getPointerTo(), tmp);
+                    }
+
+                    // convert_to_polymorphic_arg may have converted tmp to
+                    // a different descriptor variant (e.g., generic %array
+                    // for type(*) formals). Bitcast back to match desc_type
+                    // so GEPs resolve correctly on typed-pointer LLVM builds.
+                    // On opaque-pointer builds this is a no-op.
+                    if (tmp->getType()->isPointerTy()) {
+                        tmp = builder->CreateBitCast(tmp,
+                            desc_type->getPointerTo());
+                    }
+
+                    // Copy the descriptor into a temporary to avoid corrupting
+                    // the original descriptor's strides (which are in element
+                    // units internally but need byte units for CFI).
+                    llvm::DataLayout dl(module->getDataLayout());
+                    uint64_t desc_size = dl.getTypeAllocSize(desc_type);
+                    llvm::Value* desc_copy = llvm_utils->CreateAlloca(
+                        *builder, desc_type);
+                    builder->CreateMemCpy(desc_copy, llvm::MaybeAlign(),
+                        tmp, llvm::MaybeAlign(), desc_size);
+                    tmp = desc_copy;
                     llvm::Value* elem_size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, elem_size));
                     // Set elem_len (field 1)
                     builder->CreateStore(elem_size_val,
                         llvm_utils->create_gep2(desc_type, tmp, 1));
+
+                    // Set CFI attribute field (field 5):
+                    // allocatable=2, pointer=1, other=0
+                    int cfi_attr = 0; // CFI_attribute_other
+                    if (ASRUtils::is_allocatable(actual_type)) {
+                        cfi_attr = 2; // CFI_attribute_allocatable
+                    } else if (ASRUtils::is_pointer(actual_type)) {
+                        cfi_attr = 1; // CFI_attribute_pointer
+                    }
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(
+                            llvm::Type::getInt8Ty(context), cfi_attr),
+                        llvm_utils->create_gep2(desc_type, tmp, 5));
                     // Convert each dim's stride from elements to bytes
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
                     llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
