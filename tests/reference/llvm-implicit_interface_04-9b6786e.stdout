@@ -225,7 +225,6 @@ then5:                                            ; preds = %ifcont4
 
 ifcont6:                                          ; preds = %ifcont4
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont6
@@ -325,7 +324,6 @@ define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  call void @_lpython_free_argv()
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
@@ -340,7 +338,6 @@ ifcont:                                           ; preds = %else, %then
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
-  call void @_lpython_free_argv()
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont3
@@ -396,7 +393,6 @@ ifcont5:                                          ; preds = %ifcont3
 
 then6:                                            ; preds = %ifcont5
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
-  call void @_lpython_free_argv()
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont8
@@ -452,7 +448,6 @@ ifcont10:                                         ; preds = %ifcont8
 
 then11:                                           ; preds = %ifcont10
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
-  call void @_lpython_free_argv()
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont13
@@ -508,7 +503,6 @@ ifcont15:                                         ; preds = %ifcont13
 
 then16:                                           ; preds = %ifcont15
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
-  call void @_lpython_free_argv()
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont18
@@ -541,8 +535,6 @@ declare void @_lcompilers_runtime_error(i8*, { i1, i8*, { i8*, i32, i32, i32, i3
 declare void @exit(i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
-
-declare void @_lpython_free_argv()
 
 declare void @_lfortran_internal_alloc_finalize()
 

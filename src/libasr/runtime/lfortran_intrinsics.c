@@ -286,7 +286,6 @@ static void _lfortran_close_all_units(void);
 
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 {
-    _lpython_free_argv();
     _lfortran_close_all_units();
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
     int has_leaks = (_internal_alloc_count > 0);
@@ -9040,28 +9039,28 @@ LFORTRAN_API int32_t _lfortran_iachar(char *c) {
     return (int32_t) (uint8_t)(c[0]);
 }
 
-// Command line arguments
+// Command line arguments (fixed static storage, no allocation needed)
+enum { ARGV_MAX_ARGS = 256, ARGV_MAX_LEN = 4096 };
+static char _argv_buf[ARGV_MAX_ARGS][ARGV_MAX_LEN];
+static char *_argv_ptrs[ARGV_MAX_ARGS];
 int32_t _argc;
 char **_argv;
 
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
-    _argv = internal_malloc(argc_1 * sizeof(char *));
-    for (size_t i = 0; i < argc_1; i++) {
-        size_t len = strlen(argv_1[i]) + 1;
-        _argv[i] = internal_malloc(len);
-        memcpy(_argv[i], argv_1[i], len);
+    if (argc_1 > ARGV_MAX_ARGS) argc_1 = ARGV_MAX_ARGS;
+    for (int32_t i = 0; i < argc_1; i++) {
+        size_t len = strlen(argv_1[i]);
+        if (len >= ARGV_MAX_LEN) len = ARGV_MAX_LEN - 1;
+        memcpy(_argv_buf[i], argv_1[i], len);
+        _argv_buf[i][len] = '\0';
+        _argv_ptrs[i] = _argv_buf[i];
     }
     _argc = argc_1;
+    _argv = _argv_ptrs;
 }
 
 LFORTRAN_API void _lpython_free_argv() {
-    if (_argv != NULL) {
-        for (size_t i = 0; i < _argc; i++) {
-            internal_free(_argv[i]);
-        }
-        internal_free(_argv);
-        _argv = NULL;
-    }
+    // No-op: argv uses fixed static storage
 }
 
 LFORTRAN_API void _lfortran_set_use_runtime_colors(int use_colors) {

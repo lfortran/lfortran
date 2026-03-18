@@ -208,7 +208,6 @@ ifcont10:                                         ; preds = %merge_allocated7
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %loop.end
@@ -237,8 +236,6 @@ declare void @exit(i32)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
-
-declare void @_lpython_free_argv()
 
 define internal void @finalize_allocatable__Array_i32(%array* %0, i1 %1) {
 entry:
