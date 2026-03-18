@@ -496,7 +496,6 @@ define i32 @main(i32 %0, i8** %1) {
   store %modules_36_fpm_main_01.fpm_run_settings* %settings, %modules_36_fpm_main_01.fpm_run_settings** %22, align 8
   store i32 1, i32* %call_arg_value, align 4
   call void @__module_modules_36_fpm_main_01_cmd_run(%modules_36_fpm_main_01.fpm_run_settings_class* %2, i32* %call_arg_value)
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -691,8 +690,6 @@ entry:
 }
 
 declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
-
-declare void @_lpython_free_argv()
 
 define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %0) {
 entry:

@@ -64,7 +64,6 @@ free_nonnull2:                                    ; preds = %free_done
   br label %free_done3
 
 free_done3:                                       ; preds = %free_nonnull2, %free_done
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %free_done3
@@ -84,7 +83,5 @@ declare i8* @_lfortran_get_default_allocator()
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
-
-declare void @_lpython_free_argv()
 
 declare void @_lfortran_internal_alloc_finalize()

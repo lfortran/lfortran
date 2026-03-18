@@ -11,7 +11,6 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   call void @print_int()
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -67,7 +66,5 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
-
-declare void @_lpython_free_argv()
 
 declare void @_lfortran_internal_alloc_finalize()
