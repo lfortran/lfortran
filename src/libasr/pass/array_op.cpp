@@ -218,6 +218,26 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         }
     }
 
+    void visit_ComplexRe(const ASR::ComplexRe_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ComplexRe(x);
+        ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_arg)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
+    void visit_ComplexIm(const ASR::ComplexIm_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ComplexIm(x);
+        ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_arg)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StructInstanceMember(x);
         if( !ASRUtils::is_array(x.m_type) ) {
