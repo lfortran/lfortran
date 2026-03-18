@@ -786,7 +786,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             bool is_expr_array, int var2indices_key,
             size_t var_rank, const Location& loc,
             std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
-            size_t& j, ASR::ttype_t* int32_type) {
+            size_t& j) {
         if( is_expr_array ) {
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             Vec<ASR::array_index_t> array_item_args;
@@ -809,8 +809,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         index1.m_right = var2indices[j][0]; index1.m_step = nullptr;
                         new_indices.push_back(al, index1.m_right);
                         indices1.push_back(al, index1);
+                        ASR::ttype_t* nested_index_type = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_args[i].m_right));
                         array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                            m_args[i].m_right, indices1.p, 1, int32_type,
+                            m_args[i].m_right, indices1.p, 1, nested_index_type,
                             ASR::arraystorageType::ColMajor, nullptr));
                         array_index.m_step = nullptr;
                         array_item_args.push_back(al, array_index);
@@ -901,10 +903,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         create_array_item_array_indexed_expr(
             target, target_address, is_target_array, 0,
-            var_rank, loc, var2indices, j, index_type);
+            var_rank, loc, var2indices, j);
         create_array_item_array_indexed_expr(
             value, value_address, is_value_array, 1,
-            var_rank, loc, var2indices, j, index_type);
+            var_rank, loc, var2indices, j);
 
         size_t vars_expr_size = vars_expr.size();
         for( size_t i = offset_for_array_indices; i < vars_expr_size; i++ ) {

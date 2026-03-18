@@ -2315,7 +2315,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 
         if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
-            generate_associate_for_array_section(current_expr, al, loc, current_scope, current_body);
+            // For self-referential section assignments, aliasing RHS as a pointer can
+            // violate Fortran assignment semantics for overlapping slices.
+            if (is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
+                *current_expr = create_and_allocate_temporary_variable_for_array(
+                    *current_expr, "_array_section_", al, current_body,
+                    current_scope, exprs_with_target);
+            } else {
+                generate_associate_for_array_section(current_expr, al, loc, current_scope, current_body);
+            }
             return ;
         }
 
