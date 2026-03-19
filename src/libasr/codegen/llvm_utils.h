@@ -212,6 +212,8 @@ class ASRToLLVMVisitor;
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
+        void set_memory_debug(bool state);
+        bool use_memory_debug();
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -950,7 +952,7 @@ class ASRToLLVMVisitor;
                     return_val = val;
                 }
 
-                void free() {
+                void free() { // This is runtime lib allocated memory -- Isolate away from compiler's memory debug path
                     if(!return_val) return;
                     llvmUtils_instance_->lfortran_free(return_val);
                     return_val = nullptr;

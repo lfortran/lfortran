@@ -364,6 +364,7 @@ public:
               LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor, compiler_options_)),
     llvm_symtab_finalizer(*this, llvm_utils, builder, al, llvm_symtab_fn)
     {
+        LLVM::set_memory_debug(compiler_options.detect_leaks);
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
         llvm_utils->struct_api = struct_api.get();
@@ -5454,6 +5455,16 @@ public:
                     "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
+        }
+        if (compiler_options.detect_leaks) {
+            llvm::Function *fn = module->getFunction("dbg_report");
+            if(!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {}, false);
+                fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            }
+            builder->CreateCall(fn, {});
         }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
