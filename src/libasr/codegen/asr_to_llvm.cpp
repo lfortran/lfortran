@@ -7276,6 +7276,22 @@ public:
     }
 
     void visit_GetPointer(const ASR::GetPointer_t& x) {
+        if (ASR::is_a<ASR::ComplexRe_t>(*x.m_arg) ||
+                ASR::is_a<ASR::ComplexIm_t>(*x.m_arg)) {
+            ASR::expr_t* complex_arg = ASR::is_a<ASR::ComplexRe_t>(*x.m_arg)
+                ? ASR::down_cast<ASR::ComplexRe_t>(x.m_arg)->m_arg
+                : ASR::down_cast<ASR::ComplexIm_t>(x.m_arg)->m_arg;
+            unsigned int member_idx = ASR::is_a<ASR::ComplexRe_t>(*x.m_arg) ? 0 : 1;
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*complex_arg);
+            ptr_loads = ptr_loads_copy;
+            ASR::ttype_t* complex_type_asr = ASRUtils::expr_type(complex_arg);
+            int kind = ASRUtils::extract_kind_from_ttype_t(complex_type_asr);
+            llvm::Type* ctype = (kind == 4) ? complex_type_4 : complex_type_8;
+            tmp = llvm_utils->create_gep2(ctype, tmp, (int)member_idx);
+            return;
+        }
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
@@ -13422,6 +13438,11 @@ public:
                 llvm::Value* offset = arr_descr->get_offset(llvm_source_arr_type, source);
                 source_ptr = llvm_utils->create_ptr_gep2(
                     llvm_source_elem_type, source_ptr, offset);
+            } else if (ASR::is_a<ASR::CPtr_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_source)))) {
+                source_ptr = llvm_utils->CreateAlloca(
+                    source->getType(), nullptr, "bitcast_cptr_source");
+                builder->CreateStore(source, source_ptr);
             } else {
                 source_ptr = source;
             }
@@ -18104,6 +18125,26 @@ public:
                         arr_item->m_value = nullptr;
                         this->visit_expr_wrapper((ASR::expr_t*)arr_item);
                         value = tmp;
+                    } else if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
+                                ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
+                        bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
+                        ASR::expr_t* complex_elem_expr = is_re
+                            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
+                            : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
+                        int ptr_loads_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr(*complex_elem_expr);
+                        ptr_loads = ptr_loads_copy;
+                        llvm::Value* complex_ptr = tmp;
+                        if (!complex_ptr->getType()->isPointerTy()) {
+                            llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
+                            builder->CreateStore(complex_ptr, alloc);
+                            complex_ptr = alloc;
+                        }
+                        int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
+                        llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
+                        value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
                     }
                 }
                 // TODO: we are getting a warning of uninitialized variable,
@@ -18232,6 +18273,10 @@ public:
                                 al, orig_arg->base.base.loc, &orig_arg->base)),
                                 orig_arg->m_type, value);
                         }
+                        use_value = true;
+                    } else if ( (ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
+                                 ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value)) &&
+                                value->getType()->isPointerTy() ) {
                         use_value = true;
                     }
                     if (use_value) {
