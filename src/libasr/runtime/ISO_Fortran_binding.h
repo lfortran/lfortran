@@ -128,7 +128,8 @@ static inline int CFI_allocate(CFI_cdesc_t *desc,
         if (desc->dim[i].extent < 0) desc->dim[i].extent = 0;
     }
     for (int i = 0; i < desc->rank; i++) {
-        desc->dim[i].sm = (CFI_index_t)(desc->elem_len);
+        /* LFortran uses element-based strides (not byte-based) */
+        desc->dim[i].sm = 1;
         for (int j = 0; j < i; j++) {
             desc->dim[i].sm *= desc->dim[j].extent;
         }
@@ -199,6 +200,33 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
         const CFI_index_t extents[]) {
     if (!desc) return CFI_INVALID_DESCRIPTOR;
     if (rank > CFI_MAX_RANK) return CFI_INVALID_RANK;
+
+    /* Per F2018, elem_len is only used for character types;
+       for other types, infer the element length from the type code. */
+    if (elem_len == 0) {
+        switch (type) {
+            case CFI_type_signed_char: elem_len = sizeof(signed char); break;
+            case CFI_type_short:       elem_len = sizeof(short); break;
+            case CFI_type_int:         elem_len = sizeof(int); break;
+            case CFI_type_long:        elem_len = sizeof(long); break;
+            case CFI_type_long_long:   elem_len = sizeof(long long); break;
+            case CFI_type_size_t:      elem_len = sizeof(size_t); break;
+            case CFI_type_int8_t:      elem_len = 1; break;
+            case CFI_type_int16_t:     elem_len = 2; break;
+            case CFI_type_int32_t:     elem_len = 4; break;
+            case CFI_type_int64_t:     elem_len = 8; break;
+            case CFI_type_float:       elem_len = sizeof(float); break;
+            case CFI_type_double:      elem_len = sizeof(double); break;
+            case CFI_type_long_double: elem_len = sizeof(long double); break;
+            case CFI_type_float_Complex:  elem_len = 2 * sizeof(float); break;
+            case CFI_type_double_Complex: elem_len = 2 * sizeof(double); break;
+            case CFI_type_Bool:        elem_len = sizeof(uint8_t); break;
+            case CFI_type_char:        elem_len = 1; break;
+            case CFI_type_cptr:        elem_len = sizeof(void *); break;
+            default: break;
+        }
+    }
+
     desc->base_addr = base_addr;
     desc->elem_len = (int64_t)elem_len;
     desc->version = CFI_VERSION;
@@ -210,9 +238,8 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
     for (CFI_rank_t i = 0; i < rank; i++) {
         desc->dim[i].lower_bound = 0;
         desc->dim[i].extent = extents ? extents[i] : 0;
-        desc->dim[i].sm = (CFI_index_t)elem_len;
-        /* For contiguous arrays, sm = elem_len for dim 0,
-           and elem_len * product(extents[0..i-1]) for dim i */
+        /* LFortran uses element-based strides (not byte-based) */
+        desc->dim[i].sm = 1;
         for (CFI_rank_t j = 0; j < i; j++) {
             desc->dim[i].sm *= desc->dim[j].extent;
         }
