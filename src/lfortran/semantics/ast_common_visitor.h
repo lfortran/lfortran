@@ -2011,7 +2011,7 @@ public:
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
-    std::map<std::string, std::vector<std::string>> generic_procedures;
+    std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
     /*
      * A struct to store the information of a postponed call to genericProcedure
      * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`

@@ -2893,12 +2893,64 @@ public:
         }
     }
 
+    void fill_interface_proc_names_with_loc(const AST::Interface_t& x,
+                                    std::vector<std::pair<std::string, Location>>& proc_names) {
+        for (size_t i = 0; i < x.n_items; i++) {
+            AST::interface_item_t *item = x.m_items[i];
+            if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
+                AST::InterfaceModuleProcedure_t *proc
+                    = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                std::set<std::string> items_set;
+                for (size_t j = 0; j < proc->n_names; j++) {
+                    char *proc_name = proc->m_names[j];
+                    std::string item_proc_name = std::string(proc_name);
+                    if (items_set.find(item_proc_name) == items_set.end()) {
+                        proc_names.push_back({item_proc_name, item->base.loc});
+                        items_set.insert(item_proc_name);
+                    } else {
+                        diag.semantic_error_label("Entity " + item_proc_name
+                                                      + " is already present in the interface",
+                                                  { item->base.loc },
+                                                  " ");
+                        throw SemanticAbort();
+                    }
+                }
+            } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
+                visit_interface_item(*item);
+                AST::InterfaceProc_t *proc
+                    = AST::down_cast<AST::InterfaceProc_t>(item);
+                switch(proc->m_proc->type) {
+                    case AST::program_unitType::Subroutine: {
+                        AST::Subroutine_t* subrout = AST::down_cast<AST::Subroutine_t>(proc->m_proc);
+                        proc_names.push_back({std::string(subrout->m_name), item->base.loc});
+                        break;
+                    }
+                    case AST::program_unitType::Function: {
+                        AST::Function_t* fn = AST::down_cast<AST::Function_t>(proc->m_proc);
+                        proc_names.push_back({std::string(fn->m_name), item->base.loc});
+                        break;
+                    }
+                    default: {
+                        LCOMPILERS_ASSERT(false);
+                        break;
+                    }
+                }
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Interface procedure type not imlemented yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {item->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Interface(const AST::Interface_t &x) {
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             if( generic_procedures.find(generic_name) != generic_procedures.end() ) {
                 generic_procedures[generic_name].insert(generic_procedures[generic_name].end(),
                     proc_names.begin(), proc_names.end());
@@ -3247,26 +3299,36 @@ public:
 
     void add_generic_procedures() {
         for (auto &proc : generic_procedures) {
-            // FIXME LOCATION
             Location loc;
             loc.first = 1;
             loc.last = 1;
             Vec<ASR::symbol_t*> symbols;
             symbols.reserve(al, proc.second.size());
+            bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname;
-                if( pname == proc.first ) {
-                    correct_pname = pname + "~genericprocedure";
+                std::string correct_pname = pname.first;
+                if( pname.first == proc.first ) {
+                    correct_pname = pname.first + "~genericprocedure";
                 }
-                ASR::symbol_t *x;
                 Str s;
                 s.from_str_view(correct_pname);
                 char *name = s.c_str(al);
                 // lower case the name
                 name = s2c(al, to_lower(name));
-                x = resolve_symbol(loc, name);
+                ASR::symbol_t *x = current_scope->resolve_symbol(name);
+                if (!x) {
+                    diag.add(Diagnostic(
+                        "Symbol '" + std::string(pname.first) + "' not declared",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {pname.second})
+                        }));
+                    if (!compiler_options.continue_compilation) throw SemanticAbort();
+                    any_error = true;
+                    continue;
+                }
                 symbols.push_back(al, x);
             }
+            if (any_error) continue;
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
                 ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
