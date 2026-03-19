@@ -2679,7 +2679,11 @@ namespace LCompilers {
     }
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
-        llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
+        llvm::GlobalValue::LinkageTypes linkage,
+        std::string data_name){
+        if (data_name.empty()) {
+            data_name = name + "_data";
+        }
         int64_t len = 0; 
         if (str->m_len_kind == ASR::AssumedLength) {
             // For assumed length, use the actual length of initial_data
@@ -2724,7 +2728,7 @@ namespace LCompilers {
                     is_const,
                     linkage,
                     const_data_as_array,
-                    name+"_data"
+                    data_name
                 );
                 llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
                 // i8* getelementptr inbounds ( global [len x i8] c "DATA HERE", i32 0, i32 0)

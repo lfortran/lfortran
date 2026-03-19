@@ -4639,6 +4639,11 @@ public:
     }
 
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
+        // bind(C) variables without initializers should use CommonLinkage
+        // to allow merging with C definitions of the same symbol
+        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value == nullptr) {
+            return true;
+        }
         if (!compiler_options.separate_compilation
                 || x.m_abi == ASR::abiType::ExternalUndefined) {
             return false;
@@ -4709,8 +4714,10 @@ public:
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
         bool external = (x.m_abi != ASR::abiType::Source);
-        // BindC variables with an explicit initializer are definitions
-        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value != nullptr) {
+        // BindC variables defined in this module (intent local) are
+        // definitions, not external declarations
+        if (x.m_abi == ASR::abiType::BindC &&
+                (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
         llvm::Constant* init_value = nullptr;
@@ -4842,9 +4849,23 @@ public:
                     } else {
                         initial_string_value = "";
                     }
+                    llvm::GlobalValue::LinkageTypes string_linkage;
+                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation) {
+                        string_linkage = llvm::GlobalValue::ExternalLinkage;
+                    } else {
+                        string_linkage = llvm::GlobalValue::PrivateLinkage;
+                    }
+                    // For bind(C) char variables, the C-visible name must be
+                    // the data storage (not the descriptor). Use an internal
+                    // name for the descriptor and the C name for the data.
+                    std::string desc_name = llvm_var_name;
+                    std::string data_name = llvm_var_name + "_data";
+                    if (x.m_abi == ASR::abiType::BindC) {
+                        desc_name = llvm_var_name + "__desc";
+                        data_name = llvm_var_name;
+                    }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
-                        is_const, llvm_var_name,
-                        compiler_options.separate_compilation ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
+                        is_const, desc_name, string_linkage, data_name);
                 } else {
                     ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 }

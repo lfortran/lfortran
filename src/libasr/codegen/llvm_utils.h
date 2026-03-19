@@ -686,7 +686,8 @@ class ASRToLLVMVisitor;
                 string in the global scope of the llvm module.
             */
             llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
-                llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage);
+                llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage,
+                std::string data_name = "");
             
             /*
                 * Sets up the global array of strings that's not allocatable.
