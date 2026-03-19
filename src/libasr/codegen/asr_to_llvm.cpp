@@ -18117,7 +18117,16 @@ public:
                         tmp = value;
                     }
                 } else if(ASR::is_a<ASR::String_t>(*arg_type)){
-                    if (!value->getType()->isPointerTy()) {
+                    if (orig_arg && orig_arg->m_abi == ASR::abiType::BindC
+                            && orig_arg->m_value_attr) {
+                        // For bind(C) character with value attribute,
+                        // load the i8 value from the pointer
+                        if (value->getType()->isPointerTy()) {
+                            tmp = llvm_utils->CreateLoad2(target_type, value);
+                        } else {
+                            tmp = value;
+                        }
+                    } else if (!value->getType()->isPointerTy()) {
                         // String value was loaded (e.g., from ClassToIntrinsic cast);
                         // store to temp to pass by reference
                         llvm::AllocaInst *target = get_call_arg_alloca(target_type);
