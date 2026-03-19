@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define CFI_VERSION 20180515
 #define CFI_MAX_RANK 15
@@ -100,6 +101,96 @@ typedef struct CFI_cdesc_t {
 
 /* Storage macro for stack-allocated descriptors of a given rank */
 #define CFI_CDESC_T(rank) CFI_cdesc_t
+
+/*
+ * CFI_allocate — allocate memory for an allocatable or pointer descriptor.
+ *
+ * `lower` and `upper` are arrays of length `desc->rank` giving the
+ * bounds for each dimension.  `elem_len` is used only for character
+ * types (overrides desc->elem_len); pass 0 to keep the existing
+ * elem_len.
+ */
+static inline int CFI_allocate(CFI_cdesc_t *desc,
+        const CFI_index_t lower[], const CFI_index_t upper[],
+        size_t elem_len) {
+    if (!desc) return CFI_INVALID_DESCRIPTOR;
+    if (desc->base_addr != NULL) return CFI_ERROR_BASE_ADDR_NOT_NULL;
+    if (desc->attribute != CFI_attribute_allocatable &&
+        desc->attribute != CFI_attribute_pointer)
+        return CFI_INVALID_ATTRIBUTE;
+
+    if (elem_len > 0) desc->elem_len = (int64_t)elem_len;
+
+    size_t total = (size_t)desc->elem_len;
+    for (int i = 0; i < desc->rank; i++) {
+        desc->dim[i].lower_bound = lower[i];
+        desc->dim[i].extent = upper[i] - lower[i] + 1;
+        if (desc->dim[i].extent < 0) desc->dim[i].extent = 0;
+    }
+    for (int i = 0; i < desc->rank; i++) {
+        desc->dim[i].sm = (CFI_index_t)(desc->elem_len);
+        for (int j = 0; j < i; j++) {
+            desc->dim[i].sm *= desc->dim[j].extent;
+        }
+        total *= (size_t)desc->dim[i].extent;
+    }
+    if (total == 0) total = 1;
+    desc->base_addr = calloc(1, total);
+    if (!desc->base_addr) return CFI_ERROR_MEM_ALLOCATION;
+    desc->is_allocated = 1;
+    desc->offset = 0;
+    return CFI_SUCCESS;
+}
+
+/*
+ * CFI_deallocate — free memory previously allocated by CFI_allocate.
+ */
+static inline int CFI_deallocate(CFI_cdesc_t *desc) {
+    if (!desc) return CFI_INVALID_DESCRIPTOR;
+    if (desc->base_addr == NULL) return CFI_ERROR_BASE_ADDR_NULL;
+    if (desc->attribute != CFI_attribute_allocatable &&
+        desc->attribute != CFI_attribute_pointer)
+        return CFI_INVALID_ATTRIBUTE;
+    free(desc->base_addr);
+    desc->base_addr = NULL;
+    desc->is_allocated = 0;
+    return CFI_SUCCESS;
+}
+
+/*
+ * CFI_setpointer — make a pointer descriptor point at a target.
+ *
+ * If `source` is NULL the pointer is disassociated.
+ * `lower_bounds`, if non-NULL, overrides the lower bounds (length
+ * must equal source->rank).
+ */
+static inline int CFI_setpointer(CFI_cdesc_t *ptr,
+        const CFI_cdesc_t *source,
+        const CFI_index_t lower_bounds[]) {
+    if (!ptr) return CFI_INVALID_DESCRIPTOR;
+    if (ptr->attribute != CFI_attribute_pointer) return CFI_INVALID_ATTRIBUTE;
+
+    if (source == NULL) {
+        ptr->base_addr = NULL;
+        ptr->is_allocated = 0;
+        return CFI_SUCCESS;
+    }
+
+    ptr->base_addr = source->base_addr;
+    ptr->elem_len = source->elem_len;
+    ptr->is_allocated = (source->base_addr != NULL);
+    for (int i = 0; i < ptr->rank; i++) {
+        ptr->dim[i].sm = source->dim[i].sm;
+        ptr->dim[i].extent = source->dim[i].extent;
+        if (lower_bounds) {
+            ptr->dim[i].lower_bound = lower_bounds[i];
+        } else {
+            ptr->dim[i].lower_bound = source->dim[i].lower_bound;
+        }
+    }
+    ptr->offset = source->offset;
+    return CFI_SUCCESS;
+}
 
 /* Minimal establish function (inline, no runtime library needed) */
 static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
