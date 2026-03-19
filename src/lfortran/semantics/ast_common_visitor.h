@@ -18014,16 +18014,21 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
-                        if (!ASRUtils::is_value_constant(len_expr)) {
+                        if (var_sym != nullptr &&
+                                ASR::is_a<ASR::Var_t>(*str->m_len) &&
+                                !ASRUtils::is_const(str->m_len)) {
                             bool in_function_scope = in_Subroutine;
                             if (!in_function_scope) {
                                 SymbolTable* scope = current_scope;
                                 while (scope != nullptr && !in_function_scope) {
                                     if (scope->asr_owner != nullptr &&
-                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
-                                            ASR::is_a<ASR::Function_t>(
-                                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-                                        in_function_scope = true;
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
+                                                ASR::is_a<ASR::Block_t>(*owner) ||
+                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                                            in_function_scope = true;
+                                        }
                                     }
                                     scope = scope->parent;
                                 }
@@ -18077,16 +18082,20 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
-                        if (!ASRUtils::is_value_constant(len_expr)) {
+                        if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
+                                !ASRUtils::is_const(str->m_len)) {
                             bool in_function_scope = in_Subroutine;
                             if (!in_function_scope) {
                                 SymbolTable* scope = current_scope;
                                 while (scope != nullptr && !in_function_scope) {
                                     if (scope->asr_owner != nullptr &&
-                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
-                                            ASR::is_a<ASR::Function_t>(
-                                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-                                        in_function_scope = true;
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
+                                                ASR::is_a<ASR::Block_t>(*owner) ||
+                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                                            in_function_scope = true;
+                                        }
                                     }
                                     scope = scope->parent;
                                 }
