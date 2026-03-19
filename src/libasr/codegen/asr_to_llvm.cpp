@@ -7096,8 +7096,13 @@ public:
                         llvm::ConstantPointerNull::get(
                             llvm::cast<llvm::PointerType>(arg_array_desc->getType())));
                     llvm::Function* fn = builder->GetInsertBlock()->getParent();
+#if LLVM_VERSION_MAJOR >= 16
+                    fn->insert(fn->end(), copy_bb);
+                    fn->insert(fn->end(), merge_bb);
+#else
                     fn->getBasicBlockList().push_back(copy_bb);
                     fn->getBasicBlockList().push_back(merge_bb);
+#endif
                     // If null, store null data pointer and jump to merge
                     llvm::BasicBlock* absent_bb = llvm::BasicBlock::Create(
                         context, "opt_absent", fn);
