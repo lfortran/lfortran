@@ -1586,6 +1586,8 @@ RUN(NAME intrinsics_437 LABELS gfortran llvm) # norm2 with dim argument
 RUN(NAME intrinsics_438 LABELS gfortran llvm) # norm2 with variable dim argument
 RUN(NAME intrinsics_439 LABELS gfortran llvm) # minval/maxval for strings
 RUN(NAME intrinsics_440 LABELS gfortran llvm) # atan2d
+RUN(NAME intrinsics_441 LABELS llvm) # sinpi/cospi/tanpi/asinpi/acospi/atanpi/atan2pi  <--- GFortran does not have support for these intrinsics
+
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

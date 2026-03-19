@@ -40,6 +40,13 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Asinh)
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
+        INTRINSIC_NAME_CASE(Sinpi)
+        INTRINSIC_NAME_CASE(Cospi)
+        INTRINSIC_NAME_CASE(Tanpi)
+        INTRINSIC_NAME_CASE(Asinpi)
+        INTRINSIC_NAME_CASE(Acospi)
+        INTRINSIC_NAME_CASE(Atanpi)
+        INTRINSIC_NAME_CASE(Atan2pi)
         INTRINSIC_NAME_CASE(Erf)
         INTRINSIC_NAME_CASE(Erfc)
         INTRINSIC_NAME_CASE(ErfcScaled)
@@ -284,6 +291,20 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Acosh::instantiate_Acosh, &Acosh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atanh),
             {&Atanh::instantiate_Atanh, &Atanh::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sinpi),
+            {&Sinpi::instantiate_Sinpi, &Sinpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cospi),
+            {&Cospi::instantiate_Cospi, &Cospi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tanpi),
+            {&Tanpi::instantiate_Tanpi, &Tanpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asinpi),
+            {&Asinpi::instantiate_Asinpi, &Asinpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acospi),
+            {&Acospi::instantiate_Acospi, &Acospi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atanpi),
+            {&Atanpi::instantiate_Atanpi, &Atanpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2pi),
+            {&Atan2pi::instantiate_Atan2pi, &Atan2pi::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
             {&Log::instantiate_Log, &Log::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
@@ -639,6 +660,13 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
                 {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
                 {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
+                {"sinpi", {&Sinpi::create_Sinpi, &Sinpi::eval_Sinpi}},
+                {"cospi", {&Cospi::create_Cospi, &Cospi::eval_Cospi}},
+                {"tanpi", {&Tanpi::create_Tanpi, &Tanpi::eval_Tanpi}},
+                {"asinpi", {&Asinpi::create_Asinpi, &Asinpi::eval_Asinpi}},
+                {"acospi", {&Acospi::create_Acospi, &Acospi::eval_Acospi}},
+                {"atanpi", {&Atanpi::create_Atanpi, &Atanpi::eval_Atanpi}},
+                {"atan2pi", {&Atan2pi::create_Atan2pi, &Atan2pi::eval_Atan2pi}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"dreal", {&Dreal::create_Dreal, &Dreal::eval_Dreal}},
