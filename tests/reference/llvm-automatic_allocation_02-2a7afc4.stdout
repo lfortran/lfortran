@@ -498,51 +498,51 @@ else36:                                           ; preds = %ifcont34
   br label %ifcont37
 
 ifcont37:                                         ; preds = %else36, %then35
-  %191 = load i32*, i32** %i, align 8
-  %192 = ptrtoint i32* %191 to i64
-  %193 = icmp ne i64 %192, 0
-  %194 = xor i1 %193, true
-  br i1 %194, label %then38, label %ifcont39
+  %196 = load i32*, i32** %i, align 8
+  %197 = ptrtoint i32* %196 to i64
+  %198 = icmp ne i64 %197, 0
+  %199 = xor i1 %198, true
+  br i1 %199, label %then38, label %ifcont39
 
 then38:                                           ; preds = %ifcont37
-  %195 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %196 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %197 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %196, i32 0, i32 0
-  %198 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 0
-  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @41, i32 0, i32 0), i8** %198, align 8
-  %199 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 1
-  store i32 19, i32* %199, align 4
-  %200 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 2
-  store i32 16, i32* %200, align 4
-  %201 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 3
-  store i32 19, i32* %201, align 4
-  %202 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %197, i32 0, i32 4
-  store i32 16, i32* %202, align 4
-  %203 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
-  %204 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %195, i32 0, i32 0
-  %205 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %196, i32 0, i32 0
-  %206 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 2
-  %207 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 0
-  store i1 true, i1* %207, align 1
-  %208 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 1
-  store i8* %203, i8** %208, align 8
-  store { i8*, i32, i32, i32, i32 }* %205, { i8*, i32, i32, i32, i32 }** %206, align 8
-  %209 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %204, i32 0, i32 3
-  store i32 1, i32* %209, align 4
-  %210 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %195, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %210, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
+  %200 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %201 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %202 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %201, i32 0, i32 0
+  %203 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %202, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @41, i32 0, i32 0), i8** %203, align 8
+  %204 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %202, i32 0, i32 1
+  store i32 19, i32* %204, align 4
+  %205 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %202, i32 0, i32 2
+  store i32 16, i32* %205, align 4
+  %206 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %202, i32 0, i32 3
+  store i32 19, i32* %206, align 4
+  %207 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %202, i32 0, i32 4
+  store i32 16, i32* %207, align 4
+  %208 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
+  %209 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %200, i32 0, i32 0
+  %210 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %201, i32 0, i32 0
+  %211 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %209, i32 0, i32 2
+  %212 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %209, i32 0, i32 0
+  store i1 true, i1* %212, align 1
+  %213 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %209, i32 0, i32 1
+  store i8* %208, i8** %213, align 8
+  store { i8*, i32, i32, i32, i32 }* %210, { i8*, i32, i32, i32, i32 }** %211, align 8
+  %214 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %209, i32 0, i32 3
+  store i32 1, i32* %214, align 4
+  %215 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %200, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %215, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont39:                                         ; preds = %ifcont37
-  br i1 %193, label %then40, label %else41
+  br i1 %198, label %then40, label %else41
 
 then40:                                           ; preds = %ifcont39
-  %211 = alloca i8*, align 8
-  %212 = bitcast i32* %191 to i8*
-  store i8* %212, i8** %211, align 8
-  %213 = load i8*, i8** %211, align 8
-  call void @_lfortran_free(i8* %213)
+  %216 = alloca i8*, align 8
+  %217 = bitcast i32* %196 to i8*
+  store i8* %217, i8** %216, align 8
+  %218 = load i8*, i8** %216, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %218)
   store i32* null, i32** %i, align 8
   br label %ifcont42
 
@@ -550,51 +550,51 @@ else41:                                           ; preds = %ifcont39
   br label %ifcont42
 
 ifcont42:                                         ; preds = %else41, %then40
-  %214 = load float*, float** %r, align 8
-  %215 = ptrtoint float* %214 to i64
-  %216 = icmp ne i64 %215, 0
-  %217 = xor i1 %216, true
-  br i1 %217, label %then43, label %ifcont44
+  %219 = load float*, float** %r, align 8
+  %220 = ptrtoint float* %219 to i64
+  %221 = icmp ne i64 %220, 0
+  %222 = xor i1 %221, true
+  br i1 %222, label %then43, label %ifcont44
 
 then43:                                           ; preds = %ifcont42
-  %218 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %219 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %220 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %219, i32 0, i32 0
-  %221 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 0
-  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @45, i32 0, i32 0), i8** %221, align 8
-  %222 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 1
-  store i32 20, i32* %222, align 4
-  %223 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 2
-  store i32 16, i32* %223, align 4
-  %224 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 3
-  store i32 20, i32* %224, align 4
-  %225 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %220, i32 0, i32 4
-  store i32 16, i32* %225, align 4
-  %226 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @46, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
-  %227 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %218, i32 0, i32 0
-  %228 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %219, i32 0, i32 0
-  %229 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 2
-  %230 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 0
-  store i1 true, i1* %230, align 1
-  %231 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 1
-  store i8* %226, i8** %231, align 8
-  store { i8*, i32, i32, i32, i32 }* %228, { i8*, i32, i32, i32, i32 }** %229, align 8
-  %232 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %227, i32 0, i32 3
-  store i32 1, i32* %232, align 4
-  %233 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %218, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %233, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
+  %223 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %224 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %225 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %224, i32 0, i32 0
+  %226 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %225, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @45, i32 0, i32 0), i8** %226, align 8
+  %227 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %225, i32 0, i32 1
+  store i32 20, i32* %227, align 4
+  %228 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %225, i32 0, i32 2
+  store i32 16, i32* %228, align 4
+  %229 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %225, i32 0, i32 3
+  store i32 20, i32* %229, align 4
+  %230 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %225, i32 0, i32 4
+  store i32 16, i32* %230, align 4
+  %231 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @46, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
+  %232 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %223, i32 0, i32 0
+  %233 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %224, i32 0, i32 0
+  %234 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %232, i32 0, i32 2
+  %235 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %232, i32 0, i32 0
+  store i1 true, i1* %235, align 1
+  %236 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %232, i32 0, i32 1
+  store i8* %231, i8** %236, align 8
+  store { i8*, i32, i32, i32, i32 }* %233, { i8*, i32, i32, i32, i32 }** %234, align 8
+  %237 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %232, i32 0, i32 3
+  store i32 1, i32* %237, align 4
+  %238 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %223, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %238, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont44:                                         ; preds = %ifcont42
-  br i1 %216, label %then45, label %else46
+  br i1 %221, label %then45, label %else46
 
 then45:                                           ; preds = %ifcont44
-  %234 = alloca i8*, align 8
-  %235 = bitcast float* %214 to i8*
-  store i8* %235, i8** %234, align 8
-  %236 = load i8*, i8** %234, align 8
-  call void @_lfortran_free(i8* %236)
+  %239 = alloca i8*, align 8
+  %240 = bitcast float* %219 to i8*
+  store i8* %240, i8** %239, align 8
+  %241 = load i8*, i8** %239, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %241)
   store float* null, float** %r, align 8
   br label %ifcont47
 
@@ -602,51 +602,51 @@ else46:                                           ; preds = %ifcont44
   br label %ifcont47
 
 ifcont47:                                         ; preds = %else46, %then45
-  %237 = load %complex_4*, %complex_4** %c, align 8
-  %238 = ptrtoint %complex_4* %237 to i64
-  %239 = icmp ne i64 %238, 0
-  %240 = xor i1 %239, true
-  br i1 %240, label %then48, label %ifcont49
+  %242 = load %complex_4*, %complex_4** %c, align 8
+  %243 = ptrtoint %complex_4* %242 to i64
+  %244 = icmp ne i64 %243, 0
+  %245 = xor i1 %244, true
+  br i1 %245, label %then48, label %ifcont49
 
 then48:                                           ; preds = %ifcont47
-  %241 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %242 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %243 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %242, i32 0, i32 0
-  %244 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 0
-  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @49, i32 0, i32 0), i8** %244, align 8
-  %245 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 1
-  store i32 21, i32* %245, align 4
-  %246 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 2
-  store i32 16, i32* %246, align 4
-  %247 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 3
-  store i32 21, i32* %247, align 4
-  %248 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %243, i32 0, i32 4
-  store i32 16, i32* %248, align 4
-  %249 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
-  %250 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %241, i32 0, i32 0
-  %251 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %242, i32 0, i32 0
-  %252 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 2
-  %253 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 0
-  store i1 true, i1* %253, align 1
-  %254 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 1
-  store i8* %249, i8** %254, align 8
-  store { i8*, i32, i32, i32, i32 }* %251, { i8*, i32, i32, i32, i32 }** %252, align 8
-  %255 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %250, i32 0, i32 3
-  store i32 1, i32* %255, align 4
-  %256 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %241, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %256, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  %246 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %247 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %248 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %247, i32 0, i32 0
+  %249 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %248, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @49, i32 0, i32 0), i8** %249, align 8
+  %250 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %248, i32 0, i32 1
+  store i32 21, i32* %250, align 4
+  %251 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %248, i32 0, i32 2
+  store i32 16, i32* %251, align 4
+  %252 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %248, i32 0, i32 3
+  store i32 21, i32* %252, align 4
+  %253 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %248, i32 0, i32 4
+  store i32 16, i32* %253, align 4
+  %254 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  %255 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %246, i32 0, i32 0
+  %256 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %247, i32 0, i32 0
+  %257 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %255, i32 0, i32 2
+  %258 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %255, i32 0, i32 0
+  store i1 true, i1* %258, align 1
+  %259 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %255, i32 0, i32 1
+  store i8* %254, i8** %259, align 8
+  store { i8*, i32, i32, i32, i32 }* %256, { i8*, i32, i32, i32, i32 }** %257, align 8
+  %260 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %255, i32 0, i32 3
+  store i32 1, i32* %260, align 4
+  %261 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %246, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %261, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont49:                                         ; preds = %ifcont47
-  br i1 %239, label %then50, label %else51
+  br i1 %244, label %then50, label %else51
 
 then50:                                           ; preds = %ifcont49
-  %257 = alloca i8*, align 8
-  %258 = bitcast %complex_4* %237 to i8*
-  store i8* %258, i8** %257, align 8
-  %259 = load i8*, i8** %257, align 8
-  call void @_lfortran_free(i8* %259)
+  %262 = alloca i8*, align 8
+  %263 = bitcast %complex_4* %242 to i8*
+  store i8* %263, i8** %262, align 8
+  %264 = load i8*, i8** %262, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %264)
   store %complex_4* null, %complex_4** %c, align 8
   br label %ifcont52
 
@@ -654,51 +654,51 @@ else51:                                           ; preds = %ifcont49
   br label %ifcont52
 
 ifcont52:                                         ; preds = %else51, %then50
-  %260 = load i32*, i32** %l, align 8
-  %261 = ptrtoint i32* %260 to i64
-  %262 = icmp ne i64 %261, 0
-  %263 = xor i1 %262, true
-  br i1 %263, label %then53, label %ifcont54
+  %265 = load i32*, i32** %l, align 8
+  %266 = ptrtoint i32* %265 to i64
+  %267 = icmp ne i64 %266, 0
+  %268 = xor i1 %267, true
+  br i1 %268, label %then53, label %ifcont54
 
 then53:                                           ; preds = %ifcont52
-  %264 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %265 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %266 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %265, i32 0, i32 0
-  %267 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 0
-  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @53, i32 0, i32 0), i8** %267, align 8
-  %268 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 1
-  store i32 22, i32* %268, align 4
-  %269 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 2
-  store i32 16, i32* %269, align 4
-  %270 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 3
-  store i32 22, i32* %270, align 4
-  %271 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %266, i32 0, i32 4
-  store i32 16, i32* %271, align 4
-  %272 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @54, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
-  %273 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %264, i32 0, i32 0
-  %274 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %265, i32 0, i32 0
-  %275 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 2
-  %276 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 0
-  store i1 true, i1* %276, align 1
-  %277 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 1
-  store i8* %272, i8** %277, align 8
-  store { i8*, i32, i32, i32, i32 }* %274, { i8*, i32, i32, i32, i32 }** %275, align 8
-  %278 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %273, i32 0, i32 3
-  store i32 1, i32* %278, align 4
-  %279 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %264, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %279, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
+  %269 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %270 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %271 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %270, i32 0, i32 0
+  %272 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %271, i32 0, i32 0
+  store i8* getelementptr inbounds ([55 x i8], [55 x i8]* @53, i32 0, i32 0), i8** %272, align 8
+  %273 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %271, i32 0, i32 1
+  store i32 22, i32* %273, align 4
+  %274 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %271, i32 0, i32 2
+  store i32 16, i32* %274, align 4
+  %275 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %271, i32 0, i32 3
+  store i32 22, i32* %275, align 4
+  %276 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %271, i32 0, i32 4
+  store i32 16, i32* %276, align 4
+  %277 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @54, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
+  %278 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %269, i32 0, i32 0
+  %279 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %270, i32 0, i32 0
+  %280 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %278, i32 0, i32 2
+  %281 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %278, i32 0, i32 0
+  store i1 true, i1* %281, align 1
+  %282 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %278, i32 0, i32 1
+  store i8* %277, i8** %282, align 8
+  store { i8*, i32, i32, i32, i32 }* %279, { i8*, i32, i32, i32, i32 }** %280, align 8
+  %283 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %278, i32 0, i32 3
+  store i32 1, i32* %283, align 4
+  %284 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %269, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %284, i32 1, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont54:                                         ; preds = %ifcont52
-  br i1 %262, label %then55, label %else56
+  br i1 %267, label %then55, label %else56
 
 then55:                                           ; preds = %ifcont54
-  %280 = alloca i8*, align 8
-  %281 = bitcast i32* %260 to i8*
-  store i8* %281, i8** %280, align 8
-  %282 = load i8*, i8** %280, align 8
-  call void @_lfortran_free(i8* %282)
+  %285 = alloca i8*, align 8
+  %286 = bitcast i32* %265 to i8*
+  store i8* %286, i8** %285, align 8
+  %287 = load i8*, i8** %285, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %287)
   store i32* null, i32** %l, align 8
   br label %ifcont57
 
@@ -706,7 +706,6 @@ else56:                                           ; preds = %ifcont54
   br label %ifcont57
 
 ifcont57:                                         ; preds = %else56, %then55
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont57
@@ -716,27 +715,28 @@ FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
   br label %Finalize_Variable_c
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
-  %283 = load %complex_4*, %complex_4** %c, align 8
-  %284 = bitcast %complex_4* %283 to i8*
-  call void @_lfortran_free(i8* %284)
+  %288 = load %complex_4*, %complex_4** %c, align 8
+  %289 = bitcast %complex_4* %288 to i8*
+  call void @_lfortran_free_alloc(i8* %2, i8* %289)
   br label %Finalize_Variable_i
 
 Finalize_Variable_i:                              ; preds = %Finalize_Variable_c
-  %285 = load i32*, i32** %i, align 8
-  %286 = bitcast i32* %285 to i8*
-  call void @_lfortran_free(i8* %286)
+  %290 = load i32*, i32** %i, align 8
+  %291 = bitcast i32* %290 to i8*
+  call void @_lfortran_free_alloc(i8* %2, i8* %291)
   br label %Finalize_Variable_l
 
 Finalize_Variable_l:                              ; preds = %Finalize_Variable_i
-  %287 = load i32*, i32** %l, align 8
-  %288 = bitcast i32* %287 to i8*
-  call void @_lfortran_free(i8* %288)
+  %292 = load i32*, i32** %l, align 8
+  %293 = bitcast i32* %292 to i8*
+  call void @_lfortran_free_alloc(i8* %2, i8* %293)
   br label %Finalize_Variable_r
 
 Finalize_Variable_r:                              ; preds = %Finalize_Variable_l
-  %289 = load float*, float** %r, align 8
-  %290 = bitcast float* %289 to i8*
-  call void @_lfortran_free(i8* %290)
+  %294 = load float*, float** %r, align 8
+  %295 = bitcast float* %294 to i8*
+  call void @_lfortran_free_alloc(i8* %2, i8* %295)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
