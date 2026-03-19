@@ -168,7 +168,14 @@ namespace LCompilers {
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_string_only(x) ||
+            // CChar strings are raw i8 values, treated as primitive
+            bool is_cchar = false;
+            if (x && ASRUtils::is_string_only(x)) {
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(x));
+                is_cchar = (str->m_physical_type == ASR::string_physical_typeType::CChar);
+            }
+            return (ASRUtils::is_string_only(x) && !is_cchar) ||
                     (x && (ASR::is_a<ASR::List_t>(*x)
                        || ASR::is_a<ASR::Dict_t>(*x)
                        || ASR::is_a<ASR::Set_t>(*x)

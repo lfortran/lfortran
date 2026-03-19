@@ -2951,10 +2951,13 @@ public:
         return element_size * array_size;
     }
 
-    ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var) {
+    ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var,
+            SymbolTable* use_scope = nullptr) {
         uint64_t hash = get_hash((ASR::asr_t*) target_var);
         std::string target_var_name = target_var->m_name;
-        SymbolTable* scope = target_var->m_parent_symtab;
+        // Use the provided scope (e.g. subroutine scope for use-associated
+        // variables) or fall back to the variable's declaring scope
+        SymbolTable* scope = use_scope ? use_scope : target_var->m_parent_symtab;
         if (common_variables_hash.find(hash) != common_variables_hash.end()) {
             ASR::symbol_t* curr_struct = common_variables_hash[hash];
             ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(curr_struct);
@@ -3043,10 +3046,19 @@ public:
             return target;
         }
         if (ASR::is_a<ASR::Var_t>(*target)) {
-            ASR::symbol_t* target_var_sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+            ASR::symbol_t* target_var_sym_orig = ASR::down_cast<ASR::Var_t>(target)->m_v;
+            ASR::symbol_t* target_var_sym = ASRUtils::symbol_get_past_external(target_var_sym_orig);
             if (ASR::is_a<ASR::Variable_t>(*(target_var_sym))) {
                 ASR::Variable_t* target_var = ASR::down_cast<ASR::Variable_t>(target_var_sym);
-                ASR::asr_t* new_target = create_StructInstanceMember(target, target_var);
+                // Use the scope where the Var reference lives (e.g. subroutine
+                // scope for use-associated common block variables), not the
+                // scope where the variable was declared
+                SymbolTable* use_scope = nullptr;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*target_var_sym_orig)) {
+                    use_scope = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        target_var_sym_orig)->m_parent_symtab;
+                }
+                ASR::asr_t* new_target = create_StructInstanceMember(target, target_var, use_scope);
                 if (new_target) {
                     return ASRUtils::EXPR(new_target);
                 }
@@ -3055,10 +3067,16 @@ public:
             ASR::ArrayItem_t* target_array_item = ASR::down_cast<ASR::ArrayItem_t>(target);
             ASR::expr_t* target_array = target_array_item->m_v;
             if (ASR::is_a<ASR::Var_t>(*target_array)) {
-                ASR::symbol_t* target_array_var_sym = ASR::down_cast<ASR::Var_t>(target_array)->m_v;
+                ASR::symbol_t* target_array_var_sym_orig = ASR::down_cast<ASR::Var_t>(target_array)->m_v;
+                ASR::symbol_t* target_array_var_sym = ASRUtils::symbol_get_past_external(target_array_var_sym_orig);
                 if (ASR::is_a<ASR::Variable_t>(*(target_array_var_sym))) {
                     ASR::Variable_t* target_array_var = ASR::down_cast<ASR::Variable_t>(target_array_var_sym);
-                    ASR::asr_t* new_target_array = create_StructInstanceMember(target_array, target_array_var);
+                    SymbolTable* use_scope = nullptr;
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*target_array_var_sym_orig)) {
+                        use_scope = ASR::down_cast<ASR::ExternalSymbol_t>(
+                            target_array_var_sym_orig)->m_parent_symtab;
+                    }
+                    ASR::asr_t* new_target_array = create_StructInstanceMember(target_array, target_array_var, use_scope);
                     if (new_target_array) {
                         ASR::down_cast<ASR::ArrayItem_t>(target)->m_v = ASRUtils::EXPR(new_target_array);
                         return target;
@@ -6339,6 +6357,19 @@ public:
                     s_intent = ASRUtils::intent_local;
                 }
                 ASR::abiType s_abi = is_argument ? current_procedure_abi_type : ASR::abiType::Source;
+                // Return variables of bind(C) functions should also
+                // use the function's ABI for proper type mapping
+                if (!is_argument && current_scope->asr_owner &&
+                    ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                        current_scope->asr_owner);
+                    if (ASR::is_a<ASR::Function_t>(*owner)) {
+                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
+                        if (to_lower(s.m_name) == to_lower(fn->m_name)) {
+                            s_abi = current_procedure_abi_type;
+                        }
+                    }
+                }
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
@@ -17852,11 +17883,24 @@ public:
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
     AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi) {
-        // Handle kind
+        // Handle kind: set CChar for bind(C) character(c_char) arguments
+        // and return variables
+        bool is_return_var = false;
+        if (!is_argument && current_scope->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
+                if (sym == to_lower(fn->m_name)) {
+                    is_return_var = true;
+                }
+            }
+        }
         if( kind_item &&
             AST::is_a<AST::Name_t>(*kind_item->m_value) && 
             std::string(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char" &&
-            is_argument &&
+            (is_argument || is_return_var) &&
             abi == ASR::BindC){
             str->m_physical_type = ASR::CChar;
         } else {
