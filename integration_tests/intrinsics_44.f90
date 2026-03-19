@@ -17,4 +17,10 @@ program intrinsics_44
    print '(3i3)', b(3,:)
    if(any(b /= reshape( [ 7, 8, 9, 1, 2, 3, 4, 5, 6 ], [ 3, 3 ]))) error stop
 
+   block
+      integer :: x(2,2) = reshape([1,2,3,4], [2,2])
+      if (any(cshift(x, 1) /= reshape([2,1,4,3], [2,2]))) error stop
+      if (any(cshift(x, 1, dim=2) /= reshape([3,4,1,2], [2,2]))) error stop
+   end block
+
 end program

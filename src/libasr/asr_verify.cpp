@@ -1280,7 +1280,7 @@ public:
         require(x.m_name,
             "FunctionCall::m_name must be present");
         variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
-        if (x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+        if (x.m_dt) {
             visit_expr(*x.m_dt);
         }
         ASR::symbol_t* asr_owner_sym = nullptr;

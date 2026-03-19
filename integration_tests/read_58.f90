@@ -1,23 +1,26 @@
 program read_58
-  implicit none
+    implicit none
+    integer(1) :: i8
+    integer(2) :: i16
+    character(len=10) :: s
 
-  character(len=10) :: s
-  character(5), allocatable :: a(:)
-  integer :: ios
+    s = "42"
+    read(s, *) i8
+    if (i8 /= 42) error stop
+    print *, i8
 
-  allocate(a(1))
+    s = "-7"
+    read(s, *) i8
+    if (i8 /= -7) error stop
+    print *, i8
 
-  s = "hello"
+    s = "12345"
+    read(s, *) i16
+    if (i16 /= 12345) error stop
+    print *, i16
 
-  read(s, *, iostat=ios) a
-  if (ios /= 0) then
-     error stop "READ failed"
-  end if
-
-  if (a(1) /= "hello") then
-     error stop "Wrong value in a(1)"
-  end if
-
-  print *, "PASS"
-
-end program read_58
+    s = "-99"
+    read(s, *) i16
+    if (i16 /= -99) error stop
+    print *, i16
+end program

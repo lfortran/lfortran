@@ -216,6 +216,11 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         bool is_optional_argument_present(ASR::Function_t* s) {
+            // bind(C) functions use NULL for absent optional arguments
+            // per the Fortran standard; no is_present parameter needed.
+            if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                return false;
+            }
             for( size_t i = 0; i < s->n_args; i++ ) {
                 ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(s->m_args[i])->m_v;
                 if( is_presence_optional(arg_sym) ) {
@@ -485,6 +490,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
                     const Location& loc = arg_i->base.loc;
                     LCOMPILERS_ASSERT(arg_i != nullptr);
+                    bool is_dummy_pointer = ASRUtils::is_pointer(func_arg_j->m_type);
                     bool is_data_pointer = ASRUtils::is_pointer(ASRUtils::expr_type(arg_i));
                     bool is_proc_pointer = ASR::is_a<ASR::FunctionType_t>(
                         *ASRUtils::expr_type(arg_i)) &&
@@ -492,7 +498,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         ASR::is_a<ASR::Variable_t>(
                             *ASR::down_cast<ASR::Var_t>(arg_i)->m_v) &&
                         ASRUtils::EXPR2VAR(arg_i)->m_intent == ASR::intentType::Local;
-                    if( is_data_pointer || is_proc_pointer ) {
+                    if( !is_dummy_pointer && (is_data_pointer || is_proc_pointer) ) {
                         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(
                             ASR::make_Logical_t(al, loc, 4));
                         is_present = ASRUtils::EXPR(ASR::make_PointerAssociated_t(
