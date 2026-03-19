@@ -505,16 +505,9 @@ int32_t c40_check_cptr_type(CFI_cdesc_t *arr) {
     return (arr->type == CFI_type_cptr) ? 1 : 0;
 }
 
-/* ---- CFI_type_cfunptr ----
- * Note: flang is missing the CFI_type_cfunptr macro (F2018 Table 18.5
- * mandates it). We guard with #ifdef so the test compiles on flang. */
+/* ---- CFI_type_cfunptr ---- */
 int32_t c40_check_cfunptr_type(CFI_cdesc_t *arr) {
-#ifdef CFI_type_cfunptr
     return (arr->type == CFI_type_cfunptr) ? 1 : 0;
-#else
-    (void)arr;
-    return 1;  /* skip check when macro is missing */
-#endif
 }
 
 /* ---- Deferred-length allocatable character ---- */
