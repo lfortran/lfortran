@@ -17581,8 +17581,8 @@ public:
     /// Checks if types are of matching stringPhysicalType.
     /// If expressions aren't of string type, Do NOTHING.
     void check_strings_phsyicalType_match(ASR::ttype_t* const a, ASR::ttype_t* const b){
-        if(ASRUtils::type_get_past_allocatable(a)->type == ASR::Array
-        || ASRUtils::type_get_past_allocatable(b)->type == ASR::Array) return; //Don't Check - Workaround for now
+        if(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(a))->type == ASR::Array
+        || ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(b))->type == ASR::Array) return; //Don't Check - Workaround for now
 
         if(ASRUtils::extract_type(a)->type == ASR::String
             && ASRUtils::extract_type(b)->type == ASR::String){
