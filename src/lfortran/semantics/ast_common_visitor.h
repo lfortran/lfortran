@@ -8365,8 +8365,8 @@ public:
             
             if (abi == ASR::abiType::BindC) {
                 ASR::ttype_t *inner_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_array(type)));
+                    ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_pointer(type)));
                 ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(inner_type);
                 if (str_type->m_len_kind != ASR::DeferredLength
                         && str_type->m_len_kind != ASR::AssumedLength) {
