@@ -1374,7 +1374,8 @@ public:
 
         // check if format as a keyword arg
         for (size_t i = 0; i < n_kwargs; i++) {
-            if (strcmp(m_kwargs[i].m_arg, "fmt") == 0) {
+            std::string kwarg_name = to_lower(std::string(m_kwargs[i].m_arg));
+            if (strcmp(kwarg_name.c_str(), "fmt") == 0) {
                 formatted = true;
                 break;
             }
