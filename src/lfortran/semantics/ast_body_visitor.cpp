@@ -2932,7 +2932,8 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(
                 al, variable_dependencies_vec, source_type);
-            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(source);
+            ASR::symbol_t* type_decl = ASRUtils::import_struct_type(
+                al, ASRUtils::get_struct_sym_from_struct_expr(source), current_scope);
             ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, tmp_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
