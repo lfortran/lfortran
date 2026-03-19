@@ -21,6 +21,14 @@
 #    define FIXED_VECTOR_TYPE llvm::VectorType
 #endif
 
+static inline void llvm_fn_insert_bb(llvm::Function *fn, llvm::BasicBlock *bb) {
+#if LLVM_VERSION_MAJOR >= 16
+    fn->insert(fn->end(), bb);
+#else
+    fn->getBasicBlockList().push_back(bb);
+#endif
+}
+
 namespace LCompilers {
 class ASRToLLVMVisitor;
 

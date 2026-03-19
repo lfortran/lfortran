@@ -410,11 +410,7 @@ public:
             builder->CreateBr(bb);
         }
         if (bb->getParent() == nullptr) {
-#if LLVM_VERSION_MAJOR >= 16
-            fn->insert(fn->end(), bb);
-#else
-            fn->getBasicBlockList().push_back(bb);
-#endif
+            llvm_fn_insert_bb(fn, bb);
         } else {
             LCOMPILERS_ASSERT(bb->getParent() == fn);
         }
@@ -474,11 +470,7 @@ public:
             ASR::GoToTarget_t *gt = ASR::down_cast<ASR::GoToTarget_t>(body[i]);
             if (llvm_goto_targets.find(gt->m_id) != llvm_goto_targets.end()) continue;
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "goto_target");
-#if LLVM_VERSION_MAJOR >= 16
-            fn->insert(fn->end(), bb);
-#else
-            fn->getBasicBlockList().push_back(bb);
-#endif
+            llvm_fn_insert_bb(fn, bb);
             llvm_goto_targets[gt->m_id] = bb;
         }
     }
@@ -7096,13 +7088,8 @@ public:
                         llvm::ConstantPointerNull::get(
                             llvm::cast<llvm::PointerType>(arg_array_desc->getType())));
                     llvm::Function* fn = builder->GetInsertBlock()->getParent();
-#if LLVM_VERSION_MAJOR >= 16
-                    fn->insert(fn->end(), copy_bb);
-                    fn->insert(fn->end(), merge_bb);
-#else
-                    fn->getBasicBlockList().push_back(copy_bb);
-                    fn->getBasicBlockList().push_back(merge_bb);
-#endif
+                    llvm_fn_insert_bb(fn, copy_bb);
+                    llvm_fn_insert_bb(fn, merge_bb);
                     // If null, store null data pointer and jump to merge
                     llvm::BasicBlock* absent_bb = llvm::BasicBlock::Create(
                         context, "opt_absent", fn);
