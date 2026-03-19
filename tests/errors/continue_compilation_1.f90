@@ -636,6 +636,9 @@ program continue_compilation_1
     open(unit=7, decimal="POINT", decimal="comma")
     integer :: char_len_var = 10
     character(len = char_len_var) :: char_nonconst
+    interface undeclared_iface
+        module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+    end interface
 
 
 
