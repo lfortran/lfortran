@@ -8322,11 +8322,12 @@ static void process_fmt_items_read(InputSource *inputSource,
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
 
         int repeat_count = 0;
+        bool has_repeat_count = false;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
             repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
+            has_repeat_count = true;
             fmt_pos++;
         }
-        if (repeat_count == 0) repeat_count = 1;
 
         if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
             // Parenthesized group: N(...)
@@ -8358,16 +8359,20 @@ static void process_fmt_items_read(InputSource *inputSource,
             negative_scale_factor = true;
             fmt_pos++;
             repeat_count = 0;
+            has_repeat_count = false;
             while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
                 repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
+                has_repeat_count = true;
                 fmt_pos++;
             }
-            if (repeat_count == 0) repeat_count = 1;
         }
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
+            if (!has_repeat_count) repeat_count = 1;
             *scale_factor = repeat_count;
             if (negative_scale_factor) *scale_factor = -(*scale_factor);
+            repeat_count = 1;
+        } else if (!has_repeat_count) {
             repeat_count = 1;
         }
         
