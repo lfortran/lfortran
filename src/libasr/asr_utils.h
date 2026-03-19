@@ -1655,6 +1655,12 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return true;
+        } case ASR::exprType::TypeInquiry: {
+            ASR::TypeInquiry_t* ti = ASR::down_cast<ASR::TypeInquiry_t>(a_value);
+            if (ti->m_value != nullptr) {
+                return ASRUtils::is_value_constant(ti->m_value);
+            }
+            return true;
         } case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_value);
