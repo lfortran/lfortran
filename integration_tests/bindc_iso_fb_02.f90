@@ -669,8 +669,8 @@ contains
     ! ========================================================================
 
     subroutine test_char_alloc()
-        character(kind=c_char, len=1), allocatable :: ca(:)
-        allocate(ca(3))
+        character(kind=c_char, len=:), allocatable :: ca(:)
+        allocate(character(len=1) :: ca(3))
         ca = ['X', 'Y', 'Z']
         ! 88 + 89 + 90 = 267
         if (c30_char_alloc_sum(ca) /= 267) error stop "FAIL: char alloc sum"
@@ -679,8 +679,9 @@ contains
     end subroutine
 
     subroutine test_char_ptr()
-        character(kind=c_char, len=1), target :: tgt(4)
-        character(kind=c_char, len=1), pointer :: p(:)
+        character(kind=c_char, len=:), allocatable, target :: tgt(:)
+        character(kind=c_char, len=:), pointer :: p(:)
+        allocate(character(len=1) :: tgt(4))
         tgt = ['a', 'b', 'c', 'd']
         p => tgt
         ! 97 + 98 + 99 + 100 = 394
