@@ -1353,3 +1353,9 @@ semantic error: 'dim' argument of 'sum' intrinsic must be INTEGER
     |
 633 |     print *, sum(arr1, dim = mask1)
     |                              ^^^^^ 
+
+semantic error: associated() argument must be a pointer
+   --> tests/errors/continue_compilation_1.f90:635:25
+    |
+635 |     print *, associated(ppp)
+    |                         ^^^ 
