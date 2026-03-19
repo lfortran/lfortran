@@ -382,17 +382,21 @@ int c29_verify_writes(void) {
     return 0;
 }
 
-/* ---- descriptor type code queries ---- */
-int c29_get_type_code_int32(CFI_cdesc_t *a) {
-    return (int)a->type;
+/* ---- descriptor type code queries ----
+ * Return 1 if the descriptor's type matches the expected CFI_type_* macro,
+ * 0 otherwise. The numeric values of type codes are implementation-defined
+ * (GFortran uses a bitfield encoding, Flang uses sequential integers),
+ * so we must compare against the macros on the C side. */
+int c29_check_type_int32(CFI_cdesc_t *a) {
+    return (a->type == CFI_type_int32_t) ? 1 : 0;
 }
 
-int c29_get_type_code_double(CFI_cdesc_t *a) {
-    return (int)a->type;
+int c29_check_type_double(CFI_cdesc_t *a) {
+    return (a->type == CFI_type_double) ? 1 : 0;
 }
 
-int c29_get_type_code_float(CFI_cdesc_t *a) {
-    return (int)a->type;
+int c29_check_type_float(CFI_cdesc_t *a) {
+    return (a->type == CFI_type_float) ? 1 : 0;
 }
 
 /* ---- same array to multiple descriptors ---- */

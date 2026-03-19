@@ -363,21 +363,21 @@ module bindc_29_mod
             import :: c_int
         end function
 
-        ! ---- descriptor type code query ----
-        integer(c_int) function c29_get_type_code_int32(a) &
-                bind(C, name="c29_get_type_code_int32")
+        ! ---- descriptor type code check ----
+        integer(c_int) function c29_check_type_int32(a) &
+                bind(C, name="c29_check_type_int32")
             import :: c_int, c_int32_t
             integer(c_int32_t), intent(in) :: a(:)
         end function
 
-        integer(c_int) function c29_get_type_code_double(a) &
-                bind(C, name="c29_get_type_code_double")
+        integer(c_int) function c29_check_type_double(a) &
+                bind(C, name="c29_check_type_double")
             import :: c_int, c_double
             real(c_double), intent(in) :: a(:)
         end function
 
-        integer(c_int) function c29_get_type_code_float(a) &
-                bind(C, name="c29_get_type_code_float")
+        integer(c_int) function c29_check_type_float(a) &
+                bind(C, name="c29_check_type_float")
             import :: c_int, c_float
             real(c_float), intent(in) :: a(:)
         end function
@@ -991,20 +991,14 @@ contains
         integer(c_int32_t) :: ai(3)
         real(c_double)     :: ad(3)
         real(c_float)      :: af(3)
-        integer :: tc
 
         ai = [1, 2, 3]
         ad = [1.0d0, 2.0d0, 3.0d0]
         af = [1.0, 2.0, 3.0]
 
-        tc = c29_get_type_code_int32(ai)
-        if (tc /= 9) error stop "FAIL: type code int32"
-
-        tc = c29_get_type_code_double(ad)
-        if (tc /= 28) error stop "FAIL: type code double"
-
-        tc = c29_get_type_code_float(af)
-        if (tc /= 27) error stop "FAIL: type code float"
+        if (c29_check_type_int32(ai) /= 1) error stop "FAIL: type code int32"
+        if (c29_check_type_double(ad) /= 1) error stop "FAIL: type code double"
+        if (c29_check_type_float(af) /= 1) error stop "FAIL: type code float"
     end subroutine
 
     subroutine test_same_array_multi_desc()
