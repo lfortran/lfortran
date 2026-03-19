@@ -2919,6 +2919,39 @@ public:
             }
         }
 
+        // When source is a FunctionCall, materialize it into a temporary
+        // variable so the function is called only once. Without this, the
+        // source expression is duplicated into ArrayBound, ArraySize,
+        // Allocate, and Assignment nodes, causing multiple evaluations.
+        if (source_cond && source != nullptr &&
+                ASR::is_a<ASR::FunctionCall_t>(*source)) {
+            ASR::ttype_t* source_type = ASRUtils::expr_type(source);
+            std::string tmp_name = current_scope->get_unique_name(
+                "__lfortran_allocate_source_tmp");
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(
+                al, variable_dependencies_vec, source_type);
+            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(source);
+            ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
+                al, x.base.base.loc, current_scope, s2c(al, tmp_name),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, source_type, type_decl,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false);
+            current_scope->add_symbol(tmp_name,
+                ASR::down_cast<ASR::symbol_t>(tmp_sym));
+            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(
+                al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(tmp_sym)));
+            ASR::stmt_t* assign_source = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(
+                    al, x.base.base.loc, tmp_var, source, nullptr,
+                    compiler_options.po.realloc_lhs_arrays, false));
+            current_body->push_back(al, assign_source);
+            source = tmp_var;
+        }
+
         if ( mold_cond || source_cond ) {
             Vec<ASR::alloc_arg_t> new_alloc_args_vec;
             new_alloc_args_vec.reserve(al, alloc_args_vec.size());
