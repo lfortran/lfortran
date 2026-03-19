@@ -788,6 +788,28 @@ public:
                 r += " => ";
             } else {
                 r += " = ";
+                // For parameters, prefer the original symbolic expression over the
+                // evaluated value. Unwrap any implicit Cast nodes that the compiler
+                // added for type compatibility so the output stays readable.
+                if (x.m_storage == ASR::storage_typeType::Parameter && x.m_symbolic_value) {
+                    const ASR::expr_t* sym = x.m_symbolic_value;
+                    while (ASR::is_a<ASR::Cast_t>(*sym)) {
+                        sym = ASR::down_cast<ASR::Cast_t>(sym)->m_arg;
+                    }
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::RealConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::LogicalConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::StringConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::ComplexConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*sym)) {
+                        visit_expr(*sym);
+                        r += src;
+                        handle_line_truncation(r, 2);
+                        r += "\n";
+                        src = r;
+                        return;
+                    }
+                }
             }
             visit_expr(*x.m_value);
             r += src;
@@ -1717,7 +1739,8 @@ public:
         std::string re = src;
         visit_expr(*x.m_im);
         std::string im = src;
-        src = "cmplx(" + re + ", " + im + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "cmplx(" + re + ", " + im + ", kind=" + std::to_string(kind) + ")";
     }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
@@ -1830,7 +1853,7 @@ public:
                 return 4;
             case IEF::Char:
             case IEF::Achar:
-                return 1;
+                return -1;
             default:
                 return -1;
         }
@@ -1858,11 +1881,18 @@ public:
             out += src;
         }
         if (x.m_type != nullptr) {
-            int default_kind = get_default_kind_for_intrinsic(x);
-            if (default_kind > 0) {
-                int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                if (return_kind != default_kind) {
-                    out += ", " + std::to_string(return_kind);
+            using IEF = ASRUtils::IntrinsicElementalFunctions;
+            if (static_cast<IEF>(x.m_intrinsic_id) == IEF::Char ||
+                    static_cast<IEF>(x.m_intrinsic_id) == IEF::Achar) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                out += ", kind=" + std::to_string(kind);
+            } else {
+                int default_kind = get_default_kind_for_intrinsic(x);
+                if (default_kind > 0) {
+                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    if (return_kind != default_kind) {
+                        out += ", " + std::to_string(return_kind);
+                    }
                 }
             }
         }
@@ -2090,8 +2120,15 @@ public:
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        std::string re = std::to_string(x.m_re);
-        std::string im = std::to_string(x.m_im);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string re, im;
+        if (kind >= 8) {
+            re = ASRUtils::to_string_with_precision(x.m_re, 16) + "_" + std::to_string(kind);
+            im = ASRUtils::to_string_with_precision(x.m_im, 16) + "_" + std::to_string(kind);
+        } else {
+            re = ASRUtils::to_string_with_precision(x.m_re, 8);
+            im = ASRUtils::to_string_with_precision(x.m_im, 8);
+        }
         src = "(" + re + ", " + im + ")";
     }
 
@@ -2224,7 +2261,8 @@ public:
 
     void visit_StringChr(const ASR::StringChr_t &x) {
         visit_expr(*x.m_arg);
-        src = "char(" + src + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "char(" + src + ", kind=" + std::to_string(kind) + ")";
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
@@ -2275,11 +2313,20 @@ public:
             arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
             needs_reshape = (arr_type->n_dims > 1);
         }
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        std::string kind_suffix = "";
+        if (ASR::is_a<ASR::Real_t>(*elem_type) && kind >= 8) {
+            kind_suffix = "_8";
+        } else if (ASR::is_a<ASR::Integer_t>(*elem_type) && kind != 4) {
+            kind_suffix = "_" + std::to_string(kind);
+        }
         std::string r = "";
         if (needs_reshape) r += "reshape(";
         r += "[";
         for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            r += ASRUtils::fetch_ArrayConstant_value(x, i);
+            r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
             if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
         }
         r += "]";

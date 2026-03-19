@@ -6707,7 +6707,7 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         case ASR::ttypeType::Complex: {
             switch (kind) {
                 case 4: return "("+(to_string_with_precision(*(((float*)data) + 2*i), 8))+", "+ (to_string_with_precision(*(((float*)data) + 2*i + 1), 8)) + ")";
-                case 8: return "("+(to_string_with_precision(*(((double*)data) + 2*i), 16))+", "+ (to_string_with_precision(*(((double*)data) + 2*i + 1), 16)) + ")";
+                case 8: return "("+(to_string_with_precision(*(((double*)data) + 2*i), 16))+"_8, "+ (to_string_with_precision(*(((double*)data) + 2*i + 1), 16)) + "_8)";
                 default:
                     throw LCompilersException("Unsupported kind for complex array constant.");
             }
