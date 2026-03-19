@@ -2677,17 +2677,35 @@ public:
                 ASR::ttype_t* var_type = var->m_type;
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var_type))) {
                     ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var_type));
-                    ASR::ttype_t* updated_base_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                    ASR::ttype_t* resolved_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
                          ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
-                    var->m_type = rewrap_deferred_struct_type(
-                        rewrap_deferred_struct_type, var_type,
-                        updated_base_type, x.base.base.loc);
+                    // Preserve all wrappers (array + pointer/allocatable) while replacing
+                    // the deferred StructType placeholder with the resolved type.
+                    var->m_type = rewrap_pdt_member_type(var_type, resolved_type, x.base.base.loc);
                     if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
                         ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
                         ptr_null->m_type = var->m_type;
                     }
                 }
                 var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+                // If this variable is a struct member, refresh the owning struct
+                // signature so it stays in sync with the updated member type.
+                if (var->m_parent_symtab && var->m_parent_symtab->asr_owner &&
+                    ASR::is_a<ASR::symbol_t>(*var->m_parent_symtab->asr_owner)) {
+                    ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(var->m_parent_symtab->asr_owner);
+                    if (ASR::is_a<ASR::Struct_t>(*owner_sym)) {
+                        ASR::Struct_t* owner_struct = ASR::down_cast<ASR::Struct_t>(owner_sym);
+                        bool owner_is_cstruct = true;
+                        if (owner_struct->m_struct_signature &&
+                            ASR::is_a<ASR::StructType_t>(*owner_struct->m_struct_signature)) {
+                            owner_is_cstruct = ASR::down_cast<ASR::StructType_t>(
+                                owner_struct->m_struct_signature)->m_is_cstruct;
+                        }
+                        owner_struct->m_struct_signature = nullptr;
+                        owner_struct->m_struct_signature = ASRUtils::make_StructType_t_util(
+                            al, owner_struct->base.base.loc, owner_sym, owner_is_cstruct);
+                    }
+                }
             }
             vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
