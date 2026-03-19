@@ -9067,8 +9067,24 @@ public:
                         module.get());
                     llvm::Value* src_as_elem_ptr = builder->CreateBitCast(
                         source_alloca, elem_type->getPointerTo());
+
+                    // Map target index to zero-based source chunk index using
+                    // the target array lower bound (not always 1).
+                    llvm::Value* lower_bound = llvm::ConstantInt::get(
+                        idx->getType(), 1);
+                    ASR::dimension_t* target_dims = nullptr;
+                    size_t n_target_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(ai->m_v), target_dims);
+                    if (n_target_dims > 0 && target_dims[0].m_start) {
+                        int ptr_loads_copy = ptr_loads;
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(
+                            *ASRUtils::expr_type(target_dims[0].m_start));
+                        this->visit_expr_wrapper(target_dims[0].m_start, true);
+                        ptr_loads = ptr_loads_copy;
+                        lower_bound = builder->CreateSExtOrTrunc(tmp, idx->getType());
+                    }
                     llvm::Value* zero_based = builder->CreateSub(
-                        idx, llvm::ConstantInt::get(idx->getType(), 1));
+                        idx, lower_bound);
                     zero_based = builder->CreateZExtOrTrunc(
                         zero_based, llvm::Type::getInt32Ty(context));
                     llvm::Value* elem_ptr = builder->CreateGEP(
@@ -13385,12 +13401,30 @@ public:
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
+        ASR::ttype_t* source_arr_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(x.m_source));
         if (ASRUtils::is_character(*expr_type(x.m_source))) {
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
         } else if(source->getType()->isPointerTy()){//Case: [n x i8]* type Arrays and ptr %
-            source_ptr = source;
+            if (is_array && ASR::is_a<ASR::Array_t>(*source_arr_type) &&
+                ASR::down_cast<ASR::Array_t>(source_arr_type)->m_physical_type ==
+                    ASR::array_physical_typeType::DescriptorArray) {
+                llvm::Type* llvm_source_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_source, source_arr_type, module.get());
+                llvm::Type* llvm_source_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_source, ASRUtils::extract_type(source_arr_type), module.get());
+                llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                    x.m_source, ASRUtils::expr_type(x.m_source), source, module.get());
+                source_ptr = llvm_utils->CreateLoad2(
+                    llvm_source_elem_type->getPointerTo(), data_ptr_ptr);
+                llvm::Value* offset = arr_descr->get_offset(llvm_source_arr_type, source);
+                source_ptr = llvm_utils->create_ptr_gep2(
+                    llvm_source_elem_type, source_ptr, offset);
+            } else {
+                source_ptr = source;
+            }
         } else if(source_type->isArrayTy()){
             // Source is a loaded array value (e.g. from struct member access),
             // store into alloca to obtain a pointer for bitcast

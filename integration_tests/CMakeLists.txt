@@ -3565,6 +3565,8 @@ RUN(NAME transfer_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_20 LABELS gfortran llvm)
 RUN(NAME transfer_21 LABELS gfortran llvm)
 RUN(NAME transfer_22 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME transfer_23 LABELS gfortran llvm)
+RUN(NAME transfer_24 LABELS gfortran llvm)
 RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
