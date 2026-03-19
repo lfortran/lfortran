@@ -226,26 +226,26 @@ module bindc_30_mod
         integer(c_int) function c30_char_alloc_sum(a) &
                 bind(C, name="c30_char_alloc_sum")
             import :: c_int, c_char
-            character(kind=c_char, len=1), allocatable, intent(in) :: a(:)
+            character(kind=c_char, len=:), allocatable, intent(in) :: a(:)
         end function
 
         integer(c_int) function c30_char_alloc_attr(a) &
                 bind(C, name="c30_char_alloc_attr")
             import :: c_int, c_char
-            character(kind=c_char, len=1), allocatable, intent(in) :: a(:)
+            character(kind=c_char, len=:), allocatable, intent(in) :: a(:)
         end function
 
         ! ---- character pointer array ----
         integer(c_int) function c30_char_ptr_sum(a) &
                 bind(C, name="c30_char_ptr_sum")
             import :: c_int, c_char
-            character(kind=c_char, len=1), pointer, intent(in) :: a(:)
+            character(kind=c_char, len=:), pointer, intent(in) :: a(:)
         end function
 
         integer(c_int) function c30_char_ptr_attr(a) &
                 bind(C, name="c30_char_ptr_attr")
             import :: c_int, c_char
-            character(kind=c_char, len=1), pointer, intent(in) :: a(:)
+            character(kind=c_char, len=:), pointer, intent(in) :: a(:)
         end function
 
         ! ---- allocatable + assumed-rank ----
