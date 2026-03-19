@@ -1307,9 +1307,14 @@ class ASRToLLVMVisitor;
             }
 
             // Finalize members
+            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
                 if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
+                // bind(C) struct: non-pointer character members are inline i8, nothing to free
+                if(is_bindc &&
+                   !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
+                   ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
 
 
                 if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
