@@ -744,8 +744,33 @@ public:
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(
             ASRUtils::extract_type(expr_type(str_expr)));
         this->visit_expr_load_wrapper(str_expr, 0);
+
+        // For bind(C) struct character members, the LLVM type is i8*
+        // even though the ASR physical type says DescriptorString.
+        ASR::string_physical_typeType phys_type = str->m_physical_type;
+        if (phys_type == ASR::DescriptorString && tmp->getType()->isPointerTy()) {
+            // Check if this is a non-pointer character member of a bind(C) struct
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*str_expr)) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(str_expr);
+                ASR::symbol_t* member_sym = ASRUtils::symbol_get_past_external(sim->m_m);
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+                ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(
+                    member_var->m_parent_symtab->asr_owner);
+                struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+                if (ASR::is_a<ASR::Struct_t>(*struct_sym) &&
+                    ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC) {
+                    ASR::ttype_t* mem_type = sim->m_type;
+                    if (!ASR::is_a<ASR::Pointer_t>(*mem_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*mem_type)) {
+                        phys_type = ASR::CChar;
+                    }
+                }
+            }
+        }
+
         std::pair<llvm::Value*, llvm::Value*> data_and_length;
-        switch (str->m_physical_type)
+        switch (phys_type)
         {
             case ASR::DescriptorString:{
                 //Set data
@@ -766,9 +791,8 @@ public:
                 break;
             }
             case ASR::CChar:{
-
-                llvm::Value* char_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context));
-                data_and_length.first = builder->CreateStore(tmp, char_ptr);
+                // tmp is i8* (pointer to the character byte)
+                data_and_length.first = tmp;
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                 break;
             }
@@ -5723,15 +5747,23 @@ public:
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
-                    setup_string(ptr_member, symbol_type);
-                    if (!initialize_val && v && v->m_symbolic_value &&
-                        ASRUtils::is_string_only(ASRUtils::expr_type(v->m_symbolic_value))) {
-                        visit_expr(*v->m_symbolic_value);
-                        llvm_utils->lfortran_str_copy(
-                            ptr_member, tmp,
-                            ASRUtils::get_string_type(symbol_type),
-                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value)),
-                            ASRUtils::is_allocatable(symbol_type));
+                    // Skip string descriptor setup for bind(C) struct non-pointer character members
+                    bool is_bindc = (struct_type_t->m_abi == ASR::abiType::BindC);
+                    ASR::Variable_t* v_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                    bool is_direct_char = is_bindc &&
+                        !ASR::is_a<ASR::Pointer_t>(*v_sym->m_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*v_sym->m_type);
+                    if (!is_direct_char) {
+                        setup_string(ptr_member, symbol_type);
+                        if (!initialize_val && v && v->m_symbolic_value &&
+                            ASRUtils::is_string_only(ASRUtils::expr_type(v->m_symbolic_value))) {
+                            visit_expr(*v->m_symbolic_value);
+                            llvm_utils->lfortran_str_copy(
+                                ptr_member, tmp,
+                                ASRUtils::get_string_type(symbol_type),
+                                ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value)),
+                                ASRUtils::is_allocatable(symbol_type));
+                        }
                     }
                 }
                 if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val) {
@@ -10094,6 +10126,43 @@ public:
         }
         if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value)) &&
              ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_target_type))) {
+            // Check if target is a character member of a bind(C) struct
+            bool is_bindc_char_member = false;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+                ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+                ASR::symbol_t* member_sym = ASRUtils::symbol_get_past_external(sim->m_m);
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+                ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(
+                    member_var->m_parent_symtab->asr_owner);
+                struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+                if (ASR::is_a<ASR::Struct_t>(*struct_sym) &&
+                    ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC) {
+                    ASR::ttype_t* mem_type = sim->m_type;
+                    is_bindc_char_member = !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*mem_type);
+                }
+            }
+            if (is_bindc_char_member) {
+                // bind(C) struct character member: store first byte directly as i8
+                ASR::String_t* src_str_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(asr_value_type));
+                llvm::Value* byte_val;
+                if (src_str_type->m_physical_type == ASR::CChar) {
+                    byte_val = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt8Ty(context), value);
+                } else {
+                    // DescriptorString: extract data pointer and load first byte
+                    llvm::Value* data_ptr = llvm_utils->create_gep2(
+                        llvm_utils->string_descriptor, value, 0);
+                    llvm::Value* data = llvm_utils->CreateLoad2(
+                        character_type, data_ptr);
+                    byte_val = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt8Ty(context), data);
+                }
+                builder->CreateStore(byte_val, target);
+                tmp = nullptr;
+                return;
+            }
             // For struct members (especially common blocks), treat as allocatable
             // so _lfortran_strcpy allocates memory if the pointer is NULL.
             // Common block structs are initialized with zeroinitializer, so

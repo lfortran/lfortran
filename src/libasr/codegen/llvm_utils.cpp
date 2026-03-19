@@ -451,11 +451,23 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
+            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC);
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
-                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
+                llvm::Type* llvm_mem_type;
+                // bind(C) struct: non-pointer, non-allocatable character maps to i8
+                ASR::ttype_t* mem_type = member->m_type;
+                bool is_direct_char = is_bindc &&
+                    !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
+                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
+                if (is_direct_char) {
+                    llvm_mem_type = llvm::Type::getInt8Ty(context);
+                } else {
+                    llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                        al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
+                }
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
