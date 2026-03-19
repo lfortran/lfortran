@@ -1135,6 +1135,8 @@ public:
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
         is_Function = true;
+        bool old_in_Subroutine = in_Subroutine;
+        in_Subroutine = true;
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
@@ -1144,6 +1146,7 @@ public:
                 }
             }
         }
+        in_Subroutine = old_in_Subroutine;
         is_Function = false;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
@@ -2707,10 +2710,12 @@ public:
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
+        bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
+        in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
         return;
     }
@@ -3600,6 +3605,18 @@ public:
             ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
             ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var->m_type_declaration == placeholder_sym) {
+                        var->m_type_declaration = real_sym;
+                        if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                        } else {
+                            var->m_type = real_func_type;
+                        }
+                    }
+                }
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
                     for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {

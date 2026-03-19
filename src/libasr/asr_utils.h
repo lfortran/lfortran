@@ -3303,7 +3303,13 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerArray;
+            if( is_dimension_star ||
+                ASRUtils::is_fixed_size_array(m_dims, n_dims) ||
+                !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+                physical_type = ASR::array_physical_typeType::PointerArray;
+            } else {
+                physical_type = ASR::array_physical_typeType::DescriptorArray;
+            }
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument || (type && ASRUtils::is_character(*type)) ) {
@@ -5998,7 +6004,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     // need to be tracked which by default pass arrays by using descriptors.
     if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
          || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
-        && ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
+        && (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface
+            || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
     }
 
@@ -6642,8 +6649,13 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
+            int src_len = len;
+            ASR::String_t* src_type = ASR::down_cast<ASR::String_t>(
+                extract_type(expr_type((ASR::expr_t*)value)));
+            extract_value(src_type->m_len, src_len);
+            int copy_len = std::min(len, src_len);
             for (int j = 0; j < len; j++) {
-                *(((char*)x->m_data) + i*len + j) = data[j];
+                *(((char*)x->m_data) + i*len + j) = (j < copy_len) ? data[j] : ' ';
             }
             break;
         }
@@ -6695,7 +6707,7 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         case ASR::ttypeType::Complex: {
             switch (kind) {
                 case 4: return "("+(to_string_with_precision(*(((float*)data) + 2*i), 8))+", "+ (to_string_with_precision(*(((float*)data) + 2*i + 1), 8)) + ")";
-                case 8: return "("+(to_string_with_precision(*(((double*)data) + 2*i), 16))+", "+ (to_string_with_precision(*(((double*)data) + 2*i + 1), 16)) + ")";
+                case 8: return "("+(to_string_with_precision(*(((double*)data) + 2*i), 16))+"_8, "+ (to_string_with_precision(*(((double*)data) + 2*i + 1), 16)) + "_8)";
                 default:
                     throw LCompilersException("Unsupported kind for complex array constant.");
             }
@@ -6910,12 +6922,19 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         case ASR::ttypeType::String: {
             int len = -1;
             ASRUtils::extract_value(
-                ASR::down_cast<ASR::String_t>(extract_type(expr_type(a_args[0])))->m_len, len);
+                ASR::down_cast<ASR::String_t>(a_type)->m_len, len);
             char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
-                char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(
+                    ASRUtils::expr_value(a_args[i]));
+                char* value = sc->m_s;
+                int src_len = len;
+                ASR::String_t* src_type = ASR::down_cast<ASR::String_t>(
+                    extract_type(expr_type((ASR::expr_t*)sc)));
+                extract_value(src_type->m_len, src_len);
+                int copy_len = std::min(len, src_len);
                 for (int j = 0; j < len; j++) {
-                    data[i*len + j] = value[j];
+                    data[i*len + j] = (j < copy_len) ? value[j] : ' ';
                 }
             }
             data[len*n_args] = '\0';

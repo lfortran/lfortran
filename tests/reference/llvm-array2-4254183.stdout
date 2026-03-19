@@ -14,16 +14,16 @@ define i32 @main(i32 %0, i8** %1) {
   %h = alloca [24 x float], align 4
   %i = alloca [36 x i32], align 4
   %j = alloca [20 x i32], align 4
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_array2
 
 FINALIZE_SYMTABLE_array2:                         ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lpython_free_argv()
+declare void @_lfortran_internal_alloc_finalize()

@@ -214,8 +214,12 @@ class ASRToLLVMVisitor;
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
+        llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
+        llvm::Value* lfortran_realloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* ptr, llvm::Value* arg_size);
         llvm::Value* lfortran_calloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size);
         static inline bool is_llvm_struct(ASR::ttype_t* asr_type) {
@@ -281,6 +285,10 @@ class ASRToLLVMVisitor;
             llvm::Type* dim_descr_type_; // dimension_descriptor type (used with descriptorArrays)
             llvm::FunctionType* struct_copy_functype;
 
+            // Allocator support: the allocator is an opaque struct pointer
+            // passed to runtime functions for compiler-controlled allocation.
+            llvm::Value* allocator_instance = nullptr; // cached global allocator ptr
+
 #if LLVM_VERSION_MAJOR >= 17
             llvm::PointerType* i8_ptr = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
 #else
@@ -302,6 +310,11 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free(llvm::Value* ptr);
             // lfortran_free_nocheck is a variant of lfortran_free that does not check for null pointers before freeing.
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
+            llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
+
+            // Get or create the cached global allocator pointer
+            llvm::Value* get_allocator(llvm::Module* mod);
+
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
@@ -383,14 +396,15 @@ class ASRToLLVMVisitor;
                             span_type->getPointerTo(),
                             llvm::Type::getInt32Ty(context),
                         }));
-                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf");
+                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf_alloc");
                         if (!lcompilers_snprintf_fn) {
                             llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf", module);
+                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf_alloc", module);
                         }
 
                         // Allocate and populate labels and spans
@@ -422,6 +436,7 @@ class ASRToLLVMVisitor;
                             }
 
                             std::vector<llvm::Value*> snprintf_args;
+                            snprintf_args.push_back(get_allocator(module));
                             snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
                             snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
                             llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
@@ -444,13 +459,14 @@ class ASRToLLVMVisitor;
                         if (!print_error_fn) {
                             llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context),
-                                {label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                 label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
                                 true);
                             print_error_fn = llvm::Function::Create(error_fn_type,
                                 llvm::Function::ExternalLinkage, "_lcompilers_runtime_error", module);
                         }
 
-                        std::vector<llvm::Value*> vec = {LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
+                        std::vector<llvm::Value*> vec = {get_allocator(module), LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
                         builder->CreateCall(print_error_fn, vec);
 
                         llvm::Function* exit_fn = module->getFunction("exit");
@@ -985,7 +1001,7 @@ class ASRToLLVMVisitor;
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
             } else {
-                finalize_type(ptr, t, struct_sym, in_struct);
+                finalize_type(ptr, t, struct_sym);
             }
         }
 
@@ -1115,15 +1131,14 @@ class ASRToLLVMVisitor;
         }
 
         /// Dispatches to the correct finalizer based on type.
-        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
-                llvm::Value* const in_struct){
+        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
                 case(ASR::String):
                     finalize_string(var_ptr, t);
                 break;
                 case(ASR::Array) :  
-                    finalize_array(var_ptr, t, struct_sym, in_struct);
+                    finalize_array(var_ptr, t, struct_sym);
                 break;
                 case(ASR::StructType) :  
                     finalize_struct(var_ptr, t, struct_sym);
@@ -1185,10 +1200,8 @@ class ASRToLLVMVisitor;
          * @param arr llvm ptr to the array (descriptorArray, PointerArray, etc.)
          * @param t array ASR type
          * @param struct_sym if it's an array of struct. nullptr otherwise.
-         * @param in_struct is this array in some struct `(StructType(Array()))`.
-         */ 
-        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* struct_sym,
-                llvm::Value* in_struct){
+         */
+        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
@@ -1202,11 +1215,11 @@ class ASRToLLVMVisitor;
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
                     std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym);
                     if(is_cached(cache_key)){
-                        call_cached_finalizer(cache_key, {arr, in_struct});
+                        call_cached_finalizer(cache_key, {arr});
                         return;
                     }
                     auto const checkpoint_BB =
-                    START_CACHE(cache_key, arr, in_struct);
+                    START_CACHE(cache_key, arr);
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
@@ -1216,17 +1229,6 @@ class ASRToLLVMVisitor;
                     } else {
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
-
-                    // IF (struct(array())) --> Finalize dimension descriptor in this case
-                    llvm_utils_->create_if_else(in_struct, 
-                        [&]() {
-                        auto const dim_desc_ptr = builder_->CreateLoad(
-                            llvm_utils_->dim_descr_type_->getPointerTo(),
-                            llvm_utils_->create_gep2(arr_llvm_t, arr, 2));
-                            llvm_utils_->lfortran_free_nocheck(dim_desc_ptr);
-                        }
-                        , [](){}
-                        , "dimDesc_in_struct");
 
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     END_CACHE(checkpoint_BB);
@@ -1283,6 +1285,25 @@ class ASRToLLVMVisitor;
                 ptr = llvm_utils_->CreateLoad2(
                     llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                     llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+            }
+
+            if (ASRUtils::is_class_type(t)) {
+                // Guard: if the inner struct pointer is null (e.g. class wrapper
+                // was only default-initialized for an absent optional argument),
+                // skip member finalization to avoid dereferencing a null pointer.
+                llvm::BasicBlock* finalize_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_valid",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::BasicBlock* ret_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_null",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::Value* is_null = builder_->CreateICmpEQ(ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(ptr->getType())));
+                builder_->CreateCondBr(is_null, ret_bb, finalize_bb);
+                builder_->SetInsertPoint(ret_bb);
+                builder_->CreateRetVoid();
+                builder_->SetInsertPoint(finalize_bb);
             }
 
             // Finalize members

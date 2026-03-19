@@ -4260,6 +4260,7 @@ asr_implicit_typing = true
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
 enable_disable_implicit_argument_casting = true
+options = "--legacy-array-sections"
 
 [[test]]
 filename = "../integration_tests/valid_array_assignment_same_length_different_start.f90"
@@ -4280,6 +4281,7 @@ run_with_dbg = true
 [[test]]
 filename = "../integration_tests/legacy_array_sections_01.f90"
 llvm = true
+options = "--legacy-array-sections"
 
 [[test]]
 filename = "format2.f90"
@@ -5099,6 +5101,14 @@ run = true
 filename = "errors/continue_compilation_walrus.f90"
 semantics_only_cc = true
 options = "--infer"
+
+[[test]]
+filename = "../integration_tests/subroutines_21.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_107.f90"
+asr = true
 
 [[test]]
 filename = "errors/deallocate_01.f90"

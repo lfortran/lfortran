@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    2 fpoint
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -63,7 +63,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -88,7 +88,7 @@
                                     (Var 4 fpoint_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })

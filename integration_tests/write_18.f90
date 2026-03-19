@@ -33,5 +33,6 @@ program write_18
    obj%a = 10
    obj%b = 20
    write(*, '(dt)') obj
+   print '(dt)', obj
    print *, "ok"
 end program write_18
