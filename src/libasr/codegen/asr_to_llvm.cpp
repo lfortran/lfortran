@@ -7641,9 +7641,20 @@ public:
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_tgt, true);
             ptr_loads = ptr_loads_copy;
+            llvm::Value* tgt = tmp;
+            bool load_tgt = false;
+            if (ASR::is_a<ASR::Var_t>(*x.m_tgt)) {
+                ASR::Variable_t* t_var = ASRUtils::EXPR2VAR(x.m_tgt);
+                load_tgt = !is_cptr_dummy_passed_by_value(t_var);
+            }
+            if (load_tgt) {
+                llvm::Type* t_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_tgt, ASRUtils::expr_type(x.m_tgt), module.get());
+                tgt = llvm_utils->CreateLoad2(t_llvm_type, tgt);
+            }
             tmp = builder->CreateICmpEQ(
                 builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false)),
-                builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false)));
+                builder->CreatePtrToInt(tgt, llvm_utils->getIntType(8, false)));
             return ;
         }
         llvm_utils->create_if_else(builder->CreateICmpEQ(
@@ -18727,6 +18738,42 @@ public:
                     // Set elem_len (field 1)
                     builder->CreateStore(elem_size_val,
                         llvm_utils->create_gep2(desc_type, tmp, 1));
+
+                    // Set CFI type code (field 4, i16)
+                    int16_t cfi_type_code = -1; // CFI_type_other
+                    if (ASR::is_a<ASR::Integer_t>(*elem_asr_type)) {
+                        int kind = ASRUtils::extract_kind_from_ttype_t(elem_asr_type);
+                        switch (kind) {
+                            case 1: cfi_type_code = 7; break;  // CFI_type_int8_t
+                            case 2: cfi_type_code = 8; break;  // CFI_type_int16_t
+                            case 4: cfi_type_code = 9; break;  // CFI_type_int32_t
+                            case 8: cfi_type_code = 10; break; // CFI_type_int64_t
+                        }
+                    } else if (ASR::is_a<ASR::Real_t>(*elem_asr_type)) {
+                        int kind = ASRUtils::extract_kind_from_ttype_t(elem_asr_type);
+                        switch (kind) {
+                            case 4: cfi_type_code = 27; break;  // CFI_type_float
+                            case 8: cfi_type_code = 28; break;  // CFI_type_double
+                        }
+                    } else if (ASR::is_a<ASR::Complex_t>(*elem_asr_type)) {
+                        int kind = ASRUtils::extract_kind_from_ttype_t(elem_asr_type);
+                        switch (kind) {
+                            case 4: cfi_type_code = 34; break;  // CFI_type_float_Complex
+                            case 8: cfi_type_code = 35; break;  // CFI_type_double_Complex
+                        }
+                    } else if (ASR::is_a<ASR::Logical_t>(*elem_asr_type)) {
+                        cfi_type_code = 39; // CFI_type_Bool
+                    } else if (ASR::is_a<ASR::String_t>(*elem_asr_type)) {
+                        cfi_type_code = 40; // CFI_type_char
+                    } else if (ASR::is_a<ASR::CPtr_t>(*elem_asr_type)) {
+                        cfi_type_code = 41; // CFI_type_cptr
+                    } else if (ASR::is_a<ASR::StructType_t>(*elem_asr_type)) {
+                        cfi_type_code = 42; // CFI_type_struct
+                    }
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(
+                            llvm::Type::getInt16Ty(context), cfi_type_code),
+                        llvm_utils->create_gep2(desc_type, tmp, 4));
 
                     // Set CFI attribute field (field 5):
                     // allocatable=2, pointer=1, other=0
