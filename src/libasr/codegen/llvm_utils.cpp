@@ -915,8 +915,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::String) : {
                 a_kind = ASR::down_cast<ASR::String_t>(asr_type)->m_kind;
-                if(arg_m_value_attr){
-                    throw LCompilersException("Unhandled : String parameter with `value` attribute");
+                if (arg_m_abi == ASR::abiType::BindC
+                    && arg_m_value_attr) {
+                    type = get_StringType(asr_type);
                 } else {
                     type = get_StringType(asr_type)->getPointerTo();
                 }
