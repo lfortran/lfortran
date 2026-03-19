@@ -3577,6 +3577,20 @@ public:
                 }
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::Present: {
+                ASR::expr_t* arg_expr = x.m_args[0];
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*arg_expr));
+                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(arg_expr)->m_v);
+                uint32_t h = get_hash((ASR::asr_t*) arg_var);
+                llvm::Value* arg_ptr = llvm_symtab[h];
+                llvm::Type* ptr_type = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+                llvm::Value* loaded = llvm_utils->CreateLoad2(ptr_type, arg_ptr);
+                tmp = builder->CreateICmpNE(loaded,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(ptr_type)));
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -7002,6 +7016,8 @@ public:
                 ASRUtils::is_array(symbol_type) &&
                 ASRUtils::extract_physical_type(symbol_type)
                     == ASR::array_physical_typeType::DescriptorArray ) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym.second);
+                bool is_optional = (v->m_presence == ASR::presenceType::Optional);
                 llvm::Type* desc_array_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, sym.second),
                         ASRUtils::type_get_past_allocatable_pointer(symbol_type),
                         module.get());
@@ -7010,6 +7026,37 @@ public:
                 uint32_t h = get_hash((ASR::asr_t*)sym.second);
                 LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                 llvm::Value* arg_array_desc = llvm_symtab[h];
+
+                // For optional parameters, guard descriptor copy with
+                // a null check to avoid crashing on absent (NULL) args.
+                llvm::BasicBlock *copy_bb = nullptr, *merge_bb = nullptr;
+                if (is_optional) {
+                    copy_bb = llvm::BasicBlock::Create(context, "opt_present");
+                    merge_bb = llvm::BasicBlock::Create(context, "opt_merge");
+                    llvm::Value* is_null = builder->CreateICmpEQ(
+                        arg_array_desc,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(arg_array_desc->getType())));
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    fn->getBasicBlockList().push_back(copy_bb);
+                    fn->getBasicBlockList().push_back(merge_bb);
+                    // If null, store null data pointer and jump to merge
+                    llvm::BasicBlock* absent_bb = llvm::BasicBlock::Create(
+                        context, "opt_absent", fn);
+                    builder->CreateCondBr(is_null, absent_bb, copy_bb);
+                    builder->SetInsertPoint(absent_bb);
+                    // Store null base_addr so present() returns false
+                    llvm::Type* data_ptr_type = llvm_utils->get_el_type(
+                        ASRUtils::get_expr_from_sym(al, sym.second),
+                        ASRUtils::extract_type(symbol_type), module.get())->getPointerTo();
+                    builder->CreateStore(
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(data_ptr_type)),
+                        arr_descr->get_pointer_to_data(desc_array_type, array_desc));
+                    builder->CreateBr(merge_bb);
+                    builder->SetInsertPoint(copy_bb);
+                }
+
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                 llvm::Type *data_type = llvm_utils->get_el_type(ASRUtils::get_expr_from_sym(al, sym.second),
                     ASRUtils::extract_type(symbol_type), module.get());
@@ -7066,6 +7113,10 @@ public:
                             builder->CreateStore(stride, stride_ptr);
                         }
                     }
+                }
+                if (is_optional) {
+                    builder->CreateBr(merge_bb);
+                    builder->SetInsertPoint(merge_bb);
                 }
                 llvm_symtab[h] = array_desc;
             }
@@ -17841,13 +17892,24 @@ public:
                 if (x_abi == ASR::abiType::BindC) {
                     // Per Fortran standard, absent optional bind(C) args
                     // are passed as NULL pointers.
-                    // For allocatable/pointer parameters the LLVM type is
-                    // already a pointer (to the descriptor struct), so
-                    // don't add an extra pointer level.
-                    llvm::PointerType* null_ptr_type =
-                        llvm_orig_arg_type->isPointerTy()
-                        ? llvm::cast<llvm::PointerType>(llvm_orig_arg_type)
-                        : llvm_orig_arg_type->getPointerTo();
+                    // For array parameters, the LLVM type from
+                    // get_type_from_ttype_t_util is already a descriptor
+                    // pointer matching the function signature, so use it
+                    // as-is. For scalar parameters (including
+                    // allocatable/pointer scalars), add a pointer level to
+                    // match the pass-by-reference calling convention.
+                    llvm::PointerType* null_ptr_type;
+                    ASR::ttype_t* arg_type_no_ap =
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            orig_arg->m_type));
+                    if (ASRUtils::is_array(arg_type_no_ap)
+                            && llvm_orig_arg_type->isPointerTy()) {
+                        null_ptr_type = llvm::cast<llvm::PointerType>(
+                            llvm_orig_arg_type);
+                    } else {
+                        null_ptr_type = llvm_orig_arg_type->getPointerTo();
+                    }
                     args.push_back(llvm::ConstantPointerNull::get(
                         null_ptr_type));
                 } else {
