@@ -8611,6 +8611,10 @@ public:
                 }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                    ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star
+                );
                 if (is_pointer) {
                     type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
                 }
