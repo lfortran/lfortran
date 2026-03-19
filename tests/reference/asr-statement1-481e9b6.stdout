@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 8)
-                                                    2 dfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -85,7 +85,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -117,7 +117,7 @@
                                     (Var 4 dfloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             dp:
@@ -207,7 +207,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4)
-                                                    2 ifloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -249,7 +249,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -275,7 +275,7 @@
                                     (Var 5 ifloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             j:
@@ -356,7 +356,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    2 sfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -377,7 +377,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -409,7 +409,7 @@
                                     (Var 3 sfloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             sum:

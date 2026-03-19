@@ -810,6 +810,15 @@ std::string function_like_macro_expansion(
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = "unsigned char";
 
+            "##" {
+                while (!output.empty() && (output.back() == ' ' || output.back() == '\t')) {
+                    output.pop_back();
+                }
+                while (*cur == ' ' || *cur == '\t') {
+                    cur++;
+                }
+                continue;
+            }
             "#" name {
                 std::string t = token(tok + 1, cur);
                 auto search = std::find(def_args.begin(), def_args.end(), t);

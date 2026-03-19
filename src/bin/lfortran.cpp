@@ -2427,6 +2427,9 @@ int main_app(int argc, char *argv[]) {
         return 0;
     }
     compiler_options.po.time_report = compiler_options.time_report;
+#ifdef HAVE_INTERNAL_ALLOC_CHECK
+    compiler_options.internal_alloc_check = true;
+#endif
 
     if (opts.print_targets) {
 #ifdef HAVE_LFORTRAN_LLVM

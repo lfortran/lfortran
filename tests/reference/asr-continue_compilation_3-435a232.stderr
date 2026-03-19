@@ -22,6 +22,12 @@ semantic error: Module 'continue_compilation_3_fake_module' modfile was not foun
 48 |     use continue_compilation_3_fake_module
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Explicit shaped array with nonconstant bounds
+  --> tests/errors/continue_compilation_3.f90:67:23
+   |
+67 |     integer :: arr_nc(minval(abs(a)))
+   |                       ^^^^^^^^^^^^^^ 
+
 semantic error: Assumed-rank arrays are not supported in print statements
   --> tests/errors/continue_compilation_3.f90:30:18
    |

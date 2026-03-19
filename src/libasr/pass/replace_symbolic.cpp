@@ -104,6 +104,40 @@ public:
             ));
     }
 
+    bool get_dt_iotype(const ASR::expr_t* fmt_expr, std::string &iotype) {
+        if (!fmt_expr) {
+            return false;
+        }
+        ASR::expr_t* fmt_value = ASRUtils::expr_value(const_cast<ASR::expr_t*>(fmt_expr));
+        if (!fmt_value || !ASR::is_a<ASR::StringConstant_t>(*fmt_value)) {
+            return false;
+        }
+
+        std::string fmt_str = ASR::down_cast<ASR::StringConstant_t>(fmt_value)->m_s;
+        if (fmt_str.size() >= 2 && fmt_str[0] == '(' && fmt_str.back() == ')') {
+            fmt_str = fmt_str.substr(1, fmt_str.size() - 2);
+        }
+        if (fmt_str.size() < 2) {
+            return false;
+        }
+        if (std::tolower(static_cast<unsigned char>(fmt_str[0])) != 'd' ||
+            std::tolower(static_cast<unsigned char>(fmt_str[1])) != 't') {
+            return false;
+        }
+
+        iotype = "DT";
+        if (fmt_str.size() > 2) {
+            std::string suffix = fmt_str.substr(2);
+            if (suffix.size() >= 2 &&
+                ((suffix[0] == '\'' && suffix.back() == '\'') ||
+                 (suffix[0] == '"' && suffix.back() == '"'))) {
+                suffix = suffix.substr(1, suffix.size() - 2);
+            }
+            iotype += suffix;
+        }
+        return true;
+    }
+
     ASR::symbol_t *create_bindc_function(const Location &loc,
             const std::string &fn_name, std::vector<ASR::ttype_t *> args_type,
             ASR::ttype_t *return_type=nullptr) {
@@ -796,6 +830,118 @@ public:
         ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, x.m_name,
             x.m_name, call_args.p, call_args.n, x.m_dt, x.m_strict_bounds_checking));
         pass_result.push_back(al, stmt);
+    }
+
+    void visit_Print(const ASR::Print_t &x) {
+        if (!ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
+            return;
+        }
+
+        ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+        if (sf->m_kind != ASR::string_format_kindType::FormatFortran || sf->n_args != 1) {
+            return;
+        }
+
+        ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(sf->m_args[0]));
+        if (!ASR::is_a<ASR::StructType_t>(*dt_type)) {
+            return;
+        }
+
+        std::string iotype_str;
+        if (!get_dt_iotype(sf->m_fmt, iotype_str)) {
+            return;
+        }
+
+        const Location &loc = x.base.base.loc;
+        Vec<ASR::expr_t*> overload_args;
+        overload_args.reserve(al, 6);
+        overload_args.push_back(al, sf->m_args[0]);
+
+        // Add the unit argument (6 for standard output)
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        overload_args.push_back(al,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 6, int_type)));
+        {
+            ASR::ttype_t* iotype_type = ASRUtils::TYPE(
+                ASR::make_String_t(
+                    al, loc, 1,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, static_cast<int64_t>(iotype_str.size()), int_type)),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+            overload_args.push_back(al,
+                ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+                    s2c(al, iotype_str), iotype_type)));
+        }
+
+        // Create an empty array for v_list argument
+        ASR::expr_t* empty_v_list = nullptr;
+        {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+            dim.m_length = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+            dims.push_back(al, dim);
+
+            ASR::ttype_t* arr_type = ASRUtils::TYPE(
+                ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
+                    ASR::array_physical_typeType::FixedSizeArray));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, 0);
+            empty_v_list = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+                al, loc, arr_args.p, arr_args.n, arr_type,
+                ASR::arraystorageType::ColMajor));
+        }
+        
+        std::string v_list_tmp_name =
+            current_scope->get_unique_name("__libasr__created__var__array_constructor_");
+        ASR::expr_t* v_list_tmp = PassUtils::create_auxiliary_variable(
+            loc, v_list_tmp_name, al, current_scope,
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(empty_v_list)));
+        pass_result.push_back(al,
+            ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, v_list_tmp, empty_v_list, nullptr, false, false)));
+        overload_args.push_back(al, v_list_tmp);
+
+        // Create temporary variables for iostat and iomsg
+        std::string tmp_iostat_name =
+            current_scope->get_unique_name("lfortran_tmp_iostat");
+        ASR::expr_t* tmp_iostat = PassUtils::create_auxiliary_variable(
+            loc, tmp_iostat_name, al, current_scope, int_type);
+        overload_args.push_back(al, tmp_iostat);
+
+        ASR::ttype_t* iomsg_type = ASRUtils::TYPE(
+            ASR::make_String_t(
+                al, loc, 1,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+        std::string tmp_iomsg_name =
+            current_scope->get_unique_name("lfortran_iomsg");
+        ASR::expr_t* tmp_iomsg = PassUtils::create_auxiliary_variable(
+            loc, tmp_iomsg_name, al, current_scope, iomsg_type);
+        overload_args.push_back(al, tmp_iomsg);
+
+        std::string read_write = "~write_formatted";
+        ASR::asr_t* overloaded_asr = nullptr;
+        SetChar current_function_dependencies;
+        SetChar current_module_dependencies;
+        current_function_dependencies.reserve(al, 1);
+        current_module_dependencies.reserve(al, 1);
+        if (ASRUtils::use_overloaded_file_read_write(
+                read_write, overload_args, current_scope, overloaded_asr, al, loc,
+                current_function_dependencies, current_module_dependencies,
+                [&](const std::string &msg, const Location &err_loc) {
+                    (void)err_loc;
+                    throw LCompilersException(msg);
+                })) {
+            pass_result.push_back(al, ASRUtils::STMT(overloaded_asr));
+        }
     }
 
     //TODO :: Use the below implementation for stringFormat visitor.
