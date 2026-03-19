@@ -386,6 +386,12 @@ semantic error: variable cannot appear in character length expression
 635 |     character(len = char_len_var) :: char_nonconst
     |                     ^^^^^^^^^^^^ 
 
+semantic error: Symbol 'undeclared_proc' not declared
+   --> tests/errors/continue_compilation_1.f90:637:9
+    |
+637 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
     |
