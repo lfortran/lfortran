@@ -9007,8 +9007,57 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     internal_free(buf);
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
-    lfortran_error("Reading into an array of strings is not supported.");
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr, int64_t elem_len) {
+    (void)format;
+    const char *pos = str;
+    const char *end = str + len;
+    int64_t count = 0;
+    while (pos < end) {
+        // Skip whitespace and common separators
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+
+        char *dest = arr[count];
+        int64_t dest_pos = 0;
+
+        if (*pos == '\'' || *pos == '"') {
+            // Quoted string
+            char delim = *pos;
+            pos++;
+            while (pos < end) {
+                if (*pos == delim) {
+                    pos++;
+                    if (pos < end && *pos == delim) {
+                        // Escaped delimiter
+                        if (dest_pos < elem_len) {
+                            dest[dest_pos++] = delim;
+                        }
+                        pos++;
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (dest_pos < elem_len) {
+                        dest[dest_pos++] = *pos;
+                    }
+                    pos++;
+                }
+            }
+        } else {
+            // Unquoted word - delimited by whitespace or comma
+            while (pos < end && !isspace((unsigned char)*pos) && *pos != ',') {
+                if (dest_pos < elem_len) {
+                    dest[dest_pos++] = *pos;
+                }
+                pos++;
+            }
+        }
+        // Pad remaining with spaces (Fortran convention)
+        pad_with_spaces(dest, dest_pos, elem_len);
+        count++;
+    }
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)

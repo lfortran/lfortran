@@ -15281,18 +15281,36 @@ public:
                                 },
                                 false);
                         } else if (ASRUtils::is_array(type)) {
-                            function_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {   character_type /*src_data*/,
-                                    llvm::Type::getInt64Ty(context)/*src_length*/,
-                                    character_type,
-                                    llvm_utils->get_type_from_ttype_t_util(
-                                        x.m_values[i],
-                                        ASRUtils::type_get_past_allocatable_pointer(type),
-                                        module.get()
-                                    )->getPointerTo()
-                                },
-                                false);
+                            if (ASRUtils::is_array_of_strings(type)) {
+                                // String array: include elem_len parameter
+                                function_type = llvm::FunctionType::get(
+                                    llvm::Type::getVoidTy(context),
+                                    {   character_type /*src_data*/,
+                                        llvm::Type::getInt64Ty(context)/*src_length*/,
+                                        character_type /*format*/,
+                                        llvm_utils->get_type_from_ttype_t_util(
+                                            x.m_values[i],
+                                            ASRUtils::type_get_past_allocatable_pointer(type),
+                                            module.get()
+                                        )->getPointerTo(),
+                                        llvm::Type::getInt64Ty(context) /*elem_len*/
+                                    },
+                                    false);
+                            } else {
+                                // Numeric array
+                                function_type = llvm::FunctionType::get(
+                                    llvm::Type::getVoidTy(context),
+                                    {   character_type /*src_data*/,
+                                        llvm::Type::getInt64Ty(context)/*src_length*/,
+                                        character_type,
+                                        llvm_utils->get_type_from_ttype_t_util(
+                                            x.m_values[i],
+                                            ASRUtils::type_get_past_allocatable_pointer(type),
+                                            module.get()
+                                        )->getPointerTo()
+                                    },
+                                    false);
+                            }
                         } else {
                             function_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context),
@@ -15372,7 +15390,36 @@ public:
                                 arr_data = builder->CreateBitCast(arr_data, fn_param_type);
                             }
                         }
-                        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
+                        if (x.m_iostat) {
+                            int ptr_copy = ptr_loads;
+                            ptr_loads = 0;
+
+                            this->visit_expr_wrapper(x.m_iostat);
+                            llvm::Value* ios_ptr = tmp;
+
+                            ptr_loads = ptr_copy;
+
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                ios_ptr
+                            );
+                        }
+                        if (ASRUtils::is_array_of_strings(type)) {
+                            // For string arrays, pass elem_len
+                            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::type_get_past_array(
+                                    ASRUtils::type_get_past_allocatable_pointer(type)));
+                            int64_t elem_len_val;
+                            if (ASRUtils::extract_value(str_type->m_len, elem_len_val)) {
+                                llvm::Value* elem_len_llvm = llvm::ConstantInt::get(
+                                    llvm::Type::getInt64Ty(context), elem_len_val);
+                                builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data, elem_len_llvm });
+                            } else {
+                                throw LCompilersException("Dynamic element length in string array read not yet supported");
+                            }
+                        } else {
+                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
+                        }
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
                                 ASR::is_a<ASR::Pointer_t>(*type)) {
