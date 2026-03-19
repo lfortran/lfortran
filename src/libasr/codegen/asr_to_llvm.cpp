@@ -18964,8 +18964,38 @@ public:
                 callee_fn_type = ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(func_subrout));
             }
+            // Check if callee is an implicit interface function.
+            // Implicit interfaces use BindC ABI internally but the
+            // actual Fortran implementation uses LFortran's internal
+            // descriptor format.  Detect by looking for a Source/
+            // Implementation function with the same name in the
+            // global scope.
+            bool is_implicit_interface = false;
+            if (callee_fn_type &&
+                callee_fn_type->m_abi == ASR::abiType::BindC &&
+                callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
+                !callee_fn_type->m_bindc_name) {
+                ASR::Function_t* called_fn =
+                    ASR::down_cast<ASR::Function_t>(func_subrout);
+                SymbolTable* scope = called_fn->m_symtab->parent;
+                while (scope && scope->parent) scope = scope->parent;
+                if (scope) {
+                    ASR::symbol_t* impl = scope->get_symbol(
+                        called_fn->m_name);
+                    if (impl && impl != (ASR::symbol_t*)called_fn &&
+                        ASR::is_a<ASR::Function_t>(*impl)) {
+                        ASR::FunctionType_t* impl_ft =
+                            ASRUtils::get_FunctionType(
+                                ASR::down_cast<ASR::Function_t>(impl));
+                        if (impl_ft->m_abi != ASR::abiType::BindC) {
+                            is_implicit_interface = true;
+                        }
+                    }
+                }
+            }
             if (orig_arg && x_abi == ASR::abiType::BindC &&
                 callee_fn_type &&
+                !is_implicit_interface &&
                 ASRUtils::is_array(orig_arg->m_type)) {
                 ASR::array_physical_typeType phys_type =
                     ASRUtils::extract_physical_type(orig_arg->m_type);
