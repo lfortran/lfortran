@@ -1105,7 +1105,6 @@ namespace LCompilers {
                 bool is_array_type = false;
                 ASR::ttype_t* arg_type_for_abi = arg->m_type;
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
                     ASRUtils::is_array(arg_type_for_abi)) {
                     arg_type_for_abi = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type_for_abi));

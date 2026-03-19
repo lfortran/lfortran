@@ -6675,6 +6675,20 @@ public:
                     LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
 
                     llvm::Value* llvm_sym = &llvm_arg;
+                    // For bind(C) allocatable/pointer array parameters, the
+                    // function signature receives %array* (single pointer),
+                    // but the rest of the codegen expects an extra level of
+                    // indirection (%array**) for allocatable/pointer types.
+                    // Bridge the gap with a local alloca.
+                    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                        ASRUtils::is_array(arg->m_type) &&
+                        (ASRUtils::is_allocatable(arg->m_type) ||
+                         ASRUtils::is_pointer(arg->m_type))) {
+                        llvm::Value* alloca_ptr = builder->CreateAlloca(
+                            llvm_arg.getType(), nullptr, std::string(arg->m_name) + "_ptr");
+                        builder->CreateStore(&llvm_arg, alloca_ptr);
+                        llvm_sym = alloca_ptr;
+                    }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
