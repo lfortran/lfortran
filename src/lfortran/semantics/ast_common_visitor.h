@@ -6153,6 +6153,46 @@ public:
                                                var_list.n);
                     current_scope->add_or_overwrite_symbol(s2c(al, to_lower(attr_namelist->m_name)),
                                               ASR::down_cast<ASR::symbol_t>(namelist));
+                } else if (AST::is_a<AST::AttrBind_t>(*x.m_attributes[i])) {
+                    AST::AttrBind_t *attr_bind = AST::down_cast<AST::AttrBind_t>(x.m_attributes[i]);
+                    ASR::abiType abi_type = ASR::abiType::Source;
+                    char *bindc_name = nullptr;
+                    extract_bind(*attr_bind, abi_type, bindc_name, diag);
+                    for (size_t j = 0; j < x.n_syms; j++) {
+                        if (x.m_syms[j].m_sym == AST::symbolType::Slash) {
+                            std::string common_block_name = to_lower(x.m_syms[j].m_name);
+                            ASR::symbol_t* struct_sym = create_common_module(
+                                x.base.base.loc, common_block_name);
+                            if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                                ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                                struct_->m_abi = abi_type;
+                            }
+                            std::string module_name = "file_common_block_" + common_block_name;
+                            SymbolTable *global_scope = current_scope;
+                            while (global_scope->parent) {
+                                global_scope = global_scope->parent;
+                            }
+                            ASR::symbol_t* mod_sym = global_scope->resolve_symbol(module_name);
+                            if (mod_sym) {
+                                std::string instance_name = "struct_instance_" + common_block_name;
+                                ASR::symbol_t* inst_sym = ASR::down_cast<ASR::Module_t>(
+                                    mod_sym)->m_symtab->resolve_symbol(instance_name);
+                                if (inst_sym && ASR::is_a<ASR::Variable_t>(*inst_sym)) {
+                                    ASR::Variable_t* inst_var = ASR::down_cast<ASR::Variable_t>(inst_sym);
+                                    inst_var->m_abi = abi_type;
+                                    inst_var->m_bindc_name = bindc_name;
+                                }
+                            }
+                        } else {
+                            std::string sym = to_lower(x.m_syms[j].m_name);
+                            ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
+                            if (orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl)) {
+                                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                                v->m_abi = abi_type;
+                                v->m_bindc_name = bindc_name;
+                            }
+                        }
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Attribute declaration not supported",
