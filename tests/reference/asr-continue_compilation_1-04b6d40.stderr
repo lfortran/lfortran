@@ -1359,3 +1359,9 @@ semantic error: 'ieee_is_nan' is not accessible in the current scope; add 'use, 
     |
 634 |     print*, ieee_is_nan(1.0)
     |             ^^^^^^^^^^^^^^^^ not in scope
+
+semantic error: associated() argument must be a pointer
+   --> tests/errors/continue_compilation_1.f90:636:25
+    |
+636 |     print *, associated(ppp)
+    |                         ^^^ 
