@@ -18014,6 +18014,29 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        if (!ASRUtils::is_value_constant(len_expr)) {
+                            bool in_function_scope = in_Subroutine;
+                            if (!in_function_scope) {
+                                SymbolTable* scope = current_scope;
+                                while (scope != nullptr && !in_function_scope) {
+                                    if (scope->asr_owner != nullptr &&
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                                            ASR::is_a<ASR::Function_t>(
+                                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                                        in_function_scope = true;
+                                    }
+                                    scope = scope->parent;
+                                }
+                            }
+                            if (!in_function_scope) {
+                                diag.add(Diagnostic(
+                                    "variable cannot appear in character length expression",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
                     break;
@@ -18054,6 +18077,29 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        if (!ASRUtils::is_value_constant(len_expr)) {
+                            bool in_function_scope = in_Subroutine;
+                            if (!in_function_scope) {
+                                SymbolTable* scope = current_scope;
+                                while (scope != nullptr && !in_function_scope) {
+                                    if (scope->asr_owner != nullptr &&
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                                            ASR::is_a<ASR::Function_t>(
+                                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                                        in_function_scope = true;
+                                    }
+                                    scope = scope->parent;
+                                }
+                            }
+                            if (!in_function_scope) {
+                                diag.add(Diagnostic(
+                                    "variable cannot appear in character length expression",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
             } else {// Default len of "character :: x" is 1
