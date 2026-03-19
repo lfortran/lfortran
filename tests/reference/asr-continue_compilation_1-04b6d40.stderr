@@ -1354,8 +1354,8 @@ semantic error: 'dim' argument of 'sum' intrinsic must be INTEGER
 633 |     print *, sum(arr1, dim = mask1)
     |                              ^^^^^ 
 
-semantic error: associated() argument must be a pointer
-   --> tests/errors/continue_compilation_1.f90:635:25
+semantic error: 'ieee_is_nan' is not accessible in the current scope; add 'use, intrinsic :: ieee_arithmetic' to use it
+   --> tests/errors/continue_compilation_1.f90:634:13
     |
-635 |     print *, associated(ppp)
-    |                         ^^^ 
+634 |     print*, ieee_is_nan(1.0)
+    |             ^^^^^^^^^^^^^^^^ not in scope

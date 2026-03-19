@@ -15564,6 +15564,14 @@ public:
         }
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc, diag);
 
+        if (module_name == "lfortran_intrinsic_ieee_arithmetic") {
+            diag.add(Diagnostic(
+                "'" + remote_sym + "' is not accessible in the current scope; "
+                "add 'use, intrinsic :: ieee_arithmetic' to use it",
+                Level::Error, Stage::Semantic, {Label("not in scope", {loc})}));
+            throw SemanticAbort();
+        }
+
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
         std::set<std::string> empty_set;
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,

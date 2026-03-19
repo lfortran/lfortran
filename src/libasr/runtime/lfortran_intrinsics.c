@@ -7476,7 +7476,7 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
-        void* real_ptr, int32_t type_code, int scale_factor)
+        void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
     // Handle integer types (type_code 2 = int32, type_code 3 = int64)
     if (type_code == 2 || type_code == 3) {
@@ -7497,10 +7497,13 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         }
         return;
     }
-    // Replace D/d with E for parsing, check for exponent
+    // Replace D/d with E for parsing, check for exponent/decimal point
     bool has_exponent = false;
+    bool has_decimal = false;
     for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') {
+        if (buffer[i] == '.') {
+            has_decimal = true;
+        } else if (buffer[i] == 'D' || buffer[i] == 'd') {
             buffer[i] = 'E';
             has_exponent = true;
         } else if (buffer[i] == 'E' || buffer[i] == 'e') {
@@ -7548,7 +7551,13 @@ static void parse_real_from_buffer(char* buffer, int field_len,
 
     double v = strtod(buffer, NULL);
     if (!has_exponent) {
-        v = v / pow(10.0, scale_factor);
+        int total_scale = scale_factor;
+        if (!has_decimal && decimal_places > 0) {
+            total_scale += decimal_places;
+        }
+        if (total_scale != 0) {
+            v = v / pow(10.0, (double)total_scale);
+        }
     }
     if (type_code == 4) {
         *((float*)real_ptr) = (float)v;
@@ -7752,14 +7761,17 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-static void parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
+static int parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
 {
+    int decimals = 0;
     if (*fmt_pos < fmt_len && fmt[*fmt_pos] == '.') {
         (*fmt_pos)++;
         while (*fmt_pos < fmt_len && isdigit((unsigned char)fmt[*fmt_pos])) {
+            decimals = decimals * 10 + (fmt[*fmt_pos] - '0');
             (*fmt_pos)++;
         }
     }
+    return decimals;
 }
 
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
@@ -7773,7 +7785,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (type_code == 6) type_code = 4;
     if (type_code == 7) type_code = 5;
 
-    parse_decimals(fmt, fmt_len, fmt_pos);
+    int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
 
     int read_width = (width > 0) ? width : 15;
     if (read_width < 0) read_width = 0;
@@ -7804,12 +7816,11 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         }
     }
 
-    parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor);
+    parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor, decimal_places);
 
     internal_free(buffer);
     if (is_complex) {
         void* imag_ptr = (type_code == 4) ? (void*)((float*)real_ptr + 1) : (void*)((double*)real_ptr + 1);
-        parse_decimals(fmt, fmt_len, fmt_pos);
         buffer = NULL;
         field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
@@ -7832,7 +7843,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
                 }
             }
         }
-        parse_real_from_buffer(buffer, field_len, imag_ptr, type_code, scale_factor);
+        parse_real_from_buffer(buffer, field_len, imag_ptr, type_code, scale_factor, decimal_places);
         internal_free(buffer);
     }
     
@@ -8048,10 +8059,21 @@ static void process_fmt_items_read(InputSource *inputSource,
             }
             continue;
         }
-
+        bool negative_scale_factor = false;
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '-') {
+            negative_scale_factor = true;
+            fmt_pos++;
+            repeat_count = 0;
+            while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+                repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
+                fmt_pos++;
+            }
+            if (repeat_count == 0) repeat_count = 1;
+        }
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
             *scale_factor = repeat_count;
+            if (negative_scale_factor) *scale_factor = -(*scale_factor);
             repeat_count = 1;
         }
         

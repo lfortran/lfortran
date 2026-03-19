@@ -631,9 +631,9 @@ program continue_compilation_1
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
     write (*, "(a)", advance="hello") "Dothraki culture"
     print *, sum(arr1, dim = mask1)
+    print*, ieee_is_nan(1.0)
     integer, allocatable :: ppp(:)
     print *, associated(ppp)
-
 
 
 
