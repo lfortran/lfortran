@@ -20500,13 +20500,14 @@ public:
                 args.push_back(pass_arg);
             }
             builder->CreateCall(fn, args);
-            fixup_descriptor_after_cchar_bind_c_call(x, s, is_method);
+            fixup_descriptor_after_cchar_bind_c_call(x, s, is_method, args);
         }
     }
 
     void fixup_descriptor_after_cchar_bind_c_call(
             const ASR::SubroutineCall_t &x,
-            ASR::Function_t* s, bool is_method) {
+            ASR::Function_t* s, bool is_method,
+            const std::vector<llvm::Value*>& call_args) {
         for (size_t i = 0; i < x.n_args; i++) {
             if (!x.m_args[i].m_value) continue;
             if (!ASR::is_a<ASR::StringPhysicalCast_t>(*x.m_args[i].m_value)) continue;
@@ -20521,10 +20522,33 @@ public:
                     ASR::down_cast<ASR::Var_t>(s->m_args[arg_idx])->m_v));
             if (!ASRUtils::is_allocatable(orig_arg->m_type)) continue;
 
+            // Get the original string descriptor
             this->visit_expr_load_wrapper(cast->m_arg, 0);
             llvm::Value* desc = tmp;
             llvm::Value* data_ptr = llvm_utils->create_gep2(
                 llvm_utils->string_descriptor, desc, 0);
+
+            // The callee received a CFI descriptor (created during
+            // convert_call_args) and may have updated its base_addr
+            // field (e.g., via _lfortran_strcpy_alloc for intent(out)
+            // allocatable characters). Read back the new data pointer
+            // from the CFI descriptor and store it into the original
+            // string_descriptor so the caller sees the updated value.
+            if (arg_idx < call_args.size()) {
+                llvm::Value* cfi_desc = call_args[arg_idx];
+                llvm::Type* char_llvm_type = llvm::Type::getInt8Ty(context);
+                llvm::Type* cfi_desc_type = arr_descr->get_array_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al,
+                        orig_arg->base.base.loc, &orig_arg->base)),
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(orig_arg->m_type)),
+                    char_llvm_type, false);
+                llvm::Value* cfi_base_addr = llvm_utils->CreateLoad2(
+                    character_type,
+                    llvm_utils->create_gep2(cfi_desc_type, cfi_desc, 0));
+                builder->CreateStore(cfi_base_addr, data_ptr);
+            }
+
             llvm::Value* data = builder->CreateLoad(character_type, data_ptr);
             llvm::Value* len_ptr = llvm_utils->create_gep2(
                 llvm_utils->string_descriptor, desc, 1);
