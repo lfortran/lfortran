@@ -8354,7 +8354,7 @@ public:
 
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
-                dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::StringArraySinglePointer :
+                dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                 ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
                                 ASR::array_physical_typeType::DescriptorArray,
                 dims.size() > 0 ? true : false);

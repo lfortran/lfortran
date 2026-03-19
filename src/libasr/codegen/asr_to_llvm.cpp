@@ -6983,6 +6983,33 @@ public:
                 arr_descr->reset_array_details(
                     desc_array_type, array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
                 ptr_loads = ptr_loads_copy;
+                // For bind(C) functions with bindc_name, the incoming
+                // descriptor uses CFI byte strides. Convert them to
+                // LFortran's internal element strides by dividing by
+                // the element size.
+                ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(x);
+                if (fn_type->m_abi == ASR::abiType::BindC &&
+                    fn_type->m_bindc_name) {
+                    llvm::DataLayout dl(module->getDataLayout());
+                    uint64_t el_size = dl.getTypeAllocSize(data_type);
+                    if (el_size > 1) {
+                        llvm::Value* el_size_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(64, el_size));
+                        llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
+                        llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            desc_array_type, array_desc);
+                        for (int r = 0; r < n_dims; r++) {
+                            llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
+                                dim_type, dim_arr, r);
+                            llvm::Value* stride_ptr = llvm_utils->create_gep2(
+                                dim_type, dim_ptr, 0);
+                            llvm::Value* stride = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt64Ty(context), stride_ptr);
+                            stride = builder->CreateSDiv(stride, el_size_val);
+                            builder->CreateStore(stride, stride_ptr);
+                        }
+                    }
+                }
                 llvm_symtab[h] = array_desc;
             }
         }
@@ -17618,8 +17645,15 @@ public:
                 if (x_abi == ASR::abiType::BindC) {
                     // Per Fortran standard, absent optional bind(C) args
                     // are passed as NULL pointers.
+                    // For allocatable/pointer parameters the LLVM type is
+                    // already a pointer (to the descriptor struct), so
+                    // don't add an extra pointer level.
+                    llvm::PointerType* null_ptr_type =
+                        llvm_orig_arg_type->isPointerTy()
+                        ? llvm::cast<llvm::PointerType>(llvm_orig_arg_type)
+                        : llvm_orig_arg_type->getPointerTo();
                     args.push_back(llvm::ConstantPointerNull::get(
-                        llvm_orig_arg_type->getPointerTo()));
+                        null_ptr_type));
                 } else {
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, llvm_orig_arg_type);
                     args.push_back(llvm_arg);
@@ -18295,14 +18329,30 @@ public:
                     llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
-                    uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                    // Derive the descriptor type from the actual argument's
-                    // ASR type for correct struct layout and sizing.
+                    // For bind(C) character arrays, elem_size is the
+                    // character kind size (e.g. 1 for c_char), not the
+                    // size of the internal string_descriptor struct.
+                    uint64_t elem_size = ASRUtils::is_character(*elem_asr_type)
+                        ? ASRUtils::extract_kind_from_ttype_t(elem_asr_type)
+                        : data_layout.getTypeAllocSize(elem_llvm_type);
+                    // Derive the descriptor type. For scalar arguments
+                    // passed to assumed-rank parameters, use the formal
+                    // parameter's type (which carries the descriptor struct
+                    // layout), not the scalar's type.
+                    ASR::ttype_t* desc_asr_type;
+                    ASR::expr_t* desc_expr;
+                    if (!ASRUtils::is_array(actual_type)) {
+                        desc_asr_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(orig_arg->m_type));
+                        desc_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                            orig_arg->base.base.loc, &orig_arg->base));
+                    } else {
+                        desc_asr_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(actual_type));
+                        desc_expr = x.m_args[i].m_value;
+                    }
                     llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_args[i].m_value,
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(actual_type)),
-                        module.get());
+                        desc_expr, desc_asr_type, module.get());
 
                     // Ensure tmp is a pointer to the descriptor.
                     // For allocatable/pointer arrays the upstream Var handler
@@ -18341,6 +18391,25 @@ public:
                     builder->CreateMemCpy(desc_copy, llvm::MaybeAlign(),
                         tmp, llvm::MaybeAlign(), desc_size);
                     tmp = desc_copy;
+                    // For character arrays, the descriptor's base_addr
+                    // points to a string_descriptor struct ({i8*, i64}).
+                    // For CFI interop, replace it with the raw i8* data
+                    // pointer (field 0 of the string_descriptor).
+                    if (ASRUtils::is_character(*elem_asr_type)) {
+                        llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                            desc_type, tmp, 0);
+                        llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                            elem_llvm_type->getPointerTo(), base_addr_gep);
+                        llvm::Value* data_gep = llvm_utils->create_gep2(
+                            elem_llvm_type, str_desc, 0);
+                        llvm::Value* raw_data = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            data_gep);
+                        builder->CreateStore(
+                            builder->CreateBitCast(raw_data,
+                                elem_llvm_type->getPointerTo()),
+                            base_addr_gep);
+                    }
                     llvm::Value* elem_size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, elem_size));
                     // Set elem_len (field 1)

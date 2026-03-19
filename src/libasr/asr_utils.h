@@ -6004,7 +6004,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     // need to be tracked which by default pass arrays by using descriptors.
     if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
          || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
-        && ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
+        && (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface
+            || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
     }
 
