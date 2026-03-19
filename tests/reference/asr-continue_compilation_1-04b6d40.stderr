@@ -392,15 +392,15 @@ warning: Assuming implicit save attribute for variable declaration
 670 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 semantic error: variable cannot appear in character length expression
-   --> tests/errors/continue_compilation_1.f90:635:21
+   --> tests/errors/continue_compilation_1.f90:636:21
     |
-635 |     character(len = char_len_var) :: char_nonconst
+636 |     character(len = char_len_var) :: char_nonconst
     |                     ^^^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
-   --> tests/errors/continue_compilation_1.f90:637:9
+   --> tests/errors/continue_compilation_1.f90:638:9
     |
-637 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+638 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
