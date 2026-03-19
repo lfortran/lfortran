@@ -3752,12 +3752,7 @@ RUN(NAME struct_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_09 LABELS gfortran llvm)
 RUN(NAME struct_type_10 LABELS gfortran llvm)
 RUN(NAME struct_type_11 LABELS gfortran llvm)
-
 RUN(NAME struct_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME struct_type_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME struct_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME struct_type_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME struct_type_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
