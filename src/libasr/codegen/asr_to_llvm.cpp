@@ -5759,9 +5759,11 @@ public:
 
                         // Initialize dimension_descriptor (lower_bound=1, extent=1)
                         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)),
-                            llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), ptr_to_dim_desc, 1));
+                            llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), ptr_to_dim_desc,
+                                LLVMArrUtils::SimpleCMODescriptor::DIM_LOWER_BOUND));
                         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)),
-                            llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), ptr_to_dim_desc, 2));
+                            llvm_utils->create_gep2(arr_descr->get_dimension_descriptor_type(), ptr_to_dim_desc,
+                                LLVMArrUtils::SimpleCMODescriptor::DIM_EXTENT));
 
                         ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable_pointer(v->m_type));
@@ -7154,7 +7156,8 @@ public:
                             llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
                                 dim_type, dim_arr, r);
                             llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                dim_type, dim_ptr, 0);
+                                dim_type, dim_ptr,
+                                LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
                             llvm::Value* stride = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt64Ty(context), stride_ptr);
                             stride = builder->CreateSDiv(stride, el_size_val);
@@ -7211,7 +7214,8 @@ public:
                                 llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
                                     dim_type, dim_arr, r);
                                 llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                    dim_type, dim_ptr, 0);
+                                    dim_type, dim_ptr,
+                                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
                                 llvm::Value* stride = llvm_utils->CreateLoad2(
                                     llvm::Type::getInt64Ty(context), stride_ptr);
                                 stride = builder->CreateSDiv(stride, el_size_val);
@@ -7230,7 +7234,8 @@ public:
                                 llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
                                     dim_type, dim_arr, r);
                                 llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                    dim_type, dim_ptr, 0);
+                                    dim_type, dim_ptr,
+                                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
                                 llvm::Value* stride = llvm_utils->CreateLoad2(
                                     llvm::Type::getInt64Ty(context), stride_ptr);
                                 stride = builder->CreateSDiv(stride, el_size_val);
@@ -7272,7 +7277,8 @@ public:
                 llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
                     dim_type, dim_arr, r);
                 llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                    dim_type, dim_ptr, 0);
+                    dim_type, dim_ptr,
+                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
                 llvm::Value* stride = llvm_utils->CreateLoad2(
                     llvm::Type::getInt64Ty(context), stride_ptr);
                 stride = builder->CreateMul(stride, el_size_val);
@@ -19100,7 +19106,8 @@ public:
                         llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
                             dim_type, dim_arr, r);
                         llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                            dim_type, dim_ptr, 0);
+                            dim_type, dim_ptr,
+                            LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
                         llvm::Value* stride = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context), stride_ptr);
                         stride = builder->CreateMul(stride, elem_size_val);
