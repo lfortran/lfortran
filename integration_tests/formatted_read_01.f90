@@ -6,7 +6,7 @@ program formatted_read_01
 
   open(unit=10, file="formatted_read_input_01.txt", status="old")
 
-  read(unit=10, fmt='(a10)') str1
+  read(unit=10, FMT='(a10)') str1
   if (trim(str1) /= "hello") then
     print *, "Error: str1 should be 'hello'"
     error stop 1

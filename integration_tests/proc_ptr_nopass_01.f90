@@ -1,4 +1,4 @@
-  module issue_9063_m
+  module proc_ptr_nopass_01_m
     implicit none
 
     type :: ctx_t
@@ -11,10 +11,10 @@
       end function f_iface
     end interface
 
-  end module issue_9063_m
+  end module proc_ptr_nopass_01_m
 
-  program test_main
-      use issue_9063_m
+  program proc_ptr_nopass_01
+      use proc_ptr_nopass_01_m
       print *, "Test Passed Successfully!"
-  end program test_main
+  end program proc_ptr_nopass_01
 

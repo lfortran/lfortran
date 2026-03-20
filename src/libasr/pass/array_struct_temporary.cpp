@@ -1226,6 +1226,14 @@ bool is_directly_addressable_array_expr(ASR::expr_t* value) {
             // so no temporary variable needed.
             return true;
         }
+        case ASR::exprType::ComplexRe: {
+            return is_directly_addressable_array_expr(
+                ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            return is_directly_addressable_array_expr(
+                ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg);
+        }
         default: {
             return false;
         }
@@ -2006,14 +2014,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
         ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
-
-        replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_re_");
+        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+            replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_re_");
+        }
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t& x) {
         ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
-
-        replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_im_");
+        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+            replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_im_");
+        }
     }
 
     void visit_RealSqrt(const ASR::RealSqrt_t& x) {
@@ -2423,10 +2433,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexRe(ASR::ComplexRe_t* x) {
+        if (is_directly_addressable_array_expr(x->m_arg)) {
+            return;
+        }
         replace_current_expr(x, "_complex_re_");
     }
 
     void replace_ComplexIm(ASR::ComplexIm_t* x) {
+        if (is_directly_addressable_array_expr(x->m_arg)) {
+            return;
+        }
         replace_current_expr(x, "_complex_im_");
     }
 

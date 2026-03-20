@@ -1374,7 +1374,8 @@ public:
 
         // check if format as a keyword arg
         for (size_t i = 0; i < n_kwargs; i++) {
-            if (strcmp(m_kwargs[i].m_arg, "fmt") == 0) {
+            std::string kwarg_name = to_lower(std::string(m_kwargs[i].m_arg));
+            if (strcmp(kwarg_name.c_str(), "fmt") == 0) {
                 formatted = true;
                 break;
             }
@@ -2933,6 +2934,9 @@ public:
             ASRUtils::collect_variable_dependencies(
                 al, variable_dependencies_vec, source_type);
             ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(source);
+            if (type_decl != nullptr) {
+                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+            }
             ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, tmp_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),

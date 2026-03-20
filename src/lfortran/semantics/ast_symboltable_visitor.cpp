@@ -1890,6 +1890,22 @@ public:
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
+                } else if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
+                    for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                        std::string arg_name = return_type->m_kind[ki].m_id
+                            ? to_lower(return_type->m_kind[ki].m_id) : "";
+                        if (arg_name == "len") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            len_expr = ASRUtils::EXPR(tmp);
+                            a_len = ASRUtils::extract_len<SemanticAbort>(
+                                len_expr, x.base.base.loc, diag);
+                        } else if (arg_name == "kind") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                kind_expr, x.base.base.loc, diag);
+                        }
+                    }
                 } else {
                     diag.add(diag::Diagnostic(
                         "Only one kind item supported for now",
@@ -1930,10 +1946,29 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
+                    // Detect c_char kind for bind(C) return types
+                    bool is_c_char_kind = false;
+                    if (return_type->m_kind != nullptr) {
+                        for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                            std::string arg_name = return_type->m_kind[ki].m_id
+                                ? to_lower(return_type->m_kind[ki].m_id) : "";
+                            if ((arg_name == "kind" || arg_name == "") &&
+                                return_type->m_kind[ki].m_value &&
+                                AST::is_a<AST::Name_t>(*return_type->m_kind[ki].m_value) &&
+                                to_lower(AST::down_cast<AST::Name_t>(
+                                    return_type->m_kind[ki].m_value)->m_id) == "c_char") {
+                                is_c_char_kind = true;
+                            }
+                        }
+                    }
+                    ASR::string_physical_typeType phys_type =
+                        (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC)
+                        ? ASR::string_physical_typeType::CChar
+                        : ASR::string_physical_typeType::DescriptorString;
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
                         len_expr,
                         ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
+                        phys_type));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -2373,6 +2408,7 @@ public:
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
+        bool is_bindc = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -2385,6 +2421,10 @@ public:
                         throw SemanticAbort();
                     }
                     attr_extend = (AST::AttrExtends_t*)(&(x.m_attrtype[i]->base));
+                    break;
+                }
+                case AST::decl_attributeType::AttrBind: {
+                    is_bindc = true;
                     break;
                 }
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -2492,7 +2532,7 @@ public:
                 nullptr, 0,
                 nullptr, 0,
                 nullptr, 0,
-                ASR::abiType::Source, dflt_access, false, is_abstract,
+                is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -2579,7 +2619,7 @@ public:
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
             nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -3843,6 +3883,16 @@ public:
     void visit_GenericWrite(const AST::GenericWrite_t &x) {
         // this can only either be "~write_formatted" or "~write_unformatted"
         std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
+        }
+    }
+
+    void visit_GenericRead(const AST::GenericRead_t &x) {
+        std::string generic_name = "~read_" + to_lower(std::string(x.m_id));
         for (size_t i = 0; i < x.n_names; i++) {
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(

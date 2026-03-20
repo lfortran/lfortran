@@ -1,12 +1,12 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%array = type { %finalize_02.tt*, i64, i32, i8, i16, i8, i64, i1, [15 x %dimension_descriptor] }
+%array = type { %finalize_02.tt*, i64, i32, i8, i16, i8, i64, i8, [15 x %dimension_descriptor] }
 %finalize_02.tt = type { float, %finalize_02.t }
 %finalize_02.t = type { i32 }
 %dimension_descriptor = type { i64, i64, i64 }
-%array.0 = type { i32*, i64, i32, i8, i16, i8, i64, i1, [15 x %dimension_descriptor] }
-%array.1 = type { %string_descriptor*, i64, i32, i8, i16, i8, i64, i1, [15 x %dimension_descriptor] }
+%array.0 = type { i32*, i64, i32, i8, i16, i8, i64, i8, [15 x %dimension_descriptor] }
+%array.1 = type { %string_descriptor*, i64, i32, i8, i16, i8, i64, i8, [15 x %dimension_descriptor] }
 %string_descriptor = type <{ i8*, i64 }>
 
 @deep_0 = internal global i32 0

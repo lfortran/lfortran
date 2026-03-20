@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "hashtable.h"
 #include <math.h>
 #include <complex.h>
 #include <string.h>
@@ -47,6 +48,144 @@ typedef enum {
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
+
+/* ----------------------------------------------------- */
+/* --- Memory debug implementation (Compiler's side) --- */
+/* ----------------------------------------------------- */
+#define MEM_DEBUG_INITIAL_BUCKETS 1024
+
+typedef struct Alloc_info {
+    size_t size;
+} Alloc_info;
+
+unsigned long mem_debugger_HASH(void* const ptr) { // Thomas Wang hash
+    unsigned long v = (unsigned long)ptr;
+    v ^= v >> 16;
+    v *= 0x45d9f3b;
+    v ^= v >> 16;
+    return v;
+}
+
+int mem_debugger_EQUAL(void *a, void *b){
+    return (a == b);
+}
+
+DEFINE_HASHTABLE_FOR_TYPES(void*, Alloc_info, mem_debugger)
+
+static mem_debugger mem_dbg_hashTable = {NULL, 0, 0};
+
+// Create `Alloc_info` and map to the ptr
+static void register_ptr(void* const ptr, size_t size){
+    if(!ptr) return;
+    if(!mem_dbg_hashTable.buckets) mem_debugger_init(&mem_dbg_hashTable, MEM_DEBUG_INITIAL_BUCKETS);
+
+    Alloc_info a;
+    a.size = size;
+    mem_debugger_insert(&mem_dbg_hashTable, ptr, a);
+}
+
+void* dbg_malloc(void *context, int64_t size) {
+    (void)context;
+    size_t alloc_size = (size_t)size;
+    void *ptr = malloc(alloc_size);
+    if(alloc_size && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_malloc\n");
+    register_ptr(ptr, alloc_size);
+    return ptr;
+
+}
+void dbg_free(void *context, void *ptr) {
+    (void)context;
+    if (!ptr) return;
+    if(!mem_dbg_hashTable.buckets){
+        fprintf(stderr, "Error: at dbg_free -- hastable not initialized\n");
+        exit(1);
+    }
+    Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
+    if (!found) {
+        fprintf(stderr, "Error: at dbg_free -- ptr not found\n");
+        exit(1);
+    }
+    free(ptr);
+    mem_debugger_remove(&mem_dbg_hashTable, ptr);
+}
+
+void* dbg_calloc(void *context, int64_t nmemb, int64_t size) {
+    (void)context;
+    size_t count = (size_t)nmemb;
+    size_t alloc_size = (size_t)size;
+    void *ptr = calloc(count, alloc_size);
+    if((alloc_size * count) && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_calloc\n");
+    register_ptr(ptr, alloc_size * count);
+    return ptr;
+}
+
+void  *dbg_realloc(void *context, void *ptr, int64_t size){
+    if (!ptr) {
+        return dbg_malloc(context, size);
+    }
+    if (size == 0) {
+        dbg_free(context, ptr);
+        return NULL;
+    }
+
+    size_t alloc_size = (size_t)size;
+    void *new_ptr = realloc(ptr, alloc_size);
+    if (alloc_size && !new_ptr) {
+        fprintf(stderr, "ERROR : Unexpected error at dbg_realloc\n");
+        return NULL;
+    }
+
+    if(!mem_dbg_hashTable.buckets){
+        fprintf(stderr, "ERROR : Unexpected error at dbg_realloc:hashtable not initialized\n");
+        return NULL;
+    }
+
+
+    Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
+    if(!found){
+        fprintf(stderr, "ERROR : Not registered ptr\n");
+        exit(1);
+    }
+
+    if (new_ptr == ptr) {
+        found->size = alloc_size;
+    } else {
+        mem_debugger_remove(&mem_dbg_hashTable, ptr);
+        register_ptr(new_ptr, alloc_size);
+    }
+
+    return new_ptr;
+}
+
+
+
+
+// Called to report any leaks
+void dbg_report() {
+    size_t leaks = 0;
+    size_t total_bytes = 0;
+    fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
+    for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
+        if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;
+        Alloc_info *a = &mem_dbg_hashTable.buckets[i].value;
+        fprintf(stderr, "   ==> LEAK: %zu bytes\n", a->size);
+        leaks++;
+        total_bytes += a->size;
+    }
+    fprintf(stdout, "----------------------------------------------------\n");
+    if (leaks){
+        fprintf(stderr, "\n----------------------------------------------------\n");
+        fprintf(stderr, "TOTAL LEAKS FOUND : %zu, %zu bytes total\n", leaks, total_bytes);
+        fprintf(stderr, "----------------------------------------------------\n");
+        exit(1);
+    }
+    else {
+        fprintf(stdout, "NO LEAKS FOUND\n");
+    }
+}
+/* ------------------------------------------------------------- */
+/* -------------- End memory debug implementation -------------- */
+/* ------------------------------------------------------------- */
 
 #if defined (WITH_LFORTRAN_ASSERT)
     #define lfortran_assert(cond, msg)\
@@ -176,8 +315,19 @@ static lfortran_allocator_t _default_allocator = {
     NULL
 };
 
+static lfortran_allocator_t compiler_mem_dbg_allocator = {
+    dbg_malloc,
+    dbg_realloc,
+    dbg_free,
+    NULL
+};
+
 LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void) {
     return &_default_allocator;
+}
+
+LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void) {
+    return &compiler_mem_dbg_allocator;
 }
 
 /* --- End default allocator --- */
@@ -1179,13 +1329,21 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // formatted_value = "  1.12E+10" or "  1.12+100" (if E dropped)
 
     if (strlen(formatted_value) > width) {
-        if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
-            memmove(formatted_value, formatted_value + 1, strlen(formatted_value));
-            *result = append_to_string(*result, formatted_value);
-            return;
-        } else {
-            goto overflow;
+        size_t formatted_len = strlen(formatted_value);
+        if (formatted_len - width == 1) {
+            if (formatted_value[0] == '0' && formatted_value[1] == '.') {
+                memmove(formatted_value, formatted_value + 1, formatted_len);
+                *result = append_to_string(*result, formatted_value);
+                return;
+            }
+            if ((formatted_value[0] == '-' || formatted_value[0] == '+') &&
+                formatted_value[1] == '0' && formatted_value[2] == '.') {
+                memmove(formatted_value + 1, formatted_value + 2, formatted_len - 1);
+                *result = append_to_string(*result, formatted_value);
+                return;
+            }
         }
+        goto overflow;
     } else {
         *result = append_to_string(*result, formatted_value);
         return;
@@ -1267,18 +1425,38 @@ static char* unescape_quoted_literal(const char* value, int64_t value_len, char 
 
 int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
     int parenCount = 0;
+    bool in_quotes = false;
+    char current_quote = '\0';
     while (index < format_len) {
-        if (format[index] == '(') {
-            parenCount++;
-        } else if (format[index] == ')'){
-            parenCount--;
+        if (format[index] == '"' || format[index] == '\'') {
+            if (in_quotes && current_quote == format[index] && (index + 1) < format_len
+                    && format[index + 1] == format[index]) {
+                index += 2;
+                continue;
+            }
+
+            if (!in_quotes) {
+                in_quotes = true;
+                current_quote = format[index];
+            } else if (current_quote == format[index]) {
+                in_quotes = false;
+                current_quote = '\0';
+            }
+        }
+
+        if (!in_quotes) {
+            if (format[index] == '(') {
+                parenCount++;
+            } else if (format[index] == ')'){
+                parenCount--;
+            }
         }
         index++;
         if (parenCount == 0)
             break;
     }
     if (parenCount != 0) {
-        fprintf(stderr, "Error: Unbalanced paranthesis in format string\n");
+        fprintf(stderr, "Error: Unbalanced parenthesis in format string\n");
         exit(1);
     }
     return index;
@@ -4428,7 +4606,6 @@ LFORTRAN_API void* _lfortran_string_malloc_alloc(lfortran_allocator_t* al, int64
     if(length < 0) lfortran_error("Allocating string with length < 0");
     return ALLOCATOR_ALLOC(al, MAX(length, 1));
 }
-
 LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* ptr, int64_t size) {
     if (size == 0) {
         size = 1;
@@ -4436,7 +4613,7 @@ LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* p
     return (int8_t*) ALLOCATOR_REALLOC(al, ptr, size);
 }
 
-LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int32_t count, int32_t size) {
+LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int64_t count, int64_t size) {
     void* ptr = ALLOCATOR_ALLOC(al, (int64_t)count * size);
     if (ptr) memset(ptr, 0, (size_t)count * size);
     return (int8_t*) ptr;
@@ -7476,7 +7653,7 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
-        void* real_ptr, int32_t type_code, int scale_factor)
+        void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
     // Handle integer types (type_code 2 = int32, type_code 3 = int64)
     if (type_code == 2 || type_code == 3) {
@@ -7497,10 +7674,13 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         }
         return;
     }
-    // Replace D/d with E for parsing, check for exponent
+    // Replace D/d with E for parsing, check for exponent/decimal point
     bool has_exponent = false;
+    bool has_decimal = false;
     for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') {
+        if (buffer[i] == '.') {
+            has_decimal = true;
+        } else if (buffer[i] == 'D' || buffer[i] == 'd') {
             buffer[i] = 'E';
             has_exponent = true;
         } else if (buffer[i] == 'E' || buffer[i] == 'e') {
@@ -7548,7 +7728,13 @@ static void parse_real_from_buffer(char* buffer, int field_len,
 
     double v = strtod(buffer, NULL);
     if (!has_exponent) {
-        v = v / pow(10.0, scale_factor);
+        int total_scale = scale_factor;
+        if (!has_decimal && decimal_places > 0) {
+            total_scale += decimal_places;
+        }
+        if (total_scale != 0) {
+            v = v / pow(10.0, (double)total_scale);
+        }
     }
     if (type_code == 4) {
         *((float*)real_ptr) = (float)v;
@@ -7752,14 +7938,17 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-static void parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
+static int parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
 {
+    int decimals = 0;
     if (*fmt_pos < fmt_len && fmt[*fmt_pos] == '.') {
         (*fmt_pos)++;
         while (*fmt_pos < fmt_len && isdigit((unsigned char)fmt[*fmt_pos])) {
+            decimals = decimals * 10 + (fmt[*fmt_pos] - '0');
             (*fmt_pos)++;
         }
     }
+    return decimals;
 }
 
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
@@ -7773,7 +7962,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (type_code == 6) type_code = 4;
     if (type_code == 7) type_code = 5;
 
-    parse_decimals(fmt, fmt_len, fmt_pos);
+    int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
 
     int read_width = (width > 0) ? width : 15;
     if (read_width < 0) read_width = 0;
@@ -7804,12 +7993,11 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         }
     }
 
-    parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor);
+    parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor, decimal_places);
 
     internal_free(buffer);
     if (is_complex) {
         void* imag_ptr = (type_code == 4) ? (void*)((float*)real_ptr + 1) : (void*)((double*)real_ptr + 1);
-        parse_decimals(fmt, fmt_len, fmt_pos);
         buffer = NULL;
         field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
@@ -7832,7 +8020,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
                 }
             }
         }
-        parse_real_from_buffer(buffer, field_len, imag_ptr, type_code, scale_factor);
+        parse_real_from_buffer(buffer, field_len, imag_ptr, type_code, scale_factor, decimal_places);
         internal_free(buffer);
     }
     
@@ -8048,10 +8236,21 @@ static void process_fmt_items_read(InputSource *inputSource,
             }
             continue;
         }
-
+        bool negative_scale_factor = false;
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '-') {
+            negative_scale_factor = true;
+            fmt_pos++;
+            repeat_count = 0;
+            while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+                repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
+                fmt_pos++;
+            }
+            if (repeat_count == 0) repeat_count = 1;
+        }
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
             *scale_factor = repeat_count;
+            if (negative_scale_factor) *scale_factor = -(*scale_factor);
             repeat_count = 1;
         }
         
@@ -8985,8 +9184,57 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     internal_free(buf);
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
-    lfortran_error("Reading into an array of strings is not supported.");
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr, int64_t elem_len) {
+    (void)format;
+    const char *pos = str;
+    const char *end = str + len;
+    int64_t count = 0;
+    while (pos < end) {
+        // Skip whitespace and common separators
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+
+        char *dest = arr[count];
+        int64_t dest_pos = 0;
+
+        if (*pos == '\'' || *pos == '"') {
+            // Quoted string
+            char delim = *pos;
+            pos++;
+            while (pos < end) {
+                if (*pos == delim) {
+                    pos++;
+                    if (pos < end && *pos == delim) {
+                        // Escaped delimiter
+                        if (dest_pos < elem_len) {
+                            dest[dest_pos++] = delim;
+                        }
+                        pos++;
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (dest_pos < elem_len) {
+                        dest[dest_pos++] = *pos;
+                    }
+                    pos++;
+                }
+            }
+        } else {
+            // Unquoted word - delimited by whitespace or comma
+            while (pos < end && !isspace((unsigned char)*pos) && *pos != ',') {
+                if (dest_pos < elem_len) {
+                    dest[dest_pos++] = *pos;
+                }
+                pos++;
+            }
+        }
+        // Pad remaining with spaces (Fortran convention)
+        pad_with_spaces(dest, dest_pos, elem_len);
+        count++;
+    }
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)

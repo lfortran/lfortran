@@ -151,6 +151,7 @@ struct CompilerOptions {
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
+    bool detect_leaks = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };
