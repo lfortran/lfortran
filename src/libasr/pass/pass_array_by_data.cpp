@@ -1051,7 +1051,23 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+                        // When called through a struct member with PASS
+                        // semantics, the implicit self argument occupies
+                        // index 0 in the function's parameter list, so we
+                        // need to offset indices accordingly. Detect this
+                        // by comparing the original function's parameter
+                        // count with the call's explicit argument count.
+                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
+                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
+                        xx.m_args = new_args.p;
+                        xx.n_args = new_args.size();
+                        return;
+                    } else if ( new_x_name == nullptr ) {
+                        std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
+                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
                         return;
