@@ -1448,7 +1448,7 @@ int find_matching_parentheses(const fchar* format, const int64_t format_len, int
             break;
     }
     if (parenCount != 0) {
-        fprintf(stderr, "Error: Unbalanced paranthesis in format string\n");
+        fprintf(stderr, "Error: Unbalanced parenthesis in format string\n");
         exit(1);
     }
     return index;
