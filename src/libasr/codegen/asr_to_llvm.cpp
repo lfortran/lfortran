@@ -20573,6 +20573,13 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     char_llvm_type, false);
+                // The call arg may have been bitcast (e.g. %array* -> i8**)
+                // to match the callee's declared parameter type. Cast back
+                // to %array* so the GEP uses the correct struct type.
+                if (cfi_desc->getType() != cfi_desc_type->getPointerTo()) {
+                    cfi_desc = builder->CreateBitCast(cfi_desc,
+                        cfi_desc_type->getPointerTo());
+                }
                 llvm::Value* cfi_base_addr = llvm_utils->CreateLoad2(
                     character_type,
                     llvm_utils->create_gep2(cfi_desc_type, cfi_desc, 0));
