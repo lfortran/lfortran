@@ -2935,12 +2935,7 @@ public:
                 al, variable_dependencies_vec, source_type);
             ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(source);
             if (type_decl != nullptr) {
-                std::string decl_name = ASRUtils::symbol_name(type_decl);
-                ASR::symbol_t* resolved = current_scope->resolve_symbol(decl_name);
-                if (resolved != nullptr &&
-                        ASRUtils::symbol_get_past_external(resolved) == type_decl) {
-                    type_decl = resolved;
-                }
+                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
             }
             ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, tmp_name),
