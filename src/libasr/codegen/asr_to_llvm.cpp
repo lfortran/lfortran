@@ -18818,7 +18818,7 @@ public:
                 
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                     arr_descr->get_offset(descriptor_type, descriptor, false));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, 1)),
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(8, 1)),
                     llvm_utils->create_gep2(descriptor_type, descriptor, 7));
                 arr_descr->fill_dimension_descriptor(descriptor_type, descriptor, 0);
                 // Set CFI descriptor fields for scalar-to-assumed-rank
@@ -18948,7 +18948,7 @@ public:
                     llvm_utils->create_gep2(desc_type, descriptor, 1));
                 // is_allocated (field 7) = 1
                 builder->CreateStore(
-                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1),
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1),
                     llvm_utils->create_gep2(desc_type, descriptor, 7));
                 tmp = descriptor;
             }
@@ -19064,12 +19064,10 @@ public:
                     // Copy the descriptor into a temporary to avoid corrupting
                     // the original descriptor's strides (which are in element
                     // units internally but need byte units for CFI).
-                    llvm::DataLayout dl(module->getDataLayout());
-                    uint64_t desc_size = dl.getTypeAllocSize(desc_type);
                     llvm::Value* desc_copy = llvm_utils->CreateAlloca(
                         *builder, desc_type);
-                    builder->CreateMemCpy(desc_copy, llvm::MaybeAlign(),
-                        tmp, llvm::MaybeAlign(), desc_size);
+                    llvm::Value* loaded_desc = builder->CreateLoad(desc_type, tmp);
+                    builder->CreateStore(loaded_desc, desc_copy);
                     tmp = desc_copy;
                     // For character arrays, the descriptor's base_addr
                     // points to a string_descriptor struct ({i8*, i64}).
@@ -19123,6 +19121,59 @@ public:
                         }
                     }
                 }
+            }
+
+            // Handle scalar allocatable/pointer arguments for bind(C):
+            // wrap in a rank-0 CFI descriptor so the C callee receives
+            // a valid CFI_cdesc_t*.
+            if (orig_arg && x_abi == ASR::abiType::BindC &&
+                callee_fn_type && !is_implicit_interface &&
+                !ASRUtils::is_array(orig_arg->m_type) &&
+                !ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(orig_arg->m_type))) &&
+                LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                ASR::ttype_t* elem_asr_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(orig_arg->m_type));
+                llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+                    x.m_args[i].m_value, elem_asr_type, module.get());
+                // Build descriptor type from the formal parameter
+                llvm::Type* desc_type = arr_descr->get_array_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al,
+                        orig_arg->base.base.loc, &orig_arg->base)),
+                    elem_asr_type, elem_llvm_type, false);
+                llvm::Value* descriptor = llvm_utils->CreateAlloca(
+                    *builder, desc_type);
+                // base_addr: load the scalar's pointer (NULL if unallocated)
+                llvm::Value* data_gep = arr_descr->get_pointer_to_data(
+                    desc_type, descriptor);
+                llvm::Type* expected_ptr_type = desc_type->getStructElementType(0);
+                llvm::Value* base_val = llvm_utils->CreateLoad2(
+                    elem_llvm_type->getPointerTo(), tmp);
+                if (base_val->getType() != expected_ptr_type) {
+                    base_val = builder->CreateBitCast(base_val, expected_ptr_type);
+                }
+                builder->CreateStore(base_val, data_gep);
+                // rank = 0
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
+                    llvm_utils->create_gep2(desc_type, descriptor, 3));
+                // offset = 0
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
+                    arr_descr->get_offset(desc_type, descriptor, false));
+                // is_allocated
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context, llvm::APInt(8,
+                        base_val->getType()->isPointerTy() ? 1 : 0)),
+                    llvm_utils->create_gep2(desc_type, descriptor, 7));
+                // elem_len, type code, attribute
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
+                set_cfi_descriptor_fields(desc_type, descriptor,
+                    elem_asr_type, elem_size, orig_arg->m_type);
+                // Fill dim array (rank 0 → just zeroes)
+                arr_descr->fill_dimension_descriptor(desc_type, descriptor, 0);
+                tmp = descriptor;
             }
 
             // For bind(C) calls, ensure the argument type matches the
@@ -20531,6 +20582,7 @@ public:
             }
             builder->CreateCall(fn, args);
             fixup_descriptor_after_cchar_bind_c_call(x, s, is_method, args);
+            fixup_scalar_alloc_after_bind_c_call(x, s, is_method, args);
         }
     }
 
@@ -20596,6 +20648,64 @@ public:
                         {character_type}, false)),
                 {data});
             builder->CreateStore(str_len, len_ptr);
+        }
+    }
+
+    // After a bind(C) call, read back the base_addr from any CFI descriptor
+    // that was created for a scalar allocatable/pointer argument and store
+    // it into the original Fortran variable.
+    void fixup_scalar_alloc_after_bind_c_call(
+            const ASR::SubroutineCall_t &x,
+            ASR::Function_t* s, bool is_method,
+            const std::vector<llvm::Value*>& call_args) {
+        ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(s);
+        if (fn_type->m_abi != ASR::abiType::BindC)
+            return;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!x.m_args[i].m_value) continue;
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) continue;
+            size_t arg_idx = i + (is_method ? 1 : 0);
+            if (arg_idx >= s->n_args) continue;
+            ASR::Variable_t* orig_arg = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(s->m_args[arg_idx])->m_v));
+            if (ASRUtils::is_array(orig_arg->m_type)) continue;
+            if (!LLVM::is_llvm_pointer(*orig_arg->m_type)) continue;
+            if (ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(orig_arg->m_type)))) continue;
+            if (orig_arg->m_intent != ASR::intentType::Out &&
+                orig_arg->m_intent != ASR::intentType::InOut) continue;
+
+            // Get the descriptor that was passed to C
+            if (arg_idx >= call_args.size()) continue;
+            llvm::Value* cfi_desc = call_args[arg_idx];
+
+            // Determine the descriptor type
+            ASR::ttype_t* elem_asr_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(orig_arg->m_type));
+            llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+                x.m_args[i].m_value, elem_asr_type, module.get());
+            llvm::Type* desc_type = arr_descr->get_array_type(
+                ASRUtils::EXPR(ASR::make_Var_t(al,
+                    orig_arg->base.base.loc, &orig_arg->base)),
+                elem_asr_type, elem_llvm_type, false);
+
+            // Cast back to descriptor pointer if needed
+            if (cfi_desc->getType() != desc_type->getPointerTo()) {
+                cfi_desc = builder->CreateBitCast(cfi_desc,
+                    desc_type->getPointerTo());
+            }
+
+            // Read base_addr from descriptor (field 0)
+            llvm::Value* new_base = llvm_utils->CreateLoad2(
+                elem_llvm_type->getPointerTo(),
+                llvm_utils->create_gep2(desc_type, cfi_desc, 0));
+
+            // Store back into the original Fortran variable
+            ASR::Variable_t* actual_var = EXPR2VAR(x.m_args[i].m_value);
+            uint32_t h = get_hash((ASR::asr_t*)actual_var);
+            llvm::Value* var_ptr = llvm_symtab[h];
+            builder->CreateStore(new_base, var_ptr);
         }
     }
 
