@@ -18824,8 +18824,6 @@ public:
                 
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                     arr_descr->get_offset(descriptor_type, descriptor, false));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(8, 1)),
-                    llvm_utils->create_gep2(descriptor_type, descriptor, 7));
                 arr_descr->fill_dimension_descriptor(descriptor_type, descriptor, 0);
                 // Set CFI descriptor fields for scalar-to-assumed-rank
                 {
@@ -18952,10 +18950,6 @@ public:
                 // size set by set_cfi_descriptor_fields)
                 builder->CreateStore(str_len,
                     llvm_utils->create_gep2(desc_type, descriptor, 1));
-                // is_allocated (field 7) = 1
-                builder->CreateStore(
-                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1),
-                    llvm_utils->create_gep2(desc_type, descriptor, 7));
                 tmp = descriptor;
             }
 
@@ -19168,11 +19162,6 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                     arr_descr->get_offset(desc_type, descriptor, false));
-                // is_allocated
-                builder->CreateStore(
-                    llvm::ConstantInt::get(context, llvm::APInt(8,
-                        base_val->getType()->isPointerTy() ? 1 : 0)),
-                    llvm_utils->create_gep2(desc_type, descriptor, 7));
                 // elem_len, type code, attribute
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);

@@ -387,8 +387,7 @@ namespace LCompilers {
                 static constexpr int FIELD_TYPE        = 4;  // i16
                 static constexpr int FIELD_ATTRIBUTE   = 5;  // i8
                 static constexpr int FIELD_OFFSET      = 6;  // i64
-                static constexpr int FIELD_IS_ALLOC    = 7;  // i1
-                static constexpr int FIELD_DIMS        = 8;  // [rank x {i64,i64,i64}]
+                static constexpr int FIELD_DIMS        = 7;  // [rank x {i64,i64,i64}]
 
                 llvm::Type* index_type;  // always i64 for descriptor indices
                 llvm::StructType* dim_des;
