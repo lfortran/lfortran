@@ -10982,7 +10982,7 @@ public:
     }
 
     // Map ASR element type to CFI type code constant
-    int16_t get_cfi_type_code(ASR::ttype_t* elem_type) {
+    int8_t get_cfi_type_code(ASR::ttype_t* elem_type) {
         if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
             int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
             switch (kind) {
@@ -11023,9 +11023,9 @@ public:
         builder->CreateStore(
             llvm::ConstantInt::get(context, llvm::APInt(64, elem_size)),
             llvm_utils->create_gep2(desc_type, desc, 1));
-        // type code (field 4, i16)
+        // type code (field 4, i8)
         builder->CreateStore(
-            llvm::ConstantInt::get(llvm::Type::getInt16Ty(context),
+            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
                 get_cfi_type_code(elem_asr_type)),
             llvm_utils->create_gep2(desc_type, desc, 4));
         // attribute (field 5, i8): allocatable=2, pointer=1, other=0
@@ -18824,8 +18824,6 @@ public:
                 
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                     arr_descr->get_offset(descriptor_type, descriptor, false));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(8, 1)),
-                    llvm_utils->create_gep2(descriptor_type, descriptor, 7));
                 arr_descr->fill_dimension_descriptor(descriptor_type, descriptor, 0);
                 // Set CFI descriptor fields for scalar-to-assumed-rank
                 {
@@ -18952,10 +18950,6 @@ public:
                 // size set by set_cfi_descriptor_fields)
                 builder->CreateStore(str_len,
                     llvm_utils->create_gep2(desc_type, descriptor, 1));
-                // is_allocated (field 7) = 1
-                builder->CreateStore(
-                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1),
-                    llvm_utils->create_gep2(desc_type, descriptor, 7));
                 tmp = descriptor;
             }
 
@@ -19168,11 +19162,6 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
                     arr_descr->get_offset(desc_type, descriptor, false));
-                // is_allocated
-                builder->CreateStore(
-                    llvm::ConstantInt::get(context, llvm::APInt(8,
-                        base_val->getType()->isPointerTy() ? 1 : 0)),
-                    llvm_utils->create_gep2(desc_type, descriptor, 7));
                 // elem_len, type code, attribute
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
@@ -19498,7 +19487,7 @@ public:
                         builder->CreateStore(src_elem_len,
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt16Ty(context),
+                            llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(actual_array_type, dt, 4));
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 4));
