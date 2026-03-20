@@ -39,11 +39,23 @@ typedef int16_t CFI_type_t;
 #define CFI_type_int16_t 8
 #define CFI_type_int32_t 9
 #define CFI_type_int64_t 10
+#define CFI_type_int_least8_t 11
+#define CFI_type_int_least16_t 12
+#define CFI_type_int_least32_t 13
+#define CFI_type_int_least64_t 14
+#define CFI_type_int_fast8_t 15
+#define CFI_type_int_fast16_t 16
+#define CFI_type_int_fast32_t 17
+#define CFI_type_int_fast64_t 18
+#define CFI_type_intmax_t 19
+#define CFI_type_intptr_t 20
+#define CFI_type_ptrdiff_t 21
 #define CFI_type_float 27
 #define CFI_type_double 28
 #define CFI_type_long_double 30
 #define CFI_type_float_Complex 34
 #define CFI_type_double_Complex 35
+#define CFI_type_long_double_Complex 36
 #define CFI_type_Bool 39
 #define CFI_type_char 40
 #define CFI_type_cptr 41
@@ -201,6 +213,50 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
         const CFI_index_t extents[]) {
     if (!desc) return CFI_INVALID_DESCRIPTOR;
     if (rank > CFI_MAX_RANK) return CFI_INVALID_RANK;
+    if (attribute != CFI_attribute_pointer &&
+        attribute != CFI_attribute_allocatable &&
+        attribute != CFI_attribute_other)
+        return CFI_INVALID_ATTRIBUTE;
+
+    /* Validate type code */
+    switch (type) {
+        case CFI_type_signed_char:
+        case CFI_type_short:
+        case CFI_type_int:
+        case CFI_type_long:
+        case CFI_type_long_long:
+        case CFI_type_size_t:
+        case CFI_type_int8_t:
+        case CFI_type_int16_t:
+        case CFI_type_int32_t:
+        case CFI_type_int64_t:
+        case CFI_type_int_least8_t:
+        case CFI_type_int_least16_t:
+        case CFI_type_int_least32_t:
+        case CFI_type_int_least64_t:
+        case CFI_type_int_fast8_t:
+        case CFI_type_int_fast16_t:
+        case CFI_type_int_fast32_t:
+        case CFI_type_int_fast64_t:
+        case CFI_type_intmax_t:
+        case CFI_type_intptr_t:
+        case CFI_type_ptrdiff_t:
+        case CFI_type_float:
+        case CFI_type_double:
+        case CFI_type_long_double:
+        case CFI_type_float_Complex:
+        case CFI_type_double_Complex:
+        case CFI_type_long_double_Complex:
+        case CFI_type_Bool:
+        case CFI_type_char:
+        case CFI_type_cptr:
+        case CFI_type_cfunptr:
+        case CFI_type_struct:
+        case CFI_type_other:
+            break;
+        default:
+            return CFI_INVALID_TYPE;
+    }
 
     /* Per F2018, elem_len is only used for character types;
        for other types, infer the element length from the type code. */
@@ -216,11 +272,23 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
             case CFI_type_int16_t:     elem_len = 2; break;
             case CFI_type_int32_t:     elem_len = 4; break;
             case CFI_type_int64_t:     elem_len = 8; break;
+            case CFI_type_int_least8_t:  elem_len = sizeof(int_least8_t); break;
+            case CFI_type_int_least16_t: elem_len = sizeof(int_least16_t); break;
+            case CFI_type_int_least32_t: elem_len = sizeof(int_least32_t); break;
+            case CFI_type_int_least64_t: elem_len = sizeof(int_least64_t); break;
+            case CFI_type_int_fast8_t:   elem_len = sizeof(int_fast8_t); break;
+            case CFI_type_int_fast16_t:  elem_len = sizeof(int_fast16_t); break;
+            case CFI_type_int_fast32_t:  elem_len = sizeof(int_fast32_t); break;
+            case CFI_type_int_fast64_t:  elem_len = sizeof(int_fast64_t); break;
+            case CFI_type_intmax_t:      elem_len = sizeof(intmax_t); break;
+            case CFI_type_intptr_t:      elem_len = sizeof(intptr_t); break;
+            case CFI_type_ptrdiff_t:     elem_len = sizeof(ptrdiff_t); break;
             case CFI_type_float:       elem_len = sizeof(float); break;
             case CFI_type_double:      elem_len = sizeof(double); break;
             case CFI_type_long_double: elem_len = sizeof(long double); break;
             case CFI_type_float_Complex:  elem_len = 2 * sizeof(float); break;
             case CFI_type_double_Complex: elem_len = 2 * sizeof(double); break;
+            case CFI_type_long_double_Complex: elem_len = 2 * sizeof(long double); break;
             case CFI_type_Bool:        elem_len = sizeof(uint8_t); break;
             case CFI_type_char:        elem_len = 1; break;
             case CFI_type_cptr:        elem_len = sizeof(void *); break;
@@ -310,6 +378,50 @@ static inline int CFI_section(CFI_cdesc_t *result,
     }
     result->base_addr = (char *)source->base_addr + byte_offset;
     result->is_allocated = 1;
+    return CFI_SUCCESS;
+}
+
+/*
+ * CFI_is_contiguous — check whether a descriptor describes contiguous storage.
+ *
+ * Returns 1 if contiguous, 0 otherwise (or if desc is NULL).
+ */
+static inline int CFI_is_contiguous(const CFI_cdesc_t *desc) {
+    if (!desc) return 0;
+    if (desc->rank == 0) return 1;
+    if (!desc->base_addr) return 1;
+
+    CFI_index_t expected_sm = desc->elem_len;
+    for (int i = 0; i < desc->rank; i++) {
+        if (desc->dim[i].sm != expected_sm) return 0;
+        expected_sm *= desc->dim[i].extent;
+    }
+    return 1;
+}
+
+/*
+ * CFI_select_part — select a component of each element in the source array.
+ *
+ * `displacement` is the byte offset of the component within each element.
+ * `elem_len` is the size in bytes of the selected component.
+ * The result descriptor must be established first with the correct rank and type.
+ */
+static inline int CFI_select_part(CFI_cdesc_t *result,
+        const CFI_cdesc_t *source,
+        size_t displacement, size_t elem_len) {
+    if (!result || !source) return CFI_INVALID_DESCRIPTOR;
+    if (!source->base_addr) return CFI_ERROR_BASE_ADDR_NULL;
+
+    result->base_addr = (char *)source->base_addr + displacement;
+    result->elem_len = (int64_t)elem_len;
+    result->is_allocated = 1;
+
+    for (int i = 0; i < result->rank; i++) {
+        result->dim[i].lower_bound = 0;
+        result->dim[i].extent = source->dim[i].extent;
+        result->dim[i].sm = source->dim[i].sm;
+    }
+
     return CFI_SUCCESS;
 }
 
