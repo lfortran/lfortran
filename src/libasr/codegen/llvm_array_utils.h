@@ -362,6 +362,22 @@ namespace LCompilers {
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                // CFI interop: convert internal descriptor to CFI layout
+                virtual
+                llvm::StructType* get_cfi_type(llvm::Type* el_type) = 0;
+
+                virtual
+                llvm::Value* internal_to_cfi(
+                    llvm::Type* internal_type, llvm::Value* internal_desc,
+                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    int8_t type_code, int cfi_attr) = 0;
+
+                virtual
+                llvm::Value* cfi_to_internal(
+                    llvm::Type* internal_type,
+                    llvm::Type* el_type, llvm::Value* cfi_desc,
+                    int n_dims, uint64_t elem_size) = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
@@ -587,6 +603,33 @@ namespace LCompilers {
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                // CFI field indices (C-interop layout, no offset field)
+                static constexpr int CFI_FIELD_BASE_ADDR   = 0;
+                static constexpr int CFI_FIELD_ELEM_LEN    = 1;
+                static constexpr int CFI_FIELD_VERSION     = 2;
+                static constexpr int CFI_FIELD_RANK        = 3;
+                static constexpr int CFI_FIELD_TYPE        = 4;
+                static constexpr int CFI_FIELD_ATTRIBUTE   = 5;
+                static constexpr int CFI_FIELD_DIMS        = 6;
+
+                // Get or create the CFI struct type (no offset field)
+                llvm::StructType* get_cfi_type(llvm::Type* el_type);
+
+                // Convert an internal descriptor to a CFI descriptor:
+                // folds offset into base_addr, converts strides to bytes.
+                llvm::Value* internal_to_cfi(
+                    llvm::Type* internal_type, llvm::Value* internal_desc,
+                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    int8_t type_code, int cfi_attr);
+
+                // Convert a CFI descriptor to an internal descriptor:
+                // sets offset=0, converts byte strides to element strides.
+                // internal_type: the cached internal struct type to use for the alloca.
+                llvm::Value* cfi_to_internal(
+                    llvm::Type* internal_type,
+                    llvm::Type* el_type, llvm::Value* cfi_desc,
+                    int n_dims, uint64_t elem_size);
 
         };
 
