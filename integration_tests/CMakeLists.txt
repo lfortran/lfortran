@@ -1076,6 +1076,7 @@ RUN(NAME format_72 LABELS gfortran llvm)
 
 RUN(NAME format_73 LABELS gfortran llvm)
 RUN(NAME format_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_75 LABELS gfortran llvm)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -2961,6 +2962,7 @@ RUN(NAME implied_do_loops_strings LABELS gfortran llvm llvm_wasm llvm_wasm_emcc 
 RUN(NAME implied_do_loops_print LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops27 LABELS gfortran llvm)
 RUN(NAME implied_do_loops28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME implied_do_loops29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -3025,6 +3027,7 @@ RUN(NAME array_section_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_18 LABELS gfortran llvm EXTRAFILES array_section_18b.f90 EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME array_section_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME array_section_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
@@ -3504,6 +3507,7 @@ RUN(NAME legacy_array_sections_15 LABELS gfortran llvm
     EXTRA_ARGS --legacy-array-sections -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME legacy_array_sections_16 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_17 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

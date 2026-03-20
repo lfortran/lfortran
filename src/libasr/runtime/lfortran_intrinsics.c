@@ -1468,7 +1468,7 @@ int find_matching_parentheses(const fchar* format, const int64_t format_len, int
 static bool is_descriptor_requiring_comma(char c) {
     c = tolower(c);
     return (c == 'a' || c == 'i' || c == 'f' || c == 'e' || c == 'd' || 
-            c == 'g' || c == 'l' || c == 'b' || c == 'z' ||
+            c == 'g' || c == 'l' || c == 'b' || c == 'o' || c == 'z' ||
             c == 't' || c == 's' || c == 'r');
 }
 
@@ -1653,6 +1653,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
             case 'f' :
             case 'l' :
             case 'g' :
+            case 'o' :
             case 'z' :
                 if (last_was_descriptor && !comma_seen) {
                     fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
@@ -1873,6 +1874,9 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
         return current_arg_correct_format == 'i' ||
                current_arg_correct_format == 'f';
     }
+    if (lowered_format_value == 'o') {
+        return current_arg_correct_format == 'i';
+    }
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
         lowered_format_value = 'f';
     }
@@ -2005,6 +2009,111 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
 
     *result = append_to_string(*result, formatted);
     internal_free(hex_full);
+    internal_free(formatted);
+}
+
+void handle_octal(const char* format, Primitive_Types type,
+        void* arg_ptr, char** result) {
+    int width = 0;
+    int min_digits = 1;
+    if (strlen(format) > 1) {
+        width = atoi(format + 1);
+    }
+    const char *dot = strchr(format + 1, '.');
+    if (dot != NULL) {
+        int parsed = atoi(dot + 1);
+        if (parsed > 0) {
+            min_digits = parsed;
+        }
+    }
+
+    int bit_count = 0;
+    uint64_t raw = 0;
+    switch (type) {
+        case INTEGER_8_TYPE:
+            bit_count = 8;
+            raw = (uint64_t)(uint8_t)(*(int8_t*)arg_ptr);
+            break;
+        case INTEGER_16_TYPE:
+            bit_count = 16;
+            raw = (uint64_t)(uint16_t)(*(int16_t*)arg_ptr);
+            break;
+        case INTEGER_32_TYPE:
+            bit_count = 32;
+            raw = (uint64_t)(uint32_t)(*(int32_t*)arg_ptr);
+            break;
+        case INTEGER_64_TYPE:
+            bit_count = 64;
+            raw = (uint64_t)(*(int64_t*)arg_ptr);
+            break;
+        case UNSIGNED_INTEGER_8_TYPE:
+            bit_count = 8;
+            raw = (uint64_t)(*(uint8_t*)arg_ptr);
+            break;
+        case UNSIGNED_INTEGER_16_TYPE:
+            bit_count = 16;
+            raw = (uint64_t)(*(uint16_t*)arg_ptr);
+            break;
+        case UNSIGNED_INTEGER_32_TYPE:
+            bit_count = 32;
+            raw = (uint64_t)(*(uint32_t*)arg_ptr);
+            break;
+        case UNSIGNED_INTEGER_64_TYPE:
+            bit_count = 64;
+            raw = (uint64_t)(*(uint64_t*)arg_ptr);
+            break;
+        default:
+            fprintf(stderr, "Unsupported type for O edit descriptor\n");
+            exit(1);
+    }
+
+    int total_digits = (bit_count + 2) / 3;
+    if (total_digits <= 0) {
+        total_digits = 1;
+    }
+
+    char *oct_full = (char*)internal_malloc((total_digits + 1) * sizeof(char));
+    snprintf(oct_full, total_digits + 1, "%0*llo", total_digits,
+        (unsigned long long)raw);
+
+    int start_idx = 0;
+    while (start_idx < total_digits - 1 && oct_full[start_idx] == '0') {
+        start_idx++;
+    }
+
+    int digits_len = total_digits - start_idx;
+    if (digits_len <= 0) digits_len = 1;
+    if (min_digits < 1) min_digits = 1;
+
+    int output_len = digits_len > min_digits ? digits_len : min_digits;
+    char *formatted = (char*)internal_malloc((output_len + 1) * sizeof(char));
+    int leading_zeros = output_len - digits_len;
+    for (int i = 0; i < leading_zeros; i++) {
+        formatted[i] = '0';
+    }
+    memcpy(formatted + leading_zeros, oct_full + start_idx, digits_len);
+    formatted[output_len] = '\0';
+
+    if (width > 0 && width < output_len) {
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, "*");
+        }
+        internal_free(oct_full);
+        internal_free(formatted);
+        return;
+    }
+
+    if (width > output_len) {
+        int padding = width - output_len;
+        char *spaces = (char*)internal_malloc((padding + 1) * sizeof(char));
+        memset(spaces, ' ', padding);
+        spaces[padding] = '\0';
+        *result = append_to_string(*result, spaces);
+        internal_free(spaces);
+    }
+
+    *result = append_to_string(*result, formatted);
+    internal_free(oct_full);
     internal_free(formatted);
 }
 
@@ -3037,6 +3146,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'z') {
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     handle_hexadecimal(value, s_info.current_element_type,
+                        s_info.current_arg_info.current_arg, &temp_buf);
+                    int64_t temp_len = strlen(temp_buf);
+                    result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
+                    result_len += temp_len;
+                    internal_free(temp_buf);
+                } else if (tolower(value[0]) == 'o') {
+                    char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
+                    handle_octal(value, s_info.current_element_type,
                         s_info.current_arg_info.current_arg, &temp_buf);
                     int64_t temp_len = strlen(temp_buf);
                     result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
