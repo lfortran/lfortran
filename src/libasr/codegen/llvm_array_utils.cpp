@@ -123,13 +123,13 @@ namespace LCompilers {
         index_type(llvm::Type::getInt64Ty(_context)),
         dim_des(nullptr),
         co(co_) {
-            // CFI_dim_t: always i64 for stride, lower_bound, extent
+            // CFI_dim_t: always i64 for lower_bound, extent, stride
             dim_des = llvm::StructType::create(
                 context,
                 std::vector<llvm::Type*>(
-                    {llvm::Type::getInt64Ty(context),   // stride
-                     llvm::Type::getInt64Ty(context),   // lower_bound
-                     llvm::Type::getInt64Ty(context)}), // extent
+                    {llvm::Type::getInt64Ty(context),   // lower_bound
+                     llvm::Type::getInt64Ty(context),   // extent
+                     llvm::Type::getInt64Ty(context)}), // stride (sm)
                 "dimension_descriptor");
         }
 
@@ -308,7 +308,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_dimension_size(llvm::Value* dim_des_arr, llvm::Value* dim, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim), 2);
+            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim), DIM_EXTENT);
             if( !load ) {
                 return dim_size;
             }
@@ -317,7 +317,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_dimension_size(llvm::Value* dim_des_arr, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, dim_des_arr, 2);
+            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, dim_des_arr, DIM_EXTENT);
             if( !load ) {
                 return dim_size;
             }
@@ -336,9 +336,9 @@ namespace LCompilers {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
                 // Fortran standard: negative extent means zero-size array
@@ -432,9 +432,9 @@ namespace LCompilers {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 llvm::Value* first = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].first, index_type, builder, llvm_utils), index_type);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(load_if_pointer(llvm_dims[r].second, index_type, builder, llvm_utils), index_type);
                 // Fortran standard: negative extent means zero-size array
@@ -524,9 +524,9 @@ namespace LCompilers {
             // generates code to check array dimensions before the array is allocated.
             for (int i = 0; i < n_dims; i++) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_first, i);
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), llvm_utils->create_gep2(dim_des, dim_val, 0));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 1));
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, 2));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE));
             }
 
             set_rank(type, arr, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
@@ -544,13 +544,13 @@ namespace LCompilers {
             llvm::Value* source_dim_des_arr = this->get_pointer_to_dimension_descriptor_array(type, source_arr);
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
                 llvm::Value* stride = this->get_stride(
                     this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
                     llvm::ConstantInt::get(context, llvm::APInt(32, r))));
                 builder->CreateStore(stride, s_val);
-                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 if( lbs[r] == nullptr ) {
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 } else {
@@ -576,13 +576,13 @@ namespace LCompilers {
             llvm::Value* source_dim_des_arr = this->get_pointer_to_dimension_descriptor_array(source_arr_type, source_arr);
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
                 llvm::Value* stride = this->get_stride(
                     this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
                     llvm::ConstantInt::get(context, llvm::APInt(32, r))));
                 builder->CreateStore(stride, s_val);
-                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 llvm::Value* dim_size = this->get_dimension_size(
                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
@@ -786,7 +786,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_lower_bound(llvm::Value* dims, bool load) {
-            llvm::Value* lb = llvm_utils->create_gep2(dim_des, dims, 1);
+            llvm::Value* lb = llvm_utils->create_gep2(dim_des, dims, DIM_LOWER_BOUND);
             if( !load ) {
                 return lb;
             }
@@ -794,15 +794,15 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_upper_bound(llvm::Value* dims) {
-            llvm::Value* lb = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dims, 1));
-            llvm::Value* dim_size = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dims, 2));
+            llvm::Value* lb = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dims, DIM_LOWER_BOUND));
+            llvm::Value* dim_size = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dims, DIM_EXTENT));
             unsigned bit_width = index_type->getIntegerBitWidth();
             return builder->CreateSub(builder->CreateAdd(dim_size, lb),
                                       llvm::ConstantInt::get(context, llvm::APInt(bit_width, 1)));
         }
 
         llvm::Value* SimpleCMODescriptor::get_stride(llvm::Value* dims, bool load) {
-            llvm::Value* stride = llvm_utils->create_gep2(dim_des, dims, 0);
+            llvm::Value* stride = llvm_utils->create_gep2(dim_des, dims, DIM_STRIDE);
             if( !load ) {
                 return stride;
             }
@@ -819,8 +819,8 @@ namespace LCompilers {
                 llvm::Value* req_idx = m_args[r];
                 llvm::Value* curr_llvm_idx = req_idx;
                 llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep2(dim_des, dim_des_arr_ptr, r);
-                llvm::Value* lval = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, 1));
-                llvm::Value* length = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, 2));
+                llvm::Value* lval = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, DIM_LOWER_BOUND));
+                llvm::Value* length = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, DIM_EXTENT));
                 // Cast req_idx to index_type
                 req_idx = builder->CreateSExtOrTrunc(req_idx, index_type);
                 curr_llvm_idx = builder->CreateSub(req_idx, lval);
@@ -844,7 +844,7 @@ namespace LCompilers {
                                                      lval,
                                                      ubound);
                 }
-                llvm::Value* stride = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, 0));
+                llvm::Value* stride = llvm_utils->CreateLoad2(index_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, DIM_STRIDE));
                 idx = builder->CreateAdd(idx, builder->CreateMul(stride, curr_llvm_idx));
             }
             llvm::Value* offset_val = this->get_offset(type, arr);
@@ -1296,9 +1296,9 @@ namespace LCompilers {
                 llvm_utils->start_new_block(loopbody);
                 llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r_val);
-                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 builder->CreateStore(llvm_utils->CreateLoad2(index_type, prod), s_val);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(i32, llvm_utils->create_ptr_gep2(i32, shape_data, r_val)), index_type);

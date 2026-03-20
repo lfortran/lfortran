@@ -79,14 +79,13 @@ typedef int16_t CFI_type_t;
 /*
  * Per-dimension descriptor.
  *
- * LFortran's internal order is {stride, lower_bound, extent}.
- * We use the standard CFI names: sm (stride multiplier in bytes),
- * lower_bound, and extent.
+ * Standard order: {lower_bound, extent, sm}.
+ * Matches ISO/IEC 18508 (Fortran 2018) Table 18.5 and Flang.
  */
 typedef struct CFI_dim_t {
-    CFI_index_t sm;          /* stride multiplier in bytes */
     CFI_index_t lower_bound;
     CFI_index_t extent;      /* -1 for assumed size */
+    CFI_index_t sm;          /* stride multiplier in bytes */
 } CFI_dim_t;
 
 /*

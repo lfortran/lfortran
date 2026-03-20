@@ -366,6 +366,13 @@ namespace LCompilers {
 
         class SimpleCMODescriptor: public Descriptor {
 
+            public:
+
+                // CFI_dim_t sub-field indices (standard order)
+                static constexpr int DIM_LOWER_BOUND = 0;
+                static constexpr int DIM_EXTENT      = 1;
+                static constexpr int DIM_STRIDE      = 2;  // sm (stride multiplier)
+
             private:
 
                 llvm::LLVMContext& context;
