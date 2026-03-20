@@ -100,10 +100,10 @@ typedef struct CFI_cdesc_t {
     void *base_addr;
     int64_t elem_len;
     int32_t version;
-    int8_t rank;
+    CFI_rank_t rank;
     /* 1 byte padding (natural alignment for int16_t) */
     int16_t type;
-    int8_t attribute;
+    CFI_attribute_t attribute;
     /* padding to align offset to 8 bytes */
     int64_t offset;
     /* padding to align dim array to 8 bytes */
@@ -293,9 +293,9 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
     desc->base_addr = base_addr;
     desc->elem_len = (int64_t)elem_len;
     desc->version = CFI_VERSION;
-    desc->rank = (int8_t)rank;
+    desc->rank = rank;
     desc->type = type;
-    desc->attribute = (int8_t)attribute;
+    desc->attribute = attribute;
     desc->offset = 0;
     for (CFI_rank_t i = 0; i < rank; i++) {
         desc->dim[i].lower_bound = 0;
