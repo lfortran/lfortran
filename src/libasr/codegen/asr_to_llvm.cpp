@@ -7075,7 +7075,7 @@ public:
                     // Load the descriptor pointer (typed as internal struct*),
                     // cfi_to_internal() will bitcast it to CFI type.
                     llvm::Value* cfi_ptr = builder->CreateLoad(
-                        sym_val->getType()->getPointerElementType(), sym_val);
+                        desc_type->getPointerTo(), sym_val);
                     llvm::Value* internal_desc = arr_descr->cfi_to_internal(
                         desc_type, elem_llvm_type, cfi_ptr, n_dims, elem_size);
                     builder->CreateStore(internal_desc, sym_val);
