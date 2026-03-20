@@ -1,4 +1,4 @@
-module allocate61_mod
+module allocate62_mod
     implicit none
 
     type :: token_stack
@@ -49,10 +49,10 @@ contains
         end if
     end subroutine touch
 
-end module allocate61_mod
+end module allocate62_mod
 
-program allocate_61
-    use allocate61_mod
+program allocate_62
+    use allocate62_mod
     implicit none
 
     type(equation_parser) :: parser
@@ -65,4 +65,4 @@ program allocate_61
     if (parser%n_indep_vars /= 2) error stop 1
     if (parser%indep_vars(1)%value /= "x") error stop 2
     if (parser%indep_vars(2)%value /= "y") error stop 3
-end program allocate_61
+end program allocate_62
