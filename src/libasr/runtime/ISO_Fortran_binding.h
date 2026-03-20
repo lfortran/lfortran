@@ -47,6 +47,7 @@ typedef int16_t CFI_type_t;
 #define CFI_type_Bool 39
 #define CFI_type_char 40
 #define CFI_type_cptr 41
+#define CFI_type_cfunptr 43
 #define CFI_type_struct 42
 #define CFI_type_other (-1)
 
@@ -128,8 +129,8 @@ static inline int CFI_allocate(CFI_cdesc_t *desc,
         if (desc->dim[i].extent < 0) desc->dim[i].extent = 0;
     }
     for (int i = 0; i < desc->rank; i++) {
-        /* LFortran uses element-based strides (not byte-based) */
-        desc->dim[i].sm = 1;
+        /* Standard: sm is stride multiplier in bytes */
+        desc->dim[i].sm = desc->elem_len;
         for (int j = 0; j < i; j++) {
             desc->dim[i].sm *= desc->dim[j].extent;
         }
@@ -238,12 +239,77 @@ static inline int CFI_establish(CFI_cdesc_t *desc, void *base_addr,
     for (CFI_rank_t i = 0; i < rank; i++) {
         desc->dim[i].lower_bound = 0;
         desc->dim[i].extent = extents ? extents[i] : 0;
-        /* LFortran uses element-based strides (not byte-based) */
-        desc->dim[i].sm = 1;
+        /* Standard: sm is stride multiplier in bytes */
+        desc->dim[i].sm = (int64_t)elem_len;
         for (CFI_rank_t j = 0; j < i; j++) {
             desc->dim[i].sm *= desc->dim[j].extent;
         }
     }
+    return CFI_SUCCESS;
+}
+
+/*
+ * CFI_address — compute the address of an element given subscripts.
+ *
+ * `subscripts` is an array of length `desc->rank` containing 0-based indices
+ * relative to each dimension's lower_bound.
+ */
+static inline void *CFI_address(const CFI_cdesc_t *desc,
+        const CFI_index_t subscripts[]) {
+    if (!desc || !desc->base_addr) return NULL;
+    ptrdiff_t byte_offset = 0;
+    for (int i = 0; i < desc->rank; i++) {
+        CFI_index_t idx = subscripts[i] - desc->dim[i].lower_bound;
+        byte_offset += idx * desc->dim[i].sm;
+    }
+    return (char *)desc->base_addr + byte_offset;
+}
+
+/*
+ * CFI_section — create a section descriptor from a source descriptor.
+ *
+ * `lower`, `upper`, `strides` are arrays of length `source->rank`.
+ * The result descriptor must be established first (with correct rank/type).
+ */
+static inline int CFI_section(CFI_cdesc_t *result,
+        const CFI_cdesc_t *source,
+        const CFI_index_t lower[],
+        const CFI_index_t upper[],
+        const CFI_index_t strides[]) {
+    if (!result || !source) return CFI_INVALID_DESCRIPTOR;
+    if (!source->base_addr) return CFI_ERROR_BASE_ADDR_NULL;
+
+    int res_rank = result->rank;
+    result->elem_len = source->elem_len;
+    result->type = source->type;
+
+    ptrdiff_t byte_offset = 0;
+    int rd = 0;
+    for (int i = 0; i < source->rank; i++) {
+        CFI_index_t lb = lower ? lower[i] : source->dim[i].lower_bound;
+        CFI_index_t ub = upper ? upper[i] : source->dim[i].lower_bound +
+                                              source->dim[i].extent - 1;
+        CFI_index_t st = strides ? strides[i] : 1;
+
+        byte_offset += (lb - source->dim[i].lower_bound) *
+                       source->dim[i].sm;
+
+        if (rd < res_rank) {
+            CFI_index_t ext;
+            if (st > 0) {
+                ext = (ub - lb + st) / st;
+            } else {
+                ext = (lb - ub - st) / (-st);
+            }
+            if (ext < 0) ext = 0;
+            result->dim[rd].lower_bound = 0;
+            result->dim[rd].extent = ext;
+            result->dim[rd].sm = source->dim[i].sm * st;
+            rd++;
+        }
+    }
+    result->base_addr = (char *)source->base_addr + byte_offset;
+    result->is_allocated = 1;
     return CFI_SUCCESS;
 }
 

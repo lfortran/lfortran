@@ -3303,7 +3303,11 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            if( is_dimension_star ||
+            if( ASRUtils::is_fixed_size_array(m_dims, n_dims) && !is_argument ) {
+                // bind(C) module/global fixed-size arrays use inline storage
+                // to match C layout (e.g., int32_t arr[4] is 16 bytes inline)
+                physical_type = ASR::array_physical_typeType::FixedSizeArray;
+            } else if( is_dimension_star ||
                 ASRUtils::is_fixed_size_array(m_dims, n_dims) ||
                 !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 physical_type = ASR::array_physical_typeType::PointerArray;

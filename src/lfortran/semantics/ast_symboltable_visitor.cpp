@@ -1890,6 +1890,22 @@ public:
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
+                } else if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
+                    for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                        std::string arg_name = return_type->m_kind[ki].m_id
+                            ? to_lower(return_type->m_kind[ki].m_id) : "";
+                        if (arg_name == "len") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            len_expr = ASRUtils::EXPR(tmp);
+                            a_len = ASRUtils::extract_len<SemanticAbort>(
+                                len_expr, x.base.base.loc, diag);
+                        } else if (arg_name == "kind") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                kind_expr, x.base.base.loc, diag);
+                        }
+                    }
                 } else {
                     diag.add(diag::Diagnostic(
                         "Only one kind item supported for now",
@@ -1930,10 +1946,29 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
+                    // Detect c_char kind for bind(C) return types
+                    bool is_c_char_kind = false;
+                    if (return_type->m_kind != nullptr) {
+                        for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                            std::string arg_name = return_type->m_kind[ki].m_id
+                                ? to_lower(return_type->m_kind[ki].m_id) : "";
+                            if ((arg_name == "kind" || arg_name == "") &&
+                                return_type->m_kind[ki].m_value &&
+                                AST::is_a<AST::Name_t>(*return_type->m_kind[ki].m_value) &&
+                                to_lower(AST::down_cast<AST::Name_t>(
+                                    return_type->m_kind[ki].m_value)->m_id) == "c_char") {
+                                is_c_char_kind = true;
+                            }
+                        }
+                    }
+                    ASR::string_physical_typeType phys_type =
+                        (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC)
+                        ? ASR::string_physical_typeType::CChar
+                        : ASR::string_physical_typeType::DescriptorString;
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
                         len_expr,
                         ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
+                        phys_type));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
