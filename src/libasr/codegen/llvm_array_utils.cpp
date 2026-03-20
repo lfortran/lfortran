@@ -1602,6 +1602,181 @@ namespace LCompilers {
             );
         }
 
+        llvm::StructType* SimpleCMODescriptor::get_cfi_type(llvm::Type* /*el_type*/) {
+            static constexpr int CFI_MAX_RANK = 15;
+            std::vector<llvm::Type*> cfi_vec = {
+                llvm::Type::getInt8Ty(context)->getPointerTo(), // 0: base_addr (void*)
+                llvm::Type::getInt64Ty(context),                // 1: elem_len
+                llvm::Type::getInt32Ty(context),                // 2: version
+                llvm::Type::getInt8Ty(context),                 // 3: rank
+                llvm::Type::getInt8Ty(context),                 // 4: type
+                llvm::Type::getInt8Ty(context),                 // 5: attribute
+                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)     // 6: dim[15]
+            };
+            return llvm::StructType::create(context, cfi_vec, "cfi_array");
+        }
+
+        llvm::Value* SimpleCMODescriptor::internal_to_cfi(
+                llvm::Type* internal_type, llvm::Value* internal_desc,
+                llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                int8_t type_code, int cfi_attr) {
+            llvm::StructType* cfi_type = get_cfi_type(el_type);
+            llvm::Value* cfi = llvm_utils->CreateAlloca(*builder, cfi_type);
+            llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
+
+            // Copy base_addr, adjusting by offset.
+            // Guard: if base_addr is NULL (unallocated/disassociated),
+            // keep it NULL — offset may be uninitialized.
+            // Use byte-level GEP (offset * elem_size) so this works for
+            // all element types including characters (where internal el_type
+            // is string_descriptor but CFI uses raw char*).
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            llvm::Value* base_raw = llvm_utils->CreateLoad2(
+                el_type->getPointerTo(),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_BASE_ADDR));
+            llvm::Value* base_i8 = builder->CreateBitCast(base_raw, i8_ptr_type);
+            llvm::Value* offset = get_offset(internal_type, internal_desc, true);
+            llvm::Value* offset_bytes = builder->CreateMul(offset, elem_size_val);
+            llvm::Value* adjusted = builder->CreateGEP(
+                llvm::Type::getInt8Ty(context), base_i8, offset_bytes);
+            llvm::Value* is_null = builder->CreateICmpEQ(base_i8,
+                llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(base_i8->getType())));
+            adjusted = builder->CreateSelect(is_null, base_i8, adjusted);
+            builder->CreateStore(adjusted,
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_BASE_ADDR));
+
+            // elem_len: use elem_size (the CFI element size), not the
+            // internal descriptor's elem_len. For characters, the internal
+            // elem_len is sizeof(string_descriptor)=16, but CFI needs the
+            // actual character length (e.g. 1).
+            builder->CreateStore(elem_size_val,
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_ELEM_LEN));
+
+            // version
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 20180515),
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_VERSION));
+
+            // Copy rank from internal descriptor
+            llvm::Value* rank = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_RANK));
+            builder->CreateStore(rank,
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_RANK));
+
+            // type code and attribute from parameters
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), type_code),
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_TYPE));
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_attr),
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_ATTRIBUTE));
+
+            // Copy dims, converting element strides to byte strides
+            llvm::Value* src_dim_arr = get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
+            llvm::Value* dst_dim_arr = llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_DIMS);
+            dst_dim_arr = llvm_utils->create_gep2(
+                llvm::ArrayType::get(dim_des, 15), dst_dim_arr, 0);
+            for (int r = 0; r < n_dims; r++) {
+                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(dim_des, src_dim_arr, r);
+                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(dim_des, dst_dim_arr, r);
+                // lower_bound
+                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                builder->CreateStore(lb,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                // extent
+                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                builder->CreateStore(ext,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                // stride: convert elements → bytes
+                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                stride = builder->CreateMul(stride, elem_size_val);
+                builder->CreateStore(stride,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+            }
+
+            return cfi;
+        }
+
+        llvm::Value* SimpleCMODescriptor::cfi_to_internal(
+                llvm::Type* internal_type,
+                llvm::Type* el_type, llvm::Value* cfi_desc,
+                int n_dims, uint64_t elem_size) {
+            llvm::StructType* cfi_type = get_cfi_type(el_type);
+            llvm::Value* internal = llvm_utils->CreateAlloca(*builder,
+                static_cast<llvm::StructType*>(internal_type));
+
+            // Bitcast incoming pointer to CFI type for GEP access
+            llvm::Value* cfi_ptr = builder->CreateBitCast(
+                cfi_desc, cfi_type->getPointerTo());
+
+            // Copy base_addr (CFI has i8* aka void*, internal has el_type*)
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            llvm::Value* base_i8 = llvm_utils->CreateLoad2(
+                i8_ptr_type,
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_BASE_ADDR));
+            llvm::Value* base = builder->CreateBitCast(base_i8,
+                el_type->getPointerTo());
+            builder->CreateStore(base,
+                llvm_utils->create_gep2(internal_type, internal, FIELD_BASE_ADDR));
+
+            // Copy scalar fields
+            auto copy_field = [&](int cfi_idx, int int_idx, llvm::Type* ty) {
+                llvm::Value* val = llvm_utils->CreateLoad2(ty,
+                    llvm_utils->create_gep2(cfi_type, cfi_ptr, cfi_idx));
+                builder->CreateStore(val,
+                    llvm_utils->create_gep2(internal_type, internal, int_idx));
+            };
+            copy_field(CFI_FIELD_ELEM_LEN,  FIELD_ELEM_LEN,  llvm::Type::getInt64Ty(context));
+            copy_field(CFI_FIELD_VERSION,    FIELD_VERSION,    llvm::Type::getInt32Ty(context));
+            copy_field(CFI_FIELD_RANK,       FIELD_RANK,       llvm::Type::getInt8Ty(context));
+            copy_field(CFI_FIELD_TYPE,       FIELD_TYPE,       llvm::Type::getInt8Ty(context));
+            copy_field(CFI_FIELD_ATTRIBUTE,  FIELD_ATTRIBUTE,  llvm::Type::getInt8Ty(context));
+
+            // Set offset to 0
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                llvm_utils->create_gep2(internal_type, internal, FIELD_OFFSET));
+
+            // Copy dims, converting byte strides to element strides
+            llvm::Value* elem_size_val = llvm::ConstantInt::get(
+                context, llvm::APInt(64, elem_size));
+            llvm::Value* src_dim_arr = llvm_utils->create_gep2(
+                cfi_type, cfi_ptr, CFI_FIELD_DIMS);
+            src_dim_arr = llvm_utils->create_gep2(
+                llvm::ArrayType::get(dim_des, 15), src_dim_arr, 0);
+            llvm::Value* dst_dim_arr =
+                get_pointer_to_dimension_descriptor_array(internal_type, internal);
+            for (int r = 0; r < n_dims; r++) {
+                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, src_dim_arr, r);
+                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, dst_dim_arr, r);
+                // lower_bound
+                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                builder->CreateStore(lb,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                // extent
+                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                builder->CreateStore(ext,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                // stride: convert bytes → elements
+                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                stride = builder->CreateSDiv(stride, elem_size_val);
+                builder->CreateStore(stride,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+            }
+
+            return internal;
+        }
+
     } // LLVMArrUtils
 
 } // namespace LCompilers

@@ -282,6 +282,10 @@ public:
         llvm::Type* desc_array_type; // LLVM type of the descriptor
         uint64_t el_size;            // element size in bytes
         int n_dims;                  // number of dimensions
+        llvm::Value* original_cfi_ptr; // original CFI descriptor pointer (for writeback)
+        llvm::Type* el_type;         // element LLVM type
+        int8_t type_code;            // CFI type code
+        int cfi_attr;                // CFI attribute
     };
     std::vector<BindCStrideExit> bindc_stride_exits;
     struct CharConsolidationWriteback {
@@ -7028,6 +7032,99 @@ public:
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         declare_args(x, *F);
+
+        // For bind(C) functions, convert incoming CFI descriptor parameters
+        // to internal descriptor layout (which has an extra offset field
+        // and uses element strides instead of byte strides).
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::symbol_t *s = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
+                ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(s);
+                ASR::ttype_t* arg_type = arg->m_type;
+                if (!ASRUtils::is_array(arg_type)) continue;
+                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(arg_type);
+                if (phys != ASR::array_physical_typeType::DescriptorArray &&
+                    phys != ASR::array_physical_typeType::AssumedRankArray) continue;
+
+                uint32_t h = get_hash((ASR::asr_t*)arg);
+                llvm::Value* sym_val = llvm_symtab[h];
+
+                ASR::ttype_t* elem_asr_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(arg_type));
+                // Skip assumed-type (type(*)) / polymorphic (class(*))
+                // — element type is unknown at compile time
+                if (ASR::is_a<ASR::TypeParameter_t>(
+                        *ASRUtils::type_get_past_array(elem_asr_type))) continue;
+                llvm::Type* elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::get_expr_from_sym(al, s),
+                    ASRUtils::extract_type(elem_asr_type), module.get());
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
+                // Get the cached internal descriptor type
+                llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::get_expr_from_sym(al, s),
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type),
+                    module.get());
+
+                if (ASRUtils::is_allocatable(arg_type) ||
+                    ASRUtils::is_pointer(arg_type)) {
+                    // sym_val is a double pointer (alloca holding descriptor ptr).
+                    // Load the descriptor pointer (typed as internal struct*),
+                    // cfi_to_internal() will bitcast it to CFI type.
+                    llvm::Value* cfi_ptr = builder->CreateLoad(
+                        desc_type->getPointerTo(), sym_val);
+                    llvm::Value* internal_desc = arr_descr->cfi_to_internal(
+                        desc_type, elem_llvm_type, cfi_ptr, n_dims, elem_size);
+                    builder->CreateStore(internal_desc, sym_val);
+                    // For intent(out/inout), schedule writeback at function exit
+                    ASR::intentType intent = arg->m_intent;
+                    if (intent == ASRUtils::intent_out ||
+                        intent == ASRUtils::intent_inout) {
+                        int8_t type_code = get_cfi_type_code(elem_asr_type);
+                        int cfi_attr = ASRUtils::is_allocatable(arg_type) ? 2 : 1;
+                        bindc_stride_exits.push_back({sym_val, desc_type,
+                            elem_size, n_dims, cfi_ptr, elem_llvm_type,
+                            type_code, cfi_attr});
+                    }
+                } else {
+                    // sym_val is the CFI descriptor pointer directly.
+                    // For optional parameters, the pointer may be NULL
+                    // (not present). Skip conversion if NULL — the body
+                    // must check present() before accessing the array.
+                    bool is_optional = (arg->m_presence == ASR::presenceType::Optional);
+                    if (is_optional) {
+                        llvm::Value* is_null = builder->CreateICmpEQ(sym_val,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(sym_val->getType())));
+                        llvm::BasicBlock* entry_bb = builder->GetInsertBlock();
+                        llvm::Function* fn = entry_bb->getParent();
+                        llvm::BasicBlock* convert_bb = llvm::BasicBlock::Create(
+                            context, "cfi_convert", fn);
+                        llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                            context, "cfi_merge", fn);
+                        builder->CreateCondBr(is_null, merge_bb, convert_bb);
+                        builder->SetInsertPoint(convert_bb);
+                        llvm::Value* internal_desc = arr_descr->cfi_to_internal(
+                            desc_type, elem_llvm_type, sym_val, n_dims, elem_size);
+                        builder->CreateBr(merge_bb);
+                        builder->SetInsertPoint(merge_bb);
+                        llvm::PHINode* phi = builder->CreatePHI(
+                            sym_val->getType(), 2);
+                        phi->addIncoming(sym_val, entry_bb);
+                        phi->addIncoming(internal_desc, convert_bb);
+                        llvm_symtab[h] = phi;
+                    } else {
+                        llvm::Value* internal_desc = arr_descr->cfi_to_internal(
+                            desc_type, elem_llvm_type, sym_val, n_dims, elem_size);
+                        llvm_symtab[h] = internal_desc;
+                    }
+                }
+            }
+        }
+
         for( auto& sym: x.m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ) {
                 continue ;
@@ -7139,119 +7236,18 @@ public:
                 arr_descr->reset_array_details(
                     desc_array_type, array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
                 ptr_loads = ptr_loads_copy;
-                // For bind(C) functions, the incoming descriptor uses
-                // CFI byte strides. Convert them to LFortran's internal
-                // element strides by dividing by the element size.
-                ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(x);
-                if (fn_type->m_abi == ASR::abiType::BindC) {
-                    llvm::DataLayout dl(module->getDataLayout());
-                    uint64_t el_size = dl.getTypeAllocSize(data_type);
-                    if (el_size > 1) {
-                        llvm::Value* el_size_val = llvm::ConstantInt::get(
-                            context, llvm::APInt(64, el_size));
-                        llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
-                        llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                            desc_array_type, array_desc);
-                        for (int r = 0; r < n_dims; r++) {
-                            llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
-                                dim_type, dim_arr, r);
-                            llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                dim_type, dim_ptr,
-                                LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
-                            llvm::Value* stride = llvm_utils->CreateLoad2(
-                                llvm::Type::getInt64Ty(context), stride_ptr);
-                            stride = builder->CreateSDiv(stride, el_size_val);
-                            builder->CreateStore(stride, stride_ptr);
-                        }
-                    }
-                }
+                // Note: For bind(C) functions, the CFI→internal conversion
+                // (including byte→element stride conversion) is already
+                // handled in the prologue. No additional conversion needed.
                 if (is_optional) {
                     builder->CreateBr(merge_bb);
                     builder->SetInsertPoint(merge_bb);
                 }
                 llvm_symtab[h] = array_desc;
             }
-            // For bind(C) functions, convert CFI byte-based strides to
-            // LFortran element-based strides for allocatable/pointer arrays.
-            if( (ASRUtils::is_pointer(symbol_type) || ASRUtils::is_allocatable(symbol_type)) &&
-                ASRUtils::is_array(symbol_type) &&
-                ASRUtils::extract_physical_type(symbol_type)
-                    == ASR::array_physical_typeType::DescriptorArray ) {
-                ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(x);
-                if (fn_type->m_abi == ASR::abiType::BindC) {
-                    uint32_t h = get_hash((ASR::asr_t*)sym.second);
-                    LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
-                    llvm::Value* desc_ptr_ptr = llvm_symtab[h];
-                    ASR::ttype_t* asr_element_type = ASRUtils::extract_type(symbol_type);
-                    llvm::Type* desc_array_type = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::get_expr_from_sym(al, sym.second),
-                        ASRUtils::type_get_past_allocatable_pointer(symbol_type),
-                        module.get());
-                    llvm::Type* data_type = llvm_utils->get_el_type(
-                        ASRUtils::get_expr_from_sym(al, sym.second),
-                        asr_element_type, module.get());
-                    llvm::DataLayout dl(module->getDataLayout());
-                    uint64_t el_size = dl.getTypeAllocSize(data_type);
-                    ASR::dimension_t* m_dims = nullptr;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
-                    if (el_size > 1) {
-                        if (symbol_intent == ASRUtils::intent_in) {
-                            // intent(in): local copy so caller descriptor stays unchanged
-                            llvm::Value* orig_desc_ptr = llvm_utils->CreateLoad2(
-                                desc_array_type->getPointerTo(), desc_ptr_ptr);
-                            llvm::Value* local_desc = llvm_utils->CreateAlloca(
-                                desc_array_type, nullptr, "bindc_desc_local");
-                            uint64_t desc_size = dl.getTypeAllocSize(desc_array_type);
-                            builder->CreateMemCpy(local_desc, llvm::MaybeAlign(),
-                                orig_desc_ptr, llvm::MaybeAlign(), desc_size);
-                            builder->CreateStore(local_desc, desc_ptr_ptr);
-                            llvm::Value* el_size_val = llvm::ConstantInt::get(
-                                context, llvm::APInt(64, el_size));
-                            llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
-                            llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                                desc_array_type, local_desc);
-                            for (int r = 0; r < n_dims; r++) {
-                                llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
-                                    dim_type, dim_arr, r);
-                                llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                    dim_type, dim_ptr,
-                                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
-                                llvm::Value* stride = llvm_utils->CreateLoad2(
-                                    llvm::Type::getInt64Ty(context), stride_ptr);
-                                stride = builder->CreateSDiv(stride, el_size_val);
-                                builder->CreateStore(stride, stride_ptr);
-                            }
-                        } else if (symbol_intent == ASRUtils::intent_inout) {
-                            // intent(inout): convert in-place, schedule exit conversion
-                            llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
-                                desc_array_type->getPointerTo(), desc_ptr_ptr);
-                            llvm::Value* el_size_val = llvm::ConstantInt::get(
-                                context, llvm::APInt(64, el_size));
-                            llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
-                            llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                                desc_array_type, desc_ptr);
-                            for (int r = 0; r < n_dims; r++) {
-                                llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
-                                    dim_type, dim_arr, r);
-                                llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                                    dim_type, dim_ptr,
-                                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
-                                llvm::Value* stride = llvm_utils->CreateLoad2(
-                                    llvm::Type::getInt64Ty(context), stride_ptr);
-                                stride = builder->CreateSDiv(stride, el_size_val);
-                                builder->CreateStore(stride, stride_ptr);
-                            }
-                        }
-                        // For intent(out) and intent(inout), schedule exit
-                        // conversion (element→byte) before function returns.
-                        if (symbol_intent == ASRUtils::intent_out ||
-                            symbol_intent == ASRUtils::intent_inout) {
-                            bindc_stride_exits.push_back({desc_ptr_ptr,
-                                desc_array_type, el_size, n_dims});
-                        }
-                    }
-                }
-            }
+            // Note: For bind(C) functions, the CFI→internal conversion
+            // (including byte→element stride conversion) is already handled
+            // in the prologue above. No additional stride conversion needed.
         }
         declare_local_vars(x);
     }
@@ -7266,24 +7262,25 @@ public:
 
     inline void convert_bindc_strides_to_byte() {
         for (auto& info : bindc_stride_exits) {
-            llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
+            // Convert the internal descriptor back to CFI layout
+            // and write to the original CFI descriptor pointer.
+            llvm::Value* internal_ptr = llvm_utils->CreateLoad2(
                 info.desc_array_type->getPointerTo(), info.desc_ptr_ptr);
-            llvm::Value* el_size_val = llvm::ConstantInt::get(
-                context, llvm::APInt(64, info.el_size));
-            llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
-            llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                info.desc_array_type, desc_ptr);
-            for (int r = 0; r < info.n_dims; r++) {
-                llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
-                    dim_type, dim_arr, r);
-                llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                    dim_type, dim_ptr,
-                    LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
-                llvm::Value* stride = llvm_utils->CreateLoad2(
-                    llvm::Type::getInt64Ty(context), stride_ptr);
-                stride = builder->CreateMul(stride, el_size_val);
-                builder->CreateStore(stride, stride_ptr);
-            }
+            llvm::Value* cfi_result = arr_descr->internal_to_cfi(
+                info.desc_array_type, internal_ptr, info.el_type,
+                info.n_dims, info.el_size, info.type_code, info.cfi_attr);
+            // Copy CFI data back to the original CFI descriptor
+            llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type);
+            llvm::DataLayout dl(module->getDataLayout());
+            uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
+            llvm::Value* orig_cfi_i8 = builder->CreateBitCast(
+                info.original_cfi_ptr,
+                llvm::Type::getInt8Ty(context)->getPointerTo());
+            llvm::Value* new_cfi_i8 = builder->CreateBitCast(
+                cfi_result,
+                llvm::Type::getInt8Ty(context)->getPointerTo());
+            builder->CreateMemCpy(orig_cfi_i8, llvm::MaybeAlign(),
+                new_cfi_i8, llvm::MaybeAlign(), cfi_size);
         }
     }
 
@@ -19061,19 +19058,21 @@ public:
                             desc_type->getPointerTo());
                     }
 
-                    // Copy the descriptor into a temporary to avoid corrupting
-                    // the original descriptor's strides (which are in element
-                    // units internally but need byte units for CFI).
-                    llvm::Value* desc_copy = llvm_utils->CreateAlloca(
-                        *builder, desc_type);
-                    llvm::Value* loaded_desc = builder->CreateLoad(desc_type, tmp);
-                    builder->CreateStore(loaded_desc, desc_copy);
-                    tmp = desc_copy;
+                    // Convert internal descriptor to CFI layout (no offset
+                    // field, byte strides) for bind(C) interop.
+
                     // For character arrays, the descriptor's base_addr
                     // points to a string_descriptor struct ({i8*, i64}).
                     // For CFI interop, replace it with the raw i8* data
                     // pointer (field 0 of the string_descriptor).
                     if (ASRUtils::is_character(*elem_asr_type)) {
+                        // Make a temporary copy so we don't corrupt the
+                        // original descriptor's base_addr.
+                        llvm::Value* desc_copy = llvm_utils->CreateAlloca(
+                            *builder, desc_type);
+                        llvm::Value* loaded_desc = builder->CreateLoad(desc_type, tmp);
+                        builder->CreateStore(loaded_desc, desc_copy);
+                        tmp = desc_copy;
                         llvm::Value* base_addr_gep = llvm_utils->create_gep2(
                             desc_type, tmp, 0);
                         llvm::Value* str_desc = llvm_utils->CreateLoad2(
@@ -19088,25 +19087,17 @@ public:
                                 elem_llvm_type->getPointerTo()),
                             base_addr_gep);
                     }
-                    set_cfi_descriptor_fields(desc_type, tmp, elem_asr_type, elem_size, actual_type);
-                    llvm::Value* elem_size_val = llvm::ConstantInt::get(
-                        context, llvm::APInt(64, elem_size));
-                    // Convert each dim's stride from elements to bytes
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
-                    llvm::Type* dim_type = arr_descr->get_dimension_descriptor_type();
-                    llvm::Value* dim_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                        desc_type, tmp);
-                    for (int r = 0; r < n_dims; r++) {
-                        llvm::Value* dim_ptr = llvm_utils->create_ptr_gep2(
-                            dim_type, dim_arr, r);
-                        llvm::Value* stride_ptr = llvm_utils->create_gep2(
-                            dim_type, dim_ptr,
-                            LLVMArrUtils::SimpleCMODescriptor::DIM_STRIDE);
-                        llvm::Value* stride = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt64Ty(context), stride_ptr);
-                        stride = builder->CreateMul(stride, elem_size_val);
-                        builder->CreateStore(stride, stride_ptr);
+                    int8_t cfi_type_code = get_cfi_type_code(elem_asr_type);
+                    int cfi_attr = 0;
+                    if (actual_type && ASRUtils::is_allocatable(actual_type)) {
+                        cfi_attr = 2;
+                    } else if (actual_type && ASRUtils::is_pointer(actual_type)) {
+                        cfi_attr = 1;
                     }
+                    tmp = arr_descr->internal_to_cfi(
+                        desc_type, tmp, elem_llvm_type, n_dims, elem_size,
+                        cfi_type_code, cfi_attr);
                     // Bitcast descriptor pointer to match the formal parameter's
                     // descriptor type when element types differ (e.g., actual
                     // integer(c_int) passed to type(*) formal parameter).
@@ -19137,17 +19128,14 @@ public:
                     ASRUtils::type_get_past_pointer(orig_arg->m_type));
                 llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                     x.m_args[i].m_value, elem_asr_type, module.get());
-                // Build descriptor type from the formal parameter
-                llvm::Type* desc_type = arr_descr->get_array_type(
-                    ASRUtils::EXPR(ASR::make_Var_t(al,
-                        orig_arg->base.base.loc, &orig_arg->base)),
-                    elem_asr_type, elem_llvm_type, false);
+                // Build a CFI descriptor directly (no offset field)
+                llvm::StructType* cfi_type = arr_descr->get_cfi_type(elem_llvm_type);
                 llvm::Value* descriptor = llvm_utils->CreateAlloca(
-                    *builder, desc_type);
+                    *builder, cfi_type);
                 // base_addr: load the scalar's pointer (NULL if unallocated)
-                llvm::Value* data_gep = arr_descr->get_pointer_to_data(
-                    desc_type, descriptor);
-                llvm::Type* expected_ptr_type = desc_type->getStructElementType(0);
+                llvm::Value* data_gep = llvm_utils->create_gep2(
+                    cfi_type, descriptor, LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_BASE_ADDR);
+                llvm::Type* expected_ptr_type = cfi_type->getElementType(0);
                 llvm::Value* base_val = llvm_utils->CreateLoad2(
                     elem_llvm_type->getPointerTo(), tmp);
                 if (base_val->getType() != expected_ptr_type) {
@@ -19157,18 +19145,37 @@ public:
                 // rank = 0
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
-                    llvm_utils->create_gep2(desc_type, descriptor, 3));
-                // offset = 0
-                builder->CreateStore(
-                    llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
-                    arr_descr->get_offset(desc_type, descriptor, false));
+                    llvm_utils->create_gep2(cfi_type, descriptor,
+                        LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_RANK));
                 // elem_len, type code, attribute
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
-                set_cfi_descriptor_fields(desc_type, descriptor,
-                    elem_asr_type, elem_size, orig_arg->m_type);
-                // Fill dim array (rank 0 → just zeroes)
-                arr_descr->fill_dimension_descriptor(desc_type, descriptor, 0);
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context, llvm::APInt(64, elem_size)),
+                    llvm_utils->create_gep2(cfi_type, descriptor,
+                        LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_ELEM_LEN));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
+                        get_cfi_type_code(elem_asr_type)),
+                    llvm_utils->create_gep2(cfi_type, descriptor,
+                        LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_TYPE));
+                {
+                    int cfi_attr = 0;
+                    if (orig_arg->m_type && ASRUtils::is_allocatable(orig_arg->m_type)) {
+                        cfi_attr = 2;
+                    } else if (orig_arg->m_type && ASRUtils::is_pointer(orig_arg->m_type)) {
+                        cfi_attr = 1;
+                    }
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_attr),
+                        llvm_utils->create_gep2(cfi_type, descriptor,
+                            LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_ATTRIBUTE));
+                }
+                // version
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 20180515),
+                    llvm_utils->create_gep2(cfi_type, descriptor,
+                        LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_VERSION));
                 tmp = descriptor;
             }
 
