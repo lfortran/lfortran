@@ -647,13 +647,19 @@ namespace LCompilers {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
-                    llvm::Value* dim_length = builder->CreateAdd(
+                    llvm::Value* raw_dim_length = builder->CreateAdd(
                         builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))
                         );
                     llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0));
-                    // If dim_length is negative then set it to zero
-                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
+                    llvm::Value* step_pos = builder->CreateICmpSGT(dsi, zero);
+                    llvm::Value* step_neg = builder->CreateICmpSLT(dsi, zero);
+                    llvm::Value* ub_lt_lb = builder->CreateICmpSLT(ubsi, lbsi);
+                    llvm::Value* ub_gt_lb = builder->CreateICmpSGT(ubsi, lbsi);
+                    llvm::Value* pos_step_empty = builder->CreateAnd(step_pos, ub_lt_lb);
+                    llvm::Value* neg_step_empty = builder->CreateAnd(step_neg, ub_gt_lb);
+                    llvm::Value* use_zero = builder->CreateOr(pos_step_empty, neg_step_empty);
+                    llvm::Value* dim_length = builder->CreateSelect(use_zero, zero, raw_dim_length);
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
@@ -731,13 +737,19 @@ namespace LCompilers {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
-                    llvm::Value* dim_length = builder->CreateAdd(
+                    llvm::Value* raw_dim_length = builder->CreateAdd(
                         builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))
                         );
                     llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0));
-                    // If dim_length is negative then set it to zero
-                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
+                    llvm::Value* step_pos = builder->CreateICmpSGT(dsi, zero);
+                    llvm::Value* step_neg = builder->CreateICmpSLT(dsi, zero);
+                    llvm::Value* ub_lt_lb = builder->CreateICmpSLT(ubsi, lbsi);
+                    llvm::Value* ub_gt_lb = builder->CreateICmpSGT(ubsi, lbsi);
+                    llvm::Value* pos_step_empty = builder->CreateAnd(step_pos, ub_lt_lb);
+                    llvm::Value* neg_step_empty = builder->CreateAnd(step_neg, ub_gt_lb);
+                    llvm::Value* use_zero = builder->CreateOr(pos_step_empty, neg_step_empty);
+                    llvm::Value* dim_length = builder->CreateSelect(use_zero, zero, raw_dim_length);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateSExtOrTrunc(
                         load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type)), get_stride(target_dim_des, false));
