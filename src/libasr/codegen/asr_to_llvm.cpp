@@ -19171,6 +19171,11 @@ public:
                         llvm_utils->create_gep2(cfi_type, descriptor,
                             LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_ATTRIBUTE));
                 }
+                // extra = 0 (reserved)
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
+                    llvm_utils->create_gep2(cfi_type, descriptor,
+                        LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_EXTRA));
                 // version
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 20180515),

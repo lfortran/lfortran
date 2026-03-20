@@ -96,11 +96,11 @@ typedef struct CFI_dim_t {
  * codegen folds the offset into base_addr so C callers never see it.
  *
  * LLVM IR struct (internal):
- *   { ptr, i64, i32, i8, i8, i8, i64, [15 x {i64,i64,i64}] }
- *                                 ^^^  offset kept internally
+ *   { ptr, i64, i32, i8, i8, i8, i8, i64, [15 x {i64,i64,i64}] }
+ *                                         ^^^  offset kept internally
  *
  * C struct (this header):
- *   { ptr, i64, i32, u8, i8, u8, [15 x {i64,i64,i64}] }
+ *   { ptr, i64, i32, u8, i8, u8, u8, [15 x {i64,i64,i64}] }
  */
 typedef struct CFI_cdesc_t {
     void *base_addr;
@@ -109,7 +109,7 @@ typedef struct CFI_cdesc_t {
     CFI_rank_t rank;
     CFI_type_t type;
     CFI_attribute_t attribute;
-    /* padding to align dim array to 8 bytes */
+    uint8_t extra;              /* reserved (future: addendum flag, allocator) */
     CFI_dim_t dim[CFI_MAX_RANK];
 } CFI_cdesc_t;
 
