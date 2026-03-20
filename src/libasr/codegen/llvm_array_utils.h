@@ -384,7 +384,7 @@ namespace LCompilers {
                 static constexpr int FIELD_ELEM_LEN    = 1;  // i64
                 static constexpr int FIELD_VERSION     = 2;  // i32
                 static constexpr int FIELD_RANK        = 3;  // i8
-                static constexpr int FIELD_TYPE        = 4;  // i16
+                static constexpr int FIELD_TYPE        = 4;  // i8
                 static constexpr int FIELD_ATTRIBUTE   = 5;  // i8
                 static constexpr int FIELD_OFFSET      = 6;  // i64
                 static constexpr int FIELD_DIMS        = 7;  // [rank x {i64,i64,i64}]

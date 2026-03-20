@@ -230,7 +230,7 @@ namespace LCompilers {
             // 1: elem_len    (i64)           - element size in bytes
             // 2: version     (i32)           - descriptor version
             // 3: rank        (i8)            - CFI_rank_t
-            // 4: type        (i16)           - CFI_type_t
+            // 4: type        (i8)            - CFI_type_t
             // 5: attribute   (i8)            - CFI_attribute_t
             // 6: offset      (i64)           - linear offset
             // 7: dim[CFI_MAX_RANK] ([15 x {i64,i64,i64}]) - fixed max rank
@@ -239,7 +239,7 @@ namespace LCompilers {
                                 llvm::Type::getInt64Ty(context),                // 1: elem_len
                                 llvm::Type::getInt32Ty(context),                // 2: version
                                 llvm::Type::getInt8Ty(context),                 // 3: rank
-                                llvm::Type::getInt16Ty(context),                // 4: type
+                                llvm::Type::getInt8Ty(context),                 // 4: type
                                 llvm::Type::getInt8Ty(context),                 // 5: attribute
                                 llvm::Type::getInt64Ty(context),                // 6: offset
                                 llvm::ArrayType::get(dim_des, CFI_MAX_RANK)  }; // 7: dim[15]

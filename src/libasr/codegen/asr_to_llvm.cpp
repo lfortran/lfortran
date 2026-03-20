@@ -10982,7 +10982,7 @@ public:
     }
 
     // Map ASR element type to CFI type code constant
-    int16_t get_cfi_type_code(ASR::ttype_t* elem_type) {
+    int8_t get_cfi_type_code(ASR::ttype_t* elem_type) {
         if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
             int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
             switch (kind) {
@@ -11023,9 +11023,9 @@ public:
         builder->CreateStore(
             llvm::ConstantInt::get(context, llvm::APInt(64, elem_size)),
             llvm_utils->create_gep2(desc_type, desc, 1));
-        // type code (field 4, i16)
+        // type code (field 4, i8)
         builder->CreateStore(
-            llvm::ConstantInt::get(llvm::Type::getInt16Ty(context),
+            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
                 get_cfi_type_code(elem_asr_type)),
             llvm_utils->create_gep2(desc_type, desc, 4));
         // attribute (field 5, i8): allocatable=2, pointer=1, other=0
@@ -19487,7 +19487,7 @@ public:
                         builder->CreateStore(src_elem_len,
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt16Ty(context),
+                            llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(actual_array_type, dt, 4));
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 4));
