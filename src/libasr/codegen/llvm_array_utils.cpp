@@ -233,7 +233,7 @@ namespace LCompilers {
             // 4: type        (i16)           - CFI_type_t
             // 5: attribute   (i8)            - CFI_attribute_t
             // 6: offset      (i64)           - linear offset
-            // 7: is_allocated (i1)           - allocation flag
+            // 7: is_allocated (i8)            - allocation flag
             // 8: dim[CFI_MAX_RANK] ([15 x {i64,i64,i64}]) - fixed max rank
             static constexpr int CFI_MAX_RANK = 15;
             array_type_vec = {  el_type->getPointerTo(),                        // 0: base_addr
@@ -243,7 +243,7 @@ namespace LCompilers {
                                 llvm::Type::getInt16Ty(context),                // 4: type
                                 llvm::Type::getInt8Ty(context),                 // 5: attribute
                                 llvm::Type::getInt64Ty(context),                // 6: offset
-                                llvm::Type::getInt1Ty(context),                 // 7: is_allocated
+                                llvm::Type::getInt8Ty(context),                 // 7: is_allocated
                                 llvm::ArrayType::get(dim_des, CFI_MAX_RANK)  }; // 8: dim[15]
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
