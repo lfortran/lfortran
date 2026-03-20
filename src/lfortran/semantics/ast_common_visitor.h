@@ -11936,22 +11936,40 @@ public:
                         ASR::arraystorageType::ColMajor, nullptr));
         } else if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
             ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
-            ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(arr_item->m_v);
-            ASR::symbol_t* arr_sym = arr_var->m_v;
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::symbol_type(arr_sym)));
-            ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
-            int length;
-            len_compiletime = ASRUtils::extract_value(str->m_len, length) ? make_ConstantWithType(
-                make_IntegerConstant_t, length, type, loc) : nullptr;
+                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                // Simple case: plain array variable e.g. arr(i)
+                ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(arr_item->m_v);
+                ASR::symbol_t* arr_sym = arr_var->m_v;
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::symbol_type(arr_sym)));
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
+                int length;
+                len_compiletime = ASRUtils::extract_value(str->m_len, length) ? make_ConstantWithType(make_IntegerConstant_t, length, type, loc) : nullptr;
+            } else {
+                // Complex case: e.g. this%geometries(j) via CLASS/TYPE —
+                // expr_type of m_v carries the declared character length directly
+                ASR::ttype_t* mv_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arr_item->m_v));
+                mv_type = ASRUtils::type_get_past_array(mv_type);
+                if (ASR::is_a<ASR::String_t>(*mv_type)) {
+                    ASR::String_t* str = ASR::down_cast<ASR::String_t>(mv_type);
+                    int64_t length;
+                    len_compiletime = ASRUtils::extract_value(str->m_len, length)
+                        ? make_ConstantWithType(make_IntegerConstant_t, length, type, loc)
+                        : nullptr;
+                }
+            }
         }
 
         { // Try to get expression's string length (if exist)
-            ASR::String_t* string_t = ASRUtils::get_string_type(ASRUtils::expr_type(v));
-            int64_t len = -1;
-            if( ASRUtils::extract_value(string_t->m_len, len) ) {
-                len_compiletime = make_ConstantWithType(make_IntegerConstant_t, len, type, loc);
-            } else {
-                len_compiletime = nullptr;
+            ASR::ttype_t* base_t = ASRUtils::type_get_past_allocatable_pointer( ASRUtils::expr_type(v));
+            base_t = ASRUtils::type_get_past_array(base_t);
+            if (ASR::is_a<ASR::String_t>(*base_t)) {
+                ASR::String_t* string_t = ASR::down_cast<ASR::String_t>(base_t);
+                int64_t len = -1;
+                if( ASRUtils::extract_value(string_t->m_len, len) ) {
+                    len_compiletime = make_ConstantWithType(make_IntegerConstant_t, len, type, loc);
+                } else {
+                    len_compiletime = nullptr;
+                }
             }
         }
         return ASR::make_StringLen_t(al, loc, v, type, len_compiletime);
