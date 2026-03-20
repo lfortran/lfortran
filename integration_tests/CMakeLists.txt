@@ -3855,6 +3855,7 @@ RUN(NAME logical_testing LABELS gfortran llvm)
 
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
 RUN(NAME formatted_read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME formatted_read_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME format_before_read_01 LABELS gfortran llvm)
 
