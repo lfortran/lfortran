@@ -1417,11 +1417,31 @@ static char* unescape_quoted_literal(const char* value, int64_t value_len, char 
 
 int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
     int parenCount = 0;
+    bool in_quotes = false;
+    char current_quote = '\0';
     while (index < format_len) {
-        if (format[index] == '(') {
-            parenCount++;
-        } else if (format[index] == ')'){
-            parenCount--;
+        if (format[index] == '"' || format[index] == '\'') {
+            if (in_quotes && current_quote == format[index] && (index + 1) < format_len
+                    && format[index + 1] == format[index]) {
+                index += 2;
+                continue;
+            }
+
+            if (!in_quotes) {
+                in_quotes = true;
+                current_quote = format[index];
+            } else if (current_quote == format[index]) {
+                in_quotes = false;
+                current_quote = '\0';
+            }
+        }
+
+        if (!in_quotes) {
+            if (format[index] == '(') {
+                parenCount++;
+            } else if (format[index] == ')'){
+                parenCount--;
+            }
         }
         index++;
         if (parenCount == 0)
