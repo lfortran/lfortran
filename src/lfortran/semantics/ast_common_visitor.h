@@ -7301,6 +7301,64 @@ public:
                         value = nullptr;
                         init_expr = nullptr;
                     } else if (!is_char_type) {
+                        // Warn on narrowing kind conversions (e.g. real(8)->real(4)).
+                        // For integers, only warn when the constant value is out of
+                        // range for the destination kind (matching GFortran behaviour).
+                        {
+                            int src_kind = ASRUtils::extract_kind_from_ttype_t(init_type);
+                            int dst_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                            bool do_warn = false;
+                            if (src_kind > dst_kind) {
+                                if (ASRUtils::is_real(*init_type) && ASRUtils::is_real(*type)) {
+                                    // Only warn when the constant value changes after narrowing.
+                                    ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
+                                    if (cval && ASR::is_a<ASR::RealConstant_t>(*cval)) {
+                                        double v = ASR::down_cast<ASR::RealConstant_t>(cval)->m_r;
+                                        if ((double)(float)v != v) {
+                                            do_warn = true;
+                                        }
+                                    } else {
+                                        do_warn = true;
+                                    }
+                                } else if (ASRUtils::is_complex(*init_type) && ASRUtils::is_complex(*type)) {
+                                    ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
+                                    if (cval && ASR::is_a<ASR::ComplexConstant_t>(*cval)) {
+                                        auto *cc = ASR::down_cast<ASR::ComplexConstant_t>(cval);
+                                        if ((double)(float)cc->m_re != cc->m_re ||
+                                                (double)(float)cc->m_im != cc->m_im) {
+                                            do_warn = true;
+                                        }
+                                    } else {
+                                        do_warn = true;
+                                    }
+                                } else if (ASRUtils::is_integer(*init_type) && ASRUtils::is_integer(*type)) {
+                                    // Only warn when the value doesn't fit in the destination kind.
+                                    ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
+                                    if (cval && ASR::is_a<ASR::IntegerConstant_t>(*cval)) {
+                                        int64_t v = ASR::down_cast<ASR::IntegerConstant_t>(cval)->m_n;
+                                        int64_t limit = (int64_t)1 << (dst_kind * 8 - 1);
+                                        if (v < -limit || v >= limit) {
+                                            do_warn = true;
+                                        }
+                                    } else if (!cval) {
+                                        do_warn = true;
+                                    }
+                                }
+                            }
+                            if (do_warn) {
+                                std::string src_str = ASRUtils::type_to_str_fortran_symbol(init_type, nullptr) +
+                                    "(" + std::to_string(src_kind) + ")";
+                                std::string dst_str = ASRUtils::type_to_str_fortran_symbol(type, nullptr) +
+                                    "(" + std::to_string(dst_kind) + ")";
+                                diag.add(Diagnostic(
+                                    "Change of value in conversion from '" + src_str +
+                                    "' to '" + dst_str + "'",
+                                    Level::Warning, Stage::Semantic, {
+                                        Label("", {init_expr->base.loc})
+                                    }
+                                ));
+                            }
+                        }
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type, diag);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
                         value = ASRUtils::expr_value(init_expr);
