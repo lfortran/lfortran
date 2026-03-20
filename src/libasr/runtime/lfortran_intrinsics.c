@@ -1329,13 +1329,21 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // formatted_value = "  1.12E+10" or "  1.12+100" (if E dropped)
 
     if (strlen(formatted_value) > width) {
-        if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
-            memmove(formatted_value, formatted_value + 1, strlen(formatted_value));
-            *result = append_to_string(*result, formatted_value);
-            return;
-        } else {
-            goto overflow;
+        size_t formatted_len = strlen(formatted_value);
+        if (formatted_len - width == 1) {
+            if (formatted_value[0] == '0' && formatted_value[1] == '.') {
+                memmove(formatted_value, formatted_value + 1, formatted_len);
+                *result = append_to_string(*result, formatted_value);
+                return;
+            }
+            if ((formatted_value[0] == '-' || formatted_value[0] == '+') &&
+                formatted_value[1] == '0' && formatted_value[2] == '.') {
+                memmove(formatted_value + 1, formatted_value + 2, formatted_len - 1);
+                *result = append_to_string(*result, formatted_value);
+                return;
+            }
         }
+        goto overflow;
     } else {
         *result = append_to_string(*result, formatted_value);
         return;
