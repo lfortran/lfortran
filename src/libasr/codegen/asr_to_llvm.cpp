@@ -20666,9 +20666,11 @@ public:
             if (!ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) continue;
             size_t arg_idx = i + (is_method ? 1 : 0);
             if (arg_idx >= s->n_args) continue;
-            ASR::Variable_t* orig_arg = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(s->m_args[arg_idx])->m_v));
+            if (!ASR::is_a<ASR::Var_t>(*s->m_args[arg_idx])) continue;
+            ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(s->m_args[arg_idx])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::Variable_t* orig_arg = ASR::down_cast<ASR::Variable_t>(arg_sym);
             if (ASRUtils::is_array(orig_arg->m_type)) continue;
             if (!LLVM::is_llvm_pointer(*orig_arg->m_type)) continue;
             if (ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
