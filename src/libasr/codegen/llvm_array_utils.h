@@ -417,6 +417,7 @@ namespace LCompilers {
                 llvm::StructType* dim_des;
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
+                std::map<std::pair<llvm::Type*, int>, llvm::StructType*> rank_array_cache;
 
                 CompilerOptions& co;
 

@@ -268,6 +268,11 @@ namespace LCompilers {
 
         llvm::Type* SimpleCMODescriptor::get_array_type_for_rank(
             llvm::Type* el_type, int n_dims) {
+            auto key = std::make_pair(el_type, n_dims);
+            auto it = rank_array_cache.find(key);
+            if (it != rank_array_cache.end()) {
+                return it->second;
+            }
             std::vector<llvm::Type*> array_type_vec = {
                 el_type->getPointerTo(),                        // 0: base_addr
                 llvm::Type::getInt64Ty(context),                // 1: elem_len
@@ -279,8 +284,10 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context),                // 7: offset
                 llvm::ArrayType::get(dim_des, n_dims)           // 8: dim[n_dims]
             };
-            return llvm::StructType::create(
+            llvm::StructType* new_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
+            rank_array_cache[key] = new_type;
+            return new_type;
         }
 
         llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(
