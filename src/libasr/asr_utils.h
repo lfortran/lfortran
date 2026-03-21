@@ -7574,6 +7574,11 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     }
 
     bool a_is_method = (a_dt != nullptr) && (!ASRUtils::get_class_proc_nopass_val(a_name));
+    // Procedure pointer Variables don't have a self parameter
+    if (a_is_method && ASR::is_a<ASR::Variable_t>(
+            *ASRUtils::symbol_get_past_external(a_name))) {
+        a_is_method = false;
+    }
 
     // Insert self/pass argument into args at position 0 when this is a method call,
     // but only if self is not already the first argument (avoid double-insertion
@@ -7604,6 +7609,11 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
+    // Procedure pointer Variables don't have a self parameter
+    if (a_is_method && ASR::is_a<ASR::Variable_t>(
+            *ASRUtils::symbol_get_past_external(a_name))) {
+        a_is_method = false;
+    }
 
     // Check if self is already in args BEFORE potential StructInstanceMember wrapping of a_dt
     bool self_already_in_args = false;
