@@ -2060,7 +2060,7 @@ public:
                                     builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
                                 }
                             } else {
-                                ptr_ = llvm_utils->CreateAlloca(*builder, type);
+                                ptr_ = arr_descr->create_descriptor_alloca(type, n_dims);
                                 arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
                             }
 
@@ -5576,7 +5576,7 @@ public:
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
-            ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
+            ptr_ = arr_descr->create_descriptor_alloca(type_, n_dims, "arr_desc");
             if(ASRUtils::is_character(*m_type)){
                 llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
                 builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
@@ -6520,10 +6520,23 @@ public:
                                 !ASRUtils::is_descriptorString(v->m_type) ) {
                             is_llvm_ptr = true;
                         }
-                        ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
-                            v->m_name, is_llvm_ptr);
+                        if (!is_llvm_ptr && is_array_type && !is_list &&
+                                ASRUtils::extract_physical_type(v->m_type) ==
+                                    ASR::array_physical_typeType::DescriptorArray) {
+                            ptr = arr_descr->create_descriptor_alloca(type_, n_dims, v->m_name);
+                        } else {
+                            ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                                v->m_name, is_llvm_ptr);
+                        }
 #else
-                        ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                        if (is_array_type && !is_list &&
+                                !LLVM::is_llvm_pointer(*v->m_type) &&
+                                ASRUtils::extract_physical_type(v->m_type) ==
+                                    ASR::array_physical_typeType::DescriptorArray) {
+                            ptr = arr_descr->create_descriptor_alloca(type, n_dims, v->m_name);
+                        } else {
+                            ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                        }
 #endif
                     }
                 }
@@ -7170,8 +7183,9 @@ public:
                 llvm::Type* desc_array_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, sym.second),
                         ASRUtils::type_get_past_allocatable_pointer(symbol_type),
                         module.get());
-                llvm::Value* array_desc = llvm_utils->CreateAlloca(
-                    desc_array_type, nullptr, "array_descriptor_local");
+                llvm::Value* array_desc = arr_descr->create_descriptor_alloca(
+                    desc_array_type, ASRUtils::extract_n_dims_from_ttype(symbol_type),
+                    "array_descriptor_local");
                 uint32_t h = get_hash((ASR::asr_t*)sym.second);
                 LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                 llvm::Value* arg_array_desc = llvm_symtab[h];
@@ -7270,7 +7284,7 @@ public:
                 info.desc_array_type, internal_ptr, info.el_type,
                 info.n_dims, info.el_size, info.type_code, info.cfi_attr);
             // Copy CFI data back to the original CFI descriptor
-            llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type);
+            llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
             llvm::DataLayout dl(module->getDataLayout());
             uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
             llvm::Value* orig_cfi_i8 = builder->CreateBitCast(
@@ -7959,8 +7973,10 @@ public:
             x.m_target, component_elem_type, module.get());
 
         // Create a new descriptor for the component array
-        llvm::AllocaInst* new_desc = llvm_utils->CreateAlloca(
-            target_desc_type, nullptr, "component_array_desc");
+        int target_n_dims = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::type_get_past_pointer(target_type));
+        llvm::Value* new_desc = arr_descr->create_descriptor_alloca(
+            target_desc_type, target_n_dims, "component_array_desc");
 
         // Get the struct symbol name for member index lookup
         ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(sim->m_v);
@@ -8302,13 +8318,13 @@ public:
                 ASRUtils::type_get_past_pointer(value_array_type)),
              ASR::array_physical_typeType::DescriptorArray, true);
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v, target_desc_type, module.get());
-        llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-            target_type, nullptr, "array_section_descriptor");
+        int value_rank = array_section->n_args, target_rank = 0;
+        llvm::Value *target = arr_descr->create_descriptor_alloca(
+            target_type, value_rank, "array_section_descriptor");
         if( ASRUtils::is_character(*expr_type(x.m_target))){
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
         }
-        int value_rank = array_section->n_args, target_rank = 0;
         Vec<llvm::Value*> lbs; lbs.reserve(al, value_rank);
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
@@ -8779,11 +8795,11 @@ public:
 
                                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(
                                     x.m_target, target_type_, module.get());
-                                llvm::Value* llvm_target_ = llvm_utils->CreateAlloca(*builder, llvm_target_type);
-
                                 llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
                                 size_t n_dims = (size_t)ASRUtils::extract_n_dims_from_ttype(value_type);
                                 LCOMPILERS_ASSERT(n_dims > 0);
+                                llvm::Value* llvm_target_ = arr_descr->create_descriptor_alloca(
+                                    llvm_target_type, (int)n_dims);
 
                                 // Allocate and fill the target array descriptor dimensions
                                 if (ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray) {
@@ -8898,7 +8914,7 @@ public:
                                             target_desc_check,
                                             llvm::ConstantPointerNull::get(target_array_desc_type->getPointerTo())),
                                         [&]() {
-                                            llvm::Value* new_desc = llvm_utils->CreateAlloca(*builder, target_array_desc_type);
+                                            llvm::Value* new_desc = arr_descr->create_descriptor_alloca(target_array_desc_type, n_dims);
                                             llvm::Value* n_dims_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims);
                                             arr_descr->fill_dimension_descriptor(target_array_desc_type, new_desc, (int)n_dims);
                                             arr_descr->set_rank(target_array_desc_type, new_desc, n_dims_val);
@@ -8980,9 +8996,10 @@ public:
                                 llvm_value = llvm_utils->create_gep2(llvm_type, llvm_value, 0);
                             }
                             llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type_, module.get());
-                            llvm::Value* llvm_target_ = llvm_utils->CreateAlloca(*builder, llvm_target_type);
                             ASR::dimension_t* m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, m_dims);
+                            llvm::Value* llvm_target_ = arr_descr->create_descriptor_alloca(
+                                llvm_target_type, (int)n_dims);
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
                             // Use the array element *storage* type (e.g. logical arrays are i8-backed).
@@ -11041,8 +11058,9 @@ public:
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(m_type)), module.get());
-        llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-            target_type, nullptr, "array_descriptor");
+        llvm::Value *target = arr_descr->create_descriptor_alloca(
+            target_type, ASRUtils::extract_n_dims_from_ttype(m_type),
+            "array_descriptor");
         ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(m_type));
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(
@@ -11192,11 +11210,11 @@ public:
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(m_type)),
                 module.get());
-            llvm::AllocaInst *target_desc = llvm_utils->CreateAlloca(
-                target_desc_type, nullptr, "array_descriptor");
+            llvm::Value *target_desc = arr_descr->create_descriptor_alloca(
+                target_desc_type, ASRUtils::extract_n_dims_from_ttype(m_type),
+                "array_descriptor");
 
             llvm::Value* source_desc = arg;
-            // `reset_array_details()` expects `source_arr` to be indexed using the same
             // descriptor type as the target. The only difference between the source and
             // destination descriptor types here is the element pointer type, so a bitcast
             // is safe for copying descriptor metadata (dims/offset/rank).
@@ -11292,8 +11310,9 @@ public:
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(m_type)),
                 module.get());
-            llvm::AllocaInst *target_desc = llvm_utils->CreateAlloca(
-                target_desc_type, nullptr, "array_descriptor");
+            llvm::Value *target_desc = arr_descr->create_descriptor_alloca(
+                target_desc_type, ASRUtils::extract_n_dims_from_ttype(m_type),
+                "array_descriptor");
 
             llvm::Value* source_desc = arg;
             // `reset_array_details()` expects `source_arr` to be indexed using the same
@@ -14537,8 +14556,9 @@ public:
                 }
             break;
             case ASR::DescriptorArray:{
-                llvm::Value* const array_llvm = builder->CreateAlloca(array_llvm_ty);
                 LCOMPILERS_ASSERT_MSG(array_ty->n_dims, "Array in StringToArray is expected to have dimensions")
+                llvm::Value* const array_llvm = arr_descr->create_descriptor_alloca(
+                    array_llvm_ty, (int)array_ty->n_dims);
                 fill_array_details(array_llvm_ty, array_llvm 
                     , llvm_utils->get_StringType(array_ty->m_type)
                     , array_ty->m_dims, array_ty->n_dims);
@@ -18780,7 +18800,7 @@ public:
                 llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     orig_arg->m_type, module.get());
-                llvm::Value* descriptor = llvm_utils->CreateAlloca(*builder, descriptor_type);
+                llvm::Value* descriptor = arr_descr->create_descriptor_alloca(descriptor_type, 15);
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
                 // If target is unlimited polymorphic, wrap the scalar in a polymorphic type
                 // For bind(C), just store raw data pointer (C expects raw data, not wrappers)
@@ -19068,10 +19088,23 @@ public:
                     if (ASRUtils::is_character(*elem_asr_type)) {
                         // Make a temporary copy so we don't corrupt the
                         // original descriptor's base_addr.
-                        llvm::Value* desc_copy = llvm_utils->CreateAlloca(
-                            *builder, desc_type);
-                        llvm::Value* loaded_desc = builder->CreateLoad(desc_type, tmp);
-                        builder->CreateStore(loaded_desc, desc_copy);
+                        int n_dims_char = ASRUtils::extract_n_dims_from_ttype(actual_type);
+                        llvm::Value* desc_copy = arr_descr->create_descriptor_alloca(
+                            desc_type, n_dims_char, "char_desc_copy");
+                        // Copy the full descriptor (header + dims) via memcpy
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        uint64_t header_size = data_layout.getTypeAllocSize(desc_type);
+                        llvm::Type* dim_desc_ty = arr_descr->get_dimension_descriptor_type(false);
+                        uint64_t dim_size = data_layout.getTypeAllocSize(dim_desc_ty);
+                        uint64_t total_size = header_size + n_dims_char * dim_size;
+                        llvm::Value* total_size_val = llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context), total_size);
+                        builder->CreateMemCpy(
+                            builder->CreateBitCast(desc_copy, llvm::Type::getInt8Ty(context)->getPointerTo()),
+                            llvm::MaybeAlign(8),
+                            builder->CreateBitCast(tmp, llvm::Type::getInt8Ty(context)->getPointerTo()),
+                            llvm::MaybeAlign(8),
+                            total_size_val);
                         tmp = desc_copy;
                         llvm::Value* base_addr_gep = llvm_utils->create_gep2(
                             desc_type, tmp, 0);
@@ -19129,7 +19162,7 @@ public:
                 llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                     x.m_args[i].m_value, elem_asr_type, module.get());
                 // Build a CFI descriptor directly (no offset field)
-                llvm::StructType* cfi_type = arr_descr->get_cfi_type(elem_llvm_type);
+                llvm::StructType* cfi_type = arr_descr->get_cfi_type(elem_llvm_type, 0);
                 llvm::Value* descriptor = llvm_utils->CreateAlloca(
                     *builder, cfi_type);
                 // base_addr: load the scalar's pointer (NULL if unallocated)
@@ -19233,7 +19266,8 @@ public:
             }
 
                 // Create new array descriptor
-                llvm::Value* new_descriptor = llvm_utils->CreateAlloca(*builder, dest_llvm_type, nullptr, "array_descriptor");
+                llvm::Value* new_descriptor = arr_descr->create_descriptor_alloca(
+                    dest_llvm_type, ASRUtils::extract_n_dims_from_ttype(arg_type), "array_descriptor");
                 
                 // Get source array's data pointer (from polymorphic wrapper's data field)
                 llvm::Value* src_data_ptr = arr_descr->get_pointer_to_data(src_arr_type, class_value);
@@ -19476,7 +19510,13 @@ public:
                         arg_expr, ASRUtils::extract_type(arg_type), module.get());
                     llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                         s_m_args0, s_m_args0_type, module.get());
-                    llvm::Value* unlimited_polymorphic_type_array = llvm_utils->CreateAlloca(*builder, array_type);
+                    int poly_n_dims = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
+                    if (poly_n_dims == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
+                        poly_n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                        if (poly_n_dims == 0) poly_n_dims = 15;
+                    }
+                    llvm::Value* unlimited_polymorphic_type_array = arr_descr->create_descriptor_alloca(
+                        array_type, poly_n_dims);
                     llvm::Type* array_data_type = llvm_utils->get_el_type(
                         s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
                     llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
@@ -19608,7 +19648,13 @@ public:
                         ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
 
                     // Allocate the target class array descriptor
-                    llvm::Value* class_array = llvm_utils->CreateAlloca(target_array_type);
+                    int class_n_dims = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
+                    if (class_n_dims == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
+                        class_n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                        if (class_n_dims == 0) class_n_dims = 15;
+                    }
+                    llvm::Value* class_array = arr_descr->create_descriptor_alloca(
+                        target_array_type, class_n_dims);
                     
                     // Allocate buffer for class wrapper array (vptr + struct_ptr per element)
                     llvm::Value* class_array_data = llvm_utils->CreateAlloca(
@@ -19753,8 +19799,14 @@ public:
                 llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
 
                 // Create polymorphic array descriptor
+                int poly_n_dims2 = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
+                if (poly_n_dims2 == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
+                    poly_n_dims2 = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                    if (poly_n_dims2 == 0) poly_n_dims2 = 15;
+                }
                 llvm::Value* unlimited_polymorphic_type_array =
-                    llvm_utils->CreateAlloca(*builder, array_type);
+                    arr_descr->create_descriptor_alloca(
+                        array_type, poly_n_dims2);
                 builder->CreateStore(
                     array_data, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
                 arr_descr->fill_array_details(arg_expr,
@@ -19871,7 +19923,13 @@ public:
                     ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
 
                 // Allocate the target class array descriptor
-                llvm::Value* class_array = llvm_utils->CreateAlloca(target_array_type);
+                int class_n_dims2 = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
+                if (class_n_dims2 == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
+                    class_n_dims2 = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                    if (class_n_dims2 == 0) class_n_dims2 = 15;
+                }
+                llvm::Value* class_array = arr_descr->create_descriptor_alloca(
+                    target_array_type, class_n_dims2);
                 
                 // Allocate buffer for class wrapper array (vptr + struct_ptr per element)
                 llvm::Value* class_array_data = llvm_utils->CreateAlloca(

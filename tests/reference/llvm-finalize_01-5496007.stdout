@@ -1,10 +1,10 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%array = type { i32*, i64, i32, i8, i8, i8, i8, i64, [15 x %dimension_descriptor] }
+%array = type { i32*, i64, i32, i8, i8, i8, i8, i64, [0 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %string_descriptor = type <{ i8*, i64 }>
-%array.0 = type { float*, i64, i32, i8, i8, i8, i8, i64, [15 x %dimension_descriptor] }
+%array.0 = type { float*, i64, i32, i8, i8, i8, i8, i64, [0 x %dimension_descriptor] }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
 @1 = private unnamed_addr constant [22 x i8] c"tests/finalize_01.f90\00", align 1
@@ -17,85 +17,87 @@ define void @__module_finalize_01_mod_ss() {
   %0 = call i8* @_lfortran_get_default_allocator()
   %arr = alloca %array*, align 8
   store %array* null, %array** %arr, align 8
-  %arr_desc = alloca %array, align 8
-  %1 = getelementptr %array, %array* %arr_desc, i32 0, i32 8
-  %2 = getelementptr [15 x %dimension_descriptor], [15 x %dimension_descriptor]* %1, i32 0, i32 0
-  %3 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %2, i32 0
-  %4 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 0
-  store i64 1, i64* %4, align 4
-  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 1
+  %arr_desc = alloca i8, i32 56, align 8
+  call void @llvm.memset.p0i8.i32(i8* %arr_desc, i8 0, i32 56, i1 false)
+  %1 = bitcast i8* %arr_desc to %array*
+  %2 = getelementptr %array, %array* %1, i32 0, i32 8
+  %3 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %2, i32 0, i32 0
+  %4 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %3, i32 0
+  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 0
   store i64 1, i64* %5, align 4
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 2
-  store i64 0, i64* %6, align 4
-  %7 = getelementptr %array, %array* %arr_desc, i32 0, i32 3
-  store i8 1, i8* %7, align 1
-  %8 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store i32* null, i32** %8, align 8
-  store %array* %arr_desc, %array** %arr, align 8
-  %9 = load %array*, %array** %arr, align 8
-  %10 = ptrtoint %array* %9 to i64
-  %11 = icmp eq i64 %10, 0
-  br i1 %11, label %merge_allocated, label %check_data
+  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 1
+  store i64 1, i64* %6, align 4
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 2
+  store i64 0, i64* %7, align 4
+  %8 = getelementptr %array, %array* %1, i32 0, i32 3
+  store i8 1, i8* %8, align 1
+  %9 = getelementptr %array, %array* %1, i32 0, i32 0
+  store i32* null, i32** %9, align 8
+  store %array* %1, %array** %arr, align 8
+  %10 = load %array*, %array** %arr, align 8
+  %11 = ptrtoint %array* %10 to i64
+  %12 = icmp eq i64 %11, 0
+  br i1 %12, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %12 = getelementptr %array, %array* %9, i32 0, i32 0
-  %13 = load i32*, i32** %12, align 8
-  %14 = ptrtoint i32* %13 to i64
-  %15 = icmp ne i64 %14, 0
+  %13 = getelementptr %array, %array* %10, i32 0, i32 0
+  %14 = load i32*, i32** %13, align 8
+  %15 = ptrtoint i32* %14 to i64
+  %16 = icmp ne i64 %15, 0
   br label %merge_allocated
 
 merge_allocated:                                  ; preds = %check_data, %.entry
-  %is_allocated = phi i1 [ false, %.entry ], [ %15, %check_data ]
+  %is_allocated = phi i1 [ false, %.entry ], [ %16, %check_data ]
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
-  %16 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %17 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %18 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %17, i32 0, i32 0
-  %19 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %18, i32 0, i32 0
-  store i8* getelementptr inbounds ([22 x i8], [22 x i8]* @1, i32 0, i32 0), i8** %19, align 8
-  %20 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %18, i32 0, i32 1
-  store i32 15, i32* %20, align 4
-  %21 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %18, i32 0, i32 2
-  store i32 18, i32* %21, align 4
-  %22 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %18, i32 0, i32 3
-  store i32 15, i32* %22, align 4
-  %23 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %18, i32 0, i32 4
-  store i32 24, i32* %23, align 4
-  %24 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
-  %25 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %16, i32 0, i32 0
-  %26 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %17, i32 0, i32 0
-  %27 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %25, i32 0, i32 2
-  %28 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %25, i32 0, i32 0
-  store i1 true, i1* %28, align 1
-  %29 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %25, i32 0, i32 1
-  store i8* %24, i8** %29, align 8
-  store { i8*, i32, i32, i32, i32 }* %26, { i8*, i32, i32, i32, i32 }** %27, align 8
-  %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %25, i32 0, i32 3
-  store i32 1, i32* %30, align 4
-  %31 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %16, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %31, i32 1, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  %17 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %18 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %19 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
+  %20 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 0
+  store i8* getelementptr inbounds ([22 x i8], [22 x i8]* @1, i32 0, i32 0), i8** %20, align 8
+  %21 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 1
+  store i32 15, i32* %21, align 4
+  %22 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 2
+  store i32 18, i32* %22, align 4
+  %23 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 3
+  store i32 15, i32* %23, align 4
+  %24 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 4
+  store i32 24, i32* %24, align 4
+  %25 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  %26 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
+  %27 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
+  %28 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 2
+  %29 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 0
+  store i1 true, i1* %29, align 1
+  %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 1
+  store i8* %25, i8** %30, align 8
+  store { i8*, i32, i32, i32, i32 }* %27, { i8*, i32, i32, i32, i32 }** %28, align 8
+  %31 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 3
+  store i32 1, i32* %31, align 4
+  %32 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 1, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont:                                           ; preds = %merge_allocated
-  %32 = load %array*, %array** %arr, align 8
-  %33 = getelementptr %array, %array* %32, i32 0, i32 7
-  store i64 0, i64* %33, align 4
-  %34 = getelementptr %array, %array* %32, i32 0, i32 8
-  %35 = getelementptr [15 x %dimension_descriptor], [15 x %dimension_descriptor]* %34, i32 0, i32 0
-  %36 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %35, i32 0
-  %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 2
-  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 0
-  %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 1
-  store i64 1, i64* %37, align 4
+  %33 = load %array*, %array** %arr, align 8
+  %34 = getelementptr %array, %array* %33, i32 0, i32 7
+  store i64 0, i64* %34, align 4
+  %35 = getelementptr %array, %array* %33, i32 0, i32 8
+  %36 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %35, i32 0, i32 0
+  %37 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %36, i32 0
+  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 2
+  %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 0
+  %40 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 1
   store i64 1, i64* %38, align 4
-  store i64 10, i64* %39, align 4
-  %40 = getelementptr %array, %array* %32, i32 0, i32 0
-  %41 = call i8* @_lfortran_get_default_allocator()
-  %42 = call i8* @_lfortran_malloc_alloc(i8* %41, i64 40)
-  %43 = bitcast i8* %42 to i32*
-  store i32* %43, i32** %40, align 8
+  store i64 1, i64* %39, align 4
+  store i64 10, i64* %40, align 4
+  %41 = getelementptr %array, %array* %33, i32 0, i32 0
+  %42 = call i8* @_lfortran_get_default_allocator()
+  %43 = call i8* @_lfortran_malloc_alloc(i8* %42, i64 40)
+  %44 = bitcast i8* %43 to i32*
+  store i32* %44, i32** %41, align 8
   br i1 true, label %then1, label %else
 
 then1:                                            ; preds = %ifcont
@@ -120,10 +122,13 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_ss
-  %44 = load %array*, %array** %arr, align 8
-  call void @finalize_allocatable__Array_i32(%array* %44, i1 false)
+  %45 = load %array*, %array** %arr, align 8
+  call void @finalize_allocatable__Array_i32(%array* %45, i1 false)
   ret void
 }
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 
@@ -181,27 +186,29 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %arr = alloca %array*, align 8
   store %array* null, %array** %arr, align 8
-  %arr_desc = alloca %array, align 8
-  %3 = getelementptr %array, %array* %arr_desc, i32 0, i32 8
-  %4 = getelementptr [15 x %dimension_descriptor], [15 x %dimension_descriptor]* %3, i32 0, i32 0
-  %5 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %4, i32 0
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 0
-  store i64 1, i64* %6, align 4
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
+  %arr_desc = alloca i8, i32 56, align 8
+  call void @llvm.memset.p0i8.i32(i8* %arr_desc, i8 0, i32 56, i1 false)
+  %3 = bitcast i8* %arr_desc to %array*
+  %4 = getelementptr %array, %array* %3, i32 0, i32 8
+  %5 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %4, i32 0, i32 0
+  %6 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %5, i32 0
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 0
   store i64 1, i64* %7, align 4
-  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
-  store i64 0, i64* %8, align 4
-  %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 3
-  store i8 1, i8* %9, align 1
-  %10 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store i32* null, i32** %10, align 8
-  store %array* %arr_desc, %array** %arr, align 8
+  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 1
+  store i64 1, i64* %8, align 4
+  %9 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 2
+  store i64 0, i64* %9, align 4
+  %10 = getelementptr %array, %array* %3, i32 0, i32 3
+  store i8 1, i8* %10, align 1
+  %11 = getelementptr %array, %array* %3, i32 0, i32 0
+  store i32* null, i32** %11, align 8
+  store %array* %3, %array** %arr, align 8
   %str = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
-  %11 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %12 = load i8*, i8** %11, align 8
-  %13 = icmp ne i8* %12, null
-  br i1 %13, label %then, label %else
+  %12 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %13 = load i8*, i8** %12, align 8
+  %14 = icmp ne i8* %13, null
+  br i1 %14, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @__Wrong_allocation, i32 0, i32 0))
@@ -212,12 +219,12 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %14 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %15 = call i8* @_lfortran_get_default_allocator()
-  %16 = call i8* @_lfortran_malloc_alloc(i8* %15, i64 10)
-  store i8* %16, i8** %14, align 8
-  %17 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
-  store i64 10, i64* %17, align 4
+  %15 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %16 = call i8* @_lfortran_get_default_allocator()
+  %17 = call i8* @_lfortran_malloc_alloc(i8* %16, i64 10)
+  store i8* %17, i8** %15, align 8
+  %18 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
+  store i64 10, i64* %18, align 4
   call void @__module_finalize_01_mod_ss()
   call void @internal_sub()
   br label %return
@@ -232,14 +239,14 @@ FINALIZE_SYMTABLE_finalize_01:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_finalize_01
-  %18 = load %array*, %array** %arr, align 8
-  call void @finalize_allocatable__Array_i32(%array* %18, i1 false)
+  %19 = load %array*, %array** %arr, align 8
+  call void @finalize_allocatable__Array_i32(%array* %19, i1 false)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr
-  %19 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %20 = load i8*, i8** %19, align 8
-  call void @_lfortran_free_alloc(i8* %2, i8* %20)
+  %20 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %21 = load i8*, i8** %20, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %21)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -249,51 +256,55 @@ define void @internal_sub() {
   %0 = call i8* @_lfortran_get_default_allocator()
   %arr_real = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_real, align 8
-  %arr_desc = alloca %array.0, align 8
-  %1 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 8
-  %2 = getelementptr [15 x %dimension_descriptor], [15 x %dimension_descriptor]* %1, i32 0, i32 0
-  %3 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %2, i32 0
-  %4 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 0
-  store i64 1, i64* %4, align 4
-  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 1
+  %arr_desc = alloca i8, i32 80, align 8
+  call void @llvm.memset.p0i8.i32(i8* %arr_desc, i8 0, i32 80, i1 false)
+  %1 = bitcast i8* %arr_desc to %array.0*
+  %2 = getelementptr %array.0, %array.0* %1, i32 0, i32 8
+  %3 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %2, i32 0, i32 0
+  %4 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %3, i32 0
+  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 0
   store i64 1, i64* %5, align 4
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 2
-  store i64 0, i64* %6, align 4
-  %7 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %2, i32 1
-  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 0
-  store i64 1, i64* %8, align 4
-  %9 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 1
+  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 1
+  store i64 1, i64* %6, align 4
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 2
+  store i64 0, i64* %7, align 4
+  %8 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %3, i32 1
+  %9 = getelementptr %dimension_descriptor, %dimension_descriptor* %8, i32 0, i32 0
   store i64 1, i64* %9, align 4
-  %10 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 2
-  store i64 0, i64* %10, align 4
-  %11 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 3
-  store i8 2, i8* %11, align 1
-  %12 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 0
-  store float* null, float** %12, align 8
-  store %array.0* %arr_desc, %array.0** %arr_real, align 8
+  %10 = getelementptr %dimension_descriptor, %dimension_descriptor* %8, i32 0, i32 1
+  store i64 1, i64* %10, align 4
+  %11 = getelementptr %dimension_descriptor, %dimension_descriptor* %8, i32 0, i32 2
+  store i64 0, i64* %11, align 4
+  %12 = getelementptr %array.0, %array.0* %1, i32 0, i32 3
+  store i8 2, i8* %12, align 1
+  %13 = getelementptr %array.0, %array.0* %1, i32 0, i32 0
+  store float* null, float** %13, align 8
+  store %array.0* %1, %array.0** %arr_real, align 8
   %str = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
   br label %bl.start
 
 bl.start:                                         ; preds = %.entry
-  %13 = call i8* @llvm.stacksave()
+  %14 = call i8* @llvm.stacksave()
   %arr_in_block = alloca %array*, align 8
   store %array* null, %array** %arr_in_block, align 8
-  %arr_desc1 = alloca %array, align 8
-  %14 = getelementptr %array, %array* %arr_desc1, i32 0, i32 8
-  %15 = getelementptr [15 x %dimension_descriptor], [15 x %dimension_descriptor]* %14, i32 0, i32 0
-  %16 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %15, i32 0
-  %17 = getelementptr %dimension_descriptor, %dimension_descriptor* %16, i32 0, i32 0
-  store i64 1, i64* %17, align 4
-  %18 = getelementptr %dimension_descriptor, %dimension_descriptor* %16, i32 0, i32 1
-  store i64 1, i64* %18, align 4
-  %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %16, i32 0, i32 2
-  store i64 0, i64* %19, align 4
-  %20 = getelementptr %array, %array* %arr_desc1, i32 0, i32 3
-  store i8 1, i8* %20, align 1
-  %21 = getelementptr %array, %array* %arr_desc1, i32 0, i32 0
-  store i32* null, i32** %21, align 8
-  store %array* %arr_desc1, %array** %arr_in_block, align 8
+  %arr_desc1 = alloca i8, i32 56, align 8
+  call void @llvm.memset.p0i8.i32(i8* %arr_desc1, i8 0, i32 56, i1 false)
+  %15 = bitcast i8* %arr_desc1 to %array*
+  %16 = getelementptr %array, %array* %15, i32 0, i32 8
+  %17 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %16, i32 0, i32 0
+  %18 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %17, i32 0
+  %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 0
+  store i64 1, i64* %19, align 4
+  %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 1
+  store i64 1, i64* %20, align 4
+  %21 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 2
+  store i64 0, i64* %21, align 4
+  %22 = getelementptr %array, %array* %15, i32 0, i32 3
+  store i8 1, i8* %22, align 1
+  %23 = getelementptr %array, %array* %15, i32 0, i32 0
+  store i32* null, i32** %23, align 8
+  store %array* %15, %array** %arr_in_block, align 8
   br label %bl.end
 
 unreachable_after_exit:                           ; No predecessors!
@@ -309,9 +320,9 @@ FINALIZE_SYMTABLE_bl:                             ; preds = %bl.end
   br label %Finalize_Variable_arr_in_block
 
 Finalize_Variable_arr_in_block:                   ; preds = %FINALIZE_SYMTABLE_bl
-  %22 = load %array*, %array** %arr_in_block, align 8
-  call void @finalize_allocatable__Array_i32(%array* %22, i1 false)
-  call void @llvm.stackrestore(i8* %13)
+  %24 = load %array*, %array** %arr_in_block, align 8
+  call void @finalize_allocatable__Array_i32(%array* %24, i1 false)
+  call void @llvm.stackrestore(i8* %14)
   br label %loop.head
 
 loop.head:                                        ; preds = %unreachable_after_return2, %Finalize_Variable_arr_in_block
@@ -333,22 +344,22 @@ FINALIZE_SYMTABLE_internal_sub:                   ; preds = %return
   br label %Finalize_Variable_arr_real
 
 Finalize_Variable_arr_real:                       ; preds = %FINALIZE_SYMTABLE_internal_sub
-  %23 = load %array.0*, %array.0** %arr_real, align 8
-  call void @finalize_allocatable__Array_r32(%array.0* %23, i1 false)
+  %25 = load %array.0*, %array.0** %arr_real, align 8
+  call void @finalize_allocatable__Array_r32(%array.0* %25, i1 false)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr_real
-  %24 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %25 = load i8*, i8** %24, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %25)
+  %26 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %27 = load i8*, i8** %26, align 8
+  call void @_lfortran_free_alloc(i8* %0, i8* %27)
   ret void
 }
 
 ; Function Attrs: nounwind
-declare i8* @llvm.stacksave() #0
+declare i8* @llvm.stacksave() #1
 
 ; Function Attrs: nounwind
-declare void @llvm.stackrestore(i8*) #0
+declare void @llvm.stackrestore(i8*) #1
 
 define internal void @finalize_allocatable__Array_r32(%array.0* %0, i1 %1) {
 entry:
@@ -394,4 +405,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { nounwind }
+attributes #0 = { argmemonly nounwind willreturn writeonly }
+attributes #1 = { nounwind }

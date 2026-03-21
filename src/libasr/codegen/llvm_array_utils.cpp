@@ -234,8 +234,9 @@ namespace LCompilers {
             // 5: attribute   (i8)            - CFI_attribute_t
             // 6: extra       (i8)            - reserved byte
             // 7: offset      (i64)           - linear offset
-            // 8: dim[CFI_MAX_RANK] ([15 x {i64,i64,i64}]) - fixed max rank
-            static constexpr int CFI_MAX_RANK = 15;
+            // 8: dim[0] ([0 x {i64,i64,i64}]) - flexible trailing array
+            //    Actual memory is allocated as header + rank * sizeof(dim_des).
+            //    dim[0] is a zero-length array; access via pointer GEP from dim base.
             array_type_vec = {  el_type->getPointerTo(),                        // 0: base_addr
                                 llvm::Type::getInt64Ty(context),                // 1: elem_len
                                 llvm::Type::getInt32Ty(context),                // 2: version
@@ -244,7 +245,7 @@ namespace LCompilers {
                                 llvm::Type::getInt8Ty(context),                 // 5: attribute
                                 llvm::Type::getInt8Ty(context),                 // 6: extra
                                 llvm::Type::getInt64Ty(context),                // 7: offset
-                                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)  }; // 8: dim[15]
+                                llvm::ArrayType::get(dim_des, 0)  };            // 8: dim[0]
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
             if( get_pointer ) {
@@ -264,7 +265,11 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(
             llvm::Type* array_desc_type, size_t n_dims) {
             llvm::DataLayout data_layout(llvm_utils->module->getDataLayout());
-            int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
+            // With dim[0] (flexible trailing array), the struct type only
+            // contains the header. Add space for n_dims dimension descriptors.
+            int64_t header_size = data_layout.getTypeAllocSize(array_desc_type);
+            int64_t dim_size = data_layout.getTypeAllocSize(dim_des);
+            int64_t desc_size = header_size + (int64_t)n_dims * dim_size;
             llvm::Value* desc_mem = lfortran_malloc(context, *llvm_utils->module, *builder,
                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)));
             builder->CreateMemSet(desc_mem, llvm::ConstantInt::get(
@@ -277,6 +282,24 @@ namespace LCompilers {
                 llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
 
             return desc_ptr;
+        }
+
+        llvm::Value* SimpleCMODescriptor::create_descriptor_alloca(
+            llvm::Type* array_desc_type, size_t n_dims, const std::string& name) {
+            llvm::DataLayout data_layout(llvm_utils->module->getDataLayout());
+            int64_t header_size = data_layout.getTypeAllocSize(array_desc_type);
+            int64_t dim_size = data_layout.getTypeAllocSize(dim_des);
+            int64_t total_size = header_size + (int64_t)n_dims * dim_size;
+            llvm::AllocaInst* raw = builder->CreateAlloca(
+                llvm::Type::getInt8Ty(context),
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), total_size),
+                name);
+            raw->setAlignment(llvm::Align(8));
+            builder->CreateMemSet(raw, llvm::ConstantInt::get(
+                context, llvm::APInt(8, 0)),
+                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, total_size)),
+                llvm::MaybeAlign());
+            return builder->CreateBitCast(raw, array_desc_type->getPointerTo());
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -1180,7 +1203,14 @@ namespace LCompilers {
                                                   llvm::Module* module, ASR::expr_t* array_expr,
                                                   ASR::ttype_t* asr_data_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
-            llvm::Value* reshaped = llvm_utils->CreateAlloca(*builder, arr_type, nullptr, "reshaped");
+            // Determine result rank from shape for rank-sized allocation
+            size_t result_rank = 15; // safe default
+            ASR::array_physical_typeType shape_phys =
+                ASRUtils::extract_physical_type(asr_shape_type);
+            if (shape_phys == ASR::array_physical_typeType::FixedSizeArray) {
+                result_rank = (size_t)ASRUtils::get_fixed_size_of_array(asr_shape_type);
+            }
+            llvm::Value* reshaped = create_descriptor_alloca(arr_type, result_rank, "reshaped");
 
             // Deep copy data from array to reshaped.
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
@@ -1604,8 +1634,7 @@ namespace LCompilers {
             );
         }
 
-        llvm::StructType* SimpleCMODescriptor::get_cfi_type(llvm::Type* /*el_type*/) {
-            static constexpr int CFI_MAX_RANK = 15;
+        llvm::StructType* SimpleCMODescriptor::get_cfi_type(llvm::Type* /*el_type*/, int n_dims) {
             std::vector<llvm::Type*> cfi_vec = {
                 llvm::Type::getInt8Ty(context)->getPointerTo(), // 0: base_addr (void*)
                 llvm::Type::getInt64Ty(context),                // 1: elem_len
@@ -1614,7 +1643,7 @@ namespace LCompilers {
                 llvm::Type::getInt8Ty(context),                 // 4: type
                 llvm::Type::getInt8Ty(context),                 // 5: attribute
                 llvm::Type::getInt8Ty(context),                 // 6: extra
-                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)     // 7: dim[15]
+                llvm::ArrayType::get(dim_des, n_dims)           // 7: dim[n_dims]
             };
             return llvm::StructType::create(context, cfi_vec, "cfi_array");
         }
@@ -1623,7 +1652,7 @@ namespace LCompilers {
                 llvm::Type* internal_type, llvm::Value* internal_desc,
                 llvm::Type* el_type, int n_dims, uint64_t elem_size,
                 int8_t type_code, int cfi_attr) {
-            llvm::StructType* cfi_type = get_cfi_type(el_type);
+            llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
             llvm::Value* cfi = llvm_utils->CreateAlloca(*builder, cfi_type);
             llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
 
@@ -1685,7 +1714,7 @@ namespace LCompilers {
             llvm::Value* src_dim_arr = get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
             llvm::Value* dst_dim_arr = llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_DIMS);
             dst_dim_arr = llvm_utils->create_gep2(
-                llvm::ArrayType::get(dim_des, 15), dst_dim_arr, 0);
+                llvm::ArrayType::get(dim_des, n_dims), dst_dim_arr, 0);
             for (int r = 0; r < n_dims; r++) {
                 llvm::Value* src_dim = llvm_utils->create_ptr_gep2(dim_des, src_dim_arr, r);
                 llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(dim_des, dst_dim_arr, r);
@@ -1714,9 +1743,9 @@ namespace LCompilers {
                 llvm::Type* internal_type,
                 llvm::Type* el_type, llvm::Value* cfi_desc,
                 int n_dims, uint64_t elem_size) {
-            llvm::StructType* cfi_type = get_cfi_type(el_type);
-            llvm::Value* internal = llvm_utils->CreateAlloca(*builder,
-                static_cast<llvm::StructType*>(internal_type));
+            llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
+            llvm::Value* internal = create_descriptor_alloca(
+                static_cast<llvm::StructType*>(internal_type), n_dims);
 
             // Bitcast incoming pointer to CFI type for GEP access
             llvm::Value* cfi_ptr = builder->CreateBitCast(
@@ -1756,7 +1785,7 @@ namespace LCompilers {
             llvm::Value* src_dim_arr = llvm_utils->create_gep2(
                 cfi_type, cfi_ptr, CFI_FIELD_DIMS);
             src_dim_arr = llvm_utils->create_gep2(
-                llvm::ArrayType::get(dim_des, 15), src_dim_arr, 0);
+                llvm::ArrayType::get(dim_des, n_dims), src_dim_arr, 0);
             llvm::Value* dst_dim_arr =
                 get_pointer_to_dimension_descriptor_array(internal_type, internal);
             for (int r = 0; r < n_dims; r++) {
