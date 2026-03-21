@@ -341,18 +341,6 @@ public:
         }
     }
 
-    // Fix up call argument types to match function parameter types.
-    // With rank-sized array descriptors, different ranks produce different
-    // LLVM struct types. Bitcast when types are structurally compatible
-    // but nominally different (e.g., %array.1* vs %array.15* for assumed-rank).
-    void fixup_call_arg_types(std::vector<llvm::Value*>& args, llvm::FunctionType* fntype) {
-        for (size_t i = 0; i < args.size() && i < fntype->getNumParams(); i++) {
-            if (args[i]->getType() != fntype->getParamType(i)) {
-                args[i] = builder->CreateBitCast(args[i], fntype->getParamType(i));
-            }
-        }
-    }
-
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics, LocationManager &lm) :
     diag{diagnostics},
@@ -11226,6 +11214,32 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
+            // Check if this is a rank-only change for allocatable/pointer args
+            // (e.g., for assumed-rank targets). In that case, a pointer bitcast
+            // suffices since the callee's select rank checks the rank field.
+            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(m_arg);
+            int src_n_dims = ASRUtils::extract_n_dims_from_ttype(src_asr_type);
+            int dst_n_dims = ASRUtils::extract_n_dims_from_ttype(m_type);
+            if (dst_n_dims > src_n_dims &&
+                (ASR::is_a<ASR::Allocatable_t>(*src_asr_type) ||
+                 ASR::is_a<ASR::Pointer_t>(*src_asr_type)) &&
+                (ASR::is_a<ASR::Allocatable_t>(*m_type) ||
+                 ASR::is_a<ASR::Pointer_t>(*m_type))) {
+                llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    m_arg,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(m_type)),
+                    module.get());
+                // arg is %array.N** (pointer to allocatable descriptor pointer)
+                // with ptr_loads=0. Bitcast to %array.15** so the callee sees
+                // the right type. This is safe because the callee's select rank
+                // checks the rank field and only accesses valid dim slots.
+                tmp = builder->CreateBitCast(arg, target_desc_type->getPointerTo()->getPointerTo());
+            } else {
+            // General descriptor conversion: create a new descriptor with the
+            // target element type/rank and copy metadata from the source.
+            // Handles polymorphic-to-concrete casts, rank expansion for
+            // non-allocatable args, and other type-only conversions.
             llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
                 m_arg,
                 ASRUtils::type_get_past_allocatable(
@@ -11236,15 +11250,12 @@ public:
                 "array_descriptor");
 
             llvm::Value* source_desc = arg;
-            // descriptor type as the target. The only difference between the source and
-            // destination descriptor types here is the element pointer type, so a bitcast
-            // is safe for copying descriptor metadata (dims/offset/rank).
             llvm::Value* source_desc_as_target = builder->CreateBitCast(
                 source_desc, target_desc_type->getPointerTo());
 
-            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(m_arg);
+            ASR::ttype_t* src_asr_type2 = ASRUtils::expr_type(m_arg);
             ASR::ttype_t* dst_asr_type = m_type;
-            ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type);
+            ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type2);
             ASR::ttype_t* dst_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(dst_asr_type);
 
             llvm::Type* src_el_type = llvm_utils->get_el_type(
@@ -11254,17 +11265,17 @@ public:
 
             llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(
                 src_el_type->getPointerTo(),
-                arr_descr->get_pointer_to_data(m_arg, src_asr_type, source_desc, module.get()));
+                arr_descr->get_pointer_to_data(m_arg, src_asr_type2, source_desc, module.get()));
             llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
 
             llvm::Value* dst_first_el_ptr = get_typed_array_data_ptr(
-                src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
+                src_asr_type2, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
 
             // Character arrays from class(*): the data is per-element string_descriptors,
             // but character array layout expects a single descriptor with flat buffer.
             ASR::ttype_t* dst_base_type = ASRUtils::extract_type(dst_arr_asr_type);
-            if (is_polymorphic_to_concrete_cast(src_asr_type, dst_asr_type) &&
+            if (is_polymorphic_to_concrete_cast(src_asr_type2, dst_asr_type) &&
                     ASR::is_a<ASR::String_t>(*dst_base_type)) {
                 llvm::Value* n_elems = arr_descr->get_array_size(
                     target_desc_type, source_desc_as_target, nullptr, 4);
@@ -11280,6 +11291,7 @@ public:
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
             arr_descr->reset_array_details(target_desc_type, target_desc, target_desc_type, source_desc_as_target, n_dims);
             tmp = target_desc;
+            }
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
@@ -11397,11 +11409,36 @@ public:
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
             LCOMPILERS_ASSERT(x.m_new != x.m_old);
         }
+        ASR::ttype_t* src_asr_type = ASRUtils::expr_type(x.m_arg);
+        int target_n_dims = ASRUtils::extract_n_dims_from_ttype(x.m_type);
+        int src_n_dims = ASRUtils::extract_n_dims_from_ttype(src_asr_type);
+        bool is_src_alloc_or_ptr = ASR::is_a<ASR::Allocatable_t>(*src_asr_type) ||
+                               ASR::is_a<ASR::Pointer_t>(*src_asr_type);
+        bool is_dst_alloc_or_ptr = ASR::is_a<ASR::Allocatable_t>(*x.m_type) ||
+                                   ASR::is_a<ASR::Pointer_t>(*x.m_type);
+        // For allocatable/pointer assumed-rank casts (DescriptorArray→DescriptorArray
+        // with rank expansion), where both source AND target are allocatable/pointer,
+        // we need the unloaded pointer (%array.N**) so we can
+        // bitcast it to %array.15** without losing the pointer-to-pointer semantics.
+        bool is_alloc_rank_expand = (x.m_old == ASR::array_physical_typeType::DescriptorArray &&
+                                     x.m_new == ASR::array_physical_typeType::DescriptorArray &&
+                                     target_n_dims > src_n_dims &&
+                                     is_src_alloc_or_ptr && is_dst_alloc_or_ptr);
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_arg));
+        if (is_alloc_rank_expand) {
+            ptr_loads = 0;
+        } else {
+            ptr_loads = 2 - LLVM::is_llvm_pointer(*src_asr_type);
+        }
         this->visit_expr_wrapper(x.m_arg, false);
         ptr_loads = ptr_loads_copy;
-        visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, x.m_type, x.m_old, x.m_new);
+        // For assumed-rank targets (rank-15 descriptor), use the argument's
+        // type for dimension info since the target dims are empty placeholders.
+        ASR::ttype_t* m_type_for_dims = x.m_type;
+        if (target_n_dims > src_n_dims && src_n_dims > 0) {
+            m_type_for_dims = src_asr_type;
+        }
+        visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, m_type_for_dims, x.m_old, x.m_new);
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
@@ -20419,7 +20456,6 @@ public:
                 }
                 args.insert(args.begin(), pass_arg_val);
             }
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -20633,7 +20669,6 @@ public:
             }
             args = convert_call_args(x, is_method);
 
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -20648,7 +20683,6 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
 
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
@@ -20689,7 +20723,6 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
-            fixup_call_arg_types(args, fn->getFunctionType());
             builder->CreateCall(fn, args);
             fixup_descriptor_after_cchar_bind_c_call(x, s, is_method, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, is_method, args);
@@ -20900,7 +20933,6 @@ public:
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        fixup_call_arg_types(args, fnty);
         llvm::Value* return_value = builder->CreateCall(fn, args);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
@@ -20977,7 +21009,6 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        fixup_call_arg_types(args, fnTy);
         builder->CreateCall(fnTy, fn, args);
         return;
     }
@@ -21059,7 +21090,6 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        fixup_call_arg_types(args, fnTy);
         tmp = builder->CreateCall(fnTy, fn, args);
         return;
     }
@@ -21116,7 +21146,6 @@ public:
                 }
                 args.insert(args.begin(), pass_arg_val);
             }
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -21307,7 +21336,6 @@ public:
             }
             args = convert_call_args(x, is_method);
 
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
@@ -21319,7 +21347,6 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method);
 
-            fixup_call_arg_types(args, fntype);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
@@ -21332,7 +21359,6 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
-            fixup_call_arg_types(args, fn->getFunctionType());
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
