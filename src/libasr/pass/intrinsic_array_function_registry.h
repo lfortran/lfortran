@@ -1631,6 +1631,9 @@ namespace Shape {
         size_t n_dims = extract_dimensions_from_ttype(expr_type(arg_value ? arg_value : args[0]), m_dims);
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
         if( n_dims == 0 ){
+            if (ASRUtils::is_assumed_rank_array(expr_type(args[0]))) {
+                return nullptr;
+            }
             return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, m_shapes.p, 0,
                 type, ASR::arraystorageType::ColMajor));
         } else {
@@ -1679,8 +1682,23 @@ namespace Shape {
         }
         // TODO: throw error for assumed size array
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type = b.Array({n_dims},
-            TYPE(ASR::make_Integer_t(al, loc, kind)));
+        bool is_assumed_rank = ASRUtils::is_assumed_rank_array(expr_type(args[0]));
+        ASR::ttype_t *return_type;
+        if (is_assumed_rank) {
+            Vec<ASR::dimension_t> deferred_dims;
+            deferred_dims.reserve(al, 1);
+            ASR::dimension_t d;
+            d.loc = loc;
+            d.m_start = nullptr;
+            d.m_length = nullptr;
+            deferred_dims.push_back(al, d);
+            return_type = ASRUtils::make_Array_t_util(al, loc,
+                TYPE(ASR::make_Integer_t(al, loc, kind)),
+                deferred_dims.p, 1);
+            return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
+        } else {
+            return_type = b.Array({n_dims}, TYPE(ASR::make_Integer_t(al, loc, kind)));
+        }
         ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args, diag);
         return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape),
@@ -1692,9 +1710,17 @@ namespace Shape {
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args, int64_t,
             int index_kind) {
         declare_basic_variables("_lcompilers_shape");
-        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(
-            *ASRUtils::extract_type(arg_types[0]));
-        if (is_struct_type_arg) {
+        bool is_arg_assumed_rank = new_args[0].m_value &&
+            ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[0].m_value) &&
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[0].m_value)->m_old ==
+                ASR::array_physical_typeType::AssumedRankArray;
+        bool is_struct_type_arg = !is_arg_assumed_rank &&
+            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_arg_assumed_rank) {
+            ASR::expr_t* orig_var = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                new_args[0].m_value)->m_arg;
+            fill_func_arg_struct_type("source", ASRUtils::expr_type(orig_var), orig_var);
+        } else if (is_struct_type_arg) {
             fill_func_arg_struct_type("source",
                 ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]),
                 new_args[0].m_value);
@@ -1705,19 +1731,43 @@ namespace Shape {
         ASR::expr_t* result = nullptr;
         result = declare(fn_name, return_type, Out);
         args.push_back(al, result);
-        int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", b.int_type(index_kind), Local);
         body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
-        body.push_back(al, b.While(b.Lt(i, b.i_idx(iter, index_kind)), {
-            b.Assignment(b.ArrayItem_01(result, {i}),
-                b.ArraySize(args[0], i, extract_type(return_type))),
-            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
-        }));
+        if (is_arg_assumed_rank) {
+            // For assumed-rank, loop from 1 to rank(source) inclusive.
+            ASR::expr_t* rank_expr = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc,
+                args[0], b.int_type(index_kind), nullptr));
+            body.push_back(al, b.While(b.LtE(i, rank_expr), {
+                b.Assignment(b.ArrayItem_01(result, {i}),
+                    b.ArraySize(args[0], i, extract_type(return_type))),
+                b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
+            }));
+        } else {
+            int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
+            body.push_back(al, b.While(b.Lt(i, b.i_idx(iter, index_kind)), {
+                b.Assignment(b.ArrayItem_01(result, {i}),
+                    b.ArraySize(args[0], i, extract_type(return_type))),
+                b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
+            }));
+        }
         body.push_back(al, b.Return());
         ASR::symbol_t *f_sym = make_Function_Without_ReturnVar_t(
             fn_name, fn_symtab, dep, args,
             body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
+        if (is_arg_assumed_rank) {
+            Vec<ASR::call_arg_t> ar_new_args;
+            ar_new_args.reserve(al, new_args.n);
+            ASR::call_arg_t arg0;
+            arg0.loc = new_args[0].loc;
+            arg0.m_value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                new_args[0].m_value)->m_arg;
+            ar_new_args.push_back(al, arg0);
+            for (size_t j = 1; j < new_args.n; j++) {
+                ar_new_args.push_back(al, new_args[j]);
+            }
+            return b.Call(f_sym, ar_new_args, return_type, nullptr);
+        }
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
