@@ -290,7 +290,7 @@ namespace LCompilers {
             int64_t header_size = data_layout.getTypeAllocSize(array_desc_type);
             int64_t dim_size = data_layout.getTypeAllocSize(dim_des);
             int64_t total_size = header_size + (int64_t)n_dims * dim_size;
-            llvm::AllocaInst* raw = builder->CreateAlloca(
+            llvm::AllocaInst* raw = llvm_utils->CreateAlloca(
                 llvm::Type::getInt8Ty(context),
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), total_size),
                 name);

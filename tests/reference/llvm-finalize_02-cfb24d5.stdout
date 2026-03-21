@@ -31,9 +31,13 @@ define void @ss(i32* %nang) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = call i8* @_lfortran_get_default_allocator()
+  %arr_desc4 = alloca i8, i32 56, align 8
+  %arr_desc3 = alloca i8, i32 56, align 8
+  %arr_desc2 = alloca i8, i32 56, align 8
+  %arr_desc1 = alloca i8, i32 56, align 8
+  %arr_desc = alloca i8, i32 56, align 8
   %arr_01 = alloca %array*, align 8
   store %array* null, %array** %arr_01, align 8
-  %arr_desc = alloca i8, i32 56, align 8
   %2 = bitcast i8* %arr_desc to %array*
   %3 = getelementptr %array, %array* %2, i32 0, i32 8
   %4 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %3, i32 0, i32 0
@@ -51,7 +55,6 @@ define void @ss(i32* %nang) {
   store %array* %2, %array** %arr_01, align 8
   %arr_02 = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_02, align 8
-  %arr_desc1 = alloca i8, i32 56, align 8
   %11 = bitcast i8* %arr_desc1 to %array.0*
   %12 = getelementptr %array.0, %array.0* %11, i32 0, i32 8
   %13 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %12, i32 0, i32 0
@@ -71,7 +74,6 @@ define void @ss(i32* %nang) {
   store i32* null, i32** %arr_03, align 8
   %arr_04 = alloca %array.1*, align 8
   store %array.1* null, %array.1** %arr_04, align 8
-  %arr_desc2 = alloca i8, i32 56, align 8
   %20 = bitcast i8* %arr_desc2 to %array.1*
   %arr_desc_str_desc = alloca %string_descriptor, align 8
   %21 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
@@ -105,7 +107,6 @@ define void @ss(i32* %nang) {
   store i8* %35, i8** %36, align 8
   %arr_06 = alloca %array.0*, align 8
   store %array.0* null, %array.0** %arr_06, align 8
-  %arr_desc3 = alloca i8, i32 56, align 8
   %37 = bitcast i8* %arr_desc3 to %array.0*
   %38 = getelementptr %array.0, %array.0* %37, i32 0, i32 8
   %39 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %38, i32 0, i32 0
@@ -125,7 +126,6 @@ define void @ss(i32* %nang) {
   store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
   %arr_08 = alloca %array.1*, align 8
   store %array.1* null, %array.1** %arr_08, align 8
-  %arr_desc4 = alloca i8, i32 56, align 8
   %46 = bitcast i8* %arr_desc4 to %array.1*
   %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %47 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0

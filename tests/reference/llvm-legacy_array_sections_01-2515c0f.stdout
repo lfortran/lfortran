@@ -52,13 +52,16 @@ source_filename = "LFortran"
 
 define void @a(double* %w) {
 .entry:
+  %arr_desc17 = alloca i8, i32 56, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
+  %array_section_descriptor = alloca i8, i32 56, align 8
+  %arr_desc1 = alloca i8, i32 56, align 8
+  %arr_desc = alloca i8, i32 56, align 8
   %__do_loop_end = alloca i32, align 4
   %__do_loop_end1 = alloca i32, align 4
   %__lcompilers_i_0 = alloca i32, align 4
   %__libasr_created__subroutine_call_b = alloca %array*, align 8
   store %array* null, %array** %__libasr_created__subroutine_call_b, align 8
-  %arr_desc = alloca i8, i32 56, align 8
   %1 = bitcast i8* %arr_desc to %array*
   %2 = getelementptr %array, %array* %1, i32 0, i32 8
   %3 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %2, i32 0, i32 0
@@ -76,7 +79,6 @@ define void @a(double* %w) {
   store %array* %1, %array** %__libasr_created__subroutine_call_b, align 8
   %__libasr_created__subroutine_call_b1 = alloca %array*, align 8
   store %array* null, %array** %__libasr_created__subroutine_call_b1, align 8
-  %arr_desc1 = alloca i8, i32 56, align 8
   %10 = bitcast i8* %arr_desc1 to %array*
   %11 = getelementptr %array, %array* %10, i32 0, i32 8
   %12 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %11, i32 0, i32 0
@@ -94,7 +96,6 @@ define void @a(double* %w) {
   store %array* %10, %array** %__libasr_created__subroutine_call_b1, align 8
   %icon = alloca i32, align 4
   store i32 2, i32* %icon, align 4
-  %array_section_descriptor = alloca i8, i32 56, align 8
   %19 = bitcast i8* %array_section_descriptor to %array*
   %20 = load i32, i32* %icon, align 4
   %21 = getelementptr %array, %array* %19, i32 0, i32 8
@@ -452,7 +453,6 @@ else15:                                           ; preds = %merge_allocated
   br i1 %254, label %then16, label %else18
 
 then16:                                           ; preds = %else15
-  %arr_desc17 = alloca i8, i32 56, align 8
   %255 = bitcast i8* %arr_desc17 to %array*
   %256 = getelementptr %array, %array* %255, i32 0, i32 8
   %257 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %256, i32 0, i32 0
