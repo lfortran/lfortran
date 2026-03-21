@@ -4054,44 +4054,62 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
-                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, x_m_array_type, module.get());
-                llvm::Value *target = llvm_utils->CreateAlloca(
-                    target_type, nullptr, "fixed_size_reshaped_array");
-                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
-                int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
+                int64_t source_size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
+                int64_t target_size = ASRUtils::get_fixed_size_of_array(x.m_type);
+                if (target_size == -1) target_size = source_size;
                 ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type)));
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                 llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, element_type, module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
+                // Allocate flat buffer for target_size elements.
+                llvm::ArrayType* flat_target_type = llvm::ArrayType::get(llvm_data_type, target_size);
+                llvm::Value* target = llvm_utils->CreateAlloca(
+                    flat_target_type, nullptr, "fixed_size_reshaped_array");
+                llvm::Value* target_ = llvm_utils->create_gep2(flat_target_type, target, 0);
 
                 bool is_struct_type = ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(element_type));
                 if (is_struct_type) {
                     // Struct types with allocatable components need element-wise
                     // deep copy; a flat memcpy would share allocatable pointers.
+                    llvm::Type* src_target_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_array, x_m_array_type, module.get());
                     llvm::Value* llvm_total_bytes = llvm::ConstantInt::get(
-                        context, llvm::APInt(32, size * data_size));
+                        context, llvm::APInt(32, target_size * data_size));
                     builder->CreateMemSet(target_,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                         llvm_total_bytes, llvm::MaybeAlign());
-                    for (int64_t i = 0; i < size; i++) {
+                    for (int64_t i = 0; i < source_size; i++) {
                         llvm::Value* src_elem = llvm_utils->create_gep2(
-                            target_type, array, i);
-                        llvm::Value* dest_elem = llvm_utils->create_gep2(
-                            target_type, target, i);
+                            src_target_type, array, i);
+                        llvm::Value* dest_elem = builder->CreateConstGEP2_32(
+                            flat_target_type, target, 0, i);
                         llvm_utils->deepcopy(const_cast<ASR::expr_t*>(x.m_array),
                             src_elem, dest_elem, element_type, element_type,
                             module.get());
                     }
                 } else {
-                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-                    llvm_size = builder->CreateMul(llvm_size,
-                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                    builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                    llvm::Value* copy_bytes = llvm::ConstantInt::get(
+                        context, llvm::APInt(64, source_size * data_size));
+                    builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), copy_bytes);
+                    // Fill remaining elements with pad (cycling).
+                    if (x.m_pad != nullptr && target_size > source_size) {
+                        int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_pad));
+                        this->visit_expr(*x.m_pad);
+                        // tmp is already an element pointer (i32*, real*, etc.)
+                        llvm::Value* pad_base = tmp;
+                        for (int64_t i = source_size; i < target_size; i++) {
+                            llvm::Value* pad_elem = builder->CreateLoad(
+                                llvm_data_type,
+                                builder->CreateConstGEP1_32(llvm_data_type, pad_base, i % pad_size));
+                            builder->CreateStore(pad_elem,
+                                builder->CreateConstGEP1_32(llvm_data_type, target_, i));
+                        }
+                    }
                 }
                 tmp = target;
                 break;
