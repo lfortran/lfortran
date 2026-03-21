@@ -656,16 +656,23 @@ void handle_integer(char* format, int64_t val, char** result, bool is_signed_plu
         dot_pos++;
         width = atoi(format + 1);
         min_width = atoi(dot_pos);
-        if (min_width > width && width != 0) {
-            perror("Minimum number of digits cannot be more than the specified width for format.\n");
-        }
     } else {
         width = atoi(format + 1);
         if (width == 0) {
             width = len + sign_width + sign_plus_exist;
         }
     }
-    if (width >= len + sign_width + sign_plus_exist || width == 0) {
+    // Fortran standard 13.7.2.1: Iw.0 with value 0 produces w blanks
+    if (dot_pos != NULL && min_width == 0 && val == 0) {
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, " ");
+        }
+        return;
+    }
+    // Account for min_width (m) in overflow check: the effective digit
+    // count is max(m, digit_count), and sign must also fit within w.
+    int effective_len = (dot_pos != NULL && min_width > len) ? min_width : len;
+    if (width >= effective_len + sign_width + sign_plus_exist || width == 0) {
         if (min_width > len) {
             for (int i = 0; i < (width - min_width - sign_width - sign_plus_exist); i++) {
                 *result = append_to_string(*result, " ");
