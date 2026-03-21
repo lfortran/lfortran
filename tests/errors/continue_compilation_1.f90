@@ -646,7 +646,6 @@ program continue_compilation_1
 
 
 
-
     contains
     subroutine sub(f)
         interface
@@ -654,5 +653,12 @@ program continue_compilation_1
                 integer :: x, f
             end function
         end interface
+    end subroutine
+    subroutine sub_do_undeclared()
+        implicit none
+        integer :: n(3)
+        do k = 1, 3
+            n(k) = 42
+        end do
     end subroutine
 end program
