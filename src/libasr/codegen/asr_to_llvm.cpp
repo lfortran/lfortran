@@ -11240,6 +11240,9 @@ public:
             // target element type/rank and copy metadata from the source.
             // Handles polymorphic-to-concrete casts, rank expansion for
             // non-allocatable args, and other type-only conversions.
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
             llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
                 m_arg,
                 ASRUtils::type_get_past_allocatable(
