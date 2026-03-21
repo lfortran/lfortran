@@ -674,31 +674,31 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
                                 right_value)->m_s;
         std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_val));
         std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_val));
-        int8_t strcmp = left_str.compare(right_str);
+        int strcmp_result = left_str.compare(right_str);
         bool result = true;
         switch (asr_op) {
             case (ASR::cmpopType::Eq) : {
-                result = (strcmp == 0);
+                result = (strcmp_result == 0);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                result = (strcmp != 0);
+                result = (strcmp_result != 0);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                result = (strcmp > 0);
+                result = (strcmp_result > 0);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                result = (strcmp > 0 || strcmp == 0);
+                result = (strcmp_result >= 0);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                result = (strcmp < 0);
+                result = (strcmp_result < 0);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                result = (strcmp < 0 || strcmp == 0);
+                result = (strcmp_result <= 0);
                 break;
             }
             default: LCOMPILERS_ASSERT(false); // should never happen
