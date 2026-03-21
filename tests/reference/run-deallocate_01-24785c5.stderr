@@ -1,0 +1,5 @@
+runtime error: Attempting to deallocate unallocated variable 'a'
+ --> tests/errors/deallocate_01.f90:6:16
+  |
+6 |     deallocate(a)
+  |                ^ Cannot deallocate 'a' because it is not allocated

@@ -681,7 +681,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             for( size_t i = 0; i < alloc_args.size(); i++ ) {
                 to_be_deallocated.push_back(al, alloc_args.p[i].m_a);
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, to_be_deallocated.p, to_be_deallocated.size())));
             ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
@@ -697,7 +697,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             for( size_t i = 0; i < alloc_args.size(); i++ ) {
                 to_be_deallocated.push_back(al, alloc_args.p[i].m_a);
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, to_be_deallocated.p, to_be_deallocated.size())));
             ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
@@ -777,7 +777,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             for( size_t i = 0; i < alloc_args.size(); i++ ) {
                 to_be_deallocated.push_back(al, alloc_args.p[i].m_a);
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, to_be_deallocated.p, to_be_deallocated.size())));
             ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
@@ -793,7 +793,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             for( size_t i = 0; i < alloc_args.size(); i++ ) {
                 to_be_deallocated.push_back(al, alloc_args.p[i].m_a);
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, to_be_deallocated.p, to_be_deallocated.size())));
             ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));

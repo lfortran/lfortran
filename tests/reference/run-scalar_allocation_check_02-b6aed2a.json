@@ -2,7 +2,7 @@
     "basename": "run-scalar_allocation_check_02-b6aed2a",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/scalar_allocation_check_02.f90",
-    "infile_hash": "334ddfdd17e21ad5f18931bde4b01c8463c16124c4f2b35f872b0bae",
+    "infile_hash": "2f905dd22a57895cdad197194dffedecc27d4ff3c184822107973e5d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
