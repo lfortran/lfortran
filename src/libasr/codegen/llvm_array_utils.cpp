@@ -624,12 +624,14 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::fill_descriptor_for_array_section(
             llvm::Value* value_desc, llvm::Type *value_el_type, ASR::ttype_t* value_type,
+            llvm::Type* value_desc_type,
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+            llvm::Type* target_desc_type,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank, LocationManager& lm) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
-            llvm::Type* value_type_llvm = value_desc->getType()->getPointerElementType();
+            llvm::Type* value_type_llvm = value_desc_type;
             llvm::Value* value_desc_data = llvm_utils->CreateLoad2(
                 value_el_type->getPointerTo(),
                 get_pointer_to_data(value_type_llvm, value_desc));
@@ -653,7 +655,7 @@ namespace LCompilers {
                 llvm::Value* desired_position = llvm_utils->get_string_element_in_array_(
                     ASRUtils::get_string_type(value_type), value_desc_data, target_offset);
 
-                llvm::Type* tgt_llvm_ty = target->getType()->getPointerElementType();
+                llvm::Type* tgt_llvm_ty = target_desc_type;
                 llvm::Value* target_str_data, *target_str_len;
                 std::tie(target_str_data, target_str_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(target_type),
@@ -668,10 +670,10 @@ namespace LCompilers {
 
             } else {
                 value_desc_data = llvm_utils->create_ptr_gep2(value_el_type, value_desc_data, target_offset);
-                llvm::Type* target_type_llvm = target->getType()->getPointerElementType();
+                llvm::Type* target_type_llvm = target_desc_type;
                 builder->CreateStore(value_desc_data, get_pointer_to_data(target_type_llvm, target));
             }
-            llvm::Type* target_type_llvm = target->getType()->getPointerElementType();
+            llvm::Type* target_type_llvm = target_desc_type;
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                 get_offset(target_type_llvm, target, false));
@@ -719,6 +721,7 @@ namespace LCompilers {
         void SimpleCMODescriptor::fill_descriptor_for_array_section_data_only(
             llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+            llvm::Type* target_desc_type,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) {
@@ -743,7 +746,7 @@ namespace LCompilers {
                     ASRUtils::get_string_type(value_type), value_desc, target_offset);
 
                 llvm::Value* target_str_data, *target_str_len;
-                llvm::Type* tgt_llvm_ty = target->getType()->getPointerElementType();
+                llvm::Type* tgt_llvm_ty = target_desc_type;
                 std::tie(target_str_data, target_str_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(target_type),
                     builder->CreateLoad(llvm_utils->get_StringType(target_type)->getPointerTo(), get_pointer_to_data(tgt_llvm_ty, target)),
@@ -758,10 +761,10 @@ namespace LCompilers {
 
             } else {
                 value_desc = llvm_utils->create_ptr_gep2(value_el_type, value_desc, target_offset);
-                llvm::Type* tgt_llvm_ty2 = target->getType()->getPointerElementType();
+                llvm::Type* tgt_llvm_ty2 = target_desc_type;
                 builder->CreateStore(value_desc, get_pointer_to_data(tgt_llvm_ty2, target));
             }
-            llvm::Type* target_type_llvm = target->getType()->getPointerElementType();
+            llvm::Type* target_type_llvm = target_desc_type;
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                 get_offset(target_type_llvm,target, false));
@@ -816,8 +819,8 @@ namespace LCompilers {
             return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* /*arr_expr*/, ASR::ttype_t* /*arr_type*/, llvm::Value* arr, llvm::Module* /*module*/) {
-            llvm::Type* actual_type = arr->getType()->getPointerElementType();
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
+            llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr, arr_type, module);
             return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
         }
 
@@ -1224,10 +1227,7 @@ namespace LCompilers {
                 if (shape_phys == ASR::array_physical_typeType::FixedSizeArray) {
                     result_rank = (int)ASRUtils::get_fixed_size_of_array(asr_shape_type);
                 }
-                llvm::StructType* src_struct = llvm::dyn_cast<llvm::StructType>(arr_type);
-                llvm::Type* el_ptr_type = src_struct->getElementType(FIELD_BASE_ADDR);
-                llvm::Type* el_type = el_ptr_type->getPointerElementType();
-                result_type = get_array_type_for_rank(el_type, result_rank);
+                result_type = get_array_type_for_rank(llvm_data_type, result_rank);
             }
             llvm::Value* reshaped = create_descriptor_alloca(result_type, "reshaped");
 

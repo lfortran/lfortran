@@ -165,7 +165,9 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Type* value_desc_type,
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank, LocationManager& lm) = 0;
@@ -174,6 +176,7 @@ namespace LCompilers {
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) = 0;
@@ -493,7 +496,9 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Type* value_desc_type,
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank, LocationManager& lm);
@@ -502,6 +507,7 @@ namespace LCompilers {
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm);
