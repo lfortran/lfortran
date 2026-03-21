@@ -2060,11 +2060,11 @@ void add_ws_warning(const Location &loc,
 #define DO2(i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
 #define DO2_LABEL(label, i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
         label, name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
@@ -2075,7 +2075,7 @@ void add_ws_warning(const Location &loc,
 #define DO3_LABEL(label, i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
         label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
@@ -2085,7 +2085,7 @@ void add_ws_warning(const Location &loc,
 #define DO3(i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
 
 #define DO_CONCURRENT1(h, loc, trivia, body, l) make_DoConcurrentLoop_t(p.m_a, l, 0, nullptr, \
         CONCURRENT_CONTROLS(h), h.size(), \

@@ -7654,7 +7654,8 @@ public:
         ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
         if (x.m_var) {
-            var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var))));
+            const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
+            var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
