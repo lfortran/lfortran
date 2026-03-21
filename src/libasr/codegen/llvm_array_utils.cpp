@@ -296,10 +296,6 @@ namespace LCompilers {
             int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
             llvm::Value* desc_mem = lfortran_malloc(context, *llvm_utils->module, *builder,
                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)));
-            builder->CreateMemSet(desc_mem, llvm::ConstantInt::get(
-                context, llvm::APInt(8, 0)),
-                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)),
-                llvm::MaybeAlign());
             llvm::Value* desc_ptr = builder->CreateBitCast(desc_mem, array_desc_type->getPointerTo());
 
             llvm::StructType* struct_type = llvm::dyn_cast<llvm::StructType>(array_desc_type);

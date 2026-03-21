@@ -1131,7 +1131,6 @@ ifcont11:                                         ; preds = %merge_allocated8
 then12:                                           ; preds = %ifcont11
   %46 = call i8* @_lfortran_get_default_allocator()
   %47 = call i8* @_lfortran_malloc_alloc(i8* %46, i64 104)
-  call void @llvm.memset.p0i8.i32(i8* %47, i8 0, i32 104, i1 false)
   %48 = bitcast i8* %47 to %array.3*
   %49 = getelementptr %array.3, %array.3* %48, i32 0, i32 3
   store i8 3, i8* %49, align 1
@@ -3223,9 +3222,6 @@ declare void @exit(i32)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
-
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
@@ -3273,5 +3269,3 @@ entry:
   call void @_lfortran_free_alloc(i8* %1, i8* %4)
   ret void
 }
-
-attributes #0 = { argmemonly nounwind willreturn writeonly }
