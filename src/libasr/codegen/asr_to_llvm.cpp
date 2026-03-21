@@ -6242,6 +6242,7 @@ public:
                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v_llvm_type, target_var, v->m_is_volatile));
             }
         } else if(ASRUtils::is_array(v->m_type) &&
+                v->m_storage != ASR::storage_typeType::Save &&
                 (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) ||
                 (v->m_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value)))){
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
@@ -6675,7 +6676,16 @@ public:
                 } else if(v->m_storage == ASR::storage_typeType::Save &&
                     ASR::is_a<ASR::Function_t>(
                         *ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner))){
-                    variable_inital_value_vec.push_back({v, target_var});
+                    // Skip Save pointer variables initialized with => null():
+                    // the global is already null-initialized; pushing into
+                    // variable_inital_value_vec would cause set_VariableInital_value
+                    // to load the null global and dereference it (segfault).
+                    if (!(ASR::is_a<ASR::Pointer_t>(*v->m_type) &&
+                          ASRUtils::is_array(v->m_type) &&
+                          v->m_symbolic_value &&
+                          ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value))) {
+                        variable_inital_value_vec.push_back({v, target_var});
+                    }
                 } else {
                     set_VariableInital_value(v, target_var);
                 }
