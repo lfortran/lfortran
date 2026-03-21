@@ -1680,7 +1680,7 @@ namespace LCompilers {
                 llvm::Type* el_type, int n_dims, uint64_t elem_size,
                 int8_t type_code, int cfi_attr) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
-            llvm::Value* cfi = llvm_utils->CreateAlloca(*builder, cfi_type);
+            llvm::Value* cfi = llvm_utils->CreateAlloca(cfi_type);
             llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
 
             // Copy base_addr, adjusting by offset.
