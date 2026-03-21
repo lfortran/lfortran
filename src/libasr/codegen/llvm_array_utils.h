@@ -187,6 +187,10 @@ namespace LCompilers {
                 llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
                     size_t n_dims) = 0;
 
+                virtual
+                llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
+                    size_t n_dims, const std::string& name = "arr_desc") = 0;
+
                 /*
                 * Returns the llvm::Type* associated with the
                 * dimension descriptor used by the current class.
@@ -364,7 +368,7 @@ namespace LCompilers {
 
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
-                llvm::StructType* get_cfi_type(llvm::Type* el_type) = 0;
+                llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims) = 0;
 
                 virtual
                 llvm::Value* internal_to_cfi(
@@ -506,6 +510,14 @@ namespace LCompilers {
                 llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
                     size_t n_dims);
 
+                // Stack-allocate a rank-sized descriptor.
+                // With dim[0] struct type, alloca only covers the header;
+                // this helper allocates header + n_dims * dim_size bytes
+                // and returns a pointer typed as array_desc_type*.
+                virtual
+                llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
+                    size_t n_dims, const std::string& name = "arr_desc");
+
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
 
@@ -616,7 +628,7 @@ namespace LCompilers {
                 static constexpr int CFI_FIELD_DIMS        = 7;
 
                 // Get or create the CFI struct type (no offset field)
-                llvm::StructType* get_cfi_type(llvm::Type* el_type);
+                llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims);
 
                 // Convert an internal descriptor to a CFI descriptor:
                 // folds offset into base_addr, converts strides to bytes.
