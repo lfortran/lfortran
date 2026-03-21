@@ -8322,7 +8322,7 @@ public:
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
-            value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
+            value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
         }
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
