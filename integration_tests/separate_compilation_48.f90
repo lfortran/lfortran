@@ -10,10 +10,10 @@ program separate_compilation_48
 
     p = get_params(t)
 
-    if (size(p) /= 6) error stop
+    if (size(p) /= 6) error stop "FAIL: wrong size"
     do i = 1, size(p)
-        if (abs(p(i) - 1.0) > 1e-6) error stop
+        if (abs(p(i) - 1.0) > 1e-6) error stop "FAIL: wrong value"
     end do
-    print *, "PASS"
+    print *, "separate_compilation_48: all tests passed."
 
 end program separate_compilation_48
