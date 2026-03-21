@@ -16004,8 +16004,6 @@ public:
         constexpr int32_t kInt64 = 3;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
-        constexpr int32_t kComplex4 = 6;
-        constexpr int32_t kComplex8 = 7;
 
         if (ASR::is_a<ASR::String_t>(*val_type)) {
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
@@ -16028,12 +16026,23 @@ public:
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
             ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
-            int32_t type_code = (complex_type->m_kind == 4) ? kComplex4 : kComplex8;
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
-            args.push_back(elem_ptr);
+            int32_t component_type_code = (complex_type->m_kind == 4) ? kFloat : kDouble;
+            llvm::Type* llvm_complex_type = (complex_type->m_kind == 4)
+                ? static_cast<llvm::Type*>(complex_type_4)
+                : static_cast<llvm::Type*>(complex_type_8);
+            llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
+            llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
+            args.push_back(re_ptr);
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
+            args.push_back(im_ptr);
         } else {
             throw CodeGenError("Unsupported type in formatted read");
         }
+    }
+
+    int64_t get_formatted_read_arg_count(ASR::ttype_t* val_type) {
+        return ASR::is_a<ASR::Complex_t>(*val_type) ? 2 : 1;
     }
 
 
@@ -16109,7 +16118,8 @@ public:
 
         if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
             int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
-            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, array_size)));
+            int64_t single_arg_count = array_size * get_formatted_read_arg_count(val_type);
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, single_arg_count)));
             
             ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
@@ -16138,7 +16148,8 @@ public:
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
         } else {
-            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
+                get_formatted_read_arg_count(val_type))));
             add_formatted_read_arg(single_args, val_type, var_ptr);
         }
 
@@ -16363,10 +16374,13 @@ public:
         size_t total_scalar_values = 0;
         for (size_t i = 0; i < n_values; i++) {
             ASR::ttype_t* expr_type = ASRUtils::expr_type(values[i]);
+            ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(expr_type));
+            int64_t arg_count = get_formatted_read_arg_count(val_type);
             if (ASRUtils::is_array(expr_type) && ASRUtils::is_fixed_size_array(expr_type)) {
-                total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type);
+                total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type) * arg_count;
             } else {
-                total_scalar_values++;
+                total_scalar_values += arg_count;
             }
         }
 
