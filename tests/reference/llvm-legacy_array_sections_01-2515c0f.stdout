@@ -59,7 +59,6 @@ define void @a(double* %w) {
   %__libasr_created__subroutine_call_b = alloca %array*, align 8
   store %array* null, %array** %__libasr_created__subroutine_call_b, align 8
   %arr_desc = alloca i8, i32 56, align 8
-  call void @llvm.memset.p0i8.i32(i8* %arr_desc, i8 0, i32 56, i1 false)
   %1 = bitcast i8* %arr_desc to %array*
   %2 = getelementptr %array, %array* %1, i32 0, i32 8
   %3 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %2, i32 0, i32 0
@@ -78,7 +77,6 @@ define void @a(double* %w) {
   %__libasr_created__subroutine_call_b1 = alloca %array*, align 8
   store %array* null, %array** %__libasr_created__subroutine_call_b1, align 8
   %arr_desc1 = alloca i8, i32 56, align 8
-  call void @llvm.memset.p0i8.i32(i8* %arr_desc1, i8 0, i32 56, i1 false)
   %10 = bitcast i8* %arr_desc1 to %array*
   %11 = getelementptr %array, %array* %10, i32 0, i32 8
   %12 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %11, i32 0, i32 0
@@ -97,7 +95,6 @@ define void @a(double* %w) {
   %icon = alloca i32, align 4
   store i32 2, i32* %icon, align 4
   %array_section_descriptor = alloca i8, i32 56, align 8
-  call void @llvm.memset.p0i8.i32(i8* %array_section_descriptor, i8 0, i32 56, i1 false)
   %19 = bitcast i8* %array_section_descriptor to %array*
   %20 = load i32, i32* %icon, align 4
   %21 = getelementptr %array, %array* %19, i32 0, i32 8
@@ -456,7 +453,6 @@ else15:                                           ; preds = %merge_allocated
 
 then16:                                           ; preds = %else15
   %arr_desc17 = alloca i8, i32 56, align 8
-  call void @llvm.memset.p0i8.i32(i8* %arr_desc17, i8 0, i32 56, i1 false)
   %255 = bitcast i8* %arr_desc17 to %array*
   %256 = getelementptr %array, %array* %255, i32 0, i32 8
   %257 = getelementptr [0 x %dimension_descriptor], [0 x %dimension_descriptor]* %256, i32 0, i32 0
@@ -781,9 +777,6 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret void
 }
 
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
-
 declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare i8* @_lfortran_get_default_allocator()
@@ -797,7 +790,7 @@ declare void @exit(i32)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 ; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #0
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -1067,12 +1060,11 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i3
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 ; Function Attrs: nounwind readnone speculatable willreturn
-declare double @llvm.fabs.f64(double) #2
+declare double @llvm.fabs.f64(double) #1
 
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { argmemonly nounwind willreturn writeonly }
-attributes #1 = { argmemonly nounwind willreturn }
-attributes #2 = { nounwind readnone speculatable willreturn }
+attributes #0 = { argmemonly nounwind willreturn }
+attributes #1 = { nounwind readnone speculatable willreturn }

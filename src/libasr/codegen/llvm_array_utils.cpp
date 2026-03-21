@@ -295,10 +295,6 @@ namespace LCompilers {
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), total_size),
                 name);
             raw->setAlignment(llvm::Align(8));
-            builder->CreateMemSet(raw, llvm::ConstantInt::get(
-                context, llvm::APInt(8, 0)),
-                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, total_size)),
-                llvm::MaybeAlign());
             return builder->CreateBitCast(raw, array_desc_type->getPointerTo());
         }
 
