@@ -1131,6 +1131,7 @@ RUN(NAME submodule_45 LABELS gfortran llvm)
 RUN(NAME submodule_46 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_14 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
