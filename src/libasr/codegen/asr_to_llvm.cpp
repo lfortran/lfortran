@@ -14665,7 +14665,7 @@ public:
                  ASR::is_a<ASR::Pointer_t>(*item_type_asr)) &&
                 ASRUtils::is_array(item_type_asr)) {
                 data_ptr = llvm_utils->CreateLoad2(
-                    llvm::PointerType::getUnqual(context), data_ptr);
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr);
             }
 
             // Determine type code
