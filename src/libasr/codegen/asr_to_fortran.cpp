@@ -2628,6 +2628,11 @@ public:
         r += ", ";
         visit_expr(*x.m_shape);
         r += src;
+        if (x.m_pad) {
+            r += ", ";
+            visit_expr(*x.m_pad);
+            r += src;
+        }
         r += ")";
         src = r;
     }
