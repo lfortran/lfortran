@@ -8322,12 +8322,13 @@ static void process_fmt_items_read(InputSource *inputSource,
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
 
         int repeat_count = 0;
+        bool has_repeat_count = false;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+            has_repeat_count = true;
             repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
             fmt_pos++;
         }
-        if (repeat_count == 0) repeat_count = 1;
-
+        if (!has_repeat_count) repeat_count = 1;
         if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
             // Parenthesized group: N(...)
             int64_t group_start = fmt_pos + 1; // position after '('
@@ -8358,11 +8359,13 @@ static void process_fmt_items_read(InputSource *inputSource,
             negative_scale_factor = true;
             fmt_pos++;
             repeat_count = 0;
+            bool has_negative_repeat_count = false;
             while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+                has_negative_repeat_count = true;
                 repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
                 fmt_pos++;
             }
-            if (repeat_count == 0) repeat_count = 1;
+            if (!has_negative_repeat_count) repeat_count = 1;
         }
         char spec = toupper(fmt[fmt_pos++]);
         if (spec == 'P') {
