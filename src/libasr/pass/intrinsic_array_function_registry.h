@@ -1719,7 +1719,15 @@ namespace Shape {
         if (is_arg_assumed_rank) {
             ASR::expr_t* orig_var = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                 new_args[0].m_value)->m_arg;
-            fill_func_arg_struct_type("source", ASRUtils::expr_type(orig_var), orig_var);
+            // Strip Allocatable/Pointer wrappers: the formal parameter must be
+            // the bare AssumedRankArray so that LLVM sees the descriptor directly.
+            ASR::ttype_t* source_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(orig_var)));
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(source_type))) {
+                fill_func_arg_struct_type("source", source_type, orig_var);
+            } else {
+                fill_func_arg("source", source_type);
+            }
         } else if (is_struct_type_arg) {
             fill_func_arg_struct_type("source",
                 ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]),
