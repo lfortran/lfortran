@@ -165,7 +165,9 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
+                    llvm::Type* value_desc_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank, LocationManager& lm) = 0;
@@ -173,7 +175,8 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) = 0;
@@ -184,12 +187,11 @@ namespace LCompilers {
                 * Returns a pointer to the descriptor.
                 */
                 virtual
-                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
-                    size_t n_dims) = 0;
+                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type) = 0;
 
                 virtual
                 llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
-                    size_t n_dims, const std::string& name = "arr_desc") = 0;
+                    const std::string& name = "arr_desc") = 0;
 
                 /*
                 * Returns the llvm::Type* associated with the
@@ -316,7 +318,8 @@ namespace LCompilers {
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module, ASR::expr_t* array_expr = nullptr,
-                                     ASR::ttype_t* asr_data_type = nullptr) = 0;
+                                     ASR::ttype_t* asr_data_type = nullptr,
+                                     llvm::Type* result_desc_type = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -414,6 +417,7 @@ namespace LCompilers {
                 llvm::StructType* dim_des;
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
+                std::map<std::pair<llvm::Type*, int>, llvm::StructType*> rank_array_cache;
 
                 CompilerOptions& co;
 
@@ -493,7 +497,9 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
+                    llvm::Type* value_desc_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank, LocationManager& lm);
@@ -501,22 +507,20 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* /*target_expr*/,
+                    llvm::Type* target_desc_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm);
 
                 virtual
-                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
-                    size_t n_dims);
+                llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type);
 
-                // Stack-allocate a rank-sized descriptor.
-                // With dim[0] struct type, alloca only covers the header;
-                // this helper allocates header + n_dims * dim_size bytes
-                // and returns a pointer typed as array_desc_type*.
                 virtual
                 llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
-                    size_t n_dims, const std::string& name = "arr_desc");
+                    const std::string& name = "arr_desc");
+
+                llvm::Type* get_array_type_for_rank(llvm::Type* el_type, int n_dims);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
@@ -585,7 +589,8 @@ namespace LCompilers {
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
                                      llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module, ASR::expr_t* array_expr = nullptr,
-                                     ASR::ttype_t* asr_data_type = nullptr);
+                                     ASR::ttype_t* asr_data_type = nullptr,
+                                     llvm::Type* result_desc_type = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,

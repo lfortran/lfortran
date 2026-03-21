@@ -2515,9 +2515,11 @@ namespace Eoshift {
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(return_type_);
+            if (n_dims < 1) n_dims = 1;
             Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, 2);
-            for( int idim = 0; idim < 2; idim++ ) {
+            empty_dims.reserve(al, n_dims);
+            for( int idim = 0; idim < n_dims; idim++ ) {
                 ASR::dimension_t empty_dim;
                 empty_dim.loc = loc;
                 empty_dim.m_start = nullptr;

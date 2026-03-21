@@ -3541,9 +3541,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         create_if_else(desc_is_null, [&]() {
-                            ASR::dimension_t* m_dims = nullptr;
-                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(alloc_type->m_type, m_dims);
-                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type, n_dims);
+                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type);
                             if (ASRUtils::is_character(*alloc_type->m_type)) {
                                 llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
                                     src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
