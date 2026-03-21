@@ -1561,6 +1561,10 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
+        case ASR::exprType::GetPointer: {
+            ASR::GetPointer_t* get_ptr = ASR::down_cast<ASR::GetPointer_t>(a_value);
+            return is_modifiable_actual_argument_expr(get_ptr->m_arg);
+        }
         case ASR::exprType::StringPhysicalCast: {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);

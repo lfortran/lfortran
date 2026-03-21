@@ -187,6 +187,10 @@ namespace LCompilers {
                 llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
                     size_t n_dims) = 0;
 
+                virtual
+                llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
+                    size_t n_dims, const std::string& name = "arr_desc") = 0;
+
                 /*
                 * Returns the llvm::Type* associated with the
                 * dimension descriptor used by the current class.
@@ -362,9 +366,32 @@ namespace LCompilers {
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                // CFI interop: convert internal descriptor to CFI layout
+                virtual
+                llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims) = 0;
+
+                virtual
+                llvm::Value* internal_to_cfi(
+                    llvm::Type* internal_type, llvm::Value* internal_desc,
+                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    int8_t type_code, int cfi_attr) = 0;
+
+                virtual
+                llvm::Value* cfi_to_internal(
+                    llvm::Type* internal_type,
+                    llvm::Type* el_type, llvm::Value* cfi_desc,
+                    int n_dims, uint64_t elem_size) = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
+
+            public:
+
+                // CFI_dim_t sub-field indices (standard order)
+                static constexpr int DIM_LOWER_BOUND = 0;
+                static constexpr int DIM_EXTENT      = 1;
+                static constexpr int DIM_STRIDE      = 2;  // sm (stride multiplier)
 
             private:
 
@@ -377,10 +404,10 @@ namespace LCompilers {
                 static constexpr int FIELD_ELEM_LEN    = 1;  // i64
                 static constexpr int FIELD_VERSION     = 2;  // i32
                 static constexpr int FIELD_RANK        = 3;  // i8
-                static constexpr int FIELD_TYPE        = 4;  // i16
+                static constexpr int FIELD_TYPE        = 4;  // i8
                 static constexpr int FIELD_ATTRIBUTE   = 5;  // i8
-                static constexpr int FIELD_OFFSET      = 6;  // i64
-                static constexpr int FIELD_IS_ALLOC    = 7;  // i1
+                static constexpr int FIELD_EXTRA       = 6;  // i8 (reserved)
+                static constexpr int FIELD_OFFSET      = 7;  // i64
                 static constexpr int FIELD_DIMS        = 8;  // [rank x {i64,i64,i64}]
 
                 llvm::Type* index_type;  // always i64 for descriptor indices
@@ -483,6 +510,14 @@ namespace LCompilers {
                 llvm::Value* allocate_descriptor_on_heap(llvm::Type* array_desc_type,
                     size_t n_dims);
 
+                // Stack-allocate a rank-sized descriptor.
+                // With dim[0] struct type, alloca only covers the header;
+                // this helper allocates header + n_dims * dim_size bytes
+                // and returns a pointer typed as array_desc_type*.
+                virtual
+                llvm::Value* create_descriptor_alloca(llvm::Type* array_desc_type,
+                    size_t n_dims, const std::string& name = "arr_desc");
+
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
 
@@ -581,6 +616,34 @@ namespace LCompilers {
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                // CFI field indices (C-interop layout, no offset field)
+                static constexpr int CFI_FIELD_BASE_ADDR   = 0;
+                static constexpr int CFI_FIELD_ELEM_LEN    = 1;
+                static constexpr int CFI_FIELD_VERSION     = 2;
+                static constexpr int CFI_FIELD_RANK        = 3;
+                static constexpr int CFI_FIELD_TYPE        = 4;
+                static constexpr int CFI_FIELD_ATTRIBUTE   = 5;
+                static constexpr int CFI_FIELD_EXTRA       = 6;
+                static constexpr int CFI_FIELD_DIMS        = 7;
+
+                // Get or create the CFI struct type (no offset field)
+                llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims);
+
+                // Convert an internal descriptor to a CFI descriptor:
+                // folds offset into base_addr, converts strides to bytes.
+                llvm::Value* internal_to_cfi(
+                    llvm::Type* internal_type, llvm::Value* internal_desc,
+                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    int8_t type_code, int cfi_attr);
+
+                // Convert a CFI descriptor to an internal descriptor:
+                // sets offset=0, converts byte strides to element strides.
+                // internal_type: the cached internal struct type to use for the alloca.
+                llvm::Value* cfi_to_internal(
+                    llvm::Type* internal_type,
+                    llvm::Type* el_type, llvm::Value* cfi_desc,
+                    int n_dims, uint64_t elem_size);
 
         };
 
