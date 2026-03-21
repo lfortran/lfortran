@@ -7148,14 +7148,39 @@ public:
                         ASR::ttype_t* var_type = type;
                         ASR::ttype_t* init_type = ASRUtils::expr_type(init_expr);
                         if (!ASRUtils::check_equal_type(var_type, init_type, nullptr, nullptr, false)) {
-                            // Allow valid implicit conversions
-                            bool is_valid_conversion = 
-                                (ASRUtils::is_integer(*init_type) && ASRUtils::is_real(*var_type)) ||
-                                (ASRUtils::is_integer(*init_type) && ASRUtils::is_complex(*var_type)) ||
-                                (ASRUtils::is_real(*init_type) && ASRUtils::is_complex(*var_type));
-                            if (!is_valid_conversion) {
+                            // Try implicit conversion (this mutates init_expr)
+                            ImplicitCastRules::set_converted_value(
+                                al, s.m_initializer->base.loc,
+                                &init_expr, init_type, var_type, diag);
+
+                            // Recompute type after cast
+                            ASR::ttype_t* new_type = ASRUtils::expr_type(init_expr);
+                            if (ASRUtils::is_character(*var_type) && ASRUtils::is_character(*new_type)) {
+
+                                int src_kind = ASRUtils::extract_kind_from_ttype_t(new_type);
+                                int dest_kind = ASRUtils::extract_kind_from_ttype_t(var_type);
+
+                                if (src_kind != dest_kind) {
+                                    ASR::expr_t* val = ASRUtils::expr_value(init_expr);
+
+                                    if (val && ASR::is_a<ASR::StringConstant_t>(*val)) {
+                                        ASR::StringConstant_t* s_val = ASR::down_cast<ASR::StringConstant_t>(val);
+
+                                        init_expr = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                            al, s_val->base.base.loc,
+                                            s_val->m_s,
+                                            var_type
+                                        ));
+
+                                        // recompute type again after fix
+                                        new_type = ASRUtils::expr_type(init_expr);
+                                    }
+                                }
+                            }
+                            if (!ASRUtils::check_equal_type(var_type, new_type, nullptr, nullptr, false)) {
                                 std::string ltype = ASRUtils::type_to_str_fortran_expr(var_type, nullptr);
                                 std::string rtype = ASRUtils::type_to_str_fortran_expr(init_type, init_expr);
+
                                 diag.add(Diagnostic(
                                     "Type mismatch in parameter initialization: cannot assign `" +
                                     rtype + "` to `" + ltype + "`",
@@ -7165,6 +7190,8 @@ public:
                                 throw SemanticAbort();
                             }
                         }
+
+                        value = ASRUtils::expr_value(init_expr);
                     }
                     if (value == nullptr &&
                             storage_type == ASR::storage_typeType::Parameter &&
