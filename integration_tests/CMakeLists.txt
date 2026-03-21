@@ -3855,6 +3855,8 @@ RUN(NAME separate_compilation_44 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_45 LABELS gfortran llvm EXTRAFILES separate_compilation_45a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_46 LABELS gfortran llvm EXTRAFILES separate_compilation_46a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_47 LABELS gfortran llvm EXTRAFILES separate_compilation_47a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_48 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_48a.f90 separate_compilation_48b.f90 EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME separate_compilation_49 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_49a.f90 separate_compilation_49b.f90 EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
