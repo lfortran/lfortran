@@ -232,8 +232,9 @@ namespace LCompilers {
             // 3: rank        (i8)            - CFI_rank_t
             // 4: type        (i8)            - CFI_type_t
             // 5: attribute   (i8)            - CFI_attribute_t
-            // 6: offset      (i64)           - linear offset
-            // 7: dim[CFI_MAX_RANK] ([15 x {i64,i64,i64}]) - fixed max rank
+            // 6: extra       (i8)            - reserved byte
+            // 7: offset      (i64)           - linear offset
+            // 8: dim[CFI_MAX_RANK] ([15 x {i64,i64,i64}]) - fixed max rank
             static constexpr int CFI_MAX_RANK = 15;
             array_type_vec = {  el_type->getPointerTo(),                        // 0: base_addr
                                 llvm::Type::getInt64Ty(context),                // 1: elem_len
@@ -241,8 +242,9 @@ namespace LCompilers {
                                 llvm::Type::getInt8Ty(context),                 // 3: rank
                                 llvm::Type::getInt8Ty(context),                 // 4: type
                                 llvm::Type::getInt8Ty(context),                 // 5: attribute
-                                llvm::Type::getInt64Ty(context),                // 6: offset
-                                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)  }; // 7: dim[15]
+                                llvm::Type::getInt8Ty(context),                 // 6: extra
+                                llvm::Type::getInt64Ty(context),                // 7: offset
+                                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)  }; // 8: dim[15]
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
             if( get_pointer ) {
@@ -1611,7 +1613,8 @@ namespace LCompilers {
                 llvm::Type::getInt8Ty(context),                 // 3: rank
                 llvm::Type::getInt8Ty(context),                 // 4: type
                 llvm::Type::getInt8Ty(context),                 // 5: attribute
-                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)     // 6: dim[15]
+                llvm::Type::getInt8Ty(context),                 // 6: extra
+                llvm::ArrayType::get(dim_des, CFI_MAX_RANK)     // 7: dim[15]
             };
             return llvm::StructType::create(context, cfi_vec, "cfi_array");
         }
@@ -1672,6 +1675,11 @@ namespace LCompilers {
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_attr),
                 llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_ATTRIBUTE));
+
+            // extra = 0 (reserved)
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
+                llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_EXTRA));
 
             // Copy dims, converting element strides to byte strides
             llvm::Value* src_dim_arr = get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
