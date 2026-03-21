@@ -633,6 +633,7 @@ program continue_compilation_1
     print *, sum(arr1, dim = mask1)
     print*, ieee_is_nan(1.0)
 
+    integer, parameter :: n2 = "abc"
 
 
 
