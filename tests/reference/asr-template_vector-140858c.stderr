@@ -1,0 +1,5 @@
+ASR verify pass error: Argument `this` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/../integration_tests/template_vector.f90:27:13
+   |
+27 |             call this%resize(new_size)
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ failed here

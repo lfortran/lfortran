@@ -467,6 +467,7 @@
                             (Real 4)
                             ()
                             ()
+                            .false.
                         )
                         ()
                         .false.
@@ -521,6 +522,7 @@
                                 (Real 4)
                                 ()
                                 ()
+                                .false.
                             )
                             Add
                             (RealConstant
@@ -580,6 +582,7 @@
                                         (Real 8)
                                         ()
                                         ()
+                                        .false.
                                     )
                                     Sub
                                     (Cast
@@ -632,6 +635,7 @@
                                 (Integer 4)
                                 ()
                                 ()
+                                .false.
                             )
                             NotEq
                             (IntegerConstant 9 (Integer 4) Decimal)

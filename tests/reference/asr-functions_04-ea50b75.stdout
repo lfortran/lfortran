@@ -71,6 +71,7 @@
                                 (Integer 4)
                                 ()
                                 ()
+                                .false.
                             )
                             NotEq
                             (IntegerUnaryMinus
@@ -107,6 +108,7 @@
                                 (Integer 4)
                                 ()
                                 ()
+                                .false.
                             )
                             NotEq
                             (IntegerUnaryMinus

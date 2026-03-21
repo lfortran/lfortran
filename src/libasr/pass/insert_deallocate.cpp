@@ -202,7 +202,7 @@ public:
             ASR::stmt_t* call_stmt = ASRUtils::STMT(
                 ASR::make_SubroutineCall_t(
                     al, loc, local_final_sym, local_final_sym,
-                    call_args.p, call_args.n, nullptr, false));
+                    call_args.p, call_args.n, nullptr, false, false));
 
             final_calls.push_back(al, call_stmt);
         }
@@ -445,7 +445,7 @@ public:
                         ASR::stmt_t* call_stmt = ASRUtils::STMT(
                             ASR::make_SubroutineCall_t(
                                 al, loc, local_final_sym, local_final_sym,
-                                call_args.p, call_args.n, nullptr, false));
+                                call_args.p, call_args.n, nullptr, false, false));
 
                         ASR::stmt_t* wrapped_stmt = wrap_optional_check(
                             loc, var_expr, arg_var->m_presence, call_stmt);

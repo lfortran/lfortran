@@ -639,6 +639,7 @@
                                             ))]
                                             ()
                                             .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 6 last)
@@ -715,6 +716,7 @@
                                                     (Logical 4)
                                                     ()
                                                     ()
+                                                    .false.
                                                 )
                                                 [(Assignment
                                                     (Var 6 last)
@@ -752,6 +754,7 @@
                                                     ))]
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )]
                                                 []
                                             )]
@@ -779,6 +782,7 @@
                                                 ()
                                             ))]
                                             ()
+                                            .false.
                                             .false.
                                         )
                                         (Assignment
@@ -833,6 +837,7 @@
                                             ((Var 6 less))]
                                             ()
                                             .false.
+                                            .false.
                                         )
                                         (SubroutineCall
                                             2 quicksort
@@ -878,6 +883,7 @@
                                             ((Var 6 high))
                                             ((Var 6 less))]
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -1302,6 +1308,7 @@
                                             ((Var 5 compare))]
                                             ()
                                             .false.
+                                            .false.
                                         )]
                                         [(SubroutineCall
                                             2 quicksort
@@ -1312,6 +1319,7 @@
                                             ((Var 5 high))
                                             ((Var 2 compare_keys_less))]
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                     )

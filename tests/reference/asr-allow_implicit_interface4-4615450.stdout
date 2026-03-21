@@ -222,6 +222,7 @@
                         [((Var 2 f))]
                         ()
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -233,6 +234,7 @@
                                 (Real 8)
                                 ()
                                 ()
+                                .false.
                             )]
                             FormatFortran
                             (Allocatable
@@ -483,6 +485,7 @@
                         [((Var 3 c))]
                         ()
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -494,6 +497,7 @@
                                 (Real 8)
                                 ()
                                 ()
+                                .false.
                             )]
                             FormatFortran
                             (Allocatable
@@ -687,6 +691,7 @@
                         [((Var 4 a))]
                         ()
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -698,6 +703,7 @@
                                 (Real 8)
                                 ()
                                 ()
+                                .false.
                             )]
                             FormatFortran
                             (Allocatable

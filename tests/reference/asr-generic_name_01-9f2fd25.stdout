@@ -887,10 +887,12 @@
                     (SubroutineCall
                         6 1_complextype_integer_add_subrout
                         6 1_add
-                        [((Var 6 ione))
+                        [((Var 6 c))
+                        ((Var 6 ione))
                         ((Var 6 izero))
                         ((Var 6 a))]
                         (Var 6 c)
+                        .true.
                         .false.
                     )
                     (Print
@@ -962,10 +964,12 @@
                     (SubroutineCall
                         6 1_complextype_real_add_subrout
                         6 1_add
-                        [((Var 6 fpzero))
+                        [((Var 6 c))
+                        ((Var 6 fpzero))
                         ((Var 6 negfpone))
                         ((Var 6 a))]
                         (Var 6 c)
+                        .true.
                         .false.
                     )
                     (Print

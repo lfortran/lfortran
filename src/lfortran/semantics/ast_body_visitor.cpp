@@ -4443,7 +4443,7 @@ public:
             // make an assignment to the return variable of entry function
             ASR::expr_t* lhs = entry_function->m_return_var;
             ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, master_function_sym,
-                                master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr));
+                                master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr, false));
 
             stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs_arrays, false));
 

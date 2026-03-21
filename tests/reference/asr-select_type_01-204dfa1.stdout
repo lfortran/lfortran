@@ -588,6 +588,7 @@
                         [((Var 2 bptr))]
                         ()
                         .false.
+                        .false.
                     )
                     (Associate
                         (Var 2 bptr)
@@ -598,6 +599,7 @@
                         ()
                         [((Var 2 bptr))]
                         ()
+                        .false.
                         .false.
                     )]
                 )

@@ -117,12 +117,14 @@
                                         []
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (SubroutineCall
                                         4 modproc
                                         ()
                                         [((Var 5 a))]
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     ()
@@ -139,6 +141,7 @@
                         ()
                         []
                         ()
+                        .false.
                         .false.
                     )]
                 ),

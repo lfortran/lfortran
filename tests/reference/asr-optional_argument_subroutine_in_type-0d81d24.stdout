@@ -72,6 +72,7 @@
                         [(())]
                         (Var 5 test_type_instance)
                         .false.
+                        .false.
                     )]
                 ),
             test_module:

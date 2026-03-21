@@ -303,7 +303,8 @@
                                         (FunctionCall
                                             5 1_softmax_eval_1d
                                             ()
-                                            [((ArrayPhysicalCast
+                                            [((Var 5 self))
+                                            ((ArrayPhysicalCast
                                                 (Var 5 x)
                                                 DescriptorArray
                                                 DescriptorArray
@@ -328,6 +329,7 @@
                                             )
                                             ()
                                             (Var 5 self)
+                                            .true.
                                         )
                                         ()
                                         .false.

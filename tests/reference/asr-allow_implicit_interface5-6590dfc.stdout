@@ -220,6 +220,7 @@
                         [((Var 2 rt))]
                         ()
                         .false.
+                        .false.
                     )
                     (Return)]
                     ()
@@ -243,6 +244,7 @@
                         [((IntegerConstant 5 (Integer 4) Decimal))
                         ((IntegerConstant 8 (Integer 4) Decimal))]
                         ()
+                        .false.
                         .false.
                     )]
                 )

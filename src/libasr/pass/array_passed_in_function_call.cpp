@@ -932,7 +932,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(call_sym);
             func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(method->m_proc));
-            if (x.m_dt && !method->m_is_nopass) {
+            // When is_method flag is set, self is in args — no offset needed
+            if (!x.m_is_method && x.m_dt && !method->m_is_nopass) {
                 arg_offset = 1;
             }
         } else {

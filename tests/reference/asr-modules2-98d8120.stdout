@@ -336,7 +336,19 @@
                                         [(SubroutineCall
                                             15 1_toml_structure_destroy
                                             ()
-                                            []
+                                            [((StructInstanceMember
+                                                (Var 15 self)
+                                                15 1_toml_array_list
+                                                (Allocatable
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            ))]
                                             (StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
@@ -350,6 +362,7 @@
                                                 )
                                                 ()
                                             )
+                                            .true.
                                             .false.
                                         )
                                         (ExplicitDeallocate

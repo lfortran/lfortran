@@ -568,6 +568,7 @@
                                                 ) ExpressionLength DescriptorString)
                                                 ()
                                                 ()
+                                                .false.
                                             )
                                             (StringConstant
                                                 "SHORT"
@@ -701,6 +702,7 @@
                                                     ) ExpressionLength DescriptorString)
                                                     ()
                                                     ()
+                                                    .false.
                                                 )
                                                 (ArrayItem
                                                     (Var 4 shorts)

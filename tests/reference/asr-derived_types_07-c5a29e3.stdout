@@ -320,7 +320,70 @@
                                                 (FunctionCall
                                                     13 1_toml_value_match_key
                                                     ()
-                                                    [((Var 13 key))]
+                                                    [((StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        ()
+                                                    ))
+                                                    ((Var 13 key))]
                                                     (Logical 4)
                                                     ()
                                                     (StructInstanceMember
@@ -386,6 +449,7 @@
                                                         )
                                                         ()
                                                     )
+                                                    .true.
                                                 )
                                                 [(Associate
                                                     (Var 13 ptr)

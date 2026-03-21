@@ -251,7 +251,19 @@
                                         (FunctionCall
                                             6 1_t1_f
                                             ()
-                                            []
+                                            [((StructInstanceMember
+                                                (Var 6 self)
+                                                6 1_t2_val
+                                                (Allocatable
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            ))]
                                             (Logical 4)
                                             ()
                                             (StructInstanceMember
@@ -267,6 +279,7 @@
                                                 )
                                                 ()
                                             )
+                                            .true.
                                         )
                                         [(Print
                                             (StringFormat

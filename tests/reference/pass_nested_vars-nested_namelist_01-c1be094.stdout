@@ -88,6 +88,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             nested_namelist_01_mod:
@@ -298,6 +299,7 @@
                                         ()
                                         []
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Assignment

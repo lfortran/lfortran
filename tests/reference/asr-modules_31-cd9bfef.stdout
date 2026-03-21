@@ -237,7 +237,8 @@
                                     [(SubroutineCall
                                         7 1_dependency_tree_t_update_dependency
                                         7 1_update
-                                        [((StructInstanceMember
+                                        [((Var 7 deps))
+                                        ((StructInstanceMember
                                             (ArrayItem
                                                 (StructInstanceMember
                                                     (Var 7 deps)
@@ -291,6 +292,7 @@
                                         ))
                                         ((Var 7 error))]
                                         (Var 7 deps)
+                                        .true.
                                         .false.
                                     )]
                                     ()

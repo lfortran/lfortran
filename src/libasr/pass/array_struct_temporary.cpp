@@ -1907,9 +1907,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(smd->m_proc);
             if (ASR::is_a<ASR::Function_t>(*proc)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
-                // When x.m_dt is set and not nopass, the first formal argument
-                // is passed implicitly, so skip it to align actual args with formal args
-                if (x.m_dt && !smd->m_is_nopass && func->n_args > 0) {
+                // When is_method is true, self is already in args at the
+                // correct position, so no offset is needed.
+                // When is_method is false but m_dt is set with PASS semantics
+                // (legacy path), offset by 1 to skip the implicit self param.
+                if (x.m_is_method) {
+                    orig_args = func->m_args;
+                } else if (x.m_dt && !smd->m_is_nopass && func->n_args > 0) {
                     orig_args = func->m_args + 1;
                 } else {
                     orig_args = func->m_args;

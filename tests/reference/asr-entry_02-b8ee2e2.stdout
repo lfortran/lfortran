@@ -47,6 +47,7 @@
                         [((Var 5 dummy))]
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 5 dummy)
@@ -63,6 +64,7 @@
                         ()
                         [((Var 5 dummy))]
                         ()
+                        .false.
                         .false.
                     )]
                 ),
@@ -116,6 +118,7 @@
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((Var 2 dummy))]
                         ()
+                        .false.
                         .false.
                     )]
                     ()
@@ -438,6 +441,7 @@
                         [((IntegerConstant 2 (Integer 4) Decimal))
                         ((Var 3 dummy))]
                         ()
+                        .false.
                         .false.
                     )]
                     ()

@@ -161,6 +161,7 @@
                         ((Var 5 f))]
                         ()
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         5 get_value@get_elem_value_string
@@ -171,6 +172,7 @@
                         (())
                         ((Var 5 f))]
                         ()
+                        .false.
                         .false.
                     )]
                 ),

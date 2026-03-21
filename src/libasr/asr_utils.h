@@ -7573,8 +7573,28 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
         }
     }
 
+    bool a_is_method = (a_dt != nullptr) && (!ASRUtils::get_class_proc_nopass_val(a_name));
+
+    // Insert self/pass argument into args at position 0 when this is a method call,
+    // but only if self is not already the first argument (avoid double-insertion
+    // when passes copy args from existing nodes that already include self).
+    bool self_already_in_args = (a_is_method && n_args > 0 && a_args[0].m_value == a_dt);
+    if (a_is_method && !self_already_in_args) {
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_args + 1);
+        ASR::call_arg_t self_arg;
+        self_arg.loc = a_dt->base.loc;
+        self_arg.m_value = a_dt;
+        new_args.push_back(al, self_arg);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, a_args[i]);
+        }
+        a_args = new_args.p;
+        n_args = new_args.size();
+    }
+
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_type, a_value, a_dt);
+            a_args, n_args, a_type, a_value, a_dt, a_is_method);
 }
 
 static inline ASR::asr_t* make_SubroutineCall_t_util(
@@ -7582,8 +7602,24 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt, bool a_strict_bounds_checking = false) {
 
+    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
+    bool a_is_method = (a_dt != nullptr) && (!nopass);
+
+    // Check if self is already in args BEFORE potential StructInstanceMember wrapping of a_dt
+    bool self_already_in_args = false;
+    if (a_is_method && n_args > 0 && a_args[0].m_value != nullptr) {
+        // Self might be the original dt or a StructInstanceMember wrapping it
+        ASR::expr_t* first_arg = a_args[0].m_value;
+        if (first_arg == a_dt) {
+            self_already_in_args = true;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*first_arg) &&
+                   ASR::down_cast<ASR::StructInstanceMember_t>(first_arg)->m_v == a_dt) {
+            self_already_in_args = true;
+        }
+    }
+
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
+         nopass, current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
@@ -7593,7 +7629,24 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
-    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt, a_strict_bounds_checking);
+    // Insert self/pass argument into args at position 0 when this is a method call,
+    // but only if self is not already the first argument (avoid double-insertion
+    // when passes copy args from existing nodes that already include self).
+    if (a_is_method && !self_already_in_args) {
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_args + 1);
+        ASR::call_arg_t self_arg;
+        self_arg.loc = a_dt->base.loc;
+        self_arg.m_value = a_dt;
+        new_args.push_back(al, self_arg);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, a_args[i]);
+        }
+        a_args = new_args.p;
+        n_args = new_args.size();
+    }
+
+    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt, a_is_method, a_strict_bounds_checking);
 }
 
 /*

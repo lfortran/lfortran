@@ -26,6 +26,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             derived_types_17_module_1:
@@ -337,6 +338,7 @@
                                                 )
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -360,6 +362,7 @@
                                                 )
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable

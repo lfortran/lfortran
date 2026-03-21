@@ -97,6 +97,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             template_sort_02_m:
@@ -1195,6 +1196,7 @@
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 [(Assignment
                                                                     (Var 12 last)
@@ -1236,6 +1238,7 @@
                                                                     ))]
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )]
                                                                 []
                                                             )]
@@ -1274,6 +1277,7 @@
                                                             ))]
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             10 quicksort
@@ -1295,6 +1299,7 @@
                                                             ((Var 12 low))
                                                             ((Var 12 last))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (SubroutineCall
@@ -1323,6 +1328,7 @@
                                                             ))
                                                             ((Var 12 high))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )]
                                                         []
@@ -2662,6 +2668,7 @@
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 [(Assignment
                                                                     (Var 19 last)
@@ -2699,6 +2706,7 @@
                                                                     ))]
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )]
                                                                 []
                                                             )]
@@ -2733,6 +2741,7 @@
                                                             ))]
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             15 __instantiated_quicksort
@@ -2752,6 +2761,7 @@
                                                             ((Var 19 low))
                                                             ((Var 19 last))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (SubroutineCall
@@ -2778,6 +2788,7 @@
                                                             ))
                                                             ((Var 19 high))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )]
                                                         []
@@ -3021,6 +3032,7 @@
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 [(Assignment
                                                                     (Var 22 last)
@@ -3058,6 +3070,7 @@
                                                                     ))]
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )]
                                                                 []
                                                             )]
@@ -3092,6 +3105,7 @@
                                                             ))]
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             15 __instantiated_quicksort1
@@ -3111,6 +3125,7 @@
                                                             ((Var 22 low))
                                                             ((Var 22 last))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (SubroutineCall
@@ -3137,6 +3152,7 @@
                                                             ))
                                                             ((Var 22 high))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )]
                                                         []
@@ -3404,6 +3420,7 @@
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 [(Assignment
                                                                     (Var 25 last)
@@ -3451,6 +3468,7 @@
                                                                     ))]
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )]
                                                                 []
                                                             )]
@@ -3495,6 +3513,7 @@
                                                             ))]
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             15 __instantiated_quicksort2
@@ -3519,6 +3538,7 @@
                                                             ((Var 25 low))
                                                             ((Var 25 last))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (SubroutineCall
@@ -3550,6 +3570,7 @@
                                                             ))
                                                             ((Var 25 high))]
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )]
                                                         []
@@ -3781,6 +3802,7 @@
                                         ((IntegerConstant 10 (Integer 4) Decimal))]
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (SubroutineCall
                                         15 __instantiated_quicksort1
@@ -3800,6 +3822,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal))
                                         ((IntegerConstant 10 (Integer 4) Decimal))]
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (SubroutineCall
@@ -3825,6 +3848,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal))
                                         ((IntegerConstant 10 (Integer 4) Decimal))]
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Print

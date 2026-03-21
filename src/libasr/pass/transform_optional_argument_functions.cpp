@@ -392,18 +392,22 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     // first argument of FunctionType is "this" (i.e. the class instance)
     // which is depicted in `func.n_args` while isn't depicted in
     // `x.n_args` (as it only represents the "FunctionCall" arguments)
-    // hence to adjust for that, `is_method` introduces an offset
-    int is_method = is_class_procedure && (!is_nopass);
-    // For procedure pointer calls through struct members, detect implicit
-    // PASS self by comparing the function's param count (which includes
-    // added is_present params) with the call's explicit arg count. The
-    // function gained one is_present param per optional arg; if the
-    // remaining difference is > 0, there is an implicit self argument.
-    if (!is_method && is_proc_pointer_call && x.m_dt) {
-        size_t num_optional = sym2optionalargidx.count(func_sym)
-            ? sym2optionalargidx[func_sym].size() : 0;
-        is_method = ((size_t)func->n_args > (size_t)x.n_args + num_optional)
-            ? 1 : 0;
+    // hence to adjust for that, `is_method` introduces an offset.
+    // When x.m_is_method is true, self is explicitly in args, so no offset.
+    int is_method = 0;
+    if (!x.m_is_method) {
+        is_method = is_class_procedure && (!is_nopass);
+        // For procedure pointer calls through struct members, detect implicit
+        // PASS self by comparing the function's param count (which includes
+        // added is_present params) with the call's explicit arg count. The
+        // function gained one is_present param per optional arg; if the
+        // remaining difference is > 0, there is an implicit self argument.
+        if (!is_method && is_proc_pointer_call && x.m_dt) {
+            size_t num_optional = sym2optionalargidx.count(func_sym)
+                ? sym2optionalargidx[func_sym].size() : 0;
+            is_method = ((size_t)func->n_args > (size_t)x.n_args + num_optional)
+                ? 1 : 0;
+        }
     }
 
     new_args.reserve(al, func->n_args);
@@ -662,9 +666,16 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
+        // When is_method, new_args includes self; strip it so _util can re-add from dt
+        ASR::call_arg_t* args_p = new_args.p;
+        size_t args_n = new_args.size();
+        if (x->m_is_method && args_n > 0) {
+            args_p = new_args.p + 1;
+            args_n = new_args.size() - 1;
+        }
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
-                            new_args.p, new_args.size(), x->m_type, x->m_value,
+                            args_p, args_n, x->m_type, x->m_value,
                             x->m_dt));
         new_func_calls.insert(*current_expr);
     }
@@ -764,9 +775,16 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx, pass_result) ) {
                 return ;
             }
+            // When is_method, new_args includes self; strip it so _util can re-add from dt
+            ASR::call_arg_t* args_p = new_args.p;
+            size_t args_n = new_args.size();
+            if (x.m_is_method && args_n > 0) {
+                args_p = new_args.p + 1;
+                args_n = new_args.size() - 1;
+            }
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
-                                    new_args.p, new_args.size(), x.m_dt,
+                                    args_p, args_n, x.m_dt,
                                     nullptr, false)));
         }
 };

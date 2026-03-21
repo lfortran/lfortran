@@ -475,6 +475,7 @@
                                             (Logical 4)
                                             ()
                                             ()
+                                            .false.
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
@@ -500,6 +501,7 @@
                                             (Logical 4)
                                             ()
                                             ()
+                                            .false.
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
@@ -525,6 +527,7 @@
                                             (Logical 4)
                                             ()
                                             ()
+                                            .false.
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
@@ -550,6 +553,7 @@
                                             (Logical 4)
                                             ()
                                             ()
+                                            .false.
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
@@ -575,6 +579,7 @@
                                             (Logical 4)
                                             ()
                                             ()
+                                            .false.
                                         )
                                         [(Assignment
                                             (Var 6 vtype)

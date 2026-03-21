@@ -991,7 +991,7 @@ class ParallelRegionVisitor :
             // calculate chunk size
             body.push_back(al, b.Assignment(num_threads,
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),
-                            current_scope->get_symbol("omp_get_max_threads"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr))));
+                            current_scope->get_symbol("omp_get_max_threads"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr, false))));
             body.push_back(al, b.Assignment(chunk,
                             b.Div(loop_length, num_threads)));
             Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
@@ -1003,7 +1003,7 @@ class ParallelRegionVisitor :
                             mod_args.p, 2, 0, ASRUtils::expr_type(loop_length), nullptr))));
             body.push_back(al, b.Assignment(thread_num,
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
-                            current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr))));
+                            current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr, false))));
             body.push_back(al, b.Assignment(start, b.Mul(chunk, thread_num)));
             body.push_back(al, b.If(b.Lt(thread_num, leftovers), {
                 b.Assignment(start, b.Add(start, thread_num))
@@ -1110,7 +1110,7 @@ class ParallelRegionVisitor :
             //  Collapse Ends Here
 
             body.push_back(al, b.DoLoop(I, b.Add(start, b.i32(1)), end, flattened_body, loop_head.m_increment));
-            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr, false)));
+            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr, false, false)));
 
             /*
                 handle reduction variables if any then:
@@ -1120,7 +1120,7 @@ class ParallelRegionVisitor :
             */
             if (do_loop.n_reduction > 0) {
                 body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                        current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false)));
+                        current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false, false)));
             }
             for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
                 ASR::reduction_expr_t red = do_loop.m_reduction[i];
@@ -1163,7 +1163,7 @@ class ParallelRegionVisitor :
             }
             if (do_loop.n_reduction > 0) {
                 body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                        current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false)));
+                        current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false, false)));
             }
 
             ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc, current_scope, s2c(al, current_scope->parent->get_unique_name("lcompilers_function")),
@@ -1701,7 +1701,7 @@ class ParallelRegionVisitor :
                 current_scope->add_symbol(fn_name, fnInterface);
                 pass_result.push_back(al, ASRUtils::STMT(
                     ASR::make_SubroutineCall_t(al, loc, fnInterface, fnInterface,
-                    call_args.p, call_args.n, nullptr, false)));
+                    call_args.p, call_args.n, nullptr, false, false)));
                 remove_original_statement = true;
                 return;
             }
@@ -1771,7 +1771,7 @@ class ParallelRegionVisitor :
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
 
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
-                                call_args.p, call_args.n, nullptr, false)));
+                                call_args.p, call_args.n, nullptr, false, false)));
 
             for (auto it: reduction_variables) {
                 ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it);
@@ -2355,7 +2355,7 @@ class ParallelRegionVisitor :
             nested_lowered_body={};
             if (reduction_clauses.size() > 0) {
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false)));
+                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false, false)));
                 for(size_t j=0; j<reduction_clauses.size(); j++) {
                     for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
                     ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
@@ -2388,7 +2388,7 @@ class ParallelRegionVisitor :
                 }
                 }
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false)));
+                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false, false)));
             }
         }
 
@@ -2683,11 +2683,11 @@ class ParallelRegionVisitor :
                 call_args1.push_back(al, arg);
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
                                 current_scope->get_symbol("omp_set_num_threads"), nullptr,
-                                call_args1.p, call_args1.n, nullptr, false)));
+                                call_args1.p, call_args1.n, nullptr, false, false)));
             }
 
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
-                                call_args.p, call_args.n, nullptr, false)));
+                                call_args.p, call_args.n, nullptr, false, false)));
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
 
             for (auto it: reduction_variables) {
@@ -2894,7 +2894,7 @@ class ParallelRegionVisitor :
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc, while_condition, 
                     ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                         current_scope->get_symbol(gomp_start_func), nullptr, start_args.p, start_args.n,
-                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr,  nullptr)), nullptr, 0, false)));
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr, nullptr, false)), nullptr, 0, false)));
                 
                 // Create the scheduled loop using GOMP_loop_*_next
                 Vec<ASR::stmt_t*> while_body;
@@ -2978,7 +2978,7 @@ class ParallelRegionVisitor :
                 // Create the while loop: while (GOMP_loop_*_next(&start_iter, &end_iter))
                 ASR::expr_t* loop_condition = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                     current_scope->get_symbol(gomp_next_func), current_scope->get_symbol(gomp_next_func),
-                    next_args.p, next_args.n, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr, nullptr));
+                    next_args.p, next_args.n, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr, nullptr, false));
                 while_body.push_back(al, b.Assignment(while_condition, loop_condition));
                 ASR::stmt_t* while_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, while_condition, 
                     while_body.p, while_body.n, nullptr, 0));
@@ -2987,7 +2987,7 @@ class ParallelRegionVisitor :
                 
                 // Call GOMP_loop_end_nowait or GOMP_loop_end based on whether there's a nowait clause
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr, false)));
+                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr, false, false)));
                 
                 // Handle reduction variables
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
@@ -3023,7 +3023,7 @@ class ParallelRegionVisitor :
             // Step 6: Add partitioning logic to fn_body
             nested_lowered_body.push_back(b.Assignment(num_threads,
                 ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_num_threads"),
-                    current_scope->get_symbol("omp_get_num_threads"), nullptr, 0, int_type, nullptr, nullptr))));
+                    current_scope->get_symbol("omp_get_num_threads"), nullptr, 0, int_type, nullptr, nullptr, false))));
             nested_lowered_body.push_back(b.Assignment(chunk, b.Div(total_iterations, num_threads)));
             Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
             mod_args.push_back(al, total_iterations);
@@ -3032,7 +3032,7 @@ class ParallelRegionVisitor :
                 ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, mod_args.p, 2, 0, int_type, nullptr))));
             nested_lowered_body.push_back(b.Assignment(thread_num,
                 ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
-                    current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, int_type, nullptr, nullptr))));
+                    current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, int_type, nullptr, nullptr, false))));
             nested_lowered_body.push_back(b.Assignment(start, b.Mul(chunk, thread_num)));
             nested_lowered_body.push_back(b.If(b.Lt(thread_num, leftovers),
                 {b.Assignment(start, b.Add(start, thread_num))},
@@ -3217,7 +3217,7 @@ class ParallelRegionVisitor :
             
             // Generate GOMP_task call
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, 
-                current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr, false, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3388,7 +3388,7 @@ class ParallelRegionVisitor :
                 ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
                     current_scope->get_symbol("gomp_sections_start"),
                     nullptr, 
-                    start_args.p, start_args.n, int_type, nullptr, nullptr))));
+                    start_args.p, start_args.n, int_type, nullptr, nullptr, false))));
             
             // Create the while loop body: while (section_id != 0)
             Vec<ASR::stmt_t*> while_body; while_body.reserve(al, num_sections + 2);
@@ -3424,7 +3424,7 @@ class ParallelRegionVisitor :
                 ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                     current_scope->get_symbol("gomp_sections_next"),
                     nullptr,
-                    nullptr, 0, int_type, nullptr, nullptr))));
+                    nullptr, 0, int_type, nullptr, nullptr, false))));
             
             // Create while loop: while (section_id != 0)
             ASR::expr_t* while_condition = b.NotEq(section_id, b.i32(0));
@@ -3435,7 +3435,7 @@ class ParallelRegionVisitor :
             
             // Call GOMP_sections_end()
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr, false)));
+                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr, false, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3458,7 +3458,7 @@ class ParallelRegionVisitor :
             // Restrict execution to thread 0
             ASR::expr_t* condition = b.Eq(b.i32(0),
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
-                            current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr)));
+                            current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr, false)));
             Vec<ASR::stmt_t*> single_body;
             single_body.reserve(al, x.n_body);
             // Process body, handling nested OMPRegions recursively
@@ -3483,7 +3483,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> start_args;
             start_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false, false)));
 
             // Process the critical section body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
@@ -3501,7 +3501,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> end_args;
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr, false, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3515,7 +3515,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> start_args;
             start_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr, false, false)));
 
             // Process the atomic section body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
@@ -3533,7 +3533,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> end_args;
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_atomic_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_atomic_end"), nullptr, end_args.p, end_args.n, nullptr, false, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3547,7 +3547,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> barrier_args;
             barrier_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr, false, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3561,7 +3561,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> taskwait_args;
             taskwait_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr, false)));
+                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr, false, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3865,7 +3865,7 @@ class ParallelRegionVisitor :
 
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, 
                 x.base.base.loc, current_scope->get_symbol("gomp_teams"), nullptr,
-                call_args.p, call_args.n, nullptr, false)));
+                call_args.p, call_args.n, nullptr, false, false)));
             
             // Handle reduction variables if any
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
@@ -3937,12 +3937,12 @@ class ParallelRegionVisitor :
             ASR::expr_t* team_num = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
                 current_scope->get_symbol("omp_get_team_num"),
                 current_scope->get_symbol("omp_get_team_num"), nullptr, 0, 
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr, false));
             
             ASR::expr_t* num_teams = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
                 current_scope->get_symbol("omp_get_num_teams"),
                 current_scope->get_symbol("omp_get_num_teams"), nullptr, 0, 
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr, false));
             
             // Similar to OMPDo but distribute iterations across teams
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
