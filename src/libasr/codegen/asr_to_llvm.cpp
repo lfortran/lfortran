@@ -18964,9 +18964,11 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
             }
 
-            // For bind(C) with type(*) dimension(..), bitcast the descriptor pointer
-            // to match the function signature (all descriptor types share the same layout)
-            if (x_abi == ASR::abiType::BindC && orig_arg &&
+            // For assumed-rank parameters, bitcast the descriptor pointer
+            // to match the function signature (all descriptor types share
+            // the same layout; the callee reads the rank field to determine
+            // how many dim entries are valid).
+            if (orig_arg &&
                     ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
@@ -19590,15 +19592,10 @@ public:
                         arg_expr, ASRUtils::extract_type(arg_type), module.get());
                     llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                         s_m_args0, s_m_args0_type, module.get());
-                    int poly_n_dims = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
-                    if (poly_n_dims == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
-                        poly_n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
-                        if (poly_n_dims == 0) poly_n_dims = 15;
-                    }
-                    llvm::Value* unlimited_polymorphic_type_array = arr_descr->create_descriptor_alloca(
-                        array_type);
                     llvm::Type* array_data_type = llvm_utils->get_el_type(
                         s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
+                    llvm::Value* unlimited_polymorphic_type_array = arr_descr->create_descriptor_alloca(
+                        array_type);
                     llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
                     builder->CreateStore(
                         array_data, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
@@ -19728,11 +19725,6 @@ public:
                         ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
 
                     // Allocate the target class array descriptor
-                    int class_n_dims = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
-                    if (class_n_dims == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
-                        class_n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
-                        if (class_n_dims == 0) class_n_dims = 15;
-                    }
                     llvm::Value* class_array = arr_descr->create_descriptor_alloca(
                         target_array_type);
                     
@@ -19879,11 +19871,6 @@ public:
                 llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
 
                 // Create polymorphic array descriptor
-                int poly_n_dims2 = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
-                if (poly_n_dims2 == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
-                    poly_n_dims2 = ASRUtils::extract_n_dims_from_ttype(arg_type);
-                    if (poly_n_dims2 == 0) poly_n_dims2 = 15;
-                }
                 llvm::Value* unlimited_polymorphic_type_array =
                     arr_descr->create_descriptor_alloca(
                         array_type);
@@ -20003,11 +19990,6 @@ public:
                     ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
 
                 // Allocate the target class array descriptor
-                int class_n_dims2 = ASRUtils::extract_n_dims_from_ttype(s_m_args0_type);
-                if (class_n_dims2 == 0 && ASRUtils::is_assumed_rank_array(s_m_args0_type)) {
-                    class_n_dims2 = ASRUtils::extract_n_dims_from_ttype(arg_type);
-                    if (class_n_dims2 == 0) class_n_dims2 = 15;
-                }
                 llvm::Value* class_array = arr_descr->create_descriptor_alloca(
                     target_array_type);
                 

@@ -7402,24 +7402,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
 
                 if (ASRUtils::is_pointer(physical_cast_type) &&
-                    orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray &&
-                    func_type->m_abi != ASR::abiType::BindC) {
-                    // Assumed-rank parameters use rank-15 descriptors.
-                    // Create 15 empty dimensions so the cast target type
-                    // matches the function's LLVM signature.
-                    // Skip for BindC — CFI descriptor conversion handles rank separately.
-                    dimension_.reserve(al, 15);
-                    for (int r = 0; r < 15; r++) {
-                        ASR::dimension_t dim;
-                        dim.loc = arg->base.loc;
-                        dim.m_start = nullptr;
-                        dim.m_length = nullptr;
-                        dimension_.push_back(al, dim);
-                    }
-                    dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
-                } else if (ASRUtils::is_pointer(physical_cast_type) &&
                     orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    // Use the actual argument's dimensions for the descriptor.
+                    // Assumed-rank descriptors are passed by pointer, so the
+                    // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
@@ -7427,23 +7413,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimensions = nullptr;
                 } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
-                } else if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray &&
-                    func_type->m_abi != ASR::abiType::BindC) {
-                    // Assumed-rank parameters use rank-15 descriptors.
-                    // Create 15 empty dimensions so the cast target type
-                    // matches the function's LLVM signature.
-                    // Skip for BindC — CFI descriptor conversion handles rank separately.
-                    dimension_.reserve(al, 15);
-                    for (int r = 0; r < 15; r++) {
-                        ASR::dimension_t dim;
-                        dim.loc = arg->base.loc;
-                        dim.m_start = nullptr;
-                        dim.m_length = nullptr;
-                        dimension_.push_back(al, dim);
-                    }
-                    dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    // Use the actual argument's dimensions for the descriptor.
+                    // Assumed-rank descriptors are passed by pointer, so the
+                    // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;

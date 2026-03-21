@@ -213,6 +213,11 @@ namespace LCompilers {
         bool get_pointer) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_);
             if (n_dims == 0) {
+                // Assumed-rank callee parameter: use CFI_MAX_RANK (15) as
+                // conservative upper bound for the callee's descriptor type.
+                // Call sites allocate correctly-sized descriptors based on
+                // the actual argument rank (see asr_utils.h PhysicalCast
+                // and asr_to_llvm.cpp polymorphic descriptor handling).
                 n_dims = 15;
             }
             std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
