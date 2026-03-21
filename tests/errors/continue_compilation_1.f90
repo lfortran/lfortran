@@ -297,14 +297,14 @@ program continue_compilation_1
     integer :: arr_idl(4)
     contiguous :: contig_not_declared
     contiguous :: MyClass
-
-
-
-
-
-
-
-
+    
+    program test
+        type :: matrix(n)
+            integer, len :: n
+            real :: data(n)
+        end type 
+        type(matrix(5)) :: A
+    end program
 
 
 
