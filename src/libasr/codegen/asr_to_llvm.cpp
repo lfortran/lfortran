@@ -14659,6 +14659,15 @@ public:
 
         add_namelist_item = [&](const std::string &item_name, ASR::ttype_t* item_type_asr,
                                 llvm::Value* data_ptr, ASR::symbol_t* type_decl_sym) {
+            // For allocatable/pointer arrays, the symtab value stores a pointer
+            // to the array descriptor. Load through it to get the actual descriptor.
+            if ((ASR::is_a<ASR::Allocatable_t>(*item_type_asr) ||
+                 ASR::is_a<ASR::Pointer_t>(*item_type_asr)) &&
+                ASRUtils::is_array(item_type_asr)) {
+                data_ptr = llvm_utils->CreateLoad2(
+                    llvm::PointerType::getUnqual(context), data_ptr);
+            }
+
             // Determine type code
             ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable_pointer(item_type_asr);
             // For arrays, get the element type
