@@ -820,7 +820,8 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
-            llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr, arr_type, module);
+            llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr,
+                ASRUtils::type_get_past_allocatable_pointer(arr_type), module);
             return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
         }
 

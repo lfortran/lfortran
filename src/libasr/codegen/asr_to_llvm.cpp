@@ -8317,7 +8317,8 @@ public:
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
         llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
-            ASRUtils::expr_type(array_section->m_v), module.get());
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array_section->m_v))), module.get());
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
