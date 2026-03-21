@@ -376,8 +376,25 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_n, x.m_type));
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        this->visit_expr(*x.m_arg);
+        int64_t arg_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
+    }
+
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, x.m_r, x.m_type));
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        this->visit_expr(*x.m_arg);
+        double arg_val;
+        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            arg_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        } else {
+            arg_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
+        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
