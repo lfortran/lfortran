@@ -155,6 +155,26 @@ std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, 
     return arg;
 }
 
+void consume_string_literal(std::string &arg, unsigned char *&cur) {
+    unsigned char quote = *cur;
+    arg += *cur;
+    cur++;
+    while (*cur != '\0') {
+        arg += *cur;
+        if (*cur == quote) {
+            if (*(cur + 1) == quote) {
+                // escaped quote (doubled): consume the second one too
+                cur++;
+                arg += *cur;
+            } else {
+                // closing quote
+                return;
+            }
+        }
+        cur++;
+    }
+}
+
 std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) {
     LCOMPILERS_ASSERT(*cur == '(')
     unsigned char *old_cur = cur;
@@ -171,6 +191,8 @@ std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) 
         if (*cur == '(') {
             arg += match_parentheses(string_start, cur);
             LCOMPILERS_ASSERT(*cur == ')')
+        } else if (*cur == '"' || *cur == '\'') {
+            consume_string_literal(arg, cur);
         } else {
             arg += *cur;
         }
@@ -194,6 +216,8 @@ std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
         if (*cur == '(') {
             arg += match_parentheses(string_start, cur);
             LCOMPILERS_ASSERT(*cur == ')')
+        } else if (*cur == '"' || *cur == '\'') {
+            consume_string_literal(arg, cur);
         } else {
             arg += *cur;
         }

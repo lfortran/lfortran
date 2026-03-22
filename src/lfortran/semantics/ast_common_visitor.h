@@ -674,31 +674,31 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
                                 right_value)->m_s;
         std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_val));
         std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_val));
-        int8_t strcmp = left_str.compare(right_str);
+        int strcmp_result = left_str.compare(right_str);
         bool result = true;
         switch (asr_op) {
             case (ASR::cmpopType::Eq) : {
-                result = (strcmp == 0);
+                result = (strcmp_result == 0);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                result = (strcmp != 0);
+                result = (strcmp_result != 0);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                result = (strcmp > 0);
+                result = (strcmp_result > 0);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                result = (strcmp > 0 || strcmp == 0);
+                result = (strcmp_result >= 0);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                result = (strcmp < 0);
+                result = (strcmp_result < 0);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                result = (strcmp < 0 || strcmp == 0);
+                result = (strcmp_result <= 0);
                 break;
             }
             default: LCOMPILERS_ASSERT(false); // should never happen
@@ -12085,8 +12085,8 @@ public:
             } else if ( (ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) != ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array))||
             (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
-                     + " source type " + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+                    ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(ASRUtils::expr_type(pad_expr)), pad_expr) +
+                    " source type " + ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(ASRUtils::expr_type(array)), array) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             }
@@ -12366,7 +12366,7 @@ public:
                 ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
             }
         }
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, value);
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, pad_expr, reshape_ttype, value);
     }
 
     ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {

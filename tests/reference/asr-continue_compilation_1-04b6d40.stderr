@@ -923,13 +923,13 @@ semantic error: reshape accepts arrays for `order` argument, found integer inste
 482 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
     |                                                       ^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real(4) source type integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:483:50
     |
 483 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
     |                                                  ^^^^^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer(8) source type integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:484:50
     |
 484 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])

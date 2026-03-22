@@ -634,7 +634,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* struct_var = nullptr;
         if (x->m_struct_var) {
             struct_var = x->m_struct_var;
-        } else if (x->m_args[0]) {
+        } else if (x->n_args > 0 && x->m_args[0]) {
             struct_var = x->m_args[0];
         }
         result_var = PassUtils::create_var(result_counter, "_array_constructor_",
