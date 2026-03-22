@@ -7844,14 +7844,15 @@ static void parse_real_from_buffer(char* buffer, int field_len,
     }
 
     double v = strtod(buffer, NULL);
+    int total_scale = 0;
+    if (!has_decimal && decimal_places > 0) {
+        total_scale += decimal_places;
+    }
     if (!has_exponent) {
-        int total_scale = scale_factor;
-        if (!has_decimal && decimal_places > 0) {
-            total_scale += decimal_places;
-        }
-        if (total_scale != 0) {
-            v = v / pow(10.0, (double)total_scale);
-        }
+        total_scale += scale_factor;
+    }
+    if (total_scale != 0) {
+        v = v / pow(10.0, (double)total_scale);
     }
     if (type_code == 4) {
         *((float*)real_ptr) = (float)v;
