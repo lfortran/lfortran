@@ -2011,7 +2011,7 @@ public:
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
-    std::map<std::string, std::vector<std::string>> generic_procedures;
+    std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
     /*
      * A struct to store the information of a postponed call to genericProcedure
      * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`
@@ -18014,6 +18014,34 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        if (var_sym != nullptr &&
+                                ASR::is_a<ASR::Var_t>(*str->m_len) &&
+                                !ASRUtils::is_const(str->m_len)) {
+                            bool in_function_scope = in_Subroutine;
+                            if (!in_function_scope) {
+                                SymbolTable* scope = current_scope;
+                                while (scope != nullptr && !in_function_scope) {
+                                    if (scope->asr_owner != nullptr &&
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
+                                                ASR::is_a<ASR::Block_t>(*owner) ||
+                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                                            in_function_scope = true;
+                                        }
+                                    }
+                                    scope = scope->parent;
+                                }
+                            }
+                            if (!in_function_scope) {
+                                diag.add(Diagnostic(
+                                    "variable cannot appear in character length expression",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
                     break;
@@ -18054,6 +18082,33 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
+                                !ASRUtils::is_const(str->m_len)) {
+                            bool in_function_scope = in_Subroutine;
+                            if (!in_function_scope) {
+                                SymbolTable* scope = current_scope;
+                                while (scope != nullptr && !in_function_scope) {
+                                    if (scope->asr_owner != nullptr &&
+                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
+                                                ASR::is_a<ASR::Block_t>(*owner) ||
+                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                                            in_function_scope = true;
+                                        }
+                                    }
+                                    scope = scope->parent;
+                                }
+                            }
+                            if (!in_function_scope) {
+                                diag.add(Diagnostic(
+                                    "variable cannot appear in character length expression",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {len_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
             } else {// Default len of "character :: x" is 1
