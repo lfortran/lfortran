@@ -258,7 +258,8 @@
                                         "contiguous_attr": false,
                                         "bindc_name": [],
                                         "is_volatile": false,
-                                        "is_protected": false
+                                        "is_protected": false,
+                                        "is_compiler_generated": false
                                     },
                                     "loc": {
                                         "first": 38,

@@ -57,6 +57,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -83,6 +84,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -102,6 +104,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -134,6 +137,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -160,6 +164,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

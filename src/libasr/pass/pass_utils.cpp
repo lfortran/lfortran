@@ -354,7 +354,8 @@ namespace LCompilers {
                 ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, str_name), nullptr, 0,
                                                         ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                         var_type, type_decl, ASR::abiType::Source, ASR::accessType::Public,
-                                                        ASR::presenceType::Required, false);
+                                                        ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                                                        /*is_compiler_generated=*/true);
                 current_scope->add_symbol(str_name, ASR::down_cast<ASR::symbol_t>(idx_sym));
                 idx_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
             } else {

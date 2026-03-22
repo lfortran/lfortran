@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -48,6 +49,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -67,6 +69,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

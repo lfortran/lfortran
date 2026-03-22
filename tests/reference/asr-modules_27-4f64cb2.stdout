@@ -123,6 +123,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -142,6 +143,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -167,6 +169,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -186,6 +189,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -247,6 +251,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -266,6 +271,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -291,6 +297,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -310,6 +317,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -371,6 +379,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -390,6 +399,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -415,6 +425,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -434,6 +445,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -586,6 +598,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -607,6 +620,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             val:
                                                 (Variable
@@ -626,6 +640,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -683,6 +698,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -704,6 +720,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             val:
                                                 (Variable
@@ -723,6 +740,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -773,6 +791,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

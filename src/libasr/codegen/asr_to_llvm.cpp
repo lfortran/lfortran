@@ -20140,11 +20140,7 @@ public:
             cond = builder->CreateNot(is_allocated);
         } else if (ASRUtils::is_string_only(arg_expr_type)) {
             tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
-            cond = builder->CreateICmpEQ(
-                builder->CreatePtrToInt(tmp,
-                    llvm::Type::getInt64Ty(context)),
-                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
-                    llvm::Type::getInt64Ty(context)));
+            cond = builder->CreateIsNull(tmp);
         } else {
             cond = builder->CreateICmpEQ(
                 builder->CreatePtrToInt(tmp,
@@ -21823,13 +21819,19 @@ public:
             llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
-            // Check unallocated arguments
+            // Check unallocated arguments.
             if (compiler_options.po.bounds_checking) {
                 for (size_t i = 0; i < x.n_args; i++) {
                     ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
-                    bool is_alloc_string = ASRUtils::is_allocatable(arg_expr_type) &&
-                        ASRUtils::is_character(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
-                    if (ASRUtils::is_allocatable(arg_expr_type) && !is_alloc_string) {
+                    if (ASRUtils::is_allocatable(arg_expr_type)) {
+                        if (ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
+                            ASR::symbol_t* var_sym = ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+                            var_sym = ASRUtils::symbol_get_past_external(var_sym);
+                            if (ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_is_compiler_generated) {
+                                continue;
+                            }
+                        }
                         llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
                                 "Argument %d is unallocated.",
                                 {LLVMUtils::RuntimeLabel("This is unallocated", {x.m_args[i]->base.loc})},

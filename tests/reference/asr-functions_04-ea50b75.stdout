@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -160,6 +161,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -179,6 +181,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

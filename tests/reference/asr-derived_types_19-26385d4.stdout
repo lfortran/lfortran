@@ -39,6 +39,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -67,6 +68,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -227,6 +229,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     child_value
@@ -352,6 +355,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

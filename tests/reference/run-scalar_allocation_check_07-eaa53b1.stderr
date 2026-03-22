@@ -1,0 +1,5 @@
+runtime error: Argument 1 is unallocated.
+ --> tests/errors/scalar_allocation_check_07.f90:5:14
+  |
+5 |     print *, s
+  |              ^ This is unallocated
