@@ -1811,6 +1811,7 @@ typedef enum primitive_types{
     LOGICAL_32_TYPE = 15,
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
+    FLOAT_128_TYPE = 18,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -1843,6 +1844,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -1955,6 +1957,16 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             uint64_t tmp = 0;
             memcpy(&tmp, arg_ptr, sizeof(double));
             raw = tmp;
+            break;
+        }
+        case FLOAT_128_TYPE: {
+            byte_count = 16; // __float128 / fp128 is 16 bytes
+            __float128 tmp;
+            memcpy(&tmp, arg_ptr, 16);
+            double d = (double) tmp;
+            uint64_t raw_tmp = 0;
+            memcpy(&raw_tmp, &d, sizeof(double));
+            raw = raw_tmp;
             break;
         }
         default:
@@ -2342,6 +2354,17 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     case 'R':
         switch (s_info->serialization_string[s_info->current_stop++])
         {
+        case '1':
+            if (s_info->serialization_string[s_info->current_stop] == '6') {
+            s_info->current_stop++;
+            *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+            // could be R1 (unlikely but safe)
+            fprintf(stderr,
+                "RunTime - compiler internal error : Unknown R kind R1\n");
+            exit(1);
+            }
+            break;
         case '8':
             *PrimitiveType = FLOAT_64_TYPE;
             break;
@@ -2571,6 +2594,22 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             break;
         case UNSIGNED_INTEGER_8_TYPE:
             sprintf(result, "%hhu", *(uint8_t*)arg);
+            break;
+        case FLOAT_128_TYPE:
+            if (s_info->current_arg_info.is_complex) {
+                double real_d;
+                { __float128 tmp; memcpy(&tmp, arg, 16); real_d = (double)tmp; }
+                move_to_next_element(s_info, false);
+                double imag_d;
+                { __float128 tmp; memcpy(&tmp, s_info->current_arg_info.current_arg, 16); imag_d = (double)tmp; }
+                char real_str[128], imag_str[128];
+                format_double_fortran(real_str, real_d);
+                format_double_fortran(imag_str, imag_d);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
+            } else {
+                __float128 val; memcpy(&val, arg, 16);
+                format_double_fortran(result, (double)val);
+            }
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){

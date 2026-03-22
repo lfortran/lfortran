@@ -105,6 +105,12 @@ static inline double extract_real_8(const char *s) {
     return std::strtod(r_str.c_str(), nullptr);
 }
 
+static inline double extract_real_16(const char *s) {
+    std::string r_str = ASRUtils::extract_real(s);
+    long double r = std::strtold(r_str.c_str(), nullptr);
+    return (double) r;
+}
+
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
 {
     return ASR::down_cast<ASR::expr_t>(f);
@@ -3856,6 +3862,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
         if (*p == 'd' || *p == 'D') {
             // Double precision
             return 8;
+        }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision
+            return 16;
         }
         p++;
     }
