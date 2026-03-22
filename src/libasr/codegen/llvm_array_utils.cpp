@@ -305,6 +305,16 @@ namespace LCompilers {
             set_rank(array_desc_type, desc_ptr,
                 llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
 
+            // Initialize data pointer to null so that a subsequent realloc
+            // does not try to free an uninitialized (garbage) pointer.
+            llvm::Value* data_ptr = llvm_utils->create_gep2(
+                array_desc_type, desc_ptr, FIELD_BASE_ADDR);
+            llvm::Type* data_field_type = struct_type->getElementType(FIELD_BASE_ADDR);
+            builder->CreateStore(
+                llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(data_field_type)),
+                data_ptr);
+
             return desc_ptr;
         }
 
