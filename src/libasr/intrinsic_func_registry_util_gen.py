@@ -186,7 +186,7 @@ intrinsic_funcs_args = {
     "Logical": [
         {
             "args": [("bool", )],
-            "ret_type_arg_idx": 0,
+            "return": "logical",
             "kind_arg": True
         }
     ],
