@@ -311,16 +311,9 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
 
         void replace_FunctionCall(ASR::FunctionCall_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
-            // When is_method, args[0] is self; skip it so _util can re-add from dt
-            ASR::call_arg_t* args = x->m_args;
-            size_t n_args = x->n_args;
-            if (x->m_is_method && n_args > 0) {
-                args = x->m_args + 1;
-                n_args = x->n_args - 1;
-            }
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
-                al, x->base.base.loc, x->m_name, x->m_original_name, args,
-                n_args, x->m_type, x->m_value, x->m_dt));
+                al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
+                x->n_args, x->m_type, x->m_value, x->m_dt));
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(call);
             x->m_args = function_call->m_args;
             x->n_args = function_call->n_args;
@@ -365,16 +358,9 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
-            // When is_method, args[0] is self; skip it so _util can re-add from dt
-            ASR::call_arg_t* args = x.m_args;
-            size_t n_args = x.n_args;
-            if (x.m_is_method && n_args > 0) {
-                args = x.m_args + 1;
-                n_args = x.n_args - 1;
-            }
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
-                al, x.base.base.loc, x.m_name, x.m_original_name, args,
-                n_args, x.m_dt, nullptr, false));
+                al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
+                x.n_args, x.m_dt, nullptr, false));
             ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(call);
             ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
             xx.m_args = subrout_call->m_args;
