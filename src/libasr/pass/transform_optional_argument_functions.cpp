@@ -642,16 +642,9 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
-        // When is_method, new_args includes self; strip it so _util can re-add from dt
-        ASR::call_arg_t* args_p = new_args.p;
-        size_t args_n = new_args.size();
-        if (x->m_is_method && args_n > 0) {
-            args_p = new_args.p + 1;
-            args_n = new_args.size() - 1;
-        }
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
-                            args_p, args_n, x->m_type, x->m_value,
+                            new_args.p, new_args.size(), x->m_type, x->m_value,
                             x->m_dt));
         new_func_calls.insert(*current_expr);
     }
@@ -751,16 +744,9 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx, pass_result) ) {
                 return ;
             }
-            // When is_method, new_args includes self; strip it so _util can re-add from dt
-            ASR::call_arg_t* args_p = new_args.p;
-            size_t args_n = new_args.size();
-            if (x.m_is_method && args_n > 0) {
-                args_p = new_args.p + 1;
-                args_n = new_args.size() - 1;
-            }
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
-                                    args_p, args_n, x.m_dt,
+                                    new_args.p, new_args.size(), x.m_dt,
                                     nullptr, false)));
         }
 };
