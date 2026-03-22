@@ -85,6 +85,8 @@ typedef struct {
 
 /* Default malloc-based allocator (defined in lfortran_intrinsics.c) */
 LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void);
+/* Debug allocator that tracks allocations (defined in lfortran_intrinsics.c) */
+LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void);
 
 /* Convenience macros for calling through an allocator */
 #define ALLOCATOR_ALLOC(a, size)          ((a)->alloc((a)->context, (size)))
@@ -229,7 +231,7 @@ LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API void* _lfortran_malloc_alloc(lfortran_allocator_t* al, int64_t size);
 LFORTRAN_API void* _lfortran_string_malloc_alloc(lfortran_allocator_t* al, int64_t length);
 LFORTRAN_API int8_t* _lfortran_realloc_alloc(lfortran_allocator_t* al, int8_t* ptr, int64_t size);
-LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int32_t count, int32_t size);
+LFORTRAN_API int8_t* _lfortran_calloc_alloc(lfortran_allocator_t* al, int64_t count, int64_t size);
 LFORTRAN_API void _lfortran_free_alloc(lfortran_allocator_t* al, char* ptr);
 LFORTRAN_API char* _lfortran_str_item_alloc(lfortran_allocator_t* al, char* s, int64_t s_len, int64_t idx);
 LFORTRAN_API char* _lfortran_str_slice_fortran_alloc(lfortran_allocator_t* al, char* s, int64_t start, int64_t end);
@@ -333,7 +335,7 @@ LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr);
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset);
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr);
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr, int64_t elem_len);
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset);

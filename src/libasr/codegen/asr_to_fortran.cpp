@@ -558,7 +558,13 @@ public:
         }
         bool is_return_var_declared = false;
         if (x.m_return_var) {
-            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
+            bool return_var_in_function_header = true;
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var))) {
+                // Keep character result type declarations in the specification part.
+                return_var_in_function_header = false;
+            }
+            if (return_var_in_function_header &&
+                !ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
                 !ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_return_var)) &&
                 !ASRUtils::is_pointer(ASRUtils::expr_type(x.m_return_var))) {
                 is_return_var_declared = true;
@@ -2622,6 +2628,11 @@ public:
         r += ", ";
         visit_expr(*x.m_shape);
         r += src;
+        if (x.m_pad) {
+            r += ", ";
+            visit_expr(*x.m_pad);
+            r += src;
+        }
         r += ")";
         src = r;
     }

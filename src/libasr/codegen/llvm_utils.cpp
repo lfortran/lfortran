@@ -9,21 +9,37 @@ namespace LCompilers {
 
     namespace LLVM {
 
+        static bool memory_debug_enabled = false;
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
             return builder.CreateStore(x, y);
         }
 
-        static llvm::Value* get_default_allocator(llvm::LLVMContext &context,
+        const char* get_allocator_function_name() {
+            return use_memory_debug()
+                ? "_lfortran_get_compiler_mem_dbg_allocator"
+                : "_lfortran_get_default_allocator";
+        }
+
+        static llvm::Value* get_allocator(llvm::LLVMContext &context,
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            std::string func_name = "_lfortran_get_default_allocator";
+            std::string func_name = get_allocator_function_name();
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
                 fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
             }
             return builder.CreateCall(fn, {});
+        }
+
+        void set_memory_debug(bool state) {
+            memory_debug_enabled = state;
+        }
+
+        bool use_memory_debug() {
+            return memory_debug_enabled;
         }
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -41,7 +57,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
 
@@ -84,7 +100,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
 
@@ -97,13 +113,15 @@ namespace LCompilers {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         i8_ptr_type, {
                             i8_ptr_type,
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context),
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
+            count     = builder.CreateSExt(count, llvm::Type::getInt64Ty(context));
+            type_size = builder.CreateSExt(type_size, llvm::Type::getInt64Ty(context));
             return builder.CreateCall(fn, {allocator, count, type_size});
         }
 
@@ -122,7 +140,7 @@ namespace LCompilers {
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, &module);
             }
-            llvm::Value* allocator = get_default_allocator(context, module, builder);
+            llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {
                 allocator,
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -287,7 +305,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::get_allocator(llvm::Module* mod) {
         // Check if the cached instance is valid for the current function.
-        // Each LLVM function needs its own call to _lfortran_get_default_allocator
+        // Each LLVM function needs its own call to the allocator getter
         // because SSA values can't cross function boundaries.
         llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
         if (allocator_instance) {
@@ -300,7 +318,7 @@ namespace LCompilers {
 
         llvm::Type* allocator_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
 
-        std::string func_name = "_lfortran_get_default_allocator";
+        std::string func_name = LLVM::get_allocator_function_name();
         llvm::Function *fn = mod->getFunction(func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -451,11 +469,23 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
+            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC);
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
-                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
+                llvm::Type* llvm_mem_type;
+                // bind(C) struct: non-pointer, non-allocatable character maps to i8
+                ASR::ttype_t* mem_type = member->m_type;
+                bool is_direct_char = is_bindc &&
+                    !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
+                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
+                if (is_direct_char) {
+                    llvm_mem_type = llvm::Type::getInt8Ty(context);
+                } else {
+                    llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                        al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
+                }
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -915,8 +945,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::String) : {
                 a_kind = ASR::down_cast<ASR::String_t>(asr_type)->m_kind;
-                if(arg_m_value_attr){
-                    throw LCompilersException("Unhandled : String parameter with `value` attribute");
+                if (arg_m_abi == ASR::abiType::BindC
+                    && arg_m_value_attr) {
+                    type = get_StringType(asr_type);
                 } else {
                     type = get_StringType(asr_type)->getPointerTo();
                 }
@@ -1104,7 +1135,6 @@ namespace LCompilers {
                 bool is_array_type = false;
                 ASR::ttype_t* arg_type_for_abi = arg->m_type;
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
                     ASRUtils::is_array(arg_type_for_abi)) {
                     arg_type_for_abi = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type_for_abi));
@@ -1967,11 +1997,7 @@ namespace LCompilers {
             // to our new block
             builder->CreateBr(bb);
         }
-#if LLVM_VERSION_MAJOR >= 16
-        fn->insert(fn->end(), bb);
-#else
-        fn->getBasicBlockList().push_back(bb);
-#endif
+        llvm_fn_insert_bb(fn, bb);
         builder->SetInsertPoint(bb);
     }
 
@@ -2649,7 +2675,11 @@ namespace LCompilers {
     }
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
-        llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
+        llvm::GlobalValue::LinkageTypes linkage,
+        std::string data_name){
+        if (data_name.empty()) {
+            data_name = name + "_data";
+        }
         int64_t len = 0; 
         if (str->m_len_kind == ASR::AssumedLength) {
             // For assumed length, use the actual length of initial_data
@@ -2694,7 +2724,7 @@ namespace LCompilers {
                     is_const,
                     linkage,
                     const_data_as_array,
-                    name+"_data"
+                    data_name
                 );
                 llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
                 // i8* getelementptr inbounds ( global [len x i8] c "DATA HERE", i32 0, i32 0)
@@ -3511,9 +3541,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         create_if_else(desc_is_null, [&]() {
-                            ASR::dimension_t* m_dims = nullptr;
-                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(alloc_type->m_type, m_dims);
-                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type, n_dims);
+                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type);
                             if (ASRUtils::is_character(*alloc_type->m_type)) {
                                 llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
                                     src_expr, ASRUtils::extract_type(alloc_type->m_type), module);

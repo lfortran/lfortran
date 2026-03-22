@@ -81,7 +81,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         type = ASRUtils::extract_type(x->m_type);
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, type, new_args, x->m_overload_id, index_kind);
-        *current_expr = current_expr_;
+        if (current_expr_) {
+            *current_expr = current_expr_;
+        }
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {

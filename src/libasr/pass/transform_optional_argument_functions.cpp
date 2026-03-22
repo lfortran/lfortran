@@ -346,8 +346,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+    bool is_proc_pointer_call = false;
     if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
         // possible it is a `procedure(cb) :: call_back`
+        is_proc_pointer_call = true;
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
@@ -392,6 +394,17 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     // `x.n_args` (as it only represents the "FunctionCall" arguments)
     // hence to adjust for that, `is_method` introduces an offset
     int is_method = is_class_procedure && (!is_nopass);
+    // For procedure pointer calls through struct members, detect implicit
+    // PASS self by comparing the function's param count (which includes
+    // added is_present params) with the call's explicit arg count. The
+    // function gained one is_present param per optional arg; if the
+    // remaining difference is > 0, there is an implicit self argument.
+    if (!is_method && is_proc_pointer_call && x.m_dt) {
+        size_t num_optional = sym2optionalargidx.count(func_sym)
+            ? sym2optionalargidx[func_sym].size() : 0;
+        is_method = ((size_t)func->n_args > (size_t)x.n_args + num_optional)
+            ? 1 : 0;
+    }
 
     new_args.reserve(al, func->n_args);
     for( int i = 0, j = 0; j < (int)func->n_args; j++, i++ ) {

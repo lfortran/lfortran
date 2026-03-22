@@ -21,6 +21,14 @@
 #    define FIXED_VECTOR_TYPE llvm::VectorType
 #endif
 
+static inline void llvm_fn_insert_bb(llvm::Function *fn, llvm::BasicBlock *bb) {
+#if LLVM_VERSION_MAJOR >= 16
+    fn->insert(fn->end(), bb);
+#else
+    fn->getBasicBlockList().push_back(bb);
+#endif
+}
+
 namespace LCompilers {
 class ASRToLLVMVisitor;
 
@@ -212,6 +220,8 @@ class ASRToLLVMVisitor;
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
+        void set_memory_debug(bool state);
+        bool use_memory_debug();
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -684,7 +694,8 @@ class ASRToLLVMVisitor;
                 string in the global scope of the llvm module.
             */
             llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
-                llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage);
+                llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage,
+                std::string data_name = "");
             
             /*
                 * Sets up the global array of strings that's not allocatable.
@@ -950,7 +961,7 @@ class ASRToLLVMVisitor;
                     return_val = val;
                 }
 
-                void free() {
+                void free() { // This is runtime lib allocated memory -- Isolate away from compiler's memory debug path
                     if(!return_val) return;
                     llvmUtils_instance_->lfortran_free(return_val);
                     return_val = nullptr;
@@ -1307,9 +1318,14 @@ class ASRToLLVMVisitor;
             }
 
             // Finalize members
+            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
                 if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
+                // bind(C) struct: non-pointer character members are inline i8, nothing to free
+                if(is_bindc &&
+                   !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
+                   ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
 
 
                 if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
@@ -1532,6 +1548,8 @@ class ASRToLLVMVisitor;
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(t); 
             if(ASRUtils::is_array_t(t_past)){
                 key += "Array_";
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(t_past);
+                key += std::to_string(n_dims) + "_";
                 key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
             } else if(struct_sym != nullptr) { // StructType or structType Class
                 key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
@@ -1616,7 +1634,15 @@ class ASRToLLVMVisitor;
 
         llvm::Value* call_cached_finalizer(const std::string& cache_key,
                 const std::vector<llvm::Value*>& call_args) {
-            return builder_->CreateCall(type_finalizer_cache_[cache_key], call_args);
+            llvm::Function* fn = type_finalizer_cache_[cache_key];
+            std::vector<llvm::Value*> fixed_args = call_args;
+            llvm::FunctionType* fnty = fn->getFunctionType();
+            for (size_t i = 0; i < fixed_args.size() && i < fnty->getNumParams(); i++) {
+                if (fixed_args[i]->getType() != fnty->getParamType(i)) {
+                    fixed_args[i] = builder_->CreateBitCast(fixed_args[i], fnty->getParamType(i));
+                }
+            }
+            return builder_->CreateCall(fn, fixed_args);
         }
 
         /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.

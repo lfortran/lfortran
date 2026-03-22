@@ -527,7 +527,9 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
-             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))))) {
+             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))) &&
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_arg)) ==
+            ASRUtils::extract_n_dims_from_ttype(x->m_type))) {
             *current_expr = x->m_arg;
         } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
                    !ASRUtils::is_array(x->m_type)) {
@@ -539,8 +541,12 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
                 ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_arg))));
-                arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
-                arr->n_dims = src_arr->n_dims;
+                // Don't replace dims when the target has more dimensions than
+                // the source (e.g., assumed-rank target with 15 empty dims).
+                if (arr->n_dims <= src_arr->n_dims) {
+                    arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
+                    arr->n_dims = src_arr->n_dims;
+                }
             }
         }
     }
@@ -1051,7 +1057,23 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+                        // When called through a struct member with PASS
+                        // semantics, the implicit self argument occupies
+                        // index 0 in the function's parameter list, so we
+                        // need to offset indices accordingly. Detect this
+                        // by comparing the original function's parameter
+                        // count with the call's explicit argument count.
+                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
+                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
+                        xx.m_args = new_args.p;
+                        xx.n_args = new_args.size();
+                        return;
+                    } else if ( new_x_name == nullptr ) {
+                        std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
+                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
                         return;

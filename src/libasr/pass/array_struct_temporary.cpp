@@ -700,15 +700,33 @@ bool set_allocation_size(
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        intrinsic_array_function->m_type);
-                    allocate_dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::expr_t* source_arg = intrinsic_array_function->m_args[0];
+                    bool is_source_assumed_rank =
+                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*source_arg) &&
+                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(source_arg)->m_old ==
+                            ASR::array_physical_typeType::AssumedRankArray;
+                    if (is_source_assumed_rank) {
+                        ASR::expr_t* source_orig =
+                            ASRUtils::get_past_array_physical_cast(source_arg);
+                        allocate_dims.reserve(al, 1);
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = int32_one;
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArrayRank_t(
+                            al, loc, source_orig,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
                         allocate_dims.push_back(al, allocate_dim);
+                    } else {
+                        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                            intrinsic_array_function->m_type);
+                        allocate_dims.reserve(al, n_dims);
+                        for( size_t i = 0; i < n_dims; i++ ) {
+                            ASR::dimension_t allocate_dim;
+                            allocate_dim.loc = loc;
+                            allocate_dim.m_start = int32_one;
+                            allocate_dim.m_length = int32_one;
+                            allocate_dims.push_back(al, allocate_dim);
+                        }
                     }
                     break;
                 }
@@ -1225,6 +1243,14 @@ bool is_directly_addressable_array_expr(ASR::expr_t* value) {
             // GetPointer is just an address into existing expr,
             // so no temporary variable needed.
             return true;
+        }
+        case ASR::exprType::ComplexRe: {
+            return is_directly_addressable_array_expr(
+                ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            return is_directly_addressable_array_expr(
+                ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg);
         }
         default: {
             return false;
@@ -2006,14 +2032,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
         ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
-
-        replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_re_");
+        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+            replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_re_");
+        }
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t& x) {
         ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
-
-        replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_im_");
+        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+            replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_im_");
+        }
     }
 
     void visit_RealSqrt(const ASR::RealSqrt_t& x) {
@@ -2423,10 +2451,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexRe(ASR::ComplexRe_t* x) {
+        if (is_directly_addressable_array_expr(x->m_arg)) {
+            return;
+        }
         replace_current_expr(x, "_complex_re_");
     }
 
     void replace_ComplexIm(ASR::ComplexIm_t* x) {
+        if (is_directly_addressable_array_expr(x->m_arg)) {
+            return;
+        }
         replace_current_expr(x, "_complex_im_");
     }
 
