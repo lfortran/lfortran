@@ -7526,6 +7526,32 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     }
 }
 
+// Check if first_arg is the self/dt argument, handling cases where
+// they may be different ASR nodes referring to the same variable,
+// or where dt is a StructInstanceMember whose base matches first_arg.
+static inline bool is_self_argument(ASR::expr_t* first_arg, ASR::expr_t* a_dt) {
+    if (first_arg == a_dt) return true;
+    if (ASR::is_a<ASR::Var_t>(*first_arg) && ASR::is_a<ASR::Var_t>(*a_dt) &&
+        ASR::down_cast<ASR::Var_t>(first_arg)->m_v ==
+        ASR::down_cast<ASR::Var_t>(a_dt)->m_v) {
+        return true;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*first_arg) &&
+        ASR::down_cast<ASR::StructInstanceMember_t>(first_arg)->m_v == a_dt) {
+        return true;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) &&
+        ASR::is_a<ASR::Var_t>(*first_arg)) {
+        ASR::expr_t* dt_base = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
+        if (ASR::is_a<ASR::Var_t>(*dt_base) &&
+            ASR::down_cast<ASR::Var_t>(dt_base)->m_v ==
+            ASR::down_cast<ASR::Var_t>(first_arg)->m_v) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
@@ -7579,7 +7605,8 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 
     bool a_is_method = (a_dt != nullptr) && (!ASRUtils::get_class_proc_nopass_val(a_name));
 
-    bool self_already_in_args = (a_is_method && n_args > 0 && a_args[0].m_value == a_dt);
+    bool self_already_in_args = (a_is_method && n_args > 0 &&
+        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
     if (a_is_method && !self_already_in_args) {
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
@@ -7606,17 +7633,9 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
 
-    bool self_already_in_args = false;
+    bool self_already_in_args = (a_is_method && n_args > 0 &&
+        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
     ASR::expr_t* self_expr = a_dt;
-    if (a_is_method && n_args > 0 && a_args[0].m_value != nullptr) {
-        ASR::expr_t* first_arg = a_args[0].m_value;
-        if (first_arg == a_dt) {
-            self_already_in_args = true;
-        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*first_arg) &&
-                   ASR::down_cast<ASR::StructInstanceMember_t>(first_arg)->m_v == a_dt) {
-            self_already_in_args = true;
-        }
-    }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
          nopass, current_scope, current_function_dependencies);
