@@ -5627,7 +5627,7 @@ public:
                                                     current_scope, s2c(al, storage_name), nullptr, 0, ASR::intentType::Local,
                                                     nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
                                                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
-                                                    false, false, false, nullptr, false, false);
+                                                    false, false, false, nullptr, false, false, false);
 
                                                 current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
 
@@ -15163,7 +15163,7 @@ public:
                             nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                             ASR::storage_typeType::Default, arg_type, nullptr,
                             ASR::abiType::BindC, ASR::accessType::Public,
-                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
                     fn_scope->add_symbol(arg_name, arg_sym);
                     args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
                     arg_types.push_back(al, arg_type);
@@ -15175,7 +15175,7 @@ public:
                         nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                         ASR::storage_typeType::Default, return_type, nullptr,
                         ASR::abiType::BindC, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
                 fn_scope->add_symbol(return_var_name, return_sym);
                 ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
                 // Create interface FunctionType with args
@@ -15286,7 +15286,7 @@ public:
                             nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                             ASR::storage_typeType::Default, arg_type, nullptr,
                             ASR::abiType::BindC, ASR::accessType::Public,
-                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
                     fn_scope->add_symbol(arg_name, arg_sym);
                     iface_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
                     arg_types.push_back(al, arg_type);
@@ -15297,7 +15297,7 @@ public:
                         nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                         ASR::storage_typeType::Default, return_type, nullptr,
                         ASR::abiType::BindC, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
                 fn_scope->add_symbol(return_var_name, return_sym);
                 ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
 
@@ -17432,7 +17432,7 @@ public:
                     nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                     ASR::storage_typeType::Default, arg_type, nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
-                    ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                    ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
             fn_scope->add_symbol(arg_name, arg_sym);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
             arg_types.push_back(al, arg_type);
@@ -17444,7 +17444,7 @@ public:
                 nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                 ASR::storage_typeType::Default, return_type, nullptr,
                 ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                ASR::presenceType::Required, false, false, false, nullptr, false, false, false));
         fn_scope->add_symbol(return_var_name, return_sym);
         ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
         // Create interface FunctionType

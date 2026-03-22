@@ -21824,16 +21824,11 @@ public:
                 for (size_t i = 0; i < x.n_args; i++) {
                     ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
                     if (ASRUtils::is_allocatable(arg_expr_type)) {
-                        // Skip compiler-generated temporary variables only
                         if (ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
                             ASR::symbol_t* var_sym = ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
                             var_sym = ASRUtils::symbol_get_past_external(var_sym);
-                            if (!ASR::is_a<ASR::Variable_t>(*var_sym)) {
-                                continue;
-                            }
-                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
-                            const std::string var_name(var->m_name);
-                            if (var_name.find("__libasr__created__var__") == 0) {
+                            if (ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_is_compiler_generated) {
                                 continue;
                             }
                         }

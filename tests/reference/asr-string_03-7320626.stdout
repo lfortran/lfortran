@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -58,6 +59,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             posit:
                                 (Variable
@@ -77,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -100,6 +103,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             verb:
                                 (Variable
@@ -119,6 +123,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -243,6 +248,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

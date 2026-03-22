@@ -99,6 +99,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     bindc_06
@@ -271,6 +272,7 @@
                                     "c_int4"
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             f_int8:
                                 (Variable
@@ -290,6 +292,7 @@
                                     .false.
                                     .false.
                                     "c_int8"
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -313,6 +316,7 @@
                                     "c_logical"
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             f_type_c_ptr:
                                 (Variable
@@ -332,6 +336,7 @@
                                     .false.
                                     .false.
                                     "c_type_c_ptr"
+                                    .false.
                                     .false.
                                     .false.
                                 )

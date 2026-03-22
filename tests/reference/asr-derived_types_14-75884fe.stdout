@@ -32,6 +32,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             datetime:
                                                 (Variable
@@ -51,6 +52,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -74,6 +76,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -93,6 +96,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -116,6 +120,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -135,6 +140,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -236,6 +242,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     derived_types_14_module
@@ -275,6 +282,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -294,6 +302,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -426,6 +435,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             vtype:
                                                 (Variable
@@ -445,6 +455,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

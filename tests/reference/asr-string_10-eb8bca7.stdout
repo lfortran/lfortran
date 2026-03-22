@@ -33,6 +33,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             is_alpha:
                                 (Variable
@@ -54,6 +55,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -73,6 +75,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

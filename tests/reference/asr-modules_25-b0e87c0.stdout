@@ -64,6 +64,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -83,6 +84,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -145,6 +147,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -261,6 +264,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -280,6 +284,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -369,6 +374,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -395,6 +401,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -484,6 +491,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -555,6 +563,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
