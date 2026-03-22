@@ -7044,30 +7044,76 @@ static void convert_fortran_d_exponent(char* buffer) {
     }
 }
 
-// Helper to parse float with D exponent support and error checking
-// Returns 1 on success, 0 on failure
-static int parse_fortran_float(const char* buffer, float* result) {
+// Normalize Fortran real tokens for C parsing.
+// Handles D/d exponents and legacy exponent shorthand such as `1.-3` -> `1.E-3`.
+// Returns 1 if an exponent marker was inserted, 0 otherwise.
+static int normalize_fortran_real_token(char* buffer) {
+    convert_fortran_d_exponent(buffer);
+
+    for (int i = 1; buffer[i] != '\0'; i++) {
+        if ((buffer[i] == '+' || buffer[i] == '-') &&
+            isdigit((unsigned char)buffer[i + 1]) &&
+            (isdigit((unsigned char)buffer[i - 1]) || buffer[i - 1] == '.')) {
+            char prev = buffer[i - 1];
+            if (prev == 'E' || prev == 'e' || prev == 'D' || prev == 'd') {
+                continue;
+            }
+            size_t len = strlen(buffer);
+            if (len + 1 >= 100) {
+                return 0;
+            }
+            memmove(&buffer[i + 1], &buffer[i], len - (size_t)i + 1);
+            buffer[i] = 'E';
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int parse_fortran_float_token(const char* buffer, float* result, int* consumed_chars) {
     char temp[100];
     strncpy(temp, buffer, 99);
     temp[99] = '\0';
-    convert_fortran_d_exponent(temp);
+    int inserted_exponent = normalize_fortran_real_token(temp);
     char* endptr;
     *result = strtof(temp, &endptr);
-    // Check if conversion consumed any characters and reached end or whitespace
+    if (consumed_chars) {
+        int consumed = (int)(endptr - temp);
+        if (inserted_exponent && consumed > 0) {
+            consumed -= 1;
+        }
+        *consumed_chars = consumed;
+    }
     return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+}
+
+static int parse_fortran_double_token(const char* buffer, double* result, int* consumed_chars) {
+    char temp[100];
+    strncpy(temp, buffer, 99);
+    temp[99] = '\0';
+    int inserted_exponent = normalize_fortran_real_token(temp);
+    char* endptr;
+    *result = strtod(temp, &endptr);
+    if (consumed_chars) {
+        int consumed = (int)(endptr - temp);
+        if (inserted_exponent && consumed > 0) {
+            consumed -= 1;
+        }
+        *consumed_chars = consumed;
+    }
+    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+}
+
+// Helper to parse float with D exponent support and error checking
+// Returns 1 on success, 0 on failure
+static int parse_fortran_float(const char* buffer, float* result) {
+    return parse_fortran_float_token(buffer, result, NULL);
 }
 
 // Helper to parse double with D exponent support and error checking
 // Returns 1 on success, 0 on failure
 static int parse_fortran_double(const char* buffer, double* result) {
-    char temp[100];
-    strncpy(temp, buffer, 99);
-    temp[99] = '\0';
-    convert_fortran_d_exponent(temp);
-    char* endptr;
-    *result = strtod(temp, &endptr);
-    // Check if conversion consumed any characters and reached end or whitespace
-    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+    return parse_fortran_double_token(buffer, result, NULL);
 }
 
 // Read a complete complex number expression from file, handling whitespace
@@ -9018,16 +9064,20 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    convert_fortran_d_exponent(buf);
     int rc;
     if (offset) {
         int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%f%n", f, &n);
-        *offset = off + skip + n;
+        int consumed = 0;
+        rc = parse_fortran_float_token(buf + skip, f, &consumed);
+        *offset = off + skip + consumed;
     } else {
-        rc = sscanf(buf, format, f);
+        if (strcmp(format, "%f") == 0) {
+            rc = parse_fortran_float_token(buf, f, NULL);
+        } else {
+            normalize_fortran_real_token(buf);
+            rc = sscanf(buf, format, f);
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -9041,16 +9091,20 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    convert_fortran_d_exponent(buf);
     int rc;
     if (offset) {
         int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%lf%n", f, &n);
-        *offset = off + skip + n;
+        int consumed = 0;
+        rc = parse_fortran_double_token(buf + skip, f, &consumed);
+        *offset = off + skip + consumed;
     } else {
-        rc = sscanf(buf, format, f);
+        if (strcmp(format, "%lf") == 0) {
+            rc = parse_fortran_double_token(buf, f, NULL);
+        } else {
+            normalize_fortran_real_token(buf);
+            rc = sscanf(buf, format, f);
+        }
     }
     internal_free(buf);
     if (rc != 1) {
