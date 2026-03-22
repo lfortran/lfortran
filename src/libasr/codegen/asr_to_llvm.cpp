@@ -14725,8 +14725,11 @@ public:
             if ((ASR::is_a<ASR::Allocatable_t>(*item_type_asr) ||
                  ASR::is_a<ASR::Pointer_t>(*item_type_asr)) &&
                 ASRUtils::is_array(item_type_asr)) {
+                ASR::ttype_t* desc_type_asr = ASRUtils::type_get_past_allocatable_pointer(item_type_asr);
+                llvm::Type* desc_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    nullptr, desc_type_asr, module.get());
                 data_ptr = llvm_utils->CreateLoad2(
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr);
+                    desc_llvm_type->getPointerTo(), data_ptr);
             }
 
             // Determine type code

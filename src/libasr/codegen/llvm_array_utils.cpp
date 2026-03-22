@@ -301,10 +301,6 @@ namespace LCompilers {
             int64_t desc_size = data_layout.getTypeAllocSize(array_desc_type);
             llvm::Value* desc_mem = lfortran_malloc(context, *llvm_utils->module, *builder,
                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)));
-            builder->CreateMemSet(desc_mem, llvm::ConstantInt::get(
-                context, llvm::APInt(8, 0)),
-                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, desc_size)),
-                llvm::MaybeAlign());
             llvm::Value* desc_ptr = builder->CreateBitCast(desc_mem, array_desc_type->getPointerTo());
 
             llvm::StructType* struct_type = llvm::dyn_cast<llvm::StructType>(array_desc_type);
@@ -313,6 +309,16 @@ namespace LCompilers {
             uint64_t n_dims = dims_type->getNumElements();
             set_rank(array_desc_type, desc_ptr,
                 llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
+
+            // Initialize data pointer to null so that a subsequent realloc
+            // does not try to free an uninitialized (garbage) pointer.
+            llvm::Value* data_ptr = llvm_utils->create_gep2(
+                array_desc_type, desc_ptr, FIELD_BASE_ADDR);
+            llvm::Type* data_field_type = struct_type->getElementType(FIELD_BASE_ADDR);
+            builder->CreateStore(
+                llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(data_field_type)),
+                data_ptr);
 
             return desc_ptr;
         }
@@ -1685,7 +1691,7 @@ namespace LCompilers {
                 llvm::Type* el_type, int n_dims, uint64_t elem_size,
                 int8_t type_code, int cfi_attr) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
-            llvm::Value* cfi = llvm_utils->CreateAlloca(*builder, cfi_type);
+            llvm::Value* cfi = llvm_utils->CreateAlloca(cfi_type);
             llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
 
             // Copy base_addr, adjusting by offset.
