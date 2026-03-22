@@ -7165,6 +7165,17 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
         is_method = false;
     }
+    // When self is already explicitly in args (m_is_method convention),
+    // don't offset parameter indexing — args already align 1:1 with params.
+    if (is_method && n_args > 0 && a_args[0].m_value != nullptr) {
+        ASR::expr_t* first_arg = a_args[0].m_value;
+        if (first_arg == a_dt ||
+            (ASR::is_a<ASR::Var_t>(*first_arg) && ASR::is_a<ASR::Var_t>(*a_dt) &&
+             ASR::down_cast<ASR::Var_t>(first_arg)->m_v ==
+             ASR::down_cast<ASR::Var_t>(a_dt)->m_v)) {
+            is_method = false;
+        }
+    }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
     // Skip arg processing for implicit interfaces (no declared parameter types)
     if (func_type->n_arg_types == 0) {

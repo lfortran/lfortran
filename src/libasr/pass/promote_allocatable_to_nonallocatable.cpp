@@ -311,6 +311,10 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
 
         void replace_FunctionCall(ASR::FunctionCall_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
+            // Skip reconstruction for method calls where self is already in args,
+            // as make_FunctionCall_t_util can double-add self and mismap parameters
+            // (e.g., pass(rhs) where self is not the first formal parameter).
+            if (x->m_is_method) return;
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
                 x->n_args, x->m_type, x->m_value, x->m_dt));
@@ -358,6 +362,10 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
+            // Skip reconstruction for method calls where self is already in args,
+            // as make_SubroutineCall_t_util can double-add self and mismap parameters
+            // (e.g., pass(rhs) where self is not the first formal parameter).
+            if (x.m_is_method) return;
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
                 x.n_args, x.m_dt, nullptr, false));
