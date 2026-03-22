@@ -4073,6 +4073,7 @@ public:
 
                 bool is_struct_type = ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(element_type));
+                int64_t copy_size = std::min(source_size, target_size);
                 if (is_struct_type) {
                     // Struct types with allocatable components need element-wise
                     // deep copy; a flat memcpy would share allocatable pointers.
@@ -4083,7 +4084,7 @@ public:
                     builder->CreateMemSet(target_,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                         llvm_total_bytes, llvm::MaybeAlign());
-                    for (int64_t i = 0; i < source_size; i++) {
+                    for (int64_t i = 0; i < copy_size; i++) {
                         llvm::Value* src_elem = llvm_utils->create_gep2(
                             src_target_type, array, i);
                         llvm::Value* dest_elem = builder->CreateConstGEP2_32(
@@ -4094,7 +4095,7 @@ public:
                     }
                 } else {
                     llvm::Value* copy_bytes = llvm::ConstantInt::get(
-                        context, llvm::APInt(64, source_size * data_size));
+                        context, llvm::APInt(64, copy_size * data_size));
                     builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), copy_bytes);
                     // Fill remaining elements with pad (cycling).
                     if (x.m_pad != nullptr && target_size > source_size) {
