@@ -333,7 +333,7 @@ namespace LCompilers {
         return allocator_instance;
     }
 
-    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args)
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode)
     {
         llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
         if (!fn_printf) {
@@ -344,6 +344,7 @@ namespace LCompilers {
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt64Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context)}, true);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", module);
@@ -351,7 +352,18 @@ namespace LCompilers {
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
-        full_args.insert(full_args.end(), args.begin(), args.end());
+        // args contains 6 fixed arguments, then variadic arguments.
+        for (size_t i = 0; i < 6 && i < args.size(); i++) {
+            full_args.push_back(args[i]);
+        }
+        if (decimal_mode) {
+            full_args.push_back(decimal_mode);
+        } else {
+            full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+        }
+        for (size_t i = 6; i < args.size(); i++) {
+            full_args.push_back(args[i]);
+        }
         auto ret = builder->CreateCall(fn_printf, full_args);
         stringFormat_return.set(ret);
         return ret;
