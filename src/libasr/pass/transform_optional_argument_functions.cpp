@@ -381,18 +381,13 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         return false;
     }
 
-    // When x.m_is_method is true, self is explicitly in args[0], so no
-    // offset is needed. When x.m_is_method is false, there is no implicit
-    // self argument either, so the offset is always 0.
-    int is_method = 0;
-
     new_args.reserve(al, func->n_args);
     for( int i = 0, j = 0; j < (int)func->n_args; j++, i++ ) {
         if( std::find(sym2optionalargidx[func_sym].begin(),
                       sym2optionalargidx[func_sym].end(), j)
             != sym2optionalargidx[func_sym].end() ) {
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
-            if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
+            if( i >= (int)x.n_args || x.m_args[i].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
@@ -425,7 +420,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                                     ? ASR::PointerArray : ASR::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
                 arg_type = ASRUtils::expr_type(m_arg_i);
                 if( ASRUtils::is_array(arg_type) &&
                     ASRUtils::extract_physical_type(arg_type) !=
@@ -437,16 +432,16 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         ASRUtils::extract_physical_type(func_arg_j->m_type), m_type, nullptr));
                 }
                 ASR::call_arg_t m_call_arg_i;
-                m_call_arg_i.loc = x.m_args[i - is_method].loc;
+                m_call_arg_i.loc = x.m_args[i].loc;
                 m_call_arg_i.m_value = m_arg_i;
                 new_args.push_back(al, m_call_arg_i);
             } else {
-                new_args.push_back(al, x.m_args[i - is_method]);
+                new_args.push_back(al, x.m_args[i]);
             }
             ASR::ttype_t* logical_t = ASRUtils::TYPE(ASR::make_Logical_t(al,
-                                        x.m_args[i - is_method].loc, 4));
+                                        x.m_args[i].loc, 4));
             ASR::expr_t* is_present = nullptr;
-            if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
+            if( i >= (int)x.n_args || x.m_args[i].m_value == nullptr ) {
                 is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
                     al, x.m_args[0].loc, false, logical_t));
             } else {
@@ -454,8 +449,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     size_t k;
                     bool k_found = false;
                     ASR::expr_t* original_expr = nullptr;
-                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i - is_method].m_value)) {
-                        ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i - is_method].m_value);
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
+                        ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i].m_value);
                         original_expr = x_array_cast->m_arg;
                     }
                     for( k = 0; k < owning_function->n_args; k++ ) {
@@ -465,8 +460,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             break ;
                         }
 
-                        if( ASR::is_a<ASR::Var_t>(*x.m_args[i - is_method].m_value) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i - is_method].m_value)->m_v ) {
+                        if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
+                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v ) {
                             k_found = true;
                             break ;
                         }
@@ -480,7 +475,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
 
                 if( is_present == nullptr ) {
-                    ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
+                    ASR::expr_t* arg_i = x.m_args[i].m_value;
                     const Location& loc = arg_i->base.loc;
                     LCOMPILERS_ASSERT(arg_i != nullptr);
                     bool is_dummy_pointer = ASRUtils::is_pointer(func_arg_j->m_type);
@@ -503,22 +498,22 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
             }
             ASR::call_arg_t present_arg;
-            present_arg.loc = x.m_args[i - is_method].loc;
-            if( i - is_method < (int)x.n_args &&
-                x.m_args[i - is_method].m_value &&
-                ASRUtils::is_allocatable(x.m_args[i - is_method].m_value) &&
+            present_arg.loc = x.m_args[i].loc;
+            if( i < (int)x.n_args &&
+                x.m_args[i].m_value &&
+                ASRUtils::is_allocatable(x.m_args[i].m_value) &&
                 !ASRUtils::is_allocatable(func_arg_j->m_type) ) {
-                ASR::expr_t* arg_expr = x.m_args[i - is_method].m_value;
+                ASR::expr_t* arg_expr = x.m_args[i].m_value;
                 ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(arg_expr);
                 // Create a temporary variable if arg_expr is a FunctionCall
                 // This is to avoid calling the function more than once
                 if (ASR::is_a<ASR::FunctionCall_t>(*arg_expr)) {
                     std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_functioncall_");
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                        x.m_args[i - is_method].loc, dummy_variable_name, al, scope,
+                        x.m_args[i].loc, dummy_variable_name, al, scope,
                         arg_expr_type, ASR::intentType::Local);
                     ASR::stmt_t* assignment = ASRUtils::STMT(
-                            ASRUtils::make_Assignment_t_util(al, x.m_args[i - is_method].loc, dummy_variable,
+                            ASRUtils::make_Assignment_t_util(al, x.m_args[i].loc, dummy_variable,
                                 arg_expr, nullptr, false, ASRUtils::is_array(arg_expr_type)));
                     pass_result.push_back(al, assignment);
                     arg_expr = dummy_variable;
@@ -527,9 +522,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 arg_expr_vec.reserve(al, 1);
                 arg_expr_vec.push_back(al, arg_expr);
                 ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
-                    al, x.m_args[i - is_method].loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    al, x.m_args[i].loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
                     arg_expr_vec.p, arg_expr_vec.n, 0, logical_t, nullptr));
-                is_present = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.m_args[i - is_method].loc,
+                is_present = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.m_args[i].loc,
                     is_allocated, ASR::logicalbinopType::And, is_present, logical_t, nullptr));
 
                 // If the argument is allocated then pass in the actual argument
@@ -581,12 +576,12 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
                 pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
@@ -604,17 +599,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             new_args.push_back(al, present_arg);
             j++;
         } else {
-            if(i - is_method < 0) continue;
-            // not needed to have `i - is_method` can be simply
-            // `i` as well, just for consistency with code above
-            new_args.push_back(al, x.m_args[i - is_method]);
+            new_args.push_back(al, x.m_args[i]);
         }
-        // not needed to pass the class instance to `new_args`
     }
-    // new_args.size() is either
-    //      - equal to func->n_args
-    //      - one less than func->n_args (in case of StructMethodDeclaration without nopass)
-    LCOMPILERS_ASSERT(func->n_args == new_args.size() + is_method);
+    LCOMPILERS_ASSERT(func->n_args == new_args.size());
     return true;
 }
 
