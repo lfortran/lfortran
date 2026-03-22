@@ -700,15 +700,33 @@ bool set_allocation_size(
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        intrinsic_array_function->m_type);
-                    allocate_dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::expr_t* source_arg = intrinsic_array_function->m_args[0];
+                    bool is_source_assumed_rank =
+                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*source_arg) &&
+                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(source_arg)->m_old ==
+                            ASR::array_physical_typeType::AssumedRankArray;
+                    if (is_source_assumed_rank) {
+                        ASR::expr_t* source_orig =
+                            ASRUtils::get_past_array_physical_cast(source_arg);
+                        allocate_dims.reserve(al, 1);
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = int32_one;
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArrayRank_t(
+                            al, loc, source_orig,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
                         allocate_dims.push_back(al, allocate_dim);
+                    } else {
+                        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                            intrinsic_array_function->m_type);
+                        allocate_dims.reserve(al, n_dims);
+                        for( size_t i = 0; i < n_dims; i++ ) {
+                            ASR::dimension_t allocate_dim;
+                            allocate_dim.loc = loc;
+                            allocate_dim.m_start = int32_one;
+                            allocate_dim.m_length = int32_one;
+                            allocate_dims.push_back(al, allocate_dim);
+                        }
                     }
                     break;
                 }
