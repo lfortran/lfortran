@@ -2577,7 +2577,7 @@ class ReplaceExprWithTemporaryVisitor:
                 nullptr, 0, ASR::intentType::Local, nullptr, nullptr, 
                 ASR::storage_typeType::Default, logical_type, nullptr, 
                 ASR::abiType::Source, ASR::accessType::Public, 
-                ASR::presenceType::Required, false, false, false, nullptr, false, false);
+                ASR::presenceType::Required, false, false, false, nullptr, false, false, false);
         current_scope->add_symbol(std::string(c_name), c_sym);
         ASR::expr_t* c_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASRUtils::symbol_get_past_external(c_sym)));
 

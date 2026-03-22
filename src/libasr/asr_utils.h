@@ -881,6 +881,8 @@ static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
     bool nopass = false;
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym)->m_is_nopass;
+    } else if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
+        nopass = ASR::down_cast<ASR::Variable_t>(func_sym)->m_is_nopass;
     }
     return nopass;
 }
@@ -3279,12 +3281,14 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
-    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false
+    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
+    bool a_is_nopass = false
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
-        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected
+        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
+        a_is_nopass
     );
 }
 
@@ -7574,15 +7578,7 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     }
 
     bool a_is_method = (a_dt != nullptr) && (!ASRUtils::get_class_proc_nopass_val(a_name));
-    // Procedure pointer Variables don't have a self parameter
-    if (a_is_method && ASR::is_a<ASR::Variable_t>(
-            *ASRUtils::symbol_get_past_external(a_name))) {
-        a_is_method = false;
-    }
 
-    // Insert self/pass argument into args at position 0 when this is a method call,
-    // but only if self is not already the first argument (avoid double-insertion
-    // when passes copy args from existing nodes that already include self).
     bool self_already_in_args = (a_is_method && n_args > 0 && a_args[0].m_value == a_dt);
     if (a_is_method && !self_already_in_args) {
         Vec<ASR::call_arg_t> new_args;
@@ -7609,16 +7605,10 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
-    // Procedure pointer Variables don't have a self parameter
-    if (a_is_method && ASR::is_a<ASR::Variable_t>(
-            *ASRUtils::symbol_get_past_external(a_name))) {
-        a_is_method = false;
-    }
 
-    // Check if self is already in args BEFORE potential StructInstanceMember wrapping of a_dt
     bool self_already_in_args = false;
+    ASR::expr_t* self_expr = a_dt;
     if (a_is_method && n_args > 0 && a_args[0].m_value != nullptr) {
-        // Self might be the original dt or a StructInstanceMember wrapping it
         ASR::expr_t* first_arg = a_args[0].m_value;
         if (first_arg == a_dt) {
             self_already_in_args = true;
@@ -7639,15 +7629,12 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
-    // Insert self/pass argument into args at position 0 when this is a method call,
-    // but only if self is not already the first argument (avoid double-insertion
-    // when passes copy args from existing nodes that already include self).
     if (a_is_method && !self_already_in_args) {
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
         ASR::call_arg_t self_arg;
-        self_arg.loc = a_dt->base.loc;
-        self_arg.m_value = a_dt;
+        self_arg.loc = self_expr->base.loc;
+        self_arg.m_value = self_expr;
         new_args.push_back(al, self_arg);
         for (size_t i = 0; i < n_args; i++) {
             new_args.push_back(al, a_args[i]);

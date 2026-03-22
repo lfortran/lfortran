@@ -20450,13 +20450,10 @@ public:
             ptr_loads = ptr_loads_copy;
             llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
-            bool will_prepend_self = (func && func->n_args > x.n_args);
+            bool will_prepend_self = (func && (x.m_is_method || func->n_args > x.n_args));
             args = convert_call_args(x, will_prepend_self);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
-            // The interface function includes the pass (self) argument
-            // but explicit call args (x.m_args) do not. When the
-            // interface has more args, prepend the parent object.
-            if (func->n_args > x.n_args) {
+            if (x.m_is_method || func->n_args > x.n_args) {
                 ASR::StructInstanceMember_t* sim =
                     ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
                 uint64_t ptr_loads_copy2 = ptr_loads;
@@ -21145,14 +21142,12 @@ public:
                 x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
-            args = convert_call_args(x, false);
             const ASR::Function_t* func = ASRUtils::get_function(x.m_name);
+            bool will_prepend_self = (x.m_is_method || (func && func->n_args > x.n_args));
+            args = convert_call_args(x, will_prepend_self);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            // The interface function includes the pass (self) argument
-            // but explicit call args (x.m_args) do not. When the
-            // interface has more args, prepend the parent object.
-            if (func->n_args > x.n_args) {
+            if (x.m_is_method || func->n_args > x.n_args) {
                 ASR::StructInstanceMember_t* sim =
                     ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
                 uint64_t ptr_loads_copy2 = ptr_loads;

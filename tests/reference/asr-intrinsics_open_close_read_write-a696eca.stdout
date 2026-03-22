@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -48,6 +49,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -67,6 +69,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -96,6 +99,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -120,6 +124,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -148,6 +153,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -167,6 +173,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -190,6 +197,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -218,6 +226,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -242,6 +251,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )
