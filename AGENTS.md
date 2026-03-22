@@ -23,7 +23,13 @@ detailed reference how to contribute to the project.
   - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`
   - `cmake --build build -j`
 - Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
-- Tests: `./run_tests.py` (reference tests); `cd integration_tests && ./run_tests.py -j16` (integration tests)
+- Tests: `./run_tests.py &> log` (reference tests); `cd integration_tests && ./run_tests.py -j16 &> log` (integration tests)
+
+**IMPORTANT**: always redirect test output to a log file and then examine the
+log file. Do NOT run tests using the style like `./run_tests.py | tail` because
+if you need more output than the `tail` provides, you have to rerun them and
+that is very expensive, the tests can run several minutes. Instead, run tests
+only once, redirect to a log file and then examine the log file.
 
 ## Quick Smoke Test
 - We usually build with LLVM enabled (`-DWITH_LLVM=ON`).
@@ -81,7 +87,7 @@ detailed reference how to contribute to the project.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure integration tests pass locally: `cd integration_tests && ./run_tests.py -j16`.
+- Ensure integration tests pass locally: `cd integration_tests && ./run_tests.py -j16 &> log`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).
 - When fixing a bug, add an integration test that reproduces the failure and now compiles/runs successfully.
@@ -93,30 +99,30 @@ detailed reference how to contribute to the project.
     - Build: `bash ci/build.sh`
     - Quick integration run (LLVM):
       - `bash ci/test.sh` (runs a CMake+CTest LLVM pass and runner passes)
-      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16`
-  - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran`
+      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16 &> log`
+  - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran &> log`
   - Other backends as in CI:
-    - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f`
-    - `./run_tests.py -b cpp c c_nopragma` and `-f`
-    - `./run_tests.py -b wasm` and `-f`
-    - `./run_tests.py -b llvm_omp` / `target_offload` / `fortran -j1`
+    - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma &> log && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f &> log`
+    - `./run_tests.py -b cpp c c_nopragma &> log` and `-f`
+    - `./run_tests.py -b wasm &> log` and `-f`
+    - `./run_tests.py -b llvm_omp &> log` / `target_offload` / `fortran -j1`
 
 - Minimal local (without micromamba):
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
-  - Run: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16`
+  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f -nf16 &> log`
 - If builds fail with messages about missing debug info:
   - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
     `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
   - Rebuild with runtime stacktraces if needed:
     `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes -DWITH_UNWIND=ON`
-  - More details: `integration_tests/run_tests.py` (CLI flags and supported backends).
+  - More details: `integration_tests/run_tests.py &> log` (CLI flags and supported backends).
 
 ### Unit/Reference Tests (`tests/`)
 - Use only when an integration test is not yet feasible (e.g., feature doesn’t compile end‑to‑end). Prefer integration tests for all new work.
 - If possible, still add a test under `integration_tests/`, but only register `gfortran` (not `llvm`), then register this test in `tests/tests.toml` with the needed outputs (`ast`, `asr`, `llvm`, `run`, etc.). Use `.f90` or `.f` (fixed-form auto-handled). Only if that cannot be done, add a new test into `tests/`.
   - See `tests/tests.toml` for examples; reference outputs live under `tests/reference/`.
 - Multi-file modules: set `extrafiles = "mod1.f90,mod2.f90"`.
-- Run locally: `./run_tests.py -j16` (use `-s` to debug).
+- Run locally: `./run_tests.py -j16 &> log` (use `-s` to debug).
 - Update references only when outputs intentionally change: `./run_tests.py -t path/to/test -u -s`.
 - Error messages: add to `tests/errors/continue_compilation_1.f90` and update references.
 - If your integration test does not compile yet, temporarily validate the change by adding a reference test that checks AST/ASR construction (enable `asr = true` and/or `ast = true` in `tests/tests.toml`). Promote it to an integration test once end‑to‑end compilation succeeds.
@@ -127,8 +133,8 @@ detailed reference how to contribute to the project.
   Ensure the current `build/src/bin` is first on `PATH` when running tests.
 
 ### Common Commands
-- Run all tests: `ctest` and `./run_tests.py -j16`
-- Run a specific test: `./run_tests.py -t pattern -s`
+- Run all tests: `ctest` and `./run_tests.py -j16 &> log`
+- Run a specific test: `./run_tests.py -t pattern -s &> log`
 
 ## References
 - Developer docs: `doc/src/installation.md` (Tests) and `doc/src/progress.md` (workflow).
