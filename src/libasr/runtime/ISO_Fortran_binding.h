@@ -88,6 +88,19 @@ typedef struct CFI_dim_t {
     CFI_index_t sm;          /* stride multiplier in bytes */
 } CFI_dim_t;
 
+#ifdef __cplusplus
+namespace cfi_internal {
+/* C++ does not support flexible array members.  This template emulates one
+ * by inheriting from CFI_dim_t and providing array-style access. */
+extern "C++" template <typename T> struct FlexibleArray : T {
+    T &operator[](int index) { return *(this + index); }
+    const T &operator[](int index) const { return *(this + index); }
+    operator T *() { return this; }
+    operator const T *() const { return this; }
+};
+} /* namespace cfi_internal */
+#endif
+
 /*
  * Descriptor header members — factored into a macro so that both
  * CFI_cdesc_t and CFI_CDESC_T(rank) share the identical prefix.
@@ -117,16 +130,36 @@ typedef struct CFI_dim_t {
  */
 typedef struct CFI_cdesc_t {
     _CFI_CDESC_T_HEADER
+#ifdef __cplusplus
+    cfi_internal::FlexibleArray<CFI_dim_t> dim;
+#else
     CFI_dim_t dim[]; /* flexible array member (C99) */
+#endif
 } CFI_cdesc_t;
 
 /* 18.5.4 — Storage macro for stack-allocated descriptors of a given rank.
  * Provides enough trailing storage for `_RANK` dimension descriptors. */
+#ifdef __cplusplus
+namespace cfi_internal {
+extern "C++" template <int r> struct CdescStorage : public CFI_cdesc_t {
+    static_assert(r > 1 && r <= CFI_MAX_RANK, "CFI_INVALID_RANK");
+    CFI_dim_t dim[r - 1];
+};
+extern "C++" template <> struct CdescStorage<1> : public CFI_cdesc_t {};
+extern "C++" template <> struct CdescStorage<0> : public CFI_cdesc_t {};
+} /* namespace cfi_internal */
+#define CFI_CDESC_T(_RANK) cfi_internal::CdescStorage<_RANK>
+#else
 #define CFI_CDESC_T(_RANK) \
     struct { \
         _CFI_CDESC_T_HEADER \
         CFI_dim_t dim[_RANK]; \
     }
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * CFI_allocate — allocate memory for an allocatable or pointer descriptor.
@@ -427,5 +460,9 @@ static inline int CFI_select_part(CFI_cdesc_t *result,
 
     return CFI_SUCCESS;
 }
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* CFI_ISO_FORTRAN_BINDING_H_ */
