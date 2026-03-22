@@ -434,6 +434,12 @@ semantic error: Interface mismatch in procedure pointer assignment at (1): 'dumm
 183 |         pf2 => dummy_func
     |         ^^^^^^^^^^^^^^^^^ (1)
 
+semantic error: c_associated() argument must be of type c_ptr
+   --> tests/errors/continue_compilation_1.f90:195:31
+    |
+195 |         print *, c_associated(p)
+    |                               ^ 
+
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:268:14
     |
@@ -1354,8 +1360,14 @@ semantic error: 'ieee_is_nan' is not accessible in the current scope; add 'use, 
 634 |     print*, ieee_is_nan(1.0)
     |             ^^^^^^^^^^^^^^^^ not in scope
 
-semantic error: Variable 'k' is not declared
-   --> tests/errors/continue_compilation_1.f90:660:12
+semantic error: associated() argument must be a pointer
+   --> tests/errors/continue_compilation_1.f90:636:25
     |
-660 |         do k = 1, 3
+636 |     print *, associated(ppp)
+    |                         ^^^ 
+
+semantic error: Variable 'k' is not declared
+   --> tests/errors/continue_compilation_1.f90:661:12
+    |
+661 |         do k = 1, 3
     |            ^ 'k' is undeclared
