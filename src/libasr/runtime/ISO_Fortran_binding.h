@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define CFI_VERSION 20180515
+#define CFI_VERSION 20260322
 #define CFI_MAX_RANK 15
 
 typedef unsigned char CFI_rank_t;
