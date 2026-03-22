@@ -479,6 +479,10 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 #endif
 }
 
+// All code below must use internal_malloc/internal_realloc/internal_free
+// instead of malloc/realloc/free to ensure proper memory tracking.
+#pragma GCC poison malloc free realloc calloc
+
 static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
     if (!lineptr || !n || !stream) {
         errno = EINVAL;
