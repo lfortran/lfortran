@@ -8918,6 +8918,27 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
+// Helper function to skip whitespace and handle commas in list-directed I/O
+static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offset, int32_t *iostat) {
+    while (buf[*skip] && (buf[*skip] == ' ' || buf[*skip] == '\t')) {
+        (*skip)++;
+    }
+    if (buf[*skip] == ',') {
+        int look = *skip + 1;
+        while (buf[look] == ' ' || buf[look] == '\t') {
+            look++;
+        }
+        if (buf[look] == ',' || buf[look] == '\0') {
+            *skip = look;
+            *offset = off + *skip;
+            if (iostat) *iostat = 0;
+            return 1;
+        }
+        (*skip)++;
+    }
+    return 0;
+}
+
 LFORTRAN_API void _lfortran_string_read_i8(char *str, int64_t len, char *format, int8_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
@@ -8925,7 +8946,10 @@ LFORTRAN_API void _lfortran_string_read_i8(char *str, int64_t len, char *format,
     int32_t tmp;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%d%n", &tmp, &n);
         *offset = off + skip + n;
@@ -8949,7 +8973,10 @@ LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format
     int32_t tmp;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%d%n", &tmp, &n);
         *offset = off + skip + n;
@@ -8972,7 +8999,10 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
     int rc;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%d%n", i, &n);
         *offset = off + skip + n;
@@ -8995,7 +9025,10 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
     int rc;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%" PRId64 "%n", i, &n);
         *offset = off + skip + n;
@@ -9018,7 +9051,10 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
     int rc;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%f%n", f, &n);
         *offset = off + skip + n;
@@ -9041,7 +9077,10 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     int rc;
     if (offset) {
         int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
         int n = 0;
         rc = sscanf(buf + skip, "%lf%n", f, &n);
         *offset = off + skip + n;
@@ -9083,10 +9122,22 @@ char* remove_whitespace(char* str, int64_t* len) {
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset) {
     int64_t pos = offset ? *offset : 0;
 
-    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t' || (offset && src_data[pos] == ','))) {
+    while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
         pos++;
     }
-
+    if (offset && pos < src_len && src_data[pos] == ',') {
+        int64_t look = pos + 1;
+        // skip spaces after comma
+        while (look < src_len && (src_data[look] == ' ' || src_data[look] == '\t')) {
+            look++;
+        }
+        if (look >= src_len || src_data[look] == ',') {
+            pos++;
+            *offset = pos;
+            return;
+        }
+        pos++;  // consume comma and continue
+    }
     if (pos < src_len && (src_data[pos] == '\'' || src_data[pos] == '"')) {
         char delim = src_data[pos];
         pos++;
