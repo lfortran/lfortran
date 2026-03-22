@@ -943,6 +943,8 @@ class ASRToLLVMVisitor;
              *              to be freed by the consumer of that string.
              *         ** It complains if current return wasn't freed.
              */ 
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr);
+
             class StringFormatReturn {
                 LLVMUtils   *llvmUtils_instance_;
                 llvm::Value *return_val = nullptr; // Holds `_lcompilers_string_format_fortran()` call return
