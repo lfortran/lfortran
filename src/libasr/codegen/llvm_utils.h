@@ -1548,6 +1548,8 @@ class ASRToLLVMVisitor;
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(t); 
             if(ASRUtils::is_array_t(t_past)){
                 key += "Array_";
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(t_past);
+                key += std::to_string(n_dims) + "_";
                 key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
             } else if(struct_sym != nullptr) { // StructType or structType Class
                 key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
@@ -1632,7 +1634,15 @@ class ASRToLLVMVisitor;
 
         llvm::Value* call_cached_finalizer(const std::string& cache_key,
                 const std::vector<llvm::Value*>& call_args) {
-            return builder_->CreateCall(type_finalizer_cache_[cache_key], call_args);
+            llvm::Function* fn = type_finalizer_cache_[cache_key];
+            std::vector<llvm::Value*> fixed_args = call_args;
+            llvm::FunctionType* fnty = fn->getFunctionType();
+            for (size_t i = 0; i < fixed_args.size() && i < fnty->getNumParams(); i++) {
+                if (fixed_args[i]->getType() != fnty->getParamType(i)) {
+                    fixed_args[i] = builder_->CreateBitCast(fixed_args[i], fnty->getParamType(i));
+                }
+            }
+            return builder_->CreateCall(fn, fixed_args);
         }
 
         /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.

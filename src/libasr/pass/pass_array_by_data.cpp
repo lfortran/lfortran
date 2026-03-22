@@ -527,7 +527,9 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
-             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))))) {
+             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))) &&
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_arg)) ==
+            ASRUtils::extract_n_dims_from_ttype(x->m_type))) {
             *current_expr = x->m_arg;
         } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
                    !ASRUtils::is_array(x->m_type)) {
@@ -539,8 +541,12 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
                 ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_arg))));
-                arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
-                arr->n_dims = src_arr->n_dims;
+                // Don't replace dims when the target has more dimensions than
+                // the source (e.g., assumed-rank target with 15 empty dims).
+                if (arr->n_dims <= src_arr->n_dims) {
+                    arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
+                    arr->n_dims = src_arr->n_dims;
+                }
             }
         }
     }

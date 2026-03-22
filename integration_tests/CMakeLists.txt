@@ -879,6 +879,7 @@ RUN(NAME assumed_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_06 LABELS gfortran llvm)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2285,7 +2286,7 @@ RUN(NAME allocate_58 LABELS gfortran llvm)
 RUN(NAME allocate_59 LABELS gfortran llvm)
 RUN(NAME allocate_60 LABELS gfortran llvm)
 RUN(NAME allocate_61 LABELS gfortran llvm EXTRAFILES allocate_61_mod.f90 allocate_61_mod2.f90 EXTRA_ARGS --separate-compilation)
-
+RUN(NAME allocate_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_16 LABELS gfortran llvm
