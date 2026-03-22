@@ -2789,6 +2789,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     char rounding_mode = 'n';  // 'n'=nearest, 'u'=up, 'd'=down, 'z'=zero
     while (1) {
         int scale = 0;
+        bool consumed_data_item_in_cycle = false;
         bool is_array = false;
         bool array_looping = false;
         for (int i = item_start; i < format_values_count; i++) {
@@ -2910,6 +2911,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 }
             } else {
                 if (!move_to_next_element(&s_info, false)) break;
+                consumed_data_item_in_cycle = true;
                 if (!is_format_match(
                         tolower(value[0]), s_info.current_element_type)) {
                     char* type; // For better error message.
@@ -3305,6 +3307,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
         }
         if(BreakWhileLoop) break;
         if (move_to_next_element(&s_info, true)) {
+            if (!consumed_data_item_in_cycle) {
+                ALLOCATOR_DEALLOC(al, result);
+                result = (char*)ALLOCATOR_ALLOC(al, 128 * sizeof(char));
+                sprintf(result, " Runtime Error : data transfer list has more items than format descriptors\n");
+                // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                result[0] = '\b';
+                result_len = strlen(result);
+                break;
+            }
             if (!array) {
                 result = append_to_string_NTI(al, result, result_len, "\n", 1);
                 result_len += 1;
