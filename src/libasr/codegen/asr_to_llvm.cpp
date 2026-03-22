@@ -6242,7 +6242,6 @@ public:
                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v_llvm_type, target_var, v->m_is_volatile));
             }
         } else if(ASRUtils::is_array(v->m_type) &&
-                v->m_storage != ASR::storage_typeType::Save &&
                 (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) ||
                 (v->m_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value)))){
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
