@@ -11210,16 +11210,31 @@ public:
                             ASRUtils::get_struct_sym_from_struct_expr(val),
                             current_scope);
                     }
+                    ASR::ttype_t* tmp_type = ret_type;
+                    if (ASR::is_a<ASR::String_t>(*ret_type)) {
+                        ASR::String_t* ret_str = ASR::down_cast<ASR::String_t>(ret_type);
+                        if (ret_str->m_len != nullptr &&
+                                !ASRUtils::is_value_constant(ret_str->m_len)) {
+                            ASR::ttype_t* deferred_str_type = ASRUtils::TYPE(
+                                ASR::make_String_t(al, val->base.loc,
+                                    ret_str->m_kind, nullptr,
+                                    ASR::string_length_kindType::DeferredLength,
+                                    ret_str->m_physical_type));
+                            tmp_type = ASRUtils::TYPE(
+                                ASRUtils::make_Allocatable_t_util(al,
+                                    val->base.loc, deferred_str_type));
+                        }
+                    }
                     SetChar tmp_deps;
                     tmp_deps.reserve(al, 1);
                     ASRUtils::collect_variable_dependencies(al, tmp_deps,
-                        ret_type, nullptr, nullptr, tmp_name);
+                        tmp_type, nullptr, nullptr, tmp_name);
                     ASR::symbol_t* tmp_sym =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util( al, val->base.loc, current_scope,
                                 s2c(al, tmp_name), tmp_deps.p, tmp_deps.n,
                                 ASR::intentType::Local, nullptr, nullptr,
-                                ASR::storage_typeType::Default, ret_type, type_declaration, ASR::abiType::Source,
+                                ASR::storage_typeType::Default, tmp_type, type_declaration, ASR::abiType::Source,
                                 ASR::accessType::Private, ASR::presenceType::Required, false
                             )
                         );
