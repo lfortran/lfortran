@@ -8225,8 +8225,13 @@ public:
         unsigned idx_bits = idx_type->getIntegerBitWidth();
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
         if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+            ASR::ttype_t* value_desc_asr_type = value_type;
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                value_desc_asr_type = ASRUtils::expr_type(value_section->m_v);
+            }
             ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(value_type));
+                ASRUtils::type_get_past_pointer(value_desc_asr_type));
             llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                 value_type_past_alloc, module.get());
             if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
