@@ -3105,7 +3105,8 @@ namespace Logical {
         declare_basic_variables("_lcompilers_logical_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al,b.Assignment(result, b.bool_t(args[0], return_type)));
+        body.push_back(al, b.Assignment(result,
+            CastingUtil::perform_casting(args[0], return_type, al, loc)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
