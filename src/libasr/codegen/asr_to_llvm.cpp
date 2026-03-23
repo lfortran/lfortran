@@ -7683,6 +7683,12 @@ public:
                     nullptr, ASRUtils::expr_type(shape), module.get());
                 shape_data = llvm_utils->CreateLoad2(shape_elem_llvm_type, arr_descr->get_pointer_to_data(shape_llvm_type, llvm_shape));
             }
+            if( llvm_shape && (ASRUtils::extract_physical_type(asr_shape_type) ==
+                ASR::array_physical_typeType::FixedSizeArray) ) {
+                llvm::Type* shape_scalar_type = llvm_utils->get_type_from_ttype_t_util(
+                    nullptr, ASRUtils::extract_type(ASRUtils::expr_type(shape)), module.get());
+                shape_data = builder->CreateBitCast(shape_data, shape_scalar_type->getPointerTo());
+            }
 
             if (ASRUtils::is_descriptorString(fptr_data_type)) {
                 fptr_data = llvm_utils->CreateLoad2(llvm_fptr_data_type->getPointerTo(), fptr_data);
