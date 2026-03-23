@@ -33,6 +33,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             all_zeros:
                                 (Variable
@@ -54,6 +56,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             bits_kind:
                                 (ExternalSymbol
@@ -107,6 +111,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     bits_02

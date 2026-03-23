@@ -101,6 +101,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             messpr:
                                 (Function
