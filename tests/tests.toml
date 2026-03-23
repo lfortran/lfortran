@@ -4559,6 +4559,10 @@ filename = "warnings/rand_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/sizeof_01.f90"
+asr = true
+
+[[test]]
 filename = "char_arr_assignment.f90"
 asr = true
 
