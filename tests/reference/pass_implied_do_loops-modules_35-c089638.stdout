@@ -32,6 +32,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             __1__libasr_index_1:
                                                 (Variable
@@ -53,6 +55,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             __libasr__created__var__0__array_constructor_:
                                                 (Variable
@@ -81,6 +85,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             __libasr__created__var__1__array_constructor_:
                                                 (Variable
@@ -109,6 +115,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             place:
                                                 (Variable
@@ -130,6 +138,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             strings:
                                                 (Variable
@@ -158,6 +168,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             strings_a:
                                                 (Variable
@@ -186,6 +198,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     get_args_fixed_length_a_array
@@ -458,6 +472,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     modules_35

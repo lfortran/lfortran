@@ -52,6 +52,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             p_trim:
                                 (Variable
@@ -98,6 +100,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             x_pad:
                                 (Variable
@@ -125,6 +129,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             x_trim:
                                 (Variable
@@ -152,6 +158,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             y_pad:
                                 (Variable
@@ -179,6 +187,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             y_trim:
                                 (Variable
@@ -206,6 +216,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             z_pad:
                                 (Variable
@@ -251,6 +263,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             z_trim:
                                 (Variable
@@ -296,6 +310,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     character_parameter_padding_trimming
