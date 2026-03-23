@@ -252,12 +252,6 @@ semantic error: Parameter attribute cannot be used with Target attribute
 224 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind 16 is not supported for Real
-   --> tests/errors/continue_compilation_2.f90:227:5
-    |
-227 |     real*16 :: unsupported_kind
-    |     ^^^^^^^ 
-
 semantic error: Argument was not specified
    --> tests/errors/continue_compilation_2.f90:229:33
     |

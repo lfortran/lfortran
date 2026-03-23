@@ -13259,6 +13259,13 @@ public:
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
                 break;
             }
+            case 16 : {
+                char buf[64];
+                snprintf(buf, sizeof(buf), "%.17e", val);
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                tmp = llvm::ConstantFP::get(context, apf);
+                break;
+            }
             default : {
                 break;
             }
@@ -13284,6 +13291,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
@@ -13336,6 +13345,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
