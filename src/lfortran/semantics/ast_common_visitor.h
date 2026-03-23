@@ -14294,7 +14294,7 @@ public:
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
         diag.semantic_warning_label(
-            "`sizeof` is a GNU extension",
+            "`sizeof` is an LFortran extension",
             {x.base.base.loc},
             "use `c_sizeof` from `iso_c_binding` for portable code");
         Vec<ASR::expr_t*> args;
