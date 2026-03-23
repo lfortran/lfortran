@@ -988,7 +988,7 @@ public:
         if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC || func_type->m_deftype == ASR::deftypeType::Interface;
+            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC;
             for (size_t i = 0; i < func->n_args; i++ ) {
                 if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
                     ASR::Var_t* var_ = ASR::down_cast<ASR::Var_t>(func->m_args[i]);
