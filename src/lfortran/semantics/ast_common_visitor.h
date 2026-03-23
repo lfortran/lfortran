@@ -5627,7 +5627,8 @@ public:
                                                     current_scope, s2c(al, storage_name), nullptr, 0, ASR::intentType::Local,
                                                     nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
                                                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
-                                                    false, false, false, nullptr, false, false);
+                                                    false, false, false, nullptr, false, false,
+                                                    ASR::pass_attrType::NotMethod, nullptr);
 
                                                 current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
 
@@ -6392,6 +6393,7 @@ public:
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
+                bool is_nopass_attr = false;
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -6486,6 +6488,7 @@ public:
                                 is_external = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
+                                is_nopass_attr = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
                                 is_volatile = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
@@ -6750,12 +6753,24 @@ public:
                             current_scope->add_symbol(sym, symbol);
                             variable_added_to_symtab = symbol_variable;
                         } else {
+                            // Compute pass_attr for procedure pointer components in structs
+                            ASR::pass_attrType pass_attr = ASR::pass_attrType::NotMethod;
+                            if (is_derived_type) {
+                                ASR::ttype_t* underlying = ASRUtils::type_get_past_pointer(type);
+                                if (ASR::is_a<ASR::FunctionType_t>(*underlying)) {
+                                    if (is_nopass_attr) {
+                                        pass_attr = ASR::pass_attrType::NoPass;
+                                    } else {
+                                        pass_attr = ASR::pass_attrType::Pass;
+                                    }
+                                }
+                            }
                             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected
+                                is_protected, pass_attr
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -15163,7 +15178,8 @@ public:
                             nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                             ASR::storage_typeType::Default, arg_type, nullptr,
                             ASR::abiType::BindC, ASR::accessType::Public,
-                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                            ASR::pass_attrType::NotMethod, nullptr));
                     fn_scope->add_symbol(arg_name, arg_sym);
                     args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
                     arg_types.push_back(al, arg_type);
@@ -15175,7 +15191,8 @@ public:
                         nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                         ASR::storage_typeType::Default, return_type, nullptr,
                         ASR::abiType::BindC, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                        ASR::pass_attrType::NotMethod, nullptr));
                 fn_scope->add_symbol(return_var_name, return_sym);
                 ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
                 // Create interface FunctionType with args
@@ -15286,7 +15303,8 @@ public:
                             nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                             ASR::storage_typeType::Default, arg_type, nullptr,
                             ASR::abiType::BindC, ASR::accessType::Public,
-                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                            ASR::pass_attrType::NotMethod, nullptr));
                     fn_scope->add_symbol(arg_name, arg_sym);
                     iface_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
                     arg_types.push_back(al, arg_type);
@@ -15297,7 +15315,8 @@ public:
                         nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                         ASR::storage_typeType::Default, return_type, nullptr,
                         ASR::abiType::BindC, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                        ASR::pass_attrType::NotMethod, nullptr));
                 fn_scope->add_symbol(return_var_name, return_sym);
                 ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
 
@@ -17450,7 +17469,8 @@ public:
                     nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
                     ASR::storage_typeType::Default, arg_type, nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
-                    ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                    ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                    ASR::pass_attrType::NotMethod, nullptr));
             fn_scope->add_symbol(arg_name, arg_sym);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
             arg_types.push_back(al, arg_type);
@@ -17462,7 +17482,8 @@ public:
                 nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                 ASR::storage_typeType::Default, return_type, nullptr,
                 ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                ASR::pass_attrType::NotMethod, nullptr));
         fn_scope->add_symbol(return_var_name, return_sym);
         ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
         // Create interface FunctionType

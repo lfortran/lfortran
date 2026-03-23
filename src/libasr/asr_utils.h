@@ -881,6 +881,10 @@ static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
     bool nopass = false;
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym)->m_is_nopass;
+    } else if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
+        nopass = (v->m_pass_attr == ASR::pass_attrType::NoPass ||
+                  v->m_pass_attr == ASR::pass_attrType::NotMethod);
     }
     return nopass;
 }
@@ -3279,12 +3283,14 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
-    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false
+    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
+    ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
-        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected
+        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
+        a_pass_attr, a_self_argument
     );
 }
 
@@ -5559,7 +5565,7 @@ class SymbolDuplicator {
                 m_type, variable->m_type_declaration, variable->m_abi, variable->m_access,
                 variable->m_presence, variable->m_value_attr, variable->m_target_attr,
                 variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
-                variable->m_is_protected
+                variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument
             ));
     }
 
@@ -7528,8 +7534,10 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
     bool implicit_argument_casting = false) {
 
+    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
+
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
-        ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
+        nopass, current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
         !ASRUtils::is_fixed_size_array(a_type) &&
@@ -7582,8 +7590,10 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt, bool a_strict_bounds_checking = false) {
 
+    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
+
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
+         nopass, current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
