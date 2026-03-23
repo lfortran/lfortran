@@ -32,6 +32,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             map:
                                                 (Variable
@@ -56,6 +57,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -165,6 +167,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             key:
                                                 (Variable
@@ -184,6 +187,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -210,6 +214,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -304,6 +309,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             map:
                                 (Variable
@@ -330,6 +336,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             open_hashmap_type:
                                 (ExternalSymbol
@@ -347,8 +354,10 @@
                     [(SubroutineCall
                         7 1_open_hashmap_type_map_open_entry
                         ()
-                        [((Var 7 key))]
+                        [((Var 7 map))
+                        ((Var 7 key))]
                         (Var 7 map)
+                        .true.
                         .false.
                     )
                     (Print

@@ -311,6 +311,10 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
 
         void replace_FunctionCall(ASR::FunctionCall_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
+            // Skip reconstruction for method calls where self is already in args,
+            // as make_FunctionCall_t_util can double-add self and mismap parameters
+            // (e.g., pass(rhs) where self is not the first formal parameter).
+            if (x->m_is_method) return;
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
                 x->n_args, x->m_type, x->m_value, x->m_dt));
@@ -358,6 +362,52 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
+            if (x.m_is_method) {
+                // For method calls, we cannot use make_SubroutineCall_t_util
+                // because it can double-add self and mismap parameters (e.g.,
+                // pass(rhs) where self is not the first formal parameter).
+                // Instead, directly fix up array physical type mismatches.
+                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
+                if (func_type->n_arg_types == 0) return;
+                ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+                bool self_already_in_args = (xx.n_args > 0 &&
+                    xx.m_args[0].m_value != nullptr &&
+                    ASRUtils::is_self_argument(xx.m_args[0].m_value, xx.m_dt));
+                size_t offset = (self_already_in_args ? 0 : 1);
+                for (size_t i = 0; i < xx.n_args; i++) {
+                    if (i + offset >= func_type->n_arg_types ||
+                        xx.m_args[i].m_value == nullptr) continue;
+                    ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::expr_type(xx.m_args[i].m_value)));
+                    ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            func_type->m_arg_types[i + offset]));
+                    if (ASRUtils::is_array(arg_type) &&
+                        ASRUtils::is_array(orig_arg_type)) {
+                        ASR::Array_t* arg_array = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_pointer(arg_type));
+                        ASR::Array_t* orig_array = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_pointer(orig_arg_type));
+                        if (arg_array->m_physical_type !=
+                            orig_array->m_physical_type) {
+                            ASR::ttype_t* cast_type = ASRUtils::duplicate_type(
+                                al,
+                                ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::expr_type(xx.m_args[i].m_value)),
+                                nullptr, orig_array->m_physical_type, true);
+                            xx.m_args[i].m_value = ASRUtils::EXPR(
+                                ASRUtils::make_ArrayPhysicalCast_t_util(
+                                    al, xx.m_args[i].m_value->base.loc,
+                                    xx.m_args[i].m_value,
+                                    arg_array->m_physical_type,
+                                    orig_array->m_physical_type,
+                                    cast_type, nullptr));
+                        }
+                    }
+                }
+                return;
+            }
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
                 x.n_args, x.m_dt, nullptr, false));

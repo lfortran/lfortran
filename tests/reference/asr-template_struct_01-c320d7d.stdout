@@ -46,6 +46,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             template_struct_01_m:
@@ -78,6 +79,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -136,6 +138,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -157,6 +160,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -255,6 +259,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -276,6 +281,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -351,6 +357,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             tuple:
                                                 (Struct
@@ -379,6 +386,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -400,6 +408,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -522,6 +531,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -541,6 +551,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -625,6 +636,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -644,6 +656,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -728,6 +741,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -747,6 +761,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -831,6 +846,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -850,6 +866,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -919,6 +936,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -938,6 +956,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -987,6 +1006,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -1006,6 +1026,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -1055,6 +1076,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             tr:
                                                 (Variable
@@ -1079,6 +1101,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -1126,6 +1149,7 @@
                                                 (Integer 4)
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1160,6 +1184,7 @@
                                                 (Integer 4)
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1197,6 +1222,7 @@
                                                 (Real 4)
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1234,6 +1260,7 @@
                                                 (Real 4)
                                                 ()
                                                 ()
+                                                .false.
                                             )]
                                             FormatFortran
                                             (Allocatable

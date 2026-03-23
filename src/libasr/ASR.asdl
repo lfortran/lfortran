@@ -21,7 +21,7 @@ symbol
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
-               string? bindc_name, bool is_volatile, bool is_protected)
+               string? bindc_name, bool is_volatile, bool is_protected, bool is_nopass)
     | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -63,7 +63,7 @@ stmt
     | Select(identifier? name, expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
-    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt, bool strict_bounds_checking)
+    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt, bool is_method, bool strict_bounds_checking)
     | IntrinsicImpureSubroutine(int sub_intrinsic_id, expr* args, int overload_id)
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
@@ -90,7 +90,7 @@ expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
-    | FunctionCall(symbol name, symbol? original_name, call_arg* args, ttype type, expr? value, expr? dt)
+    | FunctionCall(symbol name, symbol? original_name, call_arg* args, ttype type, expr? value, expr? dt, bool is_method)
     | IntrinsicElementalFunction(int intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
     | IntrinsicArrayFunction(int arr_intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
     | IntrinsicImpureFunction(int impure_intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)

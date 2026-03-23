@@ -34,6 +34,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             internal_sub:
                                 (Function
@@ -69,6 +70,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             bl:
                                                 (Block
@@ -102,6 +104,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     bl
@@ -130,6 +133,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -202,6 +206,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             test_01:
                                 (ExternalSymbol
@@ -232,12 +237,14 @@
                         []
                         ()
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         5 internal_sub
                         ()
                         []
                         ()
+                        .false.
                         .false.
                     )
                     (Return)]
@@ -277,6 +284,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -349,6 +357,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             str:
                                                 (Variable
@@ -370,6 +379,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

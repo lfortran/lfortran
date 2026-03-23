@@ -80,6 +80,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             version:
                                                 (Variable
@@ -111,6 +112,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -235,6 +237,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     associate_block
@@ -256,7 +259,25 @@
                                                     (SubroutineCall
                                                         6 1_version_t_to_string
                                                         ()
-                                                        [((Var 5 version))]
+                                                        [((StructInstanceMember
+                                                            (Var 5 package)
+                                                            6 1_package_config_t_version
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 5 version))]
                                                         (StructInstanceMember
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
@@ -275,6 +296,7 @@
                                                             )
                                                             ()
                                                         )
+                                                        .true.
                                                         .false.
                                                     )]
                                                 ),
@@ -296,6 +318,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -339,6 +362,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             version:
                                                 (Variable
@@ -360,6 +384,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -482,6 +507,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -503,6 +529,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -541,8 +568,10 @@
                                     [(SubroutineCall
                                         15 1_version_t_to_string
                                         ()
-                                        [((Var 15 string))]
+                                        [((Var 15 self))
+                                        ((Var 15 string))]
                                         (Var 15 self)
+                                        .true.
                                         .false.
                                     )]
                                     (Var 15 string)
@@ -595,6 +624,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -616,6 +646,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -690,6 +721,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),

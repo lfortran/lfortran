@@ -117,6 +117,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             initial_team:
                                 (ExternalSymbol
@@ -230,6 +231,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -399,6 +401,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             rc:
                                                 (Variable
@@ -418,6 +421,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -441,6 +445,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -473,6 +478,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -614,6 +620,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -633,6 +640,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -672,6 +680,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -693,6 +702,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -722,6 +732,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             value:
                                                 (Variable
@@ -741,6 +752,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -815,7 +827,24 @@
                                         (FunctionCall
                                             11 1_omap_map_omap_i_at_rc
                                             ()
-                                            [((Var 11 key))
+                                            [((StructInstanceMember
+                                                (Var 11 this)
+                                                11 1_integer32complex32orderedmap_map
+                                                (StructType
+                                                    [(Complex 4)
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 11 key))
                                             ((Var 11 status))]
                                             (Pointer
                                                 (Complex 4)
@@ -838,6 +867,7 @@
                                                 )
                                                 ()
                                             )
+                                            .true.
                                         )
                                     )
                                     (If
@@ -969,6 +999,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             tree:
                                                 (Variable
@@ -993,6 +1024,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -1061,6 +1093,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -1440,6 +1473,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             logical16:
                                 (ExternalSymbol
@@ -1525,6 +1559,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -1738,6 +1773,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     nested_struct_proc_01
@@ -1774,9 +1810,11 @@
                     (SubroutineCall
                         12 1_integer32complex32orderedmap_omap_insert_key_value
                         12 1_insert
-                        [((Var 12 key))
+                        [((Var 12 my_map))
+                        ((Var 12 key))
                         ((Var 12 value))]
                         (Var 12 my_map)
+                        .true.
                         .false.
                     )
                     (Print

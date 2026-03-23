@@ -26,6 +26,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             class_circle2:
@@ -78,6 +79,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -136,6 +138,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -160,6 +163,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -261,6 +265,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -285,6 +290,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -316,10 +322,11 @@
                                         (FunctionCall
                                             5 1_circle_circle_area
                                             ()
-                                            []
+                                            [((Var 5 this))]
                                             (Real 4)
                                             ()
                                             (Var 5 this)
+                                            .true.
                                         )
                                         ()
                                         .false.
@@ -406,6 +413,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     main
@@ -463,8 +471,9 @@
                                     (SubroutineCall
                                         6 1_circle_circle_print
                                         ()
-                                        []
+                                        [((Var 6 c))]
                                         (Var 6 c)
+                                        .true.
                                         .false.
                                     )]
                                     ()
@@ -506,6 +515,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

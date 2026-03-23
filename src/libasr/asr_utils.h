@@ -881,6 +881,8 @@ static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
     bool nopass = false;
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym)->m_is_nopass;
+    } else if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
+        nopass = ASR::down_cast<ASR::Variable_t>(func_sym)->m_is_nopass;
     }
     return nopass;
 }
@@ -3279,12 +3281,14 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
-    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false
+    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
+    bool a_is_nopass = false
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
-        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected
+        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
+        a_is_nopass
     );
 }
 
@@ -7155,11 +7159,23 @@ ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr,
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
-    bool implicit_argument_casting, bool nopass, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
+    bool implicit_argument_casting, bool nopass, bool self_already_in_args = false, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
         is_method = false;
+    }
+    // When self is already explicitly in args, args align 1:1 with params.
+    if (self_already_in_args) {
+        is_method = false;
+    } else if (is_method && n_args > 0 && a_args[0].m_value != nullptr) {
+        ASR::expr_t* first_arg = a_args[0].m_value;
+        if (first_arg == a_dt ||
+            (ASR::is_a<ASR::Var_t>(*first_arg) && ASR::is_a<ASR::Var_t>(*a_dt) &&
+             ASR::down_cast<ASR::Var_t>(first_arg)->m_v ==
+             ASR::down_cast<ASR::Var_t>(a_dt)->m_v)) {
+            is_method = false;
+        }
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
     // Skip arg processing for implicit interfaces (no declared parameter types)
@@ -7522,14 +7538,45 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     }
 }
 
+// Check if first_arg is the self/dt argument, handling cases where
+// they may be different ASR nodes referring to the same variable,
+// or where dt is a StructInstanceMember whose base matches first_arg.
+static inline bool is_self_argument(ASR::expr_t* first_arg, ASR::expr_t* a_dt) {
+    if (first_arg == a_dt) return true;
+    if (ASR::is_a<ASR::Var_t>(*first_arg) && ASR::is_a<ASR::Var_t>(*a_dt) &&
+        ASR::down_cast<ASR::Var_t>(first_arg)->m_v ==
+        ASR::down_cast<ASR::Var_t>(a_dt)->m_v) {
+        return true;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*first_arg) &&
+        ASR::down_cast<ASR::StructInstanceMember_t>(first_arg)->m_v == a_dt) {
+        return true;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) &&
+        ASR::is_a<ASR::Var_t>(*first_arg)) {
+        ASR::expr_t* dt_base = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
+        if (ASR::is_a<ASR::Var_t>(*dt_base) &&
+            ASR::down_cast<ASR::Var_t>(dt_base)->m_v ==
+            ASR::down_cast<ASR::Var_t>(first_arg)->m_v) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
     bool implicit_argument_casting = false) {
 
+    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
+    bool a_is_method = (a_dt != nullptr) && (!nopass);
+    bool self_already_in_args = (a_is_method && n_args > 0 &&
+        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
+
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
-        ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
+        nopass, self_already_in_args, current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
         !ASRUtils::is_fixed_size_array(a_type) &&
@@ -7573,8 +7620,22 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
         }
     }
 
+    if (a_is_method && !self_already_in_args) {
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_args + 1);
+        ASR::call_arg_t self_arg;
+        self_arg.loc = a_dt->base.loc;
+        self_arg.m_value = a_dt;
+        new_args.push_back(al, self_arg);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, a_args[i]);
+        }
+        a_args = new_args.p;
+        n_args = new_args.size();
+    }
+
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_type, a_value, a_dt);
+            a_args, n_args, a_type, a_value, a_dt, a_is_method);
 }
 
 static inline ASR::asr_t* make_SubroutineCall_t_util(
@@ -7582,8 +7643,15 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt, bool a_strict_bounds_checking = false) {
 
+    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
+    bool a_is_method = (a_dt != nullptr) && (!nopass);
+
+    bool self_already_in_args = (a_is_method && n_args > 0 &&
+        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
+    ASR::expr_t* self_expr = a_dt;
+
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
+         nopass, self_already_in_args, current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
@@ -7593,7 +7661,21 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
-    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt, a_strict_bounds_checking);
+    if (a_is_method && !self_already_in_args) {
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_args + 1);
+        ASR::call_arg_t self_arg;
+        self_arg.loc = self_expr->base.loc;
+        self_arg.m_value = self_expr;
+        new_args.push_back(al, self_arg);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, a_args[i]);
+        }
+        a_args = new_args.p;
+        n_args = new_args.size();
+    }
+
+    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt, a_is_method, a_strict_bounds_checking);
 }
 
 /*

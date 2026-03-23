@@ -42,6 +42,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -66,6 +67,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -176,6 +178,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     bugsize
@@ -196,6 +199,7 @@
                         ()
                         [((Var 2 x))]
                         ()
+                        .false.
                         .false.
                     )]
                 )

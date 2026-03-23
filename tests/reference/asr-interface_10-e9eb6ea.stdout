@@ -57,6 +57,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -76,6 +77,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -98,6 +100,7 @@
                         [((Var 4 x))
                         ((Var 4 y))]
                         ()
+                        .false.
                         .false.
                     )
                     (Print
@@ -141,6 +144,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -160,6 +164,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

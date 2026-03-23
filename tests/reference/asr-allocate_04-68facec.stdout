@@ -38,6 +38,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             message:
                                 (Variable
@@ -61,6 +62,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -80,6 +82,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -103,6 +106,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             idd_random_transf:
                                 (Variable
@@ -46,6 +47,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -69,6 +71,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             iww:
                                 (Variable
@@ -88,6 +91,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -111,6 +115,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             nsteps:
                                 (Variable
@@ -130,6 +135,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -158,6 +164,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -184,6 +191,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -208,6 +216,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )

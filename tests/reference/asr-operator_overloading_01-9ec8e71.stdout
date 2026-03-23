@@ -43,6 +43,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -78,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -125,6 +127,7 @@
                                     (Logical 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -155,6 +158,7 @@
                                     (Logical 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -185,6 +189,7 @@
                                     (Logical 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -215,6 +220,7 @@
                                     (Logical 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -245,6 +251,7 @@
                                     (Integer 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -275,6 +282,7 @@
                                     (Integer 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -305,6 +313,7 @@
                                     (Integer 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -335,6 +344,7 @@
                                     (Integer 4)
                                     ()
                                     ()
+                                    .false.
                                 )
                             )]
                             FormatFortran
@@ -375,6 +385,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -396,6 +407,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -415,6 +427,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -518,6 +531,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -539,6 +553,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -558,6 +573,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

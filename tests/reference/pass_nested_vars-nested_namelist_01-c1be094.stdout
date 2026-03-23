@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             nml:
                                 (Namelist
@@ -53,6 +54,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -88,6 +90,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             nested_namelist_01_mod:
@@ -118,6 +121,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -154,6 +158,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 ),
@@ -233,6 +238,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             x1:
                                                 (ExternalSymbol
@@ -298,6 +304,7 @@
                                         ()
                                         []
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Assignment

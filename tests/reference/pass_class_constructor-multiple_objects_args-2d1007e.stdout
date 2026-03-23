@@ -48,6 +48,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -109,6 +110,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -133,6 +135,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -229,6 +232,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -253,6 +257,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -280,6 +285,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -322,6 +328,7 @@
                         [((Var 2 temp_struct_var__))
                         ((Var 2 temp_struct_var__1))]
                         ()
+                        .false.
                         .false.
                     )
                     (If

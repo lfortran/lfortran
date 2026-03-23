@@ -42,6 +42,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -61,6 +62,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -87,6 +89,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -174,6 +177,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -193,6 +197,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -219,6 +224,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -317,6 +323,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -440,6 +447,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     name
@@ -465,13 +473,15 @@
                             (FunctionCall
                                 6 1_t_1_multiply
                                 ()
-                                [((RealConstant
+                                [((Var 6 type_1))
+                                ((RealConstant
                                     5.000000
                                     (Real 4)
                                 ))]
                                 (Real 4)
                                 ()
                                 (Var 6 type_1)
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -498,10 +508,12 @@
                             (FunctionCall
                                 6 1_t_1_sqrt_subtract
                                 ()
-                                [((IntegerConstant 2500 (Integer 4) Decimal))]
+                                [((Var 6 type_1))
+                                ((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
                                 (Var 6 type_1)
+                                .true.
                             )
                             NotEq
                             (Cast

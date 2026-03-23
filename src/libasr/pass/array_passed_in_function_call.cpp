@@ -926,25 +926,21 @@ public:
     void add_class_to_struct_casts(Vec<ASR::call_arg_t>& call_args, const T& x) {
         ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        size_t arg_offset = 0;
         if (ASR::is_a<ASR::Function_t>(*call_sym)) {
             func = ASR::down_cast<ASR::Function_t>(call_sym);
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(call_sym);
             func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(method->m_proc));
-            if (x.m_dt && !method->m_is_nopass) {
-                arg_offset = 1;
-            }
         } else {
             return;
         }
 
         for (size_t i = 0; i < call_args.size(); i++) {
-            if (call_args.p[i].m_value == nullptr || i + arg_offset >= func->n_args) {
+            if (call_args.p[i].m_value == nullptr || i >= func->n_args) {
                 continue;
             }
             ASR::expr_t* actual_arg = call_args.p[i].m_value;
-            ASR::expr_t* formal_arg = func->m_args[i + arg_offset];
+            ASR::expr_t* formal_arg = func->m_args[i];
             ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
             if (ASRUtils::is_allocatable(formal_arg_full_type) ||
                 ASRUtils::is_pointer(formal_arg_full_type)) {

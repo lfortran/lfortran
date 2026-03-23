@@ -307,6 +307,7 @@ end program
     CHECK(call_stmt->m_dt != nullptr);
 
     call_stmt->m_dt = nullptr;
+    call_stmt->m_is_method = false;
     CHECK(!asr_verify(*asr, true, diagnostics));
 }
 

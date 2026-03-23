@@ -64,6 +64,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             warnwrite:
                                 (ExternalSymbol
@@ -84,6 +85,7 @@
                         ()
                         [((Var 9 settings))]
                         ()
+                        .false.
                         .false.
                     )]
                 ),
@@ -134,6 +136,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -160,6 +163,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -219,6 +223,7 @@
                                         ((Var 8 littlefile))]
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -251,6 +256,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -301,6 +307,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -379,6 +386,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -398,6 +406,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

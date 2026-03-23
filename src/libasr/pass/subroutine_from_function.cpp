@@ -453,8 +453,12 @@ public :
             }
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
-            new_call_args.reserve(al,1);
-            new_call_args.from_pointer_n_copy(al, x->m_args, x->n_args);
+            new_call_args.reserve(al, x->n_args + 1);
+            // When is_method, args[0] is self; skip it so _util can re-add from m_dt
+            size_t args_start = x->m_is_method ? 1 : 0;
+            for (size_t i = args_start; i < x->n_args; i++) {
+                new_call_args.push_back(al, x->m_args[i]);
+            }
             new_call_args.push_back(al, {result_var->base.loc, result_var});
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
@@ -639,10 +643,12 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
-            for( size_t i = 0; i < fc->n_args; i++ ) {
+            // When is_method, args[0] is self; skip it so _util can re-add from m_dt
+            size_t args_start = fc->m_is_method ? 1 : 0;
+            for( size_t i = args_start; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }

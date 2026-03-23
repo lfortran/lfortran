@@ -26,6 +26,7 @@
                         []
                         ()
                         .false.
+                        .false.
                     )]
                 ),
             nested_namelist_01_mod:
@@ -58,6 +59,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             inner:
                                                 (Function
@@ -82,6 +84,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -151,6 +154,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     outer
@@ -192,6 +196,7 @@
                                         ()
                                         []
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     ()

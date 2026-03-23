@@ -1025,7 +1025,7 @@ public:
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
             if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
                 func = ASR::down_cast<ASR::Function_t>(method->m_proc);
-                if (!method->m_is_nopass) {
+                if (!method->m_is_nopass && !x.m_is_method) {
                     require(x.m_dt != nullptr,
                         "Pass method call must provide m_dt (the passed object).");
                     formal_offset = 1;
@@ -1039,6 +1039,9 @@ public:
 
             for (size_t i = 0; i < x.n_args; i++) {
                 size_t formal_idx = i + formal_offset;
+                // Skip verifying the self/pass argument (args[0] when is_method)
+                // since it is handled separately
+                if (i == 0 && x.m_is_method) continue;
                 require(formal_idx < func->n_args,
                     "More actual arguments than formal arguments in call.");
                 require(ASR::is_a<ASR::Var_t>(*func->m_args[formal_idx]),

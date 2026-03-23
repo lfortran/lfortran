@@ -558,7 +558,9 @@ public:
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t *x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
-        for (size_t i=0; i<x->n_args; i++) {
+        // When is_method, args[0] is self; skip it so _util can re-add from dt
+        size_t args_start = x->m_is_method ? 1 : 0;
+        for (size_t i=args_start; i<x->n_args; i++) {
             ASR::call_arg_t new_arg;
             new_arg.loc = x->m_args[i].loc;
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
@@ -604,7 +606,9 @@ public:
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t *x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
-        for (size_t i=0; i<x->n_args; i++) {
+        // When is_method, args[0] is self; skip it so _util can re-add from dt
+        size_t args_start = x->m_is_method ? 1 : 0;
+        for (size_t i=args_start; i<x->n_args; i++) {
             ASR::call_arg_t new_arg;
             new_arg.loc = x->m_args[i].loc;
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
@@ -1550,7 +1554,9 @@ public:
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
-        for (size_t i=0; i<x->n_args; i++) {
+        // When is_method, args[0] is self; skip it so _util can re-add from dt
+        size_t args_start = x->m_is_method ? 1 : 0;
+        for (size_t i=args_start; i<x->n_args; i++) {
             ASR::call_arg_t new_arg;
             new_arg.loc = x->m_args[i].loc;
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
@@ -1595,7 +1601,9 @@ public:
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
-        for (size_t i=0; i<x->n_args; i++) {
+        // When is_method, args[0] is self; skip it so _util can re-add from dt
+        size_t args_start = x->m_is_method ? 1 : 0;
+        for (size_t i=args_start; i<x->n_args; i++) {
             ASR::call_arg_t new_arg;
             new_arg.loc = x->m_args[i].loc;
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
