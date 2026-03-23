@@ -267,6 +267,15 @@ public:
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
                 }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
+                if (ASRUtils::is_unlimited_polymorphic_type(type_decl) ||
+                        struct_name == "~unlimited_polymorphic_type") {
+                    r = "class(*)";
+                    break;
+                }
+                if (struct_name == "~assumed_type") {
+                    r = "type(*)";
+                    break;
+                }
                 r = "type(";
                 r += struct_name;
                 r += ")";
@@ -737,6 +746,10 @@ public:
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
+        if (x.m_name[0] == '~') {
+            src.clear();
+            return;
+        }
         std::string r = indent;
         r += "type";
         if (x.m_parent) {
@@ -1786,6 +1799,14 @@ public:
     }
 
     void visit_SelectType(const ASR::SelectType_t &x) {
+        auto emit_select_type_stmt = [&](ASR::stmt_t* stmt, std::string &out) {
+            if (ASR::is_a<ASR::Associate_t>(*stmt)) {
+                return;
+            }
+            visit_stmt(*stmt);
+            out += src;
+        };
+
         auto emit_select_type_body = [&](ASR::stmt_t** body, size_t n_body,
                                          std::string &out) {
             for (size_t i = 0; i < n_body; i++) {
@@ -1794,12 +1815,10 @@ public:
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
                     for (size_t j = 0; j < block->n_body; j++) {
-                        visit_stmt(*block->m_body[j]);
-                        out += src;
+                        emit_select_type_stmt(block->m_body[j], out);
                     }
                 } else {
-                    visit_stmt(*body[i]);
-                    out += src;
+                    emit_select_type_stmt(body[i], out);
                 }
             }
         };
