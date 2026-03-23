@@ -14056,6 +14056,11 @@ public:
             tmp = result;
             return nullptr;
         }
+        if (var_name == "sizeof") {
+            is_function = false;
+            tmp = create_SizeOf(x);
+            return nullptr;
+        }
         std::string specific_var_name = var_name;
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
@@ -14294,6 +14299,22 @@ public:
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+        ASR::expr_t *arg = args[0];
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *size_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, x.base.base.loc, 8));
+        return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
+            size_type, nullptr);
+    }
+
+    ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
+        diag.semantic_warning_label(
+            "`sizeof` is an LFortran extension",
+            {x.base.base.loc},
+            "use `c_sizeof` from `iso_c_binding` for portable code");
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"X"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("sizeof"));
         ASR::expr_t *arg = args[0];
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
