@@ -15873,8 +15873,26 @@ public:
                                 ASRUtils::fetch_ArrayConstant_value(al, right_array, i), op, loc, ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, left_array, i))));
             }
 
-            return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
-                                    values.p, values.size(), dest_type,
+            ASR::ttype_t* value_type = ASRUtils::type_get_past_allocatable_pointer(dest_type);
+            value_type = ASRUtils::type_get_past_pointer(value_type);
+            LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
+
+            ASR::Array_t* value_array_type = ASR::down_cast<ASR::Array_t>(value_type);
+            void* data = ASRUtils::set_ArrayConstant_data(values.p, values.size(), value_array_type->m_type);
+            int64_t n_data = values.size() * ASRUtils::extract_kind_from_ttype_t(value_array_type->m_type);
+
+            if (ASRUtils::is_character(*value_array_type->m_type)) {
+                int len = 0;
+                if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(value_array_type->m_type)->m_len, len)) {
+                    LCOMPILERS_ASSERT(false);
+                }
+                n_data = values.size() * len;
+            } else if (ASR::is_a<ASR::StructType_t>(*value_array_type->m_type)) {
+                n_data = values.size() * sizeof(ASR::expr_t*);
+            }
+
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                                    n_data, data, value_type,
                                     ASR::arraystorageType::ColMajor));
         }
         return nullptr;
