@@ -630,10 +630,10 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
-        *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
+        *current_expr = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt));
+                            x->m_dt, x->m_is_method));
         new_func_calls.insert(*current_expr);
     }
 
