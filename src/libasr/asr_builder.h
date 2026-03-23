@@ -1107,7 +1107,7 @@ class ASRBuilder {
         return Deallocate(m_a_vec);
     }
     ASR::stmt_t* Deallocate(Vec<ASR::expr_t*> &m_a){
-        return ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, m_a.p, m_a.n));
+        return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc, m_a.p, m_a.n));
     }
 
     ASR::stmt_t *DoLoop(ASR::expr_t *m_v, ASR::expr_t *start, ASR::expr_t *end,
