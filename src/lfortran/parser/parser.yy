@@ -1949,7 +1949,10 @@ backspace_statement
 
 flush_statement
     : KW_FLUSH "(" write_arg_list ")" { $$ = FLUSH($3, @$); }
-    | KW_FLUSH TK_INTEGER { $$ = FLUSH1($2, @$); }
+    | KW_FLUSH id { $$ = FLUSH2($2, @$); }
+    | KW_FLUSH TK_INTEGER { $$ = FLUSH2(INTEGER($2, @$), @$); }
+    | KW_FLUSH id "(" fnarray_arg_list_opt ")" {
+            $$ =  FLUSH2(FUNCCALLORARRAY($2, $4, @$), @$); }
     ;
 
 endfile_statement
