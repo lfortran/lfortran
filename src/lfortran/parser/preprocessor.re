@@ -630,6 +630,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     // Expand the macro once
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
+                        while (*cur == ' ' || *cur == '\t') cur++;
                         if (*cur != '(') {
                             Location loc;
                             loc.first = cur - string_start;
@@ -1153,6 +1154,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
+                while (*cur == ' ' || *cur == '\t') cur++;
                 if (*cur != '(') {
                     Location loc;
                     loc.first = cur - string_start;
