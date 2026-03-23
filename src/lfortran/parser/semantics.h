@@ -1352,8 +1352,8 @@ ast_t* builtin3(Allocator &al,
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define BACKSPACE2(arg, l) make_Backspace_t(p.m_a, l, 0, \
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
-#define FLUSH1(arg, l) make_Flush_t(p.m_a, l, 0, \
-            EXPRS(A2LIST(p.m_a, INTEGER(arg, l))), 1, nullptr, 0, nullptr)
+#define FLUSH2(arg, l) make_Flush_t(p.m_a, l, 0, \
+        EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define ENDFILE2(arg, l) make_Endfile_t(p.m_a, l, 0, \
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define BIND2(args0, l) builtin3(p.m_a, args0, l, make_Bind_t)
@@ -2060,11 +2060,11 @@ void add_ws_warning(const Location &loc,
 #define DO2(i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
 #define DO2_LABEL(label, i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
         label, name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
@@ -2075,7 +2075,7 @@ void add_ws_warning(const Location &loc,
 #define DO3_LABEL(label, i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
         label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
@@ -2085,7 +2085,7 @@ void add_ws_warning(const Location &loc,
 #define DO3(i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
 
 #define DO_CONCURRENT1(h, loc, trivia, body, l) make_DoConcurrentLoop_t(p.m_a, l, 0, nullptr, \
         CONCURRENT_CONTROLS(h), h.size(), \

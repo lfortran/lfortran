@@ -1134,6 +1134,13 @@ public:
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
+        for (size_t i=0; i<x.n_use; i++) {
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         is_Function = true;
         bool old_in_Subroutine = in_Subroutine;
         in_Subroutine = true;
@@ -2642,21 +2649,42 @@ public:
             != vars_with_deferred_struct_declaration.end()) {
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
                 ASR::ttype_t* var_type = var->m_type;
-                if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
-                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var_type));
-                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
-                         ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
-                    if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
-                        var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
-                    } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
-                        var->m_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
-                    }
-                    if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
-                        ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
-                        ptr_null->m_type = var->m_type;
-                    }
+                std::function<ASR::ttype_t*(ASR::ttype_t*)> replace_deferred_struct_type =
+                    [&](ASR::ttype_t* t) -> ASR::ttype_t* {
+                        if (ASR::is_a<ASR::StructType_t>(*t)) {
+                            ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(t);
+                            return ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                                ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
+                        }
+                        if (ASR::is_a<ASR::Array_t>(*t)) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+                            ASR::ttype_t* element_type = replace_deferred_struct_type(array_t->m_type);
+                            return ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
+                                element_type, array_t->m_dims, array_t->n_dims,
+                                array_t->m_physical_type));
+                        }
+                        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+                            ASR::Pointer_t* pointer_t = ASR::down_cast<ASR::Pointer_t>(t);
+                            ASR::ttype_t* base_type = replace_deferred_struct_type(pointer_t->m_type);
+                            return ASRUtils::make_Pointer_t_util(al, x.base.base.loc, base_type);
+                        }
+                        if (ASR::is_a<ASR::Allocatable_t>(*t)) {
+                            ASR::Allocatable_t* alloc_t = ASR::down_cast<ASR::Allocatable_t>(t);
+                            ASR::ttype_t* base_type = replace_deferred_struct_type(alloc_t->m_type);
+                            return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                                x.base.base.loc, base_type));
+                        }
+                        return t;
+                    };
+
+                var->m_type = replace_deferred_struct_type(var_type);
+                if (var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
+                    ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
+                    ptr_null->m_type = var->m_type;
                 }
                 var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+                // If this variable is a struct member, refresh the owning struct
+                // signature so it stays in sync with the updated member type.
             }
             vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }

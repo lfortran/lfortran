@@ -178,7 +178,7 @@ stmt
             trivia? t_inside, trivia? trivia)
     | DoLoop(int label, identifier? stmt_name, int do_label, identifier? var,
             expr? start, expr? end, expr? increment, stmt* body,
-            trivia? t_inside, trivia? trivia)
+            trivia? t_inside, trivia? trivia, location var_loc)
     | ForAll(int label, identifier? stmt_name,
             concurrent_control *control, expr? mask,
             concurrent_locality* locality, stmt* body,
