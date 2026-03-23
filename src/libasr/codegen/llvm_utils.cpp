@@ -2248,6 +2248,10 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
+        if (str->getType()->isPointerTy() &&
+            str->getType()->getPointerElementType()->isPointerTy()) {
+            str = CreateLoad2(str->getType()->getPointerElementType(), str);
+        }
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
         llvm::Value* ptr_to_data {};
         switch (str_type->m_physical_type)
@@ -2275,6 +2279,10 @@ namespace LCompilers {
     // >>>>>>>>>>>>>> Refactor this
 
     llvm::Value* LLVMUtils::get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len){
+        if (str->getType()->isPointerTy() &&
+            str->getType()->getPointerElementType()->isPointerTy()) {
+            str = CreateLoad2(str->getType()->getPointerElementType(), str);
+        }
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
         if(!get_pointer_to_len && str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)){ // CompileTime-Constant Length
             int64_t len; ASRUtils::extract_value(str_type->m_len, len);
