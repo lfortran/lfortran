@@ -3423,6 +3423,7 @@ RUN(NAME character_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME character_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME character_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3465,6 +3466,7 @@ RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm llvm_wasm llvm_wasm_e
 RUN(NAME implicit_argument_casting_03 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --implicit-argument-casting
     GFORTRAN_ARGS -fallow-argument-mismatch)
+
 
 RUN(NAME specfun_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)
