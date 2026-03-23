@@ -8218,11 +8218,6 @@ public:
                 if (ASRUtils::is_allocatable(v_type) || ASRUtils::is_pointer(v_type)) {
                     value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
                 }
-            } else if (ASR::is_a<ASR::Var_t>(*x.m_value)) {
-                if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_value)) ||
-                    ASRUtils::is_pointer(ASRUtils::expr_type(x.m_value))) {
-                    value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-                }
             }
             value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
             value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
