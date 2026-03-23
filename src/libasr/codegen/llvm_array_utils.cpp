@@ -1878,9 +1878,10 @@ namespace LCompilers {
                 type_code_val = (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
-            } else if (ASR::is_a<ASR::Logical_t>(*val_type)){
-                type_code_val = 1;
-            }  
+            } else {
+                throw CodeGenError("Not implemented: read into allocatable targets for dtype "
+                    + ASRUtils::type_to_str_python_expr(val_type, val_expr));
+            }
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_code_val));
             args.push_back(data_ptr_val);

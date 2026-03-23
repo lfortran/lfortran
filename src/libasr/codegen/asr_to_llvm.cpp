@@ -16141,8 +16141,10 @@ public:
                 : static_cast<llvm::Type*>(complex_type_8);
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
             args.push_back(re_ptr);
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
             args.push_back(im_ptr);
         } else {
@@ -16258,7 +16260,7 @@ public:
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
         } else if (ASRUtils::is_array(expr_type_full)) {
-        // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+            // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
                     val_type, var_ptr, module.get(), single_args);
@@ -16568,7 +16570,8 @@ public:
                     add_formatted_read_arg(args, val_type, elem_ptr);
                 }
             } else if (ASRUtils::is_array(expr_type_full)) {
-        // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+                // DescriptorArray target: push is_descriptor_array=1, elem_tc, 
+                // data_ptr, n_elems, stride
                 arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
                             val_type, var_ptr, module.get(), args);
             } else {
