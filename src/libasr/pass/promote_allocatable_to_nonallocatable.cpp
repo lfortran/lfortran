@@ -391,17 +391,22 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
                             ASRUtils::type_get_past_pointer(orig_arg_type));
                         if (arg_array->m_physical_type !=
                             orig_array->m_physical_type) {
+                            ASR::array_physical_typeType target_physical_type =
+                                orig_array->m_physical_type;
+                            if (target_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                                target_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                            }
                             ASR::ttype_t* cast_type = ASRUtils::duplicate_type(
                                 al,
                                 ASRUtils::type_get_past_allocatable(
                                     ASRUtils::expr_type(xx.m_args[i].m_value)),
-                                nullptr, orig_array->m_physical_type, true);
+                                nullptr, target_physical_type, true);
                             xx.m_args[i].m_value = ASRUtils::EXPR(
                                 ASRUtils::make_ArrayPhysicalCast_t_util(
                                     al, xx.m_args[i].m_value->base.loc,
                                     xx.m_args[i].m_value,
                                     arg_array->m_physical_type,
-                                    orig_array->m_physical_type,
+                                    target_physical_type,
                                     cast_type, nullptr));
                         }
                     }
