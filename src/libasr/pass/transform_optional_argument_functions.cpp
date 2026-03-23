@@ -732,10 +732,10 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx, pass_result) ) {
                 return ;
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
-                                    nullptr, false)));
+                                    x.m_is_method, false)));
         }
 };
 
