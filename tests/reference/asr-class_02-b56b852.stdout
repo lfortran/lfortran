@@ -326,7 +326,7 @@
                                         (FunctionCall
                                             5 1_circle_circle_area
                                             ()
-                                            []
+                                            [((Var 5 this))]
                                             (Real 4)
                                             ()
                                             (Var 5 this)
@@ -475,7 +475,7 @@
                                     (SubroutineCall
                                         6 1_circle_circle_print
                                         ()
-                                        []
+                                        [((Var 6 c))]
                                         (Var 6 c)
                                         .false.
                                     )]

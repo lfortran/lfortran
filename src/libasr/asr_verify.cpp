@@ -1118,8 +1118,8 @@ public:
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        size_t formal_offset = 0;
         bool is_method = (x.m_dt != nullptr);
+        bool nopass = false;
         if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
             require(is_method,
@@ -1127,19 +1127,10 @@ public:
                 "' called without dt (not as a method).");
             if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
                 func = ASR::down_cast<ASR::Function_t>(method->m_proc);
-                if (!method->m_is_nopass) {
-                    formal_offset = 1;
-                }
+                nopass = method->m_is_nopass;
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
             func = ASR::down_cast<ASR::Function_t>(func_sym);
-            // When a method call goes through ExternalSymbol, the resolved
-            // symbol is the bare Function. In that case we cannot determine
-            // from the symbol alone whether it is a method, so we trust
-            // m_dt.
-            if (is_method) {
-                formal_offset = 1;
-            }
         } else if (func_sym && ASR::is_a<ASR::Variable_t>(*func_sym)) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(func_sym);
             if (is_method) {
@@ -1147,6 +1138,7 @@ public:
                     "Call with dt!=nullptr targets Variable '" +
                     std::string(var->m_name) +
                     "' with pass_attr=NotMethod.");
+                nopass = (var->m_pass_attr == ASR::pass_attrType::NoPass);
             } else {
                 require(var->m_pass_attr == ASR::pass_attrType::NotMethod,
                     "Variable '" + std::string(var->m_name) +
@@ -1160,21 +1152,35 @@ public:
             verify_dt_member(x);
         }
 
+        // Verify self argument is explicit for method calls with PASS
+        if (is_method && !nopass && func) {
+            require(x.n_args > 0 && x.m_args[0].m_value != nullptr,
+                "Method call with PASS must have self as args[0].");
+        }
+
         if (func) {
-            require(x.n_args + formal_offset <= func->n_args,
-                "More actual arguments than formal arguments in call.");
+            require(x.n_args <= func->n_args,
+                "More actual arguments than formal arguments in call. "
+                "call n_args=" + std::to_string(x.n_args) +
+                " func n_args=" + std::to_string(func->n_args) +
+                " func=" + std::string(func->m_name));
 
             for (size_t i = 0; i < x.n_args; i++) {
-                size_t formal_idx = i + formal_offset;
-                require(formal_idx < func->n_args,
+                require(i < func->n_args,
                     "More actual arguments than formal arguments in call.");
-                require(ASR::is_a<ASR::Var_t>(*func->m_args[formal_idx]),
+                require(ASR::is_a<ASR::Var_t>(*func->m_args[i]),
                     "Function argument must be a Var.");
-                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[formal_idx])->m_v;
+                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
                 if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                     continue;
                 }
                 ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+
+                // Skip detailed checks for self argument (args[0] in method calls)
+                if (i == 0 && is_method && !nopass) {
+                    continue;
+                }
+
                 ASR::expr_t* passed_arg_expr = x.m_args[i].m_value;
 
                 if (passed_arg_expr == nullptr) {
@@ -1210,7 +1216,7 @@ public:
                 }
             }
 
-            for (size_t i = x.n_args + formal_offset; i < func->n_args; i++) {
+            for (size_t i = x.n_args; i < func->n_args; i++) {
                 require(ASR::is_a<ASR::Var_t>(*func->m_args[i]),
                     "Function argument must be a Var.");
                 ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
