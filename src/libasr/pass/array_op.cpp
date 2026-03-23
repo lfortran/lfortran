@@ -54,6 +54,9 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     void replace_ArrayItem(ASR::ArrayItem_t* /*x*/) {
     }
 
+    void replace_ttype(ASR::ttype_t* /*x*/) {
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( !ASRUtils::is_elemental(x->m_name) ) {
             return ;
