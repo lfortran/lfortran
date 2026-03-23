@@ -7592,11 +7592,11 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
-    bool implicit_argument_casting = false) {
+    bool implicit_argument_casting = false, bool self_in_args = false) {
 
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
-    bool self_already_in_args = (a_is_method && n_args > 0 &&
+    bool self_already_in_args = self_in_args || (a_is_method && n_args > 0 &&
         a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,

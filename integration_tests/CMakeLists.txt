@@ -2210,7 +2210,7 @@ RUN(NAME derived_types_122 LABELS gfortran llvm)
 RUN(NAME derived_types_123 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 RUN(NAME derived_types_124 LABELS gfortran llvm)
 RUN(NAME derived_types_125 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME derived_types_126 LABELS gfortran EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME derived_types_126 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

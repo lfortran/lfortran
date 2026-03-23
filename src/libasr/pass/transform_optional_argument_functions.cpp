@@ -634,10 +634,12 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
+        bool nopass = ASRUtils::get_class_proc_nopass_val(x->m_name);
+        bool self_in_args = (x->m_dt && !nopass);
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt));
+                            x->m_dt, nullptr, std::nullopt, false, self_in_args));
         new_func_calls.insert(*current_expr);
     }
 
