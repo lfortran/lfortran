@@ -1635,7 +1635,8 @@ public:
         }
         r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
-        for (size_t i = 0; i < x.n_args; i ++) {
+        size_t start_idx = x.m_is_method ? 1 : 0;
+        for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
             if (i < x.n_args-1) r += ", ";
@@ -1947,7 +1948,8 @@ public:
             r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
-        for (size_t i = 0; i < x.n_args; i ++) {
+        size_t start_idx = x.m_is_method ? 1 : 0;
+        for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
             if (i < x.n_args-1) r += ", ";
