@@ -1858,7 +1858,18 @@ public:
                 ASR::TypeStmtType_t* type_stmt = ASR::down_cast<ASR::TypeStmtType_t>(x.m_body[i]);
                 r += indent;
                 r += "type is (";
-                r += get_type(type_stmt->m_type);
+                ASR::ttype_t *guard_type = ASRUtils::type_get_past_allocatable_pointer(type_stmt->m_type);
+                if (ASR::is_a<ASR::String_t>(*guard_type)) {
+                    ASR::String_t *str_t = ASR::down_cast<ASR::String_t>(guard_type);
+                    if (str_t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                        // In a TYPE IS guard, character length must be assumed, not deferred.
+                        r += "character(len=*, kind=" + std::to_string(str_t->m_kind) + ")";
+                    } else {
+                        r += get_type(type_stmt->m_type);
+                    }
+                } else {
+                    r += get_type(type_stmt->m_type);
+                }
                 r += ")\n";
                 inc_indent();
                 emit_select_type_body(type_stmt->m_body, type_stmt->n_body, r);
