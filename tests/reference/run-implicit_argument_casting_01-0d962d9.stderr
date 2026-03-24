@@ -1,1 +1,5 @@
-Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time
+semantic error: Type mismatch in argument `a`: expected `real(8)[:]` but got `complex(8)`
+  --> tests/../integration_tests/implicit_argument_casting_01.f90:23:29
+   |
+23 |     call idz_realcomp(ls*2, w(isi))
+   |                             ^^^^^^ 
