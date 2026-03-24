@@ -2605,7 +2605,31 @@ public:
                     }));
                 throw SemanticAbort();
             }            
-            if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+            // For implicit interface procedure pointers (procedure(type-spec)),
+            // the target has no arg_types - only check return type compatibility.
+            // On association, adopt the full interface from the value.
+            bool implicit_iface = (target_func_type->n_arg_types == 0
+                                   && target_func_type->m_return_var_type != nullptr
+                                   && compiler_options.implicit_interface);
+            if (implicit_iface) {
+                if (ASRUtils::types_equal(target_func_type->m_return_var_type,
+                                          value_func_type->m_return_var_type,
+                                          nullptr, nullptr)) {
+                    // Update the pointer variable's type and type_declaration
+                    // to adopt the full interface from the assigned function.
+                    if (ASR::is_a<ASR::Var_t>(*target)) {
+                        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                            ASR::down_cast<ASR::Var_t>(target)->m_v);
+                        var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                            al, x.base.base.loc, value_type_underlying));
+                        if (ASR::is_a<ASR::Var_t>(*value)) {
+                            ASR::symbol_t *val_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                            var->m_type_declaration = ASRUtils::symbol_get_past_external(val_sym);
+                        }
+                    }
+                    tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+                }
+            } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
