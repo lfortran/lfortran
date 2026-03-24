@@ -2608,24 +2608,47 @@ public:
             // For implicit interface procedure pointers (procedure(type-spec)),
             // the target has no arg_types - only check return type compatibility.
             // On association, adopt the full interface from the value.
-            bool implicit_iface = (target_func_type->n_arg_types == 0
-                                   && target_func_type->m_return_var_type != nullptr
-                                   && compiler_options.implicit_interface);
+            // We detect procedure(type-spec) by checking if the type_declaration
+            // is an auto-generated interface (name starts with "__" and contains
+            // "_iface_"), as opposed to procedure(interface-name) which points to
+            // the actual interface function.
+            bool implicit_iface = false;
+            if (target_func_type->n_arg_types == 0
+                    && target_func_type->m_return_var_type != nullptr
+                    && compiler_options.implicit_interface
+                    && ASR::is_a<ASR::Var_t>(*target)) {
+                ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(target)->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
+                    if (target_var->m_type_declaration) {
+                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
+                            target_var->m_type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                            std::string decl_name = ASR::down_cast<ASR::Function_t>(
+                                type_decl)->m_name;
+                            if (decl_name.find("__") == 0
+                                    && decl_name.find("_iface_") != std::string::npos) {
+                                implicit_iface = true;
+                            }
+                        }
+                    }
+                }
+            }
             if (implicit_iface) {
                 if (ASRUtils::types_equal(target_func_type->m_return_var_type,
                                           value_func_type->m_return_var_type,
                                           nullptr, nullptr)) {
                     // Update the pointer variable's type and type_declaration
                     // to adopt the full interface from the assigned function.
-                    if (ASR::is_a<ASR::Var_t>(*target)) {
-                        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                            ASR::down_cast<ASR::Var_t>(target)->m_v);
-                        var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
-                            al, x.base.base.loc, value_type_underlying));
-                        if (ASR::is_a<ASR::Var_t>(*value)) {
-                            ASR::symbol_t *val_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
-                            var->m_type_declaration = ASRUtils::symbol_get_past_external(val_sym);
-                        }
+                    ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(target)->m_v);
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(target_sym);
+                    var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                        al, x.base.base.loc, value_type_underlying));
+                    if (ASR::is_a<ASR::Var_t>(*value)) {
+                        ASR::symbol_t *val_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                        var->m_type_declaration = ASRUtils::symbol_get_past_external(val_sym);
                     }
                     tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
                 }
