@@ -1655,6 +1655,7 @@ public:
         {"norm2", IntrinsicSignature({"array", "dim"}, 1, 2)},
         {"sum", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
         {"product", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"reduce", IntrinsicSignature({"array", "operation", "dim", "mask"}, 2, 4)},
         {"iparity", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
         {"matmul", IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)},
         {"dot_product", IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)},

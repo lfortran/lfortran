@@ -3478,11 +3478,11 @@ ASR::asr_t* make_ArraySize_t_util(
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
-        int64_t dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
+        int64_t dim_arg_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
             static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id));
         ASR::expr_t* af_dim = nullptr;
-        if( dim_index == 1 && (size_t) dim_index < af->n_args && af->m_args[dim_index] != nullptr ) {
-            af_dim = af->m_args[dim_index];
+        if( dim_arg_index >= 1 && (size_t) dim_arg_index < af->n_args && af->m_args[dim_arg_index] != nullptr ) {
+            af_dim = af->m_args[dim_arg_index];
         }
         if ( ASRUtils::is_array(af->m_type) ) {
             array_func_type = af->m_type;

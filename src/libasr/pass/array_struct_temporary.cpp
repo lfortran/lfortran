@@ -1875,14 +1875,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
         }
         ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
-        if( ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
-                static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id)) == 1 &&
-            x.n_args > 1 && ASRUtils::is_array(x.m_type) ) {
+        int dim_arg_idx = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
+            static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id));
+        if( dim_arg_idx >= 1 &&
+            (size_t) dim_arg_idx < x.n_args && x.m_args[dim_arg_idx] != nullptr &&
+            ASRUtils::is_array(x.m_type) ) {
             Vec<ASR::dimension_t> dims;
             diag::Diagnostics diags;
             ASRUtils::ArrIntrinsic::fill_dimensions_for_ArrIntrinsic(
                 al, ASRUtils::extract_n_dims_from_ttype(x.m_type), x.m_args[0],
-                x.m_args[1], diags, !ASRUtils::is_value_constant(x.m_args[1]), dims);
+                x.m_args[dim_arg_idx], diags, !ASRUtils::is_value_constant(x.m_args[dim_arg_idx]), dims);
             xx.m_type = ASRUtils::duplicate_type(al, x.m_type, &dims,
                 ASR::array_physical_typeType::DescriptorArray, true);
         }
