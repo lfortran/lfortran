@@ -325,7 +325,7 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -943,7 +943,6 @@ class ASRToLLVMVisitor;
              *              to be freed by the consumer of that string.
              *         ** It complains if current return wasn't freed.
              */ 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr);
 
             class StringFormatReturn {
                 LLVMUtils   *llvmUtils_instance_;
