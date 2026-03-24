@@ -1462,13 +1462,18 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
+                        llvm::Type* el_ty = get_el_type(arg_expr, v_type->m_type, module);
+                        int64_t simd_len = ASRUtils::get_fixed_size_of_array(
+                            v_type->m_dims, v_type->n_dims);
+                        if (simd_len <= 0) {
+                            llvm_type = llvm::ArrayType::get(el_ty, 0);
+                        } else {
 #if LLVM_VERSION_MAJOR >= 11
-                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
-                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
+                            llvm_type = llvm::VectorType::get(el_ty, simd_len, false);
 #else
-                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
-                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+                            llvm_type = llvm::VectorType::get(el_ty, simd_len);
 #endif
+                        }
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {

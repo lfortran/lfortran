@@ -13323,7 +13323,13 @@ public:
             throw CodeGenError("ConstArray type not supported yet");
         }
         // Create <n x float> type, where `n` is the length of the `x` constant array
-        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, ASRUtils::get_fixed_size_of_array(x.m_type));
+        int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
+        llvm::Type* type_fxn = nullptr;
+        if (simd_n <= 0) {
+            type_fxn = llvm::ArrayType::get(el_type, 0);
+        } else {
+            type_fxn = FIXED_VECTOR_TYPE::get(el_type, simd_n);
+        }
         // Create a pointer <n x float>* to a stack allocated <n x float>
         llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
         // Assign the array elements to `p_fxn`.
@@ -22114,7 +22120,12 @@ public:
         llvm::Type* ele_type = llvm_utils->get_el_type(
             x.m_array, ASRUtils::type_get_past_array(x.m_type), module.get());
         size_t n_eles = ASRUtils::get_fixed_size_of_array(x.m_type);
-        llvm::Type* vec_type = FIXED_VECTOR_TYPE::get(ele_type, n_eles);
+        llvm::Type* vec_type = nullptr;
+        if (n_eles == 0) {
+            vec_type = llvm::ArrayType::get(ele_type, 0);
+        } else {
+            vec_type = FIXED_VECTOR_TYPE::get(ele_type, n_eles);
+        }
         llvm::AllocaInst *vec = llvm_utils->CreateAlloca(*builder, vec_type);
         for (size_t i=0; i < n_eles; i++) {
             llvm::Value* store_value = value;
