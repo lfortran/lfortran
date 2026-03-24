@@ -8918,14 +8918,21 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
             if (!sym_type->m_name) {
-                Location &attr_loc = sym_type->base.base.loc;
-                diag.add(Diagnostic(
-                    "Procedure declarations without an explicit interface (procedure()) are not yet supported. "
-                    "Please use procedure(interface_name) or declare an interface block.",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{attr_loc})
-                    }));
-                throw SemanticAbort();
+                // procedure() has an implicit interface: keep the declaration
+                // unconstrained and resolve argument details from use sites.
+                type_declaration = nullptr;
+                type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, loc,
+                    nullptr, 0, nullptr,
+                    ASR::abiType::Source,
+                    ASR::deftypeType::Interface,
+                    nullptr,
+                    false, false, false, false, false,
+                    nullptr, 0, false));
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
+                return type;
             }
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
@@ -17480,11 +17487,22 @@ public:
     // If expected_type is provided, use it for the interface signature instead of
     // the procedure variable's own FunctionType (which may have incomplete info).
     void create_interface_for_procedure_variable(ASR::Variable_t* proc_var,
-            const Location& loc, ASR::FunctionType_t* expected_type = nullptr) {
-        ASR::FunctionType_t* func_type = expected_type ? expected_type :
-            ASR::down_cast<ASR::FunctionType_t>(proc_var->m_type);
+            const Location& loc, ASR::FunctionType_t* expected_type = nullptr,
+            bool is_function = true) {
+        ASR::FunctionType_t* func_type = expected_type;
+        if (!func_type) {
+            ASR::ttype_t* proc_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(proc_var->m_type));
+            if (!ASR::is_a<ASR::FunctionType_t>(*proc_type)) {
+                // Not a procedure variable with an inferrable interface.
+                return;
+            }
+            func_type = ASR::down_cast<ASR::FunctionType_t>(proc_type);
+        }
         ASR::ttype_t* return_type = func_type->m_return_var_type;
-        if (!return_type) {
+        if (!is_function) {
+            return_type = nullptr;
+        } else if (!return_type) {
             return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
         }
         std::string var_name = proc_var->m_name;
@@ -17511,17 +17529,20 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
             arg_types.push_back(al, arg_type);
         }
-        // Create return var
-        std::string return_var_name = iface_name + "_return_var";
-        ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, fn_scope, s2c(al, return_var_name),
-                nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
-                ASR::storage_typeType::Default, return_type, nullptr,
-                ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr));
-        fn_scope->add_symbol(return_var_name, return_sym);
-        ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
+        ASR::expr_t* return_var = nullptr;
+        if (is_function) {
+            // Create return var only for function interfaces.
+            std::string return_var_name = iface_name + "_return_var";
+            ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Variable_t(al, loc, fn_scope, s2c(al, return_var_name),
+                    nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                    ASR::storage_typeType::Default, return_type, nullptr,
+                    ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                    ASR::pass_attrType::NotMethod, nullptr));
+            fn_scope->add_symbol(return_var_name, return_sym);
+            return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
+        }
         // Create interface FunctionType
         ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
             al, loc, arg_types.p, arg_types.size(), return_type,
@@ -17534,8 +17555,18 @@ public:
                 return_var, ASR::accessType::Public, false, false,
                 nullptr, nullptr, nullptr));
         parent_scope->add_symbol(iface_name, iface);
-        // Update the procedure variable's type and type_declaration
-        proc_var->m_type = iface_type;
+        // Update the procedure variable's type and type_declaration.
+        // Preserve pointer/allocatable wrappers from the original declaration.
+        ASR::ttype_t* updated_proc_type = iface_type;
+        if (ASRUtils::is_pointer(proc_var->m_type)) {
+            updated_proc_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                al, loc, updated_proc_type));
+        }
+        if (ASRUtils::is_allocatable(proc_var->m_type)) {
+            updated_proc_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                al, loc, updated_proc_type));
+        }
+        proc_var->m_type = updated_proc_type;
         proc_var->m_type_declaration = iface;
         // Also update the arg type in the containing function's signature
         ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_var->m_name);

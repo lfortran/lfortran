@@ -9091,6 +9091,18 @@ public:
                         llvm_target_contents_type->getPointerTo(), llvm_target);
                     builder->CreateStore(llvm_value, loaded_target);
                 } else {
+#if LLVM_VERSION_MAJOR < 15
+                    // procedure() pointer members are stored as `void ()*` placeholders.
+                    // Cast concrete procedure pointers before storing into that slot.
+                    if (llvm_value->getType()->isPointerTy() && llvm_target->getType()->isPointerTy()) {
+                        llvm::Type* dst_type = llvm_target->getType()->getPointerElementType();
+                        if (dst_type->isPointerTy() && llvm_value->getType() != dst_type &&
+                                llvm_value->getType()->getPointerElementType()->isFunctionTy() &&
+                                dst_type->getPointerElementType()->isFunctionTy()) {
+                            llvm_value = builder->CreateBitCast(llvm_value, dst_type);
+                        }
+                    }
+#endif
                     builder->CreateStore(llvm_value, llvm_target);
                 }
             }
@@ -14772,6 +14784,7 @@ public:
                     desc_llvm_type->getPointerTo(), data_ptr);
             }
 
+
             // Determine type code
             ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable_pointer(item_type_asr);
             // For arrays, get the element type
@@ -18254,7 +18267,7 @@ public:
                                         std::string& orig_arg_name, ASR::intentType& arg_intent,
                                         size_t arg_idx) {
         m_h = get_hash((ASR::asr_t*)func_subrout);
-        LCOMPILERS_ASSERT(arg_idx < func_subrout->n_args);
+        if (arg_idx >= func_subrout->n_args) { x_abi = ASRUtils::get_FunctionType(func_subrout)->m_abi; return; }
         if( ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
             ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(func_subrout->m_args[arg_idx]);
             ASR::symbol_t* arg_sym = symbol_get_past_external(arg_var->m_v);
@@ -20557,19 +20570,42 @@ public:
             // and handle it manually with proper type conversion.
             args = convert_call_args(x, is_method /* skip_self */);
             if (is_method) {
-                ASR::StructInstanceMember_t* sim =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
-                uint64_t ptr_loads_copy2 = ptr_loads;
-                ptr_loads = 1;
-                this->visit_expr(*sim->m_v);
-                ptr_loads = ptr_loads_copy2;
-                llvm::Value* pass_arg_val = tmp;
-                llvm::Type* expected_type = fntype->getParamType(0);
-                if (pass_arg_val->getType() != expected_type) {
-                    pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
+            // The interface function may include the pass (self) argument
+            // while explicit call args (x.m_args) do not. Use LLVM arity to
+            // detect this reliably because optional/descriptor lowering can
+            // expand one source argument into multiple IR arguments.
+                if (fntype->getNumParams() == args.size() + 1) {
+                    ASR::StructInstanceMember_t* sim =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
+                    uint64_t ptr_loads_copy2 = ptr_loads;
+                    ptr_loads = 1;
+                    this->visit_expr(*sim->m_v);
+                    ptr_loads = ptr_loads_copy2;
+                    llvm::Value* pass_arg_val = tmp;
+                    llvm::Type* expected_type = fntype->getParamType(0);
+                    if (pass_arg_val->getType() != expected_type) {
+                        pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
+                    }
+                    args.insert(args.begin(), pass_arg_val);
                 }
-                args.insert(args.begin(), pass_arg_val);
             }
+            if (fntype->getNumParams() != args.size() && fntype->getNumParams() == 0) {
+                std::vector<llvm::Type*> arg_types;
+                for (auto arg : args) {
+                    arg_types.push_back(arg->getType());
+                }
+                llvm::FunctionType* new_fntype = llvm::FunctionType::get(fntype->getReturnType(), arg_types, false);
+                callee = builder->CreateBitCast(callee, new_fntype->getPointerTo());
+                fntype = new_fntype;
+            }
+            llvm::Value* is_null_callee = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(callee, llvm::Type::getInt64Ty(context)),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            llvm_utils->generate_runtime_error(is_null_callee,
+                "Attempted to call an unassociated procedure pointer.",
+                {LLVMUtils::RuntimeLabel("procedure pointer is null", {x.base.base.loc})},
+                infile,
+                location_manager);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -20783,6 +20819,25 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
+            if (fntype->getNumParams() != args.size() && fntype->getNumParams() == 0) {
+                std::vector<llvm::Type*> arg_types;
+                for (auto arg : args) {
+                    arg_types.push_back(arg->getType());
+                }
+                llvm::FunctionType* new_fntype = llvm::FunctionType::get(fntype->getReturnType(), arg_types, false);
+                fn = builder->CreateBitCast(fn, new_fntype->getPointerTo());
+                fntype = new_fntype;
+            }
+
+            llvm::Value* is_null_fn = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(fn, llvm::Type::getInt64Ty(context)),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            llvm_utils->generate_runtime_error(is_null_fn,
+                "Attempted to call an unassociated procedure pointer.",
+                {LLVMUtils::RuntimeLabel("procedure pointer is null", {x.base.base.loc})},
+                infile,
+                location_manager);
+
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -20796,6 +20851,25 @@ public:
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
+
+            if (fntype->getNumParams() != args.size() && fntype->getNumParams() == 0) {
+                std::vector<llvm::Type*> arg_types;
+                for (auto arg : args) {
+                    arg_types.push_back(arg->getType());
+                }
+                llvm::FunctionType* new_fntype = llvm::FunctionType::get(fntype->getReturnType(), arg_types, false);
+                fn = builder->CreateBitCast(fn, new_fntype->getPointerTo());
+                fntype = new_fntype;
+            }
+
+            llvm::Value* is_null_fn = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(fn, llvm::Type::getInt64Ty(context)),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            llvm_utils->generate_runtime_error(is_null_fn,
+                "Attempted to call an unassociated procedure pointer.",
+                {LLVMUtils::RuntimeLabel("procedure pointer is null", {x.base.base.loc})},
+                infile,
+                location_manager);
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {

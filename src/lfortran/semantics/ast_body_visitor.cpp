@@ -2604,11 +2604,16 @@ public:
                         Label("(1)",{x.base.base.loc})
                     }));
                 throw SemanticAbort();
-            }            
-            if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+            }
+
+            bool target_is_implicit_iface = target_func_type->n_arg_types == 0;
+            if (target_is_implicit_iface ||
+                ASRUtils::types_equal(target_type_underlying, value_type_underlying, target, value) ||
+                ASRUtils::types_equal(target_type, value_type, target, value)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
-        } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+        } else if (ASRUtils::types_equal(target_type_underlying, value_type_underlying, target, value)
+                   || ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
     }
@@ -6861,7 +6866,40 @@ public:
                     }
                     f = ASR::down_cast<ASR::Function_t>(f4);
                 } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
-                    nopass = true;
+                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(final_sym);
+                    if (ASRUtils::is_symbol_procedure_variable(final_sym) &&
+                            proc_var->m_type_declaration == nullptr) {
+                        create_interface_for_procedure_variable(
+                            proc_var, x.base.base.loc, nullptr, false);
+                    }
+
+                    // For procedure pointer components, infer pass vs nopass
+                    // from the resolved interface signature when available.
+                    nopass = (x.n_member == 0);
+                    if (x.n_member > 0 && proc_var->m_type_declaration != nullptr) {
+                        ASR::symbol_t* iface_sym = ASRUtils::symbol_get_past_external(
+                            proc_var->m_type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*iface_sym)) {
+                            ASR::Function_t* iface_fn = ASR::down_cast<ASR::Function_t>(iface_sym);
+                            bool pass_by_count = (iface_fn->n_args == args.size() + 1);
+                            bool pass_by_receiver = false;
+                            if (v_expr != nullptr && iface_fn->n_args > 0) {
+                                ASR::ttype_t* recv_type = ASRUtils::type_get_past_allocatable_pointer(
+                                    ASRUtils::expr_type(v_expr));
+                                ASR::ttype_t* first_arg_type = ASRUtils::type_get_past_allocatable_pointer(
+                                    ASRUtils::expr_type(iface_fn->m_args[0]));
+                                ASR::ttype_t* recv_base = ASRUtils::extract_type(recv_type);
+                                ASR::ttype_t* first_base = ASRUtils::extract_type(first_arg_type);
+                                if ((ASRUtils::is_class_type(first_arg_type) ||
+                                        ASR::is_a<ASR::StructType_t>(*first_base)) &&
+                                    (ASRUtils::is_class_type(recv_type) ||
+                                        ASR::is_a<ASR::StructType_t>(*recv_base))) {
+                                    pass_by_receiver = true;
+                                }
+                            }
+                            nopass = !(pass_by_count || pass_by_receiver);
+                        }
+                    }
                     final_sym = original_sym;
                     original_sym = nullptr;
                 } else {
@@ -6948,6 +6986,40 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        if (final_sym) {
+            ASR::symbol_t* callee_sym = ASRUtils::symbol_get_past_external(final_sym);
+            if (ASR::is_a<ASR::Variable_t>(*callee_sym)) {
+                ASR::Variable_t* callee_var = ASR::down_cast<ASR::Variable_t>(callee_sym);
+                if (ASRUtils::is_symbol_procedure_variable(callee_sym) &&
+                    callee_var->m_type_declaration == nullptr) {
+                    ASR::ttype_t* callee_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(callee_var->m_type));
+                    if (ASR::is_a<ASR::FunctionType_t>(*callee_type)) {
+                        ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(callee_type);
+                        if (callee_ft->n_arg_types == 0 && args.size() > 0) {
+                            Vec<ASR::ttype_t*> inferred_arg_types;
+                            inferred_arg_types.reserve(al, args.size());
+                            for (size_t i = 0; i < args.size(); i++) {
+                                LCOMPILERS_ASSERT(args[i].m_value != nullptr);
+                                inferred_arg_types.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                            }
+                            ASR::FunctionType_t* inferred_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                ASRUtils::TYPE(ASR::make_FunctionType_t(
+                                    al, x.base.base.loc,
+                                    inferred_arg_types.p, inferred_arg_types.size(), nullptr,
+                                    ASR::abiType::Source, ASR::deftypeType::Interface, nullptr,
+                                    false, false, false, false, false, nullptr, 0, false)));
+                            create_interface_for_procedure_variable(
+                                callee_var, x.base.base.loc, inferred_ft, false);
+                        } else {
+                            create_interface_for_procedure_variable(
+                                callee_var, x.base.base.loc, callee_ft, false);
+                        }
+                    }
+                }
+            }
+        }
+
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {

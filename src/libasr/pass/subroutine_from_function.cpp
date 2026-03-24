@@ -92,8 +92,11 @@ public:
         void visit_Variable(const ASR::Variable_t &x){
             ASR::Variable_t* x_ptr = &const_cast<ASR::Variable_t&>(x);
             if(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))){
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration));
-                ASR::ttype_t* new_type = func->m_function_signature;
+                if (x_ptr->m_type_declaration == nullptr) return;
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
+                if (!sym || !ASR::is_a<ASR::Function_t>(*sym)) return;
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+                ASR::ttype_t* new_type = func->m_function_signature;    
                 if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                     new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
                 }
