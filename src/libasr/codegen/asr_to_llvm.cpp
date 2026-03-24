@@ -18734,8 +18734,9 @@ public:
                         }
                     }
                 }
-                if (ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
-                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type)) &&
+                if (orig_arg && ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
+                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
+                        !ASRUtils::is_character(*ASRUtils::extract_type(arg_type)) &&
                         !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
                         !LLVM::is_llvm_pointer(*orig_arg->m_type)) {
                     llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(

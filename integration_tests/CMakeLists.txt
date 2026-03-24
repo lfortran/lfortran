@@ -3960,6 +3960,7 @@ RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 #test for forward declaration of derived type
 RUN(NAME proc_ptr_nopass_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME proc_ptr_14 LABELS gfortran llvm)
+RUN(NAME proc_ptr_15 LABELS gfortran llvm)
 RUN(NAME write_substr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME move_alloc_derived_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_assign_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
