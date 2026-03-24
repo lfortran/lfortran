@@ -18284,7 +18284,7 @@ public:
     }
 
     template <typename T>
-    std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false) {
+    std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false, size_t skip_self_idx = 0) {
         std::vector<llvm::Value *> args;
         convert_call_args_depth++;
         // Only reset alloca pool indices at outermost call to avoid
@@ -18292,8 +18292,8 @@ public:
         if (convert_call_args_depth == 1) {
             reset_call_arg_alloca_pool();
         }
-        size_t start_idx = skip_self ? 1 : 0;
-        for (size_t i=start_idx; i<x.n_args; i++) {
+        for (size_t i=0; i<x.n_args; i++) {
+            if (skip_self && i == skip_self_idx) continue;
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
             ASR::abiType x_abi = (ASR::abiType) 0;
             ASR::intentType orig_arg_intent = ASR::intentType::Unspecified;
@@ -20550,28 +20550,11 @@ public:
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
 
-            // Check if this proc pointer has a PASS attribute (self is in args[0])
-            ASR::Variable_t* ptr_var = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(x.m_name));
-            bool is_method = (ptr_var->m_pass_attr == ASR::pass_attrType::Pass);
-
-            // Self is in x.m_args[0]; skip it in convert_call_args
-            // and handle it manually with proper type conversion.
-            args = convert_call_args(x, is_method /* skip_self */);
-            if (is_method) {
-                ASR::StructInstanceMember_t* sim =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
-                uint64_t ptr_loads_copy2 = ptr_loads;
-                ptr_loads = 1;
-                this->visit_expr(*sim->m_v);
-                ptr_loads = ptr_loads_copy2;
-                llvm::Value* pass_arg_val = tmp;
-                llvm::Type* expected_type = fntype->getParamType(0);
-                if (pass_arg_val->getType() != expected_type) {
-                    pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
-                }
-                args.insert(args.begin(), pass_arg_val);
-            }
+            // Self argument has been inserted into args by the semantic
+            // layer (with a value distinct from m_dt — see
+            // make_SubroutineCall_t_util).  Let convert_call_args handle
+            // all args including self with proper class wrapping.
+            args = convert_call_args(x, false);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -21160,6 +21143,8 @@ public:
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
+            const ASR::Function_t* func = ASRUtils::get_function(x.m_name);
+
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
@@ -21168,27 +21153,13 @@ public:
                 x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
+            // Self argument has been inserted into args by the semantic
+            // layer (with a value distinct from m_dt — see
+            // make_FunctionCall_t_util).  Let convert_call_args handle
+            // all args including self with proper class wrapping.
             args = convert_call_args(x, false);
-            const ASR::Function_t* func = ASRUtils::get_function(x.m_name);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            // The interface function includes the pass (self) argument
-            // but explicit call args (x.m_args) do not. When the
-            // interface has more args, prepend the parent object.
-            if (func->n_args > x.n_args) {
-                ASR::StructInstanceMember_t* sim =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
-                uint64_t ptr_loads_copy2 = ptr_loads;
-                ptr_loads = 1;
-                this->visit_expr(*sim->m_v);
-                ptr_loads = ptr_loads_copy2;
-                llvm::Value* pass_arg_val = tmp;
-                llvm::Type* expected_type = fntype->getParamType(0);
-                if (pass_arg_val->getType() != expected_type) {
-                    pass_arg_val = builder->CreateBitCast(pass_arg_val, expected_type);
-                }
-                args.insert(args.begin(), pass_arg_val);
-            }
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
