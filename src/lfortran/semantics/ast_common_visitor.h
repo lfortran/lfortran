@@ -8917,7 +8917,15 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
-            if (!sym_type->m_name) {
+            if (!sym_type->m_name || std::string(sym_type->m_name).empty()) {
+                if (!compiler_options.implicit_interface) {
+                    diag.add(Diagnostic(
+                        "procedure() declarations require `--implicit-interface`; use procedure(interface_name) or enable implicit interfaces",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 // procedure() has an implicit interface: keep the declaration
                 // unconstrained and resolve argument details from use sites.
                 type_declaration = nullptr;
@@ -11217,6 +11225,8 @@ public:
                             ASRUtils::get_struct_sym_from_struct_expr(val),
                             current_scope);
                     }
+                    SetChar tmp_deps;
+                    tmp_deps.reserve(al, 1);
                     ASR::ttype_t* tmp_type = ret_type;
                     if (ASR::is_a<ASR::String_t>(*ret_type)) {
                         ASR::String_t* ret_str = ASR::down_cast<ASR::String_t>(ret_type);
@@ -11232,8 +11242,6 @@ public:
                                     val->base.loc, deferred_str_type));
                         }
                     }
-                    SetChar tmp_deps;
-                    tmp_deps.reserve(al, 1);
                     ASRUtils::collect_variable_dependencies(al, tmp_deps,
                         tmp_type, nullptr, nullptr, tmp_name);
                     ASR::symbol_t* tmp_sym =
