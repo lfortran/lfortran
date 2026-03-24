@@ -812,7 +812,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
             x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
         }
-        if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))) ){
+        if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))
+                && x->m_old == x->m_new) ){
             *current_expr = x->m_arg;
             return;
         }
