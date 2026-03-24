@@ -14784,7 +14784,6 @@ public:
                     desc_llvm_type->getPointerTo(), data_ptr);
             }
 
-
             // Determine type code
             ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable_pointer(item_type_asr);
             // For arrays, get the element type
