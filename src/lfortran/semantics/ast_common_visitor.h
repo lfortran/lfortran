@@ -8931,12 +8931,45 @@ public:
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {
                 Location &attr_loc = sym_type->base.base.loc;
-                ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                    al, attr_loc,
-                    nullptr, 0, nullptr, ASR::abiType::Source,        
-                    ASR::deftypeType::Interface, nullptr,                     
-                    false, false, false, false, false, nullptr, 0, false
-                    )); 
+                ASR::ttype_t *func_type = nullptr;
+                if (func_name == "integer" || func_name == "real"
+                    || func_name == "complex" || func_name == "logical") {
+                    ASR::ttype_t *return_type = nullptr;
+                    if (func_name == "integer") {
+                        sym_type->m_type = AST::decl_typeType::TypeInteger;
+                        return_type = determine_type(loc, sym, decl_attribute, is_pointer,
+                            is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    } else if (func_name == "real") {
+                        sym_type->m_type = AST::decl_typeType::TypeReal;
+                        return_type = determine_type(loc, sym, decl_attribute, is_pointer,
+                            is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    } else if (func_name == "complex") {
+                        sym_type->m_type = AST::decl_typeType::TypeComplex;
+                        return_type = determine_type(loc, sym, decl_attribute, is_pointer,
+                            is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    } else if (func_name == "logical") {
+                        sym_type->m_type = AST::decl_typeType::TypeLogical;
+                        return_type = determine_type(loc, sym, decl_attribute, is_pointer,
+                            is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    } else if (func_name == "character") {
+                        sym_type->m_type = AST::decl_typeType::TypeCharacter;
+                        return_type = determine_type(loc, sym, decl_attribute, is_pointer,
+                            is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+                    }
+                    func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                      al, attr_loc, nullptr, 0,
+                      return_type, ASR::abiType::Source,
+                      ASR::deftypeType::Interface, nullptr,
+                      false, false, false, false, false, nullptr, 0,
+                      false));
+                } else {
+                    func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                        al, attr_loc,
+                        nullptr, 0, nullptr, ASR::abiType::Source,        
+                        ASR::deftypeType::Interface, nullptr,                     
+                        false, false, false, false, false, nullptr, 0, false
+                    ));
+                }
                 SymbolTable *parent_scope = current_scope->parent; 
                 SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
