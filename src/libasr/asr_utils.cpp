@@ -3605,9 +3605,36 @@ ASR::asr_t* make_ArraySize_t_util(
             return size;
         } else if( is_dimension_constant ) {
             ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
-            ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
-            ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
-            ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
+
+            // ArraySection arguments include scalar indices as well. For
+            // ArraySize(section, dim=k), `k` is over the resulting section
+            // rank, so we must skip scalar-indexed dimensions when mapping
+            // to section args.
+            ASR::array_index_t* section_arg = nullptr;
+            int64_t logical_dim = 0;
+            for (size_t i = 0; i < array_section_t->n_args; i++) {
+                ASR::expr_t* i_start = array_section_t->m_args[i].m_left;
+                ASR::expr_t* i_end = array_section_t->m_args[i].m_right;
+                ASR::expr_t* i_step = array_section_t->m_args[i].m_step;
+                bool is_scalar_index = (i_start == nullptr) && (i_step == nullptr)
+                    && !ASRUtils::is_array(ASRUtils::expr_type(i_end));
+                if (is_scalar_index) {
+                    continue;
+                }
+                logical_dim += 1;
+                if (logical_dim == dim) {
+                    section_arg = &array_section_t->m_args[i];
+                    break;
+                }
+            }
+
+            if (section_arg == nullptr) {
+                return const1;
+            }
+
+            ASR::expr_t* start = section_arg->m_left;
+            ASR::expr_t* end = section_arg->m_right;
+            ASR::expr_t* d = section_arg->m_step;
 
             // Case: A(:, iact) where iact is an array and dim = 2
             if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
