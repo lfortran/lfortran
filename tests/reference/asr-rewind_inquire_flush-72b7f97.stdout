@@ -193,6 +193,7 @@
                         ()
                         []
                         ()
+                        ()
                     )
                     (FileInquire
                         0
@@ -229,6 +230,7 @@
                         ()
                         ()
                         []
+                        ()
                         ()
                     )
                     (FileInquire
@@ -267,6 +269,7 @@
                         (Var 2 len)
                         [(Var 2 a)
                         (Var 2 b)]
+                        ()
                         ()
                     )
                     (GoToTarget
