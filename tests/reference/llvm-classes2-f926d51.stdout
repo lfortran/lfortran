@@ -42,7 +42,7 @@ FINALIZE_SYMTABLE_r2d:                            ; preds = %return
   ret float %10
 }
 
-; Function Attrs: nounwind readnone speculatable willreturn
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
 declare float @llvm.sqrt.f32(float) #0
 
 define i32 @main(i32 %0, i8** %1) {
@@ -118,7 +118,7 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-; Function Attrs: argmemonly nounwind willreturn writeonly
+; Function Attrs: argmemonly nofree nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #1
 
 define linkonce_odr void @_copy_defs_point(i8* %0, i8* %1) {
@@ -210,5 +210,5 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
 
-attributes #0 = { nounwind readnone speculatable willreturn }
-attributes #1 = { argmemonly nounwind willreturn writeonly }
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #1 = { argmemonly nofree nounwind willreturn writeonly }

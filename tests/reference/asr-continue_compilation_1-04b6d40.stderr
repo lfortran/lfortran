@@ -70,12 +70,6 @@ warning: non-standard Fortran 77-style initialization (extension)
 165 |         integer, save :: slash_y/2/
     |                          ^^^^^^^^^^ Use modern syntax instead: integer :: slash_y = 2
 
-semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
-   --> tests/errors/continue_compilation_1.f90:179:9
-    |
-179 |         procedure(), pointer :: pf1
-    |         ^^^^^^^^^^^ 
-
 semantic error: Procedure 'op_clash_f' is already defined as an interface body
    --> tests/errors/continue_compilation_1.f90:186:5 - 190:27
     |
@@ -421,12 +415,6 @@ semantic error: Character intrinsic 'len_trim' with class(*) argument must be in
     |
 138 |         print *, len_trim(generic)
     |                  ^^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
-
-semantic error: Variable 'pf1' is not declared
-   --> tests/errors/continue_compilation_1.f90:180:9
-    |
-180 |         pf1 => dummy_sub
-    |         ^^^ 'pf1' is undeclared
 
 semantic error: Interface mismatch in procedure pointer assignment at (1): 'dummy_func' is not a subroutine
    --> tests/errors/continue_compilation_1.f90:183:9
