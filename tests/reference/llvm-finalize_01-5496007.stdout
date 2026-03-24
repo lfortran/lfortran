@@ -344,10 +344,10 @@ Finalize_Variable_str:                            ; preds = %Finalize_Variable_a
   ret void
 }
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #0
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare void @llvm.stackrestore(i8*) #0
 
 define internal void @finalize_allocatable__Array_2_r32(%array.2* %0, i1 %1) {
@@ -394,4 +394,4 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { nofree nosync nounwind willreturn }
+attributes #0 = { nounwind }

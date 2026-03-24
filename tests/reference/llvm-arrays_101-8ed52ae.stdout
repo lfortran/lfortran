@@ -555,18 +555,18 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #0
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare void @llvm.stackrestore(i8*) #0
 
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.fabs.f32(float) #1
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
-attributes #0 = { nofree nosync nounwind willreturn }
-attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #0 = { nounwind }
+attributes #1 = { nounwind readnone speculatable willreturn }

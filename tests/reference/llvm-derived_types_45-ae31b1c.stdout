@@ -125,7 +125,7 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-; Function Attrs: argmemonly nofree nounwind willreturn writeonly
+; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
@@ -158,4 +158,4 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-attributes #0 = { argmemonly nofree nounwind willreturn writeonly }
+attributes #0 = { argmemonly nounwind willreturn writeonly }

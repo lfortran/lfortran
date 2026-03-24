@@ -600,7 +600,7 @@ declare void @exit(i32)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
-; Function Attrs: argmemonly nofree nounwind willreturn writeonly
+; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 declare void @_lcompilers_print_error(i8*, ...)
@@ -609,4 +609,4 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-attributes #0 = { argmemonly nofree nounwind willreturn writeonly }
+attributes #0 = { argmemonly nounwind willreturn writeonly }

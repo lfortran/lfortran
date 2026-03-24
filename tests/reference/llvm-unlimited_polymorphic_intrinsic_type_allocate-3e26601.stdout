@@ -164,7 +164,7 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-; Function Attrs: argmemonly nofree nounwind willreturn writeonly
+; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 define linkonce_odr void @_copy_integer_8(i8* %0, i8* %1) {
@@ -195,12 +195,12 @@ entry:
 
 declare i8* @__lfortran_dynamic_cast(i8*, i8*, i1)
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #1
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
-; Function Attrs: nofree nosync nounwind willreturn
+; Function Attrs: nounwind
 declare void @llvm.stackrestore(i8*) #1
 
 define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0, i1 %1) {
@@ -225,5 +225,5 @@ declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { argmemonly nofree nounwind willreturn writeonly }
-attributes #1 = { nofree nosync nounwind willreturn }
+attributes #0 = { argmemonly nounwind willreturn writeonly }
+attributes #1 = { nounwind }

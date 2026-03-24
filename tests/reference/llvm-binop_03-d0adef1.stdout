@@ -129,7 +129,7 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
 
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+; Function Attrs: nounwind readnone speculatable willreturn
 declare double @llvm.fabs.f64(double) #0
 
-attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #0 = { nounwind readnone speculatable willreturn }

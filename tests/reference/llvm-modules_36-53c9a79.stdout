@@ -555,7 +555,7 @@ entry:
   ret void
 }
 
-; Function Attrs: argmemonly nofree nounwind willreturn writeonly
+; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1) {
@@ -723,4 +723,4 @@ declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { argmemonly nofree nounwind willreturn writeonly }
+attributes #0 = { argmemonly nounwind willreturn writeonly }
