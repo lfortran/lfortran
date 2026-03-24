@@ -3263,6 +3263,7 @@ RUN(NAME procedure_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME procedure_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_pointer_abstract_01 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
