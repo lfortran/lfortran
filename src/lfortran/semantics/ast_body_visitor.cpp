@@ -4737,24 +4737,28 @@ public:
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         collect_labels();
-        if( t->type == ASR::symbolType::GenericProcedure ) {
+        if( t && t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
 
-        if (x.n_temp_args > 0) {
+        if (t && x.n_temp_args > 0) {
             t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
         }
-
-        ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
-        current_scope = v->m_symtab;
+        ASR::Function_t *v = nullptr;
+        if (t && ASR::is_a<ASR::Function_t>(*t)) {
+            v = ASR::down_cast<ASR::Function_t>(t);
+        }
+        if (v) {
+            current_scope = v->m_symtab;
+        }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
-        if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
+        if (v && entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
             /*
                 Subroutine is parent of entry function.
                 For all template functions, create a subroutine call to master function and add it to the body
@@ -4792,19 +4796,23 @@ public:
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
-        func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        if (v) {
+            func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        }
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
         current_function_dependencies = current_function_dependencies_copy;
-        v->m_body = body.p;
-        v->n_body = body.size();
-        v->m_dependencies = func_deps.p;
-        v->n_dependencies = func_deps.size();
-        v->m_deterministic = current_function_deterministic;
-        v->m_side_effect_free = current_function_side_effect_free;
-        check_pure_function(v, v->m_body, v->n_body, diag,
-            compiler_options.continue_compilation);
+        if (v) {
+            v->m_body = body.p;
+            v->n_body = body.size();
+            v->m_dependencies = func_deps.p;
+            v->n_dependencies = func_deps.size();
+            v->m_deterministic = current_function_deterministic;
+            v->m_side_effect_free = current_function_side_effect_free;
+            check_pure_function(v, v->m_body, v->n_body, diag,
+                compiler_options.continue_compilation);
+        }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
 
