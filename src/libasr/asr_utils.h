@@ -889,6 +889,28 @@ static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
     return nopass;
 }
 
+// Returns the index of the pass argument in the function's formal parameter
+// list. Returns 0 when pass_arg is unspecified (default pass = first arg).
+static inline size_t get_pass_arg_index(ASR::symbol_t* a_name) {
+    ASR::symbol_t* sym = symbol_get_past_external(a_name);
+    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+        return 0;
+    }
+    ASR::StructMethodDeclaration_t* clss_proc =
+        ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+    if (clss_proc->m_self_argument == nullptr) {
+        return 0;
+    }
+    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+    for (size_t i = 0; i < func->n_args; i++) {
+        ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
+        if (strcmp(v->m_name, clss_proc->m_self_argument) == 0) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 static inline void encode_dimensions(size_t n_dims, std::string& res,
     bool use_underscore_sep=false) {
     if( n_dims == 0 ) {
@@ -7583,16 +7605,23 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
         }
     }
 
-    // Prepend self to args BEFORE Call_t_body so args align 1:1 with formals
+    // Insert self into args at the correct position (determined by pass
+    // attribute) BEFORE Call_t_body so args align 1:1 with formals.
     if (a_is_method && !self_already_in_args) {
+        size_t pass_idx = get_pass_arg_index(a_name);
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
         ASR::call_arg_t self_arg;
         self_arg.loc = a_dt->base.loc;
         self_arg.m_value = a_dt;
-        new_args.push_back(al, self_arg);
-        for (size_t i = 0; i < n_args; i++) {
-            new_args.push_back(al, a_args[i]);
+        size_t explicit_i = 0;
+        for (size_t i = 0; i < n_args + 1; i++) {
+            if (i == pass_idx) {
+                new_args.push_back(al, self_arg);
+            } else {
+                new_args.push_back(al, a_args[explicit_i]);
+                explicit_i++;
+            }
         }
         a_args = new_args.p;
         n_args = new_args.size();
@@ -7675,16 +7704,23 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
-    // Prepend self to args BEFORE Call_t_body so args align 1:1 with formals
+    // Insert self into args at the correct position (determined by pass
+    // attribute) BEFORE Call_t_body so args align 1:1 with formals.
     if (a_is_method && !self_already_in_args) {
+        size_t pass_idx = get_pass_arg_index(a_name);
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
         ASR::call_arg_t self_arg;
         self_arg.loc = self_expr->base.loc;
         self_arg.m_value = self_expr;
-        new_args.push_back(al, self_arg);
-        for (size_t i = 0; i < n_args; i++) {
-            new_args.push_back(al, a_args[i]);
+        size_t explicit_i = 0;
+        for (size_t i = 0; i < n_args + 1; i++) {
+            if (i == pass_idx) {
+                new_args.push_back(al, self_arg);
+            } else {
+                new_args.push_back(al, a_args[explicit_i]);
+                explicit_i++;
+            }
         }
         a_args = new_args.p;
         n_args = new_args.size();

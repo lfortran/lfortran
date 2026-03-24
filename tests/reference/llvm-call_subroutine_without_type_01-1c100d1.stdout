@@ -211,12 +211,11 @@ then1:                                            ; preds = %ifcont
 
 ifcont2:                                          ; preds = %ifcont
   %55 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  %56 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  %57 = bitcast %module_call_subroutine_without_type_01.mytype_class* %56 to void (%module_call_subroutine_without_type_01.mytype_class*)***
-  %58 = load void (%module_call_subroutine_without_type_01.mytype_class*)**, void (%module_call_subroutine_without_type_01.mytype_class*)*** %57, align 8
-  %59 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %58, i32 2
-  %60 = load void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %59, align 8
-  call void %60(%module_call_subroutine_without_type_01.mytype_class* %56)
+  %56 = bitcast %module_call_subroutine_without_type_01.mytype_class* %55 to void (%module_call_subroutine_without_type_01.mytype_class*)***
+  %57 = load void (%module_call_subroutine_without_type_01.mytype_class*)**, void (%module_call_subroutine_without_type_01.mytype_class*)*** %56, align 8
+  %58 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %57, i32 2
+  %59 = load void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %58, align 8
+  call void %59(%module_call_subroutine_without_type_01.mytype_class* %55)
   br label %return
 
 return:                                           ; preds = %ifcont2
@@ -226,8 +225,8 @@ FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
   br label %Finalize_Variable_obj
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
-  %61 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  call void @finalize_allocatable__StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %61, i1 false)
+  %60 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
+  call void @finalize_allocatable__StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %60, i1 false)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }

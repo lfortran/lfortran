@@ -444,7 +444,8 @@
                                         [(SubroutineCall
                                             8 1_toml_date_date_to_string
                                             ()
-                                            [((StructInstanceMember
+                                            [((Var 8 lhs))
+                                            ((StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
                                                 (Allocatable
@@ -458,8 +459,7 @@
                                                     )
                                                 )
                                                 ()
-                                            ))
-                                            ((Var 8 lhs))]
+                                            ))]
                                             (StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
@@ -509,7 +509,8 @@
                                             [(SubroutineCall
                                                 8 1_toml_time_time_to_string
                                                 ()
-                                                [((StructInstanceMember
+                                                [((Var 8 temporary))
+                                                ((StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
@@ -529,8 +530,7 @@
                                                         )
                                                     )
                                                     ()
-                                                ))
-                                                ((Var 8 temporary))]
+                                                ))]
                                                 (StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
