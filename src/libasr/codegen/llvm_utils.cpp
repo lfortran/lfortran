@@ -1297,7 +1297,11 @@ namespace LCompilers {
                     return_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     break;
                 case (ASR::ttypeType::Pointer) : {
-                    return_type = get_type_from_ttype_t_util(x.m_return_var, ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
+                    ASR::ttype_t* contained_type = ASRUtils::get_contained_type(return_var_type0);
+                    return_type = get_type_from_ttype_t_util(x.m_return_var, contained_type, module);
+                    if (!ASR::is_a<ASR::FunctionType_t>(*contained_type)) {
+                        return_type = return_type->getPointerTo();
+                    }
                     break;
                 }
                 case (ASR::ttypeType::Allocatable) : {

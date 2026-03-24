@@ -758,7 +758,18 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
-            return ASR::down_cast<ASR::Function_t>(fc->m_name);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(fc->m_name);
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                return ASR::down_cast<ASR::Function_t>(sym);
+            } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(var_sym->m_type_declaration);
+                if (type_decl != nullptr &&
+                    ASR::is_a<ASR::Function_t>(*type_decl)) {
+                    return ASR::down_cast<ASR::Function_t>(type_decl);
+                }
+            }
+            return nullptr;
         }
         case ASR::exprType::PointerNullConstant: {
             // PointerNullConstant is a special case where it does not have a function
