@@ -220,6 +220,14 @@ class ASRToLLVMVisitor;
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
+        // For typed-pointer LLVM (<15), cast pointer values to the destination
+        // store element type when both sides are pointers and types differ.
+        llvm::Value* cast_pointer_to_store_element_type_if_needed(
+            llvm::IRBuilder<> &builder, llvm::Value *value, llvm::Value *target_ptr);
+        // For procedure() placeholders, cast only when both source and
+        // destination pointees are function types.
+        llvm::Value* cast_function_pointer_to_store_element_type_if_needed(
+            llvm::IRBuilder<> &builder, llvm::Value *value, llvm::Value *target_ptr);
         void set_memory_debug(bool state);
         bool use_memory_debug();
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,

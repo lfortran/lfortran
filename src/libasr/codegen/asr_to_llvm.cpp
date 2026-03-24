@@ -9054,16 +9054,8 @@ public:
                             llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
                             fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             llvm::Value* target_data_ptr = arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_);
-#if LLVM_VERSION_MAJOR < 15
-                            // Typed-pointer LLVM (<15) requires the stored pointer type to match
-                            // the destination field type exactly.
-                            if (llvm_value->getType() != target_data_ptr->getType()->getPointerElementType()) {
-                                LCOMPILERS_ASSERT(llvm_value->getType()->isPointerTy());
-                                LCOMPILERS_ASSERT(target_data_ptr->getType()->getPointerElementType()->isPointerTy());
-                                llvm_value = builder->CreateBitCast(
-                                    llvm_value, target_data_ptr->getType()->getPointerElementType());
-                            }
-#endif
+                            llvm_value = LLVM::cast_pointer_to_store_element_type_if_needed(
+                                *builder, llvm_value, target_data_ptr);
                             builder->CreateStore(llvm_value, target_data_ptr);
                             llvm_value = llvm_target_;
                             break;
@@ -9091,18 +9083,8 @@ public:
                         llvm_target_contents_type->getPointerTo(), llvm_target);
                     builder->CreateStore(llvm_value, loaded_target);
                 } else {
-#if LLVM_VERSION_MAJOR < 15
-                    // procedure() pointer members are stored as `void ()*` placeholders.
-                    // Cast concrete procedure pointers before storing into that slot.
-                    if (llvm_value->getType()->isPointerTy() && llvm_target->getType()->isPointerTy()) {
-                        llvm::Type* dst_type = llvm_target->getType()->getPointerElementType();
-                        if (dst_type->isPointerTy() && llvm_value->getType() != dst_type &&
-                                llvm_value->getType()->getPointerElementType()->isFunctionTy() &&
-                                dst_type->getPointerElementType()->isFunctionTy()) {
-                            llvm_value = builder->CreateBitCast(llvm_value, dst_type);
-                        }
-                    }
-#endif
+                    llvm_value = LLVM::cast_function_pointer_to_store_element_type_if_needed(
+                        *builder, llvm_value, llvm_target);
                     builder->CreateStore(llvm_value, llvm_target);
                 }
             }

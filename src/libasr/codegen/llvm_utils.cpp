@@ -16,6 +16,40 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
+        llvm::Value* cast_pointer_to_store_element_type_if_needed(
+                llvm::IRBuilder<> &builder, llvm::Value *value, llvm::Value *target_ptr) {
+#if LLVM_VERSION_MAJOR < 15
+            if (value->getType()->isPointerTy() && target_ptr->getType()->isPointerTy()) {
+                llvm::Type* dst_type = target_ptr->getType()->getPointerElementType();
+                if (dst_type->isPointerTy() && value->getType() != dst_type) {
+                    value = builder.CreateBitCast(value, dst_type);
+                }
+            }
+#else
+            (void)builder;
+            (void)target_ptr;
+#endif
+            return value;
+        }
+
+        llvm::Value* cast_function_pointer_to_store_element_type_if_needed(
+                llvm::IRBuilder<> &builder, llvm::Value *value, llvm::Value *target_ptr) {
+#if LLVM_VERSION_MAJOR < 15
+            if (value->getType()->isPointerTy() && target_ptr->getType()->isPointerTy()) {
+                llvm::Type* dst_type = target_ptr->getType()->getPointerElementType();
+                if (dst_type->isPointerTy() && value->getType() != dst_type &&
+                        value->getType()->getPointerElementType()->isFunctionTy() &&
+                        dst_type->getPointerElementType()->isFunctionTy()) {
+                    value = builder.CreateBitCast(value, dst_type);
+                }
+            }
+#else
+            (void)builder;
+            (void)target_ptr;
+#endif
+            return value;
+        }
+
         const char* get_allocator_function_name() {
             return use_memory_debug()
                 ? "_lfortran_get_compiler_mem_dbg_allocator"
