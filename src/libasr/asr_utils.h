@@ -7547,111 +7547,49 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     }
 }
 
-// Check if first_arg is the self/dt argument, handling cases where
-// they may be different ASR nodes referring to the same variable,
-// or where dt is a StructInstanceMember whose base matches first_arg.
-static inline bool is_self_argument(ASR::expr_t* first_arg, ASR::expr_t* a_dt) {
-    if (first_arg == a_dt) return true;
+// Insert self (a_dt) into args at the PASS position for method calls.
+// Callers must invoke this BEFORE make_*Call_t_util so that m_args
+// is in 1:1 correspondence with func_type->m_arg_types.
+// For procedure pointer Variables whose a_dt is a StructInstanceMember,
+// the base object (m_v) is used as self, not the member expression.
+// No-op when a_dt is null or the callee has NOPASS.
+static inline void insert_self_arg(
+    Allocator& al, ASR::symbol_t* a_name,
+    ASR::call_arg_t*& a_args, size_t& n_args,
+    ASR::expr_t* a_dt) {
+    if (a_dt == nullptr) return;
+    bool nopass = get_class_proc_nopass_val(a_name);
+    if (nopass) return;
 
-    // Unwrap Cast expressions
-    ASR::expr_t* fa = first_arg;
-    ASR::expr_t* dt = a_dt;
-    while (ASR::is_a<ASR::Cast_t>(*fa)) {
-        fa = ASR::down_cast<ASR::Cast_t>(fa)->m_arg;
+    size_t pass_idx = get_pass_arg_index(a_name);
+    Vec<ASR::call_arg_t> new_args;
+    new_args.reserve(al, n_args + 1);
+    ASR::call_arg_t self_arg;
+    self_arg.loc = a_dt->base.loc;
+    if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
+        ASR::is_a<ASR::StructInstanceMember_t>(*a_dt)) {
+        self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
+    } else {
+        self_arg.m_value = a_dt;
     }
-    while (ASR::is_a<ASR::Cast_t>(*dt)) {
-        dt = ASR::down_cast<ASR::Cast_t>(dt)->m_arg;
-    }
-
-    if (fa == dt) return true;
-
-    // Both are Var pointing to the same symbol
-    if (ASR::is_a<ASR::Var_t>(*fa) && ASR::is_a<ASR::Var_t>(*dt) &&
-        ASR::down_cast<ASR::Var_t>(fa)->m_v ==
-        ASR::down_cast<ASR::Var_t>(dt)->m_v) {
-        return true;
-    }
-
-    // Both are ArrayItem whose bases are the same variable (elemental expansion)
-    if (ASR::is_a<ASR::ArrayItem_t>(*fa) && ASR::is_a<ASR::ArrayItem_t>(*dt)) {
-        ASR::expr_t* fa_base = ASR::down_cast<ASR::ArrayItem_t>(fa)->m_v;
-        ASR::expr_t* dt_base = ASR::down_cast<ASR::ArrayItem_t>(dt)->m_v;
-        if (ASR::is_a<ASR::Var_t>(*fa_base) && ASR::is_a<ASR::Var_t>(*dt_base) &&
-            ASR::down_cast<ASR::Var_t>(fa_base)->m_v ==
-            ASR::down_cast<ASR::Var_t>(dt_base)->m_v) {
-            return true;
+    size_t explicit_i = 0;
+    for (size_t i = 0; i < n_args + 1; i++) {
+        if (i == pass_idx) {
+            new_args.push_back(al, self_arg);
+        } else {
+            new_args.push_back(al, a_args[explicit_i]);
+            explicit_i++;
         }
     }
-
-    // first_arg is StructInstanceMember whose base is (pointer-identical to) a_dt
-    if (ASR::is_a<ASR::StructInstanceMember_t>(*fa) &&
-        ASR::down_cast<ASR::StructInstanceMember_t>(fa)->m_v == dt) {
-        return true;
-    }
-
-    // a_dt is StructInstanceMember whose base matches first_arg (proc pointer call: x%ptr(x, a))
-    if (ASR::is_a<ASR::StructInstanceMember_t>(*dt) &&
-        ASR::is_a<ASR::Var_t>(*fa)) {
-        ASR::expr_t* dt_base = ASR::down_cast<ASR::StructInstanceMember_t>(dt)->m_v;
-        if (ASR::is_a<ASR::Var_t>(*dt_base) &&
-            ASR::down_cast<ASR::Var_t>(dt_base)->m_v ==
-            ASR::down_cast<ASR::Var_t>(fa)->m_v) {
-            return true;
-        }
-    }
-
-    return false;
+    a_args = new_args.p;
+    n_args = new_args.size();
 }
 
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
-    bool implicit_argument_casting = false, bool self_in_args = false) {
-
-    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
-    bool a_is_method = (a_dt != nullptr) && (!nopass);
-    // Detect if self is already in args: either explicitly told, or
-    // by checking if args[0] matches dt, or if n_args already equals
-    // the function's formal parameter count.
-    bool self_already_in_args = self_in_args || (a_is_method && n_args > 0 &&
-        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
-    if (a_is_method && !self_already_in_args) {
-        ASR::FunctionType_t* func_type = get_FunctionType(a_name);
-        if (func_type->n_arg_types > 0 && n_args >= func_type->n_arg_types) {
-            self_already_in_args = true;
-        }
-    }
-
-    // Insert self into args at the correct position (determined by pass
-    // attribute) BEFORE Call_t_body so args align 1:1 with formals.
-    // For procedure pointer Variables, extract the base struct object
-    // from the StructInstanceMember (a_dt wraps the struct + proc ptr
-    // member, but self should be just the struct).
-    if (a_is_method && !self_already_in_args) {
-        size_t pass_idx = get_pass_arg_index(a_name);
-        Vec<ASR::call_arg_t> new_args;
-        new_args.reserve(al, n_args + 1);
-        ASR::call_arg_t self_arg;
-        self_arg.loc = a_dt->base.loc;
-        if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*a_dt)) {
-            self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
-        } else {
-            self_arg.m_value = a_dt;
-        }
-        size_t explicit_i = 0;
-        for (size_t i = 0; i < n_args + 1; i++) {
-            if (i == pass_idx) {
-                new_args.push_back(al, self_arg);
-            } else {
-                new_args.push_back(al, a_args[explicit_i]);
-                explicit_i++;
-            }
-        }
-        a_args = new_args.p;
-        n_args = new_args.size();
-    }
+    bool implicit_argument_casting = false) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
         current_scope, current_function_dependencies);
@@ -7705,64 +7643,15 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 static inline ASR::asr_t* make_SubroutineCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt, bool a_strict_bounds_checking = false, bool self_in_args = false) {
+    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt, bool a_strict_bounds_checking = false) {
 
-    bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
-    bool a_is_method = (a_dt != nullptr) && (!nopass);
-    // Detect if self is already in args: either explicitly told, or
-    // by checking if args[0] matches dt, or if n_args already equals
-    // the function's formal parameter count.
-    bool self_already_in_args = self_in_args || (a_is_method && n_args > 0 &&
-        a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
-    if (a_is_method && !self_already_in_args) {
-        ASR::FunctionType_t* func_type = get_FunctionType(a_name);
-        if (func_type->n_arg_types > 0 && n_args >= func_type->n_arg_types) {
-            self_already_in_args = true;
-        }
-    }
-    ASR::expr_t* self_expr = a_dt;
-
+    // Wrap a_dt as StructInstanceMember for procedure pointer components
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
-    }
-
-    // Insert self into args at the correct position (determined by pass
-    // attribute) BEFORE Call_t_body so args align 1:1 with formals.
-    if (a_is_method && !self_already_in_args) {
-        size_t pass_idx = get_pass_arg_index(a_name);
-        Vec<ASR::call_arg_t> new_args;
-        new_args.reserve(al, n_args + 1);
-        ASR::call_arg_t self_arg;
-        self_arg.loc = self_expr->base.loc;
-        // For procedure pointer components, self_expr may be a
-        // StructInstanceMember pointing at the same struct member as
-        // m_dt. Using it directly as the self argument would make
-        // the LLVM codegen visit the same address for both the
-        // function-pointer load and the self arg, letting LLVM CSE
-        // merge them and trigger a type-mismatch error.  Extract
-        // the parent object (sim->m_v) instead, which produces a
-        // distinct LLVM value.
-        if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*self_expr)) {
-            self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(self_expr)->m_v;
-        } else {
-            self_arg.m_value = self_expr;
-        }
-        size_t explicit_i = 0;
-        for (size_t i = 0; i < n_args + 1; i++) {
-            if (i == pass_idx) {
-                new_args.push_back(al, self_arg);
-            } else {
-                new_args.push_back(al, a_args[explicit_i]);
-                explicit_i++;
-            }
-        }
-        a_args = new_args.p;
-        n_args = new_args.size();
     }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
