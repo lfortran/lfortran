@@ -7315,6 +7315,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                             dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray);
                         }
+                        if (!orig_arg_array_t) {
+                            continue;
+                        }
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
@@ -7369,7 +7372,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::dimension_t dims_;
                         dims_.m_start = nullptr;
                         dims_.m_length = nullptr;
-                        dim_.loc = arg->base.loc;
+                        dims_.loc = arg->base.loc;
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,

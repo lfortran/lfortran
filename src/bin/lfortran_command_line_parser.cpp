@@ -345,7 +345,10 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
-            // The default LFortran behavior, do nothing
+            compiler_options.implicit_argument_casting = true;
+            if (disable_implicit_argument_casting) {
+                compiler_options.implicit_argument_casting = false;
+            }
         } else if (opts.arg_standard == "f23") {
             compiler_options.show_style_suggestions = false;
             if (style_suggestions) {
