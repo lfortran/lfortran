@@ -10229,10 +10229,22 @@ public:
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
 
         if (!v_class_proc->m_is_nopass) {
+            size_t pass_idx = ASRUtils::get_pass_arg_index(v);
             ASR::call_arg_t self_arg;
             self_arg.loc = v_expr->base.loc;
             self_arg.m_value = v_expr;
-            args.push_front(al, self_arg);  // push self arg in case of class procedure
+            Vec<ASR::call_arg_t> full_args;
+            full_args.reserve(al, n_args + 1);
+            size_t explicit_i = 0;
+            for (size_t i = 0; i < n_args + 1; i++) {
+                if (i == pass_idx) {
+                    full_args.push_back(al, self_arg);
+                } else {
+                    full_args.push_back(al, args[explicit_i]);
+                    explicit_i++;
+                }
+            }
+            args = full_args;
         }
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
@@ -10248,13 +10260,24 @@ public:
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (!v_class_proc->m_is_nopass) {
+                size_t pass_idx = ASRUtils::get_pass_arg_index(v);
                 ASR::call_arg_t self_arg;
                 self_arg.loc = v_expr->base.loc;
                 self_arg.m_value = v_expr;
+                Vec<ASR::call_arg_t> explicit_args;
+                explicit_args.reserve(al, n_args);
+                visit_expr_list(m_args, n_args, explicit_args);
                 args = {};
                 args.reserve(al, func->n_args);
-                visit_expr_list(m_args, n_args, args);
-                args.push_front(al, self_arg);  // push self arg to fulfill correct number of args in definition
+                size_t explicit_i = 0;
+                for (size_t i = 0; i < n_args + 1; i++) {
+                    if (i == pass_idx) {
+                        args.push_back(al, self_arg);
+                    } else {
+                        args.push_back(al, explicit_args[explicit_i]);
+                        explicit_i++;
+                    }
+                }
             }
             // Set the correct return type.
             type = handle_return_type(type, func->m_return_var->base.loc, args, func);
