@@ -2713,10 +2713,10 @@ void free_serialization_info(Serialization_Info* s_info){
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode);
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
-    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, ...)
+    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, ...)
 {
     va_list args;
-    va_start(args, decimal_mode);
+    va_start(args, sign_mode);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
     result[0] = '\0';
     (*result_size) = 0;
@@ -2780,10 +2780,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     */
     // Initialize is_SP_specifier based on unit 6's sign mode
     // Unit 6 is stdout, which is what PRINT uses
-    int unit6_sign_mode = 0;
-    int unit6_decimal_mode = 0;
-    get_file_pointer_from_unit(6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &unit6_sign_mode, &unit6_decimal_mode);
-    bool is_SP_specifier = (unit6_sign_mode == 1);  // 1 = sign='plus'
+    int32_t unit_6_sign_mode;
+    get_file_pointer_from_unit(6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &unit_6_sign_mode, NULL);
+    bool is_SP_specifier = (sign_mode == 1 || unit_6_sign_mode == 1);  // 1 = sign='plus'
     int item_start = 0;
     bool array = false;
     bool BreakWhileLoop= false;
@@ -5572,7 +5571,7 @@ _lfortran_open(int32_t unit_num,
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -5861,6 +5860,16 @@ LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num) {
     return 0; // point
 }
 
+LFORTRAN_API int32_t _lfortran_get_sign_mode(int32_t unit_num) {
+    _lfortran_init_standard_units();
+    for( int i = 0; i <= last_index_used; i++ ) {
+        if( unit_to_file[i].unit == unit_num && unit_to_file[i].filep != NULL ) {
+            return unit_to_file[i].sign_mode;
+        }
+    }
+    return 0; // processor_defined
+}
+
 // // int _lfortran_current_decimal_mode_global = 0; (removed)
 
 // // Local decimal mode handled via explicit arguments now. (removed)
@@ -5880,7 +5889,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char* formatted, int64_t formatted_len,
                                     char* unformatted, int64_t unformatted_len,
                                     int32_t *iostat, int32_t *nextrec,
-                                    char* decimal, int64_t decimal_len) {
+                                    char* decimal, int64_t decimal_len,
+                                    char *sign, int64_t sign_len) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -5892,6 +5902,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         bool write_access;
         int delim;
         bool blank_zero;
+        int sign_mode;
         int decimal_mode;
         int32_t unit_recl = 0;
         char *c_f_name_data = to_c_string(f_name_data, f_name_len);
@@ -5927,7 +5938,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *number = u_num;
         }
         
-        fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, NULL, &decimal_mode);
+        fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode);
         if (write != NULL) {
             if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
@@ -6047,6 +6058,19 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
+        if (sign != NULL) {
+            if (unit_file_bin || u_num == -1) {
+                _lfortran_copy_str_and_pad(sign, sign_len, "UNDEFINED", 9);
+            } else {
+                if (sign_mode == 1) {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "PLUS", 4);
+                } else if (sign_mode == 2) {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "SUPPRESS", 8);
+                } else {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "PROCESSOR_DEFINED", 17);
+                }
+            }
+        }
         if (iostat != NULL) {
             *iostat = 0;
         }
@@ -6059,8 +6083,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int delim;
         bool blank_zero;
         int decimal_mode;
+        int sign_mode;
         int32_t unit_recl = 0;
-        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, NULL, &decimal_mode);
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode);
         if (get_file_name_from_unit(unit_num, &unit_file_bin) != NULL) {
             *exists = true;
         } else {
@@ -6202,6 +6227,19 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                     _lfortran_copy_str_and_pad(decimal, decimal_len, "COMMA", 5);
                 } else {
                     _lfortran_copy_str_and_pad(decimal, decimal_len, "POINT", 5);
+                }
+            }
+        }
+        if (sign != NULL) {
+            if (unit_file_bin || fp == NULL) {
+                _lfortran_copy_str_and_pad(sign, sign_len, "UNDEFINED", 9);
+            } else {
+                if (sign_mode == 1) {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "PLUS", 4);
+                } else if (sign_mode == 2) {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "SUPPRESS", 8);
+                } else {
+                    _lfortran_copy_str_and_pad(sign, sign_len, "PROCESSOR_DEFINED", 17);
                 }
             }
         }

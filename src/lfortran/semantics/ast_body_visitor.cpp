@@ -2456,11 +2456,11 @@ public:
             {"read", 20}, {"write", 21}, {"readwrite", 22}, {"delim", 23},
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31}, 
-            {"iolength", 32}};
+            {"iolength", 32}, {"sign", 33}};
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 32, args, 33, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 33, args, 34, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -2469,11 +2469,11 @@ public:
         ASR::expr_t *read = args[20], *write = args[21], *readwrite = args[22], *delim = args[23];
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
         ASR::expr_t *carriagecontrol = args[28], *size = args[29], *pos = args[30], *decimal = args[31];
-        ASR::expr_t *iolength = args[32];
+        ASR::expr_t *iolength = args[32], *sign=args[33];
         ;
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
-            if( is_iolength_present && args[i] ) {
+            if( is_iolength_present && i!=32 && args[i] ) {
                 diag.add(Diagnostic(
                     "No argument should be specified when iolength is already present.",
                     Level::Error, Stage::Semantic, {
@@ -2508,7 +2508,7 @@ public:
                                   nextrec, blank, position, action,
                                   read, write, readwrite, delim,
                                   pad, flen, blocksize, convert,
-                                  carriagecontrol, size, pos, iolength, iolength_args.p, iolength_args.n, decimal);
+                                  carriagecontrol, size, pos, iolength, iolength_args.p, iolength_args.n, decimal, sign);
     }
 
     void visit_Flush(const AST::Flush_t& x) {
