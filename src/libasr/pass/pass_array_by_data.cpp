@@ -962,20 +962,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             return true;
         }
-        /// Is StructMethodDeclaration with m_is_nopass = false (dt will be implicitly passed)
-        static bool is_structMethodDeclaration_with_pass(ASR::symbol_t* const sym){
-            ASR::symbol_t* const sym_past_ext = ASRUtils::symbol_get_past_external(sym);
-            if(!ASR::is_a<ASR::StructMethodDeclaration_t>(*sym_past_ext)) return false;
-            return !ASR::down_cast<ASR::StructMethodDeclaration_t>(sym_past_ext)->m_is_nopass;
-        }
-
-        static bool call_with_implicit_dt_passed(const ASR::SubroutineCall_t* const x){
-            return is_structMethodDeclaration_with_pass(x->m_name);
-        }
-
-        static bool call_with_implicit_dt_passed(const ASR::FunctionCall_t* const x){
-            return is_structMethodDeclaration_with_pass(x->m_name);
-        }
         
         static bool is_struct_method_declaration(ASR::symbol_t* const sym){
             return ASR::is_a<ASR::StructMethodDeclaration_t>(*ASRUtils::symbol_get_past_external(sym));
@@ -1109,8 +1095,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if( ASR::is_a<ASR::Variable_t>(*arg->m_v) &&
                         ASR::down_cast<ASR::Variable_t>(arg->m_v)->m_presence
                             == ASR::presenceType::Optional ) {
-                        max_args += 1;
-                    } else if(call_with_implicit_dt_passed(&x)) {
                         max_args += 1;
                     } else {
                         min_args += 1;
