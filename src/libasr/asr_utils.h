@@ -893,20 +893,38 @@ static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
 // list. Returns 0 when pass_arg is unspecified (default pass = first arg).
 static inline size_t get_pass_arg_index(ASR::symbol_t* a_name) {
     ASR::symbol_t* sym = symbol_get_past_external(a_name);
-    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-        return 0;
-    }
-    ASR::StructMethodDeclaration_t* clss_proc =
-        ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-    if (clss_proc->m_self_argument == nullptr) {
-        return 0;
-    }
-    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-    for (size_t i = 0; i < func->n_args; i++) {
-        ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
-        if (strcmp(v->m_name, clss_proc->m_self_argument) == 0) {
-            return i;
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+        ASR::StructMethodDeclaration_t* clss_proc =
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+        if (clss_proc->m_self_argument == nullptr) {
+            return 0;
         }
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+        for (size_t i = 0; i < func->n_args; i++) {
+            ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
+            if (strcmp(v->m_name, clss_proc->m_self_argument) == 0) {
+                return i;
+            }
+        }
+        return 0;
+    } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_self_argument == nullptr) {
+            return 0;
+        }
+        if (var->m_type_declaration != nullptr) {
+            ASR::symbol_t* decl = symbol_get_past_external(var->m_type_declaration);
+            if (ASR::is_a<ASR::Function_t>(*decl)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl);
+                for (size_t i = 0; i < func->n_args; i++) {
+                    ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
+                    if (strcmp(v->m_name, var->m_self_argument) == 0) {
+                        return i;
+                    }
+                }
+            }
+        }
+        return 0;
     }
     return 0;
 }
@@ -7607,13 +7625,21 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 
     // Insert self into args at the correct position (determined by pass
     // attribute) BEFORE Call_t_body so args align 1:1 with formals.
+    // For procedure pointer Variables, extract the base struct object
+    // from the StructInstanceMember (a_dt wraps the struct + proc ptr
+    // member, but self should be just the struct).
     if (a_is_method && !self_already_in_args) {
         size_t pass_idx = get_pass_arg_index(a_name);
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
         ASR::call_arg_t self_arg;
         self_arg.loc = a_dt->base.loc;
-        self_arg.m_value = a_dt;
+        if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*a_dt)) {
+            self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
+        } else {
+            self_arg.m_value = a_dt;
+        }
         size_t explicit_i = 0;
         for (size_t i = 0; i < n_args + 1; i++) {
             if (i == pass_idx) {
@@ -7712,7 +7738,20 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         new_args.reserve(al, n_args + 1);
         ASR::call_arg_t self_arg;
         self_arg.loc = self_expr->base.loc;
-        self_arg.m_value = self_expr;
+        // For procedure pointer components, self_expr may be a
+        // StructInstanceMember pointing at the same struct member as
+        // m_dt. Using it directly as the self argument would make
+        // the LLVM codegen visit the same address for both the
+        // function-pointer load and the self arg, letting LLVM CSE
+        // merge them and trigger a type-mismatch error.  Extract
+        // the parent object (sim->m_v) instead, which produces a
+        // distinct LLVM value.
+        if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*self_expr)) {
+            self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(self_expr)->m_v;
+        } else {
+            self_arg.m_value = self_expr;
+        }
         size_t explicit_i = 0;
         for (size_t i = 0; i < n_args + 1; i++) {
             if (i == pass_idx) {

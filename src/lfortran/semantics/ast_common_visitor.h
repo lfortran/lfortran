@@ -6394,6 +6394,7 @@ public:
                 Location dims_attr_loc;
                 is_allocatable = false;
                 bool is_nopass_attr = false;
+                char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -6531,6 +6532,11 @@ public:
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
+                        } else if (AST::is_a<AST::AttrPass_t>(*a)) {
+                            AST::AttrPass_t *ap = AST::down_cast<AST::AttrPass_t>(a);
+                            if (ap->m_name) {
+                                pass_arg_name = s2c(al, to_lower(std::string(ap->m_name)));
+                            }
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute type not implemented yet",
@@ -6755,6 +6761,7 @@ public:
                         } else {
                             // Compute pass_attr for procedure pointer components in structs
                             ASR::pass_attrType pass_attr = ASR::pass_attrType::NotMethod;
+                            char* self_argument = nullptr;
                             if (is_derived_type) {
                                 ASR::ttype_t* underlying = ASRUtils::type_get_past_pointer(type);
                                 if (ASR::is_a<ASR::FunctionType_t>(*underlying)) {
@@ -6762,6 +6769,7 @@ public:
                                         pass_attr = ASR::pass_attrType::NoPass;
                                     } else {
                                         pass_attr = ASR::pass_attrType::Pass;
+                                        self_argument = pass_arg_name;
                                     }
                                 }
                             }
@@ -6770,7 +6778,7 @@ public:
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected, pass_attr
+                                is_protected, pass_attr, self_argument
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
