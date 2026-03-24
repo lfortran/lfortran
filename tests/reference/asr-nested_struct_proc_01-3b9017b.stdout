@@ -839,7 +839,24 @@
                                         (FunctionCall
                                             11 1_omap_map_omap_i_at_rc
                                             ()
-                                            [((Var 11 key))
+                                            [((StructInstanceMember
+                                                (Var 11 this)
+                                                11 1_integer32complex32orderedmap_map
+                                                (StructType
+                                                    [(Complex 4)
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 11 key))
                                             ((Var 11 status))]
                                             (Pointer
                                                 (Complex 4)
@@ -1810,7 +1827,8 @@
                     (SubroutineCall
                         12 1_integer32complex32orderedmap_omap_insert_key_value
                         12 1_insert
-                        [((Var 12 key))
+                        [((Var 12 my_map))
+                        ((Var 12 key))
                         ((Var 12 value))]
                         (Var 12 my_map)
                         .false.

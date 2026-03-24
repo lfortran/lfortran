@@ -444,7 +444,22 @@
                                         [(SubroutineCall
                                             12 1_toml_date_date_to_string
                                             ()
-                                            [((Var 12 lhs))]
+                                            [((StructInstanceMember
+                                                (Var 12 rhs)
+                                                12 1_toml_datetime_date
+                                                (Allocatable
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 12 lhs))]
                                             (StructInstanceMember
                                                 (Var 12 rhs)
                                                 12 1_toml_datetime_date
@@ -494,7 +509,28 @@
                                             [(SubroutineCall
                                                 12 1_toml_time_time_to_string
                                                 ()
-                                                [((Var 12 temporary))]
+                                                [((StructInstanceMember
+                                                    (Var 12 rhs)
+                                                    12 1_toml_datetime_time
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                ))
+                                                ((Var 12 temporary))]
                                                 (StructInstanceMember
                                                     (Var 12 rhs)
                                                     12 1_toml_datetime_time

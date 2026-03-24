@@ -831,15 +831,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
-            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices,
-            bool dt_implicitPass = false /*NoPass*/) {
+            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
                 if (orig_args[i].m_value == nullptr) {
                     new_args.push_back(al, orig_args[i]);
                     continue;
-                } else if (std::find(indices.begin(), indices.end(), (i + dt_implicitPass)) == indices.end()) {
+                } else if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
                     ASR::expr_t* expr = orig_args[i].m_value;
                     if (ASR::is_a<ASR::Var_t>(*expr)) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
@@ -851,7 +850,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         }
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
-                        subrout_sym, (i + dt_implicitPass), orig_args[i].m_value);
+                        subrout_sym, i, orig_args[i].m_value);
                     // The function parameter expects PointerArray but the actual
                     // call arg may be DescriptorArray (e.g. a temp created by
                     // subroutine_from_function). Add ArrayPhysicalCast.
@@ -862,7 +861,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                 ASRUtils::type_get_past_pointer(arg_type)));
                         if (array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                             ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(subrout_sym);
-                            size_t param_idx = i + dt_implicitPass;
+                            size_t param_idx = i;
                             if (param_idx < ft->n_arg_types &&
                                     ASRUtils::is_array(ft->m_arg_types[param_idx])) {
                                 ASR::Array_t* param_array = ASR::down_cast<ASR::Array_t>(
@@ -911,7 +910,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 actual_dim_vars.reserve(al, 2);
                 get_dimensions(orig_arg_i, actual_dim_vars, al);
 
-                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i + dt_implicitPass);
+                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i);
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, actual_dim_vars.size());
 
@@ -1057,23 +1056,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                        // When called through a struct member with PASS
-                        // semantics, the implicit self argument occupies
-                        // index 0 in the function's parameter list, so we
-                        // need to offset indices accordingly. Detect this
-                        // by comparing the original function's parameter
-                        // count with the call's explicit argument count.
-                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
-                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
-                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
+                        // Self is now explicitly in call args, so no offset needed.
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
                         return;
                     } else if ( new_x_name == nullptr ) {
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                        ASR::Function_t* orig_func = ASR::down_cast<ASR::Function_t>(subrout_sym);
-                        bool has_implicit_dt = ((size_t)orig_func->n_args > (size_t)x.n_args);
-                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, has_implicit_dt);
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
                         return;
@@ -1109,7 +1099,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
             ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, call_with_implicit_dt_passed(&x));
+            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
 
             {
                 ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);

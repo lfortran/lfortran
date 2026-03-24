@@ -18219,7 +18219,11 @@ public:
         if (convert_call_args_depth == 1) {
             reset_call_arg_alloca_pool();
         }
-        for (size_t i=0; i<x.n_args; i++) {
+        // When is_method, self is in x.m_args[0] but is handled
+        // separately by the caller (with polymorphic conversion),
+        // so we skip it here.
+        size_t start_idx = is_method ? 1 : 0;
+        for (size_t i=start_idx; i<x.n_args; i++) {
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
             ASR::abiType x_abi = (ASR::abiType) 0;
             ASR::intentType orig_arg_intent = ASR::intentType::Unspecified;
@@ -18228,12 +18232,12 @@ public:
             std::string orig_arg_name = "";
             if( func_subrout->type == ASR::symbolType::Function ) {
                 ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
             } else if( func_subrout->type == ASR::symbolType::StructMethodDeclaration ) {
                 ASR::StructMethodDeclaration_t* clss_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_subrout);
                 if( clss_proc->m_proc->type == ASR::symbolType::Function ) {
                     ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
-                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                     func_subrout = clss_proc->m_proc;
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
@@ -18241,7 +18245,7 @@ public:
                 if (v->m_type_declaration != nullptr) {
                     ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
                     func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                 }
                 // If m_type_declaration is nullptr (implicit interface without call),
                 // continue with default values for x_abi, orig_arg, etc.
@@ -18406,7 +18410,7 @@ public:
                                     bool pass_by_value = true;
                                     if ( ASR::is_a<ASR::Function_t>(*func_subrout) ) {
                                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_subrout);
-                                        size_t arg_idx = i + is_method;
+                                        size_t arg_idx = i;
                                         if ( arg_idx < func->n_args && ASR::is_a<ASR::Var_t>(*func->m_args[arg_idx]) ){
                                             ASR::symbol_t* func_var_sym = ASRUtils::symbol_get_past_external(
                                                 ASR::down_cast<ASR::Var_t>(func->m_args[arg_idx])->m_v);
@@ -18776,7 +18780,7 @@ public:
                     ASR::Variable_t *struct_orig_arg = nullptr;
                     if (func_subrout->type == ASR::symbolType::Function) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                        size_t arg_idx = i + is_method;
+                        size_t arg_idx = i;
                         if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
                             struct_orig_arg = EXPR2VAR(func->m_args[arg_idx]);
                             if (struct_orig_arg && struct_orig_arg->m_abi == ASR::abiType::BindC
@@ -18819,7 +18823,7 @@ public:
                     ASR::Variable_t *orig_arg = nullptr;
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                        size_t arg_idx = i + is_method;
+                        size_t arg_idx = i;
                         LCOMPILERS_ASSERT(arg_idx < func->n_args);
                         LCOMPILERS_ASSERT(func->m_args[arg_idx] != nullptr);
                         orig_arg = EXPR2VAR(func->m_args[arg_idx]);
@@ -20211,21 +20215,18 @@ public:
     void bounds_check_call(T& x, bool subroutinecall_was_functioncall = false) {
         ASR::Function_t* function = nullptr;
         ASR::symbol_t* m_name = ASRUtils::symbol_get_past_external(x.m_name);
-        bool is_nopass = false;
         if (ASR::is_a<ASR::Function_t>(*m_name)) {
             function = ASR::down_cast<ASR::Function_t>(m_name);
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*m_name)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(m_name);
             function = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-            is_nopass = clss_proc->m_is_nopass;
         } else if (ASR::is_a<ASR::Variable_t>(*m_name)) {
             // Ignore functions passed in as arguments
             return;
         } else {
             throw CodeGenError("bounds_check_call: Symbol type not supported");
         }
-        bool is_method = x.m_dt && !is_nopass;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
             if (arg_expr == nullptr) continue;
@@ -20419,9 +20420,9 @@ public:
                 }
             } else if (ASRUtils::is_allocatable(arg_expr_type)) {
                 ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
-                ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i + is_method]);
+                ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i]);
                 LCOMPILERS_ASSERT(func_arg_variable != nullptr);
-                if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
+                if (!ASRUtils::is_allocatable(ft->m_arg_types[i]) &&
                     ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
                     llvm_utils->generate_runtime_error(expr_is_unallocated(arg_expr),
                             "Argument %d of subroutine %s is unallocated.",
@@ -20472,13 +20473,17 @@ public:
             ptr_loads = ptr_loads_copy;
             llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
-            bool will_prepend_self = (func && func->n_args > x.n_args);
-            args = convert_call_args(x, will_prepend_self);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
-            // The interface function includes the pass (self) argument
-            // but explicit call args (x.m_args) do not. When the
-            // interface has more args, prepend the parent object.
-            if (func->n_args > x.n_args) {
+
+            // Check if this proc pointer has a PASS attribute (self is in args[0])
+            ASR::Variable_t* ptr_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            bool is_method = (ptr_var->m_pass_attr == ASR::pass_attrType::Pass);
+
+            // Self is in x.m_args[0]; skip it in convert_call_args
+            // and handle it manually with proper type conversion.
+            args = convert_call_args(x, is_method);
+            if (is_method) {
                 ASR::StructInstanceMember_t* sim =
                     ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
                 uint64_t ptr_loads_copy2 = ptr_loads;
@@ -20760,14 +20765,14 @@ public:
                 args.push_back(pass_arg);
             }
             builder->CreateCall(fn, args);
-            fixup_descriptor_after_cchar_bind_c_call(x, s, is_method, args);
-            fixup_scalar_alloc_after_bind_c_call(x, s, is_method, args);
+            fixup_descriptor_after_cchar_bind_c_call(x, s, args);
+            fixup_scalar_alloc_after_bind_c_call(x, s, args);
         }
     }
 
     void fixup_descriptor_after_cchar_bind_c_call(
             const ASR::SubroutineCall_t &x,
-            ASR::Function_t* s, bool is_method,
+            ASR::Function_t* s,
             const std::vector<llvm::Value*>& call_args) {
         for (size_t i = 0; i < x.n_args; i++) {
             if (!x.m_args[i].m_value) continue;
@@ -20776,7 +20781,7 @@ public:
                 ASR::down_cast<ASR::StringPhysicalCast_t>(x.m_args[i].m_value);
             if (cast->m_old != ASR::string_physical_typeType::DescriptorString ||
                 cast->m_new != ASR::string_physical_typeType::CChar) continue;
-            size_t arg_idx = i + (is_method ? 1 : 0);
+            size_t arg_idx = i;
             if (arg_idx >= s->n_args) continue;
             ASR::Variable_t* orig_arg = ASR::down_cast<ASR::Variable_t>(
                 ASRUtils::symbol_get_past_external(
@@ -20835,7 +20840,7 @@ public:
     // it into the original Fortran variable.
     void fixup_scalar_alloc_after_bind_c_call(
             const ASR::SubroutineCall_t &x,
-            ASR::Function_t* s, bool is_method,
+            ASR::Function_t* s,
             const std::vector<llvm::Value*>& call_args) {
         ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(s);
         if (fn_type->m_abi != ASR::abiType::BindC)
@@ -20843,7 +20848,7 @@ public:
         for (size_t i = 0; i < x.n_args; i++) {
             if (!x.m_args[i].m_value) continue;
             if (!ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) continue;
-            size_t arg_idx = i + (is_method ? 1 : 0);
+            size_t arg_idx = i;
             if (arg_idx >= s->n_args) continue;
             if (!ASR::is_a<ASR::Var_t>(*s->m_args[arg_idx])) continue;
             ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(

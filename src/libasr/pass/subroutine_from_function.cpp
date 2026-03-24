@@ -458,7 +458,7 @@ public :
             new_call_args.push_back(al, {result_var->base.loc, result_var});
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
-                                                nullptr, false, current_scope, std::nullopt, true));
+                                                nullptr, false, current_scope, std::nullopt, true, /*self_in_args=*/true));
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
@@ -642,7 +642,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }
@@ -718,7 +718,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope, std::nullopt, true));
+                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope, std::nullopt, true, /*self_in_args=*/true));
             pass_result.push_back(al, subrout_call);
 
             if (value_and_target_allocatable_array || use_temp_var_for_return) {

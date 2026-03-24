@@ -202,7 +202,8 @@
                                         (FunctionCall
                                             6 1_dependency_tree_t_find_dependency
                                             ()
-                                            [((Var 6 dependency))]
+                                            [((Var 6 self))
+                                            ((Var 6 dependency))]
                                             (Integer 4)
                                             ()
                                             (Var 6 self)

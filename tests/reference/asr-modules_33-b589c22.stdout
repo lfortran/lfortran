@@ -1865,7 +1865,46 @@
                                     [(SubroutineCall
                                         5 1_dependency_tree_t_add_project
                                         5 1_add
-                                        [((Var 5 package))
+                                        [((StructInstanceMember
+                                            (Var 5 model)
+                                            5 1_fpm_model_t_deps
+                                            (StructType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            [(Logical 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Logical 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ()
+                                        ))
+                                        ((Var 5 package))
                                         ((Var 5 error))]
                                         (StructInstanceMember
                                             (Var 5 model)

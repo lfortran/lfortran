@@ -21,6 +21,10 @@ source_filename = "LFortran"
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
 @7 = private unnamed_addr constant [52 x i8] c"Tried to access member of unallocated variable '%s'\00", align 1
+@8 = private unnamed_addr constant [15 x i8] c"1_mytype_get_i\00", align 1
+@9 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
+@10 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
+@11 = private unnamed_addr constant [45 x i8] c"Argument %d of subroutine %s is unallocated.\00", align 1
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_subroutine_without_type_01.mytype_class* %self) {
 .entry:
@@ -171,23 +175,59 @@ ifcont:                                           ; preds = %.entry
   %35 = getelementptr %module_call_subroutine_without_type_01.mytype, %module_call_subroutine_without_type_01.mytype* %34, i32 0, i32 0
   store float 1.000000e+00, float* %35, align 4
   %36 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  %37 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  %38 = bitcast %module_call_subroutine_without_type_01.mytype_class* %37 to void (%module_call_subroutine_without_type_01.mytype_class*)***
-  %39 = load void (%module_call_subroutine_without_type_01.mytype_class*)**, void (%module_call_subroutine_without_type_01.mytype_class*)*** %38, align 8
-  %40 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %39, i32 2
-  %41 = load void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %40, align 8
-  call void %41(%module_call_subroutine_without_type_01.mytype_class* %37)
+  %37 = ptrtoint %module_call_subroutine_without_type_01.mytype_class* %36 to i64
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %then1, label %ifcont2
+
+then1:                                            ; preds = %ifcont
+  %39 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %40 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %41 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %40, i32 0, i32 0
+  %42 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 0
+  store i8* getelementptr inbounds ([63 x i8], [63 x i8]* @9, i32 0, i32 0), i8** %42, align 8
+  %43 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 1
+  store i32 28, i32* %43, align 4
+  %44 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 2
+  store i32 5, i32* %44, align 4
+  %45 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 3
+  store i32 28, i32* %45, align 4
+  %46 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 4
+  store i32 20, i32* %46, align 4
+  %47 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @10, i32 0, i32 0))
+  %48 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %39, i32 0, i32 0
+  %49 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %40, i32 0, i32 0
+  %50 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 2
+  %51 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 0
+  store i1 true, i1* %51, align 1
+  %52 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 1
+  store i8* %47, i8** %52, align 8
+  store { i8*, i32, i32, i32, i32 }* %49, { i8*, i32, i32, i32, i32 }** %50, align 8
+  %53 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 3
+  store i32 1, i32* %53, align 4
+  %54 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %39, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %54, i32 1, i8* getelementptr inbounds ([45 x i8], [45 x i8]* @11, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @8, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont2:                                          ; preds = %ifcont
+  %55 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
+  %56 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
+  %57 = bitcast %module_call_subroutine_without_type_01.mytype_class* %56 to void (%module_call_subroutine_without_type_01.mytype_class*)***
+  %58 = load void (%module_call_subroutine_without_type_01.mytype_class*)**, void (%module_call_subroutine_without_type_01.mytype_class*)*** %57, align 8
+  %59 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %58, i32 2
+  %60 = load void (%module_call_subroutine_without_type_01.mytype_class*)*, void (%module_call_subroutine_without_type_01.mytype_class*)** %59, align 8
+  call void %60(%module_call_subroutine_without_type_01.mytype_class* %56)
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %ifcont2
   br label %FINALIZE_SYMTABLE_call_subroutine_without_type_01
 
 FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
   br label %Finalize_Variable_obj
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
-  %42 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
-  call void @finalize_allocatable__StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %42, i1 false)
+  %61 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** %obj, align 8
+  call void @finalize_allocatable__StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %61, i1 false)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
