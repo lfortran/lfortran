@@ -7058,7 +7058,7 @@ static void convert_fortran_d_exponent(char* buffer) {
 // Normalize Fortran real tokens for C parsing.
 // Handles D/d exponents and legacy exponent shorthand such as `1.-3` -> `1.E-3`.
 // Returns 1 if an exponent marker was inserted, 0 otherwise.
-static int normalize_fortran_real_token(char* buffer) {
+static int normalize_fortran_real_token(char* buffer, size_t buffer_capacity) {
     convert_fortran_d_exponent(buffer);
 
     for (int i = 1; buffer[i] != '\0'; i++) {
@@ -7070,7 +7070,7 @@ static int normalize_fortran_real_token(char* buffer) {
                 continue;
             }
             size_t len = strlen(buffer);
-            if (len + 1 >= 100) {
+            if (len + 1 >= buffer_capacity) {
                 return 0;
             }
             memmove(&buffer[i + 1], &buffer[i], len - (size_t)i + 1);
@@ -7081,11 +7081,27 @@ static int normalize_fortran_real_token(char* buffer) {
     return 0;
 }
 
+static size_t fortran_real_token_length(const char* buffer) {
+    size_t len = 0;
+    while (buffer[len] != '\0' &&
+           !isspace((unsigned char)buffer[len]) &&
+           buffer[len] != ',' &&
+           buffer[len] != '/') {
+        len++;
+    }
+    return len;
+}
+
 static int parse_fortran_float_token(const char* buffer, float* result, int* consumed_chars) {
-    char temp[100];
-    strncpy(temp, buffer, 99);
-    temp[99] = '\0';
-    int inserted_exponent = normalize_fortran_real_token(temp);
+    size_t token_len = fortran_real_token_length(buffer);
+    char *temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        return 0;
+    }
+    memcpy(temp, buffer, token_len);
+    temp[token_len] = '\0';
+
+    int inserted_exponent = normalize_fortran_real_token(temp, token_len + 2);
     char* endptr;
     *result = strtof(temp, &endptr);
     if (consumed_chars) {
@@ -7095,14 +7111,21 @@ static int parse_fortran_float_token(const char* buffer, float* result, int* con
         }
         *consumed_chars = consumed;
     }
-    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+    int ok = (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+    internal_free(temp);
+    return ok;
 }
 
 static int parse_fortran_double_token(const char* buffer, double* result, int* consumed_chars) {
-    char temp[100];
-    strncpy(temp, buffer, 99);
-    temp[99] = '\0';
-    int inserted_exponent = normalize_fortran_real_token(temp);
+    size_t token_len = fortran_real_token_length(buffer);
+    char *temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        return 0;
+    }
+    memcpy(temp, buffer, token_len);
+    temp[token_len] = '\0';
+
+    int inserted_exponent = normalize_fortran_real_token(temp, token_len + 2);
     char* endptr;
     *result = strtod(temp, &endptr);
     if (consumed_chars) {
@@ -7112,7 +7135,9 @@ static int parse_fortran_double_token(const char* buffer, double* result, int* c
         }
         *consumed_chars = consumed;
     }
-    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+    int ok = (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+    internal_free(temp);
+    return ok;
 }
 
 // Helper to parse float with D exponent support and error checking
@@ -9087,7 +9112,7 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
         if (strcmp(format, "%f") == 0) {
             rc = parse_fortran_float_token(buf, f, NULL);
         } else {
-            normalize_fortran_real_token(buf);
+            normalize_fortran_real_token(buf, strlen(buf) + 1);
             rc = sscanf(buf, format, f);
         }
     }
@@ -9114,7 +9139,7 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
         if (strcmp(format, "%lf") == 0) {
             rc = parse_fortran_double_token(buf, f, NULL);
         } else {
-            normalize_fortran_real_token(buf);
+            normalize_fortran_real_token(buf, strlen(buf) + 1);
             rc = sscanf(buf, format, f);
         }
     }
