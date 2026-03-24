@@ -3119,16 +3119,15 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
-    bool is_method;
 
     public:
 
-    ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_, bool is_method_ = false) :
-        al(al_), m_args(m_args_), n_args(n_args_), is_method(is_method_) {}
+    ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
+        al(al_), m_args(m_args_), n_args(n_args_) {}
 
     void replace_FunctionParam(ASR::FunctionParam_t *x) {
         if (current_expr) {
-            size_t n = x->m_param_number - is_method;
+            size_t n = x->m_param_number;
             if (n >= n_args) {
                 LCOMPILERS_ASSERT("FunctionParam param number not in range.");
             };
@@ -7161,16 +7160,8 @@ ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr,
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
-    bool implicit_argument_casting, bool nopass, bool self_already_in_args = false, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
-    bool is_method = (a_dt != nullptr) && (!nopass);
+    bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
-    if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
-        is_method = false;
-    }
-    // When self is already explicitly in args, args align 1:1 with params.
-    if (self_already_in_args) {
-        is_method = false;
-    }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
     // Skip arg processing for implicit interfaces (no declared parameter types)
     if (func_type->n_arg_types == 0) {
@@ -7179,18 +7170,18 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
-        if( i + is_method >= func_type->n_arg_types ) {
+        if( i >= func_type->n_arg_types ) {
             break;
         }
         if( a_args[i].m_value == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i].m_value;
-        [[maybe_unused]] ASR::expr_t* orig_arg = func->m_args[i + is_method];
+        [[maybe_unused]] ASR::expr_t* orig_arg = func->m_args[i];
         ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(func_type->m_arg_types[i + is_method]));
+            ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
         // cast string source based on the dest
         if( ASRUtils::is_string_only(orig_arg_type) &&
             ASRUtils::is_string_only(arg_type) &&
@@ -7198,7 +7189,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             arg = a_args[i].m_value = 
                 create_string_physical_cast(al, arg, 
                     get_string_type(orig_arg_type)->m_physical_type,
-                    is_allocatable(func_type->m_arg_types[i + is_method]));
+                    is_allocatable(func_type->m_arg_types[i]));
         }
 
         if( func_type->m_abi != ASR::abiType::BindC &&
@@ -7258,7 +7249,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // Pass actual argument expression to `check_equal_type()` if the expression is
                 // `ASR::FunctionParam_t`.
                 ASR::expr_t* arg_expr = arg;
-                ASR::expr_t* orig_arg_expr = func->m_args[i + is_method];
+                ASR::expr_t* orig_arg_expr = func->m_args[i];
                 if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
                     arg_expr = func->m_args[func_param->m_param_number];
@@ -7432,25 +7423,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    // When is_method is true, FunctionParam(0) refers to 'self' (a_dt),
-                    // but a_args doesn't include 'self'. We need to construct a full
-                    // args array with a_dt prepended so FunctionParam indices match.
-                    ASR::call_arg_t* full_args = a_args;
-                    size_t full_n_args = n_args;
-                    Vec<ASR::call_arg_t> full_args_vec;
-                    if (is_method && a_dt) {
-                        full_args_vec.reserve(al, n_args + 1);
-                        ASR::call_arg_t self_arg;
-                        self_arg.loc = a_dt->base.loc;
-                        self_arg.m_value = a_dt;
-                        full_args_vec.push_back(al, self_arg);
-                        for (size_t j = 0; j < n_args; j++) {
-                            full_args_vec.push_back(al, a_args[j]);
-                        }
-                        full_args = full_args_vec.p;
-                        full_n_args = full_args_vec.n;
-                    }
-                    ReplaceFunctionParamWithArg r(al, full_args, full_n_args, false);
+                    // Self is already in a_args (at the PASS position), so
+                    // FunctionParam indices align 1:1 with a_args indices.
+                    ReplaceFunctionParamWithArg r(al, a_args, n_args);
                     SetChar temp_function_dependencies;
                     CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
                     bool valid_symbols = true;
@@ -7494,7 +7469,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // Only wrap if not already wrapped (physical_cast_type may
                 // already include Pointer/Allocatable).
                 // Skip for BindC — CFI descriptors use single-pointer semantics.
-                ASR::ttype_t* raw_param_type = func_type->m_arg_types[i + is_method];
+                ASR::ttype_t* raw_param_type = func_type->m_arg_types[i];
                 if (is_orig_assumed_rank &&
                     func_type->m_abi != ASR::abiType::BindC &&
                     ASR::is_a<ASR::Allocatable_t>(*raw_param_type) &&
@@ -7596,11 +7571,35 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
+    // Detect if self is already in args: either explicitly told, or
+    // by checking if args[0] matches dt, or if n_args already equals
+    // the function's formal parameter count.
     bool self_already_in_args = self_in_args || (a_is_method && n_args > 0 &&
         a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
+    if (a_is_method && !self_already_in_args) {
+        ASR::FunctionType_t* func_type = get_FunctionType(a_name);
+        if (func_type->n_arg_types > 0 && n_args >= func_type->n_arg_types) {
+            self_already_in_args = true;
+        }
+    }
+
+    // Prepend self to args BEFORE Call_t_body so args align 1:1 with formals
+    if (a_is_method && !self_already_in_args) {
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_args + 1);
+        ASR::call_arg_t self_arg;
+        self_arg.loc = a_dt->base.loc;
+        self_arg.m_value = a_dt;
+        new_args.push_back(al, self_arg);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, a_args[i]);
+        }
+        a_args = new_args.p;
+        n_args = new_args.size();
+    }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
-        nopass, self_already_in_args, current_scope, current_function_dependencies);
+        current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
         !ASRUtils::is_fixed_size_array(a_type) &&
@@ -7644,20 +7643,6 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
         }
     }
 
-    if (a_is_method && !self_already_in_args) {
-        Vec<ASR::call_arg_t> new_args;
-        new_args.reserve(al, n_args + 1);
-        ASR::call_arg_t self_arg;
-        self_arg.loc = a_dt->base.loc;
-        self_arg.m_value = a_dt;
-        new_args.push_back(al, self_arg);
-        for (size_t i = 0; i < n_args; i++) {
-            new_args.push_back(al, a_args[i]);
-        }
-        a_args = new_args.p;
-        n_args = new_args.size();
-    }
-
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
             a_args, n_args, a_type, a_value, a_dt);
 }
@@ -7669,12 +7654,18 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     bool nopass = ASRUtils::get_class_proc_nopass_val(a_name);
     bool a_is_method = (a_dt != nullptr) && (!nopass);
+    // Detect if self is already in args: either explicitly told, or
+    // by checking if args[0] matches dt, or if n_args already equals
+    // the function's formal parameter count.
     bool self_already_in_args = self_in_args || (a_is_method && n_args > 0 &&
         a_args[0].m_value != nullptr && is_self_argument(a_args[0].m_value, a_dt));
+    if (a_is_method && !self_already_in_args) {
+        ASR::FunctionType_t* func_type = get_FunctionType(a_name);
+        if (func_type->n_arg_types > 0 && n_args >= func_type->n_arg_types) {
+            self_already_in_args = true;
+        }
+    }
     ASR::expr_t* self_expr = a_dt;
-
-    Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         nopass, self_already_in_args, current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
@@ -7684,6 +7675,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
             a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
+    // Prepend self to args BEFORE Call_t_body so args align 1:1 with formals
     if (a_is_method && !self_already_in_args) {
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, n_args + 1);
@@ -7697,6 +7689,9 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         a_args = new_args.p;
         n_args = new_args.size();
     }
+
+    Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
+         current_scope, current_function_dependencies);
 
     return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt, a_strict_bounds_checking);
 }

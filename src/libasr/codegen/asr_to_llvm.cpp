@@ -18211,7 +18211,7 @@ public:
     }
 
     template <typename T>
-    std::vector<llvm::Value*> convert_call_args(const T &x, bool is_method) {
+    std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false) {
         std::vector<llvm::Value *> args;
         convert_call_args_depth++;
         // Only reset alloca pool indices at outermost call to avoid
@@ -18219,10 +18219,10 @@ public:
         if (convert_call_args_depth == 1) {
             reset_call_arg_alloca_pool();
         }
-        // When is_method, self is in x.m_args[0] but is handled
-        // separately by the caller (with polymorphic conversion),
+        // When skip_self is true, self is in x.m_args[0] but is handled
+        // separately by the caller (with polymorphic type conversion),
         // so we skip it here.
-        size_t start_idx = is_method ? 1 : 0;
+        size_t start_idx = skip_self ? 1 : 0;
         for (size_t i=start_idx; i<x.n_args; i++) {
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
             ASR::abiType x_abi = (ASR::abiType) 0;
@@ -20482,7 +20482,7 @@ public:
 
             // Self is in x.m_args[0]; skip it in convert_call_args
             // and handle it manually with proper type conversion.
-            args = convert_call_args(x, is_method);
+            args = convert_call_args(x, is_method /* skip_self */);
             if (is_method) {
                 ASR::StructInstanceMember_t* sim =
                     ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
@@ -20636,7 +20636,7 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lpython_get_argv", module.get());
                 }
-                args = convert_call_args(x, is_method);
+                args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad2(
                     llvm::Type::getInt32Ty(context), args[0])});
@@ -20653,7 +20653,7 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lfortran_get_env_variable", module.get());
                 }
-                args = convert_call_args(x, is_method);
+                args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
                 if (args.size() > 1)
@@ -20670,7 +20670,7 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lfortran_exec_command", module.get());
                 }
-                args = convert_call_args(x, is_method);
+                args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
                 return;
@@ -20684,7 +20684,7 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lfortran_sleep", module.get());
                 }
-                args = convert_call_args(x, is_method);
+                args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), args[0]) });
                 return;
@@ -20708,7 +20708,7 @@ public:
                     ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type)) {
                 fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             }
-            args = convert_call_args(x, is_method);
+            args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
@@ -20722,7 +20722,7 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
-            args = convert_call_args(x, is_method);
+            args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
@@ -20732,7 +20732,7 @@ public:
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = ASRUtils::symbol_name(x.m_name);
-            std::vector<llvm::Value *> args2 = convert_call_args(x, is_method);
+            std::vector<llvm::Value *> args2 = convert_call_args(x, is_method /* skip_self */);
             args.insert(args.end(), args2.begin(), args2.end());
             // check if type of each arg is same as type of each arg in subrout_called
             if (ASR::is_a<ASR::Function_t>(*symbol_get_past_external(x.m_name))) {
@@ -21028,7 +21028,7 @@ public:
             llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
             args.push_back(llvm_dt);
         }
-        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
+        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
 
         // Get VTable pointer
@@ -21109,7 +21109,7 @@ public:
                 args.push_back(llvm_dt);
             }
         }
-        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
+        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
 
         // Get Runtime VTable Pointer
@@ -21381,7 +21381,7 @@ public:
                     ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type)) {
                 fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             }
-            args = convert_call_args(x, is_method);
+            args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -21392,7 +21392,7 @@ public:
                 s->m_function_signature, module.get());
             llvm::Value* fn = llvm_symtab[h];
             fn = llvm_utils->CreateLoad2(fn_type, fn);
-            args = convert_call_args(x, is_method);
+            args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
@@ -21401,7 +21401,7 @@ public:
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
-            std::vector<llvm::Value *> args2 = convert_call_args(x, is_method);
+            std::vector<llvm::Value *> args2 = convert_call_args(x, is_method /* skip_self */);
             args.insert(args.end(), args2.begin(), args2.end());
             if (pass_arg) {
                 args.push_back(pass_arg);
