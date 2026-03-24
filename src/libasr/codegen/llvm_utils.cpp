@@ -468,6 +468,9 @@ namespace LCompilers {
         if (std::find(struct_type_stack.begin(), struct_type_stack.end(),
                         der_type_name) != struct_type_stack.end()) {
             LCOMPILERS_ASSERT(name2dercontext.find(der_type_name) != name2dercontext.end());
+            if (is_pointer) {
+                return name2dercontext[der_type_name]->getPointerTo();
+            }
             return name2dercontext[der_type_name];
         }
         struct_type_stack.push_back(der_type_name);
