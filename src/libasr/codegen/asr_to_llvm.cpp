@@ -18727,6 +18727,15 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(x.m_args[i].m_value)))) ) {
                 this->visit_expr_wrapper(x.m_args[i].m_value, true);
+                if (orig_arg && ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_pointer(orig_arg->m_type))) {
+                    llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                        orig_arg->m_type, module.get());
+                    if (tmp->getType() != expected_type) {
+                        tmp = builder->CreateBitCast(tmp, expected_type);
+                    }
+                }
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
