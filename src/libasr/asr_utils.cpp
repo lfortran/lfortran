@@ -1696,8 +1696,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al, self_arg);
+                            ASR::call_arg_t* call_args1 = a_args.p;
+                            size_t n_call_args1 = a_args.n;
+                            ASRUtils::insert_self_arg(al, a_name, call_args1, n_call_args1, self_arg);
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
-                                                            a_args.p, a_args.n,
+                                                            call_args1, n_call_args1,
                                                             return_type,
                                                             nullptr, self_arg
                                                             );
@@ -2062,8 +2065,11 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                         arg.m_value = non_pass_arg;
                         a_args.push_back(al, arg);
 
+                        ASR::call_arg_t* call_args = a_args.p;
+                        size_t n_call_args = 1;
+                        ASRUtils::insert_self_arg(al, ext_sym, call_args, n_call_args, expr_dt);
                         asr = ASRUtils::make_SubroutineCall_t_util(al, loc, ext_sym, ext_sym,
-                            a_args.p, 1, expr_dt, nullptr, false);
+                            call_args, n_call_args, expr_dt, nullptr, false);
                     }
                     break;
                 }
@@ -2134,8 +2140,11 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
         ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
+        ASR::call_arg_t* call_args = a_args.p;
+        size_t n_call_args = a_args.n;
+        ASRUtils::insert_self_arg(al, a_name, call_args, n_call_args, expr_dt);
         asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
-                                        a_args.p, a_args.n, expr_dt, nullptr, false);
+                                        call_args, n_call_args, expr_dt, nullptr, false);
     }
 }
 
@@ -2394,8 +2403,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al, self_arg);
+                            ASR::call_arg_t* call_args2 = a_args.p;
+                            size_t n_call_args2 = a_args.n;
+                            ASRUtils::insert_self_arg(al, a_name, call_args2, n_call_args2, self_arg);
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
-                                                            a_args.p, a_args.n,
+                                                            call_args2, n_call_args2,
                                                             return_type,
                                                             nullptr, self_arg
                                                             );

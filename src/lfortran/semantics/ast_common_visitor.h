@@ -10364,8 +10364,11 @@ public:
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
+        ASR::call_arg_t* call_args = args.p;
+        size_t n_call_args = args.size();
+        ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
-                v, nullptr, args.p, args.size(), type, nullptr,
+                v, nullptr, call_args, n_call_args, type, nullptr,
                 v_expr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
     }
@@ -10483,8 +10486,11 @@ public:
                     args_without_dt.push_back(al, args[i]);
                 }
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                ASR::call_arg_t* call_args = args_without_dt.p;
+                size_t n_call_args = args_without_dt.size();
+                ASRUtils::insert_self_arg(al, cp_s, call_args, n_call_args, args[0].m_value);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
-                    cp_s, nullptr, args_without_dt.p, args_without_dt.size(), type,
+                    cp_s, nullptr, call_args, n_call_args, type,
                     nullptr, args[0].m_value, current_scope, current_function_dependencies,
                     compiler_options.implicit_argument_casting);
             } else {
@@ -11224,8 +11230,11 @@ public:
         if( is_dt_present ) {
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
+            ASR::call_arg_t* call_args = args.p + 1;
+            size_t n_call_args = args.size() - 1;
+            ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p + 1, args.size() - 1, return_type, nullptr, dt, current_scope, current_function_dependencies,
+                call_args, n_call_args, return_type, nullptr, dt, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
         } else {
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
