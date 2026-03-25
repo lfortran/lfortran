@@ -8936,43 +8936,97 @@ public:
                 throw SemanticAbort();
             }
             std::string func_name = to_lower(sym_type->m_name);
-            ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
-            if( !v ) {
-                Location &attr_loc = sym_type->base.base.loc;
-                ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                    al, attr_loc,
-                    nullptr, 0, nullptr, ASR::abiType::Source,        
-                    ASR::deftypeType::Interface, nullptr,                     
-                    false, false, false, false, false, nullptr, 0, false
-                    )); 
-                SymbolTable *parent_scope = current_scope->parent; 
-                SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
-                ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_Function_t(
-                        al, attr_loc,
-                        fn_scope,       
-                        s2c(al, func_name),      
-                        func_type,         
-                        nullptr, 0,              
-                        nullptr, 0,              
-                        nullptr, 0,              
-                        nullptr,                 
-                        ASR::accessType::Public, 
-                        false,                   
-                        false,                   
-                        nullptr,                 
-                        nullptr, nullptr         
-                    )
-                );
-                
-                parent_scope->add_symbol(func_name, placeholder); 
-                v = placeholder;
-                pending_proc_placeholders.push_back({func_name, placeholder});
+            // procedure(type-spec) declares a procedure with implicit interface
+            // and the given return type (e.g., procedure(integer) returns integer).
+            ASR::ttype_t *return_type = nullptr;
+            if (compiler_options.implicit_interface) {
+                if (func_name == "integer") {
+                    return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                } else if (func_name == "real") {
+                    return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                } else if (func_name == "complex") {
+                    return_type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
+                } else if (func_name == "logical") {
+                    return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                } else if (func_name == "character") {
+                    return_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::DescriptorString));
+                }
             }
-            type_declaration = v;
-            v = ASRUtils::symbol_get_past_external(v);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
-            type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            if (return_type) {
+                Location &attr_loc = sym_type->base.base.loc;
+                type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, loc,
+                    nullptr, 0, return_type, ASR::abiType::Source,
+                    ASR::deftypeType::Interface, nullptr,
+                    false, false, false, false, false, nullptr, 0, false
+                    ));
+                // Create a backing Function symbol so type_declaration is set.
+                std::string iface_name = "__" + sym + "_iface_" + func_name;
+                SymbolTable *parent_scope = current_scope->parent;
+                ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
+                if (!existing) {
+                    SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+                    existing = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Function_t(
+                            al, attr_loc,
+                            fn_scope,
+                            s2c(al, iface_name),
+                            type,
+                            nullptr, 0,
+                            nullptr, 0,
+                            nullptr, 0,
+                            nullptr,
+                            ASR::accessType::Public,
+                            false,
+                            false,
+                            nullptr,
+                            nullptr, nullptr
+                        )
+                    );
+                    parent_scope->add_symbol(iface_name, existing);
+                }
+                type_declaration = existing;
+            } else {
+                ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+                if( !v ) {
+                    Location &attr_loc = sym_type->base.base.loc;
+                    ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                        al, attr_loc,
+                        nullptr, 0, nullptr, ASR::abiType::Source,        
+                        ASR::deftypeType::Interface, nullptr,                     
+                        false, false, false, false, false, nullptr, 0, false
+                        )); 
+                    SymbolTable *parent_scope = current_scope->parent; 
+                    SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+                    ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Function_t(
+                            al, attr_loc,
+                            fn_scope,       
+                            s2c(al, func_name),      
+                            func_type,         
+                            nullptr, 0,              
+                            nullptr, 0,              
+                            nullptr, 0,              
+                            nullptr,                 
+                            ASR::accessType::Public, 
+                            false,                   
+                            false,                   
+                            nullptr,                 
+                            nullptr, nullptr         
+                        )
+                    );
+                    
+                    parent_scope->add_symbol(func_name, placeholder); 
+                    v = placeholder;
+                    pending_proc_placeholders.push_back({func_name, placeholder});
+                }
+                type_declaration = v;
+                v = ASRUtils::symbol_get_past_external(v);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
+                type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
             }
