@@ -10493,6 +10493,19 @@ public:
             // their string descriptor pointers start as NULL.
             bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type) ||
                                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target);
+            // bind(C) allocatable string dummies have an extra pointer
+            // level (string_descriptor** rather than string_descriptor*)
+            // due to the BindC ABI. Dereference to string_descriptor*.
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::Variable_t* target_var = ASRUtils::EXPR2VAR(x.m_target);
+                if (target_var->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::is_allocatable(asr_target_type) &&
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type))
+                        ->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    target = llvm_utils->CreateLoad2(
+                        llvm_utils->string_descriptor->getPointerTo(), target);
+                }
+            }
             llvm_utils->lfortran_str_copy(target, value,
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
@@ -19165,6 +19178,32 @@ public:
                     : nullptr;
                 bool callee_is_extern_c = !arg_cft ||
                                            is_external_interface_function(arg_cft);
+
+                // If the interface looks external but there is a Fortran
+                // bind(C) implementation in the same translation unit,
+                // the callee uses LFortran's internal string_descriptor**
+                // layout, not a CFI descriptor.
+                if (callee_is_extern_c && arg_cft &&
+                    arg_cft->m_abi == ASR::abiType::BindC) {
+                    ASR::Function_t* called_fn =
+                        ASR::down_cast<ASR::Function_t>(func_subrout);
+                    SymbolTable* scope = called_fn->m_symtab->parent;
+                    while (scope && scope->parent) scope = scope->parent;
+                    if (scope) {
+                        ASR::symbol_t* impl = scope->get_symbol(
+                            called_fn->m_name);
+                        if (impl && impl != (ASR::symbol_t*)called_fn &&
+                            ASR::is_a<ASR::Function_t>(*impl)) {
+                            ASR::FunctionType_t* impl_ft =
+                                ASRUtils::get_FunctionType(
+                                    ASR::down_cast<ASR::Function_t>(impl));
+                            if (impl_ft->m_abi == ASR::abiType::BindC &&
+                                impl_ft->m_deftype == ASR::deftypeType::Implementation) {
+                                callee_is_extern_c = false;
+                            }
+                        }
+                    }
+                }
 
                 llvm::Value* str_desc = builder->CreateBitCast(
                     tmp, llvm_utils->string_descriptor->getPointerTo());
