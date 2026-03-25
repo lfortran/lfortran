@@ -2787,8 +2787,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     bool array = false;
     bool BreakWhileLoop= false;
     char rounding_mode = 'n';  // 'n'=nearest, 'u'=up, 'd'=down, 'z'=zero
+    int scale = 0;
     while (1) {
-        int scale = 0;
         bool consumed_data_item_in_cycle = false;
         bool is_array = false;
         bool array_looping = false;
@@ -9083,7 +9083,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,
+LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred,
+    bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
     va_list args;
     va_start(args, format_len);
@@ -9125,12 +9126,42 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     else
         sprintf(s, "%.*s%.*s", (int)str_len, str, (int)end_len, end_data);
 
-    // Internal WRITE must not reallocate an already-allocated target string;
-    // it writes into the existing buffer and pads the remainder with spaces.
-    // If the string is not yet allocated, fall back to _lfortran_strcpy which
-    // will allocate it.
+    // Internal WRITE must not reallocate an already-allocated target string.
+    // For character array internal files, each '\n' in formatted text denotes
+    // the next record (array element).
     if (*str_holder != NULL) {
-        _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
+        if (is_array_unit && array_size > 0) {
+            int64_t rec = 0;
+            int64_t start = 0;
+            while (rec < array_size && start <= str_len) {
+                int64_t end = start;
+                while (end < str_len && str[end] != '\n') {
+                    end++;
+                }
+                _lfortran_copy_str_and_pad(
+                    (*str_holder) + rec * (*len),
+                    *len,
+                    str + start,
+                    end - start);
+                rec++;
+                if (end >= str_len) {
+                    break;
+                }
+                start = end + 1;
+            }
+
+            // For remaining records, pad with spaces.
+            while (rec < array_size) {
+                _lfortran_copy_str_and_pad(
+                    (*str_holder) + rec * (*len),
+                    *len,
+                    "",
+                    0);
+                rec++;
+            }
+        } else {
+            _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
+        }
     } else {
         _lfortran_strcpy_alloc(_lfortran_get_default_allocator(), str_holder, len, is_allocatable, is_deferred, str, str_len);
     }
