@@ -9210,22 +9210,28 @@ public:
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
+        bool all_values_constant = true;
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
             // If val.m_value is nullptr, default value is not needed and it is still const (Variable with Allocatable type)
             if (val.m_value &&
                     !(ASRUtils::is_value_constant(val.m_value) ||
                       ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
+                    all_values_constant = false;
                     is_const = false;
                     break;
             }
         }
+        ASR::expr_t* struct_value = nullptr;
+        if (all_values_constant) {
+            struct_value = ASRUtils::EXPR(ASR::make_StructConstant_t(
+                al, loc, v, vals.p, vals.size(), der));
+        }
         if (is_const) {
-           return ASR::make_StructConstant_t(al, loc,
-                    v, vals.p, vals.size(), der);
+           return (ASR::asr_t*)struct_value;
         }
         return ASR::make_StructConstructor_t(al, loc,
-                v, vals.p, vals.size(), der, nullptr);
+                v, vals.p, vals.size(), der, struct_value);
     }
 
     int get_based_indexing(ASR::symbol_t* v) {
