@@ -5218,6 +5218,13 @@ public:
                                     }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
                                         sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])], value);
+                                        if (sym_ && sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            if (!ASRUtils::is_pointer(v->m_type)) {
+                                                v->m_type = ASRUtils::TYPE(
+                                                    ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
+                                            }
+                                        }
                                     }
                                 }
                                 if (sym_ && sa->m_attr == AST::simple_attributeType::AttrParameter) {
