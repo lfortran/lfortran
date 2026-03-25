@@ -975,6 +975,8 @@ RUN(NAME any_03 LABELS gfortran llvm)
 RUN(NAME sum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME sum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME sum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
+RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
 RUN(NAME product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME product_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
