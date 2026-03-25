@@ -8926,15 +8926,63 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
             if (!sym_type->m_name) {
-                Location &attr_loc = sym_type->base.base.loc;
-                diag.add(Diagnostic(
-                    "Procedure declarations without an explicit interface (procedure()) are not yet supported. "
-                    "Please use procedure(interface_name) or declare an interface block.",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{attr_loc})
-                    }));
-                throw SemanticAbort();
-            }
+                if (compiler_options.implicit_interface) {
+                    ASR::ttype_t *return_type = nullptr;
+                    std::string first_letter = std::string(1, sym[0]);
+                    if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()
+                            && implicit_dictionary[first_letter] != nullptr) {
+                        return_type = implicit_dictionary[first_letter];
+                    } else {
+                        char first_char = sym[0];
+                        if (first_char >= 'i' && first_char <= 'n') {
+                            return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                        } else {
+                            return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                        }
+                    }
+                    Location &attr_loc = sym_type->base.base.loc;
+                    type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                        al, loc,
+                        nullptr, 0, return_type, ASR::abiType::Source,
+                        ASR::deftypeType::Interface, nullptr,
+                        false, false, false, false, false, nullptr, 0, false
+                        ));
+                    std::string iface_name = "__" + sym + "_iface_implicit";
+                    SymbolTable *parent_scope = current_scope->parent;
+                    ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
+                    if (!existing) {
+                        SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+                        existing = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_Function_t(
+                                al, attr_loc,
+                                fn_scope,
+                                s2c(al, iface_name),
+                                type,
+                                nullptr, 0,
+                                nullptr, 0,
+                                nullptr, 0,
+                                nullptr,
+                                ASR::accessType::Public,
+                                false,
+                                false,
+                                nullptr,
+                                nullptr, nullptr
+                            )
+                        );
+                        parent_scope->add_symbol(iface_name, existing);
+                    }
+                    type_declaration = existing;
+                } else {
+                    Location &attr_loc = sym_type->base.base.loc;
+                    diag.add(Diagnostic(
+                        "Procedure declarations without an explicit interface (procedure()) are not yet supported. "
+                        "Please use procedure(interface_name) or declare an interface block.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{attr_loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else {
             std::string func_name = to_lower(sym_type->m_name);
             // procedure(type-spec) declares a procedure with implicit interface
             // and the given return type (e.g., procedure(integer) returns integer).
@@ -9027,6 +9075,7 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
                 type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
             }
+            } // else (named procedure interface)
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
             }
