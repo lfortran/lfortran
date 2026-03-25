@@ -3130,14 +3130,26 @@ public:
         // Check if the operator is already imported into the scope. If yes, include it's procedures
         // into the current `CustomOperator` symbol that we overwrite with.
         if (current_scope->get_symbol(generic_name) != nullptr) {
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*current_scope->get_symbol(generic_name))) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::ExternalSymbol_t>(
-                                    current_scope->get_symbol(generic_name))->m_external;
+            ASR::symbol_t* existing = current_scope->get_symbol(generic_name);
+            ASR::CustomOperator_t* cop = nullptr;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
                 if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                    ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
-                    for (size_t i = 0; i < cop->n_procs; i++) {
-                        std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
-                        symbols.push_back(al, resolve_symbol(loc, s2c(al, proc_name)));
+                    cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+                }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
+                cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
+            }
+            if (cop != nullptr) {
+                for (size_t i = 0; i < cop->n_procs; i++) {
+                    std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                    ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
+                    if (proc_sym == nullptr) {
+                        proc_sym = current_scope->resolve_symbol(
+                            ASRUtils::symbol_name(cop->m_procs[i]));
+                    }
+                    if (proc_sym != nullptr) {
+                        symbols.push_back(al, proc_sym);
                     }
                 }
             }
