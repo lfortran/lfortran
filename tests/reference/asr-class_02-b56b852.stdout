@@ -451,7 +451,19 @@
                                                 .true.
                                                 .false.
                                             )
-                                            ()
+                                            (StructConstant
+                                                2 circle
+                                                [((RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                ))]
+                                                (StructType
+                                                    [(Real 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
                                         )
                                         ()
                                         .false.
