@@ -2098,6 +2098,7 @@ RUN(NAME pdt_14 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME pdt_15 LABELS gfortran llvm)
 RUN(NAME pdt_16 LABELS gfortran llvm)
 
+RUN(NAME parameter_reshape_derived_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
 RUN(NAME derived_types_03 LABELS gfortran llvm)
