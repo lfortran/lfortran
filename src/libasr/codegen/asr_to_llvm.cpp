@@ -6316,7 +6316,11 @@ public:
                 // Do nothing, the value is already initialized
                 // in the global variable
             } else {
-                builder->CreateStore(init_value, target_var, v->m_is_volatile);
+                if (v->m_is_volatile) {
+                    builder->CreateStore(init_value, target_var, v->m_is_volatile);
+                } else {
+                    emit_store_or_array_memcpy(init_value, target_var);
+                }
             }
         }
     }
@@ -9192,6 +9196,79 @@ public:
         return llvm_utils->CreateLoad2(t, ptr, is_volatile);
     }
 
+    void emit_store_or_array_memcpy(llvm::Value* value, llvm::Value* target) {
+        if (target->getType()->isPointerTy() && value->getType()->isPointerTy()) {
+            llvm::Type* pt = llvm::cast<llvm::PointerType>(target->getType())->getPointerElementType();
+            llvm::Type* pv = llvm::cast<llvm::PointerType>(value->getType())->getPointerElementType();
+            // Empty LLVM array (e.g. SIMD len 0): must not use CreateStore when the value
+            // pointer is a different type (e.g. i32* vs [0 x T]*); copy 0 bytes via gep.
+            if (llvm::ArrayType* at = llvm::dyn_cast<llvm::ArrayType>(pt)) {
+                if (at->getNumElements() == 0u) {
+                    llvm::Value* target_el = llvm_utils->create_gep2(at, target, 0);
+                    builder->CreateMemCpy(target_el, llvm::MaybeAlign(), value, llvm::MaybeAlign(),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+                    return;
+                }
+            }
+            const llvm::DataLayout& dl = module->getDataLayout();
+            if (pt == pv && llvm::isa<llvm::ArrayType>(pt)) {
+                llvm::ArrayType* at = llvm::cast<llvm::ArrayType>(pt);
+                if (at->isSized()) {
+                    uint64_t nbytes = dl.getTypeAllocSize(at);
+                    builder->CreateMemCpy(
+                        builder->CreateBitCast(target, llvm_utils->i8_ptr),
+                        llvm::MaybeAlign(),
+                        builder->CreateBitCast(value, llvm_utils->i8_ptr),
+                        llvm::MaybeAlign(),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, (unsigned)nbytes)));
+                    return;
+                }
+            }
+            if (!pt->isSized() || !pv->isSized()) {
+                builder->CreateStore(value, target);
+                return;
+            }
+            uint64_t st = dl.getTypeAllocSize(pt);
+            uint64_t sv = dl.getTypeAllocSize(pv);
+            if (st == 0 && sv == 0) {
+                builder->CreateMemCpy(
+                    builder->CreateBitCast(target, llvm_utils->i8_ptr),
+                    llvm::MaybeAlign(),
+                    builder->CreateBitCast(value, llvm_utils->i8_ptr),
+                    llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+                return;
+            }
+        }
+        builder->CreateStore(value, target);
+    }
+
+    void emit_store_or_array_memcpy_with_asr_empty(
+            llvm::Value* value, llvm::Value* target,
+            ASR::expr_t* target_expr, ASR::ttype_t* target_asr_type, ASR::ttype_t* value_asr_type) {
+        if (ASRUtils::is_array(target_asr_type) && ASRUtils::is_array(value_asr_type)) {
+            ASR::dimension_t* td = nullptr;
+            size_t tnd = ASRUtils::extract_dimensions_from_ttype(target_asr_type, td);
+            ASR::dimension_t* vd = nullptr;
+            size_t vnd = ASRUtils::extract_dimensions_from_ttype(value_asr_type, vd);
+            int64_t tsz = ASRUtils::get_fixed_size_of_array(td, tnd);
+            int64_t vsz = ASRUtils::get_fixed_size_of_array(vd, vnd);
+            if (tsz == 0 && vsz == 0) {
+                llvm::Type* tgt_ll = llvm_utils->get_type_from_ttype_t_util(
+                    target_expr, target_asr_type, module.get());
+                llvm::Type* tgt_mem = tgt_ll;
+                if (tgt_mem->isPointerTy()) {
+                    tgt_mem = tgt_mem->getPointerElementType();
+                }
+                llvm::Value* target_el = llvm_utils->create_gep2(tgt_mem, target, 0);
+                builder->CreateMemCpy(target_el, llvm::MaybeAlign(), value, llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+                return;
+            }
+        }
+        emit_store_or_array_memcpy(value, target);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
@@ -10686,7 +10763,8 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                     builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
                 } else {
-                    builder->CreateStore(value, target);
+                    emit_store_or_array_memcpy_with_asr_empty(
+                        value, target, x.m_target, target_type, value_type);
                 }
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
@@ -10752,9 +10830,13 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
-            builder->CreateStore(value, target);
+            ASR::ttype_t* alloc_inner = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target)));
+            emit_store_or_array_memcpy_with_asr_empty(
+                value, target, x.m_target, alloc_inner, value_type);
         } else {
-            builder->CreateStore(value, target);
+            emit_store_or_array_memcpy_with_asr_empty(
+                value, target, x.m_target, target_type, value_type);
         }
     }
 
@@ -13324,14 +13406,16 @@ public:
             throw CodeGenError("ConstArray type not supported yet");
         }
         // Create <n x float> type, where `n` is the length of the `x` constant array
-        int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
+        int64_t arr_len = ASRUtils::get_fixed_size_of_array(x.m_type);
+        LCOMPILERS_ASSERT(arr_len >= 0);
         llvm::Type* type_fxn = nullptr;
-        if (simd_n <= 0) {
+        if (arr_len == 0) {
             type_fxn = llvm::ArrayType::get(el_type, 0);
         } else {
-            type_fxn = FIXED_VECTOR_TYPE::get(el_type, simd_n);
+            type_fxn = FIXED_VECTOR_TYPE::get(
+                el_type, static_cast<unsigned>(arr_len));
         }
-        // Create a pointer <n x float>* to a stack allocated <n x float>
+        // Create a pointer to a stack allocated vector or empty array
         llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
         // Assign the array elements to `p_fxn`.
         for (size_t i=0; i < x.n_args; i++) {
@@ -13346,8 +13430,14 @@ public:
             }
             builder->CreateStore(tmp, llvm_el);
         }
-        // Return the vector as float* type:
-        tmp = llvm_utils->create_gep2(type_fxn ,p_fxn, 0);
+        // Return pointer to the aggregate (same as C's array decay for non-empty);
+        // for arr_len==0 there is no element 0 — keep the array pointer so callers
+        // can memcpy [0 x T] to [0 x T], not i32* to [0 x T].
+        if (arr_len == 0) {
+            tmp = p_fxn;
+        } else {
+            tmp = llvm_utils->create_gep2(type_fxn ,p_fxn, 0);
+        }
     }
 
     void visit_ArrayConstantUtil(const ASR::ArrayConstant_t &x) {

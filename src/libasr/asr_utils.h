@@ -1641,9 +1641,23 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::RealBinOp:
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
-        case ASR::exprType::IntegerBinOp:
-        case ASR::exprType::ArrayConstructor:
-        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::IntegerBinOp: {
+            return is_value_constant(expr_value(a_value));
+        } case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* array_constructor =
+                ASR::down_cast<ASR::ArrayConstructor_t>(a_value);
+            if (ASRUtils::is_value_constant(array_constructor->m_value)) {
+                return true;
+            }
+            for (size_t i = 0; i < array_constructor->n_args; i++) {
+                if (!ASRUtils::is_value_constant(array_constructor->m_args[i]) &&
+                    !ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(array_constructor->m_args[i]))) {
+                    return false;
+                }
+            }
+            return true;
+        } case ASR::exprType::StructInstanceMember:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
         } case ASR::exprType::ListConstant: {
@@ -3088,10 +3102,9 @@ inline bool is_array_t(ASR::expr_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(expr_type(x)));
 }
 
-// Check through number of dims.
+// True when the underlying type is Array (including rank-zero arrays with n_dims == 0).
 inline bool is_array(ASR::ttype_t *x) {
-    ASR::dimension_t* dims = nullptr;
-    return extract_dimensions_from_ttype(x, dims) > 0 || is_assumed_rank_array(x);
+    return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }
 
 class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments> {
@@ -4219,6 +4232,12 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     bool check_n_dims= true){
 
     if (check_n_dims && (n_dims_a != n_dims_b)) {
+        int total_a = get_fixed_size_of_array(dims_a, n_dims_a);
+        int total_b = get_fixed_size_of_array(dims_b, n_dims_b);
+        // e.g. rank-zero (n_dims==0) vs explicit empty dimension (1:0): both are empty.
+        if (total_a == 0 && total_b == 0) {
+            return true;
+        }
         return false;
     }
     int total_a = get_fixed_size_of_array(dims_a,n_dims_a);
