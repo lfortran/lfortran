@@ -15505,7 +15505,7 @@ public:
                     for (size_t i = 0; i < c_args.size(); i++) {
                         arg_types.push_back(al, ASRUtils::expr_type(c_args[i].m_value));
                     }
-                    ASR::ttype_t* iface_type = create_or_update_implicit_interface(
+                    create_or_update_implicit_interface(
                         proc_var, x.base.base.loc, arg_types.p, arg_types.size(),
                         return_type, parent_scope, var_name);
                     // Update the arg type in the containing function's signature
