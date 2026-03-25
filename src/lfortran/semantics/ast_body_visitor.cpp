@@ -2636,9 +2636,27 @@ public:
                 }
             }
             if (implicit_iface) {
-                if (ASRUtils::types_equal(target_func_type->m_return_var_type,
-                                          value_func_type->m_return_var_type,
-                                          nullptr, nullptr)) {
+                bool return_types_match = ASRUtils::types_equal(
+                    target_func_type->m_return_var_type,
+                    value_func_type->m_return_var_type,
+                    nullptr, nullptr);
+                bool fully_implicit = false;
+                if (!return_types_match) {
+                    ASR::symbol_t* target_sym_check = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(target)->m_v);
+                    ASR::Variable_t *target_var_check = ASR::down_cast<ASR::Variable_t>(target_sym_check);
+                    if (target_var_check->m_type_declaration) {
+                        ASR::symbol_t *td = ASRUtils::symbol_get_past_external(
+                            target_var_check->m_type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*td)) {
+                            std::string dn = ASR::down_cast<ASR::Function_t>(td)->m_name;
+                            if (dn.find("_iface_implicit") != std::string::npos) {
+                                fully_implicit = true;
+                            }
+                        }
+                    }
+                }
+                if (return_types_match || fully_implicit) {
                     // Update the pointer variable's type and type_declaration
                     // to adopt the full interface from the assigned function.
                     ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
