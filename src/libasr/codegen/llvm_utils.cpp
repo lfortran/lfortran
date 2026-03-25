@@ -2247,11 +2247,31 @@ namespace LCompilers {
         return builder->CreateAlloca(string_descriptor, nullptr, name);
     }
 
-    llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
-        if (str->getType()->isPointerTy() &&
-            str->getType()->getPointerElementType()->isPointerTy()) {
-            str = CreateLoad2(str->getType()->getPointerElementType(), str);
+    namespace {
+    llvm::Value* load_string_value_if_pointer_slot(
+            LLVMUtils& u,
+            ASR::String_t* str_type,
+            llvm::Value* str) {
+        llvm::Type* const ptr_to_str =
+            u.get_StringType((ASR::ttype_t*)str_type)->getPointerTo();
+        if (auto* alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(str)) {
+            if (alloca_inst->getAllocatedType()->isPointerTy()) {
+                return u.CreateLoad2(ptr_to_str, str);
+            }
+            return str;
         }
+        if (auto* global_var = llvm::dyn_cast<llvm::GlobalVariable>(str)) {
+            if (global_var->getValueType()->isPointerTy()) {
+                return u.CreateLoad2(ptr_to_str, str);
+            }
+            return str;
+        }
+        return str;
+    }
+    }
+
+    llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
+        str = load_string_value_if_pointer_slot(*this, str_type, str);
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
         llvm::Value* ptr_to_data {};
         switch (str_type->m_physical_type)
@@ -2279,10 +2299,7 @@ namespace LCompilers {
     // >>>>>>>>>>>>>> Refactor this
 
     llvm::Value* LLVMUtils::get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len){
-        if (str->getType()->isPointerTy() &&
-            str->getType()->getPointerElementType()->isPointerTy()) {
-            str = CreateLoad2(str->getType()->getPointerElementType(), str);
-        }
+        str = load_string_value_if_pointer_slot(*this, str_type, str);
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
         if(!get_pointer_to_len && str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)){ // CompileTime-Constant Length
             int64_t len; ASRUtils::extract_value(str_type->m_len, len);
