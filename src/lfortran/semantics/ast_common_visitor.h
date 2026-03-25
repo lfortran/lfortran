@@ -5224,7 +5224,6 @@ public:
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
                                             }
-                                            assgnd_pointer.erase(sym);
                                         }
                                     }
                                 }
