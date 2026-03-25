@@ -37,6 +37,7 @@ set(SRC
     pass/openmp.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
+    pass/do_concurrent_to_openmp.cpp
     pass/for_all.cpp
     pass/while_else.cpp
     pass/global_stmts.cpp

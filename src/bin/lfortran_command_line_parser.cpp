@@ -407,6 +407,7 @@ namespace LCompilers::CommandLineInterface {
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+        compiler_options.po.target_offload_enabled = compiler_options.target_offload_enabled;
 
         for (auto &f_flag : opts.f_flags) {
             if (f_flag == "PIC") {
