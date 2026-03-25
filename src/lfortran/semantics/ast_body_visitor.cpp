@@ -2583,11 +2583,16 @@ public:
             bool implicit_iface = false;
             bool fully_implicit = false;
             if (target_func_type->n_arg_types == 0
-                    && compiler_options.implicit_interface
-                    && ASR::is_a<ASR::Var_t>(*target)) {
-                ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(target)->m_v);
-                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                    && compiler_options.implicit_interface) {
+                ASR::symbol_t* target_sym = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*target)) {
+                    target_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(target)->m_v);
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    target_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+                }
+                if (target_sym && ASR::is_a<ASR::Variable_t>(*target_sym)) {
                     ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
                     if (target_var->m_type_declaration) {
                         ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
@@ -2648,8 +2653,14 @@ public:
                     return_types_match = true;
                 }
                 if (return_types_match || fully_implicit) {
-                    ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(target)->m_v);
+                    ASR::symbol_t* target_sym = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*target)) {
+                        target_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(target)->m_v);
+                    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                        target_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+                    }
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(target_sym);
                     var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
                         al, x.base.base.loc, value_type_underlying));
