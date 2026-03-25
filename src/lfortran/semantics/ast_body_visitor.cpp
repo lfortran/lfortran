@@ -2577,10 +2577,40 @@ public:
             ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type_underlying);
             ASR::FunctionType_t* value_func_type = ASR::down_cast<ASR::FunctionType_t>(value_type_underlying);
             
+            // Detect implicit interface procedure pointers before the
+            // sub/function mismatch check, because procedure() pointers
+            // can point to either a function or a subroutine.
+            bool implicit_iface = false;
+            bool fully_implicit = false;
+            if (target_func_type->n_arg_types == 0
+                    && compiler_options.implicit_interface
+                    && ASR::is_a<ASR::Var_t>(*target)) {
+                ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(target)->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
+                    if (target_var->m_type_declaration) {
+                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
+                            target_var->m_type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                            std::string decl_name = ASR::down_cast<ASR::Function_t>(
+                                type_decl)->m_name;
+                            if (decl_name.find("__") == 0
+                                    && decl_name.find("_iface_") != std::string::npos) {
+                                implicit_iface = true;
+                                if (decl_name.find("_iface_implicit") != std::string::npos) {
+                                    fully_implicit = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             bool target_is_sub = (target_func_type->m_return_var_type == nullptr);
             bool value_is_sub = (value_func_type->m_return_var_type == nullptr);
             
-            if (target_is_sub != value_is_sub) {
+            if (target_is_sub != value_is_sub && !fully_implicit) {
                 std::string value_name = "";
                 if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) || 
                     ASR::is_a<ASR::IntrinsicImpureFunction_t>(*value)) {
@@ -2605,60 +2635,19 @@ public:
                     }));
                 throw SemanticAbort();
             }            
-            // For implicit interface procedure pointers (procedure(type-spec)),
-            // the target has no arg_types - only check return type compatibility.
-            // On association, adopt the full interface from the value.
-            // We detect procedure(type-spec) by checking if the type_declaration
-            // is an auto-generated interface (name starts with "__" and contains
-            // "_iface_"), as opposed to procedure(interface-name) which points to
-            // the actual interface function.
-            bool implicit_iface = false;
-            if (target_func_type->n_arg_types == 0
-                    && target_func_type->m_return_var_type != nullptr
-                    && compiler_options.implicit_interface
-                    && ASR::is_a<ASR::Var_t>(*target)) {
-                ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(target)->m_v);
-                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
-                    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
-                    if (target_var->m_type_declaration) {
-                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
-                            target_var->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                            std::string decl_name = ASR::down_cast<ASR::Function_t>(
-                                type_decl)->m_name;
-                            if (decl_name.find("__") == 0
-                                    && decl_name.find("_iface_") != std::string::npos) {
-                                implicit_iface = true;
-                            }
-                        }
-                    }
-                }
-            }
             if (implicit_iface) {
-                bool return_types_match = ASRUtils::types_equal(
-                    target_func_type->m_return_var_type,
-                    value_func_type->m_return_var_type,
-                    nullptr, nullptr);
-                bool fully_implicit = false;
-                if (!return_types_match) {
-                    ASR::symbol_t* target_sym_check = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(target)->m_v);
-                    ASR::Variable_t *target_var_check = ASR::down_cast<ASR::Variable_t>(target_sym_check);
-                    if (target_var_check->m_type_declaration) {
-                        ASR::symbol_t *td = ASRUtils::symbol_get_past_external(
-                            target_var_check->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*td)) {
-                            std::string dn = ASR::down_cast<ASR::Function_t>(td)->m_name;
-                            if (dn.find("_iface_implicit") != std::string::npos) {
-                                fully_implicit = true;
-                            }
-                        }
-                    }
+                bool return_types_match = false;
+                if (target_func_type->m_return_var_type != nullptr
+                        && value_func_type->m_return_var_type != nullptr) {
+                    return_types_match = ASRUtils::types_equal(
+                        target_func_type->m_return_var_type,
+                        value_func_type->m_return_var_type,
+                        nullptr, nullptr);
+                } else if (target_func_type->m_return_var_type == nullptr
+                        && value_func_type->m_return_var_type == nullptr) {
+                    return_types_match = true;
                 }
                 if (return_types_match || fully_implicit) {
-                    // Update the pointer variable's type and type_declaration
-                    // to adopt the full interface from the assigned function.
                     ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(target)->m_v);
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(target_sym);
