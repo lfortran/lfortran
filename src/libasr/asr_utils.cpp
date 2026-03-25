@@ -455,7 +455,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::BitCast: {
             ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(bit_cast->m_source));
+            return ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(bit_cast->m_mold));
         }
         case ASR::exprType::ComplexConstructor: {
             ASR::ComplexConstructor_t* complex_constructor = ASR::down_cast<ASR::ComplexConstructor_t>(expression);
