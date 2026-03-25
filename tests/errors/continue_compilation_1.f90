@@ -632,8 +632,8 @@ program continue_compilation_1
     write (*, "(a)", advance="hello") "Dothraki culture"
     print *, sum(arr1, dim = mask1)
     print*, ieee_is_nan(1.0)
-
-
+    open(unit=7, decimal=1, decimal="comma")
+    open(unit=7, decimal="POINT", decimal="comma")
 
 
 

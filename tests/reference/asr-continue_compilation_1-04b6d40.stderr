@@ -1354,6 +1354,18 @@ semantic error: 'ieee_is_nan' is not accessible in the current scope; add 'use, 
 634 |     print*, ieee_is_nan(1.0)
     |             ^^^^^^^^^^^^^^^^ not in scope
 
+semantic error: `decimal` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:635:5
+    |
+635 |     open(unit=7, decimal=1, decimal="comma")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `decimal` found
+   --> tests/errors/continue_compilation_1.f90:636:5
+    |
+636 |     open(unit=7, decimal="POINT", decimal="comma")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Variable 'k' is not declared
    --> tests/errors/continue_compilation_1.f90:660:12
     |
