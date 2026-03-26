@@ -562,7 +562,7 @@ static std::string intent_to_str(ASR::intentType intent) {
 
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 
-static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym);
+static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym, bool show_kind = false);
 
 static inline char *symbol_name(const ASR::symbol_t *f);
 
@@ -570,7 +570,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
-            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
+            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration, true);
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
                 if (stype->m_is_cstruct) {
@@ -964,25 +964,61 @@ static inline void encode_dimensions(size_t n_dims, std::string& res,
 }
 
 static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
-                                                     ASR::symbol_t* struct_sym)
+                                                     ASR::symbol_t* struct_sym,
+                                                     bool show_kind)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
+            if (show_kind) {
+                ASR::Integer_t* int_t = ASR::down_cast<ASR::Integer_t>(t);
+                return "integer(" + std::to_string(int_t->m_kind) + ")";
+            }
             return "integer";
         }
         case ASR::ttypeType::UnsignedInteger: {
+            if (show_kind) {
+                ASR::UnsignedInteger_t* uint_t = ASR::down_cast<ASR::UnsignedInteger_t>(t);
+                return "type(unsigned(" + std::to_string(uint_t->m_kind) + "))";
+            }
             return "type(unsigned)";
         }
         case ASR::ttypeType::Real: {
+            if (show_kind) {
+                ASR::Real_t* real_t = ASR::down_cast<ASR::Real_t>(t);
+                return "real(" + std::to_string(real_t->m_kind) + ")";
+            }
             return "real";
         }
         case ASR::ttypeType::Complex: {
+            if (show_kind) {
+                ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
+                return "complex(" + std::to_string(complex_t->m_kind) + ")";
+            }
             return "complex";
         }
         case ASR::ttypeType::String: {
+            if (show_kind) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(t);
+                std::string res = "character";
+                if (str_t->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                    res += "(len=*)";
+                } else if (str_t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                    res += "(len=:)";
+                } else if (str_t->m_len) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*str_t->m_len)) {
+                        ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len);
+                        res += "(len=" + std::to_string(ic->m_n) + ")";
+                    }
+                }
+                return res;
+            }
             return "string";
         }
         case ASR::ttypeType::Logical: {
+            if (show_kind) {
+                ASR::Logical_t* log_t = ASR::down_cast<ASR::Logical_t>(t);
+                return "logical(" + std::to_string(log_t->m_kind) + ")";
+            }
             return "logical";
         }
         case ASR::ttypeType::Set: {
@@ -1012,11 +1048,11 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         }
         case ASR::ttypeType::Pointer: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_pointer(
-                        const_cast<ASR::ttype_t*>(t)), struct_sym) + " pointer";
+                        const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_allocatable(
-                        const_cast<ASR::ttype_t*>(t)), struct_sym) + " allocatable";
+                        const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
             return "type(c_ptr)";
@@ -1030,7 +1066,7 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_fortran_symbol(array_t->m_type, struct_sym);
+            std::string res = type_to_str_fortran_symbol(array_t->m_type, struct_sym, show_kind);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -1038,11 +1074,11 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "FunctionType(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str_fortran_symbol(ftp->m_arg_types[i], nullptr) + ", ";
+                result += type_to_str_fortran_symbol(ftp->m_arg_types[i], nullptr, show_kind) + ", ";
             }
             if( ftp->m_return_var_type ) {
                 result += "return_type: ";
-                result += type_to_str_fortran_symbol(ftp->m_return_var_type, nullptr);
+                result += type_to_str_fortran_symbol(ftp->m_return_var_type, nullptr, show_kind);
             }
             result += ")";
             return result;
