@@ -3347,6 +3347,8 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
+ASR::expr_t* get_array_section_flattened_size(Allocator& al, ASR::expr_t* section_expr, const Location& loc);
+
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,

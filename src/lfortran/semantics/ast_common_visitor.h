@@ -10001,12 +10001,25 @@ public:
                     ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(idl->m_value);
                     idl->m_type = array_constant->m_type;
                 };
-                is_fixed_size_implied_do_loop = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr));
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
             if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
                 expr_type = ASRUtils::type_get_past_pointer(expr_type);
+            }
+            {
+                ASR::ttype_t* expr_type_past = ASRUtils::type_get_past_allocatable_pointer(expr_type);
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                    if (!ASRUtils::is_fixed_size_array(expr_type_past)) {
+                        is_fixed_size_implied_do_loop = false;
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstructor_t>(*expr) &&
+                        !ASR::is_a<ASR::Array_t>(*expr_type_past)) {
+                    is_fixed_size_implied_do_loop = false;
+                } else if (ASR::is_a<ASR::Array_t>(*expr_type_past) &&
+                        !ASRUtils::is_fixed_size_array(expr_type_past)) {
+                    is_fixed_size_implied_do_loop = false;
+                }
             }
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
                 if(!ASRUtils::is_value_constant(expr)) 

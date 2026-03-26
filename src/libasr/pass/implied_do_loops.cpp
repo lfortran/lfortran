@@ -449,24 +449,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     array_size = implied_doloop_size;
                 }
             } else if( ASR::is_a<ASR::ArraySection_t>(*element) ) {
-                ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(element);
-                ASR::expr_t* array_section_size = nullptr;
-                for( size_t j = 0; j < array_section_t->n_args; j++ ) {
-                    ASR::expr_t* start = array_section_t->m_args[j].m_left;
-                    ASR::expr_t* end = array_section_t->m_args[j].m_right;
-                    ASR::expr_t* d = array_section_t->m_args[j].m_step;
-                    if( d == nullptr ) {
-                        continue;
-                    }
-                    ASR::expr_t* dim_size = builder.Add(builder.Div(
-                        builder.Sub(end, start), d),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc));
-                    if( array_section_size == nullptr ) {
-                        array_section_size = dim_size;
-                    } else {
-                        array_section_size = builder.Mul(array_section_size, dim_size);
-                    }
-                }
+                ASR::expr_t* array_section_size = ASRUtils::get_array_section_flattened_size(al, element, loc);
                 if( array_size == nullptr ) {
                     array_size = array_section_size;
                 } else {
@@ -588,6 +571,23 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
+
+        if (is_result_var_fixed_size && !ASRUtils::is_value_constant(array_constructor)) {
+            is_result_var_fixed_size = false;
+        }
+
+        if (is_result_var_fixed_size) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(result_var), m_dims);
+            if (n_dims >= 1 && m_dims[0].m_length != nullptr) {
+                int64_t fixed_sz = -1, comp_sz = -1;
+                bool fixed_ok = ASRUtils::extract_value(ASRUtils::expr_value(m_dims[0].m_length), fixed_sz);
+                bool comp_ok = ASRUtils::extract_value(ASRUtils::expr_value(array_constructor), comp_sz);
+                if ((fixed_ok && comp_ok && fixed_sz != comp_sz) || (fixed_ok && !comp_ok)) {
+                    is_result_var_fixed_size = false;
+                }
+            }
+        }
 
         // Case: `keywords = [character(len=ii) :: value]`
         // For runtime-dependent string lengths, defer evaluation and use allocatable results with per-element runtime allocation.
