@@ -2197,6 +2197,7 @@ public:
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
         if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
         if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
             ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
             if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){

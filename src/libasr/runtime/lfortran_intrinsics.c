@@ -2787,8 +2787,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     bool array = false;
     bool BreakWhileLoop= false;
     char rounding_mode = 'n';  // 'n'=nearest, 'u'=up, 'd'=down, 'z'=zero
+    int scale = 0;
     while (1) {
-        int scale = 0;
         bool consumed_data_item_in_cycle = false;
         bool is_array = false;
         bool array_looping = false;
@@ -8176,6 +8176,10 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
 static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    // descriptor-array path for A not yet supported
+    // TODO: Add support for read into descriptor-arrays for character reads
+    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
     (void)type_code;
     char** str_data_ptr = va_arg(*args, char**);
@@ -8207,6 +8211,10 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
 static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    // descriptor-array path for L not yet supported
+    // TODO: Add support for read into descriptor-arrays for logical reads
+    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
     (void)type_code;
     int32_t* log_ptr = va_arg(*args, int32_t*);
@@ -8231,6 +8239,27 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        int32_t elem_tc  = va_arg(*args, int32_t);
+        void*   data_ptr = va_arg(*args, void*);
+        int32_t n_elems  = va_arg(*args, int32_t);
+        int32_t stride   = va_arg(*args, int32_t);
+        (*arg_idx)++;
+        size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
+        int read_width = (width > 0) ? width : 10;
+        for (int32_t i = 0; i < n_elems; i++) {
+            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * esz;
+            char* buffer = NULL; int field_len = 0;
+            if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                            consumed_newline, &buffer, &field_len)) break;
+            bool parse_error = false;
+            parse_integer_from_buffer(buffer, field_len, elem_ptr, elem_tc, blank_mode, &parse_error);
+            internal_free(buffer);
+            if (parse_error) { if (iostat) *iostat = 5010; break; }
+        }
+        return true;
+    }
     int32_t type_code = va_arg(*args, int32_t);
     void* int_ptr = va_arg(*args, void*);
     (*arg_idx)++;
@@ -8269,6 +8298,26 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode, int scale_factor, int decimal_mode)
 {
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        int32_t elem_tc  = va_arg(*args, int32_t);
+        void*   data_ptr = va_arg(*args, void*);
+        int32_t n_elems  = va_arg(*args, int32_t);
+        int32_t stride   = va_arg(*args, int32_t);
+        (*arg_idx)++;
+        size_t esz = (elem_tc == 5) ? sizeof(double) : sizeof(float);
+        int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
+        int read_width = (width > 0) ? width : 15;
+        for (int32_t i = 0; i < n_elems; i++) {
+            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * esz;
+            char* buffer = NULL; int field_len = 0;
+            if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                            consumed_newline, &buffer, &field_len)) break;
+            parse_real_from_buffer(buffer, field_len, elem_ptr, elem_tc, scale_factor, decimal_places);
+            internal_free(buffer);
+        }
+        return true;
+    }
     int32_t type_code = va_arg(*args, int32_t);
     void* real_ptr = va_arg(*args, void*);
     (*arg_idx)++;
@@ -8485,6 +8534,21 @@ LFORTRAN_API void _lfortran_string_formatted_read(
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
+// Variadic protocol for _lfortran_formatted_read / _lfortran_string_formatted_read:
+// Each read target is introduced by a bool flag `is_descriptor_array` (passed as int32_t):
+//
+// Scalar (is_descriptor_array == 0):
+//     int32_t is_descriptor_array = 0
+//     int32_t type_code   (0=char/ptr+len, 1=logical, 2=int32, 3=int64, 4=float, 5=double,
+//                          6=complex4, 7=complex8)
+//     void*   ptr          (char** + int64_t str_len for type_code 0)
+//
+// Descriptor array (is_descriptor_array == 1):
+//     int32_t is_descriptor_array = 1
+//     int32_t elem_type_code  (same codes as above, non-char)
+//     void*   data_ptr        (i8* / void* to first element)
+//     int32_t n_elems         (total number of elements)
+//     int32_t stride_elems    (stride in elements between consecutive items)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
@@ -8543,6 +8607,11 @@ static void process_fmt_items_read(InputSource *inputSource,
             fmt_pos++;
         }
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
+        bool is_unlimited = false;
+        if (fmt_pos < fmt_len && fmt[fmt_pos] == '*'){
+            is_unlimited = true;
+            fmt_pos++;  // add '*'
+        }
 
         int repeat_count = 0;
         bool has_repeat_count = false;
@@ -8553,7 +8622,7 @@ static void process_fmt_items_read(InputSource *inputSource,
         }
         if (!has_repeat_count) repeat_count = 1;
         if (fmt_pos < fmt_len && fmt[fmt_pos] == '(') {
-            // Parenthesized group: N(...)
+            // Parenthesized group: N(...) or *(...)
             int64_t group_start = fmt_pos + 1; // position after '('
             // Find matching ')'
             int paren_depth = 1;
@@ -8566,14 +8635,24 @@ static void process_fmt_items_read(InputSource *inputSource,
             int64_t group_end = pos - 1; // position of matching ')'
             int64_t group_len = group_end - group_start;
             fmt_pos = pos; // advance past ')'
-
-            for (int rep = 0; rep < repeat_count; rep++) {
-                process_fmt_items_read(inputSource, iostat, chunk,
-                    advance_no, fmt + group_start, group_len,
-                    no_of_args, args, arg_idx, blank_mode,
-                    scale_factor, consumed_newline, decimal_mode);
-                if (iostat && *iostat != 0) return;
-                if (*arg_idx >= no_of_args) return;
+            if (is_unlimited) {
+                // Repeat group for all remaining args in one record — no newline advance
+                while (*arg_idx < no_of_args) {
+                    process_fmt_items_read(inputSource, iostat, chunk,
+                        advance_no, fmt + group_start, group_len,
+                        no_of_args, args, arg_idx, blank_mode,
+                        scale_factor, consumed_newline, decimal_mode);
+                    if (iostat && *iostat != 0) return;
+                }
+            } else {
+                for (int rep = 0; rep < repeat_count; rep++) {
+                    process_fmt_items_read(inputSource, iostat, chunk,
+                        advance_no, fmt + group_start, group_len,
+                        no_of_args, args, arg_idx, blank_mode,
+                        scale_factor, consumed_newline, decimal_mode);
+                    if (iostat && *iostat != 0) return;
+                    if (*arg_idx >= no_of_args) return;
+                }
             }
             continue;
         }
@@ -9083,7 +9162,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,
+LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred,
+    bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
     va_list args;
     va_start(args, format_len);
@@ -9125,12 +9205,42 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     else
         sprintf(s, "%.*s%.*s", (int)str_len, str, (int)end_len, end_data);
 
-    // Internal WRITE must not reallocate an already-allocated target string;
-    // it writes into the existing buffer and pads the remainder with spaces.
-    // If the string is not yet allocated, fall back to _lfortran_strcpy which
-    // will allocate it.
+    // Internal WRITE must not reallocate an already-allocated target string.
+    // For character array internal files, each '\n' in formatted text denotes
+    // the next record (array element).
     if (*str_holder != NULL) {
-        _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
+        if (is_array_unit && array_size > 0) {
+            int64_t rec = 0;
+            int64_t start = 0;
+            while (rec < array_size && start <= str_len) {
+                int64_t end = start;
+                while (end < str_len && str[end] != '\n') {
+                    end++;
+                }
+                _lfortran_copy_str_and_pad(
+                    (*str_holder) + rec * (*len),
+                    *len,
+                    str + start,
+                    end - start);
+                rec++;
+                if (end >= str_len) {
+                    break;
+                }
+                start = end + 1;
+            }
+
+            // For remaining records, pad with spaces.
+            while (rec < array_size) {
+                _lfortran_copy_str_and_pad(
+                    (*str_holder) + rec * (*len),
+                    *len,
+                    "",
+                    0);
+                rec++;
+            }
+        } else {
+            _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
+        }
     } else {
         _lfortran_strcpy_alloc(_lfortran_get_default_allocator(), str_holder, len, is_allocatable, is_deferred, str, str_len);
     }
@@ -9192,15 +9302,26 @@ LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%d%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    }
+    int n = 0;
+    int32_t tmp_i;
+    int rc = sscanf(buf + skip, "%d%n", &tmp_i, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *i = tmp_i;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -9211,19 +9332,29 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
-
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
-    int rc;
+    int skip = 0;
     if (offset) {
-        int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%" PRId64 "%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    }
+    int n = 0;
+    int64_t tmp_i;
+    int rc = sscanf(buf + skip, "%" PRId64 "%n", &tmp_i, &n);
+    if (rc == 1) {
+        char next = buf[skip + n];
+        /*
+         * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+         * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+         */
+        if (next != '\0' && next != ' ' && next != '\t' && next != '\n'
+                         && next != ',' && next != '/') {
+            rc = 0;
+        } else {
+            *i = tmp_i;
+            if (offset) *offset = off + skip + n;
+        }
     }
     internal_free(buf);
     if (rc != 1) {
@@ -9242,8 +9373,22 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
         int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
         int consumed = 0;
-        rc = parse_fortran_float_token(buf + skip, f, &consumed);
-        *offset = off + skip + consumed;
+        float tmp_f;
+        parse_fortran_float_token(buf + skip, &tmp_f, &consumed);
+        rc = 0;
+        if (consumed > 0) {
+            char next = buf[skip + consumed];
+            /*
+             * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+             * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+             */
+            if (next == '\0' || next == ' ' || next == '\t' || next == '\n'
+                             || next == ',' || next == '/') {
+                *f = tmp_f;
+                *offset = off + skip + consumed;
+                rc = 1;
+            }
+        }
     } else {
         if (strcmp(format, "%f") == 0) {
             rc = parse_fortran_float_token(buf, f, NULL);
@@ -9269,8 +9414,22 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
         int skip = 0;
         while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
         int consumed = 0;
-        rc = parse_fortran_double_token(buf + skip, f, &consumed);
-        *offset = off + skip + consumed;
+        double tmp_f;
+        parse_fortran_double_token(buf + skip, &tmp_f, &consumed);
+        rc = 0;
+        if (consumed > 0) {
+            char next = buf[skip + consumed];
+            /*
+             * As per Fortran 2018 standard section 13.10.2 (List-directed formatting),
+             * A value separator is (1) a comma, (2) a slash or (3) one or more contiguous blanks.
+             */
+            if (next == '\0' || next == ' ' || next == '\t' || next == '\n'
+                             || next == ',' || next == '/') {
+                *f = tmp_f;
+                *offset = off + skip + consumed;
+                rc = 1;
+            }
+        }
     } else {
         if (strcmp(format, "%lf") == 0) {
             rc = parse_fortran_double_token(buf, f, NULL);

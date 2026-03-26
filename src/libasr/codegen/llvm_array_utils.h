@@ -385,6 +385,12 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size) = 0;
 
+                virtual
+                void push_descriptor_array_args(
+                    ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
+                    ASR::ttype_t* val_type, llvm::Value* var_ptr,
+                    llvm::Module* module, std::vector<llvm::Value*>& args) = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
@@ -649,6 +655,17 @@ namespace LCompilers {
                     llvm::Type* internal_type,
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size);
+                
+                /*
+                 * Extracts descriptor fields from a DescriptorArray and appends
+                 * { is_descriptor_array=1, type_code, data_ptr, n_elems, stride }
+                 * to `args`.  Used by formatted read codegen for
+                 * descriptor-unwrapping logic.
+                 */
+                void push_descriptor_array_args(
+                    ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
+                    ASR::ttype_t* val_type, llvm::Value* var_ptr,
+                    llvm::Module* module, std::vector<llvm::Value*>& args);
 
         };
 

@@ -10171,6 +10171,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             continue;
                         }
                         src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
+                    } else if (!src->getType()->isPointerTy()) {
+                        src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
                     } else {
                         src_member = llvm_utils->create_gep2(llvm_utils->name2dertype[der_type_name], src, mem_idx);
                     }
@@ -10182,7 +10184,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         !ASRUtils::is_pointer(member_type) &&
                         !ASRUtils::is_descriptorString(member_type) &&
                         !llvm::isa<llvm::ConstantStruct>(src) &&
-                        !llvm::isa<llvm::ConstantAggregateZero>(src)) {
+                        !llvm::isa<llvm::ConstantAggregateZero>(src) &&
+                        src->getType()->isPointerTy()) {
                         src_member = llvm_utils->CreateLoad2(mem_type, src_member);
                     }
                     llvm::Value* dest_member = llvm_utils->create_gep2(
@@ -10476,7 +10479,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 }
                 if( struct_sym->m_parent != nullptr ) {
                     // gep the parent struct, which is the 0th member of the child struct
-                    src = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], src, 0);
+                    if (src->getType()->isPointerTy()) {
+                        src = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], src, 0);
+                    } else {
+                        src = builder->CreateExtractValue(src, {0});
+                    }
                     dest = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], dest, 0);
 
                     ASR::Struct_t* parent_struct_type_t =

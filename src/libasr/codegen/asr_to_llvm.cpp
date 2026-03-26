@@ -10493,6 +10493,19 @@ public:
             // their string descriptor pointers start as NULL.
             bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type) ||
                                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target);
+            // bind(C) allocatable string dummies have an extra pointer
+            // level (string_descriptor** rather than string_descriptor*)
+            // due to the BindC ABI. Dereference to string_descriptor*.
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::Variable_t* target_var = ASRUtils::EXPR2VAR(x.m_target);
+                if (target_var->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::is_allocatable(asr_target_type) &&
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type))
+                        ->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    target = llvm_utils->CreateLoad2(
+                        llvm_utils->string_descriptor->getPointerTo(), target);
+                }
+            }
             llvm_utils->lfortran_str_copy(target, value,
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
@@ -16115,23 +16128,29 @@ public:
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
 
+        // Scalar arg: prepend is_descriptor_array=0 before type_code
+        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         if (ASR::is_a<ASR::String_t>(*val_type)) {
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
             auto [str_data, str_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(val_type), elem_ptr, true);
             args.push_back(str_data);
             args.push_back(str_len);
         } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Integer_t>(*val_type)) {
             ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
             int32_t type_code = (int_type->m_kind <= 4) ? kInt32 : kInt64;
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Real_t>(*val_type)) {
             ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
             int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
@@ -16142,8 +16161,10 @@ public:
                 : static_cast<llvm::Type*>(complex_type_8);
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
             args.push_back(re_ptr);
+            args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
             args.push_back(im_ptr);
         } else {
@@ -16227,6 +16248,7 @@ public:
         single_args.push_back(fmt_len);
 
         if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
+            // Fixed-size array: unroll into N scalar args (is_descriptor_array=0 each)
             int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
             int64_t single_arg_count = array_size * get_formatted_read_arg_count(val_type);
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, single_arg_count)));
@@ -16257,7 +16279,13 @@ public:
                 }
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
+        } else if (ASRUtils::is_array(expr_type_full)) {
+            // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
+                    val_type, var_ptr, module.get(), single_args);
         } else {
+            // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
                 get_formatted_read_arg_count(val_type))));
             add_formatted_read_arg(single_args, val_type, var_ptr);
@@ -16490,6 +16518,7 @@ public:
             if (ASRUtils::is_array(expr_type) && ASRUtils::is_fixed_size_array(expr_type)) {
                 total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type) * arg_count;
             } else {
+                // scalars and descriptor arrays each count as one read target
                 total_scalar_values += arg_count;
             }
         }
@@ -16560,6 +16589,11 @@ public:
                     }
                     add_formatted_read_arg(args, val_type, elem_ptr);
                 }
+            } else if (ASRUtils::is_array(expr_type_full)) {
+                // DescriptorArray target: push is_descriptor_array=1, elem_tc, 
+                // data_ptr, n_elems, stride
+                arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
+                            val_type, var_ptr, module.get(), args);
             } else {
                 add_formatted_read_arg(args, val_type, var_ptr);
             }
@@ -17426,12 +17460,17 @@ public:
         bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
 
         int ptr_loads_copy = ptr_loads;
+        bool is_string_array_unit = false;
+        llvm::Value* string_array_size = nullptr;
         if ( is_string ) {
+            is_string_array_unit = ASRUtils::is_array(ASRUtils::expr_type(x.m_unit));
             ptr_loads = 0;
             runtime_func_name = "_lfortran_string_write";
             args_type.push_back(character_type->getPointerTo());// str_holder
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_allocatable
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_deferred
+            args_type.push_back(llvm::Type::getInt8Ty(context)); // is_array_unit
+            args_type.push_back(llvm::Type::getInt64Ty(context)); // array_size
             args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo()); //len
             args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); //iostat
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); //format_data
@@ -17471,6 +17510,15 @@ public:
         } else { // String Write
             std::tie(unit, string_len) = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            if (is_string_array_unit) {
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                    ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
+                visit_ArraySize(*array_size);
+                string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+            } else {
+                string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+            }
         }
         ptr_loads = ptr_loads_copy;
 
@@ -17772,8 +17820,12 @@ public:
                 ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_unit))));
             llvm::Value* is_deferred = llvm::ConstantInt::get(context, llvm::APInt(8,
                 ASRUtils::is_deferredLength_string(ASRUtils::expr_type(x.m_unit))));
+            llvm::Value* is_array_unit = llvm::ConstantInt::get(context, llvm::APInt(8,
+                is_string_array_unit));
             printf_args.push_back(is_allocatable);
             printf_args.push_back(is_deferred);
+            printf_args.push_back(is_array_unit);
+            printf_args.push_back(string_array_size);
             printf_args.push_back(string_len);
         }
         printf_args.push_back(iostat);
@@ -18706,6 +18758,15 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(x.m_args[i].m_value)))) ) {
                 this->visit_expr_wrapper(x.m_args[i].m_value, true);
+                if (orig_arg && ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_pointer(orig_arg->m_type))) {
+                    llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                        orig_arg->m_type, module.get());
+                    if (tmp->getType() != expected_type) {
+                        tmp = builder->CreateBitCast(tmp, expected_type);
+                    }
+                }
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
@@ -19135,6 +19196,32 @@ public:
                     : nullptr;
                 bool callee_is_extern_c = !arg_cft ||
                                            is_external_interface_function(arg_cft);
+
+                // If the interface looks external but there is a Fortran
+                // bind(C) implementation in the same translation unit,
+                // the callee uses LFortran's internal string_descriptor**
+                // layout, not a CFI descriptor.
+                if (callee_is_extern_c && arg_cft &&
+                    arg_cft->m_abi == ASR::abiType::BindC) {
+                    ASR::Function_t* called_fn =
+                        ASR::down_cast<ASR::Function_t>(func_subrout);
+                    SymbolTable* scope = called_fn->m_symtab->parent;
+                    while (scope && scope->parent) scope = scope->parent;
+                    if (scope) {
+                        ASR::symbol_t* impl = scope->get_symbol(
+                            called_fn->m_name);
+                        if (impl && impl != (ASR::symbol_t*)called_fn &&
+                            ASR::is_a<ASR::Function_t>(*impl)) {
+                            ASR::FunctionType_t* impl_ft =
+                                ASRUtils::get_FunctionType(
+                                    ASR::down_cast<ASR::Function_t>(impl));
+                            if (impl_ft->m_abi == ASR::abiType::BindC &&
+                                impl_ft->m_deftype == ASR::deftypeType::Implementation) {
+                                callee_is_extern_c = false;
+                            }
+                        }
+                    }
+                }
 
                 llvm::Value* str_desc = builder->CreateBitCast(
                     tmp, llvm_utils->string_descriptor->getPointerTo());

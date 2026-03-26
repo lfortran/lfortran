@@ -455,7 +455,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::BitCast: {
             ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(bit_cast->m_source));
+            return ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(bit_cast->m_mold));
         }
         case ASR::exprType::ComplexConstructor: {
             ASR::ComplexConstructor_t* complex_constructor = ASR::down_cast<ASR::ComplexConstructor_t>(expression);
@@ -3478,11 +3479,11 @@ ASR::asr_t* make_ArraySize_t_util(
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
-        int64_t dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
+        int64_t dim_arg_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
             static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id));
         ASR::expr_t* af_dim = nullptr;
-        if( dim_index == 1 && (size_t) dim_index < af->n_args && af->m_args[dim_index] != nullptr ) {
-            af_dim = af->m_args[dim_index];
+        if( dim_arg_index >= 1 && (size_t) dim_arg_index < af->n_args && af->m_args[dim_arg_index] != nullptr ) {
+            af_dim = af->m_args[dim_arg_index];
         }
         if ( ASRUtils::is_array(af->m_type) ) {
             array_func_type = af->m_type;

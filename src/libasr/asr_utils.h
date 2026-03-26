@@ -2363,7 +2363,15 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            return ASRUtils::symbol_name(struct_sym);
+            if (struct_sym != nullptr) {
+                return ASRUtils::symbol_name(struct_sym);
+            }
+            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(t);
+            std::string s = "struct";
+            for (size_t i = 0; i < st->n_data_member_types; i++) {
+                s += "_" + type_to_str_python_symbol(st->m_data_member_types[i], nullptr);
+            }
+            return s;
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
@@ -2387,6 +2395,27 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
         }
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
+        }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string result = "Func[";
+            for (size_t i = 0; i < ft->n_arg_types; i++) {
+                if (i > 0) {
+                    result += ",";
+                }
+                if (ft->m_arg_types[i] != nullptr) {
+                    result += type_to_str_python_symbol(ft->m_arg_types[i], nullptr);
+                } else {
+                    result += "null";
+                }
+            }
+            result += "]->";
+            if (ft->m_return_var_type != nullptr) {
+                result += type_to_str_python_symbol(ft->m_return_var_type, nullptr);
+            } else {
+                result += "null";
+            }
+            return result;
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -3389,6 +3418,36 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  Location loc,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
+
+// Struct "zero" for reductions: component-wise get_constant_zero / nested struct constructors.
+static inline ASR::expr_t* get_struct_type_constructor_zero(
+        Allocator& al, const Location& loc, ASR::symbol_t* struct_sym) {
+    struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        throw LCompilersException("get_struct_type_constructor_zero: expected struct symbol");
+    }
+    ASR::Struct_t* derived = ASR::down_cast<ASR::Struct_t>(struct_sym);
+    ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+    Vec<ASR::call_arg_t> vals;
+    vals.reserve(al, derived->n_members);
+    for (size_t i = 0; i < derived->n_members; i++) {
+        ASR::symbol_t* mem_sym = derived->m_symtab->get_symbol(derived->m_members[i]);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*mem_sym));
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(mem_sym);
+        ASR::call_arg_t ca;
+        ca.loc = loc;
+        ASR::ttype_t* inner = ASRUtils::extract_type(
+            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(v->m_type)));
+        if (ASR::is_a<ASR::StructType_t>(*inner) && v->m_type_declaration != nullptr) {
+            ca.m_value = ASRUtils::get_struct_type_constructor_zero(al, loc, v->m_type_declaration);
+        } else {
+            ca.m_value = ASRUtils::get_constant_zero_with_given_type(al, v->m_type);
+        }
+        vals.push_back(al, ca);
+    }
+    return ASRUtils::EXPR(ASR::make_StructConstant_t(
+        al, loc, struct_sym, vals.p, vals.size(), der));
+}
 
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
@@ -7002,6 +7061,13 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             for (size_t i = 0; i < n_args; i++) {
                 data[i] = ASRUtils::expr_value(a_args[i]);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::StructConstant_t>(*data[i]));
+            }
+            return (void*) data;
+        }
+        case ASR::ttypeType::CPtr: {
+            ASR::expr_t** data = new ASR::expr_t*[n_args];
+            for (size_t i = 0; i < n_args; i++) {
+                data[i] = ASRUtils::expr_value(a_args[i]);
             }
             return (void*) data;
         }

@@ -1655,6 +1655,7 @@ public:
         {"norm2", IntrinsicSignature({"array", "dim"}, 1, 2)},
         {"sum", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
         {"product", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"reduce", IntrinsicSignature({"array", "operation", "dim", "mask"}, 2, 4)},
         {"iparity", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
         {"matmul", IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)},
         {"dot_product", IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)},
@@ -5218,6 +5219,13 @@ public:
                                     }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
                                         sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])], value);
+                                        if (sym_ && sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            if (!ASRUtils::is_pointer(v->m_type)) {
+                                                v->m_type = ASRUtils::TYPE(
+                                                    ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
+                                            }
+                                        }
                                     }
                                 }
                                 if (sym_ && sa->m_attr == AST::simple_attributeType::AttrParameter) {
