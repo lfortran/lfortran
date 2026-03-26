@@ -6686,7 +6686,7 @@ public:
                     builder->CreateCondBr(already_done, struct_skip_bb, struct_init_bb);
 
                     llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                    fn->getBasicBlockList().push_back(struct_init_bb);
+                    llvm_fn_insert_bb(fn, struct_init_bb);
                     builder->SetInsertPoint(struct_init_bb);
                     builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
                 }
@@ -6705,7 +6705,7 @@ public:
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
                     llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                    fn->getBasicBlockList().push_back(struct_skip_bb);
+                    llvm_fn_insert_bb(fn, struct_skip_bb);
                     builder->SetInsertPoint(struct_skip_bb);
                 }
             }
