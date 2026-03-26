@@ -7581,6 +7581,12 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                } else if (arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    // Assumed-rank actual argument (0 compile-time dims) passed
+                    // to a known-rank formal parameter (e.g. inside select rank).
+                    // Use the formal parameter's dimensions so the cast target
+                    // type is a proper Array, not a bare element type.
+                    dimensions = &dimension_;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
                     // Self is already in a_args (at the PASS position), so
