@@ -55,6 +55,9 @@ public:
     // Names of pass-object dummy arguments for the function currently being emitted.
     std::set<std::string> current_pass_self_args;
 
+    // True while emitting component declarations inside a derived type definition.
+    bool in_struct_member_declaration = false;
+
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
         : use_colors{_use_colors}, indent_level{0},
@@ -765,6 +768,8 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        bool old_in_struct_member_declaration = in_struct_member_declaration;
+        in_struct_member_declaration = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -773,6 +778,7 @@ public:
                 r += src;
             }
         }
+        in_struct_member_declaration = old_in_struct_member_declaration;
 
         std::vector<std::string> class_procedure_order = ASRUtils::determine_class_procedure_declaration_order(x.m_symtab);
         if (class_procedure_order.size() > 0) r += "contains\n";
@@ -860,7 +866,7 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
-        } else if (x.m_storage == ASR::storage_typeType::Save) {
+        } else if (x.m_storage == ASR::storage_typeType::Save && !in_struct_member_declaration) {
             r += ", save";
         }
         if (x.m_value_attr) {
@@ -1808,7 +1814,15 @@ public:
     void visit_SelectType(const ASR::SelectType_t &x) {
         auto emit_select_type_stmt = [&](ASR::stmt_t* stmt, std::string &out) {
             if (ASR::is_a<ASR::Associate_t>(*stmt)) {
-                return;
+                if (x.m_assoc_name) {
+                    ASR::Associate_t* assoc_stmt = ASR::down_cast<ASR::Associate_t>(stmt);
+                    if (ASR::is_a<ASR::Var_t>(*assoc_stmt->m_target)) {
+                        ASR::Var_t* target_var = ASR::down_cast<ASR::Var_t>(assoc_stmt->m_target);
+                        if (std::string(ASRUtils::symbol_name(target_var->m_v)) == std::string(x.m_assoc_name)) {
+                            return;
+                        }
+                    }
+                }
             }
             visit_stmt(*stmt);
             out += src;
