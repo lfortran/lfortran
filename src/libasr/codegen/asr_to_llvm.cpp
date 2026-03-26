@@ -7614,7 +7614,7 @@ public:
         if((ASR::is_a<ASR::Pointer_t>(*asr_type) || ASR::is_a<ASR::Allocatable_t>(*asr_type)) &&
             (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_allocatable_pointer(asr_type))
              || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(asr_type))
-             || (ASR::is_a<ASR::Pointer_t>(*asr_type) && llvm::isa<llvm::AllocaInst>(llvm_tmp)))) {
+             || ASR::is_a<ASR::Pointer_t>(*asr_type))) {
             ASR::ttype_t* contained_type = ASRUtils::type_get_past_allocatable_pointer(asr_type);
             llvm::Type* llvm_ty = llvm_utils->get_type_from_ttype_t_util(asr_expr, contained_type, module.get());
             // FunctionType already maps to a pointer type (fntype*) in LLVM,
