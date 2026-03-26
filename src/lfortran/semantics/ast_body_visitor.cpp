@@ -2664,9 +2664,31 @@ public:
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(target_sym);
                     var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
                         al, x.base.base.loc, value_type_underlying));
+                    if (var->m_symbolic_value &&
+                            ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
+                        ASR::PointerNullConstant_t *pnc = ASR::down_cast<ASR::PointerNullConstant_t>(
+                            var->m_symbolic_value);
+                        pnc->m_type = var->m_type;
+                    }
+                    if (var->m_value &&
+                            ASR::is_a<ASR::PointerNullConstant_t>(*var->m_value)) {
+                        ASR::PointerNullConstant_t *pnc = ASR::down_cast<ASR::PointerNullConstant_t>(
+                            var->m_value);
+                        pnc->m_type = var->m_type;
+                    }
                     if (ASR::is_a<ASR::Var_t>(*value)) {
-                        ASR::symbol_t *val_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
-                        var->m_type_declaration = ASRUtils::symbol_get_past_external(val_sym);
+                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(value)->m_v);
+                        if (ASR::is_a<ASR::Function_t>(*val_sym)) {
+                            var->m_type_declaration = val_sym;
+                        } else if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
+                            ASR::Variable_t *val_var = ASR::down_cast<ASR::Variable_t>(val_sym);
+                            ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
+                                val_var->m_type_declaration);
+                            if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
+                                var->m_type_declaration = val_type_decl;
+                            }
+                        }
                     }
                     tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
                 }
@@ -8259,6 +8281,10 @@ public:
 
     void visit_SyncAll(const AST::SyncAll_t &x) {
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
+    }
+
+    void visit_SyncMemory(const AST::SyncMemory_t &x) {
+        tmp = ASR::make_SyncMemory_t(al, x.base.base.loc);
     }
 
     void visit_Nullify(const AST::Nullify_t &x) {

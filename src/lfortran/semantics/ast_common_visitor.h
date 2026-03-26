@@ -7140,6 +7140,8 @@ public:
                                 }
                             }
                             value = nullptr;
+                        } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+                            value = init_expr;
                         } else {
                             diag.add(Diagnostic(
                                 "Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -7148,6 +7150,16 @@ public:
                                     Label("",{x.base.base.loc})
                                 }));
                             throw SemanticAbort();
+                        }
+                    }
+                    if (storage_type == ASR::storage_typeType::Parameter &&
+                        init_expr && ASRUtils::is_array(type)) {
+                        ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                        ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                            ASRUtils::expr_type(init_expr));
+                        if (var_ptype != init_expr_ptype &&
+                            var_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
                         }
                     }
                     // Apply character validation for type() syntax & parameter type
@@ -9924,6 +9936,73 @@ public:
         }
     }
 
+    // Compute the total number of elements produced by an ImpliedDoLoop
+    // when all loop bounds are compile-time constants. Returns -1 if
+    // the size cannot be determined.
+    static int64_t compute_implied_do_element_count(ASR::ImpliedDoLoop_t* idl) {
+        int64_t start_val = 0, end_val = 0, step_val = 1;
+        bool bounds_constant =
+            ASRUtils::extract_value(idl->m_start, start_val) &&
+            ASRUtils::extract_value(idl->m_end, end_val) &&
+            (idl->m_increment == nullptr ||
+             ASRUtils::extract_value(idl->m_increment, step_val));
+        if (!bounds_constant || step_val == 0) {
+            return -1;
+        }
+        int64_t n_iters;
+        if (step_val > 0) {
+            n_iters = std::max((int64_t)0,
+                (end_val - start_val + step_val) / step_val);
+        } else {
+            n_iters = std::max((int64_t)0,
+                (start_val - end_val - step_val) / (-step_val));
+        }
+        int64_t elements_per_iter = 0;
+        for (size_t i = 0; i < idl->n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                int64_t inner = compute_implied_do_element_count(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]));
+                if (inner < 0) return -1;
+                elements_per_iter += inner;
+            } else if (ASRUtils::is_fixed_size_array(
+                           ASRUtils::expr_type(idl->m_values[i]))) {
+                elements_per_iter += ASRUtils::get_fixed_size_of_array(
+                    ASRUtils::expr_type(idl->m_values[i]));
+            } else {
+                elements_per_iter += 1;
+            }
+        }
+        return n_iters * elements_per_iter;
+    }
+
+    // Compute the total flattened element count for an ArrayConstructor.
+    // Returns -1 if the size cannot be statically determined.
+    static int64_t compute_array_constructor_element_count(
+            ASR::ArrayConstructor_t* ac) {
+        int64_t total = 0;
+        for (size_t i = 0; i < ac->n_args; i++) {
+            ASR::expr_t* elem = ac->m_args[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*elem)) {
+                int64_t idl_count = compute_implied_do_element_count(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(elem));
+                if (idl_count < 0) return -1;
+                total += idl_count;
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*elem)) {
+                int64_t inner = compute_array_constructor_element_count(
+                    ASR::down_cast<ASR::ArrayConstructor_t>(elem));
+                if (inner < 0) return -1;
+                total += inner;
+            } else if (ASRUtils::is_fixed_size_array(
+                           ASRUtils::expr_type(elem))) {
+                total += ASRUtils::get_fixed_size_of_array(
+                    ASRUtils::expr_type(elem));
+            } else {
+                total += 1;
+            }
+        }
+        return total;
+    }
+
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
@@ -10076,7 +10155,25 @@ public:
                     &expr, expr_type, type, diag);
             }
 
-            if (ASRUtils::is_fixed_size_array(expr_type)) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                int64_t idl_count = compute_implied_do_element_count(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr));
+                if (idl_count >= 0) {
+                    n_elements += idl_count;
+                } else {
+                    use_descriptorArray = true;
+                    n_elements += 1;
+                }
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
+                int64_t ac_count = compute_array_constructor_element_count(
+                    ASR::down_cast<ASR::ArrayConstructor_t>(expr));
+                if (ac_count >= 0) {
+                    n_elements += ac_count;
+                } else {
+                    use_descriptorArray = true;
+                    n_elements += 1;
+                }
+            } else if (ASRUtils::is_fixed_size_array(expr_type)) {
                 n_elements += ASRUtils::get_fixed_size_of_array(expr_type);
             } else {
                 n_elements += 1;
