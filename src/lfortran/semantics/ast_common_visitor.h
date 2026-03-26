@@ -7140,6 +7140,8 @@ public:
                                 }
                             }
                             value = nullptr;
+                        } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+                            value = init_expr;
                         } else {
                             diag.add(Diagnostic(
                                 "Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -7148,6 +7150,16 @@ public:
                                     Label("",{x.base.base.loc})
                                 }));
                             throw SemanticAbort();
+                        }
+                    }
+                    if (storage_type == ASR::storage_typeType::Parameter &&
+                        init_expr && ASRUtils::is_array(type)) {
+                        ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                        ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                            ASRUtils::expr_type(init_expr));
+                        if (var_ptype != init_expr_ptype &&
+                            var_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
                         }
                     }
                     // Apply character validation for type() syntax & parameter type

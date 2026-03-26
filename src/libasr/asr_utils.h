@@ -1642,10 +1642,22 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
-        case ASR::exprType::ArrayConstructor:
         case ASR::exprType::StructInstanceMember:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
+        }
+        case ASR::exprType::ArrayConstructor: {
+            if (is_value_constant(expr_value(a_value))) {
+                return true;
+            }
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(a_value);
+            for (size_t i = 0; i < ac->n_args; i++) {
+                if (!is_value_constant(ac->m_args[i]) &&
+                    !is_value_constant(expr_value(ac->m_args[i]))) {
+                    return false;
+                }
+            }
+            return true;
         } case ASR::exprType::ListConstant: {
             ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
             for( size_t i = 0; i < list_constant->n_args; i++ ) {
