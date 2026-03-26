@@ -5050,6 +5050,20 @@ public:
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
+                } else if (ASRUtils::is_array(x.m_type)) {
+                    // For pointer/allocatable array module variables, create a
+                    // companion global descriptor so the pointer is never NULL.
+                    // In separate compilation, main() cannot initialize
+                    // submodule-private variables, so we need a valid
+                    // descriptor from the start.
+                    std::string desc_name = llvm_var_name + "_descriptor__";
+                    llvm::GlobalVariable *desc_global = new llvm::GlobalVariable(
+                        *module, type_, false,
+                        llvm::GlobalVariable::InternalLinkage,
+                        llvm::ConstantAggregateZero::get(type_),
+                        desc_name);
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
+                            desc_global);
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
