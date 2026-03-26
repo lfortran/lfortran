@@ -6908,6 +6908,20 @@ public:
                             llvm_sym = llvm_utils->CreateLoad2(internal_type, cast_ptr);
                         }
                     }
+                    // For non-BindC functions with value attribute,
+                    // create a local copy so modifications to the
+                    // parameter don't affect the caller's variable.
+                    if (arg->m_value_attr &&
+                        ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
+                        llvm_arg.getType()->isPointerTy()) {
+                        llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, arg->m_type, module.get());
+                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
+                        llvm::Value* local_copy = builder->CreateAlloca(
+                            val_type, nullptr, std::string(arg->m_name) + "_value");
+                        builder->CreateStore(loaded, local_copy);
+                        llvm_sym = local_copy;
+                    }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
