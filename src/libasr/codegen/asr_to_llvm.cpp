@@ -8447,14 +8447,22 @@ public:
             arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
-            if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
-                !is_parameter) {
+            if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(value_array_type)),
                     module.get());
+#if LLVM_VERSION_MAJOR < 15
+                // On typed pointers, only GEP if value_desc points to the
+                // array type. For parameters whose m_value was visited via
+                // visit_ArrayConstant, the pointer is already at element level.
+                if (value_desc->getType()->getPointerElementType() == val_type) {
+                    value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
+                }
+#else
                 value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
+#endif
             }
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
