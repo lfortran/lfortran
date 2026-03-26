@@ -28,6 +28,16 @@
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#if LLVM_VERSION_MAJOR >= 14
+#   include <llvm/MC/TargetRegistry.h>
+#else
+#   include <llvm/Support/TargetRegistry.h>
+#endif
+#if LLVM_VERSION_MAJOR >= 18
+#   include <llvm/TargetParser/Host.h>
+#else
+#   include <llvm/Support/Host.h>
+#endif
 #include <llvm/ADT/APFloat.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/IR/Verifier.h>
@@ -1583,7 +1593,27 @@ public:
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
-        module->setDataLayout("");
+        // Set host target DataLayout so that getTypeAllocSize() returns
+        // correct sizes (respecting alignment) during IR generation.
+        {
+            std::string target_triple = llvm::sys::getDefaultTargetTriple();
+            std::string Error;
+            const llvm::Target *target =
+                llvm::TargetRegistry::lookupTarget(target_triple, Error);
+            if (target) {
+                llvm::TargetOptions opt;
+                auto TM = target->createTargetMachine(
+                    target_triple, "generic", "", opt, {});
+                if (TM) {
+                    module->setDataLayout(TM->createDataLayout());
+                    delete TM;
+                } else {
+                    module->setDataLayout("");
+                }
+            } else {
+                module->setDataLayout("");
+            }
+        }
         llvm_utils->set_module(module.get());
 
         if (compiler_options.emit_debug_info) {
