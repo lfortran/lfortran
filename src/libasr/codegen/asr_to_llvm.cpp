@@ -9463,9 +9463,14 @@ public:
 
                     visit_expr_wrapper(bc->m_source, true);
                     llvm::Value* source_val = tmp;
-                    llvm::Value* source_alloca = builder->CreateAlloca(
-                        source_val->getType(), nullptr, "transfer_source");
-                    builder->CreateStore(source_val, source_alloca);
+                    llvm::Value* source_alloca;
+                    if (source_val->getType()->isPointerTy()) {
+                        source_alloca = source_val;
+                    } else {
+                        source_alloca = builder->CreateAlloca(
+                            source_val->getType(), nullptr, "transfer_source");
+                        builder->CreateStore(source_val, source_alloca);
+                    }
 
                     llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_target,
