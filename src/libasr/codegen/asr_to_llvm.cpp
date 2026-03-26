@@ -19871,18 +19871,19 @@ public:
                                                 module.get(),
                                                 true);
                     // Set CFI metadata fields (elem_len, type, attribute)
-                    // in the polymorphic descriptor. For elem_len and
-                    // attribute, copy from the source descriptor. For
-                    // the type field, compute the CFI type code from the
-                    // concrete element type, because the source descriptor
-                    // of a concrete type does not populate that field.
+                    // in the polymorphic descriptor. Compute elem_len
+                    // and type from the concrete element type, because
+                    // the source descriptor of a concrete type does not
+                    // populate those fields.
                     {
-                        llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt64Ty(context),
-                            llvm_utils->create_gep2(actual_array_type, dt, 1));
-                        builder->CreateStore(src_elem_len,
-                            llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
+                        llvm::DataLayout dl(module->getDataLayout());
                         ASR::ttype_t* elem_type = ASRUtils::extract_type(arg_type);
+                        uint64_t elem_size = ASRUtils::is_character(*elem_type)
+                            ? ASRUtils::extract_kind_from_ttype_t(elem_type)
+                            : dl.getTypeAllocSize(actual_array_data_type);
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size),
+                            llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
                         int8_t cfi_type_code = get_cfi_type_code(elem_type);
                         builder->CreateStore(
                             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_type_code),
