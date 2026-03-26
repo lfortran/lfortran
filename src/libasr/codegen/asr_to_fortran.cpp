@@ -1637,6 +1637,12 @@ public:
         src += "\n";
     }
 
+    void visit_SyncMemory(const ASR::SyncMemory_t & /* x */) {
+        src = indent;
+        src += "sync memory";
+        src += "\n";
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {

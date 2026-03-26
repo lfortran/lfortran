@@ -4049,6 +4049,7 @@ RUN(NAME allocatable_component_assign_01 LABELS gfortran llvm EXTRA_ARGS --reall
 RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm NO_FAST GFORTRAN_ARGS -fcheck=bounds)
 
 RUN(NAME sync_all_01 LABELS llvm)
+RUN(NAME sync_memory_01 LABELS llvm)
 
 RUN(NAME random_init_01 LABELS gfortran llvm)
 RUN(NAME random_init_02 LABELS gfortran llvm)
