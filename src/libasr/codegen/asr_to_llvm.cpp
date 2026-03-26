@@ -17460,12 +17460,17 @@ public:
         bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
 
         int ptr_loads_copy = ptr_loads;
+        bool is_string_array_unit = false;
+        llvm::Value* string_array_size = nullptr;
         if ( is_string ) {
+            is_string_array_unit = ASRUtils::is_array(ASRUtils::expr_type(x.m_unit));
             ptr_loads = 0;
             runtime_func_name = "_lfortran_string_write";
             args_type.push_back(character_type->getPointerTo());// str_holder
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_allocatable
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_deferred
+            args_type.push_back(llvm::Type::getInt8Ty(context)); // is_array_unit
+            args_type.push_back(llvm::Type::getInt64Ty(context)); // array_size
             args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo()); //len
             args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); //iostat
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); //format_data
@@ -17505,6 +17510,15 @@ public:
         } else { // String Write
             std::tie(unit, string_len) = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            if (is_string_array_unit) {
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                    ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
+                visit_ArraySize(*array_size);
+                string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+            } else {
+                string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+            }
         }
         ptr_loads = ptr_loads_copy;
 
@@ -17806,8 +17820,12 @@ public:
                 ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_unit))));
             llvm::Value* is_deferred = llvm::ConstantInt::get(context, llvm::APInt(8,
                 ASRUtils::is_deferredLength_string(ASRUtils::expr_type(x.m_unit))));
+            llvm::Value* is_array_unit = llvm::ConstantInt::get(context, llvm::APInt(8,
+                is_string_array_unit));
             printf_args.push_back(is_allocatable);
             printf_args.push_back(is_deferred);
+            printf_args.push_back(is_array_unit);
+            printf_args.push_back(string_array_size);
             printf_args.push_back(string_len);
         }
         printf_args.push_back(iostat);
