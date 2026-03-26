@@ -10161,6 +10161,7 @@ public:
                 if (idl_count >= 0) {
                     n_elements += idl_count;
                 } else {
+                    use_descriptorArray = true;
                     n_elements += 1;
                 }
             } else if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
@@ -10169,6 +10170,7 @@ public:
                 if (ac_count >= 0) {
                     n_elements += ac_count;
                 } else {
+                    use_descriptorArray = true;
                     n_elements += 1;
                 }
             } else if (ASRUtils::is_fixed_size_array(expr_type)) {
