@@ -1891,6 +1891,18 @@ namespace LCompilers {
 #endif
     }
 
+    llvm::Value* LLVMUtils::CreateBitCastForStore(llvm::Value* value, llvm::Value* target_ptr) {
+#if LLVM_VERSION_MAJOR < 15
+        if (value->getType()->isPointerTy() && target_ptr->getType()->isPointerTy()) {
+            llvm::Type* dest_pointee_type = target_ptr->getType()->getPointerElementType();
+            if (value->getType() != dest_pointee_type) {
+                value = builder->CreateBitCast(value, dest_pointee_type);
+            }
+        }
+#endif
+        return value;
+    }
+
     /*
     TODO: To avoid the dyn_cast checks here, the alternative is to standardize
     llvm_symtab to always store the descriptor pointer value (not the slot) for

@@ -8538,14 +8538,7 @@ public:
                     llvm_target = llvm_utils->get_string_data(
                         ASRUtils::get_string_type(target_type), llvm_target, true);
                 }
-                if (llvm_value->getType()->isPointerTy() &&
-                        llvm_target->getType()->isPointerTy()) {
-                    llvm::Type* dest_pointee_type =
-                        llvm_target->getType()->getPointerElementType();
-                    if (llvm_value->getType() != dest_pointee_type) {
-                        llvm_value = builder->CreateBitCast(llvm_value, dest_pointee_type);
-                    }
-                }
+                llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if ((ASRUtils::is_string_only(value_type)) && (ASRUtils::is_unlimited_polymorphic_type(target_type))){
                 // String to unlimited polymorphic association
@@ -9062,16 +9055,7 @@ public:
                             llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
                             fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             llvm::Value* target_data_ptr = arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_);
-#if LLVM_VERSION_MAJOR < 15
-                            // Typed-pointer LLVM (<15) requires the stored pointer type to match
-                            // the destination field type exactly.
-                            if (llvm_value->getType() != target_data_ptr->getType()->getPointerElementType()) {
-                                LCOMPILERS_ASSERT(llvm_value->getType()->isPointerTy());
-                                LCOMPILERS_ASSERT(target_data_ptr->getType()->getPointerElementType()->isPointerTy());
-                                llvm_value = builder->CreateBitCast(
-                                    llvm_value, target_data_ptr->getType()->getPointerElementType());
-                            }
-#endif
+                            llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, target_data_ptr);
                             builder->CreateStore(llvm_value, target_data_ptr);
                             llvm_value = llvm_target_;
                             break;
