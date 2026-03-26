@@ -10472,8 +10472,6 @@ public:
             h = get_hash((ASR::asr_t*)asr_target);
             target = llvm_symtab[h];
             if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASRUtils::is_character(*asr_target->m_type) &&
                 !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
                 llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
@@ -10550,10 +10548,13 @@ public:
         load_non_array_non_character_pointers(m_value, value_type, value);
         value = logical_store_val(value, x.m_target);
 
-        if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
-            if (value->getType()->isPointerTy()) {
-                llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                value = llvm_utils->CreateLoad2(st_type, value);
+        {
+            ASR::ttype_t* target_type_past_ptr = ASRUtils::type_get_past_pointer(target_type);
+            if (ASR::is_a<ASR::StructType_t>(*target_type_past_ptr) && !ASRUtils::is_class_type(target_type_past_ptr)) {
+                if (value->getType()->isPointerTy()) {
+                    llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type_past_ptr, module.get());
+                    value = llvm_utils->CreateLoad2(st_type, value);
+                }
             }
         }
         if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value)) &&

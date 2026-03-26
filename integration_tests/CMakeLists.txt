@@ -2255,6 +2255,7 @@ RUN(NAME derived_types_128 LABELS gfortran llvm)
 RUN(NAME derived_types_129 LABELS gfortran llvm)
 RUN(NAME derived_types_130 LABELS gfortran llvm)
 RUN(NAME derived_types_131 LABELS gfortran llvm)
+RUN(NAME derived_types_132 LABELS gfortran llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
