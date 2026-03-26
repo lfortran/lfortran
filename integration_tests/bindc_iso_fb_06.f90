@@ -6,6 +6,10 @@ module bindc_iso_fb_06_mod
       type(*) :: a(..)
       integer, value :: expected_type
     end subroutine
+    integer function cfi_type_int32() bind(C)
+    end function
+    integer function cfi_type_float() bind(C)
+    end function
   end interface
 contains
   subroutine wrap(a, expected_type)
@@ -22,7 +26,7 @@ program bindc_iso_fb_06
   real :: vr
   vi = 42
   vr = 3.14
-  call wrap(vi, 9)
-  call wrap(vr, 27)
+  call wrap(vi, cfi_type_int32())
+  call wrap(vr, cfi_type_float())
   print *, "PASS"
 end program
