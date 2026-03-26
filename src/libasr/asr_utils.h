@@ -7064,6 +7064,13 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             }
             return (void*) data;
         }
+        case ASR::ttypeType::CPtr: {
+            ASR::expr_t** data = new ASR::expr_t*[n_args];
+            for (size_t i = 0; i < n_args; i++) {
+                data[i] = ASRUtils::expr_value(a_args[i]);
+            }
+            return (void*) data;
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
