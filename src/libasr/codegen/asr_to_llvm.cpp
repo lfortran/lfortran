@@ -6219,10 +6219,14 @@ public:
             this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
         }
         llvm::Value *init_value = tmp;
+        auto is_array_const_or_ctor = [](ASR::expr_t* e) {
+            return e && (ASR::is_a<ASR::ArrayConstant_t>(*e) ||
+                         ASR::is_a<ASR::ArrayConstructor_t>(*e));
+        };
         if( ASRUtils::is_array(v->m_type) &&
             ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
-            (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
-            (v->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)))) {
+            (is_array_const_or_ctor(v->m_symbolic_value) ||
+             is_array_const_or_ctor(v->m_value))) {
             ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(v->m_type);
             if( target_ptype == ASR::array_physical_typeType::DescriptorArray ) {
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -6230,11 +6234,12 @@ public:
                 target_var = arr_descr->get_pointer_to_data(target_type, target_var);
                 builder->CreateStore(init_value, target_var, v->m_is_volatile);
             } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                ASR::expr_t* arr_value = v->m_value ? v->m_value : v->m_symbolic_value;
                 llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
+                llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(arr_value))));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)),
-                    ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_value)), module.get());
+                    ASRUtils::type_get_past_array(ASRUtils::expr_type(arr_value)), module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
