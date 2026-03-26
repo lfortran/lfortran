@@ -6632,6 +6632,34 @@ public:
                 *ASRUtils::type_get_past_array(v->m_type))
                 && !ASRUtils::is_class_type(
                     ASRUtils::type_get_past_array(v->m_type))) {
+                // For save variables of struct type, member initialization
+                // (default values, string descriptors, array descriptors) must
+                // run exactly once rather than on every call, otherwise saved
+                // values are overwritten. We emit a one-time guard.
+                llvm::BasicBlock* struct_init_bb = nullptr;
+                llvm::BasicBlock* struct_skip_bb = nullptr;
+                if (v->m_storage == ASR::storage_typeType::Save) {
+                    std::string parent_function_name = std::string(x.m_name);
+                    if (x.class_type == ASR::symbolType::Block) {
+                        parent_function_name += "_" + x.m_symtab->get_counter();
+                    }
+                    std::string guard_name = parent_function_name + "." + v->m_name + ".__struct_init";
+                    llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
+                    module->getOrInsertGlobal(guard_name, i1_type);
+                    llvm::GlobalVariable* guard = module->getNamedGlobal(guard_name);
+                    guard->setLinkage(llvm::GlobalValue::InternalLinkage);
+                    guard->setInitializer(llvm::ConstantInt::getFalse(context));
+
+                    llvm::Value* already_done = builder->CreateLoad(i1_type, guard);
+                    struct_init_bb = llvm::BasicBlock::Create(context, "struct_init");
+                    struct_skip_bb = llvm::BasicBlock::Create(context, "struct_init_done");
+                    builder->CreateCondBr(already_done, struct_skip_bb, struct_init_bb);
+
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    fn->getBasicBlockList().push_back(struct_init_bb);
+                    builder->SetInsertPoint(struct_init_bb);
+                    builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+                }
                 if( ASRUtils::is_array(v->m_type) ) {
                     // For DescriptorArray, the array descriptor (ndim, dim_desc, data
                     // ptr) is not initialized yet at this point. Defer the member
@@ -6643,6 +6671,12 @@ public:
                 } else {
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type);
+                }
+                if (struct_skip_bb != nullptr) {
+                    builder->CreateBr(struct_skip_bb);
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    fn->getBasicBlockList().push_back(struct_skip_bb);
+                    builder->SetInsertPoint(struct_skip_bb);
                 }
             }
             if (compiler_options.emit_debug_info) {
