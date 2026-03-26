@@ -70,6 +70,7 @@ stmt
     | Nullify(expr* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | SyncAll()
+    | SyncMemory()
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)
