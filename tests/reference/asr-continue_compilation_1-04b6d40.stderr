@@ -380,27 +380,28 @@ semantic error: The shapes of the `array` and `mask` arguments of the `MaxLoc` i
 631 |     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
     |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
 
-semantic error: Cannot convert LOGICAL to REAL
-   --> tests/errors/continue_compilation_1.f90:666:24
+semantic error: variable cannot appear in character length expression
+   --> tests/errors/continue_compilation_1.f90:638:21
     |
-666 |         real :: adwf = .true.
+638 |     character(len = char_len_var) :: char_nonconst
+    |                     ^^^^^^^^^^^^ 
+
+semantic error: Cannot convert LOGICAL to REAL
+   --> tests/errors/continue_compilation_1.f90:674:24
+    |
+674 |         real :: adwf = .true.
     |                        ^^^^^^ 
 
 warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:670:23
+   --> tests/errors/continue_compilation_1.f90:678:23
     |
-670 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+678 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
-semantic error: variable cannot appear in character length expression
-   --> tests/errors/continue_compilation_1.f90:636:21
-    |
-636 |     character(len = char_len_var) :: char_nonconst
-    |                     ^^^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
-   --> tests/errors/continue_compilation_1.f90:638:9
+   --> tests/errors/continue_compilation_1.f90:640:9
     |
-638 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
@@ -1390,13 +1391,13 @@ semantic error: Duplicate value of `decimal` found
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Variable 'k' is not declared
-   --> tests/errors/continue_compilation_1.f90:660:12
+   --> tests/errors/continue_compilation_1.f90:668:12
     |
-660 |         do k = 1, 3
+668 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
 semantic error: Expected logical expression in if statement, but recieved logical[:] instead
-   --> tests/errors/continue_compilation_1.f90:671:13
+   --> tests/errors/continue_compilation_1.f90:679:13
     |
-671 |         if (abs(arr1)(1) /= 2471095) error stop
+679 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
