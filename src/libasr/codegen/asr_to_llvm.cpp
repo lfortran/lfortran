@@ -6180,7 +6180,7 @@ public:
                 ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
                 llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
                     ? llvm_utils->get_el_type(pnc->m_var_expr,
-                    ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
+                        ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
                     : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
             }
