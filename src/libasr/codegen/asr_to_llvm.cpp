@@ -6941,19 +6941,16 @@ public:
                     // For non-BindC functions with value attribute,
                     // create a local copy so modifications to the
                     // parameter don't affect the caller's variable.
+                    // Skip CPtr: it is already passed by value at
+                    // the call site and handled by the existing
+                    // is_cptr_dummy_passed_by_value path.
                     if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
+                        !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
                             nullptr, arg->m_type, module.get());
-                        llvm::Value* loaded;
-                        if (ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
-                            // CPtr value is already the pointer value itself,
-                            // not a reference to a pointer
-                            loaded = llvm_sym;
-                        } else {
-                            loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
-                        }
+                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
                         builder->CreateStore(loaded, local_copy);
@@ -18550,8 +18547,8 @@ public:
                             if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
                                      && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
                                 if ( orig_arg_intent != ASRUtils::intent_out &&
-                                        (arg->m_intent == intent_local || arg->m_value_attr) ) {
-                                    // Local variable or value-attribute dummy of type
+                                        arg->m_intent == intent_local ) {
+                                    // Local variable of type
                                     // CPtr is a void**, so we
                                     // have to load it
                                     llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
