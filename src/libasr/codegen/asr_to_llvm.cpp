@@ -19870,18 +19870,22 @@ public:
                                                 s_m_args0_type,
                                                 module.get(),
                                                 true);
-                    // Copy CFI metadata fields (elem_len, type, attribute)
-                    // from source descriptor to polymorphic descriptor
+                    // Set CFI metadata fields (elem_len, type, attribute)
+                    // in the polymorphic descriptor. For elem_len and
+                    // attribute, copy from the source descriptor. For
+                    // the type field, compute the CFI type code from the
+                    // concrete element type, because the source descriptor
+                    // of a concrete type does not populate that field.
                     {
                         llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(actual_array_type, dt, 1));
                         builder->CreateStore(src_elem_len,
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
-                        llvm::Value* src_type = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context),
-                            llvm_utils->create_gep2(actual_array_type, dt, 4));
-                        builder->CreateStore(src_type,
+                        ASR::ttype_t* elem_type = ASRUtils::extract_type(arg_type);
+                        int8_t cfi_type_code = get_cfi_type_code(elem_type);
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_type_code),
                             llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 4));
                         llvm::Value* src_attr = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),

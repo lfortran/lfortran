@@ -4049,6 +4049,7 @@ RUN(NAME allocatable_lhs_finalization_01 LABELS llvm)
 RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME assumed_type_01 LABELS gfortran llvm)
+RUN(NAME assumed_type_02 LABELS gfortran llvm EXTRAFILES assumed_type_02.c)
 RUN(NAME allocatable_cchar_01 LABELS gfortran llvm)
 RUN(NAME allocatable_nested_types_01 LABELS gfortran llvm)
 RUN(NAME allocatable_derived_array_01 LABELS gfortran llvm)
