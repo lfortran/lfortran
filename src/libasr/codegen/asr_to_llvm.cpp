@@ -8343,7 +8343,6 @@ public:
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
-        bool is_parameter = ASRUtils::is_value_constant(array_section->m_v);
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
