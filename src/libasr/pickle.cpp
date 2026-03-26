@@ -101,15 +101,22 @@ public:
         if(indent) s.append("\n" + indented);
         else s.append(" ");
         s.append("[");
-        int kind;
-        if(ASRUtils::is_character(*x.m_type)){
-            ASR::String_t* str = ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array(x.m_type));
-            if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
+        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        int size;
+        if (ASRUtils::is_character(*x.m_type)) {
+            int len;
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(element_type);
+            if (!ASRUtils::extract_value(str->m_len, len)) {
+                LCOMPILERS_ASSERT(false)
+            }
+            size = x.m_n_data / len;
+        } else if (ASR::is_a<ASR::StructType_t>(*element_type)) {
+            size = x.m_n_data / sizeof(ASR::expr_t*);
         } else {
-            kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            size = x.m_n_data / kind;
         }
-        int size = x.m_n_data / kind;
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {

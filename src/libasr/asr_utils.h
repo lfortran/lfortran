@@ -19,6 +19,7 @@
 #include <libasr/asr_expr_type_visitor.h>
 #include <libasr/asr_expr_value_visitor.h>
 #include <libasr/asr_walk_visitor.h>
+#include <libasr/pickle.h>
 
 #include <complex>
 #include <string>
@@ -6785,6 +6786,11 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             new_char[len] = '\0';
             return '\"' + std::string(new_char) + '\"';
         }
+        case ASR::ttypeType::StructType: {
+            ASR::expr_t* value = ((ASR::expr_t**)data)[i];
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructConstant_t>(*value));
+            return LCompilers::pickle(value->base, false, false, false, false);
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
@@ -6875,6 +6881,11 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,
                                 s2c(al, str), type));
+            return value;
+        }
+        case ASR::ttypeType::StructType: {
+            value = ((ASR::expr_t**)data)[i];
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructConstant_t>(*value));
             return value;
         }
         default:
