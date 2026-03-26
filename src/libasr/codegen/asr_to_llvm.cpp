@@ -19250,8 +19250,16 @@ public:
                     ? ASRUtils::get_FunctionType(
                         ASR::down_cast<ASR::Function_t>(func_subrout))
                     : nullptr;
-                bool callee_is_extern_c = !arg_cft ||
-                                           is_external_interface_function(arg_cft);
+                // Procedure pointer calls (where x.m_name resolves to a
+                // Variable, not a Function) use the LLVM function type
+                // generated from the abstract interface, which uses
+                // LFortran's internal string_descriptor** convention.
+                // Do not build a CFI descriptor for these calls.
+                ASR::symbol_t* call_sym = symbol_get_past_external(x.m_name);
+                bool is_proc_pointer_call = ASR::is_a<ASR::Variable_t>(*call_sym);
+                bool callee_is_extern_c = !is_proc_pointer_call &&
+                                           (!arg_cft ||
+                                            is_external_interface_function(arg_cft));
 
                 // If the interface looks external but there is a Fortran
                 // bind(C) implementation in the same translation unit,
