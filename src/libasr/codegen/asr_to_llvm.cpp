@@ -19440,6 +19440,8 @@ public:
                             base_addr_gep);
                     }
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
+                    bool is_type_star = ASR::is_a<ASR::StructType_t>(*elem_asr_type)
+                        && ASR::down_cast<ASR::StructType_t>(elem_asr_type)->m_is_unlimited_polymorphic;
                     int8_t cfi_type_code = get_cfi_type_code(elem_asr_type);
                     int cfi_attr = 0;
                     if (actual_type && ASRUtils::is_allocatable(actual_type)) {
@@ -19447,9 +19449,24 @@ public:
                     } else if (actual_type && ASRUtils::is_pointer(actual_type)) {
                         cfi_attr = 1;
                     }
+                    llvm::Value* internal_desc_ptr = tmp;
                     tmp = arr_descr->internal_to_cfi(
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size,
                         cfi_type_code, cfi_attr);
+                    if (is_type_star) {
+                        llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
+                            tmp)->getAllocatedType();
+                        llvm::Value* src_type = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context),
+                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
+                        builder->CreateStore(src_type,
+                            llvm_utils->create_gep2(cfi_struct, tmp, 4));
+                        llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
+                        builder->CreateStore(src_elem_len,
+                            llvm_utils->create_gep2(cfi_struct, tmp, 1));
+                    }
                     // Bitcast descriptor pointer to match the formal parameter's
                     // descriptor type when element types differ (e.g., actual
                     // integer(c_int) passed to type(*) formal parameter).
