@@ -29,13 +29,13 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                [(Integer 8)
-                                                (Allocatable
+                                                [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
-                                                )]
+                                                )
+                                                (Integer 8)]
                                                 []
                                                 .true.
                                                 .false.
@@ -112,13 +112,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Integer 8)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                )
+                                                                (Integer 8)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -181,13 +181,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Integer 8)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                )
+                                                                (Integer 8)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -216,13 +216,13 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    [(Integer 8)
-                                                    (Allocatable
+                                                    [(Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
-                                                    )]
+                                                    )
+                                                    (Integer 8)]
                                                     []
                                                     .true.
                                                     .false.
@@ -300,13 +300,13 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            [(Integer 8)
-                                                            (Allocatable
+                                                            [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            )
+                                                            (Integer 8)]
                                                             []
                                                             .true.
                                                             .false.
@@ -354,13 +354,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Integer 8)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                )
+                                                                (Integer 8)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -375,13 +375,13 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            [(Integer 8)
-                                                            (Allocatable
+                                                            [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            )
+                                                            (Integer 8)]
                                                             []
                                                             .true.
                                                             .false.
@@ -487,13 +487,13 @@
                                         })
                                     srcfile_t
                                     (StructType
-                                        [(Integer 8)
-                                        (Allocatable
+                                        [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
-                                        )]
+                                        )
+                                        (Integer 8)]
                                         []
                                         .true.
                                         .false.

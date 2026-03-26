@@ -363,6 +363,12 @@
                                     dependency_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (StructType
                                                 [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -374,12 +380,6 @@
                                                 .true.
                                                 .false.
                                             )
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.
@@ -489,6 +489,12 @@
                                                         (Array
                                                             (StructType
                                                                 [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
                                                                     (StructType
                                                                         [(Allocatable
                                                                             (String 1 () DeferredLength DescriptorString)
@@ -500,12 +506,6 @@
                                                                         .true.
                                                                         .false.
                                                                     )
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
                                                                 )]
                                                                 []
                                                                 .true.
@@ -619,6 +619,12 @@
                                             (Array
                                                 (StructType
                                                     [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
                                                         (StructType
                                                             [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
@@ -630,12 +636,6 @@
                                                             .true.
                                                             .false.
                                                         )
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
                                                     )]
                                                     []
                                                     .true.
@@ -738,6 +738,12 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (StructType
                                                                 [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
@@ -749,12 +755,6 @@
                                                                 .true.
                                                                 .false.
                                                             )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
                                                         )]
                                                         []
                                                         .true.
@@ -803,6 +803,12 @@
                                     (FunctionType
                                         [(StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (StructType
                                                     [(Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
@@ -814,12 +820,6 @@
                                                     .true.
                                                     .false.
                                                 )
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
                                             )]
                                             []
                                             .true.

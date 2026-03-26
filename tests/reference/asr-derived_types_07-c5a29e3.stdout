@@ -140,7 +140,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -161,8 +162,7 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -184,7 +184,8 @@
                                     find
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -205,8 +206,7 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -597,7 +597,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -618,8 +619,7 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .true.
                                                         .false.
@@ -641,7 +641,8 @@
                                     new_vector
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -662,8 +663,7 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .true.
                                             .false.
@@ -908,7 +908,8 @@
                                         })
                                     toml_vector
                                     (StructType
-                                        [(Allocatable
+                                        [(Integer 4)
+                                        (Allocatable
                                             (Array
                                                 (StructType
                                                     [(Allocatable
@@ -929,8 +930,7 @@
                                                 ())]
                                                 DescriptorArray
                                             )
-                                        )
-                                        (Integer 4)]
+                                        )]
                                         []
                                         .true.
                                         .false.

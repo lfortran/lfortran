@@ -68,9 +68,9 @@
                                     Default
                                     (Allocatable
                                         (StructType
-                                            [(Logical 4)
+                                            [(Integer 4)
                                             (Real 4)
-                                            (Integer 4)]
+                                            (Logical 4)]
                                             []
                                             .false.
                                             .false.
@@ -270,9 +270,9 @@
                                         })
                                     fpm_run_settings
                                     (StructType
-                                        [(Logical 4)
+                                        [(Integer 4)
                                         (Real 4)
-                                        (Integer 4)]
+                                        (Logical 4)]
                                         []
                                         .true.
                                         .false.
@@ -307,9 +307,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            [(Logical 4)
+                                                            [(Integer 4)
                                                             (Real 4)
-                                                            (Integer 4)]
+                                                            (Logical 4)]
                                                             []
                                                             .false.
                                                             .false.
@@ -333,9 +333,9 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                [(Logical 4)
+                                                [(Integer 4)
                                                 (Real 4)
-                                                (Integer 4)]
+                                                (Logical 4)]
                                                 []
                                                 .false.
                                                 .false.
@@ -369,9 +369,9 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
-                                                [(Logical 4)
+                                                [(Integer 4)
                                                 (Real 4)
-                                                (Integer 4)]
+                                                (Logical 4)]
                                                 []
                                                 .true.
                                                 .false.

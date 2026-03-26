@@ -367,6 +367,9 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -386,9 +389,6 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
                                                         )]
                                                         []
                                                         .true.
@@ -435,6 +435,9 @@
                                     (FunctionType
                                         [(StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -454,9 +457,6 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
                                             )]
                                             []
                                             .true.
@@ -682,6 +682,9 @@
                                     package_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (Array
                                                 (StructType
                                                     [(Allocatable
@@ -701,9 +704,6 @@
                                                 ())]
                                                 DescriptorArray
                                             )
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.
