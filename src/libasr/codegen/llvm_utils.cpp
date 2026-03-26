@@ -1668,7 +1668,29 @@ namespace LCompilers {
                         ASRUtils::symbol_get_past_external(type_declaration));
                     llvm_type = get_function_type(*fn, module)->getPointerTo();
                 } else {
-                    llvm_type = get_function_type(*ASRUtils::get_function_from_expr(arg_expr), module)->getPointerTo();
+                    const ASR::Function_t* fn_from_expr = nullptr;
+                    if (arg_expr) {
+                        fn_from_expr = ASRUtils::get_function_from_expr(arg_expr);
+                    }
+                    if (fn_from_expr) {
+                        llvm_type = get_function_type(*fn_from_expr, module)->getPointerTo();
+                    } else {
+                        // For implicit interfaces / null procedure pointers, arg_expr
+                        // can be null or not resolve to a concrete Function_t.
+                        ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(asr_type);
+                        llvm::Type* return_type = ft->m_return_var_type != nullptr
+                            ? get_type_from_ttype_t_util(nullptr, ft->m_return_var_type, module)
+                            : llvm::Type::getVoidTy(context);
+                        std::vector<llvm::Type*> arg_types;
+                        arg_types.reserve(ft->n_arg_types);
+                        for (size_t i = 0; i < ft->n_arg_types; i++) {
+                            llvm::Type* arg_t = get_type_from_ttype_t_util(nullptr, ft->m_arg_types[i], module);
+                            arg_types.push_back(arg_t->getPointerTo());
+                        }
+                        llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                            return_type, arg_types, false);
+                        llvm_type = fn_type->getPointerTo();
+                    }
                 }
                 break;
             }

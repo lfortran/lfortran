@@ -5926,6 +5926,19 @@ public:
                             ASRUtils::is_allocatable(v->m_type)) { // Any non primitve
                             throw LCompilersException("Not implemented");
                         } else {
+                            // Procedure-pointer component initializers can carry a
+                            // more specific function pointer type than the member
+                            // storage type (e.g. float()* vs void()* under
+                            // --implicit-interface). Cast to the destination
+                            // pointee type to keep LLVM IR well-typed.
+                            if (tmp->getType()->isPointerTy() &&
+                                    ptr_member->getType()->isPointerTy()) {
+                                llvm::Type* dest_pointee_type =
+                                    ptr_member->getType()->getPointerElementType();
+                                if (tmp->getType() != dest_pointee_type) {
+                                    tmp = builder->CreateBitCast(tmp, dest_pointee_type);
+                                }
+                            }
                             LLVM::CreateStore(*builder, tmp, ptr_member);
                         }
                     }
@@ -6178,10 +6191,11 @@ public:
             }
             case ASR::exprType::PointerNullConstant: {
                 ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
-                llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
+                ASR::ttype_t* const_type = target_type != nullptr ? target_type : pnc->m_type;
+                llvm::Type* value_type = ASRUtils::is_array(const_type)
                     ? llvm_utils->get_el_type(pnc->m_var_expr,
-                        ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
-                    : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
+                        ASRUtils::extract_type(const_type), module.get())->getPointerTo()
+                    : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, const_type, module.get());
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
             }
             default:
@@ -8537,6 +8551,14 @@ public:
                 if (ASRUtils::is_string_only(target_type)) {
                     llvm_target = llvm_utils->get_string_data(
                         ASRUtils::get_string_type(target_type), llvm_target, true);
+                }
+                if (llvm_value->getType()->isPointerTy() &&
+                        llvm_target->getType()->isPointerTy()) {
+                    llvm::Type* dest_pointee_type =
+                        llvm_target->getType()->getPointerElementType();
+                    if (llvm_value->getType() != dest_pointee_type) {
+                        llvm_value = builder->CreateBitCast(llvm_value, dest_pointee_type);
+                    }
                 }
                 builder->CreateStore(llvm_value, llvm_target);
             } else if ((ASRUtils::is_string_only(value_type)) && (ASRUtils::is_unlimited_polymorphic_type(target_type))){
