@@ -4372,13 +4372,30 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
-            x.m_arg, nullptr, module.get());
-        llvm::DataLayout data_layout(module->getDataLayout());
-        int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
+        ASR::ttype_t* arg_type = x.m_arg;
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = llvm::ConstantInt::get(llvm_utils->getIntType(kind),
-            llvm::APInt(kind * 8, type_size));
+        // For array types, compute element_size * array_count.
+        // This avoids passing a nullptr expr into get_type_from_ttype_t_util
+        // for array-of-struct types (where the struct symbol cannot be
+        // resolved from a type alone).
+        if (ASR::is_a<ASR::Array_t>(*arg_type)) {
+            int64_t array_size = ASRUtils::get_fixed_size_of_array(arg_type);
+            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(arg_type);
+            llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                elem_type, nullptr, module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
+            int64_t elem_size = data_layout.getTypeAllocSize(llvm_elem_type);
+            int64_t type_size = (array_size > 0) ? elem_size * array_size : elem_size;
+            tmp = llvm::ConstantInt::get(llvm_utils->getIntType(kind),
+                llvm::APInt(kind * 8, type_size));
+        } else {
+            llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                arg_type, nullptr, module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
+            int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
+            tmp = llvm::ConstantInt::get(llvm_utils->getIntType(kind),
+                llvm::APInt(kind * 8, type_size));
+        }
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
