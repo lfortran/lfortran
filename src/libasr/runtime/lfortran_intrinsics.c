@@ -1777,6 +1777,9 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
+                        // Keep the next descriptor (for example '/') visible to
+                        // the outer loop's trailing index++.
+                        index--;
                     } else {
                         start = index;
                         while (isalpha(cformat[index])) index++; 
