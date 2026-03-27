@@ -1603,7 +1603,12 @@ public:
             if (target) {
                 llvm::TargetOptions opt;
                 auto TM = target->createTargetMachine(
-                    target_triple, "generic", "", opt, {});
+#if LLVM_VERSION_MAJOR >= 21
+                    llvm::Triple(target_triple),
+#else
+                    target_triple,
+#endif
+                    "generic", "", opt, {});
                 if (TM) {
                     module->setDataLayout(TM->createDataLayout());
                     delete TM;
