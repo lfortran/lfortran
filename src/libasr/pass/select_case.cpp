@@ -144,6 +144,12 @@ Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_
     if (!ASR::is_a<ASR::Var_t>(*a)) {
         const Location& loc = select_case.base.base.loc;
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
+        if (ASRUtils::is_character(*a_type)) {
+            a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+        }
         std::string tmp_name = scope->get_unique_name("select_case_tmp");
         ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, loc, scope, s2c(al, tmp_name), nullptr, 0,
@@ -235,6 +241,12 @@ Vec<ASR::stmt_t*> replace_selectcase_with_fall_through(
     if (!ASR::is_a<ASR::Var_t>(*a)) {
         const Location& loc = select_case.base.base.loc;
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
+        if (ASRUtils::is_character(*a_type)) {
+            a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+        }
         std::string tmp_name = scope->get_unique_name("select_case_tmp");
         ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, loc, scope, s2c(al, tmp_name), nullptr, 0,

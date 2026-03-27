@@ -521,6 +521,7 @@ RUN(NAME if_label_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME select_label_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME variables_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
