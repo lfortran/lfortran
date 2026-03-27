@@ -9500,12 +9500,17 @@ public:
 
                 visit_expr_wrapper(bc->m_size, true);
                 llvm::Value* size_val = tmp;
-                int target_elem_kind = ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::extract_type(tgt_type_));
+                ASR::ttype_t* tgt_elem_type = ASRUtils::extract_type(tgt_type_);
+                llvm::Type* tgt_elem_llvm_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, tgt_elem_type, module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t target_elem_size =
+                    data_layout.getTypeAllocSize(tgt_elem_llvm_type);
                 llvm::Value* nbytes = builder->CreateMul(
                     size_val,
                     llvm::ConstantInt::get(
-                        size_val->getType(), target_elem_kind));
+                        size_val->getType(), target_elem_size));
                 nbytes = builder->CreateZExtOrTrunc(
                     nbytes, llvm::Type::getInt64Ty(context));
 
