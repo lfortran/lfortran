@@ -16967,6 +16967,7 @@ public:
         llvm::Value *iostat{}, *nextrec{};
         llvm::Value *decimal_val{}, *decimal_len{};
         llvm::Value *sign_val{}, *sign_len{};
+        llvm::Value *encoding_val{}, *encoding_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -17302,6 +17303,17 @@ public:
             sign_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_encoding) {
+            this->visit_expr_load_wrapper(x.m_encoding, 0);
+            std::tie(encoding_val, encoding_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_encoding),
+                    tmp);
+        } else {
+            encoding_val = llvm::Constant::getNullValue(character_type);
+            encoding_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -17330,7 +17342,8 @@ public:
                         llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
                         llvm::Type::getInt32Ty(context)->getPointerTo(), // nextrec
                         character_type, llvm::Type::getInt64Ty(context),  // decimal_data, decimal_len
-                        character_type, llvm::Type::getInt64Ty(context)   // sign_data, sign_len
+                        character_type, llvm::Type::getInt64Ty(context),   // sign_data, sign_len
+                        character_type, llvm::Type::getInt64Ty(context)    // encoding_data, encoding_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17353,7 +17366,8 @@ public:
             unformatted, unformatted_len,
             iostat, nextrec,
             decimal_val, decimal_len,
-            sign_val, sign_len});
+            sign_val, sign_len,
+            encoding_val, encoding_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
