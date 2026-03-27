@@ -1240,6 +1240,58 @@ namespace Radix {
 
 namespace StorageSize {
 
+    // Compute the byte size and alignment of an ASR type, matching the
+    // LLVM struct layout rules used by LFortran's codegen on LP64 targets.
+    // Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
+    static std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type) {
+        type = ASRUtils::type_get_past_array(
+                   ASRUtils::type_get_past_allocatable(
+                       ASRUtils::type_get_past_pointer(type)));
+        if (ASR::is_a<ASR::Integer_t>(*type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*type) ||
+            ASR::is_a<ASR::Real_t>(*type) ||
+            ASR::is_a<ASR::Logical_t>(*type)) {
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+            if (kind > 0) return {kind, kind};
+            return {-1, -1};
+        } else if (ASR::is_a<ASR::Complex_t>(*type)) {
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+            if (kind <= 0) return {-1, -1};
+            // LFortran maps complex to a packed LLVM struct {float,float}
+            // or {double,double}, so alignment is 1 (packed).
+            return {2 * kind, 1};
+        } else if (ASR::is_a<ASR::CPtr_t>(*type)) {
+            return {8, 8};
+        } else if (ASR::is_a<ASR::StructType_t>(*type)) {
+            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+            int64_t offset = 0;
+            int64_t max_align = 1;
+            for (size_t i = 0; i < st->n_data_member_types; i++) {
+                ASR::ttype_t* mt = st->m_data_member_types[i];
+                // Pointer/Allocatable scalars are pointers in LLVM
+                if ((ASRUtils::is_pointer(mt) || ASRUtils::is_allocatable(mt)) &&
+                    !ASRUtils::is_array(mt)) {
+                    int64_t align = 8, size = 8;
+                    offset = ((offset + align - 1) / align) * align;
+                    offset += size;
+                    if (align > max_align) max_align = align;
+                    continue;
+                }
+                auto [size, align] = compute_type_size_align(mt);
+                if (size < 0) return {-1, -1};
+                offset = ((offset + align - 1) / align) * align;
+                offset += size;
+                if (align > max_align) max_align = align;
+            }
+            // Pad struct to its alignment
+            offset = ((offset + max_align - 1) / max_align) * max_align;
+            if (offset == 0) offset = 1;
+            return {offset, max_align};
+        } else {
+            return {-1, -1};
+        }
+    }
+
     static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arg_type = expr_type(args[0]);
@@ -1254,31 +1306,14 @@ namespace StorageSize {
                     ASR::make_StringLen_t(al, loc, args[0], int64, nullptr));
             }
             return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
-        } else if (ASR::is_a<ASR::CPtr_t>(*type)) {
-            return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
-        } else if (ASR::is_a<ASR::StructType_t>(*type)) {
-            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
-            int64_t total_bits = 0;
-            for (size_t i = 0; i < st->n_data_member_types; i++) {
-                ASR::ttype_t* mt = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(
-                            st->m_data_member_types[i])));
-                if (ASR::is_a<ASR::CPtr_t>(*mt)) {
-                    total_bits += 64;
-                } else if (is_complex(*mt)) {
-                    int64_t k = ASRUtils::extract_kind_from_ttype_t(mt);
-                    if (k > 0) total_bits += k * 16;
-                    else total_bits += 32;
-                } else {
-                    int64_t k = ASRUtils::extract_kind_from_ttype_t(
-                        st->m_data_member_types[i]);
-                    if (k > 0) total_bits += k * 8;
-                    else total_bits += 32;
-                }
+        } else if (ASR::is_a<ASR::StructType_t>(*type) ||
+                   ASR::is_a<ASR::CPtr_t>(*type)) {
+            auto [size_bytes, _align] = compute_type_size_align(type);
+            (void)_align;
+            if (size_bytes > 0) {
+                return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
             }
-            if (total_bits == 0) total_bits = 32;
-            return make_ConstantWithType(make_IntegerConstant_t, total_bits, t1, loc);
+            return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
         } else if (is_complex(*arg_type)) {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
