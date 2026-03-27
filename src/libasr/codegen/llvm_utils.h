@@ -1027,12 +1027,17 @@ class ASRToLLVMVisitor;
             }
 
             auto const llvm_var = get_llvm_var(v);
+            ASR::ttype_t* const v_type_past =
+                ASRUtils::type_get_past_allocatable(v->m_type);
+            bool const is_scalar_struct_like =
+                (v_type_past->type == ASR::StructType);
 
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path.
             auto* struct_sym = get_struct_sym(v);
             if (struct_sym != nullptr
+                    && is_scalar_struct_like
                     && !ASRUtils::is_allocatable(v->m_type)
                     && struct_sym->n_member_functions > 0) {
                 for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
@@ -1338,11 +1343,16 @@ class ASRToLLVMVisitor;
 
                 llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
+                ASR::ttype_t* const member_type_past =
+                    ASRUtils::type_get_past_allocatable(member_asr_type);
+                bool const member_is_scalar_struct_like =
+                    (member_type_past->type == ASR::StructType);
 
                 // Call user-defined FINAL procedures on finalizable components
                 // (Fortran 2018 §7.5.6.2, para 1-4)
                 auto* member_struct_sym = get_struct_sym(member_variable);
                 if (member_struct_sym != nullptr
+                        && member_is_scalar_struct_like
                         && !ASRUtils::is_allocatable(member_asr_type)
                         && member_struct_sym->n_member_functions > 0) {
                     for (size_t fi = 0; fi < member_struct_sym->n_member_functions; fi++) {
