@@ -649,6 +649,7 @@ public:
         }
 
         // Interface
+        std::vector<std::string> internal_proc_name;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
@@ -666,12 +667,23 @@ public:
                     r += "end interface\n";
                     is_interface = false;
                 } else {
-                    throw CodeGenError("Nested Function is not handled yet");
+                    internal_proc_name.push_back(std::string(f->m_name));
                 }
             }
         }
 
         visit_body(x, r, false);
+
+        if (internal_proc_name.size() > 0) {
+            r += indent;
+            r += "contains\n";
+            for (size_t i = 0; i < internal_proc_name.size(); i++) {
+                visit_symbol(*x.m_symtab->get_symbol(internal_proc_name[i]));
+                r += src;
+                if (i < internal_proc_name.size()) r += "\n";
+            }
+        }
+
         dec_indent();
         r += indent;
         r += "end ";
@@ -2539,7 +2551,30 @@ public:
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
 
+    std::string get_array_constructor_type_spec(const ASR::ttype_t *t,
+            const ASR::expr_t *struct_var=nullptr) {
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(const_cast<ASR::ttype_t*>(t)));
+
+        if (ASR::is_a<ASR::StructType_t>(*elem_type)) {
+            if (struct_var && ASR::is_a<ASR::Var_t>(*struct_var)) {
+                ASR::symbol_t *dt_sym = ASR::down_cast<ASR::Var_t>(struct_var)->m_v;
+                return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(dt_sym));
+            }
+            throw LCompilersException(
+                "missing derived type symbol while emitting empty array constructor");
+        }
+
+        return get_type(elem_type);
+    }
+
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        if (x.n_args == 0 && x.m_type) {
+            src = "[" + get_array_constructor_type_spec(x.m_type, x.m_struct_var) + " :: ]";
+            last_expr_precedence = Precedence::Ext;
+            return;
+        }
+
         std::string r = "[";
         for(size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i]);
@@ -2558,6 +2593,7 @@ public:
             arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
             needs_reshape = (arr_type->n_dims > 1);
         }
+        size_t fixed_size = static_cast<size_t>(ASRUtils::get_fixed_size_of_array(x.m_type));
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable(x.m_type));
         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -2569,12 +2605,16 @@ public:
         }
         std::string r = "";
         if (needs_reshape) r += "reshape(";
-        r += "[";
-        for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
-            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
+        if (fixed_size == 0) {
+            r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
+        } else {
+            r += "[";
+            for(size_t i = 0; i < fixed_size; i++) {
+                r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                if (i < fixed_size - 1) r += ", ";
+            }
+            r += "]";
         }
-        r += "]";
         if (needs_reshape) {
             r += ", [";
             for (size_t i = 0; i < arr_type->n_dims; i++) {
