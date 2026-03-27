@@ -135,18 +135,45 @@ void case_to_if(Allocator& al, const ASR::Select_t& x, ASR::expr_t* a_test, Vec<
     body.push_back(al, last_if_else);
 }
 
-Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_case) {
+Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_case,
+                                     SymbolTable* scope) {
     ASR::expr_t *a = select_case.m_test;
+    ASR::expr_t *a_test = a;
+    ASR::stmt_t *pre_stmt = nullptr;
+
+    if (!ASR::is_a<ASR::Var_t>(*a)) {
+        const Location& loc = select_case.base.base.loc;
+        ASR::ttype_t* a_type = ASRUtils::expr_type(a);
+        if (ASRUtils::is_character(*a_type)) {
+            a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+        }
+        std::string tmp_name = scope->get_unique_name("select_case_tmp");
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, scope, s2c(al, tmp_name), nullptr, 0,
+            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+            a_type, nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        scope->add_symbol(tmp_name, tmp_sym);
+        a_test = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+        pre_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, a_test, a, nullptr, false, false));
+    }
+
     Vec<ASR::stmt_t*> body;
-    case_to_if(al, select_case, a, body);
-    /*
-    std::cout << "Input:" << std::endl;
-    std::cout << pickle((ASR::asr_t&)loop);
-    std::cout << "Output:" << std::endl;
-    std::cout << pickle((ASR::asr_t&)*stmt1);
-    std::cout << pickle((ASR::asr_t&)*stmt2);
-    std::cout << "--------------" << std::endl;
-    */
+    case_to_if(al, select_case, a_test, body);
+
+    if (pre_stmt != nullptr) {
+        Vec<ASR::stmt_t*> result;
+        result.reserve(al, body.size() + 1);
+        result.push_back(al, pre_stmt);
+        for (size_t i = 0; i < body.size(); i++) {
+            result.push_back(al, body[i]);
+        }
+        return result;
+    }
     return body;
 }
 
@@ -208,8 +235,42 @@ Vec<ASR::stmt_t*> replace_selectcase_with_fall_through(
     Allocator &al, const ASR::Select_t &select_case,
     SymbolTable* scope) {
     ASR::expr_t *a = select_case.m_test;
+    ASR::expr_t *a_test = a;
+    ASR::stmt_t *pre_stmt = nullptr;
+
+    if (!ASR::is_a<ASR::Var_t>(*a)) {
+        const Location& loc = select_case.base.base.loc;
+        ASR::ttype_t* a_type = ASRUtils::expr_type(a);
+        if (ASRUtils::is_character(*a_type)) {
+            a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+        }
+        std::string tmp_name = scope->get_unique_name("select_case_tmp");
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, scope, s2c(al, tmp_name), nullptr, 0,
+            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+            a_type, nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        scope->add_symbol(tmp_name, tmp_sym);
+        a_test = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+        pre_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, a_test, a, nullptr, false, false));
+    }
+
     Vec<ASR::stmt_t*> body;
-    case_to_if_with_fall_through(al, select_case, a, body, scope);
+    case_to_if_with_fall_through(al, select_case, a_test, body, scope);
+
+    if (pre_stmt != nullptr) {
+        Vec<ASR::stmt_t*> result;
+        result.reserve(al, body.size() + 1);
+        result.push_back(al, pre_stmt);
+        for (size_t i = 0; i < body.size(); i++) {
+            result.push_back(al, body[i]);
+        }
+        return result;
+    }
     return body;
 }
 
@@ -231,7 +292,7 @@ public:
         if( x.m_enable_fall_through ) {
             pass_result = replace_selectcase_with_fall_through(al, x, current_scope);
         } else {
-            pass_result = replace_selectcase(al, x);
+            pass_result = replace_selectcase(al, x, current_scope);
         }
     }
 };
