@@ -6472,7 +6472,8 @@ public:
                         if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
+                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length,
+                                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(m_dims[i].m_length)), module.get());
                             llvm::Value* deep = new llvm::GlobalVariable(
                                     *module,
                                     deep_type,
@@ -6481,7 +6482,8 @@ public:
                                     llvm::Constant::getNullValue(deep_type),
                                     "deep_" + std::to_string(global_deep_count++));
                             builder->CreateStore(tmp, deep, v->m_is_volatile);
-                            llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
+                            llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length,
+                                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(m_dims[i].m_length)), module.get());
                             tmp = llvm_utils->CreateLoad2(m_dims_length_llvm_type,deep, v->m_is_volatile);
                             llvm_symtab_deep_copy[{m_length_variable_h, current_scope}] = deep;
                         }
@@ -18558,9 +18560,11 @@ public:
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                     uint32_t h = get_hash((ASR::asr_t*)arg);
+                    bool using_deep_copy = false;
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
                         if (llvm_symtab_deep_copy.find({h, current_scope}) != llvm_symtab_deep_copy.end()) {
                             tmp = llvm_symtab_deep_copy[{h, current_scope}];
+                            using_deep_copy = true;
                         } else {
                             tmp = llvm_symtab[h];
                         }
@@ -18692,6 +18696,7 @@ public:
                                     }
                                 }
                                 if( orig_arg &&
+                                    !using_deep_copy &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !is_func_type_arg &&
@@ -21620,6 +21625,8 @@ public:
     }
 
     void load_array_size_deep_copy(ASR::expr_t* x) {
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 2;
         if (x != nullptr &&  ASR::is_a<ASR::Var_t>(*x)) {
             ASR::Var_t* x_var = ASR::down_cast<ASR::Var_t>(x);
             ASR::symbol_t* x_sym = ASRUtils::symbol_get_past_external(x_var->m_v);
@@ -21627,7 +21634,10 @@ public:
                 ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
                 uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
                 if (llvm_symtab_deep_copy.find({x_sym_variable_h, current_scope}) != llvm_symtab_deep_copy.end()) {
-                    tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get()),
+                    ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+                    llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x,
+                        ASRUtils::type_get_past_allocatable_pointer(x_type), module.get());
+                    tmp = llvm_utils->CreateLoad2(llvm_type,
                         llvm_symtab_deep_copy[{x_sym_variable_h, current_scope}]);
                 } else {
                     this->visit_expr_wrapper(x, true);
@@ -21638,8 +21648,10 @@ public:
         } else if (x != nullptr) {
             this->visit_expr_wrapper(x, true);
         } else {
+            ptr_loads = ptr_loads_copy;
             throw CodeGenError("x is nullptr in load_array_size_deep_copy()");
         }
+        ptr_loads = ptr_loads_copy;
     }
 
     void visit_ArraySizeUtil(ASR::expr_t* m_v, ASR::ttype_t* m_type,

@@ -2601,7 +2601,7 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
                 ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
 
-                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+                if (ASRUtils::type_get_past_pointer(dim_expr_variable->m_type)->type != ASR::ttypeType::Integer) {
                     error = true;
                 } else {
 
