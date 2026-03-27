@@ -706,11 +706,6 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         return ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
             al, loc, result, logical_type));
     } else {
-        diag.add(diag::Diagnostic(
-            "Comparison operator not implemented",
-            Level::Error, Stage::Semantic, {
-            diag::Label("", {loc})}));
-        throw SemanticAbort();
         return nullptr;
     }
 }
@@ -7168,6 +7163,28 @@ public:
                         validate_and_adjust_character_parameter_length(
                             init_expr, value, type, x.base.base.loc, al, diag);
                     }
+                    if (storage_type == ASR::storage_typeType::Parameter) {
+                        if (ASRUtils::is_array(type) && init_expr) {
+                            ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                            ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                                ASRUtils::expr_type(init_expr));
+                            if (var_ptype != init_expr_ptype &&
+                                var_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
+                            }
+                        }
+                        if (value && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                type = a->m_type;
+                            }
+                        } else if (value && ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                            ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                type = a->m_type;
+                            }
+                        }
+                    }
                 } else if (s.m_initializer != nullptr) {
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
@@ -9231,21 +9248,27 @@ public:
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
         // Ensure all values are constant before creating StructConstant
+        bool all_args_const = true;
         for (const auto& val : vals) {
             // If val.m_value is nullptr, default value is not needed and it is still const (Variable with Allocatable type)
             if (val.m_value &&
                     !(ASRUtils::is_value_constant(val.m_value) ||
                       ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
-                    is_const = false;
+                    all_args_const = false;
                     break;
             }
         }
-        if (is_const) {
+        if (is_const && all_args_const) {
            return ASR::make_StructConstant_t(al, loc,
                     v, vals.p, vals.size(), der);
         }
+        ASR::expr_t* value = nullptr;
+        if (all_args_const) {
+            value = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc,
+                    v, vals.p, vals.size(), der));
+        }
         return ASR::make_StructConstructor_t(al, loc,
-                v, vals.p, vals.size(), der, nullptr);
+                v, vals.p, vals.size(), der, value);
     }
 
     int get_based_indexing(ASR::symbol_t* v) {

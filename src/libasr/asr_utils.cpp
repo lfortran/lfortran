@@ -445,12 +445,20 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::StringConstant:
         case ASR::exprType::IntegerConstant:
         case ASR::exprType::LogicalConstant:
-        case ASR::exprType::ArrayConstant: 
         case ASR::exprType::PointerNullConstant:
         case ASR::exprType::UnsignedIntegerConstant:
         case ASR::exprType::ComplexConstant:
         {
             // These do not have a struct symbol, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(expression);
+            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(array_constant->m_type);
+            if (ASR::is_a<ASR::StructType_t>(*elem_type) && array_constant->m_n_data > 0) {
+                ASR::expr_t** struct_data = (ASR::expr_t**)array_constant->m_data;
+                return ASRUtils::get_struct_sym_from_struct_expr(struct_data[0]);
+            }
             return nullptr;
         }
         case ASR::exprType::BitCast: {

@@ -109,7 +109,12 @@ public:
         } else {
             kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         }
-        int size = x.m_n_data / kind;
+        int size;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
+            size = x.m_n_data / sizeof(ASR::expr_t*);
+        } else {
+            size = x.m_n_data / kind;
+        }
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {
