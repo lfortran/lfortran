@@ -1,6 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
+target datalayout = "..."
 
 %main.foo_c = type { %main.foo_b, %main.bar_c }
 %main.foo_b = type { %main.foo_a, %main.bar_b }

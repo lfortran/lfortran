@@ -1,6 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
+target datalayout = "..."
 
 %select_type_13_module.shape_class = type <{ i32 (...)**, %select_type_13_module.shape* }>
 %select_type_13_module.shape = type {}

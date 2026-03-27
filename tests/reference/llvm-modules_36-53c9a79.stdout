@@ -1,6 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
+target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 %modules_36_fpm_main_01.fpm_run_settings_class = type <{ i32 (...)**, %modules_36_fpm_main_01.fpm_run_settings* }>
