@@ -9500,12 +9500,17 @@ public:
 
                 visit_expr_wrapper(bc->m_size, true);
                 llvm::Value* size_val = tmp;
-                int target_elem_kind = ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::extract_type(tgt_type_));
+                ASR::ttype_t* tgt_elem_type = ASRUtils::extract_type(tgt_type_);
+                llvm::Type* tgt_elem_llvm_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, tgt_elem_type, module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t target_elem_size =
+                    data_layout.getTypeAllocSize(tgt_elem_llvm_type);
                 llvm::Value* nbytes = builder->CreateMul(
                     size_val,
                     llvm::ConstantInt::get(
-                        size_val->getType(), target_elem_kind));
+                        size_val->getType(), target_elem_size));
                 nbytes = builder->CreateZExtOrTrunc(
                     nbytes, llvm::Type::getInt64Ty(context));
 
@@ -9587,7 +9592,7 @@ public:
             ASR::ttype_t* bc_tgt_type = ASRUtils::expr_type(x.m_target);
             if (ASRUtils::is_array(bc_src_type) && ASRUtils::is_array(bc_tgt_type) &&
                 !ASRUtils::is_string_only(bc_src_type)) {
-                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
+                int64_t src_elem_size = ASRUtils::get_type_byte_size(
                     ASRUtils::extract_type(bc_src_type));
 
                 // Visit the source to get both the descriptor and data pointer
@@ -9670,7 +9675,7 @@ public:
                 int64_t src_n = ASRUtils::get_fixed_size_of_array(bc_src_type);
                 if (src_n > 0) {
                     // Fixed-size source: constant byte count
-                    int64_t nbytes = src_kind * src_n;
+                    int64_t nbytes = src_elem_size * src_n;
                     builder->CreateMemCpy(
                         dest_i8, llvm::MaybeAlign(1),
                         src_i8, llvm::MaybeAlign(1),
@@ -9684,7 +9689,7 @@ public:
                         builder->CreateZExtOrTrunc(num_elements,
                             llvm::Type::getInt64Ty(context)),
                         llvm::ConstantInt::get(
-                            llvm::Type::getInt64Ty(context), src_kind));
+                            llvm::Type::getInt64Ty(context), src_elem_size));
                     builder->CreateMemCpy(
                         dest_i8, llvm::MaybeAlign(1),
                         src_i8, llvm::MaybeAlign(1),
@@ -9696,7 +9701,7 @@ public:
                     // to get element count, then compute byte count.
                     ASR::ttype_t* bc_result_type = bc->m_type;
                     ASR::ttype_t* bc_result_unwrapped = ASRUtils::type_get_past_allocatable_pointer(bc_result_type);
-                    int64_t result_kind = ASRUtils::extract_kind_from_ttype_t(
+                    int64_t result_elem_size = ASRUtils::get_type_byte_size(
                         ASRUtils::extract_type(bc_result_type));
                     bool emitted = false;
                     if (ASR::is_a<ASR::Array_t>(*bc_result_unwrapped)) {
@@ -9709,7 +9714,7 @@ public:
                                 builder->CreateZExtOrTrunc(n_elements,
                                     llvm::Type::getInt64Ty(context)),
                                 llvm::ConstantInt::get(
-                                    llvm::Type::getInt64Ty(context), result_kind));
+                                    llvm::Type::getInt64Ty(context), result_elem_size));
                             builder->CreateMemCpy(
                                 dest_i8, llvm::MaybeAlign(1),
                                 src_i8, llvm::MaybeAlign(1),
@@ -9719,11 +9724,11 @@ public:
                     }
                     if (!emitted) {
                         // Last resort: use target size if fixed
-                        int64_t tgt_kind = ASRUtils::extract_kind_from_ttype_t(
+                        int64_t tgt_elem_size = ASRUtils::get_type_byte_size(
                             ASRUtils::extract_type(bc_tgt_type));
                         int64_t tgt_n = ASRUtils::get_fixed_size_of_array(bc_tgt_type);
                         if (tgt_n > 0) {
-                            int64_t nbytes = tgt_kind * tgt_n;
+                            int64_t nbytes = tgt_elem_size * tgt_n;
                             builder->CreateMemCpy(
                                 dest_i8, llvm::MaybeAlign(1),
                                 src_i8, llvm::MaybeAlign(1),
@@ -19588,11 +19593,28 @@ public:
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
                             tmp)->getAllocatedType();
+                        // Fix base_addr: internal_to_cfi set it to the
+                        // polymorphic box address (~assumed_type struct:
+                        // {vtable_ptr, data_ptr}). CFI needs the actual
+                        // data pointer (field 1 of the box).
+                        llvm::Type* i8_ptr_type =
+                            llvm::Type::getInt8Ty(context)->getPointerTo();
+                        llvm::Value* cfi_base_gep = llvm_utils->create_gep2(
+                            cfi_struct, tmp, 0);
+                        llvm::Value* box_i8 = llvm_utils->CreateLoad2(
+                            i8_ptr_type, cfi_base_gep);
+                        llvm::Value* box_ptr = builder->CreateBitCast(
+                            box_i8, elem_llvm_type->getPointerTo());
+                        llvm::Value* data_ptr = unwrap_polymorphic_box_data(
+                            elem_llvm_type, box_ptr);
+                        builder->CreateStore(data_ptr, cfi_base_gep);
+                        // Fix type code from internal descriptor
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(cfi_struct, tmp, 4));
+                        // Fix elem_len from internal descriptor
                         llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
