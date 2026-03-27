@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 

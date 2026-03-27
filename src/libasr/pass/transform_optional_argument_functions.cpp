@@ -339,10 +339,19 @@ template <typename T>
 bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx, Vec<ASR::stmt_t*>& pass_result) {
     ASR::Function_t* owning_function = nullptr;
-    if( scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
-        ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner)) ) {
-        owning_function = ASR::down_cast<ASR::Function_t>(
-            ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+    {
+        SymbolTable* s = scope;
+        while( s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+            if( ASR::is_a<ASR::Function_t>(*owner_sym) ) {
+                owning_function = ASR::down_cast<ASR::Function_t>(owner_sym);
+                break;
+            } else if( ASR::is_a<ASR::Block_t>(*owner_sym) ) {
+                s = s->parent;
+            } else {
+                break;
+            }
+        }
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);

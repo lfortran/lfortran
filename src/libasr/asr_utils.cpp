@@ -482,8 +482,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_reshape->m_array));
         }
         case ASR::exprType::ArraySize: {
-            ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_size->m_v));
+            return nullptr;
         }
         case ASR::exprType::LogicalNot: {
             ASR::LogicalNot_t* logical_not = ASR::down_cast<ASR::LogicalNot_t>(expression);
@@ -515,12 +514,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_broadcast->m_array));
         }
         case ASR::exprType::ArrayBound: {
-            ASR::ArrayBound_t* array_bound = ASR::down_cast<ASR::ArrayBound_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_bound->m_v));
+            return nullptr;
         }
         case ASR::exprType::ArrayRank: {
-            ASR::ArrayRank_t* array_rank = ASR::down_cast<ASR::ArrayRank_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_rank->m_v));
+            return nullptr;
         }
         case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(expression);
@@ -3810,12 +3807,14 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
     std::string derived_type_name = derived_type->m_name;
 
     Vec<ASR::ttype_t*> member_types;
-    member_types.reserve(al, derived_type->m_symtab->get_scope().size());
+    member_types.reserve(al, derived_type->n_members);
 
-    for (auto const& sym : derived_type->m_symtab->get_scope()) {
-        if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
+    for (size_t i = 0; i < derived_type->n_members; i++) {
+        std::string member_name = derived_type->m_members[i];
+        ASR::symbol_t* sym = derived_type->m_symtab->get_symbol(member_name);
+        if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(sym.second));
+                ASRUtils::symbol_get_past_external(sym));
             if (ASRUtils::symbol_get_past_external(derived_type_sym) == ASRUtils::symbol_get_past_external(var->m_type_declaration)) {
                 // this is self referential, so we can directly take it
                 ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var->m_type));

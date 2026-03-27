@@ -860,6 +860,44 @@ namespace LCompilers {
                                            arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
+                    ASR::ttype_t* curr_init_type = ASRUtils::expr_type(curr_init);
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(curr_init_type);
+                    if (n_dims > 1) {
+                        Vec<ASR::expr_t*> idx_vars_local;
+                        PassUtils::create_idx_vars(idx_vars_local, n_dims, loc, al, current_scope, "_t");
+                        Vec<ASR::stmt_t*> inner_body;
+                        ASR::stmt_t* inner_doloop = nullptr;
+                        for (int di = 0; di < n_dims; di++) {
+                            ASR::do_loop_head_t head;
+                            head.m_v = idx_vars_local[di];
+                            head.m_start = PassUtils::get_bound(curr_init, di + 1, "lbound", al);
+                            head.m_end = PassUtils::get_bound(curr_init, di + 1, "ubound", al);
+                            head.m_increment = nullptr;
+                            head.loc = head.m_v->base.loc;
+                            inner_body.reserve(al, 1);
+                            if (inner_doloop == nullptr) {
+                                ASR::expr_t* ref = PassUtils::create_array_ref(curr_init, idx_vars_local, al,
+                                    current_scope, perform_cast, cast_kind, casted_type);
+                                ASR::expr_t* res = PassUtils::create_array_ref(arr_var, arr_idx, al, current_scope);
+                                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                    al, loc, res, ref, nullptr, false, false));
+                                inner_body.push_back(al, assign);
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                    al, loc, 1, ASRUtils::expr_type(arr_idx)));
+                                ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                                    al, loc, arr_idx, ASR::binopType::Add, one,
+                                    ASRUtils::expr_type(arr_idx), nullptr));
+                                ASR::stmt_t* inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                    al, loc, arr_idx, increment, nullptr, false, false));
+                                inner_body.push_back(al, inc_stmt);
+                            } else {
+                                inner_body.push_back(al, inner_doloop);
+                            }
+                            inner_doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                                inner_body.p, inner_body.size(), nullptr, 0));
+                        }
+                        doloop_body.push_back(al, inner_doloop);
+                    } else {
                     ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, loc, 1, ASRUtils::expr_type(arr_idx)));
@@ -918,6 +956,7 @@ namespace LCompilers {
                         arr_var->base.loc, arr_idx,
                         expr_duplicator.duplicate_expr(start_plus_size), nullptr, false, false));
                     doloop_body.push_back(al, inc_stmt);
+                    }
                 } else {
                     ASR::expr_t* idoloop_m_values_i = idoloop->m_values[i];
                     if( perform_cast ) {

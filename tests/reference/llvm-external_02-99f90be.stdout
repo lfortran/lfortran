@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 define void @cobyla(void (double*)* %calcfc) {
 .entry:

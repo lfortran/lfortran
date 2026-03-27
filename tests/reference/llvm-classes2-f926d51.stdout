@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %defs.point_class = type <{ i32 (...)**, %defs.point* }>
 %defs.point = type {}

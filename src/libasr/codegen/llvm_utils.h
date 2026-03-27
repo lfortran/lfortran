@@ -1043,7 +1043,37 @@ class ASRToLLVMVisitor;
                         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                         if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                             llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                            builder_->CreateCall(final_fn, {llvm_var});
+                            ASR::ttype_t* v_type_past = ASRUtils::type_get_past_allocatable(v->m_type);
+                            if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
+                                // Variable is an array but the final subroutine
+                                // takes a scalar — call it element-by-element.
+                                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(v_type_past);
+                                llvm::Type* elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+                                llvm::Value* data_ptr = builder_->CreateBitCast(
+                                    llvm_var, elem_llvm_type->getPointerTo());
+                                int64_t array_size = ASRUtils::get_fixed_size_of_array(v->m_type);
+                                auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
+                                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "final_iter");
+                                builder_->CreateStore(
+                                    llvm::ConstantInt::get(iter_type, -1, true), iter);
+                                auto cond_fn = [&]() {
+                                    auto* loaded = builder_->CreateLoad(iter_type, iter);
+                                    auto* next = builder_->CreateAdd(loaded,
+                                        llvm::ConstantInt::get(iter_type, 1));
+                                    builder_->CreateStore(next, iter);
+                                    return builder_->CreateICmpSLT(next,
+                                        llvm::ConstantInt::get(iter_type, array_size));
+                                };
+                                auto body_fn = [&]() {
+                                    auto* idx = builder_->CreateLoad(iter_type, iter);
+                                    auto* elem = llvm_utils_->create_ptr_gep2(
+                                        elem_llvm_type, data_ptr, idx);
+                                    builder_->CreateCall(final_fn, {elem});
+                                };
+                                llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
+                            } else {
+                                builder_->CreateCall(final_fn, {llvm_var});
+                            }
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 
@@ -37,7 +38,7 @@ define i32 @main(i32 %0, i8** %1) {
   %char = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %char, align 1
   %3 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 1
-  store i64 10, i64* %3, align 4
+  store i64 10, i64* %3, align 8
   %4 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 10)

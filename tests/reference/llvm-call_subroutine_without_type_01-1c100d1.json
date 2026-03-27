@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-call_subroutine_without_type_01-1c100d1.stdout",
-    "stdout_hash": "30e74b0f79fbe5ec454619529c8eb8a8862f24a61fb24bc095109566",
+    "stdout_hash": "bb0159961ba17c18cc50b44bba87ac4bd7ac0c10ce936fbebb11ecdc",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

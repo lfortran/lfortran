@@ -10222,6 +10222,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         src->getType()->isPointerTy()) {
                         src_member = llvm_utils->CreateLoad2(mem_type, src_member);
                     }
+                    if( ASRUtils::is_pointer(member_type) &&
+                        !src->getType()->isPointerTy() ) {
+                        // When src is a struct value (not a pointer),
+                        // extractvalue yields the pointer value itself.
+                        // deepcopy(Pointer) expects a pointer-to-pointer,
+                        // so store into a temporary alloca.
+                        llvm::Value* tmp = builder->CreateAlloca(src_member->getType());
+                        builder->CreateStore(src_member, tmp);
+                        src_member = tmp;
+                    }
                     llvm::Value* dest_member = llvm_utils->create_gep2(
                         llvm_utils->name2dertype[der_type_name], dest, mem_idx);
                     llvm::Value* dest_member_orig = dest_member;
