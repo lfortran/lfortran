@@ -3124,52 +3124,78 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
     return ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
 }
 
+// Compute the byte size and alignment of an ASR type, matching the
+// LLVM struct layout rules used by LFortran's codegen on LP64 targets.
+// Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
+static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type) {
+    type = type_get_past_array(
+               type_get_past_allocatable(
+                   type_get_past_pointer(type)));
+    if (ASR::is_a<ASR::Integer_t>(*type) ||
+        ASR::is_a<ASR::UnsignedInteger_t>(*type) ||
+        ASR::is_a<ASR::Real_t>(*type) ||
+        ASR::is_a<ASR::Logical_t>(*type)) {
+        int64_t kind = extract_kind_from_ttype_t(type);
+        if (kind > 0) return {kind, kind};
+        return {-1, -1};
+    } else if (ASR::is_a<ASR::Complex_t>(*type)) {
+        int64_t kind = extract_kind_from_ttype_t(type);
+        if (kind <= 0) return {-1, -1};
+        // LFortran maps complex to a packed LLVM struct {float,float}
+        // or {double,double}, so alignment is 1 (packed).
+        return {2 * kind, 1};
+    } else if (ASR::is_a<ASR::CPtr_t>(*type)) {
+        return {8, 8};
+    } else if (ASR::is_a<ASR::String_t>(*type)) {
+        int64_t kind = ASR::down_cast<ASR::String_t>(type)->m_kind;
+        if (kind > 0) return {kind, 1};
+        return {-1, -1};
+    } else if (ASR::is_a<ASR::StructType_t>(*type)) {
+        ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+        int64_t offset = 0;
+        int64_t max_align = 1;
+        for (size_t i = 0; i < st->n_data_member_types; i++) {
+            ASR::ttype_t* mt = st->m_data_member_types[i];
+            // Pointer/Allocatable scalars are pointers in LLVM
+            if ((ASR::is_a<ASR::Pointer_t>(*mt) || ASR::is_a<ASR::Allocatable_t>(*mt)) &&
+                !ASR::is_a<ASR::Array_t>(*mt)) {
+                int64_t align = 8, size = 8;
+                offset = ((offset + align - 1) / align) * align;
+                offset += size;
+                if (align > max_align) max_align = align;
+                continue;
+            }
+            auto [size, align] = compute_type_size_align(mt);
+            if (size < 0) return {-1, -1};
+            offset = ((offset + align - 1) / align) * align;
+            offset += size;
+            if (align > max_align) max_align = align;
+        }
+        // Pad struct to its alignment
+        offset = ((offset + max_align - 1) / max_align) * max_align;
+        if (offset == 0) offset = 1;
+        return {offset, max_align};
+    } else {
+        return {-1, -1};
+    }
+}
+
 static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
     if (type == nullptr) {
         return -1;
     }
-    switch (type->type) {
-        case ASR::ttypeType::Array: {
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
-            int64_t n_elem = get_fixed_size_of_array(
-                arr->m_dims, arr->n_dims);
-            if (n_elem <= 0) return -1;
-            int64_t elem_size = get_type_byte_size(arr->m_type);
-            if (elem_size < 0) return -1;
-            return n_elem * elem_size;
-        }
-        case ASR::ttypeType::Integer:
-            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
-        case ASR::ttypeType::UnsignedInteger:
-            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
-        case ASR::ttypeType::Real:
-            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
-        case ASR::ttypeType::Complex:
-            return 2 * ASR::down_cast<ASR::Complex_t>(type)->m_kind;
-        case ASR::ttypeType::Logical:
-            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-        case ASR::ttypeType::String:
-            return ASR::down_cast<ASR::String_t>(type)->m_kind;
-        case ASR::ttypeType::Pointer:
-            return get_type_byte_size(
-                ASR::down_cast<ASR::Pointer_t>(type)->m_type);
-        case ASR::ttypeType::Allocatable:
-            return get_type_byte_size(
-                ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
-        case ASR::ttypeType::StructType: {
-            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
-            int64_t total = 0;
-            for (size_t i = 0; i < st->n_data_member_types; i++) {
-                int64_t member_size = get_type_byte_size(
-                    st->m_data_member_types[i]);
-                if (member_size < 0) return -1;
-                total += member_size;
-            }
-            return total;
-        }
-        default:
-            return -1;
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+        int64_t n_elem = get_fixed_size_of_array(
+            arr->m_dims, arr->n_dims);
+        if (n_elem <= 0) return -1;
+        int64_t elem_size = get_type_byte_size(arr->m_type);
+        if (elem_size < 0) return -1;
+        return n_elem * elem_size;
     }
+    auto [size, _align] = compute_type_size_align(type);
+    (void)_align;
+    return size;
 }
 
 inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
