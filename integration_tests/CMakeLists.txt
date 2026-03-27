@@ -3131,6 +3131,7 @@ RUN(NAME deallocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_02 LABELS gfortran llvm)
 RUN(NAME finalization_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME finalization_04 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)

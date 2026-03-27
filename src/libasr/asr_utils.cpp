@@ -482,8 +482,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_reshape->m_array));
         }
         case ASR::exprType::ArraySize: {
-            ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_size->m_v));
+            return nullptr;
         }
         case ASR::exprType::LogicalNot: {
             ASR::LogicalNot_t* logical_not = ASR::down_cast<ASR::LogicalNot_t>(expression);
@@ -515,12 +514,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_broadcast->m_array));
         }
         case ASR::exprType::ArrayBound: {
-            ASR::ArrayBound_t* array_bound = ASR::down_cast<ASR::ArrayBound_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_bound->m_v));
+            return nullptr;
         }
         case ASR::exprType::ArrayRank: {
-            ASR::ArrayRank_t* array_rank = ASR::down_cast<ASR::ArrayRank_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_rank->m_v));
+            return nullptr;
         }
         case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(expression);
