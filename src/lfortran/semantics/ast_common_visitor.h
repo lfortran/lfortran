@@ -12560,6 +12560,12 @@ public:
                         throw SemanticAbort();
                     }
                 }
+                if (!ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                    if (ASR::is_a<ASR::ArrayConstructor_t>(*array) &&
+                        ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value != nullptr) {
+                        array = ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value;
+                    }
+                }
                 if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
                     ASR::ttype_t* a_type = ASRUtils::expr_type(array);
                     a_type = ASRUtils::type_get_past_pointer(a_type);
