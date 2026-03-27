@@ -19588,11 +19588,28 @@ public:
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
                             tmp)->getAllocatedType();
+                        // Fix base_addr: internal_to_cfi set it to the
+                        // polymorphic box address (~assumed_type struct:
+                        // {vtable_ptr, data_ptr}). CFI needs the actual
+                        // data pointer (field 1 of the box).
+                        llvm::Type* i8_ptr_type =
+                            llvm::Type::getInt8Ty(context)->getPointerTo();
+                        llvm::Value* cfi_base_gep = llvm_utils->create_gep2(
+                            cfi_struct, tmp, 0);
+                        llvm::Value* box_i8 = llvm_utils->CreateLoad2(
+                            i8_ptr_type, cfi_base_gep);
+                        llvm::Value* box_ptr = builder->CreateBitCast(
+                            box_i8, elem_llvm_type->getPointerTo());
+                        llvm::Value* data_ptr = unwrap_polymorphic_box_data(
+                            elem_llvm_type, box_ptr);
+                        builder->CreateStore(data_ptr, cfi_base_gep);
+                        // Fix type code from internal descriptor
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(cfi_struct, tmp, 4));
+                        // Fix elem_len from internal descriptor
                         llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
