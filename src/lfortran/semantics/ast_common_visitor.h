@@ -13556,7 +13556,7 @@ public:
                 ASR::ttype_t* src_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
                 ASR::ttype_t* src_elem = ASRUtils::type_get_past_array(src_type);
-                int64_t src_bytes = ASRUtils::extract_kind_from_ttype_t(src_elem);
+                int64_t src_bytes = ASRUtils::get_type_byte_size(src_elem);
                 ASR::expr_t* src_len_expr = nullptr;
                 // If compile time size known, assign mold for better memory usage
                 // Else, mold-size is set to default(64) for runtime-sized sources or dynamically calculated
@@ -13611,7 +13611,7 @@ public:
                 if( src_bytes > 0 ) {
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(mold_elem_type);
+                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
                     // For character types: mold_bytes = kind * length
                     if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
                         ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
@@ -13630,7 +13630,8 @@ public:
                     // For runtime-sized strings with known length expression, use it
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(mold_elem_type);
+                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                    // For character types: mold_bytes = kind * length
                     if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
                         ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
                         if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {

@@ -3124,6 +3124,54 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
     return ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
 }
 
+static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
+    if (type == nullptr) {
+        return -1;
+    }
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+            int64_t n_elem = get_fixed_size_of_array(
+                arr->m_dims, arr->n_dims);
+            if (n_elem <= 0) return -1;
+            int64_t elem_size = get_type_byte_size(arr->m_type);
+            if (elem_size < 0) return -1;
+            return n_elem * elem_size;
+        }
+        case ASR::ttypeType::Integer:
+            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+        case ASR::ttypeType::UnsignedInteger:
+            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
+        case ASR::ttypeType::Real:
+            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
+        case ASR::ttypeType::Complex:
+            return 2 * ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+        case ASR::ttypeType::Logical:
+            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+        case ASR::ttypeType::String:
+            return ASR::down_cast<ASR::String_t>(type)->m_kind;
+        case ASR::ttypeType::Pointer:
+            return get_type_byte_size(
+                ASR::down_cast<ASR::Pointer_t>(type)->m_type);
+        case ASR::ttypeType::Allocatable:
+            return get_type_byte_size(
+                ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+        case ASR::ttypeType::StructType: {
+            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+            int64_t total = 0;
+            for (size_t i = 0; i < st->n_data_member_types; i++) {
+                int64_t member_size = get_type_byte_size(
+                    st->m_data_member_types[i]);
+                if (member_size < 0) return -1;
+                total += member_size;
+            }
+            return total;
+        }
+        default:
+            return -1;
+    }
+}
+
 inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
     ASR::dimension_t* m_dims_temp = nullptr;
     return extract_dimensions_from_ttype(x, m_dims_temp);
