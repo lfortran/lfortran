@@ -1,0 +1,289 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "symtab": {
+            "node": "SymbolTable1",
+            "fields": {
+                "iso_c_binding": {
+                    "node": "Module",
+                    "fields": {
+                        "name": "lfortran_intrinsic_iso_c_binding",
+                        "parent_module": [],
+                        "dependencies": [],
+                        "loaded_from_mod": true,
+                        "intrinsic": true,
+                        "has_submodules": false
+                    },
+                    "loc": {
+                        "first": 138,
+                        "last": 2660,
+                        "first_filename": "/home/venkata/lfortran/src/runtime/pure/lfortran_intrinsic_iso_c_binding.f90",
+                        "first_line": 1,
+                        "first_column": 1,
+                        "last_filename": "/home/venkata/lfortran/src/runtime/pure/lfortran_intrinsic_iso_c_binding.f90",
+                        "last_line": 87,
+                        "last_column": 10
+                    }
+                },
+                "test_c_binding": {
+                    "node": "Program",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable2",
+                            "fields": {
+                                "c_int": {
+                                    "node": "ExternalSymbol",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "c_int",
+                                        "external": "c_int (SymbolTable4)",
+                                        "module_name": "lfortran_intrinsic_iso_c_binding",
+                                        "scope_names": [],
+                                        "original_name": "c_int",
+                                        "access": "Public"
+                                    },
+                                    "loc": {
+                                        "first": 64,
+                                        "last": 68,
+                                        "first_filename": "tests/intrinsic_c_test.f90",
+                                        "first_line": 2,
+                                        "first_column": 42,
+                                        "last_filename": "tests/intrinsic_c_test.f90",
+                                        "last_line": 2,
+                                        "last_column": 46
+                                    }
+                                },
+                                "i": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "i",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 42,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 110,
+                                                        "last": 111,
+                                                        "first_filename": "tests/intrinsic_c_test.f90",
+                                                        "first_line": 4,
+                                                        "first_column": 25,
+                                                        "last_filename": "tests/intrinsic_c_test.f90",
+                                                        "last_line": 4,
+                                                        "last_column": 26
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 110,
+                                                "last": 111,
+                                                "first_filename": "tests/intrinsic_c_test.f90",
+                                                "first_line": 4,
+                                                "first_column": 25,
+                                                "last_filename": "tests/intrinsic_c_test.f90",
+                                                "last_line": 4,
+                                                "last_column": 26
+                                            }
+                                        },
+                                        "value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 42,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 110,
+                                                        "last": 111,
+                                                        "first_filename": "tests/intrinsic_c_test.f90",
+                                                        "first_line": 4,
+                                                        "first_column": 25,
+                                                        "last_filename": "tests/intrinsic_c_test.f90",
+                                                        "last_line": 4,
+                                                        "last_column": 26
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 110,
+                                                "last": 111,
+                                                "first_filename": "tests/intrinsic_c_test.f90",
+                                                "first_line": 4,
+                                                "first_column": 25,
+                                                "last_filename": "tests/intrinsic_c_test.f90",
+                                                "last_line": 4,
+                                                "last_column": 26
+                                            }
+                                        },
+                                        "storage": "Save",
+                                        "type": {
+                                            "node": "Integer",
+                                            "fields": {
+                                                "kind": 4
+                                            },
+                                            "loc": {
+                                                "first": 88,
+                                                "last": 111,
+                                                "first_filename": "tests/intrinsic_c_test.f90",
+                                                "first_line": 4,
+                                                "first_column": 3,
+                                                "last_filename": "tests/intrinsic_c_test.f90",
+                                                "last_line": 4,
+                                                "last_column": 26
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": []
+                                    },
+                                    "loc": {
+                                        "first": 106,
+                                        "last": 111,
+                                        "first_filename": "tests/intrinsic_c_test.f90",
+                                        "first_line": 4,
+                                        "first_column": 21,
+                                        "last_filename": "tests/intrinsic_c_test.f90",
+                                        "last_line": 4,
+                                        "last_column": 26
+                                    }
+                                }
+                            }
+                        },
+                        "name": "test_c_binding",
+                        "dependencies": [
+                            "iso_c_binding"
+                        ],
+                        "body": [
+                            {
+                                "node": "Print",
+                                "fields": {
+                                    "text": {
+                                        "node": "StringFormat",
+                                        "fields": {
+                                            "fmt": [],
+                                            "args": [
+                                                {
+                                                    "node": "Var",
+                                                    "fields": {
+                                                        "v": "i (SymbolTable2)"
+                                                    },
+                                                    "loc": {
+                                                        "first": 124,
+                                                        "last": 124,
+                                                        "first_filename": "tests/intrinsic_c_test.f90",
+                                                        "first_line": 5,
+                                                        "first_column": 12,
+                                                        "last_filename": "tests/intrinsic_c_test.f90",
+                                                        "last_line": 5,
+                                                        "last_column": 12
+                                                    }
+                                                }
+                                            ],
+                                            "kind": "FormatFortran",
+                                            "type": {
+                                                "node": "Allocatable",
+                                                "fields": {
+                                                    "type": {
+                                                        "node": "String",
+                                                        "fields": {
+                                                            "kind": 1,
+                                                            "len": [],
+                                                            "len_kind": "DeferredLength",
+                                                            "physical_type": "DescriptorString"
+                                                        },
+                                                        "loc": {
+                                                            "first": 115,
+                                                            "last": 124,
+                                                            "first_filename": "tests/intrinsic_c_test.f90",
+                                                            "first_line": 5,
+                                                            "first_column": 3,
+                                                            "last_filename": "tests/intrinsic_c_test.f90",
+                                                            "last_line": 5,
+                                                            "last_column": 12
+                                                        }
+                                                    }
+                                                },
+                                                "loc": {
+                                                    "first": 115,
+                                                    "last": 124,
+                                                    "first_filename": "tests/intrinsic_c_test.f90",
+                                                    "first_line": 5,
+                                                    "first_column": 3,
+                                                    "last_filename": "tests/intrinsic_c_test.f90",
+                                                    "last_line": 5,
+                                                    "last_column": 12
+                                                }
+                                            },
+                                            "value": []
+                                        },
+                                        "loc": {
+                                            "first": 115,
+                                            "last": 124,
+                                            "first_filename": "tests/intrinsic_c_test.f90",
+                                            "first_line": 5,
+                                            "first_column": 3,
+                                            "last_filename": "tests/intrinsic_c_test.f90",
+                                            "last_line": 5,
+                                            "last_column": 12
+                                        }
+                                    }
+                                },
+                                "loc": {
+                                    "first": 115,
+                                    "last": 124,
+                                    "first_filename": "tests/intrinsic_c_test.f90",
+                                    "first_line": 5,
+                                    "first_column": 3,
+                                    "last_filename": "tests/intrinsic_c_test.f90",
+                                    "last_line": 5,
+                                    "last_column": 12
+                                }
+                            }
+                        ]
+                    },
+                    "loc": {
+                        "first": 0,
+                        "last": 136,
+                        "first_filename": "tests/intrinsic_c_test.f90",
+                        "first_line": 1,
+                        "first_column": 1,
+                        "last_filename": "tests/intrinsic_c_test.f90",
+                        "last_line": 6,
+                        "last_column": 11
+                    }
+                }
+            }
+        },
+        "items": []
+    },
+    "loc": {
+        "first": 0,
+        "last": 136,
+        "first_filename": "tests/intrinsic_c_test.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/intrinsic_c_test.f90",
+        "last_line": 6,
+        "last_column": 11
+    }
+}
