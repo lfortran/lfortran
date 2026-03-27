@@ -720,7 +720,8 @@ public:
             sym && ASR::is_a<ASR::Module_t>(*sym) &&
             ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
             src = indent;
-            src += "use ";
+            src += "use";
+            src += ", intrinsic :: ";
             src += "iso_c_binding";
             src += ", only: ";
             src.append(x.m_original_name);
