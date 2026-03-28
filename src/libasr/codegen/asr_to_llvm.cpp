@@ -4117,12 +4117,12 @@ public:
 
                 bool is_struct_type = ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(element_type));
+                llvm::Type* src_target_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_array, x_m_array_type, module.get());
                 int64_t copy_size = std::min(source_size, target_size);
                 if (is_struct_type) {
                     // Struct types with allocatable components need element-wise
                     // deep copy; a flat memcpy would share allocatable pointers.
-                    llvm::Type* src_target_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_array, x_m_array_type, module.get());
                     llvm::Value* llvm_total_bytes = llvm::ConstantInt::get(
                         context, llvm::APInt(32, target_size * data_size));
                     builder->CreateMemSet(target_,
@@ -4154,6 +4154,106 @@ public:
                             builder->CreateStore(pad_elem,
                                 builder->CreateConstGEP1_32(llvm_data_type, target_, i));
                         }
+                    }
+                }
+
+                if (x.m_order != nullptr) {
+                    this->visit_expr(*x.m_order);
+                    llvm::Value* order_base = tmp;
+
+                    ASR::dimension_t* result_dims = nullptr;
+                    size_t rank = ASRUtils::extract_dimensions_from_ttype(x.m_type, result_dims);
+                    int64_t n = static_cast<int64_t>(rank);
+                    ASR::ttype_t* order_elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_order))));
+                    llvm::Type* llvm_order_type = llvm_utils->get_el_type(x.m_order, order_elem_type, module.get());
+                    llvm::Type* order_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_order, ASRUtils::expr_type(x.m_order), module.get());
+
+                    llvm::Value* order_data_base = order_base;
+                    ASR::array_physical_typeType order_physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_order));
+                    if (order_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        order_data_base = llvm_utils->create_gep2(order_array_type, order_base, 0);
+                        order_data_base = llvm_utils->CreateLoad2(llvm_order_type->getPointerTo(), order_data_base);
+                    } else if (order_physical_type == ASR::array_physical_typeType::FixedSizeArray && 
+                                !ASRUtils::expr_value(x.m_order)) {
+                        order_data_base = llvm_utils->create_gep2(order_array_type, order_base, 0);
+                    }
+
+                    std::vector<int64_t> shape_values(n);
+                    for (int64_t i = 0; i < n; i++) {
+                        int64_t shape_i = -1;
+                        bool shape_is_constant = ASRUtils::extract_value(result_dims[i].m_length, shape_i);
+                        LCOMPILERS_ASSERT(shape_is_constant);
+                        shape_values[i] = shape_i;
+                    }
+
+                    llvm::Value* source_base = llvm_utils->create_gep2(src_target_type, array, 0);
+
+                    llvm::ArrayType* idx_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n);
+                    llvm::Value* I_arr = llvm_utils->CreateAlloca(idx_arr_type, nullptr, "reshape_I");
+                    for (int64_t i = 0; i < target_size; i++) {
+                        llvm::Value* temp_val = llvm::ConstantInt::get(context, llvm::APInt(64, i));
+                        for (int64_t j = 0; j < n; j++) {
+                            llvm::Value* ij_ptr = llvm_utils->create_gep2(
+                                idx_arr_type, I_arr,
+                                llvm::ConstantInt::get(context, llvm::APInt(64, j)));
+                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), ij_ptr);
+                        }
+
+                        for (int64_t j = 0; j < n; j++) {
+                            llvm::Value* order_j = llvm_utils->CreateLoad2(
+                                llvm_order_type,
+                                llvm_utils->create_ptr_gep2(
+                                    llvm_order_type, order_data_base,
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, j))));
+                            order_j = builder->CreateSExtOrTrunc(order_j, llvm::Type::getInt64Ty(context));
+                            llvm::Value* dim = builder->CreateSub(order_j,
+                                llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+
+                            llvm::Value* shape_dim = llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[0]));
+                            for (int64_t k = 1; k < n; k++) {
+                                llvm::Value* cond = builder->CreateICmpEQ(dim,
+                                    llvm::ConstantInt::get(context, llvm::APInt(64, k)));
+                                shape_dim = builder->CreateSelect(cond,
+                                    llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[k])),
+                                    shape_dim);
+                            }
+
+                            llvm::Value* d_j = builder->CreateSRem(temp_val, shape_dim);
+                            temp_val = builder->CreateSDiv(temp_val, shape_dim);
+
+                            llvm::Value* I_dim_ptr = llvm_utils->create_gep2(idx_arr_type, I_arr, dim);
+                            builder->CreateStore(d_j, I_dim_ptr);
+                        }
+
+                        llvm::Value* source_index = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+                        int64_t stride = 1;
+                        for (int64_t j = 0; j < n; j++) {
+                            llvm::Value* I_j_ptr = llvm_utils->create_gep2(
+                                idx_arr_type, I_arr,
+                                llvm::ConstantInt::get(context, llvm::APInt(64, j)));
+                            llvm::Value* I_j = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), I_j_ptr);
+                            llvm::Value* term = builder->CreateMul(I_j,
+                                llvm::ConstantInt::get(context, llvm::APInt(64, stride)));
+                            source_index = builder->CreateAdd(source_index, term);
+                            stride *= shape_values[j];
+                        }
+
+                        llvm::Value* in_source = builder->CreateICmpSLT(
+                            source_index,
+                            llvm::ConstantInt::get(context, llvm::APInt(64, source_size)));
+                        llvm::Value* safe_source_index = builder->CreateSelect(
+                            in_source,
+                            source_index,
+                            llvm::ConstantInt::get(context, llvm::APInt(64, 0)));
+                        llvm::Value* source_elem = llvm_utils->CreateLoad2(
+                            llvm_data_type,
+                            llvm_utils->create_ptr_gep2(llvm_data_type, source_base, safe_source_index));
+
+                        builder->CreateStore(source_elem,
+                            builder->CreateConstGEP1_32(llvm_data_type, target_, i));
                     }
                 }
                 tmp = target;
