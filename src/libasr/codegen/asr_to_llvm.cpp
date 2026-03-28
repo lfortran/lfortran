@@ -4202,6 +4202,24 @@ public:
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), ij_ptr);
                         }
 
+                        // Decode result linear index i into result subscripts
+                        // in normal Fortran column-major order.
+                        for (int64_t j = 0; j < n; j++) {
+                            llvm::Value* shape_dim = llvm::ConstantInt::get(
+                                context, llvm::APInt(64, shape_values[j]));
+
+                            llvm::Value* d_j = builder->CreateSRem(temp_val, shape_dim);
+                            temp_val = builder->CreateSDiv(temp_val, shape_dim);
+
+                            llvm::Value* I_j_ptr = llvm_utils->create_gep2(
+                                idx_arr_type, I_arr,
+                                llvm::ConstantInt::get(context, llvm::APInt(64, j)));
+                            builder->CreateStore(d_j, I_j_ptr);
+                        }
+
+                        // Build source linear index using ORDER permutation.
+                        llvm::Value* source_index = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+                        llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                         for (int64_t j = 0; j < n; j++) {
                             llvm::Value* order_j = llvm_utils->CreateLoad2(
                                 llvm_order_type,
@@ -4212,6 +4230,11 @@ public:
                             llvm::Value* dim = builder->CreateSub(order_j,
                                 llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
 
+                            llvm::Value* I_dim_ptr = llvm_utils->create_gep2(idx_arr_type, I_arr, dim);
+                            llvm::Value* I_dim = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), I_dim_ptr);
+                            llvm::Value* term = builder->CreateMul(I_dim, stride);
+                            source_index = builder->CreateAdd(source_index, term);
+
                             llvm::Value* shape_dim = llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[0]));
                             for (int64_t k = 1; k < n; k++) {
                                 llvm::Value* cond = builder->CreateICmpEQ(dim,
@@ -4220,25 +4243,7 @@ public:
                                     llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[k])),
                                     shape_dim);
                             }
-
-                            llvm::Value* d_j = builder->CreateSRem(temp_val, shape_dim);
-                            temp_val = builder->CreateSDiv(temp_val, shape_dim);
-
-                            llvm::Value* I_dim_ptr = llvm_utils->create_gep2(idx_arr_type, I_arr, dim);
-                            builder->CreateStore(d_j, I_dim_ptr);
-                        }
-
-                        llvm::Value* source_index = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
-                        int64_t stride = 1;
-                        for (int64_t j = 0; j < n; j++) {
-                            llvm::Value* I_j_ptr = llvm_utils->create_gep2(
-                                idx_arr_type, I_arr,
-                                llvm::ConstantInt::get(context, llvm::APInt(64, j)));
-                            llvm::Value* I_j = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), I_j_ptr);
-                            llvm::Value* term = builder->CreateMul(I_j,
-                                llvm::ConstantInt::get(context, llvm::APInt(64, stride)));
-                            source_index = builder->CreateAdd(source_index, term);
-                            stride *= shape_values[j];
+                            stride = builder->CreateMul(stride, shape_dim);
                         }
 
                         llvm::Value* in_source = builder->CreateICmpSLT(
