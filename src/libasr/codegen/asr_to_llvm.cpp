@@ -18877,14 +18877,6 @@ public:
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
                 this->visit_expr_wrapper(x.m_args[i].m_value);
-                if (orig_arg) {
-                    llvm::Type* expected =
-                        llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::EXPR(ASR::make_Var_t(
-                                al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, module.get());
-                    if (tmp->getType() != expected && tmp->getType()->isPointerTy() && expected->isPointerTy())
-                        tmp = builder->CreateBitCast(tmp, expected);
-                }
                 if (ASRUtils::is_class_type(
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))
                     && !ASRUtils::is_class_type(

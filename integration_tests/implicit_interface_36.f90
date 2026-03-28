@@ -1,8 +1,6 @@
 program implicit_interface_36
   implicit none
 
-! Compiling with --implicit-interface previously caused ICE / LLVM failure
-
   external :: x
   real :: x
 
@@ -32,7 +30,7 @@ end subroutine
 subroutine sub_fixed(F, Y)
 
   real F, FB
-  real Y(10)  ! Previously caused LLVM code generation error
+  real Y(10)
  
   FB = F(Y)
 
