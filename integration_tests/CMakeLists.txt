@@ -2871,7 +2871,7 @@ RUN(NAME test_ieee_arithmetic_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_fast_01 LABELS gfortran llvm)
-RUN(NAME iso_fortran_env_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME iso_fortran_env_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME iso_fortran_env_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME iso_fortran_env_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME iso_fortran_env_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3215,7 +3215,7 @@ RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME iso_c_binding_01 LABELS gfortran llvm)
+RUN(NAME iso_c_binding_01 LABELS gfortran llvm fortran)
 RUN(NAME iso_c_binding_02 LABELS gfortran llvm)
 
 RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
