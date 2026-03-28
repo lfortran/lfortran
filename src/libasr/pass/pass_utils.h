@@ -167,7 +167,6 @@ namespace LCompilers {
             like fixed strings or allocatables.
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
-            // TODO : Handle other allocatable types and fixed strings.
             // CChar strings are raw i8 values, treated as primitive
             bool is_cchar = false;
             if (x && ASRUtils::is_string_only(x)) {
@@ -175,7 +174,16 @@ namespace LCompilers {
                     ASRUtils::type_get_past_allocatable_pointer(x));
                 is_cchar = (str->m_physical_type == ASR::string_physical_typeType::CChar);
             }
+            bool is_allocatable_scalar = false;
+            if (x && ASRUtils::is_allocatable(x)) {
+                ASR::ttype_t* inner = ASRUtils::type_get_past_allocatable(x);
+                is_allocatable_scalar = ASR::is_a<ASR::Integer_t>(*inner)
+                    || ASR::is_a<ASR::Real_t>(*inner)
+                    || ASR::is_a<ASR::Complex_t>(*inner)
+                    || ASR::is_a<ASR::Logical_t>(*inner);
+            }
             return (ASRUtils::is_string_only(x) && !is_cchar) ||
+                    is_allocatable_scalar ||
                     (x && (ASR::is_a<ASR::List_t>(*x)
                        || ASR::is_a<ASR::Dict_t>(*x)
                        || ASR::is_a<ASR::Set_t>(*x)
