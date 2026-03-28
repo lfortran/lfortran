@@ -166,7 +166,8 @@ namespace RandomSeed {
         }
         if (!is_real(*arg_types[1])) {
             flag = 1;
-            fill_func_arg_sub("put", arg_types[1], In);
+            ASR::ttype_t* put_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
+            fill_func_arg_sub("put", put_type, In);
             ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable(arg_types[1]));
             if (fn_symtab->get_symbol(c_func_name_1) == nullptr) {
@@ -189,7 +190,8 @@ namespace RandomSeed {
             fill_func_arg_sub("put", real32, In);
         }
         if (!is_real(*arg_types[2])) {
-            fill_func_arg_sub("get", arg_types[2], Out);
+            ASR::ttype_t* get_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]);
+            fill_func_arg_sub("get", get_type, Out);
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
             } else {

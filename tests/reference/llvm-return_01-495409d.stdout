@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 
@@ -24,13 +25,13 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 %2, i32* %main_out, align 4
   %3 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %3, i32 12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -75,4 +76,4 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lpython_free_argv()
+declare void @_lfortran_internal_alloc_finalize()

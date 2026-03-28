@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 8)
-                                                    2 dfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -32,6 +32,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -53,6 +55,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -74,6 +78,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     dfloat
@@ -85,7 +91,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -117,7 +123,7 @@
                                     (Var 4 dfloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             dp:
@@ -149,6 +155,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -170,6 +178,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             ifloat:
                                 (Function
@@ -196,6 +206,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             ifloat_return_var_name:
                                                 (Variable
@@ -207,7 +219,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4)
-                                                    2 ifloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -217,6 +229,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -238,6 +252,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     ifloat
@@ -249,7 +265,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -275,7 +291,7 @@
                                     (Var 5 ifloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             j:
@@ -298,6 +314,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             sfloat:
                                 (Function
@@ -324,6 +342,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -345,6 +365,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             sfloat_return_var_name:
                                                 (Variable
@@ -356,7 +378,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    2 sfloat
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -366,6 +388,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     sfloat
@@ -377,7 +401,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -409,7 +433,7 @@
                                     (Var 3 sfloat_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             sum:
@@ -432,6 +456,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             ti:
                                 (Variable
@@ -453,6 +479,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     statement1

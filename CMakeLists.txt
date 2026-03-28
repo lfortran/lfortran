@@ -165,6 +165,12 @@ set(WITH_LINKH no
     CACHE BOOL "Build with link.h support")
 set(WITH_MACHO no
     CACHE BOOL "Build with mach-o support")
+set(WITH_INTERNAL_ALLOC_CHECK no
+    CACHE BOOL "Enable internal allocation leak detector")
+if (WITH_INTERNAL_ALLOC_CHECK)
+    set(HAVE_INTERNAL_ALLOC_CHECK yes)
+endif()
+
 set(WITH_STACKTRACE no
     CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
 set(WITH_LLVM_STACKTRACE no
@@ -415,6 +421,7 @@ message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
 message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_RUNTIME_STACKTRACE: ${WITH_RUNTIME_STACKTRACE}")
+message("WITH_INTERNAL_ALLOC_CHECK: ${WITH_INTERNAL_ALLOC_CHECK}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
 message("WITH_LIBUNWIND: ${WITH_LIBUNWIND}")
 message("WITH_BFD: ${WITH_BFD}")

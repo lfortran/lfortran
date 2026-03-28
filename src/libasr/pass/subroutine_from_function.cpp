@@ -642,7 +642,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }
@@ -746,10 +746,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
                     // User-defined assignment(=) where the RHS is a function
-                    // call returning an aggregate type. The array_struct_temporary
-                    // pass has already created a temp for the function result
-                    // and wired the m_overloaded SubroutineCall to use it.
-                    // Just emit the overloaded call and drop this Assignment.
+                    // call returning an aggregate type.  Visit the overloaded
+                    // SubroutineCall so that any FunctionCall nodes in its
+                    // arguments are replaced with SubroutineCall + temp var
+                    // (the function was already converted to a subroutine in
+                    // Phase 1).  Then emit the overloaded call and drop the
+                    // Assignment.
+                    this->visit_stmt(*x.m_overloaded);
                     pass_result.push_back(al, x.m_overloaded);
                     remove_original_statement = true;
                     return;

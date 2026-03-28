@@ -1,0 +1,13 @@
+{
+    "basename": "asr-sizeof_01-9e0775c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/sizeof_01.f90",
+    "infile_hash": "86071170f964364faf88b5375e6fe96e90875a39486075b394efdd5e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-sizeof_01-9e0775c.stdout",
+    "stdout_hash": "e317209aa5b6a5acd50473b117027de08e9548f75886159eb028e15c",
+    "stderr": "asr-sizeof_01-9e0775c.stderr",
+    "stderr_hash": "37f448eb33d6ccc76ae5d1960db2fe93c9c3d8c3132b405870d5f6f1",
+    "returncode": 0
+}

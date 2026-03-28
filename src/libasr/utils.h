@@ -104,6 +104,7 @@ struct CompilerOptions {
     std::string column = "";
     bool continue_compilation = false;
     bool semantics_only = false;
+    bool new_classes = true;
     /*
         Generates object code for modules as well as global procedures ( subroutines / functions )
         avialable in ASR. This needs to be explicity set to true.
@@ -142,6 +143,7 @@ struct CompilerOptions {
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
+    bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;
@@ -149,6 +151,7 @@ struct CompilerOptions {
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
+    bool detect_leaks = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };

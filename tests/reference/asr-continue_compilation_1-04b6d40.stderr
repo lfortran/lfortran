@@ -332,6 +332,18 @@ semantic error: Result of `erfc` underflows its kind
 296 |     real(8), parameter :: erfc_param = erfc(40.12_8)
     |                                        ^^^^^^^^^^^^^ 
 
+semantic error: Contiguous attribute can only be applied to declared variables
+   --> tests/errors/continue_compilation_1.f90:298:19
+    |
+298 |     contiguous :: contig_not_declared
+    |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Contiguous attribute can only be applied to variables
+   --> tests/errors/continue_compilation_1.f90:299:19
+    |
+299 |     contiguous :: MyClass
+    |                   ^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
@@ -355,6 +367,42 @@ semantic error: Parameterized derived type 'container' parameter 'rk' has no def
     |
 627 |     type(container) :: obj2
     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The shapes of the `array` and `mask` arguments of the `MinLoc` intrinsic must be the same
+   --> tests/errors/continue_compilation_1.f90:630:47
+    |
+630 |     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
+    |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
+
+semantic error: The shapes of the `array` and `mask` arguments of the `MaxLoc` intrinsic must be the same
+   --> tests/errors/continue_compilation_1.f90:631:47
+    |
+631 |     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
+    |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
+
+semantic error: variable cannot appear in character length expression
+   --> tests/errors/continue_compilation_1.f90:638:21
+    |
+638 |     character(len = char_len_var) :: char_nonconst
+    |                     ^^^^^^^^^^^^ 
+
+semantic error: Cannot convert LOGICAL to REAL
+   --> tests/errors/continue_compilation_1.f90:674:24
+    |
+674 |         real :: adwf = .true.
+    |                        ^^^^^^ 
+
+warning: Assuming implicit save attribute for variable declaration
+   --> tests/errors/continue_compilation_1.f90:678:23
+    |
+678 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: Symbol 'undeclared_proc' not declared
+   --> tests/errors/continue_compilation_1.f90:640:9
+    |
+640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
@@ -701,11 +749,11 @@ semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intri
 435 |     print *, sum(arr1, mask2)
     |                  ^^^^  ^^^^^ `array` is rank 1, but `mask` is rank 2
 
-semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intrinsic must be the same
-   --> tests/errors/continue_compilation_1.f90:436:18
+semantic error: `dim` argument of `Sum` intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_1.f90:436:24
     |
 436 |     print *, sum(arr2, mask3, 2)
-    |                  ^^^^  ^^^^^ `array` is rank 2, but `mask` is rank 3
+    |                        ^^^^^ 
 
 semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:437:22
@@ -713,11 +761,11 @@ semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` 
 437 |     print *, iparity(arr2, mask4)
     |                      ^^^^  ^^^^^ `array` has shape [2,3], but `mask` has shape [3,2]
 
-semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` intrinsic must be the same
-   --> tests/errors/continue_compilation_1.f90:438:22
+semantic error: `dim` argument of `Iparity` intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_1.f90:438:28
     |
 438 |     print *, iparity(arr3, mask5, 3)
-    |                      ^^^^  ^^^^^ `array` has shape [2,1,3], but `mask` has shape [2,3,1]
+    |                            ^^^^^ 
 
 semantic error: Argument to 'present' must be a variable, but got an expression
    --> tests/errors/continue_compilation_1.f90:441:22
@@ -899,13 +947,13 @@ semantic error: reshape accepts arrays for `order` argument, found integer inste
 482 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
     |                                                       ^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real(4) source type integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:483:50
     |
 483 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
     |                                                  ^^^^^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer(8) source type integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:484:50
     |
 484 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
@@ -1311,3 +1359,45 @@ semantic error: Implied DO loop must be enclosed within array constructor bracke
     |
 629 |     arr_idl = (i, i = 1, 4)
     |               ^^^^^^^^^^^^^ 
+
+semantic error: ADVANCE= specifier must have value = YES or NO
+   --> tests/errors/continue_compilation_1.f90:632:30
+    |
+632 |     write (*, "(a)", advance="hello") "Dothraki culture"
+    |                              ^^^^^^^ 
+
+semantic error: 'dim' argument of 'sum' intrinsic must be INTEGER
+   --> tests/errors/continue_compilation_1.f90:633:30
+    |
+633 |     print *, sum(arr1, dim = mask1)
+    |                              ^^^^^ 
+
+semantic error: 'ieee_is_nan' is not accessible in the current scope; add 'use, intrinsic :: ieee_arithmetic' to use it
+   --> tests/errors/continue_compilation_1.f90:634:13
+    |
+634 |     print*, ieee_is_nan(1.0)
+    |             ^^^^^^^^^^^^^^^^ not in scope
+
+semantic error: `decimal` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:635:5
+    |
+635 |     open(unit=7, decimal=1, decimal="comma")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `decimal` found
+   --> tests/errors/continue_compilation_1.f90:636:5
+    |
+636 |     open(unit=7, decimal="POINT", decimal="comma")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'k' is not declared
+   --> tests/errors/continue_compilation_1.f90:668:12
+    |
+668 |         do k = 1, 3
+    |            ^ 'k' is undeclared
+
+semantic error: Expected logical expression in if statement, but recieved logical[:] instead
+   --> tests/errors/continue_compilation_1.f90:679:13
+    |
+679 |         if (abs(arr1)(1) /= 2471095) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical

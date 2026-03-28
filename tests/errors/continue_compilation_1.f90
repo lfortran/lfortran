@@ -295,8 +295,8 @@ program continue_compilation_1
     class(type_t) :: inst_tt
     real(8), parameter :: erfc_param = erfc(40.12_8)
     integer :: arr_idl(4)
-
-
+    contiguous :: contig_not_declared
+    contiguous :: MyClass
 
 
 
@@ -627,6 +627,19 @@ program continue_compilation_1
     type(container) :: obj2
 
     arr_idl = (i, i = 1, 4)
+    integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
+    integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
+    write (*, "(a)", advance="hello") "Dothraki culture"
+    print *, sum(arr1, dim = mask1)
+    print*, ieee_is_nan(1.0)
+    open(unit=7, decimal=1, decimal="comma")
+    open(unit=7, decimal="POINT", decimal="comma")
+    integer :: char_len_var = 10
+    character(len = char_len_var) :: char_nonconst
+    interface undeclared_iface
+        module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+    end interface
+
 
 
 
@@ -648,5 +661,21 @@ program continue_compilation_1
                 integer :: x, f
             end function
         end interface
+    end subroutine
+    subroutine sub_do_undeclared()
+        implicit none
+        integer :: n(3)
+        do k = 1, 3
+            n(k) = 42
+        end do
+    end subroutine
+    subroutine sub_real_logical_init()
+        implicit none
+        real :: adwf = .true.
+    end subroutine
+    subroutine sub_abs_array_index()
+        implicit none
+        integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+        if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
 end program

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-rand_01-5739aee",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/rand_01.f90",
+    "infile_hash": "52adc408e8be0fc19d7bcc8d16bd550a26e39637ff244dd87957335f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-rand_01-5739aee.stdout",
+    "stdout_hash": "07f11828a51c3fcc1593089cfc6384ff1352697bd2670afd51a66939",
+    "stderr": "asr-rand_01-5739aee.stderr",
+    "stderr_hash": "ce9fb38fdc5fdacd02522991309cc7d24272f37328734150c223153e",
+    "returncode": 0
+}

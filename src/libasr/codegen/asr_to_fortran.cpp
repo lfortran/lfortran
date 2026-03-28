@@ -4,6 +4,8 @@
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
+#include <set>
+
 using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
 
@@ -49,6 +51,12 @@ public:
     // Used for importing struct type inside interface
     bool is_interface = false;
     std::vector<std::string> import_struct_type;
+
+    // Names of pass-object dummy arguments for the function currently being emitted.
+    std::set<std::string> current_pass_self_args;
+
+    // True while emitting component declarations inside a derived type definition.
+    bool in_struct_member_declaration = false;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -258,7 +266,19 @@ public:
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
+                if (!type_decl) {
+                    throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
+                }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
+                if (ASRUtils::is_unlimited_polymorphic_type(type_decl) ||
+                        struct_name == "~unlimited_polymorphic_type") {
+                    r = "class(*)";
+                    break;
+                }
+                if (struct_name == "~assumed_type") {
+                    r = "type(*)";
+                    break;
+                }
                 r = "type(";
                 r += struct_name;
                 r += ")";
@@ -272,6 +292,9 @@ public:
                 r = "type(c_ptr)";
                 break;
             } case ASR::ttypeType::FunctionType: {
+                if (!type_decl) {
+                    throw LCompilersException("Missing procedure symbol while generating Fortran type spec");
+                }
                 r = "procedure(";
                 r += ASRUtils::symbol_name(type_decl);
                 r += ")";
@@ -408,7 +431,9 @@ public:
 
     void visit_Module(const ASR::Module_t &x) {
         std::string r;
-        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0 && x.m_intrinsic) {
+        if (x.m_intrinsic && (
+            strcmp(x.m_name, "lfortran_intrinsic_iso_c_binding") == 0 ||
+            strcmp(x.m_name, "lfortran_intrinsic_iso_fortran_env") == 0)) {
             return;
         }
         r = "module";
@@ -507,6 +532,36 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        current_pass_self_args.clear();
+        SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
+            (ASR::symbol_t*) &x);
+        if (parent_symtab) {
+            for (auto &item : parent_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Struct_t>(*item.second)) {
+                    continue;
+                }
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
+                for (auto &st_item : st->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*st_item.second)) {
+                        continue;
+                    }
+                    ASR::StructMethodDeclaration_t *decl =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(st_item.second);
+                    if (decl->m_is_nopass) {
+                        continue;
+                    }
+                    if (std::string(decl->m_proc_name) == std::string(x.m_name)) {
+                        if (decl->m_self_argument) {
+                            current_pass_self_args.insert(std::string(decl->m_self_argument));
+                        } else if (x.n_args > 0 && ASR::is_a<ASR::Var_t>(*x.m_args[0])) {
+                            ASR::Variable_t *self_var =
+                                ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(x.m_args[0])->m_v);
+                            current_pass_self_args.insert(std::string(self_var->m_name));
+                        }
+                    }
+                }
+            }
+        }
         if (type->m_pure) {
             r += "pure ";
         }
@@ -515,7 +570,13 @@ public:
         }
         bool is_return_var_declared = false;
         if (x.m_return_var) {
-            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
+            bool return_var_in_function_header = true;
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var))) {
+                // Keep character result type declarations in the specification part.
+                return_var_in_function_header = false;
+            }
+            if (return_var_in_function_header &&
+                !ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
                 !ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_return_var)) &&
                 !ASRUtils::is_pointer(ASRUtils::expr_type(x.m_return_var))) {
                 is_return_var_declared = true;
@@ -588,6 +649,7 @@ public:
         }
 
         // Interface
+        std::vector<std::string> internal_proc_name;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
@@ -605,12 +667,23 @@ public:
                     r += "end interface\n";
                     is_interface = false;
                 } else {
-                    throw CodeGenError("Nested Function is not handled yet");
+                    internal_proc_name.push_back(std::string(f->m_name));
                 }
             }
         }
 
         visit_body(x, r, false);
+
+        if (internal_proc_name.size() > 0) {
+            r += indent;
+            r += "contains\n";
+            for (size_t i = 0; i < internal_proc_name.size(); i++) {
+                visit_symbol(*x.m_symtab->get_symbol(internal_proc_name[i]));
+                r += src;
+                if (i < internal_proc_name.size()) r += "\n";
+            }
+        }
+
         dec_indent();
         r += indent;
         r += "end ";
@@ -622,6 +695,7 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        current_pass_self_args.clear();
         src = r;
     }
 
@@ -650,15 +724,43 @@ public:
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        // Ensure no stale output leaks when this symbol does not emit a use line.
+        src.clear();
+        // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
+        if (std::string(x.m_name).find('@') != std::string::npos ||
+            std::string(x.m_original_name).find('@') != std::string::npos) {
+            return;
+        }
+        auto append_import_name = [&](std::string &out) {
+            if (std::strcmp(x.m_name, x.m_original_name) == 0) {
+                out += std::string(x.m_name);
+            } else {
+                out += std::string(x.m_name);
+                out += " => ";
+                out += std::string(x.m_original_name);
+            }
+        };
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
-        if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0 &&
-            sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+        if (strcmp(x.m_module_name, "lfortran_intrinsic_iso_c_binding") == 0 &&
+            sym && ASR::is_a<ASR::Module_t>(*sym) &&
+            ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
             src = indent;
             src += "use ";
             src += "iso_c_binding";
             src += ", only: ";
-            src.append(x.m_original_name);
+            append_import_name(src);
+            src += "\n";
+            return;
+        }
+        if (strcmp(x.m_module_name, "lfortran_intrinsic_iso_fortran_env") == 0 &&
+            sym && ASR::is_a<ASR::Module_t>(*sym) &&
+            ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+            src = indent;
+            src += "use ";
+            src += "iso_fortran_env";
+            src += ", only: ";
+            append_import_name(src);
             src += "\n";
             return;
         }
@@ -667,12 +769,16 @@ public:
             src += "use ";
             src.append(x.m_module_name);
             src += ", only: ";
-            src.append(x.m_original_name);
+            append_import_name(src);
             src += "\n";
         }
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
+        if (x.m_name[0] == '~') {
+            src.clear();
+            return;
+        }
         std::string r = indent;
         r += "type";
         if (x.m_parent) {
@@ -688,6 +794,8 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        bool old_in_struct_member_declaration = in_struct_member_declaration;
+        in_struct_member_declaration = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -696,6 +804,7 @@ public:
                 r += src;
             }
         }
+        in_struct_member_declaration = old_in_struct_member_declaration;
 
         std::vector<std::string> class_procedure_order = ASRUtils::determine_class_procedure_declaration_order(x.m_symtab);
         if (class_procedure_order.size() > 0) r += "contains\n";
@@ -739,7 +848,22 @@ public:
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
-        r += get_type(x.m_type, x.m_type_declaration);
+        std::string var_type = get_type(x.m_type, x.m_type_declaration);
+        ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+        if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+            bool emit_class = current_pass_self_args.find(std::string(x.m_name))
+                != current_pass_self_args.end();
+            if (!emit_class && x.m_type_declaration) {
+                ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*decl)) {
+                    emit_class = ASR::down_cast<ASR::Struct_t>(decl)->m_is_abstract;
+                }
+            }
+            if (emit_class && var_type.rfind("type(", 0) == 0) {
+                var_type.replace(0, 5, "class(");
+            }
+        }
+        r += var_type;
         switch (x.m_intent) {
             case ASR::intentType::In : {
                 r += ", intent(in)";
@@ -768,7 +892,7 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
-        } else if (x.m_storage == ASR::storage_typeType::Save) {
+        } else if (x.m_storage == ASR::storage_typeType::Save && !in_struct_member_declaration) {
             r += ", save";
         }
         if (x.m_value_attr) {
@@ -788,6 +912,28 @@ public:
                 r += " => ";
             } else {
                 r += " = ";
+                // For parameters, prefer the original symbolic expression over the
+                // evaluated value. Unwrap any implicit Cast nodes that the compiler
+                // added for type compatibility so the output stays readable.
+                if (x.m_storage == ASR::storage_typeType::Parameter && x.m_symbolic_value) {
+                    const ASR::expr_t* sym = x.m_symbolic_value;
+                    while (ASR::is_a<ASR::Cast_t>(*sym)) {
+                        sym = ASR::down_cast<ASR::Cast_t>(sym)->m_arg;
+                    }
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::RealConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::LogicalConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::StringConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::ComplexConstant_t>(*sym) &&
+                            !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*sym)) {
+                        visit_expr(*sym);
+                        r += src;
+                        handle_line_truncation(r, 2);
+                        r += "\n";
+                        src = r;
+                        return;
+                    }
+                }
             }
             visit_expr(*x.m_value);
             r += src;
@@ -877,15 +1023,40 @@ public:
     void visit_Allocate(const ASR::Allocate_t &x) {
         std::string r = indent;
         r += "allocate(";
+        bool has_source_expr = x.m_source != nullptr;
+        bool prefer_mold_clause = false;
+        bool has_object_type_spec = false;
         for (size_t i = 0; i < x.n_args; i ++) {
-            if (x.m_args[i].m_type) {
+            bool emit_type_spec = x.m_args[i].m_type != nullptr;
+            if (emit_type_spec) {
+                ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_args[i].m_type);
+                if ((ASR::is_a<ASR::StructType_t>(*base_type) ||
+                     ASR::is_a<ASR::FunctionType_t>(*base_type)) &&
+                    x.m_args[i].m_sym_subclass == nullptr) {
+                    emit_type_spec = false;
+                    prefer_mold_clause = true;
+                }
+            }
+            if (emit_type_spec && x.m_args[i].m_len_expr && !has_source_expr) {
+                emit_type_spec = false;
+            }
+            if (emit_type_spec && has_source_expr) {
+                has_object_type_spec = true;
+                emit_type_spec = false;
+            }
+            if (emit_type_spec) {
+                has_object_type_spec = true;
                 r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
-            } else if (x.m_args[i].m_len_expr) {
-                r += "character(len=";
-                visit_expr(*x.m_args[i].m_len_expr);
-                r += src;
-                r += ") :: ";
+            }
+            if (x.m_args[i].m_len_expr) {
+                has_object_type_spec = true;
+                if (!has_source_expr) {
+                    r += "character(len=";
+                    visit_expr(*x.m_args[i].m_len_expr);
+                    r += src;
+                    r += ") :: ";
+                }
             }
             visit_expr(*x.m_args[i].m_a);
             r += src;
@@ -903,6 +1074,17 @@ public:
         if (x.m_stat) {
             r += ", stat=";
             visit_expr(*x.m_stat);
+            r += src;
+        }
+        if (x.m_errmsg) {
+            r += ", errmsg=";
+            visit_expr(*x.m_errmsg);
+            r += src;
+        }
+        if (x.m_source) {
+            bool emit_mold_clause = prefer_mold_clause || has_object_type_spec;
+            r += emit_mold_clause ? ", mold=" : ", source=";
+            visit_expr(*x.m_source);
             r += src;
         }
         r += ")";
@@ -1487,6 +1669,12 @@ public:
         src += "\n";
     }
 
+    void visit_SyncMemory(const ASR::SyncMemory_t & /* x */) {
+        src = indent;
+        src += "sync memory";
+        src += "\n";
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -1498,7 +1686,9 @@ public:
         }
         r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
-        for (size_t i = 0; i < x.n_args; i ++) {
+        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
+        size_t start_idx = is_method ? 1 : 0;
+        for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
             if (i < x.n_args-1) r += ", ";
@@ -1647,7 +1837,107 @@ public:
         src = r;
     }
 
-    // void visit_SelectType(const ASR::SelectType_t &x) {}
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        auto emit_select_type_stmt = [&](ASR::stmt_t* stmt, std::string &out) {
+            if (ASR::is_a<ASR::Associate_t>(*stmt)) {
+                if (x.m_assoc_name) {
+                    ASR::Associate_t* assoc_stmt = ASR::down_cast<ASR::Associate_t>(stmt);
+                    if (ASR::is_a<ASR::Var_t>(*assoc_stmt->m_target)) {
+                        ASR::Var_t* target_var = ASR::down_cast<ASR::Var_t>(assoc_stmt->m_target);
+                        if (std::string(ASRUtils::symbol_name(target_var->m_v)) == std::string(x.m_assoc_name)) {
+                            return;
+                        }
+                    }
+                }
+            }
+            visit_stmt(*stmt);
+            out += src;
+        };
+
+        auto emit_select_type_body = [&](ASR::stmt_t** body, size_t n_body,
+                                         std::string &out) {
+            for (size_t i = 0; i < n_body; i++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(body[i]);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
+                    ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                    for (size_t j = 0; j < block->n_body; j++) {
+                        emit_select_type_stmt(block->m_body[j], out);
+                    }
+                } else {
+                    emit_select_type_stmt(body[i], out);
+                }
+            }
+        };
+
+        std::string r = indent;
+        r += "select type (";
+        if (x.m_assoc_name) {
+            r += std::string(x.m_assoc_name);
+            r += " => ";
+        }
+        visit_expr(*x.m_selector);
+        r += src;
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+
+        inc_indent();
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (ASR::is_a<ASR::TypeStmtName_t>(*x.m_body[i])) {
+                ASR::TypeStmtName_t* type_stmt = ASR::down_cast<ASR::TypeStmtName_t>(x.m_body[i]);
+                r += indent;
+                r += "type is (";
+                r += ASRUtils::symbol_name(type_stmt->m_sym);
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(type_stmt->m_body, type_stmt->n_body, r);
+                dec_indent();
+            } else if (ASR::is_a<ASR::ClassStmt_t>(*x.m_body[i])) {
+                ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(x.m_body[i]);
+                r += indent;
+                r += "class is (";
+                r += ASRUtils::symbol_name(class_stmt->m_sym);
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(class_stmt->m_body, class_stmt->n_body, r);
+                dec_indent();
+            } else if (ASR::is_a<ASR::TypeStmtType_t>(*x.m_body[i])) {
+                ASR::TypeStmtType_t* type_stmt = ASR::down_cast<ASR::TypeStmtType_t>(x.m_body[i]);
+                r += indent;
+                r += "type is (";
+                ASR::ttype_t *guard_type = ASRUtils::type_get_past_allocatable_pointer(type_stmt->m_type);
+                if (ASR::is_a<ASR::String_t>(*guard_type)) {
+                    ASR::String_t *str_t = ASR::down_cast<ASR::String_t>(guard_type);
+                    if (str_t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                        // In a TYPE IS guard, character length must be assumed, not deferred.
+                        r += "character(len=*, kind=" + std::to_string(str_t->m_kind) + ")";
+                    } else {
+                        r += get_type(type_stmt->m_type);
+                    }
+                } else {
+                    r += get_type(type_stmt->m_type);
+                }
+                r += ")\n";
+                inc_indent();
+                emit_select_type_body(type_stmt->m_body, type_stmt->n_body, r);
+                dec_indent();
+            }
+        }
+
+        if (x.n_default > 0) {
+            r += indent;
+            r += "class default\n";
+            inc_indent();
+            emit_select_type_body(x.m_default, x.n_default, r);
+            dec_indent();
+        }
+
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        src = r;
+    }
 
     // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
 
@@ -1717,7 +2007,8 @@ public:
         std::string re = src;
         visit_expr(*x.m_im);
         std::string im = src;
-        src = "cmplx(" + re + ", " + im + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "cmplx(" + re + ", " + im + ", kind=" + std::to_string(kind) + ")";
     }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
@@ -1734,7 +2025,9 @@ public:
             r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
-        for (size_t i = 0; i < x.n_args; i ++) {
+        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
+        size_t start_idx = is_method ? 1 : 0;
+        for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
             if (i < x.n_args-1) r += ", ";
@@ -1830,7 +2123,7 @@ public:
                 return 4;
             case IEF::Char:
             case IEF::Achar:
-                return 1;
+                return -1;
             default:
                 return -1;
         }
@@ -1858,11 +2151,18 @@ public:
             out += src;
         }
         if (x.m_type != nullptr) {
-            int default_kind = get_default_kind_for_intrinsic(x);
-            if (default_kind > 0) {
-                int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                if (return_kind != default_kind) {
-                    out += ", " + std::to_string(return_kind);
+            using IEF = ASRUtils::IntrinsicElementalFunctions;
+            if (static_cast<IEF>(x.m_intrinsic_id) == IEF::Char ||
+                    static_cast<IEF>(x.m_intrinsic_id) == IEF::Achar) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                out += ", kind=" + std::to_string(kind);
+            } else {
+                int default_kind = get_default_kind_for_intrinsic(x);
+                if (default_kind > 0) {
+                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    if (return_kind != default_kind) {
+                        out += ", " + std::to_string(return_kind);
+                    }
                 }
             }
         }
@@ -1888,6 +2188,7 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
+        else if(intrinsic_func_name == "Rand") intrinsic_func_name = "rand";
         else if(intrinsic_func_name == "ThisImage") intrinsic_func_name = "this_image";
         else if(intrinsic_func_name == "NumImages") intrinsic_func_name = "num_images";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
@@ -1928,6 +2229,7 @@ public:
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
         if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
         if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
             ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
             if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){
@@ -2089,8 +2391,15 @@ public:
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        std::string re = std::to_string(x.m_re);
-        std::string im = std::to_string(x.m_im);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string re, im;
+        if (kind >= 8) {
+            re = ASRUtils::to_string_with_precision(x.m_re, 16) + "_" + std::to_string(kind);
+            im = ASRUtils::to_string_with_precision(x.m_im, 16) + "_" + std::to_string(kind);
+        } else {
+            re = ASRUtils::to_string_with_precision(x.m_re, 8);
+            im = ASRUtils::to_string_with_precision(x.m_im, 8);
+        }
         src = "(" + re + ", " + im + ")";
     }
 
@@ -2223,7 +2532,8 @@ public:
 
     void visit_StringChr(const ASR::StringChr_t &x) {
         visit_expr(*x.m_arg);
-        src = "char(" + src + ")";
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "char(" + src + ", kind=" + std::to_string(kind) + ")";
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
@@ -2255,7 +2565,30 @@ public:
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
 
+    std::string get_array_constructor_type_spec(const ASR::ttype_t *t,
+            const ASR::expr_t *struct_var=nullptr) {
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(const_cast<ASR::ttype_t*>(t)));
+
+        if (ASR::is_a<ASR::StructType_t>(*elem_type)) {
+            if (struct_var && ASR::is_a<ASR::Var_t>(*struct_var)) {
+                ASR::symbol_t *dt_sym = ASR::down_cast<ASR::Var_t>(struct_var)->m_v;
+                return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(dt_sym));
+            }
+            throw LCompilersException(
+                "missing derived type symbol while emitting empty array constructor");
+        }
+
+        return get_type(elem_type);
+    }
+
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        if (x.n_args == 0 && x.m_type) {
+            src = "[" + get_array_constructor_type_spec(x.m_type, x.m_struct_var) + " :: ]";
+            last_expr_precedence = Precedence::Ext;
+            return;
+        }
+
         std::string r = "[";
         for(size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i]);
@@ -2274,14 +2607,28 @@ public:
             arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
             needs_reshape = (arr_type->n_dims > 1);
         }
+        size_t fixed_size = static_cast<size_t>(ASRUtils::get_fixed_size_of_array(x.m_type));
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        std::string kind_suffix = "";
+        if (ASR::is_a<ASR::Real_t>(*elem_type) && kind >= 8) {
+            kind_suffix = "_8";
+        } else if (ASR::is_a<ASR::Integer_t>(*elem_type) && kind != 4) {
+            kind_suffix = "_" + std::to_string(kind);
+        }
         std::string r = "";
         if (needs_reshape) r += "reshape(";
-        r += "[";
-        for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            r += ASRUtils::fetch_ArrayConstant_value(x, i);
-            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
+        if (fixed_size == 0) {
+            r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
+        } else {
+            r += "[";
+            for(size_t i = 0; i < fixed_size; i++) {
+                r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                if (i < fixed_size - 1) r += ", ";
+            }
+            r += "]";
         }
-        r += "]";
         if (needs_reshape) {
             r += ", [";
             for (size_t i = 0; i < arr_type->n_dims; i++) {
@@ -2390,6 +2737,11 @@ public:
         r += ", ";
         visit_expr(*x.m_shape);
         r += src;
+        if (x.m_pad) {
+            r += ", ";
+            visit_expr(*x.m_pad);
+            r += src;
+        }
         r += ")";
         src = r;
     }
@@ -2440,9 +2792,10 @@ public:
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
 
-        // If the cast is from Integer to Logical, do nothing
-        if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
-            // Implicit conversion between integer -> logical
+        if (x.m_kind == ASR::cast_kindType::IntegerToLogical ||
+            x.m_kind == ASR::cast_kindType::ClassToStruct ||
+            x.m_kind == ASR::cast_kindType::ClassToClass ||
+            x.m_kind == ASR::cast_kindType::ClassToIntrinsic) {
             return;
         }
 
@@ -2565,7 +2918,23 @@ public:
         src = "null()";
     }
 
-    // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
+    void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_expr(*x.m_ptr);
+        std::string ptr = src;
+        std::string r = "associated(" + ptr;
+        if (x.m_tgt) {
+            visit_expr(*x.m_tgt);
+            std::string tgt = src;
+            r += ", " + tgt;
+        }
+        r += ")";
+        src = r;
+        last_expr_precedence = Precedence::Ext;
+    }
 
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);

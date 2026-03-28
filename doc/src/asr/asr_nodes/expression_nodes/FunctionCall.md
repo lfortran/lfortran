@@ -20,7 +20,7 @@ FunctionCall(symbol name, symbol? original_name, call_arg* args,
 | `args` | arguments of the called function |
 | `type` | table entry type |
 | `value` | expression value |
-| `dt` | ? |
+| `dt` | If non-null, this is a method call on the object given by `dt`. If null, this is a regular (non-method) function call. |
 
 ### Return values
 

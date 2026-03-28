@@ -6,6 +6,7 @@ program array_section_08
 
     call test_simple_array()
     call test_struct_array()
+    call test_reverse_overlap_section_assign()
 
     print *, "PASS"
 
@@ -49,6 +50,19 @@ contains
         if (size(items) /= 2) error stop "struct: size should be 2"
         if (items(1)%value /= 20) error stop "struct: items(1)%value should be 20"
         if (items(2)%value /= 30) error stop "struct: items(2)%value should be 30"
+    end subroutine
+
+    subroutine test_reverse_overlap_section_assign()
+        integer :: x(5)
+
+        x = [1, 2, 3, 4, 5]
+        x(5:2:-1) = x(2:5)
+
+        if (x(1) /= 1) error stop "reverse-overlap: x(1) should be 1"
+        if (x(2) /= 5) error stop "reverse-overlap: x(2) should be 5"
+        if (x(3) /= 4) error stop "reverse-overlap: x(3) should be 4"
+        if (x(4) /= 3) error stop "reverse-overlap: x(4) should be 3"
+        if (x(5) /= 2) error stop "reverse-overlap: x(5) should be 2"
     end subroutine
 
 end program array_section_08

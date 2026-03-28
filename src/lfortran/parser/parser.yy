@@ -14,8 +14,8 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    237 // shift/reduce conflicts
-%expect-rr 175 // reduce/reduce conflicts
+%expect    238 // shift/reduce conflicts
+%expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -1533,6 +1533,8 @@ var_modifier
     | KW_SAVE { $$ = SIMPLE_ATTR(Save, @$); }
     | KW_SEQUENCE { $$ = SIMPLE_ATTR(Sequence, @$); }
     | KW_CONTIGUOUS { $$ = SIMPLE_ATTR(Contiguous, @$); }
+    | KW_PASS { $$ = PASS(nullptr, @$); }
+    | KW_PASS "(" id ")" { $$ = PASS($3, @$); }
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
     | KW_PRIVATE { $$ = SIMPLE_ATTR(Private, @$); }
     | KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
@@ -1949,7 +1951,10 @@ backspace_statement
 
 flush_statement
     : KW_FLUSH "(" write_arg_list ")" { $$ = FLUSH($3, @$); }
-    | KW_FLUSH TK_INTEGER { $$ = FLUSH1($2, @$); }
+    | KW_FLUSH id { $$ = FLUSH2($2, @$); }
+    | KW_FLUSH TK_INTEGER { $$ = FLUSH2(INTEGER($2, @$), @$); }
+    | KW_FLUSH id "(" fnarray_arg_list_opt ")" {
+            $$ =  FLUSH2(FUNCCALLORARRAY($2, $4, @$), @$); }
     ;
 
 endfile_statement

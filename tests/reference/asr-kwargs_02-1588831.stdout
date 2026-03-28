@@ -53,6 +53,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -79,6 +81,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -100,6 +104,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     add_log_file
@@ -131,7 +137,8 @@
                                     [(SubroutineCall
                                         4 1_logger_type_log_io_error
                                         ()
-                                        [((IntegerConstant 1 (Integer 4) Decimal))
+                                        [((Var 4 self))
+                                        ((IntegerConstant 1 (Integer 4) Decimal))
                                         ((Var 4 filename))
                                         ((Var 4 unit))]
                                         (Var 4 self)
@@ -168,6 +175,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             filename:
                                                 (Variable
@@ -189,6 +198,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -215,6 +226,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -236,6 +249,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     log_io_error

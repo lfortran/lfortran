@@ -42,6 +42,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -63,6 +65,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -89,6 +93,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     multiply
@@ -174,6 +180,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -195,6 +203,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -221,6 +231,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     sqrt_subtract
@@ -319,6 +331,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             multiply:
                                                 (StructMethodDeclaration
@@ -440,6 +454,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     name
@@ -465,7 +481,8 @@
                             (FunctionCall
                                 6 1_t_1_multiply
                                 ()
-                                [((RealConstant
+                                [((Var 6 type_1))
+                                ((RealConstant
                                     5.000000
                                     (Real 4)
                                 ))]
@@ -498,7 +515,8 @@
                             (FunctionCall
                                 6 1_t_1_sqrt_subtract
                                 ()
-                                [((IntegerConstant 2500 (Integer 4) Decimal))]
+                                [((Var 6 type_1))
+                                ((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
                                 (Var 6 type_1)

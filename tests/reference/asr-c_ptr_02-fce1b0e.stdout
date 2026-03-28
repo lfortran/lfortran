@@ -19,6 +19,16 @@
                                     ptr
                                     Public
                                 ),
+                            c_alert:
+                                (ExternalSymbol
+                                    2
+                                    c_alert
+                                    4 c_alert
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_alert
+                                    Public
+                                ),
                             c_arr:
                                 (Variable
                                     2
@@ -44,6 +54,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -55,6 +67,16 @@
                                     c_associated
                                     Public
                                 ),
+                            c_backspace:
+                                (ExternalSymbol
+                                    2
+                                    c_backspace
+                                    4 c_backspace
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_backspace
+                                    Public
+                                ),
                             c_bool:
                                 (ExternalSymbol
                                     2
@@ -63,6 +85,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
+                                    Public
+                                ),
+                            c_carriage_return:
+                                (ExternalSymbol
+                                    2
+                                    c_carriage_return
+                                    4 c_carriage_return
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_carriage_return
                                     Public
                                 ),
                             c_char:
@@ -135,6 +167,16 @@
                                     c_float_complex
                                     Public
                                 ),
+                            c_form_feed:
+                                (ExternalSymbol
+                                    2
+                                    c_form_feed
+                                    4 c_form_feed
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_form_feed
+                                    Public
+                                ),
                             c_funloc:
                                 (ExternalSymbol
                                     2
@@ -153,6 +195,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
+                                    Public
+                                ),
+                            c_horizontal_tab:
+                                (ExternalSymbol
+                                    2
+                                    c_horizontal_tab
+                                    4 c_horizontal_tab
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_horizontal_tab
                                     Public
                                 ),
                             c_int:
@@ -203,6 +255,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int8_t
+                                    Public
+                                ),
+                            c_intmax_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intmax_t
+                                    4 c_intmax_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intmax_t
                                     Public
                                 ),
                             c_intptr_t:
@@ -365,6 +427,16 @@
                                     c_sizeof
                                     Public
                                 ),
+                            c_vertical_tab:
+                                (ExternalSymbol
+                                    2
+                                    c_vertical_tab
+                                    4 c_vertical_tab
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_vertical_tab
+                                    Public
+                                ),
                             instance:
                                 (Variable
                                     2
@@ -390,6 +462,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             r_ptr:
                                 (Variable
@@ -418,6 +492,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             temp_ptr:
                                 (Variable
@@ -439,6 +515,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             test_obj:
                                 (Struct
@@ -471,6 +549,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     test_obj

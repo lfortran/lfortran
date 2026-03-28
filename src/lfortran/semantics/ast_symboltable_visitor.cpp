@@ -1134,7 +1134,16 @@ public:
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
+        for (size_t i=0; i<x.n_use; i++) {
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         is_Function = true;
+        bool old_in_Subroutine = in_Subroutine;
+        in_Subroutine = true;
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
@@ -1144,6 +1153,7 @@ public:
                 }
             }
         }
+        in_Subroutine = old_in_Subroutine;
         is_Function = false;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
@@ -1772,7 +1782,7 @@ public:
 
                     LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name == sym_name) {
+                           type->m_name && type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -1887,6 +1897,22 @@ public:
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
+                } else if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
+                    for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                        std::string arg_name = return_type->m_kind[ki].m_id
+                            ? to_lower(return_type->m_kind[ki].m_id) : "";
+                        if (arg_name == "len") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            len_expr = ASRUtils::EXPR(tmp);
+                            a_len = ASRUtils::extract_len<SemanticAbort>(
+                                len_expr, x.base.base.loc, diag);
+                        } else if (arg_name == "kind") {
+                            visit_expr(*return_type->m_kind[ki].m_value);
+                            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                kind_expr, x.base.base.loc, diag);
+                        }
+                    }
                 } else {
                     diag.add(diag::Diagnostic(
                         "Only one kind item supported for now",
@@ -1927,10 +1953,29 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
+                    // Detect c_char kind for bind(C) return types
+                    bool is_c_char_kind = false;
+                    if (return_type->m_kind != nullptr) {
+                        for (size_t ki = 0; ki < return_type->n_kind; ki++) {
+                            std::string arg_name = return_type->m_kind[ki].m_id
+                                ? to_lower(return_type->m_kind[ki].m_id) : "";
+                            if ((arg_name == "kind" || arg_name == "") &&
+                                return_type->m_kind[ki].m_value &&
+                                AST::is_a<AST::Name_t>(*return_type->m_kind[ki].m_value) &&
+                                to_lower(AST::down_cast<AST::Name_t>(
+                                    return_type->m_kind[ki].m_value)->m_id) == "c_char") {
+                                is_c_char_kind = true;
+                            }
+                        }
+                    }
+                    ASR::string_physical_typeType phys_type =
+                        (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC)
+                        ? ASR::string_physical_typeType::CChar
+                        : ASR::string_physical_typeType::DescriptorString;
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
                         len_expr,
                         ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
+                        phys_type));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -2370,6 +2415,7 @@ public:
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
+        bool is_bindc = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -2382,6 +2428,10 @@ public:
                         throw SemanticAbort();
                     }
                     attr_extend = (AST::AttrExtends_t*)(&(x.m_attrtype[i]->base));
+                    break;
+                }
+                case AST::decl_attributeType::AttrBind: {
+                    is_bindc = true;
                     break;
                 }
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -2489,7 +2539,7 @@ public:
                 nullptr, 0,
                 nullptr, 0,
                 nullptr, 0,
-                ASR::abiType::Source, dflt_access, false, is_abstract,
+                is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -2576,7 +2626,7 @@ public:
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
             nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -2599,21 +2649,42 @@ public:
             != vars_with_deferred_struct_declaration.end()) {
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
                 ASR::ttype_t* var_type = var->m_type;
-                if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
-                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var_type));
-                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
-                         ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
-                    if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
-                        var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
-                    } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
-                        var->m_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
-                    }
-                    if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
-                        ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
-                        ptr_null->m_type = var->m_type;
-                    }
+                std::function<ASR::ttype_t*(ASR::ttype_t*)> replace_deferred_struct_type =
+                    [&](ASR::ttype_t* t) -> ASR::ttype_t* {
+                        if (ASR::is_a<ASR::StructType_t>(*t)) {
+                            ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(t);
+                            return ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                                ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
+                        }
+                        if (ASR::is_a<ASR::Array_t>(*t)) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+                            ASR::ttype_t* element_type = replace_deferred_struct_type(array_t->m_type);
+                            return ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
+                                element_type, array_t->m_dims, array_t->n_dims,
+                                array_t->m_physical_type));
+                        }
+                        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+                            ASR::Pointer_t* pointer_t = ASR::down_cast<ASR::Pointer_t>(t);
+                            ASR::ttype_t* base_type = replace_deferred_struct_type(pointer_t->m_type);
+                            return ASRUtils::make_Pointer_t_util(al, x.base.base.loc, base_type);
+                        }
+                        if (ASR::is_a<ASR::Allocatable_t>(*t)) {
+                            ASR::Allocatable_t* alloc_t = ASR::down_cast<ASR::Allocatable_t>(t);
+                            ASR::ttype_t* base_type = replace_deferred_struct_type(alloc_t->m_type);
+                            return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                                x.base.base.loc, base_type));
+                        }
+                        return t;
+                    };
+
+                var->m_type = replace_deferred_struct_type(var_type);
+                if (var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
+                    ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
+                    ptr_null->m_type = var->m_type;
                 }
                 var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+                // If this variable is a struct member, refresh the owning struct
+                // signature so it stays in sync with the updated member type.
             }
             vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
@@ -2707,10 +2778,12 @@ public:
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
+        bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
+        in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
         return;
     }
@@ -2827,12 +2900,64 @@ public:
         }
     }
 
+    void fill_interface_proc_names_with_loc(const AST::Interface_t& x,
+                                    std::vector<std::pair<std::string, Location>>& proc_names) {
+        for (size_t i = 0; i < x.n_items; i++) {
+            AST::interface_item_t *item = x.m_items[i];
+            if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
+                AST::InterfaceModuleProcedure_t *proc
+                    = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                std::set<std::string> items_set;
+                for (size_t j = 0; j < proc->n_names; j++) {
+                    char *proc_name = proc->m_names[j];
+                    std::string item_proc_name = std::string(proc_name);
+                    if (items_set.find(item_proc_name) == items_set.end()) {
+                        proc_names.push_back({item_proc_name, item->base.loc});
+                        items_set.insert(item_proc_name);
+                    } else {
+                        diag.semantic_error_label("Entity " + item_proc_name
+                                                      + " is already present in the interface",
+                                                  { item->base.loc },
+                                                  " ");
+                        throw SemanticAbort();
+                    }
+                }
+            } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
+                visit_interface_item(*item);
+                AST::InterfaceProc_t *proc
+                    = AST::down_cast<AST::InterfaceProc_t>(item);
+                switch(proc->m_proc->type) {
+                    case AST::program_unitType::Subroutine: {
+                        AST::Subroutine_t* subrout = AST::down_cast<AST::Subroutine_t>(proc->m_proc);
+                        proc_names.push_back({std::string(subrout->m_name), item->base.loc});
+                        break;
+                    }
+                    case AST::program_unitType::Function: {
+                        AST::Function_t* fn = AST::down_cast<AST::Function_t>(proc->m_proc);
+                        proc_names.push_back({std::string(fn->m_name), item->base.loc});
+                        break;
+                    }
+                    default: {
+                        LCOMPILERS_ASSERT(false);
+                        break;
+                    }
+                }
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Interface procedure type not imlemented yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {item->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Interface(const AST::Interface_t &x) {
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             if( generic_procedures.find(generic_name) != generic_procedures.end() ) {
                 generic_procedures[generic_name].insert(generic_procedures[generic_name].end(),
                     proc_names.begin(), proc_names.end());
@@ -3057,14 +3182,26 @@ public:
         // Check if the operator is already imported into the scope. If yes, include it's procedures
         // into the current `CustomOperator` symbol that we overwrite with.
         if (current_scope->get_symbol(generic_name) != nullptr) {
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*current_scope->get_symbol(generic_name))) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::ExternalSymbol_t>(
-                                    current_scope->get_symbol(generic_name))->m_external;
+            ASR::symbol_t* existing = current_scope->get_symbol(generic_name);
+            ASR::CustomOperator_t* cop = nullptr;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
                 if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                    ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
-                    for (size_t i = 0; i < cop->n_procs; i++) {
-                        std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
-                        symbols.push_back(al, resolve_symbol(loc, s2c(al, proc_name)));
+                    cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+                }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
+                cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
+            }
+            if (cop != nullptr) {
+                for (size_t i = 0; i < cop->n_procs; i++) {
+                    std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                    ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
+                    if (proc_sym == nullptr) {
+                        proc_sym = current_scope->resolve_symbol(
+                            ASRUtils::symbol_name(cop->m_procs[i]));
+                    }
+                    if (proc_sym != nullptr) {
+                        symbols.push_back(al, proc_sym);
                     }
                 }
             }
@@ -3181,26 +3318,36 @@ public:
 
     void add_generic_procedures() {
         for (auto &proc : generic_procedures) {
-            // FIXME LOCATION
             Location loc;
             loc.first = 1;
             loc.last = 1;
             Vec<ASR::symbol_t*> symbols;
             symbols.reserve(al, proc.second.size());
+            bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname;
-                if( pname == proc.first ) {
-                    correct_pname = pname + "~genericprocedure";
+                std::string correct_pname = pname.first;
+                if( pname.first == proc.first ) {
+                    correct_pname = pname.first + "~genericprocedure";
                 }
-                ASR::symbol_t *x;
                 Str s;
                 s.from_str_view(correct_pname);
                 char *name = s.c_str(al);
                 // lower case the name
                 name = s2c(al, to_lower(name));
-                x = resolve_symbol(loc, name);
+                ASR::symbol_t *x = current_scope->resolve_symbol(name);
+                if (!x) {
+                    diag.add(Diagnostic(
+                        "Symbol '" + std::string(pname.first) + "' not declared",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {pname.second})
+                        }));
+                    if (!compiler_options.continue_compilation) throw SemanticAbort();
+                    any_error = true;
+                    continue;
+                }
                 symbols.push_back(al, x);
             }
+            if (any_error) continue;
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
                 ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
@@ -3600,6 +3747,18 @@ public:
             ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
             ASR::ttype_t *real_func_type = real_func->m_function_signature;
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var->m_type_declaration == placeholder_sym) {
+                        var->m_type_declaration = real_sym;
+                        if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                            var->m_type = ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+                        } else {
+                            var->m_type = real_func_type;
+                        }
+                    }
+                }
                 if (ASR::is_a<ASR::Struct_t>(*sym)) {
                     ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
                     for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {
@@ -3826,6 +3985,16 @@ public:
     void visit_GenericWrite(const AST::GenericWrite_t &x) {
         // this can only either be "~write_formatted" or "~write_unformatted"
         std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
+        }
+    }
+
+    void visit_GenericRead(const AST::GenericRead_t &x) {
+        std::string generic_name = "~read_" + to_lower(std::string(x.m_id));
         for (size_t i = 0; i < x.n_names; i++) {
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(
