@@ -7480,6 +7480,18 @@ public:
                         }
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type, diag);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
+                        ASR::ttype_t* converted_type = ASRUtils::expr_type(init_expr);
+                        if (!ASRUtils::check_equal_type(type, converted_type, nullptr, nullptr, false)) {
+                            std::string ltype = ASRUtils::type_to_str_fortran_expr(type, nullptr);
+                            std::string rtype = ASRUtils::type_to_str_fortran_expr(init_type, init_expr);
+                            diag.add(Diagnostic(
+                                "type mismatch in initialization: `" +
+                                rtype + "` cannot be assigned to `" + ltype + "`",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {init_expr->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         value = ASRUtils::expr_value(init_expr);
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
