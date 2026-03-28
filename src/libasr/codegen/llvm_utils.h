@@ -1712,9 +1712,21 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
-            return v->m_intent != ASR::Local
-                || v->m_storage == ASR::Parameter
-                || v->m_storage == ASR::Save /*Neglect - Lives till program ends*/;
+            if (v->m_intent != ASR::Local) return true;
+            if (v->m_storage == ASR::Parameter) return true;
+            if (v->m_storage == ASR::Save) {
+                // Save variables persist across calls in functions/subroutines.
+                // In Program scope, struct-type save variables must be finalized
+                // to free heap-allocated members (e.g. string descriptors inside
+                // structs allocated during struct initialization).
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (!ASR::is_a<ASR::Program_t>(*owner)) return true;
+                ASR::ttype_t* t = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+                t = ASRUtils::type_get_past_array(t);
+                return !ASR::is_a<ASR::StructType_t>(*t);
+            }
+            return false;
         }
 
         static bool non_deallocatable_construct(ASR::asr_t* const s){ // Can't deallocate
