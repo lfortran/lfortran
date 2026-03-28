@@ -2742,14 +2742,6 @@ public:
             visit_expr(*x.m_pad);
             r += src;
         }
-        if (x.m_order) {
-            r += ", ";
-            if (!x.m_pad) {
-                r += "order=";
-            }
-            visit_expr(*x.m_order);
-            r += src;
-        }
         r += ")";
         src = r;
     }

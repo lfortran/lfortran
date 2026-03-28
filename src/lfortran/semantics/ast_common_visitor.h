@@ -12390,16 +12390,6 @@ public:
             this->visit_expr(*order);
             order_expr = ASRUtils::EXPR(tmp);
             order_for_eval = ASRUtils::expr_value(order_expr);
-            // if (ASR::is_a<ASR::ArrayConstructor_t>(*order_for_eval) &&
-            //     ASR::down_cast<ASR::ArrayConstructor_t>(order_for_eval)->m_value != nullptr) {
-            //     order_for_eval = ASR::down_cast<ASR::ArrayConstructor_t>(order_for_eval)->m_value;
-            // }
-            // if (!ASR::is_a<ASR::ArrayConstant_t>(*order_for_eval)) {
-            //     ASR::expr_t* order_value = ASRUtils::expr_value(order_for_eval);
-            //     if (order_value != nullptr) {
-            //         order_for_eval = ASRUtils::get_past_array_physical_cast(order_value);
-            //     }
-            // }
         }
         if (pad != nullptr){
             this->visit_expr(*pad);

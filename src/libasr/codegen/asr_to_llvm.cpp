@@ -4092,9 +4092,14 @@ public:
                 llvm::Type* result_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_array, ASRUtils::type_get_past_allocatable_pointer(asr_result_type),
                     module.get());
+                llvm::Value* order = nullptr;
+                if (x.m_order != nullptr) {
+                    this->visit_expr(*x.m_order);
+                    order = tmp;
+                }
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                    result_desc_type);
+                    result_desc_type, order, x.m_order);
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -4169,7 +4174,7 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_order))));
                     llvm::Type* llvm_order_type = llvm_utils->get_el_type(x.m_order, order_elem_type, module.get());
                     llvm::Type* order_array_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_order, ASRUtils::expr_type(x.m_order), module.get());
+                        x.m_order, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_order)), module.get());
 
                     llvm::Value* order_data_base = order_base;
                     ASR::array_physical_typeType order_physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_order));
@@ -4181,12 +4186,39 @@ public:
                         order_data_base = llvm_utils->create_gep2(order_array_type, order_base, 0);
                     }
 
-                    std::vector<int64_t> shape_values(n);
+                    ASR::ttype_t* shape_expr_type = ASRUtils::expr_type(x.m_shape);
+                    ASR::ttype_t* shape_elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(shape_expr_type)));
+                    llvm::Type* llvm_shape_type = llvm_utils->get_el_type(x.m_shape, shape_elem_type, module.get());
+                    llvm::Type* shape_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_shape, shape_expr_type, module.get());
+
+                    llvm::Value* shape_data_base = shape;
+                    ASR::array_physical_typeType shape_physical_type = ASRUtils::extract_physical_type(shape_expr_type);
+                    if (shape_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        shape_data_base = llvm_utils->create_gep2(shape_array_type, shape, 0);
+                        shape_data_base = llvm_utils->CreateLoad2(llvm_shape_type->getPointerTo(), shape_data_base);
+                    } else if (shape_physical_type == ASR::array_physical_typeType::FixedSizeArray &&
+                                !ASRUtils::expr_value(x.m_shape)) {
+                        shape_data_base = llvm_utils->create_gep2(shape_array_type, shape, 0);
+                    }
+
+                    std::vector<llvm::Value*> shape_values(n);
                     for (int64_t i = 0; i < n; i++) {
                         int64_t shape_i = -1;
                         bool shape_is_constant = ASRUtils::extract_value(result_dims[i].m_length, shape_i);
-                        LCOMPILERS_ASSERT(shape_is_constant);
-                        shape_values[i] = shape_i;
+                        if (shape_is_constant) {
+                            shape_values[i] = llvm::ConstantInt::get(context, llvm::APInt(64, shape_i));
+                        } else {
+                            llvm::Value* shape_i_val = llvm_utils->CreateLoad2(
+                                llvm_shape_type,
+                                llvm_utils->create_ptr_gep2(
+                                    llvm_shape_type,
+                                    shape_data_base,
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, i))));
+                            shape_values[i] = builder->CreateSExtOrTrunc(shape_i_val, llvm::Type::getInt64Ty(context));
+                        }
                     }
 
                     llvm::Value* source_base = llvm_utils->create_gep2(src_target_type, array, 0);
@@ -4205,8 +4237,7 @@ public:
                         // Decode result linear index i into result subscripts
                         // in normal Fortran column-major order.
                         for (int64_t j = 0; j < n; j++) {
-                            llvm::Value* shape_dim = llvm::ConstantInt::get(
-                                context, llvm::APInt(64, shape_values[j]));
+                            llvm::Value* shape_dim = shape_values[j];
 
                             llvm::Value* d_j = builder->CreateSRem(temp_val, shape_dim);
                             temp_val = builder->CreateSDiv(temp_val, shape_dim);
@@ -4235,12 +4266,12 @@ public:
                             llvm::Value* term = builder->CreateMul(I_dim, stride);
                             source_index = builder->CreateAdd(source_index, term);
 
-                            llvm::Value* shape_dim = llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[0]));
+                            llvm::Value* shape_dim = shape_values[0];
                             for (int64_t k = 1; k < n; k++) {
                                 llvm::Value* cond = builder->CreateICmpEQ(dim,
                                     llvm::ConstantInt::get(context, llvm::APInt(64, k)));
                                 shape_dim = builder->CreateSelect(cond,
-                                    llvm::ConstantInt::get(context, llvm::APInt(64, shape_values[k])),
+                                    shape_values[k],
                                     shape_dim);
                             }
                             stride = builder->CreateMul(stride, shape_dim);
