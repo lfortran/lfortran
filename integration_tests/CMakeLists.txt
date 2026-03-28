@@ -950,37 +950,37 @@ RUN(NAME call_subroutine_without_type LABELS gfortran llvm llvm_wasm llvm_wasm_e
 RUN(NAME call_subroutine_without_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 # GFortran
-RUN(NAME arrays_02 LABELS gfortran llvm)
-RUN(NAME arrays_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME arrays_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME arrays_08_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME arrays_08_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME arrays_09 LABELS gfortran llvm)
-RUN(NAME arrays_10 LABELS gfortran llvm)
-RUN(NAME arrays_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray cpp)
-RUN(NAME arrays_12 LABELS gfortran) # constant arrays
-RUN(NAME arrays_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # constant arrays
-RUN(NAME arrays_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME arrays_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_02 LABELS gfortran llvm fortran)
+RUN(NAME arrays_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
+RUN(NAME arrays_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_08_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
+RUN(NAME arrays_08_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
+RUN(NAME arrays_09 LABELS gfortran llvm fortran)
+RUN(NAME arrays_10 LABELS gfortran llvm fortran)
+RUN(NAME arrays_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray cpp fortran)
+RUN(NAME arrays_12 LABELS gfortran fortran) # constant arrays
+RUN(NAME arrays_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # constant arrays
+RUN(NAME arrays_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 
-RUN(NAME arrays_inputs_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # constant arrays
-RUN(NAME arrays_16_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_inputs_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # constant arrays
+RUN(NAME arrays_16_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran llvm fortran) # minval, maxval
-RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
-RUN(NAME arrays_intrin_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # maxval
+RUN(NAME arrays_intrin_02 LABELS gfortran fortran) # all, any
+RUN(NAME arrays_intrin_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # maxval
 RUN(NAME arrays_intrin_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # maxval
-RUN(NAME arrays_intrin_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # minval
+RUN(NAME arrays_intrin_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # minval
 RUN(NAME arrays_intrin_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # minval
 RUN(NAME arrays_intrin_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # min
 RUN(NAME arrays_intrin_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
-RUN(NAME arrays_intrin_09 LABELS gfortran llvm) # any/count logical mask
-RUN(NAME any_01 LABELS gfortran)
-RUN(NAME any_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME any_03 LABELS gfortran llvm)
-RUN(NAME sum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_intrin_09 LABELS gfortran llvm fortran) # any/count logical mask
+RUN(NAME any_01 LABELS gfortran fortran)
+RUN(NAME any_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME any_03 LABELS gfortran llvm fortran)
+RUN(NAME sum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME sum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME sum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME sum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
 RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
 RUN(NAME product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -726,6 +726,20 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         // Ensure no stale output leaks when this symbol does not emit a use line.
         src.clear();
+        // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
+        if (std::string(x.m_name).find('@') != std::string::npos ||
+            std::string(x.m_original_name).find('@') != std::string::npos) {
+            return;
+        }
+        auto append_import_name = [&](std::string &out) {
+            if (std::strcmp(x.m_name, x.m_original_name) == 0) {
+                out += std::string(x.m_name);
+            } else {
+                out += std::string(x.m_name);
+                out += " => ";
+                out += std::string(x.m_original_name);
+            }
+        };
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
         if (strcmp(x.m_module_name, "lfortran_intrinsic_iso_c_binding") == 0 &&
@@ -735,7 +749,7 @@ public:
             src += "use ";
             src += "iso_c_binding";
             src += ", only: ";
-            src.append(x.m_original_name);
+            append_import_name(src);
             src += "\n";
             return;
         }
@@ -746,7 +760,7 @@ public:
             src += "use ";
             src += "iso_fortran_env";
             src += ", only: ";
-            src.append(x.m_original_name);
+            append_import_name(src);
             src += "\n";
             return;
         }
@@ -755,7 +769,7 @@ public:
             src += "use ";
             src.append(x.m_module_name);
             src += ", only: ";
-            src.append(x.m_original_name);
+            append_import_name(src);
             src += "\n";
         }
     }
