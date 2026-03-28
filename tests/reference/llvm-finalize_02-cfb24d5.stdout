@@ -161,12 +161,12 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
 
 Finalize_Variable_arr_01:                         ; preds = %FINALIZE_SYMTABLE_ss
   %60 = load %array.1*, %array.1** %arr_01, align 8
-  call void @finalize_allocatable__Array_1_StructType__tt(%array.1* %60, i1 false)
+  call void @finalize_allocatable__Array_1_StructType__tt(%array.1* %60)
   br label %Finalize_Variable_arr_02
 
 Finalize_Variable_arr_02:                         ; preds = %Finalize_Variable_arr_01
   %61 = load %array.1.0*, %array.1.0** %arr_02, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1.0* %61, i1 false)
+  call void @finalize_allocatable__Array_1_i32(%array.1.0* %61)
   br label %Finalize_Variable_arr_03
 
 Finalize_Variable_arr_03:                         ; preds = %Finalize_Variable_arr_02
@@ -177,7 +177,7 @@ Finalize_Variable_arr_03:                         ; preds = %Finalize_Variable_a
 
 Finalize_Variable_arr_04:                         ; preds = %Finalize_Variable_arr_03
   %64 = load %array.1.1*, %array.1.1** %arr_04, align 8
-  call void @finalize_allocatable__Array_1_str(%array.1.1* %64, i1 false)
+  call void @finalize_allocatable__Array_1_str(%array.1.1* %64)
   br label %Finalize_Variable_arr_05
 
 Finalize_Variable_arr_05:                         ; preds = %Finalize_Variable_arr_04
@@ -188,7 +188,7 @@ Finalize_Variable_arr_05:                         ; preds = %Finalize_Variable_a
 
 Finalize_Variable_arr_06:                         ; preds = %Finalize_Variable_arr_05
   %67 = load %array.1.0*, %array.1.0** %arr_06, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1.0* %67, i1 false)
+  call void @finalize_allocatable__Array_1_i32(%array.1.0* %67)
   br label %Finalize_Variable_arr_07
 
 Finalize_Variable_arr_07:                         ; preds = %Finalize_Variable_arr_06
@@ -199,7 +199,7 @@ Finalize_Variable_arr_07:                         ; preds = %Finalize_Variable_a
 
 Finalize_Variable_arr_08:                         ; preds = %Finalize_Variable_arr_07
   %70 = load %array.1.1*, %array.1.1** %arr_08, align 8
-  call void @finalize_allocatable__Array_1_str(%array.1.1* %70, i1 false)
+  call void @finalize_allocatable__Array_1_str(%array.1.1* %70)
   br label %Finalize_Variable_arr_09
 
 Finalize_Variable_arr_09:                         ; preds = %Finalize_Variable_arr_08
@@ -212,31 +212,19 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-define internal void @finalize_allocatable__Array_1_StructType__tt(%array.1* %0, i1 %1) {
+define internal void @finalize_allocatable__Array_1_StructType__tt(%array.1* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %array.1* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = icmp ne %array.1* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
   call void @finalize_descriptorArray_Array_1_StructType__tt(%array.1* %0)
-  br i1 %1, label %allocatableArray_in_struct.then, label %allocatableArray_in_struct.else
-
-allocatableArray_in_struct.then:                  ; preds = %is_allocated.then
-  %4 = bitcast %array.1* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.else:                  ; preds = %is_allocated.then
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.ifcont:                ; preds = %allocatableArray_in_struct.else, %allocatableArray_in_struct.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %allocatableArray_in_struct.ifcont
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret void
 }
 
@@ -318,31 +306,19 @@ Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_s
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-define internal void @finalize_allocatable__Array_1_i32(%array.1.0* %0, i1 %1) {
+define internal void @finalize_allocatable__Array_1_i32(%array.1.0* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %array.1.0* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = icmp ne %array.1.0* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
   call void @finalize_descriptorArray_Array_1_i32(%array.1.0* %0)
-  br i1 %1, label %allocatableArray_in_struct.then, label %allocatableArray_in_struct.else
-
-allocatableArray_in_struct.then:                  ; preds = %is_allocated.then
-  %4 = bitcast %array.1.0* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.else:                  ; preds = %is_allocated.then
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.ifcont:                ; preds = %allocatableArray_in_struct.else, %allocatableArray_in_struct.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %allocatableArray_in_struct.ifcont
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret void
 }
 
@@ -356,31 +332,19 @@ entry:
   ret void
 }
 
-define internal void @finalize_allocatable__Array_1_str(%array.1.1* %0, i1 %1) {
+define internal void @finalize_allocatable__Array_1_str(%array.1.1* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %array.1.1* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = icmp ne %array.1.1* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
   call void @finalize_descriptorArray_Array_1_str(%array.1.1* %0)
-  br i1 %1, label %allocatableArray_in_struct.then, label %allocatableArray_in_struct.else
-
-allocatableArray_in_struct.then:                  ; preds = %is_allocated.then
-  %4 = bitcast %array.1.1* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.else:                  ; preds = %is_allocated.then
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.ifcont:                ; preds = %allocatableArray_in_struct.else, %allocatableArray_in_struct.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %allocatableArray_in_struct.ifcont
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret void
 }
 
