@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %codegen_function_polymorphic.abstype_class = type <{ i32 (...)**, %codegen_function_polymorphic.abstype* }>
 %codegen_function_polymorphic.abstype = type {}

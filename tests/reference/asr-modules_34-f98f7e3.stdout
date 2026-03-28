@@ -80,6 +80,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             version:
                                                 (Variable
@@ -113,6 +115,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     package_config_t
@@ -235,6 +239,8 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
                                                                 )
                                                         })
                                                     associate_block
@@ -256,7 +262,25 @@
                                                     (SubroutineCall
                                                         6 1_version_t_to_string
                                                         ()
-                                                        [((Var 5 version))]
+                                                        [((StructInstanceMember
+                                                            (Var 5 package)
+                                                            6 1_package_config_t_version
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 5 version))]
                                                         (StructInstanceMember
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
@@ -298,6 +322,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             package:
                                                 (Variable
@@ -339,6 +365,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             version:
                                                 (Variable
@@ -362,6 +390,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     build_model
@@ -482,6 +512,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -505,6 +537,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     as_string
@@ -541,7 +575,8 @@
                                     [(SubroutineCall
                                         15 1_version_t_to_string
                                         ()
-                                        [((Var 15 string))]
+                                        [((Var 15 self))
+                                        ((Var 15 string))]
                                         (Var 15 self)
                                         .false.
                                     )]
@@ -595,6 +630,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -618,6 +655,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     to_string
@@ -692,6 +731,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration

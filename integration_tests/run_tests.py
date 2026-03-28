@@ -17,6 +17,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin"
 
 fast_tests = "no"
+detect_leak_tests = "no"
 nofast_llvm16 = "no"
 separate_compilation = "no"
 use_ninja = False
@@ -77,16 +78,19 @@ def run_test(backend, std, test_pattern=None):
                 cwd=cwd)
     elif backend == "cpp":
         run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
+                f"-DDETECT_LEAK={detect_leak_tests} -DLLVM_GOC={separate_compilation} "
+                f"-DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            f"-DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} "
+            f"-DFAST={fast_tests} -DDETECT_LEAK={detect_leak_tests} "
+            f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} "
             f"-DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
+                f"-DDETECT_LEAK={detect_leak_tests} -DLLVM_GOC={separate_compilation} "
+                f"{std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
                 cwd=cwd)
 
     # If a test pattern is provided, find matching tests and build only those
@@ -189,6 +193,8 @@ def get_args():
                 help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
+    parser.add_argument("--detect-leak", "--detect-leaks", dest="detect_leak", action='store_true',
+                help="Run LFortran tests with --detect-leaks")
     parser.add_argument("-sc", "--separate_compilation", action='store_true',
                 help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
@@ -211,7 +217,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads, verbose
+    global NO_OF_THREADS, fast_tests, detect_leak_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads, verbose
     local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
     if os.path.isfile(local_lfortran):
         os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
@@ -226,6 +232,7 @@ def main():
         NO_OF_THREADS = args.no_of_threads
         user_specified_threads = True
     fast_tests = "yes" if args.fast else "no"
+    detect_leak_tests = "yes" if args.detect_leak else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
     use_ninja = args.ninja

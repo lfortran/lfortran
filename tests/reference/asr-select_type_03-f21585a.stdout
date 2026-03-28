@@ -36,6 +36,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             success:
                                                 (Variable
@@ -57,6 +59,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     enum_stat
@@ -128,6 +132,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     class_default_select_type
@@ -183,6 +189,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     check_table
@@ -253,6 +261,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -274,6 +284,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -301,6 +313,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -313,8 +327,8 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            [(Real 4)
-                                                            (Integer 4)]
+                                                            [(Integer 4)
+                                                            (Real 4)]
                                                             []
                                                             .false.
                                                             .false.
@@ -330,6 +344,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -548,6 +564,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -575,6 +593,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_table
@@ -623,6 +643,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             int:
                                                 (Variable
@@ -644,12 +666,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_value
                                     (StructType
-                                        [(Real 4)
-                                        (Integer 4)]
+                                        [(Integer 4)
+                                        (Real 4)]
                                         []
                                         .true.
                                         .false.

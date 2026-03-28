@@ -527,7 +527,9 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
-             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))))) {
+             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))) &&
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_arg)) ==
+            ASRUtils::extract_n_dims_from_ttype(x->m_type))) {
             *current_expr = x->m_arg;
         } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
                    !ASRUtils::is_array(x->m_type)) {
@@ -539,8 +541,12 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
                 ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_arg))));
-                arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
-                arr->n_dims = src_arr->n_dims;
+                // Don't replace dims when the target has more dimensions than
+                // the source (e.g., assumed-rank target with 15 empty dims).
+                if (arr->n_dims <= src_arr->n_dims) {
+                    arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
+                    arr->n_dims = src_arr->n_dims;
+                }
             }
         }
     }
@@ -825,15 +831,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
-            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices,
-            bool dt_implicitPass = false /*NoPass*/) {
+            size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
                 if (orig_args[i].m_value == nullptr) {
                     new_args.push_back(al, orig_args[i]);
                     continue;
-                } else if (std::find(indices.begin(), indices.end(), (i + dt_implicitPass)) == indices.end()) {
+                } else if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
                     ASR::expr_t* expr = orig_args[i].m_value;
                     if (ASR::is_a<ASR::Var_t>(*expr)) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
@@ -845,7 +850,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         }
                     }
                     orig_args[i].m_value = maybe_cast_class_arg_to_struct(
-                        subrout_sym, (i + dt_implicitPass), orig_args[i].m_value);
+                        subrout_sym, i, orig_args[i].m_value);
                     // The function parameter expects PointerArray but the actual
                     // call arg may be DescriptorArray (e.g. a temp created by
                     // subroutine_from_function). Add ArrayPhysicalCast.
@@ -856,7 +861,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                 ASRUtils::type_get_past_pointer(arg_type)));
                         if (array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                             ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(subrout_sym);
-                            size_t param_idx = i + dt_implicitPass;
+                            size_t param_idx = i;
                             if (param_idx < ft->n_arg_types &&
                                     ASRUtils::is_array(ft->m_arg_types[param_idx])) {
                                 ASR::Array_t* param_array = ASR::down_cast<ASR::Array_t>(
@@ -905,7 +910,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 actual_dim_vars.reserve(al, 2);
                 get_dimensions(orig_arg_i, actual_dim_vars, al);
 
-                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i + dt_implicitPass);
+                int64_t expected_n_dims = get_expected_n_dims(subrout_sym, i);
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, actual_dim_vars.size());
 
@@ -956,20 +961,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             return true;
-        }
-        /// Is StructMethodDeclaration with m_is_nopass = false (dt will be implicitly passed)
-        static bool is_structMethodDeclaration_with_pass(ASR::symbol_t* const sym){
-            ASR::symbol_t* const sym_past_ext = ASRUtils::symbol_get_past_external(sym);
-            if(!ASR::is_a<ASR::StructMethodDeclaration_t>(*sym_past_ext)) return false;
-            return !ASR::down_cast<ASR::StructMethodDeclaration_t>(sym_past_ext)->m_is_nopass;
-        }
-
-        static bool call_with_implicit_dt_passed(const ASR::SubroutineCall_t* const x){
-            return is_structMethodDeclaration_with_pass(x->m_name);
-        }
-
-        static bool call_with_implicit_dt_passed(const ASR::FunctionCall_t* const x){
-            return is_structMethodDeclaration_with_pass(x->m_name);
         }
         
         static bool is_struct_method_declaration(ASR::symbol_t* const sym){
@@ -1051,6 +1042,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+                        // Self is now explicitly in call args, so no offset needed.
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
+                        xx.m_args = new_args.p;
+                        xx.n_args = new_args.size();
+                        return;
+                    } else if ( new_x_name == nullptr ) {
+                        std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
                         Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
                         xx.m_args = new_args.p;
                         xx.n_args = new_args.size();
@@ -1087,7 +1085,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
             ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices, call_with_implicit_dt_passed(&x));
+            Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym, x.n_args, x.m_args, indices);
 
             {
                 ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);
@@ -1097,8 +1095,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if( ASR::is_a<ASR::Variable_t>(*arg->m_v) &&
                         ASR::down_cast<ASR::Variable_t>(arg->m_v)->m_presence
                             == ASR::presenceType::Optional ) {
-                        max_args += 1;
-                    } else if(call_with_implicit_dt_passed(&x)) {
                         max_args += 1;
                     } else {
                         min_args += 1;
@@ -1287,7 +1283,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name),
                         x.m_dependencies, x.n_dependencies, x.m_intent,
                         sym_val, m_val, x.m_storage, new_var_type,
-                        new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr));
+                        new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr,
+                        x.m_target_attr, x.m_contiguous_attr, x.m_bindc_name,
+                        x.m_is_volatile, x.m_is_protected, x.m_pass_attr, x.m_self_argument));
                 v.proc2newproc[(ASR::symbol_t *) &x] = {new_func_sym_, {}};
                 x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_);
                 not_to_be_erased.insert(new_func_sym_);

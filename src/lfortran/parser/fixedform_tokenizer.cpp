@@ -1089,6 +1089,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "selectcase(")) {
+            lex_selectcase(cur);
+            return true;
+        }
+
         if (is_function_call(cur)) {
             push_token_advance(cur, "call");
             tokenize_line(cur);
@@ -1547,6 +1552,24 @@ struct FixedFormRecursiveDescent {
         tokenize_line(cur); // tokenize rest of line where `select rank` starts
         while (!next_is(cur, "endselect\n")) {
             tokenize_line(cur);
+        }
+        push_token_advance(cur, "endselect");
+        tokenize_line(cur);
+    }
+
+    void lex_selectcase(unsigned char *&cur) {
+        auto end = cur; next_line(end);
+        push_token_advance(cur, "select");
+        push_token_advance(cur, "case");
+        tokenize_line(cur);
+        while (!next_is(cur, "endselect\n")) {
+            if (next_is(cur, "casedefault")) {
+                push_token_advance(cur, "case");
+                push_token_advance(cur, "default");
+                tokenize_line(cur);
+            } else {
+                tokenize_line(cur);
+            }
         }
         push_token_advance(cur, "endselect");
         tokenize_line(cur);

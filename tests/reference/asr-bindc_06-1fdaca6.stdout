@@ -99,6 +99,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     bindc_06
@@ -271,6 +273,8 @@
                                     "c_int4"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             f_int8:
                                 (Variable
@@ -292,6 +296,8 @@
                                     "c_int8"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             f_logical:
                                 (Variable
@@ -313,6 +319,8 @@
                                     "c_logical"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             f_type_c_ptr:
                                 (Variable
@@ -334,6 +342,8 @@
                                     "c_type_c_ptr"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     bindc_06_mod

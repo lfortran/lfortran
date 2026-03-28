@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 
@@ -216,17 +217,17 @@ ifcont14:                                         ; preds = %ifcont13, %then1
 
 ifcont15:                                         ; preds = %ifcont14, %then
   %37 = alloca i64, align 8
-  %38 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %37, i32 0, i32 0, %string_descriptor* @string_const.14, i32* %marks)
-  %39 = load i64, i64* %37, align 4
+  %38 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %37, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.14, i32* %marks)
+  %39 = load i64, i64* %37, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %38, i8** %40, align 8
   %41 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %39, i64* %41, align 4
+  store i64 %39, i64* %41, align 8
   %42 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %43 = load i8*, i8** %42, align 8
   %44 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %45 = load i64, i64* %44, align 4
+  %45 = load i64, i64* %44, align 8
   %46 = trunc i64 %45 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %43, i32 %46, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
   %47 = icmp eq i8* %38, null
@@ -347,17 +348,17 @@ ifcont35:                                         ; preds = %ifcont34, %then21
 
 ifcont36:                                         ; preds = %ifcont35, %then19
   %84 = alloca i64, align 8
-  %85 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.29, i32 0, i32 0), i64* %84, i32 0, i32 0, %string_descriptor* @string_const.31, i32* %marks)
-  %86 = load i64, i64* %84, align 4
+  %85 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.29, i32 0, i32 0), i64* %84, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.31, i32* %marks)
+  %86 = load i64, i64* %84, align 8
   %stringFormat_desc37 = alloca %string_descriptor, align 8
   %87 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc37, i32 0, i32 0
   store i8* %85, i8** %87, align 8
   %88 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc37, i32 0, i32 1
-  store i64 %86, i64* %88, align 4
+  store i64 %86, i64* %88, align 8
   %89 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc37, i32 0, i32 0
   %90 = load i8*, i8** %89, align 8
   %91 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc37, i32 0, i32 1
-  %92 = load i64, i64* %91, align 4
+  %92 = load i64, i64* %91, align 8
   %93 = trunc i64 %92 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @33, i32 0, i32 0), i8* %90, i32 %93, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 1)
   %94 = icmp eq i8* %85, null
@@ -464,17 +465,17 @@ ifcont56:                                         ; preds = %ifcont55, %then42
 
 ifcont57:                                         ; preds = %ifcont56, %then40
   %129 = alloca i64, align 8
-  %130 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.46, i32 0, i32 0), i64* %129, i32 0, i32 0, %string_descriptor* @string_const.48, i32* %marks)
-  %131 = load i64, i64* %129, align 4
+  %130 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.46, i32 0, i32 0), i64* %129, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.48, i32* %marks)
+  %131 = load i64, i64* %129, align 8
   %stringFormat_desc58 = alloca %string_descriptor, align 8
   %132 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc58, i32 0, i32 0
   store i8* %130, i8** %132, align 8
   %133 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc58, i32 0, i32 1
-  store i64 %131, i64* %133, align 4
+  store i64 %131, i64* %133, align 8
   %134 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc58, i32 0, i32 0
   %135 = load i8*, i8** %134, align 8
   %136 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc58, i32 0, i32 1
-  %137 = load i64, i64* %136, align 4
+  %137 = load i64, i64* %136, align 8
   %138 = trunc i64 %137 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @49, i32 0, i32 0), i8* %135, i32 %138, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 1)
   %139 = icmp eq i8* %130, null
@@ -499,7 +500,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 

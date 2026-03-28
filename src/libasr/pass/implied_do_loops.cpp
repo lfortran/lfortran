@@ -634,7 +634,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* struct_var = nullptr;
         if (x->m_struct_var) {
             struct_var = x->m_struct_var;
-        } else if (x->m_args[0]) {
+        } else if (x->n_args > 0 && x->m_args[0]) {
             struct_var = x->m_args[0];
         }
         result_var = PassUtils::create_var(result_counter, "_array_constructor_",
@@ -812,7 +812,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
             x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
         }
-        if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))) ){
+        if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))
+                && x->m_old == x->m_new) ){
             *current_expr = x->m_arg;
             return;
         }
@@ -1114,7 +1115,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::storage_typeType::Default, str_type, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, false, false,
-                nullptr, false, false);
+                nullptr, false, false,
+                ASR::pass_attrType::NotMethod, nullptr);
             current_scope->add_symbol(accum_name,
                 ASR::down_cast<ASR::symbol_t>(accum_var_asr));
             ASR::expr_t* accum_ref = ASRUtils::EXPR(ASR::make_Var_t(

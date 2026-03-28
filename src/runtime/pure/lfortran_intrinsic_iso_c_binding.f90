@@ -29,8 +29,17 @@ integer, parameter :: c_char = 1
 integer, parameter :: c_intptr_t = 8
 integer, parameter :: c_ptrdiff_t = 8
 integer, parameter :: c_signed_char = 1
+integer, parameter :: c_intmax_t = 8
+
 character(len=1), parameter :: c_null_char = char(0)
+character(len=1), parameter :: c_alert = char(7)
+character(len=1), parameter :: c_backspace = char(8)
+character(len=1), parameter :: c_form_feed = char(12)
 character(len=1), parameter :: c_new_line = char(10)
+character(len=1), parameter :: c_carriage_return = char(13)
+character(len=1), parameter :: c_horizontal_tab = char(9)
+character(len=1), parameter :: c_vertical_tab = char(11)
+
 type(c_ptr), parameter :: c_null_ptr = c_ptr(0)
 type(c_funptr), parameter :: c_null_funptr = c_funptr(0)
 

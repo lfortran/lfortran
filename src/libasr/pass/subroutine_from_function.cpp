@@ -642,7 +642,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }

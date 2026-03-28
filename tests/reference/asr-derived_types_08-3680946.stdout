@@ -113,6 +113,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -162,6 +164,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     derived_types_08
@@ -169,7 +173,8 @@
                     [(SubroutineCall
                         6 1_shape_initialize_subrout
                         ()
-                        [((IntegerConstant 1 (Integer 4) Decimal))
+                        [((Var 6 shp))
+                        ((IntegerConstant 1 (Integer 4) Decimal))
                         ((LogicalConstant
                             .true.
                             (Logical 4)
@@ -182,7 +187,8 @@
                     (SubroutineCall
                         6 1_shape_initialize_subrout
                         ()
-                        [((IntegerConstant 2 (Integer 4) Decimal))
+                        [((Var 6 rect))
+                        ((IntegerConstant 2 (Integer 4) Decimal))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -377,6 +383,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -398,6 +406,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             sh:
                                                 (Variable
@@ -427,6 +437,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -448,6 +460,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -469,6 +483,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     initialize_subrout
@@ -583,6 +599,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             width:
                                                 (Variable
@@ -604,6 +622,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     rectangle
@@ -652,6 +672,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -673,6 +695,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             initialize:
                                                 (StructMethodDeclaration
@@ -705,6 +729,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -726,6 +752,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     shape

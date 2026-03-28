@@ -82,6 +82,7 @@ if [[ $WIN != "1" ]]; then
     if [[ $MACOS != "1" ]]; then
         ./run_tests.py -b llvm_submodule -sc -j${NPROC}
     fi
+    ./run_tests.py -b llvm --detect-leaks
     cd ..
 
     pip install src/server/tests tests/server
