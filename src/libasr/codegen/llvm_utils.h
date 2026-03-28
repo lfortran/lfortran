@@ -1032,6 +1032,23 @@ class ASRToLLVMVisitor;
             auto* const struct_sym = get_struct_sym(v);
             check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
+            // For non-allocatable DescriptorArray of strings, the data pointer
+            // (heap-allocated array of string_descriptors) must be freed here.
+            // The cached finalize_descriptorArray function is shared with the
+            // allocatable path where the descriptor may be stack-allocated, so
+            // the free cannot live inside the cache.
+            if(!ASRUtils::is_allocatable_or_pointer(v->m_type)
+                    && ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                auto* arr_t = ASR::down_cast<ASR::Array_t>(v->m_type);
+                if(arr_t->m_physical_type == ASR::DescriptorArray
+                        && ASRUtils::extract_type(arr_t->m_type)->type == ASR::String) {
+                    auto* arr_llvm_t = get_llvm_type(v->m_type, struct_sym);
+                    auto* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                    auto const data = builder_->CreateLoad(elem_llvm_t->getPointerTo(),
+                                                           llvm_utils_->create_gep2(arr_llvm_t, llvm_var, 0));
+                    llvm_utils_->lfortran_free_nocheck(data);
+                }
+            }
         }
 
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
@@ -1543,8 +1560,9 @@ class ASRToLLVMVisitor;
 
         void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* const t){
             if(ASRUtils::extract_type(t)->type == ASR::String){ 
-                // Array of strings are special handled. 
-                // it's always stack allocated. (e.g. StringDescriptor -> {i8*, i64})
+                // For PointerArray of strings, the string_descriptor is
+                // stack-allocated. For DescriptorArray of strings, the
+                // data-pointer free is handled in finalize_variable.
                 return;
             } else if (ASRUtils::non_unlimited_polymorphic_class(t)){
                 // Class => {VTable* , underlying_struct*}
