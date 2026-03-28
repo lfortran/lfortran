@@ -6700,8 +6700,8 @@ public:
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
-                    intrinsic_module_procedures_as_asr_nodes.end()) {
+                if (get_intrinsic_module_procedures_as_asr_nodes().find(sub_name) !=
+                    get_intrinsic_module_procedures_as_asr_nodes().end()) {
                     if (sub_name == "c_f_pointer") {
                         tmp = create_CFPointer(x);
                     } else if (sub_name == "c_f_procpointer") {

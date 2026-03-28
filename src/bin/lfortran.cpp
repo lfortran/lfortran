@@ -1227,15 +1227,18 @@ int compile_src_to_object_file(const std::string &infile,
         if (err) return err;
     }
 
-    // ASR -> LLVM
-    LCompilers::LLVMEvaluator e(compiler_options.target);
-
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
-        e.create_empty_object_file(outfile);
+        try {
+            LCompilers::LLVMEvaluator &e = fe.get_llvm_evaluator();
+            e.create_empty_object_file(outfile);
+        } catch (const std::exception &ex) {
+            std::cerr << "Code emission failed: " << ex.what() << std::endl;
+            return 10;
+        }
         return 0;
     }
 
@@ -1273,10 +1276,17 @@ int compile_src_to_object_file(const std::string &infile,
 
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
+        LCompilers::LLVMEvaluator &e = fe.get_llvm_evaluator();
         e.save_asm_file(*(m->m_m), outfile);
     } else {
         t1 = std::chrono::high_resolution_clock::now();
-        e.save_object_file(*(m->m_m), outfile);
+        try {
+            LCompilers::LLVMEvaluator &e = fe.get_llvm_evaluator();
+            e.save_object_file(*(m->m_m), outfile);
+        } catch (const std::exception &ex) {
+            std::cerr << "Code emission failed: " << ex.what() << std::endl;
+            return 10;
+        }
         t2 = std::chrono::high_resolution_clock::now();
         time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
@@ -1297,6 +1307,7 @@ int compile_src_to_object_file(const std::string &infile,
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
                         .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
+                    LCompilers::LLVMEvaluator &e = fe.get_llvm_evaluator();
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())

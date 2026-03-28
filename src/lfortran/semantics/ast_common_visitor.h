@@ -1917,6 +1917,14 @@ public:
         return map;
     }
 
+    static const std::set<std::string> &get_intrinsic_module_procedures_as_asr_nodes() {
+        static const std::set<std::string> set = {
+            "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
+            "c_sizeof"
+        };
+        return set;
+    }
+
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
@@ -1928,10 +1936,6 @@ public:
     SetChar current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
-    std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
-        "c_sizeof"
-    };
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
@@ -15892,7 +15896,8 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                if (get_intrinsic_module_procedures_as_asr_nodes().find(var_name) !=
+                        get_intrinsic_module_procedures_as_asr_nodes().end()) {
                     if (var_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
                     } else if (var_name == "c_associated") {

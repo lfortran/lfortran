@@ -17,36 +17,36 @@ namespace LCompilers::LFortran {
 struct IntrinsicProceduresAsASRNodes {
 
     private:
-
-        std::set<std::string> intrinsics_present_in_ASR;
-        std::set<std::string> kind_based_intrinsics;
-
-    public:
-
-        IntrinsicProceduresAsASRNodes() {
-            intrinsics_present_in_ASR = {"size", "lbound", "ubound",
+        static const std::set<std::string> &intrinsics_present_in_asr() {
+            static const std::set<std::string> set = {
+                "size", "lbound", "ubound",
                 "transpose", "transfer", "reshape", "rank",
                 "iachar", "null", "associated", "len", "complex", "is_contiguous",
-
-                // LF specific
                 "_lfortran_unsigned",
                 "_lfortran_len", "_lfortran_get_item", "_lfortran_concat", "_lfortran_rep", "_lfortran_pop",
                 "_lfortran_eq",
                 "_lfortran_list_constant", "_lfortran_list_count",
                 "_lfortran_set_constant",
                 "_lfortran_dict_constant",
-                "_lfortran_tuple_constant", 
-                "_lfortran_str", "_lfortran_ord"};
-
-            kind_based_intrinsics = {};
+                "_lfortran_tuple_constant",
+                "_lfortran_str", "_lfortran_ord"
+            };
+            return set;
         }
 
+        static const std::set<std::string> &kind_based_intrinsics() {
+            static const std::set<std::string> set = {};
+            return set;
+        }
+
+    public:
+
         bool is_intrinsic_present_in_ASR(std::string& name) {
-            return intrinsics_present_in_ASR.find(name) != intrinsics_present_in_ASR.end();
+            return intrinsics_present_in_asr().find(name) != intrinsics_present_in_asr().end();
         }
 
         bool is_kind_based_selection_required(std::string& name) {
-            return kind_based_intrinsics.find(name) != kind_based_intrinsics.end();
+            return kind_based_intrinsics().find(name) != kind_based_intrinsics().end();
         }
 
 };
@@ -70,33 +70,34 @@ struct IntrinsicProcedures {
     */
 
     typedef ASR::expr_t* (*comptime_eval_callback)(Allocator &, const Location &, Vec<ASR::expr_t*> &, const CompilerOptions &);
-    std::map<std::string, std::tuple<std::string, comptime_eval_callback, bool>> comptime_eval_map;
-
-    IntrinsicProcedures() {
-        comptime_eval_map = {
+    static const std::map<std::string, std::tuple<std::string, comptime_eval_callback, bool>> &comptime_eval_map() {
+        static const std::string ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
+        static const std::string custom = "lfortran_intrinsic_custom";
+        static const std::map<std::string, std::tuple<std::string, comptime_eval_callback, bool>> map = {
             // Arguments can be evaluated or not
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
-            {"newunit", {m_custom, &not_implemented, false}},
+            {"newunit", {custom, &not_implemented, false}},
 
             // IEEE Arithmetic
-            {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_is_finite", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_is_negative", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_copy_sign", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_support_datatype", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_is_normal", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_unordered", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_logb", {m_ieee_arithmetic, &not_implemented, false}},
-            {"ieee_rem", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_value", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_nan", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_finite", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_negative", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_copy_sign", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_support_datatype", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_normal", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_unordered", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_logb", {ieee_arithmetic, &not_implemented, false}},
+            {"ieee_rem", {ieee_arithmetic, &not_implemented, false}},
         };
+        return map;
     }
 
     bool is_intrinsic(std::string name) const {
-        auto search = comptime_eval_map.find(name);
-        if (search != comptime_eval_map.end()) {
+        auto search = comptime_eval_map().find(name);
+        if (search != comptime_eval_map().end()) {
             return true;
         } else {
             return false;
@@ -104,8 +105,8 @@ struct IntrinsicProcedures {
     }
 
     std::string get_module(std::string name, const Location &loc, diag::Diagnostics &diag) const {
-        auto search = comptime_eval_map.find(name);
-        if (search != comptime_eval_map.end()) {
+        auto search = comptime_eval_map().find(name);
+        if (search != comptime_eval_map().end()) {
             std::string module_name = std::get<0>(search->second);
             return module_name;
         } else {
@@ -119,8 +120,8 @@ struct IntrinsicProcedures {
     }
 
     ASR::expr_t *comptime_eval(std::string name, Allocator &al, const Location &loc, Vec<ASR::call_arg_t>& args, const CompilerOptions &compiler_options) const {
-        auto search = comptime_eval_map.find(name);
-        if (search != comptime_eval_map.end()) {
+        auto search = comptime_eval_map().find(name);
+        if (search != comptime_eval_map().end()) {
             comptime_eval_callback cb = std::get<1>(search->second);
             bool eval_args = std::get<2>(search->second);
             if (eval_args) {

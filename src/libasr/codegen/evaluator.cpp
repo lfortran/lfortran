@@ -263,9 +263,6 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     }
 #endif
 
-    // For some reason the JIT requires a different TargetMachine
-    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
-
     _lfortran_stan(0.5);
 }
 
@@ -273,6 +270,12 @@ LLVMEvaluator::~LLVMEvaluator()
 {
     jit.reset();
     context.reset();
+}
+
+void LLVMEvaluator::ensure_jit() {
+    if (!jit) {
+        jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+    }
 }
 
 std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")
@@ -297,7 +300,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
 #else
     module->setTargetTriple(target_triple);
 #endif
-    module->setDataLayout(jit->getDataLayout());
+    module->setDataLayout(TM->createDataLayout());
     return module;
 }
 
@@ -319,6 +322,7 @@ void LLVMEvaluator::add_module(const std::string &source) {
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
+    ensure_jit();
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
 #if LLVM_VERSION_MAJOR >= 21
@@ -344,6 +348,7 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+    ensure_jit();
 #if LLVM_VERSION_MAJOR < 8
     // LLVM 7: Use findSymbol which returns JITSymbol
     llvm::JITSymbol s = jit->findSymbol(name);
@@ -536,6 +541,7 @@ llvm::LLVMContext &LLVMEvaluator::get_context()
 }
 
 const llvm::DataLayout &LLVMEvaluator::get_jit_data_layout() {
+    ensure_jit();
     return jit->getDataLayout();
 }
 

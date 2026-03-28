@@ -63,6 +63,7 @@ public:
 class LLVMEvaluator
 {
 private:
+    void ensure_jit();
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
     std::unique_ptr<llvm::LLVMContext> context;
     std::string target_triple;
