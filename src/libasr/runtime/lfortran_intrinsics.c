@@ -9258,7 +9258,7 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     if(iostat != NULL) *iostat = 0;
 }
 
-// Helper function to skip whitespace and handle commas in list-directed I/O
+// Helper function to skip whitespace, and handle commas in list-directed I/O
 static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offset, int32_t *iostat) {
     while (buf[*skip] && (buf[*skip] == ' ' || buf[*skip] == '\t')) {
         (*skip)++;
