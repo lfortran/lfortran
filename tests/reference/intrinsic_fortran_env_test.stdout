@@ -1,7 +1,0 @@
-
-program test_fortran_env
-use, intrinsic :: iso_fortran_env, only: real64
-implicit none
-real(8), save :: x = 3.1400001049041748e+00_8
-print *, x
-end program test_fortran_env
