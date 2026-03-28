@@ -5591,6 +5591,17 @@ public:
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        // Free globals if detecting leaks is ON, to print clean report
+        if(compiler_options.detect_leaks){
+            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
+            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
+                auto &sym = name_sym_pair.second;
+                if(ASR::is_a<ASR::Module_t>(*sym)){
+                    llvm_symtab_finalizer.finalize_symtab(
+                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+                }
+            }
+        }
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = module->getFunction(

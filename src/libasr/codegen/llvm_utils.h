@@ -976,7 +976,6 @@ class ASRToLLVMVisitor;
      * @class LLVMFinalize
      * @brief Finalize variables before exiting their scope.
      * @details 
-     * Notice Global variables aren't finalized; They live till program ends.
      *
      * @see doc/src/llvm_utils.md 
      */
@@ -1730,9 +1729,8 @@ class ASRToLLVMVisitor;
                                       && ASRUtils::get_FunctionType(sym)->m_deftype == ASR::Interface;
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
-            const bool is_module = sym && ASR::is_a<ASR::Module_t>(*sym);
             const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
-            return is_TU || is_module || is_interface || is_external_abi ;
+            return is_TU || is_interface || is_external_abi ;
         }
 
         static bool is_variable(ASR::symbol_t* const s){
