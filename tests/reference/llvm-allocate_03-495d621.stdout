@@ -1016,7 +1016,7 @@ FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
   %455 = load %array.3*, %array.3** %c, align 8
-  call void @finalize_allocatable__Array_3_i32(%array.3* %455, i1 false)
+  call void @finalize_allocatable__Array_3_i32(%array.3* %455)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -3235,31 +3235,19 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-define internal void @finalize_allocatable__Array_3_i32(%array.3* %0, i1 %1) {
+define internal void @finalize_allocatable__Array_3_i32(%array.3* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %array.3* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = icmp ne %array.3* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
   call void @finalize_descriptorArray_Array_3_i32(%array.3* %0)
-  br i1 %1, label %allocatableArray_in_struct.then, label %allocatableArray_in_struct.else
-
-allocatableArray_in_struct.then:                  ; preds = %is_allocated.then
-  %4 = bitcast %array.3* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.else:                  ; preds = %is_allocated.then
-  br label %allocatableArray_in_struct.ifcont
-
-allocatableArray_in_struct.ifcont:                ; preds = %allocatableArray_in_struct.else, %allocatableArray_in_struct.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %allocatableArray_in_struct.ifcont
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret void
 }
 

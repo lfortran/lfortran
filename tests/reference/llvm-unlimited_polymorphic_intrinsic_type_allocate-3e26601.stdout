@@ -154,7 +154,7 @@ FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate: ; preds = %retu
 
 Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
   %39 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  call void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %39, i1 false)
+  call void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %39)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -204,15 +204,15 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 ; Function Attrs: nounwind
 declare void @llvm.stackrestore(i8*) #1
 
-define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0, i1 %1) {
+define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %"~unlimited_polymorphic_type"* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = icmp ne %"~unlimited_polymorphic_type"* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %4 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
+  %3 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry

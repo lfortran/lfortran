@@ -884,12 +884,12 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
   %358 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s1, align 8
-  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %358, i1 false)
+  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %358)
   br label %Finalize_Variable_s2
 
 Finalize_Variable_s2:                             ; preds = %Finalize_Variable_s1
   %359 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s2, align 8
-  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %359, i1 false)
+  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %359)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -1053,15 +1053,15 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-define internal void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0, i1 %1) {
+define internal void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %select_type_13_module.shape_class* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = icmp ne %select_type_13_module.shape_class* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %4 = bitcast %select_type_13_module.shape_class* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
+  %3 = bitcast %select_type_13_module.shape_class* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry

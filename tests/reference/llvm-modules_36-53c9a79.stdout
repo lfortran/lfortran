@@ -716,7 +716,6 @@ entry:
   %9 = getelementptr %string_descriptor, %string_descriptor* %8, i32 0, i32 0
   %10 = load i8*, i8** %9, align 8
   call void @_lfortran_free_alloc(i8* %1, i8* %10)
-  %11 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %0, i32 0, i32 4
   ret void
 }
 
