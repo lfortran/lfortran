@@ -41,7 +41,7 @@ inline std::map<std::string, int> &get_assumed_rank_arrays() {
     return *arrays;
 }
 
-static int PDT_SENTINEL = 1000;
+static constexpr int PDT_SENTINEL = 1000;
 
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
@@ -7892,19 +7892,19 @@ public:
                         && ASR::down_cast<ASR::ExternalSymbol_t>(
                                variable_added_to_symtab->m_type_declaration)
                                    ->m_external == nullptr) {
-                        auto &vars_with_deferred_struct_declaration =
+                        auto &deferred_struct_declarations =
                             get_vars_with_deferred_struct_declaration();
-                        if (vars_with_deferred_struct_declaration.find(
+                        if (deferred_struct_declarations.find(
                                 ASRUtils::symbol_name(variable_added_to_symtab->m_type_declaration))
-                            != vars_with_deferred_struct_declaration.end()) {
-                            vars_with_deferred_struct_declaration[ASRUtils::symbol_name(
+                            != deferred_struct_declarations.end()) {
+                            deferred_struct_declarations[ASRUtils::symbol_name(
                                                                       variable_added_to_symtab
                                                                           ->m_type_declaration)]
                                 .push_back(variable_added_to_symtab);
                         } else {
                             std::vector<ASR::Variable_t*> var_vector;
                             var_vector.push_back(variable_added_to_symtab);
-                            vars_with_deferred_struct_declaration[ASRUtils::symbol_name(
+                            deferred_struct_declarations[ASRUtils::symbol_name(
                                 variable_added_to_symtab->m_type_declaration)]
                                 = var_vector;
                         }
