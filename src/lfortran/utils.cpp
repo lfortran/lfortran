@@ -97,10 +97,28 @@ std::string get_runtime_library_c_header_dir()
 
     switch (execution_mode)
     {
-        case ExecutionMode::LFortranDevelopment:
+        case ExecutionMode::LFortranDevelopment: {
+            std::string header_dir = lfortran_exec_path_dir + "/../libasr/runtime";
+            if (std::filesystem::exists(header_dir + "/ISO_Fortran_binding.h")) {
+                return header_dir;
+            }
+            header_dir = lfortran_exec_path_dir + "/../../../src/libasr/runtime";
+            if (std::filesystem::exists(header_dir + "/ISO_Fortran_binding.h")) {
+                return header_dir;
+            }
             return lfortran_exec_path_dir + "/../libasr/runtime";
-        case ExecutionMode::LFortranCtest:
+        }
+        case ExecutionMode::LFortranCtest: {
+            std::string header_dir = lfortran_exec_path_dir + "/../../libasr/runtime";
+            if (std::filesystem::exists(header_dir + "/ISO_Fortran_binding.h")) {
+                return header_dir;
+            }
+            header_dir = lfortran_exec_path_dir + "/../../../../src/libasr/runtime";
+            if (std::filesystem::exists(header_dir + "/ISO_Fortran_binding.h")) {
+                return header_dir;
+            }
             return lfortran_exec_path_dir + "/../../libasr/runtime";
+        }
         case ExecutionMode::LFortranInstalled:
             return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
         default:
