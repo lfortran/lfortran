@@ -347,6 +347,8 @@ private :
                    || ASR::is_a<ASR::Set_t>  (*function_return_t)
                    || ASR::is_a<ASR::Tuple_t>(*function_return_t)) {
             return false;
+        } else if (ASRUtils::is_allocatable(function_return_t)) {
+            return false;
         } else {
              throw LCompilersException("Unhandled Type : " + ASRUtils::type_to_str_fortran_expr(function_return_t, nullptr));
         }
@@ -577,6 +579,19 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return PassUtils::is_aggregate_or_array_type(m_value);
         }
 
+        bool is_function_call_returning_allocatable_scalar(ASR::expr_t* m_value) {
+            if (!ASR::is_a<ASR::FunctionCall_t>(*m_value))
+                return false;
+            ASR::ttype_t* t = ASRUtils::expr_type(m_value);
+            if (!ASRUtils::is_allocatable(t))
+                return false;
+            ASR::ttype_t* inner = ASRUtils::type_get_past_allocatable(t);
+            return ASR::is_a<ASR::Integer_t>(*inner)
+                || ASR::is_a<ASR::Real_t>(*inner)
+                || ASR::is_a<ASR::Complex_t>(*inner)
+                || ASR::is_a<ASR::Logical_t>(*inner);
+        }
+
         bool subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
@@ -743,7 +758,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
-            if(is_function_call_returning_aggregate_type(x.m_value)) {
+            if(is_function_call_returning_aggregate_type(x.m_value)
+                || is_function_call_returning_allocatable_scalar(x.m_value)) {
                 if (x.m_overloaded) {
                     // User-defined assignment(=) where the RHS is a function
                     // call returning an aggregate type.  Visit the overloaded
