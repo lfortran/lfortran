@@ -12385,9 +12385,11 @@ public:
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
         ASR::expr_t* order_expr = nullptr;
         ASR::expr_t* pad_expr = nullptr;
+        ASR::expr_t* order_for_eval = nullptr;
         if (order!=nullptr){
             this->visit_expr(*order);
             order_expr = ASRUtils::EXPR(tmp);
+            order_for_eval = ASRUtils::expr_value(order_expr);
         }
         if (pad != nullptr){
             this->visit_expr(*pad);
@@ -12539,10 +12541,10 @@ public:
                     }
                 }
             }
-            if (order_expr && ASR::is_a<ASR::ArrayConstant_t>(*order_expr)){
-                ASR::ArrayConstant_t* const_order = ASR::down_cast<ASR::ArrayConstant_t>(order_expr);
+            if (order_for_eval && ASR::is_a<ASR::ArrayConstant_t>(*order_for_eval)){
+                ASR::ArrayConstant_t* const_order = ASR::down_cast<ASR::ArrayConstant_t>(order_for_eval);
                 std::vector<int> elements;
-                int64_t n = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(order_expr));
+                int64_t n = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(order_for_eval));
                 for (int64_t i=0; i <  n; i++) {
                     if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, const_order, i))){
                         elements.push_back(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, i))->m_n);
@@ -12709,7 +12711,7 @@ public:
                 ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
             }
         }
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, pad_expr, reshape_ttype, value);
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, pad_expr, order_expr, reshape_ttype, value);
     }
 
     ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
