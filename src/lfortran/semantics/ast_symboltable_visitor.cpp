@@ -2645,8 +2645,6 @@ public:
         // variables declared with deferred struct declarations. For an example, see
         // `integration_tests/modules_37.f90` for declaration of `ptr` inside struct
         // `build_target_ptr`.
-        auto &vars_with_deferred_struct_declaration =
-            get_vars_with_deferred_struct_declaration();
         if (vars_with_deferred_struct_declaration.find(to_lower(x.m_name))
             != vars_with_deferred_struct_declaration.end()) {
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
