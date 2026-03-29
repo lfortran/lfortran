@@ -108,9 +108,109 @@ namespace LCompilers::CommandLineInterface {
         std::exit(1);
     }
 
+    static void initialize_subcommands(LFortranCommandLineParser &parser) {
+        parser.fmt = parser.app.add_subcommand("fmt", "Format Fortran source files.");
+        parser.fmt->add_option("file", parser.opts.arg_fmt_file,
+            "Fortran source file to format")->required();
+        parser.fmt->add_flag("-i", parser.opts.arg_fmt_inplace,
+            "Modify <file> in-place (instead of writing to stdout)");
+        parser.fmt->add_option("--spaces", parser.opts.arg_fmt_indent,
+            "Number of spaces to use for indentation")->capture_default_str();
+        parser.fmt->add_flag("--indent-unit", parser.opts.arg_fmt_indent_unit,
+            "Indent contents of sub / fn / prog / mod");
+        parser.fmt->add_flag("--no-color", parser.opts.arg_fmt_no_color,
+            "Turn off color when writing to stdout");
+
+        parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
+        parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
+            "The kernel connection file")->required();
+
+        parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
+        parser.mod->add_option("file", parser.opts.arg_mod_file,
+            "Mod file (*.mod)")->required();
+        parser.mod->add_flag("--show-asr", parser.opts.arg_mod_show_asr,
+            "Show ASR for the module");
+        parser.mod->add_flag("--no-color", parser.opts.arg_mod_no_color,
+            "Turn off colored ASR");
+
+        parser.pywrap = parser.app.add_subcommand("pywrap", "Python wrapper generator");
+        parser.pywrap->add_option("file", parser.opts.arg_pywrap_file,
+            "Fortran source file (*.f90)")->required();
+        parser.pywrap->add_option("--array-order", parser.opts.arg_pywrap_array_order,
+            "Select array order (c, f)")->capture_default_str();
+
+#ifdef WITH_LSP
+        parser.server = parser.languageServerInterface.prepare(parser.app);
+#endif
+        parser.app.require_subcommand(0, 1);
+    }
+
+    static bool try_fast_compile_only_parse(int argc, const char *const *argv,
+                                            LFortranCommandLineParser &parser) {
+        if (argv == nullptr || argc <= 1) {
+            return false;
+        }
+
+        LFortranCommandLineOpts fast_opts = parser.opts;
+        CompilerOptions &compiler_options = fast_opts.compiler_options;
+        int positional_count = 0;
+
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "-c") {
+                fast_opts.arg_c = true;
+                continue;
+            }
+            if (arg == "-g") {
+                compiler_options.emit_debug_info = true;
+                continue;
+            }
+            if (arg == "--time-report") {
+                compiler_options.time_report = true;
+                continue;
+            }
+            if (arg == "-o") {
+                if (i + 1 >= argc) {
+                    return false;
+                }
+                compiler_options.arg_o = argv[++i];
+                continue;
+            }
+            if (arg.rfind("-o", 0) == 0 && arg.size() > 2) {
+                compiler_options.arg_o = arg.substr(2);
+                continue;
+            }
+            if (!arg.empty() && arg[0] != '-') {
+                fast_opts.arg_files.push_back(arg);
+                positional_count++;
+                continue;
+            }
+            return false;
+        }
+
+        if (!fast_opts.arg_c || positional_count != 1) {
+            return false;
+        }
+
+        fast_opts.arg_file = fast_opts.arg_files[0];
+        compiler_options.use_colors = true;
+        compiler_options.use_runtime_colors = false;
+        compiler_options.indent = true;
+        compiler_options.prescan = true;
+        compiler_options.c_preprocessor = false;
+        compiler_options.infer_mode = false;
+        compiler_options.po.openmp = compiler_options.openmp;
+        parser.opts = std::move(fast_opts);
+        initialize_subcommands(parser);
+        return true;
+    }
+
     auto LFortranCommandLineParser::parse() -> void {
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        if (try_fast_compile_only_parse(argc, argv, *this)) {
+            return;
+        }
 
         std::string group_warning_options = "Warning Options";
         std::string group_language_options = "Language Options";
@@ -277,37 +377,8 @@ namespace LCompilers::CommandLineInterface {
         * Subcommands:
         */
 
-        // fmt
-        fmt = app.add_subcommand("fmt", "Format Fortran source files.");
-        fmt->add_option("file", opts.arg_fmt_file, "Fortran source file to format")->required();
-        fmt->add_flag("-i", opts.arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
-        fmt->add_option("--spaces", opts.arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
-        fmt->add_flag("--indent-unit", opts.arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
-        fmt->add_flag("--no-color", opts.arg_fmt_no_color, "Turn off color when writing to stdout");
-
-        // kernel
-        kernel = app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-        kernel->add_option("-f", opts.arg_kernel_f, "The kernel connection file")->required();
-
-        // mod
-        mod = app.add_subcommand("mod", "Fortran mod file utilities.");
-        mod->add_option("file", opts.arg_mod_file, "Mod file (*.mod)")->required();
-        mod->add_flag("--show-asr", opts.arg_mod_show_asr, "Show ASR for the module");
-        mod->add_flag("--no-color", opts.arg_mod_no_color, "Turn off colored ASR");
-
-        // pywrap
-        pywrap = app.add_subcommand("pywrap", "Python wrapper generator");
-        pywrap->add_option("file", opts.arg_pywrap_file, "Fortran source file (*.f90)")->required();
-        pywrap->add_option("--array-order", opts.arg_pywrap_array_order,
-                "Select array order (c, f)")->capture_default_str();
-
-        #ifdef WITH_LSP
-            // server
-            server = languageServerInterface.prepare(app);
-        #endif
-
+        initialize_subcommands(*this);
         app.get_formatter()->column_width(25);
-        app.require_subcommand(0, 1);
 
         std::string help_arg = find_help_category_arg(argc, argv, args);
         if (!help_arg.empty()) {

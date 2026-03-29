@@ -25,7 +25,8 @@ int position = 0;
 
 namespace LCompilers::LFortran {
 
-const std::unordered_map<std::string, yytokentype> identifiers_map = {
+static const std::unordered_map<std::string, yytokentype> &identifier_token_map() {
+    static const std::unordered_map<std::string, yytokentype> map = {
     {"EOF", END_OF_FILE},
     {"\n", TK_NEWLINE},
     {"name", TK_NAME},
@@ -267,7 +268,9 @@ const std::unordered_map<std::string, yytokentype> identifiers_map = {
     {"while", KW_WHILE},
     {"write", KW_WRITE},
     {"uminus", UMINUS}
-};
+    };
+    return map;
+}
 
 // star-forms must appear before non-stars
 const std::vector<std::string> declarators{
@@ -464,8 +467,8 @@ struct FixedFormRecursiveDescent {
 
     // token_type automatically determined
     void push_token_no_advance(unsigned char *cur, const std::string &token_str) {
-	auto it = identifiers_map.find(token_str);
-	LCOMPILERS_ASSERT(it != identifiers_map.end());
+	auto it = identifier_token_map().find(token_str);
+	LCOMPILERS_ASSERT(it != identifier_token_map().end());
         push_token_no_advance_token(cur, token_str, it->second);
     }
 
