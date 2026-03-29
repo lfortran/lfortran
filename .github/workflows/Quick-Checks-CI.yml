@@ -330,6 +330,59 @@ jobs:
         run: |
           python3 check_binary_file_in_git_history.py
 
+  liric_api_compat:
+    name: LFortran CI (OS=ubuntu-latest, LIRIC)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout lfortran
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout liric
+        uses: actions/checkout@v6
+        with:
+          repository: krystophny/liric
+          ref: main
+          path: liric
+          fetch-depth: 0
+
+      - name: Checkout meta repo
+        uses: actions/checkout@v6
+        with:
+          repository: krystophny/lfortran-dev
+          ref: main
+          path: lfortran-dev
+          fetch-depth: 0
+
+      - name: Install Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build cmake bison re2c zstd jq python3 python3-pip python-is-python3 git \
+            clang llvm libunwind-dev
+
+      - name: Run WITH_LIRIC quick parity suite
+        run: |
+          set -euo pipefail
+          cd "${GITHUB_WORKSPACE}"
+          LFORTRAN_DIR="${GITHUB_WORKSPACE}" \
+          LIRIC_DIR="${GITHUB_WORKSPACE}/liric" \
+            "${GITHUB_WORKSPACE}/lfortran-dev/scripts/liric-parity.sh" quick
+
+      - name: Upload LIRIC artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: liric-api-compat
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            ${{ github.workspace }}/build-liric/Testing/Temporary/LastTest.log
+            ${{ github.workspace }}/integration_tests/test-*/Testing/Temporary/LastTest.log
+
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"

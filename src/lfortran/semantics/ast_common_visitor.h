@@ -1663,7 +1663,8 @@ public:
         {AST::intrinsicopType::CONCAT, "~concat"}
     };
 
-    std::map<std::string, IntrinsicSignature> name2signature = {
+    static const std::map<std::string, IntrinsicSignature> &get_intrinsic_signature_map() {
+        static const std::map<std::string, IntrinsicSignature> map = {
         {"any", IntrinsicSignature({"mask", "dim"}, 1, 2)},
         {"all", IntrinsicSignature({"mask", "dim"}, 1, 2)},
         {"iany", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
@@ -1840,10 +1841,13 @@ public:
         {"_lfortran_list_insert", IntrinsicSignature({"list", "index", "element"}, 3, 3)},
         {"_lfortran_list_remove", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
-    };
+        };
+        return map;
+    }
 
 
-    std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
+    static const std::map<std::string, std::pair<std::string, std::vector<std::string>>> &get_intrinsic_mapping() {
+        static const std::map<std::string, std::pair<std::string, std::vector<std::string>>> map = {
         {"iabs", {"abs", {"int4"}}},
         {"dabs", {"abs", {"real8"}}},
         {"cabs", {"abs", {"complex4"}}},
@@ -1919,7 +1923,17 @@ public:
         {"ddim", {"dim", {"real8", "real8"}}},
         {"amod", {"mod", {"real4", "real4"}}},
         {"dmod", {"mod", {"real8", "real8"}}},
-    };
+        };
+        return map;
+    }
+
+    static const std::set<std::string> &get_intrinsic_module_procedures_as_asr_nodes() {
+        static const std::set<std::string> set = {
+            "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
+            "c_sizeof"
+        };
+        return set;
+    }
 
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
@@ -1932,10 +1946,6 @@ public:
     SetChar current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
-    std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_f_procpointer", "c_associated", "c_funloc",
-        "c_sizeof"
-    };
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
@@ -2208,9 +2218,10 @@ public:
             if (check_is_explicit_intrinsic(var_name)) {
                 std::string intrinsic_name = var_name;
                 std::vector<std::string> arg_types;
+                const auto &intrinsic_mapping = get_intrinsic_mapping();
                 if (intrinsic_mapping.count(var_name) > 0) {
-                    intrinsic_name = intrinsic_mapping[var_name].first;
-                    arg_types = intrinsic_mapping[var_name].second;
+                    intrinsic_name = intrinsic_mapping.at(var_name).first;
+                    arg_types = intrinsic_mapping.at(var_name).second;
                 }
                 if (intrinsic_procedures.is_intrinsic(intrinsic_name)) {
                     v = resolve_intrinsic_function(loc, intrinsic_name);
@@ -4298,6 +4309,7 @@ public:
     }
 
     void create_intrinsic_function_wrapper(const std::string& sym, Location loc) {
+        const auto &intrinsic_mapping = get_intrinsic_mapping();
         if (intrinsic_mapping.find(sym) == intrinsic_mapping.end()) {
             return;
         }
@@ -11434,8 +11446,9 @@ public:
             std::string func_name = std::string(func->m_name);
             
             std::string intrinsic_name = func_name;
+            const auto &intrinsic_mapping = get_intrinsic_mapping();
             if (intrinsic_mapping.count(func_name) > 0) {
-                intrinsic_name = intrinsic_mapping[func_name].first;
+                intrinsic_name = intrinsic_mapping.at(func_name).first;
             }
             
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
@@ -14139,14 +14152,15 @@ public:
     }
 
     IntrinsicSignature get_intrinsic_signature(std::string& var_name) {
+        const auto &name2signature = get_intrinsic_signature_map();
         if( name2signature.find(var_name) == name2signature.end() ) {
             return IntrinsicSignature({}, 1, 1);
         }
-        return name2signature[var_name];
+        return name2signature.at(var_name);
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
-        bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
+        bool is_specific_type_intrinsic = get_intrinsic_mapping().count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
@@ -14282,6 +14296,7 @@ public:
 
     void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
         std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax0", "max1", "amax1", "dmax1"};
+        const auto &intrinsic_mapping = get_intrinsic_mapping();
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
@@ -14299,10 +14314,10 @@ public:
         for (size_t i = 0; i < arg_size; i++) {
             std::string argument_type = "";
             if (array_intrinsic_mapping_names.find(intrinsic_name) != array_intrinsic_mapping_names.end()) {
-                argument_type = intrinsic_mapping[intrinsic_name].second[0];
+                argument_type = intrinsic_mapping.at(intrinsic_name).second[0];
             } else {
-                if(i < intrinsic_mapping[intrinsic_name].second.size()){
-                    argument_type = intrinsic_mapping[intrinsic_name].second[i];
+                if(i < intrinsic_mapping.at(intrinsic_name).second.size()){
+                    argument_type = intrinsic_mapping.at(intrinsic_name).second[i];
                 } else {
                     diag.add(Diagnostic("Too many arguments to call `" + intrinsic_name + "`",
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -14520,7 +14535,7 @@ public:
             is_function = false;
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
-                var_name = intrinsic_mapping[var_name].first;
+                var_name = intrinsic_mapping.at(var_name).first;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
@@ -15895,7 +15910,8 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                if (get_intrinsic_module_procedures_as_asr_nodes().find(var_name) !=
+                        get_intrinsic_module_procedures_as_asr_nodes().end()) {
                     if (var_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
                     } else if (var_name == "c_associated") {

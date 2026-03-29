@@ -219,6 +219,57 @@ class ASRToLLVMVisitor;
         builder.CreateCall(fn, args);
     }
 
+    static inline void call_lfortran_dbg_push_call(llvm::LLVMContext &context,
+            llvm::Module &module, llvm::IRBuilder<> &builder,
+            llvm::Value *filename, llvm::Value *line)
+    {
+        llvm::Function *fn = module.getFunction("_lfortran_dbg_push_call");
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context)
+                }, false);
+            fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, "_lfortran_dbg_push_call",
+                &module);
+        }
+        builder.CreateCall(fn, {filename, line});
+    }
+
+    static inline void call_lfortran_dbg_pop_call(llvm::LLVMContext &context,
+            llvm::Module &module, llvm::IRBuilder<> &builder)
+    {
+        llvm::Function *fn = module.getFunction("_lfortran_dbg_pop_call");
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {}, false);
+            fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, "_lfortran_dbg_pop_call",
+                &module);
+        }
+        builder.CreateCall(fn, {});
+    }
+
+    static inline void call_print_stacktrace_liric_debug(
+            llvm::LLVMContext &context, llvm::Module &module,
+            llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
+    {
+        llvm::Function *fn = module.getFunction("print_stacktrace_liric_debug");
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context),
+                    llvm::Type::getInt1Ty(context)
+                }, false);
+            fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, "print_stacktrace_liric_debug",
+                &module);
+        }
+        builder.CreateCall(fn, args);
+    }
+
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
@@ -1517,9 +1568,9 @@ class ASRToLLVMVisitor;
                 auto const consecutive_field_ptr = llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1);
                 auto const consecutive_field_type = class_type_llvm->getStructElementType(1);
                 auto const allocated_cosecutive_structs = builder_->CreateLoad(consecutive_field_type, consecutive_field_ptr);
-                llvm_utils_->lfortran_free_nocheck(allocated_cosecutive_structs);
+                llvm_utils_->lfortran_free(allocated_cosecutive_structs);
                 // deallocate class wrapper 
-                llvm_utils_->lfortran_free_nocheck(data_ptr);
+                llvm_utils_->lfortran_free(data_ptr);
             }
         }
             

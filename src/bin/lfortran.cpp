@@ -48,6 +48,9 @@
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
 #include <libasr/config.h>
+#ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/IR/Module.h>
+#endif
 #include <lfortran/fortran_kernel.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -120,6 +123,111 @@ std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
 const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
+
+#if defined(HAVE_LFORTRAN_LLVM) && defined(WITH_LIRIC)
+static void liric_env_set(const char *key, const char *value)
+{
+#ifdef _WIN32
+    _putenv_s(key, value);
+#else
+    setenv(key, value, 1);
+#endif
+}
+
+static void liric_env_unset(const char *key)
+{
+#ifdef _WIN32
+    _putenv_s(key, "");
+#else
+    unsetenv(key);
+#endif
+}
+
+static std::string liric_append_env_path(const char *key,
+    const std::string &value)
+{
+    const char *previous = std::getenv(key);
+    if (previous == nullptr || previous[0] == '\0') {
+        return value;
+    }
+#ifdef _WIN32
+    const char separator = ';';
+#else
+    const char separator = ':';
+#endif
+    return value + separator + std::string(previous);
+}
+
+class LiricScopedUnsetEnvVar {
+private:
+    const char *m_key;
+    bool m_active;
+    bool m_had_previous;
+    std::string m_previous_value;
+
+public:
+    LiricScopedUnsetEnvVar(const char *key, bool active)
+        : m_key(key), m_active(active), m_had_previous(false)
+    {
+        if (!m_active) {
+            return;
+        }
+        const char *previous = std::getenv(m_key);
+        if (previous != nullptr) {
+            m_had_previous = true;
+            m_previous_value = previous;
+        }
+        liric_env_unset(m_key);
+    }
+
+    ~LiricScopedUnsetEnvVar()
+    {
+        if (!m_active) {
+            return;
+        }
+        if (m_had_previous) {
+            liric_env_set(m_key, m_previous_value.c_str());
+        } else {
+            liric_env_unset(m_key);
+        }
+    }
+};
+
+class LiricScopedSetEnvVar {
+private:
+    const char *m_key;
+    bool m_active;
+    bool m_had_previous;
+    std::string m_previous_value;
+
+public:
+    LiricScopedSetEnvVar(const char *key, const std::string &value, bool active)
+        : m_key(key), m_active(active), m_had_previous(false)
+    {
+        if (!m_active) {
+            return;
+        }
+        const char *previous = std::getenv(m_key);
+        if (previous != nullptr) {
+            m_had_previous = true;
+            m_previous_value = previous;
+        }
+        liric_env_set(m_key, value.c_str());
+    }
+
+    ~LiricScopedSetEnvVar()
+    {
+        if (!m_active) {
+            return;
+        }
+        if (m_had_previous) {
+            liric_env_set(m_key, m_previous_value.c_str());
+        } else {
+            liric_env_unset(m_key);
+        }
+    }
+};
+#endif
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
@@ -1173,6 +1281,24 @@ int compile_src_to_object_file(const std::string &infile,
         LCompilers::PassManager& lpm,
         bool arg_c = false)
 {
+#if defined(HAVE_LFORTRAN_LLVM) && defined(WITH_LIRIC)
+    bool disable_liric_no_link_for_compile = false;
+    if (const char *no_link_mode = std::getenv("LFORTRAN_NO_LINK_MODE")) {
+        disable_liric_no_link_for_compile = std::string(no_link_mode) == "1";
+    }
+    const bool has_liric_runtime_archive =
+        std::getenv("LIRIC_RUNTIME_ARCHIVE") != nullptr;
+    // No-link mode is for executable emission only; compile-only steps must
+    // always produce regular object files.
+    LiricScopedUnsetEnvVar scoped_no_link_mode("LFORTRAN_NO_LINK_MODE",
+        disable_liric_no_link_for_compile);
+    LiricScopedUnsetEnvVar scoped_no_link_empty("LFORTRAN_NO_LINK_MODULE_EMPTY_OBJECTS",
+        disable_liric_no_link_for_compile);
+    // Runtime injection is only needed for final executable emission.
+    LiricScopedUnsetEnvVar scoped_runtime_archive("LIRIC_RUNTIME_ARCHIVE",
+        has_liric_runtime_archive);
+#endif
+
     int time_file_read=0;
     int time_src_to_asr=0;
     int time_save_mod=0;
@@ -1348,7 +1474,12 @@ int compile_llvm_to_object_file(const std::string& infile,
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
     std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
-    e.save_object_file(*(m->m_m), outfile);
+    try {
+        e.save_object_file(*(m->m_m), outfile);
+    } catch (const std::exception &ex) {
+        std::cerr << "Code emission failed: " << ex.what() << std::endl;
+        return 10;
+    }
 
     return 0;
 }
@@ -1841,6 +1972,36 @@ int compile_to_binary_fortran(const std::string &infile,
     return 0;
 }
 
+static int generate_runtime_stacktrace_artifacts(const std::string &outfile,
+        const std::string &file_name) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+    std::string cmd;
+#ifdef HAVE_LFORTRAN_MACHO
+    cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
+        + outfile + ".dSYM > ";
+#else
+    cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
+#endif
+    std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
+    cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
+        + file_name + "_ldd.txt " + file_name + "_lines.txt "
+        + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
+        + file_name + "_lines.dat)";
+    int status = system(cmd.c_str());
+    if (status != 0) {
+        std::cerr << "Error in creating the files used to generate "
+            "the debug information. This might be caused because either"
+            " `llvm-dwarfdump` or `Python` are not available. "
+            "Please activate the CONDA environment and compile again.\n";
+    }
+    return status;
+#else
+    (void)outfile;
+    (void)file_name;
+    return 0;
+#endif
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -1940,6 +2101,81 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
+#if defined(HAVE_LFORTRAN_LLVM) && defined(WITH_LIRIC)
+    if (backend == Backend::llvm) {
+        const bool has_runtime_archive =
+            std::getenv("LIRIC_RUNTIME_ARCHIVE") != nullptr;
+        const std::string runtime_archive = has_runtime_archive
+            ? std::string()
+            : LCompilers::LFortran::get_liric_runtime_archive();
+        if (static_executable || shared_executable ||
+            !lib_dirs.empty() || !libraries.empty() || !linker_flags.empty()) {
+            std::cerr << "WITH_LIRIC AOT no-link mode ignoring external linker flags "
+                         "(-static/-shared, -L/-l, and linker options)."
+                      << std::endl;
+        }
+        if (!has_runtime_archive) {
+            if (runtime_archive.empty()) {
+                std::cerr << "WITH_LIRIC AOT no-link executable emission requires "
+                             "a prepared runtime archive, but no default build-tree "
+                             "location is available in this execution mode."
+                          << std::endl;
+                return 10;
+            }
+            if (!std::filesystem::is_regular_file(runtime_archive)) {
+                std::cerr << "WITH_LIRIC AOT no-link executable emission requires "
+                             "runtime archive: "
+                          << runtime_archive << std::endl;
+                std::cerr << "Run scripts/lf.sh --with-liric build to prepare it."
+                          << std::endl;
+                return 10;
+            }
+        }
+        LiricScopedSetEnvVar scoped_runtime_archive("LIRIC_RUNTIME_ARCHIVE",
+            runtime_archive, !has_runtime_archive);
+        const std::string runtime_c_header_dir =
+            LCompilers::LFortran::get_runtime_library_c_header_dir();
+        LiricScopedSetEnvVar scoped_cpath("CPATH",
+            liric_append_env_path("CPATH", runtime_c_header_dir),
+            !runtime_c_header_dir.empty());
+        LiricScopedSetEnvVar scoped_c_include_path("C_INCLUDE_PATH",
+            liric_append_env_path("C_INCLUDE_PATH", runtime_c_header_dir),
+            !runtime_c_header_dir.empty());
+        try {
+            llvm::Module::emitExecutableFromObjects(infiles, outfile);
+        } catch (const std::exception &ex) {
+            std::cerr << "WITH_LIRIC AOT no-link executable emission failed: "
+                      << ex.what() << std::endl;
+            std::cerr << "Refusing linker fallback." << std::endl;
+            return 10;
+        }
+        if (compiler_options.emit_debug_info) {
+            int status = generate_runtime_stacktrace_artifacts(outfile, file_name);
+            if (status != 0) {
+                return status;
+            }
+        }
+        if ( compiler_options.arg_o != "" ) {
+            return 0;
+        }
+        std::string run_cmd = "./" + outfile;
+        int err = system(run_cmd.c_str());
+        if (err != 0) {
+            if (0 < err && err < 256) {
+                return err;
+            } else {
+                return LCompilers::LFortran::get_exit_status(err);
+            }
+        }
+        auto t2 = std::chrono::high_resolution_clock::now();
+        int time_total = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        if (time_report) {
+            std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+        }
+        return 0;
+    }
+#endif
     if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
@@ -2094,31 +2330,12 @@ int link_executable(const std::vector<std::string> &infiles,
             return 10;
         }
 
-#ifdef HAVE_RUNTIME_STACKTRACE
         if (compiler_options.emit_debug_info) {
-            // TODO: Replace the following hardcoded part
-            std::string cmd = "";
-#ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
-                + outfile + ".dSYM > ";
-#else
-            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
-#endif
-            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                + file_name + "_lines.dat)";
-            int status = system(cmd.c_str());
-            if ( status != 0 ) {
-                std::cerr << "Error in creating the files used to generate "
-                    "the debug information. This might be caused because either"
-                    " `llvm-dwarfdump` or `Python` are not available. "
-                    "Please activate the CONDA environment and compile again.\n";
+            int status = generate_runtime_stacktrace_artifacts(outfile, file_name);
+            if (status != 0) {
                 return status;
             }
         }
-#endif
     } else if (backend == Backend::c) {
         std::string CXX = "gcc";
         std::string cmd = CXX + " -o " + outfile + " ";

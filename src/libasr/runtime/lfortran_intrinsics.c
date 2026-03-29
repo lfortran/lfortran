@@ -256,6 +256,9 @@ extern uintptr_t _Unwind_GetIP(struct _Unwind_Context *context);
 #define LCOMPILERS_MAX_STACKTRACE_LENGTH 200
 char *source_filename;
 char *binary_executable_path = "/proc/self/exe";
+static char *liric_debug_filenames[LCOMPILERS_MAX_STACKTRACE_LENGTH];
+static uint64_t liric_debug_lines[LCOMPILERS_MAX_STACKTRACE_LENGTH];
+static uint64_t liric_debug_depth = 0;
 
 struct Stacktrace {
     uintptr_t pc[LCOMPILERS_MAX_STACKTRACE_LENGTH];
@@ -271,14 +274,14 @@ struct Stacktrace {
     uint64_t stack_size;
 };
 
+#endif // HAVE_RUNTIME_STACKTRACE
+
 // Styles and Colors
 #define DIM "\033[2m"
 #define BOLD "\033[1m"
 #define S_RESET "\033[0m"
 #define MAGENTA "\033[35m"
 #define C_RESET "\033[39m"
-
-#endif // HAVE_RUNTIME_STACKTRACE
 
 #ifdef HAVE_LFORTRAN_MACHO
     #define INT64 "%lld"
@@ -10726,6 +10729,81 @@ static inline void print_stacktrace_raw_addresses(struct Stacktrace *d, bool use
 }
 
 #endif // HAVE_RUNTIME_STACKTRACE
+
+static void print_stacktrace_debug_frame(const char *filename, uint64_t line_number,
+        bool use_colors) {
+    char *line = NULL;
+    char *trimmed = NULL;
+    const char *path = filename ? filename : "unknown";
+
+    if (line_number != 0) {
+        line = runtime_read_line(path, (unsigned int)line_number);
+    }
+    if (line == NULL) {
+        line = internal_malloc(1);
+        if (line != NULL) {
+            line[0] = '\0';
+        }
+    }
+    if (line == NULL) {
+        return;
+    }
+    trimmed = line;
+    while (*trimmed == ' ' || *trimmed == '\t') {
+        trimmed++;
+    }
+
+    if (use_colors) {
+        fprintf(stderr, DIM "  File " S_RESET
+            BOLD MAGENTA "\"%s\"" C_RESET S_RESET
+            DIM ", line %" PRIu64 "\n" S_RESET
+            "    %s\n", path, line_number, trimmed);
+    } else {
+        fprintf(stderr, "  File \"%s\", line %" PRIu64 "\n    %s\n",
+            path, line_number, trimmed);
+    }
+    internal_free(line);
+}
+
+LFORTRAN_API void _lfortran_dbg_push_call(char *filename, int64_t line) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+    if (liric_debug_depth >= LCOMPILERS_MAX_STACKTRACE_LENGTH) {
+        return;
+    }
+    liric_debug_filenames[liric_debug_depth] = filename;
+    liric_debug_lines[liric_debug_depth] = line > 0 ? (uint64_t)line : 0;
+    liric_debug_depth++;
+#else
+    (void)filename;
+    (void)line;
+#endif
+}
+
+LFORTRAN_API void _lfortran_dbg_pop_call(void) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+    if (liric_debug_depth > 0) {
+        liric_debug_depth--;
+    }
+#endif
+}
+
+LFORTRAN_API void print_stacktrace_liric_debug(char *filename, int64_t line,
+        bool use_colors) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+    uint64_t i;
+    for (i = 0; i < liric_debug_depth; i++) {
+        print_stacktrace_debug_frame(liric_debug_filenames[i],
+            liric_debug_lines[i], use_colors);
+    }
+    if (line > 0) {
+        print_stacktrace_debug_frame(filename, (uint64_t)line, use_colors);
+    }
+#else
+    (void)filename;
+    (void)line;
+    (void)use_colors;
+#endif
+}
 
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_RUNTIME_STACKTRACE

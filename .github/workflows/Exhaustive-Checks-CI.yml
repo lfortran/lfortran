@@ -160,6 +160,62 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
+  liric_api_compat_extended:
+    name: LFortran CI (OS=ubuntu-latest, LIRIC Extended)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    steps:
+      - name: Checkout lfortran
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout liric
+        uses: actions/checkout@v6
+        with:
+          repository: krystophny/liric
+          ref: main
+          path: liric
+          fetch-depth: 0
+
+      - name: Checkout meta repo
+        uses: actions/checkout@v6
+        with:
+          repository: krystophny/lfortran-dev
+          ref: main
+          path: lfortran-dev
+          fetch-depth: 0
+
+      - name: Install Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build cmake bison re2c zstd jq python3 python3-pip python-is-python3 git \
+            clang llvm libunwind-dev
+
+      - name: Run WITH_LIRIC extended parity suite
+        run: |
+          set -euo pipefail
+          cd "${GITHUB_WORKSPACE}"
+          LFORTRAN_DIR="${GITHUB_WORKSPACE}" \
+          LIRIC_DIR="${GITHUB_WORKSPACE}/liric" \
+            "${GITHUB_WORKSPACE}/lfortran-dev/scripts/liric-parity.sh" exhaustive
+
+      - name: Upload LIRIC internal extended artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: liric-api-compat-extended
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            ${{ github.workspace }}/build-liric/Testing/Temporary/LastTest.log
+            ${{ github.workspace }}/integration_tests/test-*/Testing/Temporary/LastTest.log
+
 # Commented out to save CI runners:
 #  test-pixi:
 #    name: Pixi Build (${{ matrix.os }})

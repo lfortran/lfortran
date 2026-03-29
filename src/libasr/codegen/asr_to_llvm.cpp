@@ -67,6 +67,14 @@
 
 namespace LCompilers {
 
+static bool lfortran_verify_llvm_module_enabled() {
+    const char *env = std::getenv("LFORTRAN_VERIFY_LLVM");
+    if (!env || !env[0])
+        return false;
+    return strcmp(env, "0") != 0 && strcmp(env, "false") != 0 &&
+           strcmp(env, "False") != 0;
+}
+
 using ASR::is_a;
 using ASR::down_cast;
 using ASR::down_cast2;
@@ -625,6 +633,63 @@ public:
         builder->SetCurrentDebugLocation(
             llvm::DILocation::get(debug_current_scope->getContext(),
                 line, column, debug_current_scope));
+    }
+
+    uint32_t debug_get_line_number(Location loc) {
+        uint32_t line, column;
+        debug_get_line_column(loc.first, line, column);
+        return line;
+    }
+
+    llvm::Value* debug_filename_value() {
+        return LCompilers::create_global_string_ptr(
+            context, *module, *builder, infile);
+    }
+
+    void liric_debug_push_call(Location loc) {
+#ifdef WITH_LIRIC
+        if (!compiler_options.emit_debug_info) {
+            return;
+        }
+        llvm::Value *line = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), debug_get_line_number(loc));
+        LCompilers::call_lfortran_dbg_push_call(
+            context, *module, *builder, debug_filename_value(), line);
+#else
+        (void)loc;
+#endif
+    }
+
+    void liric_debug_pop_call() {
+#ifdef WITH_LIRIC
+        if (!compiler_options.emit_debug_info) {
+            return;
+        }
+        LCompilers::call_lfortran_dbg_pop_call(context, *module, *builder);
+#endif
+    }
+
+    void liric_debug_print_stacktrace(Location loc) {
+#ifdef WITH_LIRIC
+        if (!compiler_options.emit_debug_info) {
+            return;
+        }
+        llvm::Value *line = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), debug_get_line_number(loc));
+        llvm::Value *use_colors = llvm::ConstantInt::get(
+            context, llvm::APInt(1, compiler_options.use_colors));
+        LCompilers::call_print_stacktrace_liric_debug(
+            context, *module, *builder, {debug_filename_value(), line, use_colors});
+#else
+        (void)loc;
+#endif
+    }
+
+    template <typename EmitFn>
+    void liric_debug_wrap_call(Location loc, EmitFn emit_fn) {
+        liric_debug_push_call(loc);
+        emit_fn();
+        liric_debug_pop_call();
     }
 
     template <typename T>
@@ -13962,11 +14027,15 @@ public:
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, []() {}, [=]() {
             if (compiler_options.emit_debug_info) {
+#ifdef WITH_LIRIC
+                liric_debug_print_stacktrace(x.base.base.loc);
+#else
                 llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 call_print_stacktrace_addresses(context, *module, *builder,
                     {fmt_ptr, fmt_ptr1});
+#endif
             }
             if (x.m_msg) {
                 std::vector<std::string> fmt;
@@ -18862,8 +18931,12 @@ public:
                 this->visit_expr(*x.m_code);
                 llvm::Value *test = builder->CreateICmpNE(tmp, builder->getInt32(0));
                 llvm_utils->create_if_else(test, [=]() {
+#ifdef WITH_LIRIC
+                    liric_debug_print_stacktrace(x.base.base.loc);
+#else
                     call_print_stacktrace_addresses(context, *module, *builder,
                         {fmt_ptr, fmt_ptr1});
+#endif
                 }, [](){});
             }
         }
@@ -18877,11 +18950,15 @@ public:
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
+#ifdef WITH_LIRIC
+            liric_debug_print_stacktrace(x.base.base.loc);
+#else
             llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                 1, compiler_options.use_colors));
             call_print_stacktrace_addresses(context, *module, *builder,
                 {fmt_ptr, fmt_ptr1});
+#endif
         }
 
         int exit_code_int = 1;
@@ -22118,7 +22195,9 @@ public:
             // make_SubroutineCall_t_util).  Let convert_call_args handle
             // all args including self with proper class wrapping.
             args = convert_call_args(x, false);
-            tmp = builder->CreateCall(fntype, callee, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, callee, args);
+            });
             return ;
         }
 
@@ -22256,7 +22335,9 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, fn, args);
+            });
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -22270,7 +22351,9 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, fn, args);
+            });
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -22306,7 +22389,9 @@ public:
                     }
                 }
             }
-            builder->CreateCall(fn, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                builder->CreateCall(fn, args);
+            });
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
             for (auto& fc : pending_flat_copybacks) {
@@ -22603,7 +22688,9 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        builder->CreateCall(fnTy, fn, args);
+        liric_debug_wrap_call(x.base.base.loc, [&]() {
+            builder->CreateCall(fnTy, fn, args);
+        });
         return;
     }
 
@@ -22684,7 +22771,9 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        tmp = builder->CreateCall(fnTy, fn, args);
+        liric_debug_wrap_call(x.base.base.loc, [&]() {
+            tmp = builder->CreateCall(fnTy, fn, args);
+        });
         return;
     }
 
@@ -22728,7 +22817,9 @@ public:
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            tmp = builder->CreateCall(fntype, callee, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, callee, args);
+            });
             return ;
         }
 
@@ -22836,7 +22927,9 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, fn, args);
+            });
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -22847,7 +22940,9 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                tmp = builder->CreateCall(fntype, fn, args);
+            });
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -22859,25 +22954,35 @@ public:
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
-                    if (a_kind == 8) {
-                        if (compiler_options.platform == Platform::Windows) {
-                            tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
-                            args.insert(args.begin(), tmp);
-                            builder->CreateCall(fn, args);
-                            // Convert {double,double}* to {double,double}
-                            tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
+                        if (a_kind == 8) {
+                            if (compiler_options.platform == Platform::Windows) {
+                                tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
+                                args.insert(args.begin(), tmp);
+                                liric_debug_wrap_call(x.base.base.loc, [&]() {
+                                    builder->CreateCall(fn, args);
+                                });
+                                // Convert {double,double}* to {double,double}
+                                tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
+                            } else {
+                                liric_debug_wrap_call(x.base.base.loc, [&]() {
+                                    tmp = builder->CreateCall(fn, args);
+                                });
+                            }
                         } else {
-                            tmp = builder->CreateCall(fn, args);
+                            liric_debug_wrap_call(x.base.base.loc, [&]() {
+                                tmp = builder->CreateCall(fn, args);
+                            });
                         }
                     } else {
-                        tmp = builder->CreateCall(fn, args);
+                        liric_debug_wrap_call(x.base.base.loc, [&]() {
+                            tmp = builder->CreateCall(fn, args);
+                        });
                     }
                 } else {
-                    tmp = builder->CreateCall(fn, args);
+                    liric_debug_wrap_call(x.base.base.loc, [&]() {
+                        tmp = CreateCallUtil(fn, args, return_var_type0);
+                    });
                 }
-            } else {
-                tmp = CreateCallUtil(fn, args, return_var_type0);
-            }
             // The convention we use is that any strings is a pointer to the underlying physicalType
             // Example of StringPhysicalTypes -> `string_descriptor*`, `i8*`
             if(ASRUtils::is_string_only(return_var_type0)){
@@ -23636,20 +23741,22 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
-    std::string msg;
-    llvm::raw_string_ostream err(msg);
-    if (llvm::verifyModule(*v.module, &err)) {
-        std::string buf;
-        llvm::raw_string_ostream os(buf);
-        v.module->print(os, nullptr);
-        std::cout << os.str();
-        msg = "asr_to_llvm: module failed verification. Error:\n" + err.str();
-        std::cout << msg << std::endl;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-        diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
-            diag::Level::Error, diag::Stage::CodeGen));
-        Error error;
-        return error;
-    };
+    if (lfortran_verify_llvm_module_enabled()) {
+        std::string msg;
+        llvm::raw_string_ostream err(msg);
+        if (llvm::verifyModule(*v.module, &err)) {
+            std::string buf;
+            llvm::raw_string_ostream os(buf);
+            v.module->print(os, nullptr);
+            std::cout << os.str();
+            msg = "asr_to_llvm: module failed verification. Error:\n" + err.str();
+            std::cout << msg << std::endl;
+            diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
+                diag::Level::Error, diag::Stage::CodeGen));
+            Error error;
+            return error;
+        };
+    }
 
     std::unique_ptr<LLVMModule> res = std::make_unique<LLVMModule>(std::move(v.module));
     t2 = std::chrono::high_resolution_clock::now();
