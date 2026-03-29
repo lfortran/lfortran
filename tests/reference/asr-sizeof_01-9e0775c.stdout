@@ -1,0 +1,106 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            sizeof_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c_int:
+                                (ExternalSymbol
+                                    2
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_size_t:
+                                (ExternalSymbol
+                                    2
+                                    c_size_t
+                                    4 c_size_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_size_t
+                                    Public
+                                ),
+                            s:
+                                (Variable
+                                    2
+                                    s
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                )
+                        })
+                    sizeof_01
+                    [iso_c_binding]
+                    [(Assignment
+                        (Var 2 s)
+                        (SizeOfType
+                            (Integer 4)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 s)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

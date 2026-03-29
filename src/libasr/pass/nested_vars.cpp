@@ -880,7 +880,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             visit_expr(*x.m_dt);
         }
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
+            nullptr, false);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -921,7 +921,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
 
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
+            nullptr, false);
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {

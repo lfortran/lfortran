@@ -27,6 +27,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             nml:
                                 (Namelist
@@ -55,6 +57,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -120,6 +124,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             i1:
                                                 (ExternalSymbol
@@ -156,6 +162,8 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
                                                                 ),
                                                             nml:
                                                                 (ExternalSymbol
@@ -233,6 +241,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             x1:
                                                 (ExternalSymbol

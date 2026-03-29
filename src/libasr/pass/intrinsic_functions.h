@@ -1242,20 +1242,33 @@ namespace StorageSize {
 
     static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
-        if (is_character(*expr_type(args[0]))) {
+        ASR::ttype_t* arg_type = expr_type(args[0]);
+        ASR::ttype_t* type = ASRUtils::type_get_past_array(
+                                 ASRUtils::type_get_past_allocatable(
+                                     ASRUtils::type_get_past_pointer(arg_type)));
+        if (is_character(*arg_type)) {
             int64_t len;
             if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array(expr_type(args[0])))->m_len, len)){
+                ASRUtils::type_get_past_array(arg_type))->m_len, len)){
                 return ASRUtils::EXPR(
                     ASR::make_StringLen_t(al, loc, args[0], int64, nullptr));
             }
             return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
-        } else if (is_complex(*expr_type(args[0]))) {
+        } else if (ASR::is_a<ASR::StructType_t>(*type) ||
+                   ASR::is_a<ASR::CPtr_t>(*type)) {
+            auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
+            (void)_align;
+            if (size_bytes > 0) {
+                return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
+        } else if (is_complex(*arg_type)) {
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         } else {
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
             if (kind == 1) return make_ConstantWithType(make_IntegerConstant_t, 8, t1, loc);
             else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
             else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
@@ -3105,7 +3118,8 @@ namespace Logical {
         declare_basic_variables("_lcompilers_logical_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al,b.Assignment(result, b.bool_t(args[0], return_type)));
+        body.push_back(al, b.Assignment(result,
+            CastingUtil::perform_casting(args[0], return_type, al, loc)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

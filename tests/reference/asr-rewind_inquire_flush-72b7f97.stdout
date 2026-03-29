@@ -27,6 +27,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -48,6 +50,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             ext:
                                 (Variable
@@ -69,6 +73,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             fm:
                                 (Variable
@@ -90,6 +96,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             ios:
                                 (Variable
@@ -111,6 +119,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             len:
                                 (Variable
@@ -132,6 +142,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     rewind_inquire_flush
@@ -180,6 +192,9 @@
                         ()
                         ()
                         []
+                        ()
+                        ()
+                        ()
                     )
                     (FileInquire
                         0
@@ -216,6 +231,9 @@
                         ()
                         ()
                         []
+                        ()
+                        ()
+                        ()
                     )
                     (FileInquire
                         0
@@ -253,6 +271,9 @@
                         (Var 2 len)
                         [(Var 2 a)
                         (Var 2 b)]
+                        ()
+                        ()
+                        ()
                     )
                     (GoToTarget
                         10

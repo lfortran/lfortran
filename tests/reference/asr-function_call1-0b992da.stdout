@@ -42,6 +42,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -68,6 +70,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -94,6 +98,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     eval_1d
@@ -196,6 +202,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -222,6 +230,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -248,6 +258,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     eval_1d_prime
@@ -303,7 +315,8 @@
                                         (FunctionCall
                                             5 1_softmax_eval_1d
                                             ()
-                                            [((ArrayPhysicalCast
+                                            [((Var 5 self))
+                                            ((ArrayPhysicalCast
                                                 (Var 5 x)
                                                 DescriptorArray
                                                 DescriptorArray

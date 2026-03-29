@@ -62,6 +62,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -96,6 +98,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     default_executable
@@ -211,6 +215,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -234,6 +240,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -257,6 +265,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     executable_config
@@ -357,6 +367,9 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -376,9 +389,6 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
                                                         )]
                                                         []
                                                         .true.
@@ -394,6 +404,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             root:
                                                 (Variable
@@ -415,12 +427,17 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     package_defaults
                                     (FunctionType
                                         [(StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -440,9 +457,6 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
                                             )]
                                             []
                                             .true.
@@ -636,6 +650,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -659,11 +675,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     package_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (Array
                                                 (StructType
                                                     [(Allocatable
@@ -683,9 +704,6 @@
                                                 ())]
                                                 DescriptorArray
                                             )
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.

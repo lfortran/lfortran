@@ -27,6 +27,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -48,6 +50,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -69,6 +73,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             msg:
                                 (Variable
@@ -96,6 +102,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             p:
                                 (Variable
@@ -122,6 +130,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             q:
                                 (Variable
@@ -148,6 +158,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             u:
                                 (Variable
@@ -169,6 +181,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             u_ptr:
                                 (Variable
@@ -192,6 +206,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -218,6 +234,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -244,6 +262,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     open_close_read_write
@@ -385,6 +405,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (DoLoop
                         ()
@@ -460,6 +481,7 @@
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()

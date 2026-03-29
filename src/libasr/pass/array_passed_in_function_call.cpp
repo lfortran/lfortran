@@ -910,9 +910,13 @@ public:
                     // This prevents double-free on the next loop iteration: without nullification,
                     // the ExplicitDeallocate at the start of the loop would try to free memory
                     // that belongs to the source array (was aliased via Associate).
+                    // In the non-contiguous case, deallocate the heap-allocated temporary
+                    // that was used for copy-in (and copy-out).
                     body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                         ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
-                    }, {}));
+                    }, {
+                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                    }));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                 }
@@ -926,25 +930,21 @@ public:
     void add_class_to_struct_casts(Vec<ASR::call_arg_t>& call_args, const T& x) {
         ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        size_t arg_offset = 0;
         if (ASR::is_a<ASR::Function_t>(*call_sym)) {
             func = ASR::down_cast<ASR::Function_t>(call_sym);
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(call_sym);
             func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(method->m_proc));
-            if (x.m_dt && !method->m_is_nopass) {
-                arg_offset = 1;
-            }
         } else {
             return;
         }
 
         for (size_t i = 0; i < call_args.size(); i++) {
-            if (call_args.p[i].m_value == nullptr || i + arg_offset >= func->n_args) {
+            if (call_args.p[i].m_value == nullptr || i >= func->n_args) {
                 continue;
             }
             ASR::expr_t* actual_arg = call_args.p[i].m_value;
-            ASR::expr_t* formal_arg = func->m_args[i + arg_offset];
+            ASR::expr_t* formal_arg = func->m_args[i];
             ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
             if (ASRUtils::is_allocatable(formal_arg_full_type) ||
                 ASRUtils::is_pointer(formal_arg_full_type)) {
@@ -992,7 +992,7 @@ public:
         if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC || func_type->m_deftype == ASR::deftypeType::Interface;
+            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC;
             for (size_t i = 0; i < func->n_args; i++ ) {
                 if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
                     ASR::Var_t* var_ = ASR::down_cast<ASR::Var_t>(func->m_args[i]);

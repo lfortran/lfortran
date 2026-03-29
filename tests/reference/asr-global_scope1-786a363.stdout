@@ -22,6 +22,8 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
                 )
         })
     []

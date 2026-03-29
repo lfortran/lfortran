@@ -632,6 +632,14 @@ program continue_compilation_1
     write (*, "(a)", advance="hello") "Dothraki culture"
     print *, sum(arr1, dim = mask1)
     print*, ieee_is_nan(1.0)
+    open(unit=7, decimal=1, decimal="comma")
+    open(unit=7, decimal="POINT", decimal="comma")
+    integer :: char_len_var = 10
+    character(len = char_len_var) :: char_nonconst
+    interface undeclared_iface
+        module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
+    end interface
+
 
 
 
@@ -660,5 +668,14 @@ program continue_compilation_1
         do k = 1, 3
             n(k) = 42
         end do
+    end subroutine
+    subroutine sub_real_logical_init()
+        implicit none
+        real :: adwf = .true.
+    end subroutine
+    subroutine sub_abs_array_index()
+        implicit none
+        integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+        if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
 end program

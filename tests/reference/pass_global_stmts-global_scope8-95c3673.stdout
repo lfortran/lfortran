@@ -27,6 +27,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 )
                         })
                     f
@@ -86,6 +88,8 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
                 )
         })
     []

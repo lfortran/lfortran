@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 define void @find_fit(void ([1 x float]*)* %expr) {
 .entry:

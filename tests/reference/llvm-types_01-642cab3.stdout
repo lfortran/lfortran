@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

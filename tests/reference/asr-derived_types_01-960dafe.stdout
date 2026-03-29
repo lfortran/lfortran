@@ -77,8 +77,8 @@
                                     ()
                                     Default
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -93,6 +93,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -108,8 +110,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -132,6 +134,8 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
                                 ),
                             set:
                                 (ExternalSymbol
@@ -254,8 +258,8 @@
                                     (StructType
                                         [(Complex 4)
                                         (StructType
-                                            [(Integer 4)
-                                            (Real 4)]
+                                            [(Real 4)
+                                            (Integer 4)]
                                             []
                                             .true.
                                             .false.
@@ -268,8 +272,8 @@
                                 )
                                 8 1_y_d
                                 (StructType
-                                    [(Integer 4)
-                                    (Real 4)]
+                                    [(Real 4)
+                                    (Integer 4)]
                                     []
                                     .true.
                                     .false.
@@ -297,8 +301,8 @@
                                     (StructType
                                         [(Complex 4)
                                         (StructType
-                                            [(Integer 4)
-                                            (Real 4)]
+                                            [(Real 4)
+                                            (Integer 4)]
                                             []
                                             .true.
                                             .false.
@@ -311,8 +315,8 @@
                                 )
                                 8 1_y_d
                                 (StructType
-                                    [(Integer 4)
-                                    (Real 4)]
+                                    [(Real 4)
+                                    (Integer 4)]
                                     []
                                     .true.
                                     .false.
@@ -366,8 +370,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -380,8 +384,8 @@
                                     )
                                     8 1_y_d
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -400,8 +404,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -414,8 +418,8 @@
                                     )
                                     8 1_y_d
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -449,8 +453,8 @@
                                 (StructType
                                     [(Complex 4)
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -463,8 +467,8 @@
                             )
                             8 1_y_d
                             (StructType
-                                [(Integer 4)
-                                (Real 4)]
+                                [(Real 4)
+                                (Integer 4)]
                                 []
                                 .true.
                                 .false.
@@ -485,8 +489,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -499,8 +503,8 @@
                                     )
                                     8 1_y_d
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -519,8 +523,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -533,8 +537,8 @@
                                     )
                                     8 1_y_d
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -599,8 +603,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Integer 4)
-                                                        (Real 4)]
+                                                        [(Real 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
                                                         .false.
@@ -615,13 +619,15 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     set
                                     (FunctionType
                                         [(StructType
-                                            [(Integer 4)
-                                            (Real 4)]
+                                            [(Real 4)
+                                            (Integer 4)]
                                             []
                                             .true.
                                             .false.
@@ -698,6 +704,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -719,12 +727,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     x
                                     (StructType
-                                        [(Integer 4)
-                                        (Real 4)]
+                                        [(Real 4)
+                                        (Integer 4)]
                                         []
                                         .true.
                                         .false.
@@ -767,6 +777,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             d:
                                                 (Variable
@@ -778,8 +790,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Integer 4)
-                                                        (Real 4)]
+                                                        [(Real 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
                                                         .false.
@@ -794,14 +806,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     y
                                     (StructType
                                         [(Complex 4)
                                         (StructType
-                                            [(Integer 4)
-                                            (Real 4)]
+                                            [(Real 4)
+                                            (Integer 4)]
                                             []
                                             .true.
                                             .false.
@@ -871,6 +885,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             l:
                                                 (Variable
@@ -884,8 +900,8 @@
                                                     (StructType
                                                         [(Complex 4)
                                                         (StructType
-                                                            [(Integer 4)
-                                                            (Real 4)]
+                                                            [(Real 4)
+                                                            (Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
@@ -904,6 +920,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     z
@@ -912,8 +930,8 @@
                                         (StructType
                                             [(Complex 4)
                                             (StructType
-                                                [(Integer 4)
-                                                (Real 4)]
+                                                [(Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
                                                 .false.

@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 @0 = private unnamed_addr constant [2 x i8] c"a\00", align 1
 @1 = private unnamed_addr constant [41 x i8] c"tests/../integration_tests/arrays_01.f90\00", align 1

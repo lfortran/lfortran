@@ -39,6 +39,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -68,6 +70,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -235,6 +239,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             error:
                                                 (Variable
@@ -247,10 +253,10 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            [(Allocatable
+                                                            [(Integer 4)
+                                                            (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Integer 4)]
+                                                            )]
                                                             []
                                                             .true.
                                                             .false.
@@ -266,6 +272,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -295,6 +303,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_parse_string
@@ -316,10 +326,10 @@
                                         )
                                         (Allocatable
                                             (StructType
-                                                [(Allocatable
+                                                [(Integer 4)
+                                                (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Integer 4)]
+                                                )]
                                                 []
                                                 .true.
                                                 .false.
@@ -364,10 +374,10 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            [(Allocatable
+                                                            [(Integer 4)
+                                                            (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Integer 4)]
+                                                            )]
                                                             []
                                                             .true.
                                                             .false.
@@ -383,6 +393,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -412,6 +424,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -433,6 +447,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_parse_unit
@@ -449,10 +465,10 @@
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
-                                                [(Allocatable
+                                                [(Integer 4)
+                                                (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Integer 4)]
+                                                )]
                                                 []
                                                 .true.
                                                 .false.
@@ -532,6 +548,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -553,14 +571,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_error
                                     (StructType
-                                        [(Allocatable
+                                        [(Integer 4)
+                                        (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Integer 4)]
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -622,6 +642,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -649,6 +671,8 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
                                                 )
                                         })
                                     toml_table

@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 %derived_types_45_mod.myint = type { i32 }
 
@@ -114,7 +115,7 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
   %38 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  call void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %38, i1 false)
+  call void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %38)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -138,15 +139,15 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-define internal void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %0, i1 %1) {
+define internal void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %0) {
 entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = icmp ne %derived_types_45_mod.myint* %0, null
-  br i1 %3, label %is_allocated.then, label %is_allocated.else
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = icmp ne %derived_types_45_mod.myint* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %4 = bitcast %derived_types_45_mod.myint* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %4)
+  %3 = bitcast %derived_types_45_mod.myint* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry

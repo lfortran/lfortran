@@ -9,6 +9,8 @@
 #include <llvm/IR/IRBuilder.h>
 #include <libasr/asr.h>
 
+#include <llvm/Support/Casting.h>
+#include <llvm/Support/raw_ostream.h>
 #include <map>
 #include <set>
 #include <string>
@@ -325,7 +327,7 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -333,6 +335,7 @@ class ASRToLLVMVisitor;
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
+            llvm::Value* CreateBitCastForStore(llvm::Value* value, llvm::Value* target_ptr);
             llvm::Value* get_array_descriptor_ptr(llvm::Value* value, llvm::Type* arr_type,
                                                   bool is_character_array);
 
@@ -943,6 +946,7 @@ class ASRToLLVMVisitor;
              *              to be freed by the consumer of that string.
              *         ** It complains if current return wasn't freed.
              */ 
+
             class StringFormatReturn {
                 LLVMUtils   *llvmUtils_instance_;
                 llvm::Value *return_val = nullptr; // Holds `_lcompilers_string_format_fortran()` call return
@@ -974,7 +978,6 @@ class ASRToLLVMVisitor;
      * @class LLVMFinalize
      * @brief Finalize variables before exiting their scope.
      * @details 
-     * Notice Global variables aren't finalized; They live till program ends.
      *
      * @see doc/src/llvm_utils.md 
      */
@@ -1006,11 +1009,13 @@ class ASRToLLVMVisitor;
          * @param struct_sym Struct symbol that could be related to `t` (if it contains structType), nullptr otherwise.
          * @param in_struct This type (instance) is inside a struct type or not -- Useful for arrays.
          */
-        void finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
-                llvm::Value* const in_struct){
-            if(!is_finalizable_type(t, struct_sym)) { return; }
+        void finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, const bool in_struct){
+            if(!is_finalizable_type(t, struct_sym, in_struct)) { return; }
+            
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
+            } else if(ASRUtils::is_pointer(t)) {
+                finalize_pointer(ptr, t, struct_sym);
             } else {
                 finalize_type(ptr, t, struct_sym);
             }
@@ -1018,20 +1023,23 @@ class ASRToLLVMVisitor;
 
         void finalize_variable(ASR::Variable_t* const v){
             if(not_finalizable_variable(v)) return;
+            if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
-            if(is_finalizable_type(v->m_type, get_struct_sym(v))) {
-                insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
-            }
+            insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
 
             auto const llvm_var = get_llvm_var(v);
+            auto* const struct_sym = get_struct_sym(v);
+            check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
+        }
+
+        void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path.
-            auto* struct_sym = get_struct_sym(v);
             if (struct_sym != nullptr
-                    && !ASRUtils::is_allocatable(v->m_type)
+                    && !ASRUtils::is_allocatable(type)
                     && struct_sym->n_member_functions > 0) {
                 for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
                     std::string final_proc_name = struct_sym->m_member_functions[fi];
@@ -1041,29 +1049,58 @@ class ASRToLLVMVisitor;
                         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                         if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                             llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                            builder_->CreateCall(final_fn, {llvm_var});
+                            ASR::ttype_t* v_type_past = ASRUtils::type_get_past_allocatable(type);
+                            if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
+                                // Variable is an array but the final subroutine
+                                // takes a scalar — call it element-by-element.
+                                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(v_type_past);
+                                llvm::Type* elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+                                llvm::Value* data_ptr = builder_->CreateBitCast(
+                                    ptr, elem_llvm_type->getPointerTo());
+                                int64_t array_size = ASRUtils::get_fixed_size_of_array(type);
+                                auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
+                                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "final_iter");
+                                builder_->CreateStore(
+                                    llvm::ConstantInt::get(iter_type, -1, true), iter);
+                                auto cond_fn = [&]() {
+                                    auto* loaded = builder_->CreateLoad(iter_type, iter);
+                                    auto* next = builder_->CreateAdd(loaded,
+                                        llvm::ConstantInt::get(iter_type, 1));
+                                    builder_->CreateStore(next, iter);
+                                    return builder_->CreateICmpSLT(next,
+                                        llvm::ConstantInt::get(iter_type, array_size));
+                                };
+                                auto body_fn = [&]() {
+                                    auto* idx = builder_->CreateLoad(iter_type, iter);
+                                    auto* elem = llvm_utils_->create_ptr_gep2(
+                                        elem_llvm_type, data_ptr, idx);
+                                    builder_->CreateCall(final_fn, {elem});
+                                };
+                                llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
+                            } else {
+                                builder_->CreateCall(final_fn, {ptr});
+                            }
                         }
                     }
                 }
             }
 
-            finalize(llvm_var, v->m_type, get_struct_sym(v), get_bool_constant(false));
+            finalize(ptr, type, struct_sym, in_struct);
         }
         
-        void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
-                llvm::Value* in_struct){
+        void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
             switch (t_past->type) {
                 case ASR::StructType:
                 case ASR::Array:{
-                    std::string cache_key = get_type_key(t, struct_sym);
+                    std::string cache_key = get_type_key(t, struct_sym) + (in_struct ? "__in_struct":"");
                     if(is_cached(cache_key)) {
-                        call_cached_finalizer(cache_key, {ptr, in_struct});
+                        call_cached_finalizer(cache_key, {ptr});
                         return;
                     }
                     auto const checkPoint_BB = 
-                    START_CACHE(cache_key, ptr, in_struct);
+                    START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
                         finalize(ptr, t_past, struct_sym, in_struct);
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
@@ -1079,8 +1116,20 @@ class ASRToLLVMVisitor;
             }
         }
 
+        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym){
+            LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
+            auto const t_past = ASRUtils::type_get_past_pointer(t);
+            switch (t_past->type) {
+                case ASR::Array:
+                    llvm_utils_->lfortran_free_nocheck(ptr);
+                break;
+                default:
+                    throw LCompilersException("Unhandled Case.");
+            }
+        }
+
         /// Frees pointer to allocatable type ( e.g `i32*`, `{i64, i8}*` )
-        void free_allocatable_ptr(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, llvm::Value* const in_struct){
+        void free_allocatable_ptr(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, const bool in_struct){
             LCOMPILERS_ASSERT(ASRUtils::is_allocatable(t))
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
@@ -1110,11 +1159,9 @@ class ASRToLLVMVisitor;
                     // Free based on array physical type + in_struct or not.
                     auto const arr_physical_t = ASRUtils::extract_physical_type(t_past);
                     bool const need_free = ( arr_physical_t == ASR::DescriptorArray
-                                              || arr_physical_t == ASR::PointerArray);
+                                              || arr_physical_t == ASR::PointerArray) && in_struct;
                     if(need_free) {
-                        llvm_utils_->create_if_else(in_struct, [&]() {
-                            llvm_utils_->lfortran_free_nocheck(var_ptr);
-                        }, [](){}, "allocatableArray_in_struct");
+                        llvm_utils_->lfortran_free_nocheck(var_ptr);
                     }
                 }
                 break;
@@ -1321,53 +1368,31 @@ class ASRToLLVMVisitor;
             bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
-                if(ASRUtils::is_pointer(member_variable->m_type)) { continue; }
                 // bind(C) struct: non-pointer character members are inline i8, nothing to free
                 if(is_bindc &&
                    !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
+                if(!is_finalizable_type(member_variable->m_type, struct_sym, true)){continue;} 
 
 
-                if(is_finalizable_type(member_variable->m_type, struct_sym)){// Insert BB label
-                    auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
-                                            + member_variable->m_name +"_member";
-                    insert_BB_for_readability(BB_str_label.c_str());
-                } 
+                auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
+                                        + member_variable->m_name +"_member";
+                insert_BB_for_readability(BB_str_label.c_str());
 
                 llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
-
-                // Call user-defined FINAL procedures on finalizable components
-                // (Fortran 2018 §7.5.6.2, para 1-4)
                 auto* member_struct_sym = get_struct_sym(member_variable);
-                if (member_struct_sym != nullptr
-                        && !ASRUtils::is_allocatable(member_asr_type)
-                        && member_struct_sym->n_member_functions > 0) {
-                    for (size_t fi = 0; fi < member_struct_sym->n_member_functions; fi++) {
-                        std::string final_proc_name = member_struct_sym->m_member_functions[fi];
-                        ASR::symbol_t* final_sym = member_struct_sym->m_symtab->parent->get_symbol(final_proc_name);
-                        if (final_sym) {
-                            final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                            uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                            if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
-                                llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                                builder_->CreateCall(final_fn, {member_ptr});
-                            }
-                        }
-                    }
-                }
-
-                finalize(member_ptr, member_asr_type, member_struct_sym, get_bool_constant(true));
+                check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
             }
 
             // Finalize Parent
             if(struct_sym->m_parent){
                 ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-                if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct)) {
+                if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct, false)) {
                     insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
                     llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
                         llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
-                        finalize(parent_ptr, parent_struct->m_struct_signature, parent_struct, get_bool_constant(true));
+                        finalize(parent_ptr, parent_struct->m_struct_signature, parent_struct, true);
                 }
                 /// Parent is inlined -- Not allocated separately.
             }
@@ -1452,7 +1477,7 @@ class ASRToLLVMVisitor;
                     auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
                     struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 }
-                finalize(struct_element, &struct_t->base, struct_sym, get_bool_constant(false));
+                finalize(struct_element, &struct_t->base, struct_sym, false);
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
@@ -1501,7 +1526,7 @@ class ASRToLLVMVisitor;
                 }
                 break;
                 case ASR::String : // Force string finalization on this single string. -- Don't loop, One string holds all.
-                    finalize(data_ptr, data_type, struct_sym, get_bool_constant(false)); 
+                    finalize(data_ptr, data_type, struct_sym, false); 
                 break; 
                 case ASR::Integer :
                 case ASR::Real :
@@ -1540,12 +1565,13 @@ class ASRToLLVMVisitor;
             return llvm::ConstantInt::get(llvm::Type::getInt1Ty(builder_->getContext()), b);
         }
 
+
         // Get a unique string key for finalizable ASR types
         std::string get_type_key(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym) {
-            LCOMPILERS_ASSERT(!ASRUtils::is_pointer(t))
             std::string key {};
             if(ASRUtils::is_allocatable(t)) {key += "allocatable__";}
-            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(t); 
+            if(ASRUtils::is_pointer(t)) {key += "pointer__";}
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             if(ASRUtils::is_array_t(t_past)){
                 key += "Array_";
                 int n_dims = ASRUtils::extract_n_dims_from_ttype(t_past);
@@ -1649,7 +1675,7 @@ class ASRToLLVMVisitor;
         template <typename finProcess>
         void check_if_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, finProcess fin){
             auto const null_ptr_const = llvm::ConstantPointerNull::get(
-                                            get_llvm_type(ASRUtils::type_get_past_allocatable(t), struct_sym)->getPointerTo());
+                                            get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(t), struct_sym)->getPointerTo());
             llvm_utils_->create_if_else(builder_->CreateICmpNE(ptr, null_ptr_const), fin, [](){}, "is_allocated");
         }
 
@@ -1683,11 +1709,10 @@ class ASRToLLVMVisitor;
             return llvm_utils_->get_type_from_ttype_t_util(dummy_var_symbol, type, llvm_utils_->module);
         }
 
-        /// Check if variable can't be finalized
+        /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
             return v->m_intent != ASR::Local
-                || ASRUtils::is_pointer(v->m_type)
                 || v->m_storage == ASR::Parameter
                 || v->m_storage == ASR::Save /*Neglect - Lives till program ends*/;
         }
@@ -1698,9 +1723,8 @@ class ASRToLLVMVisitor;
                                       && ASRUtils::get_FunctionType(sym)->m_deftype == ASR::Interface;
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
-            const bool is_module = sym && ASR::is_a<ASR::Module_t>(*sym);
             const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
-            return is_TU || is_module || is_interface || is_external_abi ;
+            return is_TU || is_interface || is_external_abi ;
         }
 
         static bool is_variable(ASR::symbol_t* const s){
@@ -1750,57 +1774,122 @@ class ASRToLLVMVisitor;
             }
             return fetched_member;
         }
+        /**
+         * Check if this type is finalizable.
+         * It dispatches to other helper functions.
+         * @param t ASR type that we're checking
+         * @param struct_sym struct symbol of the ASR type (if it's of ASR structType_t)
+         * @param in_struct is this type inside a struct symbol. We make decisions based on this info.
+         */
+        bool is_finalizable_type(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, const bool in_struct){
+            if(ASRUtils::is_allocatable(t)){
+                return is_finalizable_type_allocatable(ASR::down_cast<ASR::Allocatable_t>(t), struct_sym, in_struct);
+            } else if (ASRUtils::is_pointer(t)){
+                return is_finalizable_type_pointer(ASR::down_cast<ASR::Pointer_t>(t), struct_sym, in_struct);
+            }
+            return is_finalizable_type_atomic(t, struct_sym, in_struct);
+        }
+        
+        /// Does this type (non allocatable, non pointer) require a finalization process
+        bool is_finalizable_type_atomic(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, [[maybe_unused]]const bool in_struct){
+            LCOMPILERS_ASSERT_MSG(!ASRUtils::is_allocatable_or_pointer(t), "Doesn't handle allocatable nor pointer")
 
-        /// Does this type require a finalization process
-        bool is_finalizable_type(ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            if(ASRUtils::is_pointer(t)) { return false; }
-            bool const is_allocatable = ASRUtils::is_allocatable(t);
-            auto const t_past = ASRUtils::type_get_past_allocatable(t);
-
-            switch(t_past->type){
+            switch(t->type){
                 case ASR::Integer:
                 case ASR::Real:
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
-                    if(is_allocatable) {return true;}
                     return false;
                 case ASR::StructType:{
-                    if(is_allocatable) { return true; }
                     if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
-                    ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t_past);
+                    ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
                     // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
                     if(struct_sym && struct_sym->n_member_functions > 0) { return true; }
                     if(struct_sym->m_parent){ // Check parent
                         ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-                        finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct);
+                        finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct, false);
                     }
                     for(size_t i = 0; (i < struct_sym->n_members) && !finalizable_struct; i++) {
                         auto* member_var = ASR::down_cast<ASR::Variable_t>(
                             struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
-                        if(ASRUtils::is_pointer(member_var->m_type)) continue;
-                        finalizable_struct |= is_finalizable_type(member_var->m_type, get_struct_sym(member_var));
+                        finalizable_struct |= is_finalizable_type(member_var->m_type, get_struct_sym(member_var), true);
                     }
                     return finalizable_struct;
                 }
                 case ASR::Array:
-                    return is_array_finalizable(ASR::down_cast<ASR::Array_t>(t_past), struct_sym);
+                    return is_array_finalizable(ASR::down_cast<ASR::Array_t>(t), struct_sym);
                 break;
                 case ASR::List:
                 case ASR::Dict:
                 case ASR::Tuple:
                 case ASR::UnionType:
                 case ASR::Set:
-                    return false; // >>>>> TO DO <<<<<
+                return false; // >>>>> TO DO <<<<<
                 case ASR::String:
-                    return true;
+                return true;
                 case ASR::FunctionType:
                 case ASR::CPtr:
                     return false;
                 default:
                     throw LCompilersException("Handle this case");
+            }
+        }
+
+        // Check if a pointer type is finalizable
+        bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
+            switch(t_past->type){
+                case ASR::Array:
+                    return in_struct 
+                        && (   ASRUtils::extract_physical_type(t_past) == ASR::DescriptorArray
+                            || ASRUtils::extract_physical_type(t_past) == ASR::AssumedRankArray);
+                case ASR::Integer:
+                case ASR::Real:
+                case ASR::Complex:
+                case ASR::UnsignedInteger:
+                case ASR::Logical:
+                case ASR::StructType:
+                case ASR::List:
+                case ASR::Dict:
+                case ASR::Tuple:
+                case ASR::UnionType:
+                case ASR::Set:
+                case ASR::String:
+                case ASR::FunctionType:
+                case ASR::CPtr:
+                    return false;
+                default:
+                    throw LCompilersException("Unhandled ASR pointer type");
+            }
+        }
+
+        // Check if an allocatable type is finalizable
+        bool is_finalizable_type_allocatable(ASR::Allocatable_t* const t, ASR::Struct_t* const struct_sym, const bool  in_struct){
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
+            switch(t_past->type){
+                case ASR::Integer:
+                case ASR::Real:
+                case ASR::Complex:
+                case ASR::UnsignedInteger:
+                case ASR::Logical:
+                case ASR::StructType:
+                case ASR::String:
+                    return true;
+                case ASR::Array:
+                    return is_finalizable_type_atomic(t_past, struct_sym, in_struct);
+                case ASR::FunctionType:
+                case ASR::CPtr:
+                case ASR::List:
+                case ASR::Dict:
+                case ASR::Tuple:
+                case ASR::UnionType:
+                case ASR::Set:
+                    return false;
+                default:
+                    throw LCompilersException("Unhandled ASR allocatable type");
             }
         }
         
@@ -1812,7 +1901,7 @@ class ASRToLLVMVisitor;
                     return true;
                 case ASR::FixedSizeArray:
                 case ASR::SIMDArray:
-                    return is_finalizable_type(t->m_type, struct_sym);
+                    return is_finalizable_type(t->m_type, struct_sym, false);
                 default:
                     return false;
             }
@@ -1882,7 +1971,7 @@ class ASRToLLVMVisitor;
                 case ASR::Array: {
                     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
                     if (arr_t->m_type->type != ASR::StructType) { return; }
-                    if (!is_finalizable_type(arr_t->m_type, struct_sym)) { return; }
+                    if (!is_finalizable_type(arr_t->m_type, struct_sym, in_struct)) { return; }
                     // Finalize array elements but don't free the array data itself
                     auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
                     auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
@@ -1897,8 +1986,8 @@ class ASRToLLVMVisitor;
                     return;
                 }
                 case ASR::StructType: {
-                    if (!is_finalizable_type(t_past, struct_sym)) { return; }
-                    finalize(ptr, t_past, struct_sym, get_bool_constant(in_struct));
+                    if (!is_finalizable_type(t_past, struct_sym, in_struct)) { return; }
+                    finalize(ptr, t_past, struct_sym, in_struct);
                     return;
                 }
                 default:
