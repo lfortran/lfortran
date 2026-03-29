@@ -1026,6 +1026,18 @@ class ASRToLLVMVisitor;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
+            // Non-allocatable PointerArray of String uses a statically
+            // allocated data buffer. Attempting to free it would crash
+            // because the buffer was never heap-allocated.
+            if(!ASRUtils::is_allocatable_or_pointer(v->m_type)
+                    && ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                auto* arr_t = ASR::down_cast<ASR::Array_t>(v->m_type);
+                if(arr_t->m_physical_type == ASR::PointerArray
+                        && ASRUtils::extract_type(arr_t->m_type)->type == ASR::String) {
+                    return;
+                }
+            }
+
             insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
 
             auto const llvm_var = get_llvm_var(v);
