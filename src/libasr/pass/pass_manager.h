@@ -187,7 +187,7 @@ namespace LCompilers {
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
-#if defined(WITH_LFORTRAN_ASSERT)
+#if defined(WITH_LFORTRAN_VERIFY_EVERY_PASS)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException("Verify failed in the pass: "
@@ -211,6 +211,12 @@ namespace LCompilers {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
             }
+#if defined(WITH_LFORTRAN_ASSERT) && !defined(WITH_LFORTRAN_VERIFY_EVERY_PASS)
+            if (!asr_verify(*asr, true, diagnostics)) {
+                std::cerr << diagnostics.render2();
+                throw LCompilersException("Verify failed after all passes");
+            };
+#endif
         }
 
         void _parse_pass_arg(std::string& arg, std::vector<std::string>& passes) {
@@ -401,7 +407,7 @@ namespace LCompilers {
                         << "\n" << fortran_code.result << "\n";
                     outfile.close();
                 }
-#if defined(WITH_LFORTRAN_ASSERT)
+#if defined(WITH_LFORTRAN_VERIFY_EVERY_PASS)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException("Verify failed in the pass: "
@@ -412,6 +418,12 @@ namespace LCompilers {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
             }
+#if defined(WITH_LFORTRAN_ASSERT) && !defined(WITH_LFORTRAN_VERIFY_EVERY_PASS)
+            if (!asr_verify(*asr, true, diagnostics)) {
+                std::cerr << diagnostics.render2();
+                throw LCompilersException("Verify failed after all passes");
+            };
+#endif
         }
 
         void use_default_passes(bool _c_skip_pass=false) {

@@ -89,6 +89,12 @@ endif()
 set(WITH_LFORTRAN_ASSERT ${WITH_LFORTRAN_ASSERT_DEFAULT}
     CACHE BOOL "Enable LFORTRAN_ASSERT macro")
 
+
+# WITH_LFORTRAN_VERIFY_EVERY_PASS: run asr_verify after every single ASR pass
+# (slow, useful only when debugging a specific pass that corrupts the ASR tree).
+# By default, Debug builds verify once after all passes complete.
+set(WITH_LFORTRAN_VERIFY_EVERY_PASS no
+    CACHE BOOL "Run asr_verify after every ASR pass (slow, for debugging passes)")
 # LFORTRAN_STATIC_BIN
 set(LFORTRAN_STATIC_BIN no CACHE BOOL "Build LFortran as a static binary")
 
@@ -417,6 +423,7 @@ message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("C++ compiler flags    : ${CMAKE_CXX_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("WITH_LFORTRAN_ASSERT: ${WITH_LFORTRAN_ASSERT}")
+message("WITH_LFORTRAN_VERIFY_EVERY_PASS: ${WITH_LFORTRAN_VERIFY_EVERY_PASS}")
 message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
 message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
