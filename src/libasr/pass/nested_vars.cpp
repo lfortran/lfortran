@@ -625,8 +625,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             nullptr, ASR::DeferredLength, ASR::DescriptorString));
                     }
                 }
-                if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
+                if (is_allocatable && !ASRUtils::is_allocatable(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                }
+                if (is_pointer && !ASRUtils::is_pointer(var_type)) {
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
                 ASR::symbol_t* type_decl = nullptr;
                 if (m_derived_type_or_class_type) {
@@ -1395,7 +1398,9 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
+        bool is_proc_variable = ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(x.m_name));
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name)
+            || is_proc_variable;
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
