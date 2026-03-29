@@ -52,6 +52,8 @@ include(GNUInstallDirs)
 file(RELATIVE_PATH CMAKE_INSTALL_LIBDIR_RELATIVE ${CMAKE_INSTALL_FULL_BINDIR} ${CMAKE_INSTALL_FULL_LIBDIR})
 # create CMAKE_INSTALL_INCLUDEDIR_RELATIVE, INCLUDEDIR relative to BINDIR
 file(RELATIVE_PATH CMAKE_INSTALL_INCLUDEDIR_RELATIVE ${CMAKE_INSTALL_FULL_BINDIR} ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+# absolute path to libasr/runtime in the source tree (for ISO_Fortran_binding.h)
+set(LIBASR_RUNTIME_DIR "${CMAKE_SOURCE_DIR}/src/libasr/runtime")
 
 # Build a CPack driven installer package
 #
