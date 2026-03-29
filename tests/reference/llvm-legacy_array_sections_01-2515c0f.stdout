@@ -738,18 +738,47 @@ then37:                                           ; preds = %merge_allocated35
   %444 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b1, align 8
   %445 = getelementptr %array.1, %array.1* %444, i32 0, i32 0
   store double* null, double** %445, align 8
-  br label %ifcont39
+  br label %ifcont45
 
 else38:                                           ; preds = %merge_allocated35
-  br label %ifcont39
+  %446 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b1, align 8
+  %447 = ptrtoint %array.1* %446 to i64
+  %448 = icmp eq i64 %447, 0
+  br i1 %448, label %merge_allocated40, label %check_data39
 
-ifcont39:                                         ; preds = %else38, %then37
+check_data39:                                     ; preds = %else38
+  %449 = getelementptr %array.1, %array.1* %446, i32 0, i32 0
+  %450 = load double*, double** %449, align 8
+  %451 = ptrtoint double* %450 to i64
+  %452 = icmp ne i64 %451, 0
+  br label %merge_allocated40
+
+merge_allocated40:                                ; preds = %check_data39, %else38
+  %is_allocated41 = phi i1 [ false, %else38 ], [ %452, %check_data39 ]
+  br i1 %is_allocated41, label %then42, label %else43
+
+then42:                                           ; preds = %merge_allocated40
+  %453 = getelementptr %array.1, %array.1* %446, i32 0, i32 0
+  %454 = load double*, double** %453, align 8
+  %455 = bitcast double* %454 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %455)
+  %456 = getelementptr %array.1, %array.1* %446, i32 0, i32 0
+  store double* null, double** %456, align 8
+  br label %ifcont44
+
+else43:                                           ; preds = %merge_allocated40
+  br label %ifcont44
+
+ifcont44:                                         ; preds = %else43, %then42
+  br label %ifcont45
+
+ifcont45:                                         ; preds = %ifcont44, %then37
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
   br label %return
 
-return:                                           ; preds = %unreachable_after_return, %ifcont39
+return:                                           ; preds = %unreachable_after_return, %ifcont45
   br label %FINALIZE_SYMTABLE_a
 
 FINALIZE_SYMTABLE_a:                              ; preds = %return
