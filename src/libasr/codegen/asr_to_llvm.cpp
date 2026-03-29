@@ -13239,9 +13239,13 @@ public:
                 break;
             }
             case 16 : {
-                char buf[64];
-                snprintf(buf, sizeof(buf), "%.17e", val);
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                // Note: m_r is currently stored as double in ASR, so
+                // precision is limited to 64-bit. A future PR will store
+                // the 128-bit value properly in ASR::RealConstant_t.
+                llvm::APFloat apf(val);
+                bool losesInfo;
+                apf.convert(llvm::APFloat::IEEEquad(),
+                            llvm::APFloat::rmNearestTiesToEven, &losesInfo);
                 tmp = llvm::ConstantFP::get(context, apf);
                 break;
             }

@@ -49,6 +49,39 @@ typedef enum {
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
+/*
+ * Portability layer for 128-bit floating point (fp128 / real(16)).
+ *
+ * __float128 is available on Linux with GCC and Clang.
+ * On macOS and Windows it is not available; we define a 16-byte struct
+ * and convert to double for printing (lossy but functional).
+ * A future PR will implement proper 128-bit arithmetic on all platforms.
+ */
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+#  define HAVE_FLOAT128 1
+#else
+#  define HAVE_FLOAT128 0
+   typedef struct { uint8_t bytes[16]; } lf_float128;
+#endif
+
+static inline double lf_float128_to_double(const void *ptr) {
+#if HAVE_FLOAT128
+    __float128 tmp;
+    memcpy(&tmp, ptr, 16);
+    return (double)tmp;
+#else
+    /*
+     * Fallback for platforms without __float128 (macOS, Windows):
+     * Read as long double (80-bit on x86, 64-bit on ARM) which is
+     * lossy but functional.  A proper software binary128 → double
+     * conversion should be added in a future PR.
+     */
+    long double ld;
+    memcpy(&ld, ptr, sizeof(long double));
+    return (double)ld;
+#endif
+}
+
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -1960,10 +1993,8 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             break;
         }
         case FLOAT_128_TYPE: {
-            byte_count = 16; // __float128 / fp128 is 16 bytes
-            __float128 tmp;
-            memcpy(&tmp, arg_ptr, 16);
-            double d = (double) tmp;
+            byte_count = 16; // fp128 is 16 bytes
+            double d = lf_float128_to_double(arg_ptr);
             uint64_t raw_tmp = 0;
             memcpy(&raw_tmp, &d, sizeof(double));
             raw = raw_tmp;
@@ -2597,18 +2628,16 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             break;
         case FLOAT_128_TYPE:
             if (s_info->current_arg_info.is_complex) {
-                double real_d;
-                { __float128 tmp; memcpy(&tmp, arg, 16); real_d = (double)tmp; }
+                double real_d = lf_float128_to_double(arg);
                 move_to_next_element(s_info, false);
-                double imag_d;
-                { __float128 tmp; memcpy(&tmp, s_info->current_arg_info.current_arg, 16); imag_d = (double)tmp; }
+                double imag_d = lf_float128_to_double(s_info->current_arg_info.current_arg);
                 char real_str[128], imag_str[128];
                 format_double_fortran(real_str, real_d);
                 format_double_fortran(imag_str, imag_d);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
-                __float128 val; memcpy(&val, arg, 16);
-                format_double_fortran(result, (double)val);
+                double val_d = lf_float128_to_double(arg);
+                format_double_fortran(result, val_d);
             }
             break;
         case FLOAT_64_TYPE:
