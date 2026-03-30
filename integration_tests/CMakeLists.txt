@@ -767,7 +767,7 @@ RUN(NAME arrays_reshape_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
 RUN(NAME arrays_reshape_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME arrays_reshape_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK)
+RUN(NAME arrays_reshape_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_33 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_reshape_34 LABELS gfortran llvm)

@@ -4323,7 +4323,7 @@ public:
                 if(ASRUtils::is_character(*x_m_array_type)){
                     tmp = create_and_setup_string_for_array(x_m_array_type,
                         builder->CreateSExtOrTrunc(llvm_arr_size, llvm::Type::getInt64Ty(context)),
-                        false, "StringArrayReshape");
+                        true, "StringArrayReshape");
                     builder->CreateMemCpy(
                         llvm_utils->get_stringArray_data(x_m_array_type, tmp), llvm::MaybeAlign(),
                         llvm_utils->get_stringArray_data(ASRUtils::expr_type(x.m_array), array), llvm::MaybeAlign(),
