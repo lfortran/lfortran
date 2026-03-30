@@ -1234,7 +1234,9 @@ namespace LCompilers {
                                                   llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                                   llvm::Module* module, ASR::expr_t* array_expr,
                                                   ASR::ttype_t* asr_data_type,
-                                                  llvm::Type* result_desc_type) {
+                                                  llvm::Type* result_desc_type,
+                                                  llvm::Value* order,
+                                                  ASR::expr_t* order_expr) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Type* result_type;
             if (result_desc_type) {
@@ -1261,8 +1263,9 @@ namespace LCompilers {
 
             bool is_struct_type = asr_data_type != nullptr &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
+            bool has_order = (order != nullptr && order_expr != nullptr);
 
-            if (is_struct_type && array_expr != nullptr) {
+            if (!has_order && is_struct_type && array_expr != nullptr) {
                 // For derived types with allocatable components, do element-wise
                 // deep copy to avoid sharing allocatable component pointers.
                 // Zero-initialize dest buffer so allocatable members start as null.
@@ -1316,7 +1319,7 @@ namespace LCompilers {
                 builder->CreateBr(loopHead);
 
                 llvm_utils->start_new_block(loopEnd);
-            } else {
+            } else if (!has_order) {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
@@ -1390,6 +1393,114 @@ namespace LCompilers {
 
                 // end
                 llvm_utils->start_new_block(loopend);
+
+                if (has_order) {
+                    int64_t rank = ASRUtils::get_fixed_size_of_array(asr_shape_type);
+                    LCOMPILERS_ASSERT(rank > 0);
+
+                    ASR::ttype_t* asr_order_type = ASRUtils::expr_type(order_expr);
+                    ASR::ttype_t* order_elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(asr_order_type)));
+                    llvm::Type* llvm_order_type = llvm_utils->get_el_type(order_expr, order_elem_type, module);
+                    llvm::Type* order_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        order_expr, ASRUtils::type_get_past_allocatable_pointer(asr_order_type), module);
+
+                    llvm::Value* order_data_base = order;
+                    ASR::array_physical_typeType order_physical_type = ASRUtils::extract_physical_type(asr_order_type);
+                    if (order_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        order_data_base = llvm_utils->create_gep2(order_array_type, order_data_base, 0);
+                        order_data_base = llvm_utils->CreateLoad2(llvm_order_type->getPointerTo(), order_data_base);
+                    } else if (order_physical_type == ASR::array_physical_typeType::FixedSizeArray && 
+                                !ASRUtils::expr_value(order_expr)) {
+                        order_data_base = llvm_utils->create_gep2(order_array_type, order_data_base, 0);
+                    }
+
+                    std::vector<llvm::Value*> shape_values(rank);
+                    for (int64_t i = 0; i < rank; i++) {
+                        llvm::Value* sv = llvm_utils->CreateLoad2(
+                            i32,
+                            llvm_utils->create_ptr_gep2(i32, shape_data,
+                                llvm::ConstantInt::get(context, llvm::APInt(32, i))));
+                        shape_values[i] = builder->CreateSExtOrTrunc(sv, index_type);
+                    }
+
+                    llvm::Value* src_data = llvm_utils->CreateLoad2(
+                        llvm_data_type->getPointerTo(), ptr2firstptr);
+                    llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                        llvm_data_type->getPointerTo(), first_ptr);
+
+                    llvm::Value* I_arr = llvm_utils->CreateAlloca(
+                        *builder, llvm::Type::getInt64Ty(context),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, rank)));
+
+                    llvm::BasicBlock *order_loop_head = llvm::BasicBlock::Create(context, "reshape_order.head");
+                    llvm::BasicBlock *order_loop_body = llvm::BasicBlock::Create(context, "reshape_order.body");
+                    llvm::BasicBlock *order_loop_end = llvm::BasicBlock::Create(context, "reshape_order.end");
+
+                    llvm::Value* idx = llvm_utils->CreateAlloca(*builder, index_type);
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), idx);
+
+                    llvm_utils->start_new_block(order_loop_head);
+                    llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
+                    llvm::Value* cond2 = builder->CreateICmpSLT(idx_val,
+                        builder->CreateSExtOrTrunc(num_elements, index_type));
+                    builder->CreateCondBr(cond2, order_loop_body, order_loop_end);
+
+                    llvm_utils->start_new_block(order_loop_body);
+                    idx_val = llvm_utils->CreateLoad2(index_type, idx);
+                    llvm::Value* temp_val = idx_val;
+
+                    for (int64_t j = 0; j < rank; j++) {
+                        llvm::Value* d_j = builder->CreateSRem(temp_val, shape_values[j]);
+                        temp_val = builder->CreateSDiv(temp_val, shape_values[j]);
+                        llvm::Value* I_j_ptr = llvm_utils->create_ptr_gep2(
+                            llvm::Type::getInt64Ty(context), I_arr,
+                            llvm::ConstantInt::get(context, llvm::APInt(32, j)));
+                        builder->CreateStore(d_j, I_j_ptr);
+                    }
+
+                    llvm::Value* source_index = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0));
+                    llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
+                    for (int64_t j = 0; j < rank; j++) {
+                        llvm::Value* order_j = llvm_utils->CreateLoad2(
+                            llvm_order_type,
+                            llvm_utils->create_ptr_gep2(
+                                llvm_order_type, order_data_base,
+                                llvm::ConstantInt::get(context, llvm::APInt(32, j))));
+                        order_j = builder->CreateSExtOrTrunc(order_j, index_type);
+                        llvm::Value* dim = builder->CreateSub(order_j,
+                            llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
+
+                        llvm::Value* I_dim_ptr = llvm_utils->create_ptr_gep2(
+                            llvm::Type::getInt64Ty(context), I_arr,
+                            builder->CreateSExtOrTrunc(dim, llvm::Type::getInt32Ty(context)));
+                        llvm::Value* I_dim = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context), I_dim_ptr);
+                        source_index = builder->CreateAdd(source_index,
+                            builder->CreateMul(I_dim, stride));
+
+                        llvm::Value* shape_dim = shape_values[0];
+                        for (int64_t k = 1; k < rank; k++) {
+                            llvm::Value* dim_eq_k = builder->CreateICmpEQ(
+                                dim, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, k)));
+                            shape_dim = builder->CreateSelect(dim_eq_k, shape_values[k], shape_dim);
+                        }
+                        stride = builder->CreateMul(stride, shape_dim);
+                    }
+
+                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
+                    llvm::Value* val = llvm_utils->CreateLoad2(llvm_data_type, src_ptr);
+                    llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
+                    builder->CreateStore(val, dst_ptr);
+
+                    llvm::Value* idx_next = builder->CreateAdd(idx_val,
+                        llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
+                    builder->CreateStore(idx_next, idx);
+                    builder->CreateBr(order_loop_head);
+
+                    llvm_utils->start_new_block(order_loop_end);
+                }
             }
             return reshaped;
         }

@@ -115,6 +115,9 @@ public:
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
     Allocator &get_al() { return al; };
+#ifdef HAVE_LFORTRAN_LLVM
+    LLVMEvaluator &get_llvm_evaluator();
+#endif
 
 private:
     Allocator al;
