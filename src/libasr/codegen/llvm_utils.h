@@ -1154,18 +1154,20 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
                 case(ASR::StructType) :  {
-                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
                         // be decided from the ASR class flag, not the LLVM pointer type.
-                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                        // Use t_past (bare StructType) for GEP since var_ptr already
+                        // points to the class wrapper struct {vtable*, struct*}.
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
                         auto const struct_ptr = llvm_utils_->CreateLoad2(
                             llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                             llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
                         check_if_allocated_then_finalize(struct_ptr, struct_sym->m_struct_signature, struct_sym,
                             [this, struct_ptr](){llvm_utils_->lfortran_free_nocheck(struct_ptr);});
-                    } else if(ASRUtils::is_class_type(t)){ // {VTable*, struct*} -- Free struct
-                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                    } else if(ASRUtils::is_class_type(t_past)){ // {VTable*, struct*} -- Free struct
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
                         auto const struct_ptr = llvm_utils_->CreateLoad2(
                             llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                             llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
