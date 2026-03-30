@@ -4530,37 +4530,38 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
             case (ASR::ttypeType::StructType) : {
-                // Structural comparison when expressions unavailable
-                if (a_expr == nullptr || b_expr == nullptr) {
-                    ASR::StructType_t* a2 = ASR::down_cast<ASR::StructType_t>(a);
-                    ASR::StructType_t* b2 = ASR::down_cast<ASR::StructType_t>(b);
-                    if (a2->m_is_cstruct != b2->m_is_cstruct) return false;
-                    if (a2->m_is_unlimited_polymorphic != b2->m_is_unlimited_polymorphic) return false;
-                    if (a2->n_data_member_types != b2->n_data_member_types) return false;
-                    for (size_t i = 0; i < a2->n_data_member_types; i++) {
-                        if (!types_equal(a2->m_data_member_types[i], b2->m_data_member_types[i],
-                                         nullptr, nullptr, check_for_dimensions)) {
-                            return false;
-                        }
-                    }
-                    if (a2->n_member_function_types != b2->n_member_function_types) return false;
-                    for (size_t i = 0; i < a2->n_member_function_types; i++) {
-                        if (!types_equal(a2->m_member_function_types[i], b2->m_member_function_types[i],
-                                         nullptr, nullptr, check_for_dimensions)) {
-                            return false;
-                        }
-                    }
-                    return true;
+                ASR::symbol_t* a_struct_sym = (a_expr != nullptr)
+                    ? ASRUtils::symbol_get_past_external(
+                          ASRUtils::get_struct_sym_from_struct_expr(a_expr))
+                    : nullptr;
+                ASR::symbol_t* b_struct_sym = (b_expr != nullptr)
+                    ? ASRUtils::symbol_get_past_external(
+                          ASRUtils::get_struct_sym_from_struct_expr(b_expr))
+                    : nullptr;
+                if (a_struct_sym != nullptr && b_struct_sym != nullptr) {
+                    ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(a_struct_sym);
+                    ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(b_struct_sym);
+                    return is_derived_type_similar(x_struct, y_struct);
                 }
-                ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
-                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
-
-                if (!is_derived_type_similar(x_struct, y_struct)) {
-                    return false;
+                // Structural comparison when struct symbols unavailable
+                ASR::StructType_t* a2 = ASR::down_cast<ASR::StructType_t>(a);
+                ASR::StructType_t* b2 = ASR::down_cast<ASR::StructType_t>(b);
+                if (a2->m_is_cstruct != b2->m_is_cstruct) return false;
+                if (a2->m_is_unlimited_polymorphic != b2->m_is_unlimited_polymorphic) return false;
+                if (a2->n_data_member_types != b2->n_data_member_types) return false;
+                for (size_t i = 0; i < a2->n_data_member_types; i++) {
+                    if (!types_equal(a2->m_data_member_types[i], b2->m_data_member_types[i],
+                                     nullptr, nullptr, check_for_dimensions)) {
+                        return false;
+                    }
                 }
-
+                if (a2->n_member_function_types != b2->n_member_function_types) return false;
+                for (size_t i = 0; i < a2->n_member_function_types; i++) {
+                    if (!types_equal(a2->m_member_function_types[i], b2->m_member_function_types[i],
+                                     nullptr, nullptr, check_for_dimensions)) {
+                        return false;
+                    }
+                }
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
@@ -4722,22 +4723,30 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
             }
-            case (ASR::ttypeType::StructType) : {          
+            case (ASR::ttypeType::StructType) : {
                 ASR::Struct_t* x_struct = nullptr;
                 if (a_struct) {
                     x_struct = a_struct;
-                } else {
-                    x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
+                } else if (a_expr != nullptr) {
+                    ASR::symbol_t* a_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(a_expr));
+                    if (a_sym != nullptr) {
+                        x_struct = ASR::down_cast<ASR::Struct_t>(a_sym);
+                    }
                 }
-                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
-
-                if (!is_derived_type_similar(x_struct, y_struct)) {
-                    return false;
+                ASR::Struct_t* y_struct = nullptr;
+                if (b_expr != nullptr) {
+                    ASR::symbol_t* b_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(b_expr));
+                    if (b_sym != nullptr) {
+                        y_struct = ASR::down_cast<ASR::Struct_t>(b_sym);
+                    }
                 }
 
-                return true;
+                if (x_struct != nullptr && y_struct != nullptr) {
+                    return is_derived_type_similar(x_struct, y_struct);
+                }
+                return types_equal(a, b, nullptr, nullptr, check_for_dimensions);
             }
             case (ASR::ttypeType::UnionType) : {
                 ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
