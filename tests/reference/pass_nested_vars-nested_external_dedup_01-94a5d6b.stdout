@@ -81,10 +81,10 @@
                                                     a
                                                     Public
                                                 ),
-                                            a2:
+                                            a_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    a2
+                                                    a_nested_ctx
                                                     6 a
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -221,7 +221,7 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
                                         .false.
@@ -236,13 +236,13 @@
                                     )
                                     (Assignment
                                         (Var 3 a)
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
                                         .false.
@@ -257,7 +257,7 @@
                                     )
                                     (Assignment
                                         (Var 3 a)
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
