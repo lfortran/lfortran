@@ -127,10 +127,10 @@
                                                     NotMethod
                                                     ()
                                                 ),
-                                            i1:
+                                            i_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    i1
+                                                    i_nested_ctx
                                                     6 i
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -244,10 +244,10 @@
                                                     NotMethod
                                                     ()
                                                 ),
-                                            x1:
+                                            x_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    x1
+                                                    x_nested_ctx
                                                     6 x
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -290,14 +290,14 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 i1)
+                                        (Var 3 i_nested_ctx)
                                         (Var 3 i)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 x1)
+                                        (Var 3 x_nested_ctx)
                                         (Var 3 x)
                                         ()
                                         .false.
@@ -312,14 +312,14 @@
                                     )
                                     (Assignment
                                         (Var 3 i)
-                                        (Var 3 i1)
+                                        (Var 3 i_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
                                         (Var 3 x)
-                                        (Var 3 x1)
+                                        (Var 3 x_nested_ctx)
                                         ()
                                         .false.
                                         .false.

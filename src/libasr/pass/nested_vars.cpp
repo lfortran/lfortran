@@ -1115,14 +1115,14 @@ public:
                             ext_sym = it_ext->second;
                         } else {
                             std::string original_name = ASRUtils::symbol_name(t);
-                            ASR::symbol_t *existing = current_scope->get_symbol(original_name);
+                            ASR::symbol_t *existing = current_scope->resolve_symbol(original_name);
                             if (existing != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
                                     ASRUtils::symbol_get_past_external(existing) == t) {
                                 ext_sym = existing;
                             } else {
                                 std::string unique_name = original_name;
                                 if (existing != nullptr) {
-                                    unique_name = current_scope->get_unique_name(original_name, false);
+                                    unique_name = current_scope->get_unique_name(original_name + "_nested_ctx", false);
                                 }
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                     al, t->base.loc,
@@ -1183,16 +1183,17 @@ public:
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
                         if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
+                            std::string unique_name = current_scope->get_unique_name(sym_name, false);
                             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
                             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                 al, t->base.loc,
                                 /* a_symtab */ current_scope,
-                                /* a_name */ s2c(al, current_scope->get_unique_name(sym_name, false)),
+                                /* a_name */ s2c(al, unique_name),
                                 s, ASRUtils::symbol_name(ASRUtils::get_asr_owner(s)),
                                 nullptr, 0, ASRUtils::symbol_name(s), ASR::accessType::Public
                             );
                             sym_ = ASR::down_cast<ASR::symbol_t>(fn);
-                            current_scope->add_symbol(sym_name, sym_);
+                            current_scope->add_symbol(unique_name, sym_);
                         }
                         LCOMPILERS_ASSERT(ext_sym != nullptr);
                         LCOMPILERS_ASSERT(sym_ != nullptr);
