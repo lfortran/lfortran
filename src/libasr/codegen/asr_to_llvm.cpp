@@ -11423,6 +11423,31 @@ public:
         builder->CreateStore(tmp_cast, data_ptr);
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
+        Vec<ASR::dimension_t> patched_dims;
+        bool need_patch = false;
+        for (int i = 0; i < n_dims; i++) {
+            if (m_dims[i].m_start == nullptr || m_dims[i].m_length == nullptr) { // unbounded/assumed-size
+                need_patch = true;
+                break;
+            }
+        }
+        if (need_patch) {
+            patched_dims.reserve(al, n_dims);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                al, m_type->base.loc, compiler_options.po.default_integer_kind));
+            for (int i = 0; i < n_dims; i++) {
+                ASR::dimension_t dim;
+                dim.loc = m_dims[i].loc;
+                dim.m_start = m_dims[i].m_start ? m_dims[i].m_start
+                    : ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, m_type->base.loc, 1, int_type));
+                dim.m_length = m_dims[i].m_length ? m_dims[i].m_length
+                    : ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, m_type->base.loc, 0, int_type));
+                patched_dims.push_back(al, dim);
+            }
+            m_dims = patched_dims.p;
+        }
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
         fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
