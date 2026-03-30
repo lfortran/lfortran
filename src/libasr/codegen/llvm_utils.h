@@ -1751,6 +1751,21 @@ class ASRToLLVMVisitor;
                 }
                 return true;
             }
+            // Module-scope non-allocatable, non-pointer string variables
+            // (including arrays of strings) have their data in static global
+            // buffers.  Attempting to free them crashes the leak detector.
+            {
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)
+                        && !ASRUtils::is_allocatable(v->m_type)
+                        && !ASRUtils::is_pointer(v->m_type)) {
+                    ASR::ttype_t* base_t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::String_t>(*base_t)) {
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 
