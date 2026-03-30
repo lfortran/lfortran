@@ -1032,6 +1032,26 @@ class ASRToLLVMVisitor;
             auto* const struct_sym = get_struct_sym(v);
             check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
+            // For non-allocatable DescriptorArray of strings, the cached
+            // finalize function only frees the character data but not the
+            // heap-allocated string_descriptor array itself.  We must free
+            // it here.  (Allocatable arrays use a stack-allocated initial
+            // string_descriptor, so this only applies to non-allocatable.)
+            if (!ASRUtils::is_allocatable(v->m_type) && !ASRUtils::is_pointer(v->m_type)) {
+                ASR::ttype_t* t_past = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+                if (ASRUtils::is_array_t(t_past)) {
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                    if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray
+                        && ASRUtils::extract_type(t_past)->type == ASR::ttypeType::String) {
+                        llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                        llvm::Type* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                        llvm::Value* data = builder_->CreateLoad(
+                            elem_llvm_t->getPointerTo(),
+                            llvm_utils_->create_gep2(arr_llvm_t, llvm_var, 0));
+                        llvm_utils_->lfortran_free_nocheck(data);
+                    }
+                }
+            }
         }
 
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
