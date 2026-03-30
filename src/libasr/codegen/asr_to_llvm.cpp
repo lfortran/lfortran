@@ -11036,14 +11036,13 @@ public:
             ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(x.m_target)));
-            if (ASR::is_a<ASR::Integer_t>(*asr_type) ||
-                ASR::is_a<ASR::Real_t>(*asr_type) ||
-                ASR::is_a<ASR::Complex_t>(*asr_type) ||
-                ASR::is_a<ASR::Logical_t>(*asr_type)) {
-                check_and_allocate_scalar(x.m_target);
-            }
-
             if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_value))) {
+                if (ASR::is_a<ASR::Integer_t>(*asr_type) ||
+                    ASR::is_a<ASR::Real_t>(*asr_type) ||
+                    ASR::is_a<ASR::Complex_t>(*asr_type) ||
+                    ASR::is_a<ASR::Logical_t>(*asr_type)) {
+                    check_and_allocate_scalar(x.m_target);
+                }
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
