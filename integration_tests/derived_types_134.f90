@@ -34,6 +34,7 @@ call do_init()
 ctx => get_default()
 if (ctx%val /= 42) error stop
 if (ctx%sub%x /= 10) error stop
+deallocate(ctx)
 
 print *, "PASS"
 end program derived_types_134
