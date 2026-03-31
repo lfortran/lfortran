@@ -10858,6 +10858,22 @@ public:
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
                 is_dest_allocatable);
+            if (ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
+                (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x.m_value) &&
+                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x.m_value)->m_intrinsic_id ==
+                     static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim))) {
+                ASR::String_t* value_str_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(asr_value_type));
+                if (value_str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    llvm::Value* data_ptr_ptr = llvm_utils->create_gep2(
+                        llvm_utils->string_descriptor, value, 0);
+                    llvm::Value* data_ptr = llvm_utils->CreateLoad2(character_type, data_ptr_ptr);
+                    builder->CreateCall(llvm_utils->_Deallocate(),
+                        {llvm_utils->get_allocator(module.get()), data_ptr});
+                    builder->CreateStore(
+                        llvm::ConstantPointerNull::getNullValue(character_type), data_ptr_ptr);
+                }
+            }
             tmp = nullptr;
             return;
         }
