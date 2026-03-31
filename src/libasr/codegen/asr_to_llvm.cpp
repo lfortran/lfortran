@@ -8869,7 +8869,7 @@ public:
                                 llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
                                 llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
                                     target_llvm_type, nullptr, "class_str_wrapper");
-                                llvm::DataLayout dl(module.get());
+                                const llvm::DataLayout &dl = module->getDataLayout();
                                 uint64_t type_size = dl.getTypeAllocSize(target_llvm_type);
                                 builder->CreateMemSet(
                                     builder->CreateBitCast(wrapper_ptr,
@@ -9001,7 +9001,7 @@ public:
                             llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
                             llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
                                 target_llvm_type, nullptr, "class_ptr_wrapper");
-                            llvm::DataLayout dl(module.get());
+                            const llvm::DataLayout &dl = module->getDataLayout();
                             uint64_t type_size = dl.getTypeAllocSize(target_llvm_type);
                             builder->CreateMemSet(
                                 builder->CreateBitCast(wrapper_ptr,
