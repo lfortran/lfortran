@@ -1873,7 +1873,7 @@ RUN(NAME select_type_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_38 LABELS gfortran llvm)
 RUN(NAME select_type_39 LABELS gfortran llvm)
-RUN(NAME select_type_40 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME select_type_40 LABELS gfortran llvm)
 RUN(NAME select_type_41 LABELS gfortran llvm NO_DETECT_LEAK)
 
 RUN(NAME select_type_42 LABELS gfortran llvm)
