@@ -8426,7 +8426,7 @@ public:
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
         
         // Get the base pointer variable from the target section
-        [[maybe_unused]] ASR::Variable_t* ptr_var = ASRUtils::EXPR2VAR(target_section->m_v);
+        ASR::Variable_t* ptr_var = ASRUtils::EXPR2VAR(target_section->m_v);
         ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         
         // Get the llvm values
@@ -8484,10 +8484,30 @@ public:
             }
         }
         
-        // Allocate descriptor on the heap so it survives after this
-        // function returns (the caller holds a pointer).
-        llvm::Value* new_desc = arr_descr->allocate_descriptor_on_heap(
-            target_type_llvm);
+        // For local pointer variables, reuse the existing descriptor
+        // or stack-allocate a new one. This avoids heap leaks since
+        // pointer variables have no automatic deallocation at scope exit.
+        // For non-local pointers, heap-allocate so the descriptor survives
+        // after the function returns.
+        llvm::Value* new_desc;
+        bool target_is_local = (ptr_var->m_intent == ASR::intentType::Local);
+        if (target_is_local) {
+            llvm::Value* current_desc_ptr = llvm_utils->CreateLoad2(
+                target_type_llvm->getPointerTo(), target_desc);
+            llvm::Value* is_null = builder->CreateICmpEQ(current_desc_ptr,
+                llvm::ConstantPointerNull::get(target_type_llvm->getPointerTo()));
+            llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
+            llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
+            llvm::Value* stack_desc = entry_builder.CreateAlloca(
+                target_type_llvm, nullptr, "ptr_section_desc");
+            new_desc = builder->CreateSelect(is_null, stack_desc, current_desc_ptr);
+        } else {
+            // Allocate descriptor on the heap so it survives after this
+            // function returns (the caller holds a pointer).
+            new_desc = arr_descr->allocate_descriptor_on_heap(
+                target_type_llvm);
+        }
         // Fill the descriptor with the value's data and the target's bounds
         // Dims are inline at FIELD_DIMS - get pointer to first dim element
         llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(
