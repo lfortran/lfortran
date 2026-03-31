@@ -12957,6 +12957,7 @@ public:
         tmp = lfortran_strConcat(left_val, left_len, right_val, right_len);
         tmp = llvm_utils->create_string_descriptor(tmp,
             builder->CreateAdd(left_len, right_len), "strConcat_desc");
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
@@ -14827,6 +14828,7 @@ public:
                 }
 
                 tmp = str;
+                strings_to_be_deallocated.push_back(al, tmp);
                 break;
             }
             case (ASR::cast_kindType::IntegerToString) : {
@@ -14873,6 +14875,7 @@ public:
                 }
 
                 tmp = str;
+                strings_to_be_deallocated.push_back(al, tmp);
                 break;
             }
             case (ASR::cast_kindType::LogicalToString) : {
@@ -21038,6 +21041,7 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(

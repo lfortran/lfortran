@@ -4025,7 +4025,7 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # LFortran extenstion (Python's str)
 
-RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
+RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_rep LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME str_to_char LABELS gfortran llvm)
