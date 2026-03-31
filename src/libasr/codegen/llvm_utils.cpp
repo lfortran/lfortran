@@ -9694,28 +9694,131 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
         }
 
-        // Free own members' string data
+        // Free own members' data
         for (size_t i = 0; i < struct_t->n_members; i++) {
             ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
                 struct_t->m_symtab->get_symbol(struct_t->m_members[i]));
             ASR::ttype_t* member_type = member_var->m_type;
-
-            // Only handle non-array string members (string_descriptor)
             ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(member_type);
-            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) continue;
-            if (!ASR::is_a<ASR::String_t>(*type_past_alloc)) continue;
-
-            ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type_past_alloc);
-            if (str_t->m_physical_type != ASR::string_physical_typeType::DescriptorString) continue;
-
             int member_idx = (int)i + (is_extended ? 1 : 0);
-            llvm::Value* member_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, member_idx);
 
-            llvm::Value* data_ptr_ptr = llvm_utils->create_gep2(
-                llvm_utils->string_descriptor, member_ptr, 0);
-            llvm::Value* data_ptr = llvm_utils->CreateLoad2(
-                llvm_utils->character_type, data_ptr_ptr);
-            llvm_utils->lfortran_free_nocheck(data_ptr);
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) continue;
+
+            // Handle non-array string members (string_descriptor)
+            if (ASR::is_a<ASR::String_t>(*type_past_alloc)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type_past_alloc);
+                if (str_t->m_physical_type != ASR::string_physical_typeType::DescriptorString) continue;
+
+                llvm::Value* member_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, member_idx);
+                llvm::Value* data_ptr_ptr = llvm_utils->create_gep2(
+                    llvm_utils->string_descriptor, member_ptr, 0);
+                llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                    llvm_utils->character_type, data_ptr_ptr);
+                llvm_utils->lfortran_free_nocheck(data_ptr);
+                continue;
+            }
+
+            // Handle allocatable class-type members (e.g. class(X), allocatable)
+            if (ASRUtils::is_allocatable(member_type)
+                    && ASR::is_a<ASR::StructType_t>(*type_past_alloc)
+                    && !ASR::down_cast<ASR::StructType_t>(type_past_alloc)->m_is_cstruct) {
+
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
+                    member_var->m_type_declaration);
+                if (!ASR::is_a<ASR::Struct_t>(*type_decl)) continue;
+                ASR::Struct_t* member_struct = ASR::down_cast<ASR::Struct_t>(type_decl);
+
+                llvm::Type* class_type = llvm_utils->getClassType(member_struct);
+                llvm::Value* member_ptr = llvm_utils->create_gep2(
+                    struct_type, struct_ptr, member_idx);
+                llvm::Value* class_wrapper = llvm_utils->CreateLoad2(
+                    class_type->getPointerTo(), member_ptr);
+
+                llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                    context, "member_allocated", func);
+                llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                    context, "member_done", func);
+                llvm::Value* is_null = builder->CreateICmpEQ(class_wrapper,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(class_wrapper->getType())));
+                builder->CreateCondBr(is_null, merge_bb, then_bb);
+                builder->SetInsertPoint(then_bb);
+
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(context)->getPointerTo();
+                llvm::Type* i8PtrPtrTy = i8PtrTy->getPointerTo();
+
+                // Load struct data pointer from class wrapper slot [1]
+                llvm::Type* inner_struct_type = llvm_utils->getStructType(
+                    member_struct, module, true);
+                llvm::Value* struct_data = llvm_utils->CreateLoad2(
+                    inner_struct_type,
+                    llvm_utils->create_gep2(class_type, class_wrapper, 1));
+
+                // Guard: only finalize if struct data is non-null
+                llvm::BasicBlock* data_valid_bb = llvm::BasicBlock::Create(
+                    context, "data_valid", func);
+                llvm::BasicBlock* data_done_bb = llvm::BasicBlock::Create(
+                    context, "data_done", func);
+                llvm::Value* data_is_null = builder->CreateICmpEQ(struct_data,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(struct_data->getType())));
+                builder->CreateCondBr(data_is_null, data_done_bb, data_valid_bb);
+                builder->SetInsertPoint(data_valid_bb);
+
+                // VTable dispatch: load vptr from class wrapper slot [0],
+                // then call finalize at vptr offset 2 (copy=0, allocate=1, finalize=2)
+                llvm::Value* vptr = llvm_utils->CreateLoad2(i8PtrPtrTy,
+                    llvm_utils->create_gep2(class_type, class_wrapper, 0));
+                llvm::Value* fn_slot = llvm_utils->create_ptr_gep2(i8PtrTy, vptr, 2);
+                llvm::Value* fn_raw = llvm_utils->CreateLoad2(i8PtrTy, fn_slot);
+                llvm::FunctionType* fin_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {i8PtrTy}, false);
+                llvm::Value* fn_ptr = builder->CreateBitCast(
+                    fn_raw, fin_fn_type->getPointerTo());
+                builder->CreateCall(fin_fn_type, fn_ptr,
+                    {builder->CreateBitCast(struct_data, i8PtrTy)});
+
+                // Free the struct data
+                llvm_utils->lfortran_free_nocheck(struct_data);
+
+                builder->CreateBr(data_done_bb);
+                builder->SetInsertPoint(data_done_bb);
+
+                // Free the class wrapper itself
+                llvm_utils->lfortran_free_nocheck(class_wrapper);
+
+                builder->CreateBr(merge_bb);
+                builder->SetInsertPoint(merge_bb);
+                continue;
+            }
+
+            // Handle other allocatable scalar members (integer, real, etc.)
+            if (ASRUtils::is_allocatable(member_type)
+                    && !ASR::is_a<ASR::StructType_t>(*type_past_alloc)
+                    && !ASR::is_a<ASR::String_t>(*type_past_alloc)) {
+                llvm::Type* member_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    nullptr, type_past_alloc, module);
+                llvm::Value* member_ptr = llvm_utils->create_gep2(
+                    struct_type, struct_ptr, member_idx);
+                llvm::Value* alloc_ptr = llvm_utils->CreateLoad2(
+                    member_llvm_type->getPointerTo(), member_ptr);
+
+                llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                    context, "scalar_allocated", func);
+                llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                    context, "scalar_done", func);
+                llvm::Value* is_null = builder->CreateICmpEQ(alloc_ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(alloc_ptr->getType())));
+                builder->CreateCondBr(is_null, merge_bb, then_bb);
+                builder->SetInsertPoint(then_bb);
+
+                llvm_utils->lfortran_free_nocheck(alloc_ptr);
+
+                builder->CreateBr(merge_bb);
+                builder->SetInsertPoint(merge_bb);
+                continue;
+            }
         }
 
         builder->CreateRetVoid();
