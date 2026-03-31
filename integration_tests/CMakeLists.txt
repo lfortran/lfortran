@@ -937,7 +937,7 @@ RUN(NAME pointer_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME pointer_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME pointer_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME pointer_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME pointer_11 LABELS gfortran llvm fortran NO_DETECT_LEAK)
+RUN(NAME pointer_11 LABELS gfortran llvm fortran)
 RUN(NAME pointer_12 LABELS gfortran llvm fortran NO_DETECT_LEAK)
 RUN(NAME pointer_13 LABELS gfortran llvmImplicit)
 
