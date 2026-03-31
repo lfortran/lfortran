@@ -6023,7 +6023,13 @@ public:
                             ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                             element_type, module.get());
                         if(ASRUtils::is_character(*v->m_type)){
-                            llvm::Value* str_desc = create_and_setup_string_for_array(v->m_type, nullptr, false, "arr_desc_str_desc");
+                            // Heap-allocate the string_descriptor so that
+                            // finalization can safely free it (struct member
+                            // array descriptors are also heap-allocated).
+                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
+                            ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::extract_type(v->m_type));
+                            setup_string_length(str_desc, str_t, str_t->m_len);
                             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
                         } else {
                             arr_descr->reset_is_allocated_flag(type_, arr, data_type);

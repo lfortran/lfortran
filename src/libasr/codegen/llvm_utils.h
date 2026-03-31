@@ -1183,6 +1183,19 @@ class ASRToLLVMVisitor;
                     bool const need_free = ( arr_physical_t == ASR::DescriptorArray
                                               || arr_physical_t == ASR::PointerArray) && in_struct;
                     if(need_free) {
+                        // For DescriptorArray of strings in a struct, the
+                        // string_descriptor is heap-allocated during struct
+                        // member init.  Free it before the array descriptor.
+                        ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                        if (arr_physical_t == ASR::array_physical_typeType::DescriptorArray
+                                && ASRUtils::extract_type(t_past)->type == ASR::ttypeType::String) {
+                            llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                            llvm::Type* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                            llvm::Value* data = builder_->CreateLoad(
+                                elem_llvm_t->getPointerTo(),
+                                llvm_utils_->create_gep2(arr_llvm_t, var_ptr, 0));
+                            llvm_utils_->lfortran_free_nocheck(data);
+                        }
                         llvm_utils_->lfortran_free_nocheck(var_ptr);
                     }
                 }
