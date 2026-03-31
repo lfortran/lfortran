@@ -1123,23 +1123,6 @@ class ASRToLLVMVisitor;
                     START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
                         finalize(ptr, t_past, struct_sym, in_struct);
-                        // For allocatable arrays of strings inside structs,
-                        // the string_descriptor data array is heap-allocated
-                        // and must be freed explicitly.
-                        // free_array_ptr_to_consecutive_data skips String
-                        // arrays (they are stack-allocated for top-level
-                        // variables), so we free here for struct members.
-                        if (in_struct && t_past->type == ASR::ttypeType::Array) {
-                            ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
-                            if (ASRUtils::extract_type(arr_t->m_type)->type == ASR::ttypeType::String
-                                && arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                                llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
-                                llvm::Type* data_ptr_type = get_llvm_type(arr_t->m_type, struct_sym)->getPointerTo();
-                                llvm::Value* data = builder_->CreateLoad(data_ptr_type,
-                                    llvm_utils_->create_gep2(arr_llvm_t, ptr, 0));
-                                llvm_utils_->lfortran_free_nocheck(data);
-                            }
-                        }
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
                         
                     });
