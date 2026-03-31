@@ -9430,6 +9430,26 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_function, llvm_utils->i8_ptr));
 
+        // No-op finalize_members for intrinsic types (they have no allocatable
+        // components).  This keeps the vtable layout consistent with struct
+        // vtables so that unlimited polymorphic finalization can safely use
+        // vtable dispatch at offset 2 from the vptr.
+        std::string finalize_name = "_finalize_members_" +
+            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
+        llvm::Function* finalize_function = module->getFunction(finalize_name);
+        if (!finalize_function) {
+            llvm::FunctionType* finalize_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+            finalize_function = llvm::Function::Create(
+                finalize_type, llvm::Function::LinkOnceODRLinkage,
+                finalize_name, module);
+            llvm::BasicBlock* entry = llvm::BasicBlock::Create(
+                context, "entry", finalize_function);
+            llvm::IRBuilder<> tmp_builder(entry);
+            tmp_builder.CreateRetVoid();
+        }
+        slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
         std::string gv_name = "_VTable_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);

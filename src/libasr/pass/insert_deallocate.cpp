@@ -528,6 +528,58 @@ public:
 };
 
 
+// Deallocate compiler-generated ~select_type_selector_tmp_ variables after
+// the SelectType statement that uses them.  These temporaries are created by
+// semantics (visit_SelectType) to hold the result of a function-call selector
+// expression.  Without explicit cleanup they leak.
+class SelectTypeTmpDeallocateVisitor : public ASR::BaseWalkVisitor<SelectTypeTmpDeallocateVisitor>
+{
+    Allocator &al;
+
+    void insert_dealloc_after_select_type(ASR::stmt_t **&m_body, size_t &n_body) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            new_body.push_back(al, m_body[i]);
+            if (ASR::is_a<ASR::SelectType_t>(*m_body[i])) {
+                ASR::SelectType_t* st = ASR::down_cast<ASR::SelectType_t>(m_body[i]);
+                ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(st->m_selector);
+                if (var &&
+                    std::string(var->m_name).find("~select_type_selector_tmp_") != std::string::npos &&
+                    ASRUtils::is_allocatable(var->m_type)) {
+                    Vec<ASR::expr_t*> dealloc_args;
+                    dealloc_args.reserve(al, 1);
+                    dealloc_args.push_back(al, st->m_selector);
+                    new_body.push_back(al, ASRUtils::STMT(
+                        ASR::make_ImplicitDeallocate_t(al, st->base.base.loc,
+                                                       dealloc_args.p, dealloc_args.n)));
+                }
+            }
+        }
+        m_body = new_body.p;
+        n_body = new_body.n;
+    }
+
+public:
+    SelectTypeTmpDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+    void visit_Program(const ASR::Program_t &x) {
+        ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
+        insert_dealloc_after_select_type(xx.m_body, xx.n_body);
+        for (auto &a : x.m_symtab->get_scope()) {
+            visit_symbol(*a.second);
+        }
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+        insert_dealloc_after_select_type(xx.m_body, xx.n_body);
+        for (auto &a : x.m_symtab->get_scope()) {
+            visit_symbol(*a.second);
+        }
+    }
+};
+
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
     // Deallocate intent(out) allocatable arguments at function entry
@@ -540,6 +592,10 @@ void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
 
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);
+
+    // Deallocate ~select_type_selector_tmp_ after SelectType blocks
+    SelectTypeTmpDeallocateVisitor sttd(al);
+    sttd.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
