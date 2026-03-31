@@ -1168,7 +1168,7 @@ RUN(NAME iso_c_binding_04 LABELS gfortran llvm)
 RUN(NAME submodule_45 LABELS gfortran llvm)
 RUN(NAME submodule_46 LABELS gfortran llvm)
 RUN(NAME submodule_47 LABELS gfortran llvm)
-RUN(NAME submodule_48 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME submodule_48 LABELS gfortran llvm)
 RUN(NAME submodule_49 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
@@ -2084,7 +2084,7 @@ RUN(NAME complex_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME complex_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME complex_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_array_member_access LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_implicit_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_sub_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
@@ -3094,13 +3094,13 @@ RUN(NAME enum_08 LABELS gfortran llvm)
 RUN(NAME array_section_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME array_section_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray NO_DETECT_LEAK)
+RUN(NAME array_section_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_section_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_section_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_section_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK
     EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME array_section_09 LABELS gfortran llvm NO_DETECT_LEAK
+RUN(NAME array_section_09 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME array_section_10 LABELS gfortran llvm)
@@ -3111,7 +3111,7 @@ RUN(NAME array_section_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME array_section_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME array_section_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_18 LABELS gfortran llvm EXTRAFILES array_section_18b.f90 EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME array_section_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3607,7 +3607,7 @@ RUN(NAME legacy_array_sections_11 LABELS gfortran llvm
     EXTRAFILES legacy_array_sections_11_stubs.c
     EXTRA_ARGS --fixed-form --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation
     GFORTRAN_ARGS -ffixed-form -fno-underscoring)
-RUN(NAME legacy_array_sections_12 LABELS gfortran llvm NO_DETECT_LEAK
+RUN(NAME legacy_array_sections_12 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME legacy_array_sections_13 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_14 LABELS gfortran llvm
