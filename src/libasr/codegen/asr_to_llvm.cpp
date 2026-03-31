@@ -7579,6 +7579,26 @@ public:
         declare_local_vars(x);
     }
 
+    inline void free_strings_to_be_deallocated(size_t start_n) {
+        for (size_t i = start_n; i < strings_to_be_deallocated.n; i++) {
+            llvm::Value* str_desc = strings_to_be_deallocated[i];
+            llvm::Value* str_data_ptr = llvm_utils->create_gep2(llvm_utils->string_descriptor, str_desc, 0);
+            llvm::Value* str_data = llvm_utils->CreateLoad2(llvm_utils->character_type->getPointerTo(), str_data_ptr);
+            llvm_utils->lfortran_free_nocheck(str_data);
+        }
+        strings_to_be_deallocated.n = start_n;
+    }
+
+    struct DeallocateStringsScope {
+        ASRToLLVMVisitor* visitor;
+        size_t start_n;
+        DeallocateStringsScope(ASRToLLVMVisitor* visitor)
+            : visitor(visitor), start_n(visitor->strings_to_be_deallocated.n) {}
+        ~DeallocateStringsScope() {
+            visitor->free_strings_to_be_deallocated(start_n);
+        }
+    };
+
     inline void free_heap_fixed_size_arrays() {
         // Free all heap-allocated large fixed-size arrays
         for (size_t i = 0; i < heap_fixed_size_arrays.n; i++) {
@@ -9524,6 +9544,7 @@ public:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
+        DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
         // Special-case: transfer(character, int8_array, size) lowered as BitCast.
@@ -12921,6 +12942,7 @@ public:
         right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt64Ty(context));
         tmp = llvm_utils->create_string_descriptor(tmp,
             builder->CreateMul(left_len, right_val), "strRepeat_desc");
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
