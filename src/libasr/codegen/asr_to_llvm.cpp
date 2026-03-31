@@ -9231,18 +9231,25 @@ public:
                                     fill_array_details(llvm_target_type, llvm_target_, wrapper_llvm_type, m_dims, (int)n_dims, false, false);
                                 }
 
-                                // Allocate the polymorphic wrapper for the associated target
+                                // Allocate the polymorphic wrapper on the stack.
+                                // Pointer variables have no automatic deallocation at
+                                // scope exit, so heap allocation would leak.
                                 ASR::ttype_t* wrapper_asr_type = ASRUtils::extract_type(target_type_);
                                 llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                                     x.m_target, wrapper_asr_type, module.get());
-                                llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, wrapper_asr_type,
-                                    llvm_utils->getIntType(4),
-                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                                llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                    context, *module, *builder, wrapper_size);
-                                builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                    wrapper_size, llvm::MaybeAlign());
-                                wrapper_ptr = builder->CreateBitCast(wrapper_ptr, wrapper_llvm_type->getPointerTo());
+                                llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
+                                llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
+                                llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
+                                llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
+                                    wrapper_llvm_type, nullptr, "class_arr_wrapper");
+                                const llvm::DataLayout &dl = module->getDataLayout();
+                                uint64_t wrapper_alloc_size = dl.getTypeAllocSize(wrapper_llvm_type);
+                                builder->CreateMemSet(
+                                    builder->CreateBitCast(wrapper_ptr,
+                                        llvm::Type::getInt8Ty(context)->getPointerTo()),
+                                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), wrapper_alloc_size),
+                                    llvm::MaybeAlign());
 
                                 // Get pointer to the first element of the concrete RHS array
                                 llvm::Value* value_data_ptr = nullptr;
