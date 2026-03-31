@@ -9478,10 +9478,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
+        llvm::Function* finalize_members_function = define_finalize_struct_function(struct_sym, module);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_array_members_function, llvm_utils->i8_ptr));
+        struct_vtab_function_offset[struct_sym]["_lfortran_finalize_struct_members"] = slots.size() - 2;
+        slots.push_back(llvm::ConstantExpr::getBitCast(finalize_members_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -9500,6 +9503,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // populate copy function body after creating vtable
         fill_struct_copy_body(struct_sym, copy_function, module);
         fill_allocate_struct_body(struct_sym, allocate_array_members_function, module);
+        fill_finalize_struct_body(struct_sym, finalize_members_function, module);
     }
 
     void LLVMStruct::create_type_info_for_struct(ASR::symbol_t* struct_sym, llvm::Module* module)
@@ -9635,6 +9639,85 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, struct_sym, true);
         allocate_struct_array_members(struct_t, malloc_ptr, struct_signature, false);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+    }
+
+    llvm::Function* LLVMStruct::define_finalize_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr},
+            false
+        );
+
+        std::string func_name = "_finalize_members_";
+        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
+                            + "_" + ASRUtils::symbol_name(struct_sym);
+        llvm::Function *func = llvm::Function::Create(
+            funcType,
+            llvm::Function::LinkOnceODRLinkage,
+            func_name,
+            module
+        );
+        return func;
+    }
+
+    void LLVMStruct::fill_finalize_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module) 
+    {
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        llvm::Value* raw_ptr = &*func->arg_begin();
+
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        llvm::Type* struct_type = llvm_utils->getStructType(struct_t, module);
+        llvm::Value* struct_ptr = builder->CreateBitCast(raw_ptr, struct_type->getPointerTo());
+
+        bool is_extended = struct_t->m_parent != nullptr;
+
+        // Handle parent first by calling parent's finalize function
+        if (struct_t->m_parent) {
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(struct_t->m_parent);
+            std::string parent_func_name = "_finalize_members_";
+            parent_func_name += std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(parent_sym)))
+                              + "_" + std::string(ASRUtils::symbol_name(parent_sym));
+            llvm::Function* parent_fn = module->getFunction(parent_func_name);
+            if (parent_fn) {
+                llvm::Value* parent_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, 0);
+                builder->CreateCall(parent_fn, {builder->CreateBitCast(parent_ptr, llvm_utils->i8_ptr)});
+            }
+        }
+
+        // Free own members' string data
+        for (size_t i = 0; i < struct_t->n_members; i++) {
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
+                struct_t->m_symtab->get_symbol(struct_t->m_members[i]));
+            ASR::ttype_t* member_type = member_var->m_type;
+
+            // Only handle non-array string members (string_descriptor)
+            ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(member_type);
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) continue;
+            if (!ASR::is_a<ASR::String_t>(*type_past_alloc)) continue;
+
+            ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type_past_alloc);
+            if (str_t->m_physical_type != ASR::string_physical_typeType::DescriptorString) continue;
+
+            int member_idx = (int)i + (is_extended ? 1 : 0);
+            llvm::Value* member_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, member_idx);
+
+            llvm::Value* data_ptr_ptr = llvm_utils->create_gep2(
+                llvm_utils->string_descriptor, member_ptr, 0);
+            llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                llvm_utils->character_type, data_ptr_ptr);
+            llvm_utils->lfortran_free_nocheck(data_ptr);
+        }
+
         builder->CreateRetVoid();
 
         if (savedBB) {
