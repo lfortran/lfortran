@@ -9702,7 +9702,48 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(member_type);
             int member_idx = (int)i + (is_extended ? 1 : 0);
 
-            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) continue;
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) {
+                if (ASRUtils::is_allocatable(member_type)) {
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(type_past_alloc);
+                    ASR::ttype_t* elem_asr_type = arr_t->m_type;
+                    // Only handle arrays of basic scalar types here;
+                    // arrays of structs/strings need expr context we don't have.
+                    if (!ASR::is_a<ASR::StructType_t>(*elem_asr_type)
+                            && !ASR::is_a<ASR::String_t>(*elem_asr_type)) {
+                        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, type_past_alloc, module);
+                        llvm::Value* member_ptr = llvm_utils->create_gep2(
+                            struct_type, struct_ptr, member_idx);
+                        llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
+                            desc_type->getPointerTo(), member_ptr);
+
+                        llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                            context, "arr_allocated", func);
+                        llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                            context, "arr_done", func);
+                        llvm::Value* is_null = builder->CreateICmpEQ(desc_ptr,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(desc_ptr->getType())));
+                        builder->CreateCondBr(is_null, merge_bb, then_bb);
+                        builder->SetInsertPoint(then_bb);
+
+                        // Free the data pointer (first field of the descriptor)
+                        llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, elem_asr_type, module);
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                            elem_type->getPointerTo(),
+                            llvm_utils->create_gep2(desc_type, desc_ptr, 0));
+                        llvm_utils->lfortran_free_nocheck(data_ptr);
+
+                        // Free the descriptor itself
+                        llvm_utils->lfortran_free_nocheck(desc_ptr);
+
+                        builder->CreateBr(merge_bb);
+                        builder->SetInsertPoint(merge_bb);
+                    }
+                }
+                continue;
+            }
 
             // Handle non-array string members (string_descriptor)
             if (ASR::is_a<ASR::String_t>(*type_past_alloc)) {
