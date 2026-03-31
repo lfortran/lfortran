@@ -4031,7 +4031,7 @@ RUN(NAME test_rep LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfor
 RUN(NAME str_to_char LABELS gfortran llvm)
 
 # test for polymorphic select type
-RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
 RUN(NAME polymorphic_select_type_02 LABELS gfortran llvm)
 RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 
