@@ -93,6 +93,15 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
 #define ALLOCATOR_REALLOC(a, ptr, size)   ((a)->realloc_func((a)->context, (ptr), (size)))
 #define ALLOCATOR_DEALLOC(a, ptr)         ((a)->dealloc((a)->context, (ptr)))
 
+/*
+ * CFI allocator — used by ISO_Fortran_binding.h so that CFI_allocate /
+ * CFI_deallocate go through the same allocator the Fortran codegen uses.
+ * Call _lfortran_init_cfi_allocator() at program start to set the allocator.
+ */
+LFORTRAN_API void  _lfortran_init_cfi_allocator(lfortran_allocator_t* al);
+LFORTRAN_API void* _lfortran_cfi_calloc(int64_t count, int64_t size);
+LFORTRAN_API void  _lfortran_cfi_free(void* ptr);
+
 LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
 LFORTRAN_API double _lfortran_sum(int n, double *v);

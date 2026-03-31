@@ -5707,6 +5707,30 @@ public:
                 llvm::APInt(32, 1));
             builder->CreateCall(fn, {use_colors});
         }
+        // Initialize CFI allocator so CFI_allocate/CFI_deallocate use the
+        // same tracked allocator as Fortran codegen (only for --detect-leaks;
+        // without it the CFI functions fall back to standard calloc/free).
+        if (compiler_options.detect_leaks) {
+            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+
+            std::string al_func_name = "_lfortran_get_compiler_mem_dbg_allocator";
+            llvm::Function *al_fn = module->getFunction(al_func_name);
+            if (!al_fn) {
+                llvm::FunctionType *al_ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
+                al_fn = llvm::Function::Create(al_ft,
+                    llvm::Function::ExternalLinkage, al_func_name, module.get());
+            }
+            llvm::Value *al = builder->CreateCall(al_fn, {});
+
+            llvm::Function *init_fn = module->getFunction("_lfortran_init_cfi_allocator");
+            if (!init_fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {i8_ptr_type}, false);
+                init_fn = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage, "_lfortran_init_cfi_allocator", module.get());
+            }
+            builder->CreateCall(init_fn, {al});
+        }
         for(to_be_allocated_array array : allocatable_array_details){
             fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
                 true, true, false, array.var_type);
