@@ -306,6 +306,7 @@ public:
         llvm::Value* n_elems_i64;
     };
     std::vector<CharConsolidationWriteback> pending_char_writebacks;
+    std::vector<llvm::Value*> pending_poly_char_temps;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -11759,6 +11760,10 @@ public:
                     n_elems, llvm::Type::getInt64Ty(context));
                 dst_first_el_ptr = llvm_utils->consolidate_char_descriptors(
                     dst_first_el_ptr, n_elems_i64);
+                llvm::Value* flat_buf = llvm_utils->CreateLoad2(
+                    llvm_utils->character_type,
+                    llvm_utils->create_gep2(llvm_utils->string_descriptor, dst_first_el_ptr, 0));
+                heap_fixed_size_arrays.push_back(al, flat_buf);
             }
 
             builder->CreateStore(dst_first_el_ptr,
@@ -12020,6 +12025,10 @@ public:
             auto& wb = pending_char_writebacks[i];
             llvm_utils->writeback_char_to_polymorphic_descriptors(
                 wb.original_descs_i8, wb.consolidated_desc, wb.n_elems_i64);
+            llvm::Value* flat_buf = llvm_utils->CreateLoad2(
+                llvm_utils->character_type,
+                llvm_utils->create_gep2(llvm_utils->string_descriptor, wb.consolidated_desc, 0));
+            llvm_utils->lfortran_free(flat_buf);
         }
         pending_char_writebacks.resize(wb_before);
 
@@ -20382,6 +20391,7 @@ public:
                         llvm::Value* descs_i8 = llvm_utils->expand_flat_to_char_descriptors(
                             src_char_data, char_len, n_elems_i64);
                         builder->CreateStore(descs_i8, data_ptr);
+                        pending_poly_char_temps.push_back(descs_i8);
                     } else {
                         builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
                                             data_ptr);
@@ -20626,6 +20636,7 @@ public:
                         src_char_data, char_len, n_elems_i64);
 
                     builder->CreateStore(descs_i8, data_ptr);
+                    pending_poly_char_temps.push_back(descs_i8);
                 } else {
                     // Non-character types: source data is already contiguous
                     builder->CreateStore(
@@ -21094,6 +21105,13 @@ public:
         }
     }
 
+    void free_pending_poly_char_temps() {
+        for (llvm::Value* temp : pending_poly_char_temps) {
+            llvm_utils->lfortran_free(temp);
+        }
+        pending_poly_char_temps.clear();
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
@@ -21138,6 +21156,7 @@ public:
             // all args including self with proper class wrapping.
             args = convert_call_args(x, false);
             tmp = builder->CreateCall(fntype, callee, args);
+            free_pending_poly_char_temps();
             return ;
         }
 
@@ -21276,6 +21295,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            free_pending_poly_char_temps();
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -21290,6 +21310,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            free_pending_poly_char_temps();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -21326,6 +21347,7 @@ public:
                 }
             }
             builder->CreateCall(fn, args);
+            free_pending_poly_char_temps();
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
         }
@@ -21618,6 +21640,7 @@ public:
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         builder->CreateCall(fnTy, fn, args);
+        free_pending_poly_char_temps();
         return;
     }
 
@@ -21699,6 +21722,7 @@ public:
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
+        free_pending_poly_char_temps();
         return;
     }
 
@@ -21743,6 +21767,7 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            free_pending_poly_char_temps();
             return ;
         }
 
@@ -21862,6 +21887,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            free_pending_poly_char_temps();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -21892,6 +21918,7 @@ public:
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
+            free_pending_poly_char_temps();
             // The convention we use is that any strings is a pointer to the underlying physicalType
             // Example of StringPhysicalTypes -> `string_descriptor*`, `i8*`
             if(ASRUtils::is_string_only(return_var_type0)){
