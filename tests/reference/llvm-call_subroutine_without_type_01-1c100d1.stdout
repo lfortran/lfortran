@@ -296,6 +296,7 @@ entry:
   br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
+  call void @finalize_StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %0)
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 1
   %4 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %3, align 8
   %5 = icmp ne %module_call_subroutine_without_type_01.mytype* %4, null
@@ -318,6 +319,27 @@ is_allocated.else2:                               ; preds = %entry
   br label %is_allocated.ifcont3
 
 is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
+  ret void
+}
+
+define internal void @finalize_StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %0) {
+entry:
+  %1 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 1
+  %2 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %1, align 8
+  %3 = icmp eq %module_call_subroutine_without_type_01.mytype* %2, null
+  br i1 %3, label %class_ptr_null, label %class_ptr_valid
+
+class_ptr_valid:                                  ; preds = %entry
+  %4 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 0
+  %5 = load i8**, i32 (...)*** %4, align 8
+  %6 = getelementptr inbounds i8*, i8** %5, i32 2
+  %7 = load i8*, i8** %6, align 8
+  %8 = bitcast i8* %7 to void (i8*)*
+  %9 = bitcast %module_call_subroutine_without_type_01.mytype* %2 to i8*
+  call void %8(i8* %9)
+  ret void
+
+class_ptr_null:                                   ; preds = %entry
   ret void
 }
 

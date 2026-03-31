@@ -1908,6 +1908,10 @@ class ASRToLLVMVisitor;
                 case ASR::StructType:{
                     if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
+                    // Class (polymorphic) types are always finalizable because
+                    // the runtime type may have allocatable members that need
+                    // cleanup, even if the static base type does not.
+                    if(ASRUtils::is_class_type(t)) { return true; }
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
                     // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
