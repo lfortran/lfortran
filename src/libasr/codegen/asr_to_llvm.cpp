@@ -5928,7 +5928,33 @@ public:
             if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) {
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                 llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(v->m_type, struct_sym, module.get());
-                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type), ptr);
+                if (ASR::is_a<ASR::Pointer_t>(*v->m_type) &&
+                    v->m_intent == ASRUtils::intent_local &&
+                    std::string(v->m_name).find("~select_type_selector_tmp_") != std::string::npos) {
+                    // Stack-allocate the polymorphic wrapper for select type
+                    // selector temporaries.  These hold the result of a
+                    // function-call selector (class(*), pointer return).  The
+                    // callee would otherwise heap-allocate a wrapper that the
+                    // caller never frees, causing a memory leak.
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    llvm::Type* wrapper_llvm_type = llvm_utils->getClassType(struct_t, false);
+                    llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
+                    llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
+                    llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
+                        wrapper_llvm_type, nullptr, "class_select_type_wrapper");
+                    const llvm::DataLayout &dl = module->getDataLayout();
+                    uint64_t type_size = dl.getTypeAllocSize(wrapper_llvm_type);
+                    builder->CreateMemSet(
+                        builder->CreateBitCast(wrapper_ptr,
+                            llvm::Type::getInt8Ty(context)->getPointerTo()),
+                        llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
+                        llvm::MaybeAlign());
+                    builder->CreateStore(wrapper_ptr, ptr);
+                } else {
+                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type), ptr);
+                }
             } else {
                 builder->CreateStore(null_value, ptr);
             }
