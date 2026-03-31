@@ -1861,7 +1861,7 @@ RUN(NAME select_type_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS
 RUN(NAME select_type_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
 RUN(NAME select_type_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
 RUN(NAME select_type_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
