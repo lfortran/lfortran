@@ -11246,6 +11246,25 @@ public:
                         arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);
+                    } else if (arg_expr && ASR::is_a<ASR::ArraySection_t>(*arg_expr)) {
+                        ASR::call_arg_t arg = args[i];
+                        ASR::ttype_t* original_dummy_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(array_arg_idx[i]));
+                        int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                        int actual_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(arg_expr));
+
+                        if (expected_n_dims_cast != actual_n_dims) {
+                            ASR::array_physical_typeType actual_phys_type =
+                                ASRUtils::extract_physical_type(ASRUtils::expr_type(arg_expr));
+                            ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, expected_arg_type, expected_phys, true);
+                            ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
+                                al, arg_expr->base.loc, arg_expr, actual_phys_type,
+                                expected_phys, cast_target_type, nullptr);
+                            arg.m_value = ASRUtils::EXPR(array_cast);
+                        }
+
+                        args_with_array_section.push_back(al, arg);
                     } else {
                         args_with_array_section.push_back(al, args[i]);
                     }

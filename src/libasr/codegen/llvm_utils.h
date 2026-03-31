@@ -1712,9 +1712,26 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
-            return v->m_intent != ASR::Local
-                || v->m_storage == ASR::Parameter
-                || v->m_storage == ASR::Save /*Neglect - Lives till program ends*/;
+            if (v->m_intent != ASR::Local) return true;
+            if (v->m_storage == ASR::Parameter) return true;
+            if (v->m_storage == ASR::Save) {
+                // Save variables in functions persist across calls and must not
+                // be finalized at function exit.  In the main Program, however,
+                // save struct variables have string members whose data is
+                // heap-allocated during struct initialization.  These must be
+                // finalized at program exit to avoid leaking that memory.
+                // (Plain save strings have static data and must NOT be freed.)
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
         }
 
         static bool non_deallocatable_construct(ASR::asr_t* const s){ // Can't deallocate
