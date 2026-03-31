@@ -1570,11 +1570,19 @@ class ASRToLLVMVisitor;
          */ 
         void free_array_structs(llvm::Value* const data_ptr, ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym, llvm::Value* array_size){
             // Unlimited polymorphic arrays store a single wrapper {VTable*, data*},
-            // not an array of wrappers. Element-by-element iteration would read
-            // beyond the single wrapper into invalid memory. The wrapper and its
-            // inner data pointer are freed by free_array_ptr_to_consecutive_data
-            // and the allocatable cleanup path.
+            // not an array of wrappers.  Element-by-element iteration would
+            // read beyond the single wrapper into invalid memory.
+            // The wrapper itself is freed by free_array_ptr_to_consecutive_data;
+            // here we must free the inner data pointer it holds.
             if (ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                llvm::Type* wrapper_type = llvm_utils_->getClassType(struct_sym);
+                llvm::Value* data_member_ptr = llvm_utils_->create_gep2(
+                    wrapper_type, data_ptr, 1);
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(
+                    builder_->getContext())->getPointerTo();
+                llvm::Value* inner_data = builder_->CreateLoad(
+                    i8PtrTy, data_member_ptr);
+                llvm_utils_->lfortran_free_nocheck(inner_data);
                 return;
             }
 
