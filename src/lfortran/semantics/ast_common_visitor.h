@@ -18393,11 +18393,21 @@ public:
             if(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))){
                 ASR::StructInstanceMember_t* tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                 if(ASR::is_a<ASR::Array_t>(*array_type)){
-                    (ASR::down_cast<ASR::Array_t>(array_type))->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type);
+                    arr->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    if (ASRUtils::is_character(*arr->m_type) &&
+                            arr->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        arr->m_physical_type = ASR::array_physical_typeType::PointerArray;
+                    }
                     tmp2->m_type = array_type;
                 }
                 if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
-                    ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
+                    ASR::Array_t* alloc_arr = ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type);
+                    alloc_arr->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
+                    if (ASRUtils::is_character(*alloc_arr->m_type) &&
+                            alloc_arr->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        alloc_arr->m_physical_type = ASR::array_physical_typeType::PointerArray;
+                    }
                     if (ASRUtils::is_allocatable(ASRUtils::EXPR(tmp))) {
                         tmp2->m_type = array_type;
                     } else {
@@ -18405,14 +18415,24 @@ public:
                     }
                 }
                 if(ASR::is_a<ASR::Pointer_t>(*array_type)){
-                    ASR::down_cast<ASR::Array_t>(ASR::down_cast<ASR::Pointer_t>(array_type)->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(tmp2->m_type));
+                    ASR::Array_t* ptr_arr = ASR::down_cast<ASR::Array_t>(ASR::down_cast<ASR::Pointer_t>(array_type)->m_type);
+                    ptr_arr->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(tmp2->m_type));
+                    if (ASRUtils::is_character(*ptr_arr->m_type) &&
+                            ptr_arr->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        ptr_arr->m_physical_type = ASR::array_physical_typeType::PointerArray;
+                    }
                     tmp2->m_type = ASRUtils::type_get_past_pointer(array_type);
                 }
 
             } else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
                 ASR::ArrayItem_t* tmp2 = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
                 if(ASR::is_a<ASR::Array_t>(*array_type)){
-                    (ASR::down_cast<ASR::Array_t>(array_type))->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type);
+                    arr->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    if (ASRUtils::is_character(*arr->m_type) &&
+                            arr->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        arr->m_physical_type = ASR::array_physical_typeType::PointerArray;
+                    }
                     tmp2->m_type = array_type;
                 }
                 if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
