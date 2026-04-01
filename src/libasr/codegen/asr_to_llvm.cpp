@@ -12054,7 +12054,16 @@ public:
             selector_asr_type = ASRUtils::type_get_past_allocatable(selector_asr_type);
             llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
         }
-        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        std::string merge_name = "ifcont";
+        if (x.m_name) {
+            merge_name = std::string(x.m_name) + ".end";
+        }
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, merge_name);
+
+        if (x.m_name) {
+            loop_or_block_end.push_back(mergeBB);
+            loop_or_block_end_names.push_back(merge_name);
+        }
 
         llvm::Value* rank = arr_descr->get_rank(llvm_selector_type_, llvm_selector);
         for( size_t i = 0; i < rank_stmts.size(); i++ ) {
@@ -12098,6 +12107,10 @@ public:
             for( size_t i = 0; i < x.n_default; i++ ) {
                 this->visit_stmt(*x.m_default[i]);
             }
+        }
+        if (x.m_name) {
+            loop_or_block_end.pop_back();
+            loop_or_block_end_names.pop_back();
         }
         start_new_block(mergeBB);
     }

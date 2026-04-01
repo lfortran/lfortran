@@ -3615,6 +3615,7 @@ public:
     }
 
     void visit_SelectRank(const AST::SelectRank_t& x) {
+        all_loops_blocks_nesting++;
         if ( !x.m_selector ) {
             diag.add(Diagnostic(
                 "Selector expression is missing in select rank statement.",
@@ -3727,11 +3728,14 @@ public:
             assumed_rank_arrays.erase(array_var_name);
         }
 
-        tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
+        all_loops_blocks_nesting--;
+        tmp = ASR::make_SelectRank_t(al, x.base.base.loc, x.m_stmt_name,
+                    m_selector, select_rank_body.p, 
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
+        all_loops_blocks_nesting++;
         // TODO: We might need to re-order all ASR::TypeStmtName
         // before ASR::ClassStmt as per GFortran's semantics
         if( !x.m_selector ) {
@@ -4299,6 +4303,7 @@ public:
             selector_variable->n_dependencies = selector_variable_n_dependencies;
         }
 
+        all_loops_blocks_nesting--;
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
