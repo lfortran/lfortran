@@ -245,6 +245,15 @@ public:
         so that we can jump to the end of the block when we reach an exit */
     std::vector<std::string> loop_or_block_end_names;
 
+    struct FlatCopyback {
+        llvm::Value* flat_buf;
+        llvm::Value* orig_struct_ptr;
+        llvm::Type* struct_llvm_type;
+        struct Member { uint64_t flat_off; uint64_t size; int member_idx; bool is_char; };
+        std::vector<Member> layout;
+    };
+    std::vector<FlatCopyback> pending_flat_copybacks;
+
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
@@ -11431,6 +11440,123 @@ public:
         return -1; // CFI_type_other
     }
 
+    bool get_struct_flat_layout(ASR::ttype_t* elem_asr_type,
+            llvm::Type* elem_llvm_type,
+            ASR::expr_t* actual_expr,
+            std::vector<FlatCopyback::Member>& layout,
+            uint64_t& flat_size) {
+        if (!ASR::is_a<ASR::StructType_t>(*elem_asr_type)) return false;
+        if (!actual_expr) return false;
+        ASR::symbol_t* dt_sym = ASRUtils::get_struct_sym_from_struct_expr(actual_expr);
+        if (!dt_sym) return false;
+        dt_sym = ASRUtils::symbol_get_past_external(dt_sym);
+        if (!ASR::is_a<ASR::Struct_t>(*dt_sym)) return false;
+        ASR::Struct_t* dt = ASR::down_cast<ASR::Struct_t>(dt_sym);
+        if (dt->m_abi == ASR::abiType::BindC) return false;
+
+        llvm::DataLayout data_layout(module->getDataLayout());
+        llvm::StructType* st = llvm::cast<llvm::StructType>(elem_llvm_type);
+        uint64_t offset = 0;
+        bool has_char = false;
+        layout.clear();
+        for (size_t i = 0; i < dt->n_members; i++) {
+            ASR::Variable_t* mvar = ASR::down_cast<ASR::Variable_t>(
+                dt->m_symtab->get_symbol(dt->m_members[i]));
+            ASR::ttype_t* mt = mvar->m_type;
+            int mem_idx = (int)i;
+            bool is_char_mem = false;
+            int64_t slen = -1;
+            if (!ASR::is_a<ASR::Pointer_t>(*mt) &&
+                !ASR::is_a<ASR::Allocatable_t>(*mt) &&
+                !ASR::is_a<ASR::Array_t>(*mt) &&
+                ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mt))) {
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::type_get_past_array(mt));
+                if (str->m_len && ASRUtils::extract_value(str->m_len, slen) && slen > 0) {
+                    is_char_mem = true;
+                    has_char = true;
+                }
+            }
+            if (is_char_mem) {
+                layout.push_back({offset, (uint64_t)slen, mem_idx, true});
+                offset += slen;
+            } else {
+                llvm::Type* field_type = st->getElementType(mem_idx);
+                uint64_t align = data_layout.getABITypeAlign(field_type).value();
+                if (align > 0 && offset % align != 0)
+                    offset += align - (offset % align);
+                uint64_t mem_size = data_layout.getTypeAllocSize(field_type);
+                layout.push_back({offset, mem_size, mem_idx, false});
+                offset += mem_size;
+            }
+        }
+        if (!has_char) return false;
+        flat_size = offset;
+        return true;
+    }
+
+    llvm::Value* create_flat_copy_from_struct(llvm::Value* struct_ptr,
+            llvm::Type* struct_llvm_type,
+            const std::vector<FlatCopyback::Member>& layout,
+            uint64_t flat_size) {
+        llvm::Value* flat_buf = builder->CreateAlloca(
+            llvm::ArrayType::get(llvm::Type::getInt8Ty(context), flat_size),
+            nullptr, "flat_struct");
+        llvm::Value* flat_i8 = builder->CreateBitCast(
+            flat_buf, llvm::Type::getInt8Ty(context)->getPointerTo());
+        for (auto& fm : layout) {
+            llvm::Value* dst_gep = builder->CreateGEP(
+                llvm::Type::getInt8Ty(context), flat_i8,
+                llvm::ConstantInt::get(context, llvm::APInt(64, fm.flat_off)));
+            llvm::Value* src_gep = llvm_utils->create_gep2(
+                struct_llvm_type, struct_ptr, fm.member_idx);
+            if (fm.is_char) {
+                llvm::Value* desc_data = builder->CreateLoad(
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm_utils->create_gep2(string_descriptor, src_gep, 0));
+                builder->CreateMemCpy(dst_gep, llvm::MaybeAlign(),
+                    desc_data, llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, fm.size)));
+            } else {
+                llvm::Value* src_i8 = builder->CreateBitCast(
+                    src_gep, llvm::Type::getInt8Ty(context)->getPointerTo());
+                builder->CreateMemCpy(dst_gep, llvm::MaybeAlign(),
+                    src_i8, llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, fm.size)));
+            }
+        }
+        return flat_buf;
+    }
+
+    void copy_flat_back_to_struct(llvm::Value* flat_buf,
+            llvm::Value* struct_ptr,
+            llvm::Type* struct_llvm_type,
+            const std::vector<FlatCopyback::Member>& layout) {
+        llvm::Value* flat_i8 = builder->CreateBitCast(
+            flat_buf, llvm::Type::getInt8Ty(context)->getPointerTo());
+        for (auto& fm : layout) {
+            llvm::Value* src_gep = builder->CreateGEP(
+                llvm::Type::getInt8Ty(context), flat_i8,
+                llvm::ConstantInt::get(context, llvm::APInt(64, fm.flat_off)));
+            llvm::Value* dst_gep = llvm_utils->create_gep2(
+                struct_llvm_type, struct_ptr, fm.member_idx);
+            if (fm.is_char) {
+                llvm::Value* desc_data = builder->CreateLoad(
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm_utils->create_gep2(string_descriptor, dst_gep, 0));
+                builder->CreateMemCpy(desc_data, llvm::MaybeAlign(),
+                    src_gep, llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, fm.size)));
+            } else {
+                llvm::Value* dst_i8 = builder->CreateBitCast(
+                    dst_gep, llvm::Type::getInt8Ty(context)->getPointerTo());
+                builder->CreateMemCpy(dst_i8, llvm::MaybeAlign(),
+                    src_gep, llvm::MaybeAlign(),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, fm.size)));
+            }
+        }
+    }
+
     // Set CFI descriptor fields (elem_len, type, attribute) in descriptor
     void set_cfi_descriptor_fields(llvm::Type* desc_type, llvm::Value* desc,
             ASR::ttype_t* elem_asr_type, uint64_t elem_size,
@@ -18707,6 +18833,7 @@ public:
         // Only reset alloca pool indices at outermost call to avoid
         // nested calls (in argument expressions) clobbering allocas
         if (convert_call_args_depth == 1) {
+            pending_flat_copybacks.clear();
             reset_call_arg_alloca_pool();
         }
         for (size_t i=0; i<x.n_args; i++) {
@@ -19436,10 +19563,31 @@ public:
                 ASR::ttype_t* orig_arg_type_past_pointer = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(orig_arg->m_type));
                 if (x_abi == ASR::abiType::BindC) {
-                    // For bind(C), store the raw pointer bitcast to the expected type
-                    llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
-                    llvm::Value* raw_ptr = builder->CreateBitCast(tmp, expected_ptr_type);
-                    builder->CreateStore(raw_ptr, data_ptr);
+                    ASR::ttype_t* scalar_type = ASRUtils::expr_type(x.m_args[i].m_value);
+                    ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(scalar_type);
+                    llvm::Type* scalar_llvm_type = llvm_utils->get_el_type(
+                        x.m_args[i].m_value, elem_asr_type, module.get());
+                    llvm::Value* scalar_ptr = tmp;
+                    if (ASRUtils::is_pointer(scalar_type)) {
+                        scalar_ptr = llvm_utils->CreateLoad2(
+                            scalar_llvm_type->getPointerTo(), tmp);
+                    }
+                    std::vector<FlatCopyback::Member> flat_layout;
+                    uint64_t flat_sz = 0;
+                    if (get_struct_flat_layout(elem_asr_type, scalar_llvm_type,
+                            x.m_args[i].m_value, flat_layout, flat_sz)) {
+                        llvm::Value* flat_buf = create_flat_copy_from_struct(
+                            scalar_ptr, scalar_llvm_type, flat_layout, flat_sz);
+                        llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
+                        llvm::Value* flat_ptr = builder->CreateBitCast(flat_buf, expected_ptr_type);
+                        builder->CreateStore(flat_ptr, data_ptr);
+                        pending_flat_copybacks.push_back({
+                            flat_buf, scalar_ptr, scalar_llvm_type, flat_layout});
+                    } else {
+                        llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
+                        llvm::Value* raw_ptr = builder->CreateBitCast(scalar_ptr, expected_ptr_type);
+                        builder->CreateStore(raw_ptr, data_ptr);
+                    }
                 } else if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
                         ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)))) {
                     // Get the element type of the polymorphic array (unlimited_polymorphic_type)
@@ -19448,8 +19596,6 @@ public:
                         ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get());
                     llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
                     
-                    // Store vptr for intrinsic type (skip for polymorphic args,
-                    // e.g. dummy placeholders for absent optional class(*) arguments)
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type));
@@ -19458,11 +19604,32 @@ public:
                             ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
                     }
                     
-                    // Store data pointer (bitcast scalar pointer to i8*)
                     llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
-                    builder->CreateStore(builder->CreateBitCast(tmp, llvm_utils->i8_ptr), poly_data_ptr);
+                    ASR::ttype_t* elem_asr_chk = ASRUtils::extract_type(arg_type);
+                    llvm::Type* elem_llvm_chk = llvm_utils->get_el_type(
+                        x.m_args[i].m_value, elem_asr_chk, module.get());
+                    llvm::Value* poly_scalar_ptr = tmp;
+                    if (ASRUtils::is_pointer(arg_type)) {
+                        poly_scalar_ptr = llvm_utils->CreateLoad2(
+                            elem_llvm_chk->getPointerTo(), tmp);
+                    }
+                    std::vector<FlatCopyback::Member> flat_layout;
+                    uint64_t flat_sz = 0;
+                    if (get_struct_flat_layout(elem_asr_chk, elem_llvm_chk,
+                            x.m_args[i].m_value, flat_layout, flat_sz)) {
+                        llvm::Value* flat_buf = create_flat_copy_from_struct(
+                            poly_scalar_ptr, elem_llvm_chk, flat_layout, flat_sz);
+                        builder->CreateStore(
+                            builder->CreateBitCast(flat_buf, llvm_utils->i8_ptr),
+                            poly_data_ptr);
+                        pending_flat_copybacks.push_back({
+                            flat_buf, poly_scalar_ptr, elem_llvm_chk, flat_layout});
+                    } else {
+                        builder->CreateStore(
+                            builder->CreateBitCast(poly_scalar_ptr, llvm_utils->i8_ptr),
+                            poly_data_ptr);
+                    }
                     
-                    // Store the polymorphic wrapper pointer in the descriptor
                     builder->CreateStore(poly_wrapper, data_ptr);
                 } else {
                     builder->CreateStore(tmp, data_ptr);
@@ -19479,6 +19646,12 @@ public:
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t elem_size = data_layout.getTypeAllocSize(scalar_llvm_type);
+                    std::vector<FlatCopyback::Member> tmp_layout;
+                    uint64_t flat_sz = 0;
+                    if (get_struct_flat_layout(elem_asr_type, scalar_llvm_type,
+                            x.m_args[i].m_value, tmp_layout, flat_sz)) {
+                        elem_size = flat_sz;
+                    }
                     set_cfi_descriptor_fields(descriptor_type, descriptor,
                         elem_asr_type, elem_size, scalar_type);
                 }
@@ -19737,8 +19910,17 @@ public:
                     // opaque-pointer builds where the load type loses pointer
                     // indirection). Re-derive the descriptor pointer from
                     // the variable when the actual arg is allocatable/pointer.
+                    // Skip when we already created a fresh descriptor for a
+                    // scalar passed to an assumed-rank parameter — that
+                    // descriptor is correct and must not be overwritten.
+                    bool already_has_assumed_rank_desc =
+                        orig_arg &&
+                        ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(
+                            x.m_args[i].m_value));
                     if (LLVM::is_llvm_pointer(*actual_type)
-                            && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                            && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)
+                            && !already_has_assumed_rank_desc) {
                         ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                         uint32_t h = get_hash((ASR::asr_t*)arg);
                         tmp = llvm_symtab[h];
@@ -19813,10 +19995,6 @@ public:
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
                             tmp)->getAllocatedType();
-                        // Fix base_addr: internal_to_cfi set it to the
-                        // polymorphic box address (~assumed_type struct:
-                        // {vtable_ptr, data_ptr}). CFI needs the actual
-                        // data pointer (field 1 of the box).
                         llvm::Type* i8_ptr_type =
                             llvm::Type::getInt8Ty(context)->getPointerTo();
                         llvm::Value* cfi_base_gep = llvm_utils->create_gep2(
@@ -19827,17 +20005,43 @@ public:
                             box_i8, elem_llvm_type->getPointerTo());
                         llvm::Value* data_ptr = unwrap_polymorphic_box_data(
                             elem_llvm_type, box_ptr);
-                        builder->CreateStore(data_ptr, cfi_base_gep);
-                        // Fix type code from internal descriptor
+
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
-                        builder->CreateStore(src_type,
-                            llvm_utils->create_gep2(cfi_struct, tmp, 4));
-                        // Fix elem_len from internal descriptor
                         llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
+
+                        llvm::Value* is_char = builder->CreateICmpEQ(
+                            src_type,
+                            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 40));
+                        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* char_bb = llvm::BasicBlock::Create(context, "type_star_char", fn);
+                        llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "type_star_merge", fn);
+                        llvm::BasicBlock* other_bb = llvm::BasicBlock::Create(context, "type_star_other", fn);
+                        builder->CreateCondBr(is_char, char_bb, other_bb);
+
+                        builder->SetInsertPoint(char_bb);
+                        llvm::Value* str_desc_ptr = builder->CreateBitCast(
+                            data_ptr, llvm_utils->string_descriptor->getPointerTo());
+                        llvm::Value* raw_char_data = llvm_utils->CreateLoad2(
+                            i8_ptr_type,
+                            llvm_utils->create_gep2(llvm_utils->string_descriptor, str_desc_ptr, 0));
+                        builder->CreateBr(merge_bb);
+
+                        builder->SetInsertPoint(other_bb);
+                        builder->CreateBr(merge_bb);
+
+                        builder->SetInsertPoint(merge_bb);
+                        llvm::PHINode* final_data = builder->CreatePHI(i8_ptr_type, 2);
+                        final_data->addIncoming(raw_char_data, char_bb);
+                        final_data->addIncoming(data_ptr, other_bb);
+
+                        builder->CreateStore(final_data, cfi_base_gep);
+
+                        builder->CreateStore(src_type,
+                            llvm_utils->create_gep2(cfi_struct, tmp, 4));
                         builder->CreateStore(src_elem_len,
                             llvm_utils->create_gep2(cfi_struct, tmp, 1));
                     }
@@ -20243,12 +20447,21 @@ public:
                     {
                         llvm::DataLayout dl(module->getDataLayout());
                         ASR::ttype_t* elem_type = ASRUtils::extract_type(arg_type);
-                        uint64_t elem_size = ASRUtils::is_character(*elem_type)
-                            ? ASRUtils::extract_kind_from_ttype_t(elem_type)
-                            : dl.getTypeAllocSize(actual_array_data_type);
-                        builder->CreateStore(
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size),
-                            llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
+                        if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                            llvm::Value* src_base = llvm_utils->CreateLoad2(
+                                actual_array_data_type->getPointerTo(),
+                                llvm_utils->create_gep2(actual_array_type, dt, 0));
+                            llvm::Value* char_len = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt64Ty(context),
+                                llvm_utils->create_gep2(llvm_utils->string_descriptor, src_base, 1));
+                            builder->CreateStore(char_len,
+                                llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
+                        } else {
+                            uint64_t elem_size = dl.getTypeAllocSize(actual_array_data_type);
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size),
+                                llvm_utils->create_gep2(array_type, unlimited_polymorphic_type_array, 1));
+                        }
                         int8_t cfi_type_code = get_cfi_type_code(elem_type);
                         builder->CreateStore(
                             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_type_code),
@@ -20287,8 +20500,6 @@ public:
                     }
                     // Store intrinsic type data ptr
                     if (ASR::is_a<ASR::String_t>(*arg_type)) {
-                        // Character arrays: source has ONE string_descriptor with flat
-                        // char buffer, but class(*) expects per-element string_descriptors.
                         llvm::Type* str_desc_ty = llvm_utils->string_descriptor;
                         llvm::Value* src_char_data = llvm_utils->CreateLoad2(
                             llvm_utils->i8_ptr,
@@ -21249,6 +21460,11 @@ public:
             builder->CreateCall(fn, args);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
+            for (auto& fc : pending_flat_copybacks) {
+                copy_flat_back_to_struct(fc.flat_buf, fc.orig_struct_ptr,
+                    fc.struct_llvm_type, fc.layout);
+            }
+            pending_flat_copybacks.clear();
         }
     }
 
