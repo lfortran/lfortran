@@ -6998,7 +6998,9 @@ public:
                             }
 
                         } else {
-                            // Handle initialization with named parameter constants
+                            // Handle declaration-time initialization by name:
+                            //   (1) pointer association: type(t), pointer :: p => target_var
+                            //   (2) named parameter initialization for non-pointer variables
                             ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                             if (sym_found == nullptr) {
                                 diag.add(Diagnostic(
@@ -7008,7 +7010,53 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Check if the symbol is a parameter variable
+                            if (is_pointer) {
+                                if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                                    diag.add(Diagnostic(
+                                        "Pointer initialization target `" + sym_name + "` is not a variable",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                                if (!var->m_target_attr) {
+                                    diag.add(Diagnostic(
+                                        "Pointer initialization target `" + sym_name +
+                                            "` must have the `target` attribute",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc}),
+                                            Label("declared here", {var->base.base.loc}, false)
+                                        }));
+                                    throw SemanticAbort();
+                                }
+
+                                ASR::ttype_t* lhs_type = ASRUtils::type_get_past_pointer(type);
+                                ASR::ttype_t* rhs_type = ASRUtils::type_get_past_pointer(var->m_type);
+                                ASR::expr_t* lhs_var_expr = nullptr;
+                                if (variable_added_to_symtab != nullptr) {
+                                    lhs_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                        variable_added_to_symtab->base.base.loc,
+                                        &variable_added_to_symtab->base));
+                                }
+                                ASR::expr_t* rhs_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                    var->base.base.loc, &var->base));
+                                if (!ASRUtils::check_equal_type(lhs_type, rhs_type,
+                                        lhs_var_expr, rhs_var_expr)) {
+                                    diag.add(Diagnostic(
+                                        "Type mismatch in pointer initialization of `" + std::string(s.m_name) + "`",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc}),
+                                            Label("target declared here", {var->base.base.loc}, false)
+                                        }));
+                                    throw SemanticAbort();
+                                }
+
+                                init_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                    s.m_initializer->base.loc, sym_found));
+                            } else {
+                                // Handle initialization with named parameter constants
+                                // Check if the symbol is a parameter variable
                             if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
                                 diag.add(Diagnostic(
                                     "Named initialization not supported with: " + sym_name,
@@ -7059,6 +7107,7 @@ public:
                                     struct_const->m_type, param_init));
                             } else {
                                 init_expr = param_init;
+                            }
                             }
                         }
                     } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
@@ -7123,7 +7172,9 @@ public:
 
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
-                        if( ASRUtils::is_value_constant(value) ) {
+                        if (is_pointer && ASR::is_a<ASR::Var_t>(*init_expr)) {
+                            value = init_expr;
+                        } else if( ASRUtils::is_value_constant(value) ) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
                             value = nullptr;
                         } else if (ASR::is_a<ASR::ArrayConstructor_t>(*init_expr)) {
