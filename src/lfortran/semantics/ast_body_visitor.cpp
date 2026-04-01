@@ -3854,12 +3854,17 @@ public:
                 bool is_assumed_rank = arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
 
                 if (is_assumed_rank) {
-                    int known_rank = selector_variable ? [&]() {
+                    int known_rank = -1;
+                    if (selector_variable) {
                         auto it = assumed_rank_arrays.find(selector_variable->m_name);
-                        return it != assumed_rank_arrays.end() ? it->second : 0;
-                    }() : 0;
+                        if (it != assumed_rank_arrays.end()) {
+                            known_rank = it->second;
+                        }
+                    }
                     if (known_rank > 0) {
                         result = ASRUtils::create_array_type_with_empty_dims(al, known_rank, guard_type);
+                    } else if (known_rank == 0) {
+                        result = guard_type;
                     } else {
                         result = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, guard_type, arr->m_dims, arr->n_dims,
@@ -4093,15 +4098,11 @@ public:
                                 type_stmt_type->base.base.loc, selector_ttype, selector_type);
                             is_selector_array = ASRUtils::is_array(
                                 ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(selector_ttype)));
+                                    ASRUtils::type_get_past_pointer(view_type)));
                         } else {
                             view_type = selector_type;
                         }
                         if (is_selector_array) {
-                            // For arrays, use old mechanism: rewrite the type to the guard type.
-                            // Array indexing in semantic analysis requires the variable to have
-                            // the correct element type; ClassToIntrinsic wrapping would break
-                            // ArrayItem creation because the Cast obscures the array nature.
                             assoc_variable->m_type = view_type;
                         } else {
                             // Design (C): Do NOT rewrite assoc_variable->m_type to the guard type.
