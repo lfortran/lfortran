@@ -3764,6 +3764,7 @@ RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_24 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME free_all_memory_01 LABELS gfortran llvm EXTRA_ARGS --free-all-memory)
 RUN(NAME types_real_to_complex_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 

@@ -364,7 +364,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
-        app.add_flag("--detect-leaks", compiler_options.detect_leaks, "Print a memory leak report")->group(group_miscellaneous_options);
+        app.add_flag("--detect-leaks", compiler_options.detect_leaks, "Print a memory leak report (implies --free-all-memory)")->group(group_miscellaneous_options);
+        app.add_flag("--free-all-memory", compiler_options.free_all_memory, "Free all unused memory on program exit (useful for leak detection tools)")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
@@ -577,6 +578,10 @@ namespace LCompilers::CommandLineInterface {
         // Propagate descriptor_index_64 to PassOptions
         if (compiler_options.descriptor_index_64) {
             compiler_options.po.descriptor_index_64 = true;
+        }
+
+        if (compiler_options.detect_leaks) {
+            compiler_options.free_all_memory = true;
         }
     }
 

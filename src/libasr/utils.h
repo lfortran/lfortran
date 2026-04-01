@@ -152,6 +152,7 @@ struct CompilerOptions {
     std::vector<std::string> import_paths;
     Platform platform;
     bool detect_leaks = false;
+    bool free_all_memory = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };
