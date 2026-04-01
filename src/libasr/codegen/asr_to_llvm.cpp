@@ -11456,9 +11456,10 @@ public:
 
         llvm::DataLayout data_layout(module->getDataLayout());
         llvm::StructType* st = llvm::cast<llvm::StructType>(elem_llvm_type);
-        uint64_t offset = 0;
         bool has_char = false;
         layout.clear();
+        std::vector<llvm::Type*> flat_types;
+        std::vector<std::pair<int, bool>> member_info;
         for (size_t i = 0; i < dt->n_members; i++) {
             ASR::Variable_t* mvar = ASR::down_cast<ASR::Variable_t>(
                 dt->m_symtab->get_symbol(dt->m_members[i]));
@@ -11478,20 +11479,24 @@ public:
                 }
             }
             if (is_char_mem) {
-                layout.push_back({offset, (uint64_t)slen, mem_idx, true});
-                offset += slen;
+                flat_types.push_back(llvm::ArrayType::get(
+                    llvm::Type::getInt8Ty(context), slen));
+                member_info.push_back({mem_idx, true});
             } else {
-                llvm::Type* field_type = st->getElementType(mem_idx);
-                uint64_t align = data_layout.getABITypeAlign(field_type).value();
-                if (align > 0 && offset % align != 0)
-                    offset += align - (offset % align);
-                uint64_t mem_size = data_layout.getTypeAllocSize(field_type);
-                layout.push_back({offset, mem_size, mem_idx, false});
-                offset += mem_size;
+                flat_types.push_back(st->getElementType(mem_idx));
+                member_info.push_back({mem_idx, false});
             }
         }
         if (!has_char) return false;
-        flat_size = offset;
+        llvm::StructType* flat_st = llvm::StructType::get(context, flat_types);
+        const llvm::StructLayout* sl = data_layout.getStructLayout(flat_st);
+        for (size_t i = 0; i < member_info.size(); i++) {
+            uint64_t off = sl->getElementOffset(i);
+            uint64_t sz = data_layout.getTypeAllocSize(flat_types[i]);
+            layout.push_back({off, sz, member_info[i].first,
+                member_info[i].second});
+        }
+        flat_size = sl->getSizeInBytes();
         return true;
     }
 
