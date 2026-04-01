@@ -1319,7 +1319,13 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                 }) ) {
                 overloaded_uminus = ASRUtils::EXPR(asr);
             }
-            LCOMPILERS_ASSERT(overloaded_uminus != nullptr);
+            if (overloaded_uminus == nullptr) {
+                diag.add(diag::Diagnostic(
+                    "No matching `operator(-)` found for this operand type",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             asr = ASR::make_OverloadedUnaryMinus_t(al, x.base.base.loc,
                 operand, ASRUtils::expr_type(overloaded_uminus),
                 nullptr, overloaded_uminus);

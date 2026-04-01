@@ -1854,6 +1854,47 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             }
         }
     }
+    if (!found && ASR::is_a<ASR::StructType_t>(*operand_type) &&
+            !ASRUtils::is_class_type(operand_type)) {
+        ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(operand));
+        if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
+            ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
+            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            while (struct_sub == nullptr && struct_type_t->m_parent != nullptr) {
+                struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
+                struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            }
+            if (struct_sub != nullptr) {
+                ASR::symbol_t* struct_orig = ASRUtils::symbol_get_past_external(struct_sub);
+                if (ASR::is_a<ASR::CustomOperator_t>(*struct_orig)) {
+                    ASR::CustomOperator_t* struct_gen = ASR::down_cast<ASR::CustomOperator_t>(struct_orig);
+                    for (size_t i = 0; i < struct_gen->n_procs && !found; i++) {
+                        ASR::symbol_t* proc = struct_gen->m_procs[i];
+                        switch(proc->type) {
+                            case ASR::symbolType::Function: {
+                                process_overloaded_unary_minus_function(proc, operand, operand_type,
+                                    found, al, curr_scope, loc, current_function_dependencies,
+                                    current_module_dependencies, asr, err);
+                                break;
+                            }
+                            case ASR::symbolType::StructMethodDeclaration: {
+                                ASR::StructMethodDeclaration_t* class_procedure_t =
+                                    ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                                process_overloaded_unary_minus_function(class_procedure_t->m_proc,
+                                    operand, operand_type, found, al, curr_scope, loc,
+                                    current_function_dependencies, current_module_dependencies, asr, err);
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
     return found;
 }
 
