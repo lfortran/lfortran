@@ -3448,7 +3448,8 @@ public:
             ASR::ArrayPhysicalCast_t *apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(v);
             return get_allocate_expr_sym(apc->m_arg);
         }
-        LCOMPILERS_ASSERT(false);
+        throw LCompilersException("get_allocate_expr_sym: unhandled expression type " +
+            std::to_string(v->type));
         return nullptr;
     }
 
@@ -3720,6 +3721,10 @@ public:
                 }
             }
             current_scope = parent_scope;
+        }
+
+        if (!array_var_name.empty()) {
+            assumed_rank_arrays.erase(array_var_name);
         }
 
         tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
