@@ -1779,7 +1779,11 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             }
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
-            asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, proc,
+            ASR::symbol_t* original_name = proc;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*a_name)) {
+                original_name = a_name;
+            }
+            asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, original_name,
                                             a_args.p, 1,
                                             return_type,
                                             nullptr, nullptr
