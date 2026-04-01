@@ -327,6 +327,7 @@ public:
                 namelist_order.push_back(item.first);
             }
         }
+        // Insertion sort ideal for smaller arrays
         for (size_t i = 1; i < namelist_order.size(); i++) {
             std::string key = namelist_order[i];
             int j = i - 1;
