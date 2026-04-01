@@ -3553,6 +3553,9 @@ RUN(NAME cpp_pre_10 LABELS gfortran llvm
 RUN(NAME cpp_pre_11 LABELS gfortran llvm
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
+RUN(NAME cpp_pre_12 LABELS gfortran llvm
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
 
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
