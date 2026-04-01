@@ -655,6 +655,16 @@ program continue_compilation_1
 
 
     contains
+    subroutine test_uminus_struct()
+        use continue_compilation_1_mod, only: MyClass
+        implicit none
+        type(MyClass) :: tt
+        print *, -tt
+    end subroutine
+
+
+
+
     subroutine sub(f)
         interface
             function f(x)
