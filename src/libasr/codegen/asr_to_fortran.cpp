@@ -320,6 +320,41 @@ public:
         src = r;
     }
 
+    void append_namelist_declarations(SymbolTable *symtab, std::string &r) {
+        std::vector<std::string> namelist_order;
+        for (auto &item : symtab->get_scope()) {
+            if (is_a<ASR::Namelist_t>(*item.second)) {
+                namelist_order.push_back(item.first);
+            }
+        }
+        for (size_t i = 1; i < namelist_order.size(); i++) {
+            std::string key = namelist_order[i];
+            int j = i - 1;
+            while (j >= 0 && namelist_order[j] > key) {
+                namelist_order[j + 1] = namelist_order[j];
+                j--;
+            }
+            namelist_order[j + 1] = key;
+        }
+        for (auto &name : namelist_order) {
+            ASR::symbol_t *sym = symtab->get_symbol(name);
+            ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(sym);
+            std::string line = indent;
+            line += "namelist /";
+            line += nml->m_group_name;
+            line += "/ ";
+            for (size_t i = 0; i < nml->n_var_list; i++) {
+                line += ASRUtils::symbol_name(nml->m_var_list[i]);
+                if (i + 1 < nml->n_var_list) {
+                    line += ", ";
+                }
+            }
+            handle_line_truncation(line, 2);
+            line += "\n";
+            r += line;
+        }
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -397,6 +432,7 @@ public:
                 r += src;
             }
         }
+        append_namelist_declarations(x.m_symtab, r);
 
         visit_body(x, r, false);
 
@@ -484,6 +520,7 @@ public:
                 r += src;
             }
         }
+        append_namelist_declarations(x.m_symtab, r);
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -631,6 +668,7 @@ public:
                     variable_declaration += src;
                 }
             }
+            append_namelist_declarations(x.m_symtab, variable_declaration);
             for (size_t i = 0; i < import_struct_type.size(); i ++) {
                 if (i == 0) {
                     r += indent;
@@ -1402,7 +1440,10 @@ public:
         } else {
             r += "*";
         }
-        if (x.m_fmt) {
+        if (x.m_nml) {
+            r += ", nml=";
+            r += ASRUtils::symbol_name(x.m_nml);
+        } else if (x.m_fmt) {
             r += ", ";
             r += "fmt=";
             visit_expr(*x.m_fmt);
@@ -1428,11 +1469,14 @@ public:
             visit_expr(*x.m_id);
             r += src;
         }
-        r += ") ";
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
-            r += src;
-            if (i < x.n_values - 1) r += ", ";
+        r += ")";
+        if (x.n_values > 0) {
+            r += " ";
+            for (size_t i = 0; i < x.n_values; i++) {
+                visit_expr(*x.m_values[i]);
+                r += src;
+                if (i < x.n_values - 1) r += ", ";
+            }
         }
         handle_line_truncation(r, 2);
         r += "\n";
@@ -1474,6 +1518,10 @@ public:
                 fmt_src = "*";
             }
         }
+        std::string nml_src;
+        if (x.m_nml) {
+            nml_src = ASRUtils::symbol_name(x.m_nml);
+        }
 
         std::string iomsg_src, iostat_src, id_src, end_src;
         if (x.m_iomsg) {
@@ -1498,8 +1546,13 @@ public:
             out += "write";
             out += "(";
             out += unit_src;
-            out += ", ";
-            out += fmt_src;
+            if (!nml_src.empty()) {
+                out += ", nml=";
+                out += nml_src;
+            } else {
+                out += ", ";
+                out += fmt_src;
+            }
             if (!iomsg_src.empty()) {
                 out += ", iomsg=";
                 out += iomsg_src;
@@ -1512,7 +1565,7 @@ public:
                 out += ", id=";
                 out += id_src;
             }
-            if (x.m_end) {
+            if (x.m_end && nml_src.empty()) {
                 out += ", advance='no'";
             }
             out += ") ";
@@ -1520,7 +1573,9 @@ public:
 
         std::string r;
         build_prefix(r);
-        if (sf) {
+        if (!nml_src.empty()) {
+            // NAMELIST write has no explicit I/O list.
+        } else if (sf) {
             for (size_t i = 0; i < sf->n_args; i++) {
                 visit_expr(*sf->m_args[i]);
                 r += src;
@@ -1536,7 +1591,7 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
 
-        if (x.m_end) {
+        if (x.m_end && nml_src.empty()) {
             std::string end_stmt = indent;
             end_stmt += "write(";
             end_stmt += unit_src;
