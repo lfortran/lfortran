@@ -1396,6 +1396,12 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: No matching `operator(-)` found for this operand type
+   --> tests/errors/continue_compilation_1.f90:652:18
+    |
+652 |         print *, -tt
+    |                  ^^^ 
+
 semantic error: Variable 'k' is not declared
    --> tests/errors/continue_compilation_1.f90:668:12
     |
