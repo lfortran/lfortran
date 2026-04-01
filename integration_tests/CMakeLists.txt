@@ -875,7 +875,7 @@ RUN(NAME arrays_104 LABELS gfortran llvm)
 RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --legacy-array-sections)
-RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_109 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_111 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -954,7 +954,7 @@ RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME hashmap_derived_pointer_associated LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME call_subroutine_without_type LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME call_subroutine_without_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK)
+RUN(NAME call_subroutine_without_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran llvm fortran)
@@ -963,7 +963,7 @@ RUN(NAME arrays_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_08_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_08_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_09 LABELS gfortran llvm fortran)
-RUN(NAME arrays_10 LABELS gfortran llvm fortran NO_DETECT_LEAK)
+RUN(NAME arrays_10 LABELS gfortran llvm fortran NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME arrays_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray cpp fortran)
 RUN(NAME arrays_12 LABELS gfortran fortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # constant arrays
@@ -1084,7 +1084,7 @@ RUN(NAME format_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME format_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1433,7 +1433,7 @@ RUN(NAME intrinsics_229 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_230 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bessel
 RUN(NAME intrinsics_231 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dgamma
 RUN(NAME intrinsics_232 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iparity
-RUN(NAME intrinsics_233 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_DETECT_LEAK) # isnan
+RUN(NAME intrinsics_233 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # isnan
 RUN(NAME intrinsics_234 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # parity
 RUN(NAME intrinsics_235 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgamma algama dlgama
 RUN(NAME intrinsics_236 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bit_size, huge
@@ -1535,7 +1535,7 @@ RUN(NAME intrinsics_330 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
 RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # move_alloc
+RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc
 RUN(NAME move_alloc_pointer_alias LABELS gfortran llvm)
 RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #kind, real
 RUN(NAME intrinsics_336 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #any
@@ -1616,7 +1616,7 @@ RUN(NAME intrinsics_410 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8) # maxloc/minloc/shape with -fdefault-integer-8
 RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
-RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # max_loc FAST
+RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # max_loc FAST # USER_LEAK
 RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar(char(0))
 RUN(NAME intrinsics_414 LABELS gfortran llvm) # system
 RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum/product with scalar mask = .true.
@@ -1716,7 +1716,7 @@ RUN(NAME modules_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
         modules_20b.f90)
 RUN(NAME modules_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
         modules_21b.f90)
-RUN(NAME modules_24 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME modules_24 LABELS gfortran llvm)
 RUN(NAME modules_25 LABELS gfortran EXTRAFILES
         modules_25_module.f90 modules_25_module1.f90)
 RUN(NAME modules_27 LABELS gfortran EXTRAFILES
@@ -1769,9 +1769,9 @@ RUN(NAME modules_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME modules_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
         EXTRAFILES modules_63_module.f90)
 RUN(NAME modules_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME modules_65 LABELS gfortran llvm NO_DETECT_LEAK
+RUN(NAME modules_65 LABELS gfortran llvm
         EXTRAFILES modules_65_base.f90 modules_65_child.f90 modules_65_worker.f90)
-RUN(NAME modules_66 LABELS gfortran llvm NO_DETECT_LEAK
+RUN(NAME modules_66 LABELS gfortran llvm
         EXTRAFILES modules_66_base.f90 modules_66_worker.f90)
 RUN(NAME modules_67 LABELS gfortran llvm
         EXTRAFILES modules_67_origin.f90 modules_67_reexport.f90 modules_67_consumer.f90)
@@ -1796,7 +1796,7 @@ RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME bindc_02 LABELS gfortran llvm EXTRAFILES bindc_02b.f90 bindc_02c.c)
 RUN(NAME bindc_03 LABELS gfortran llvm EXTRAFILES bindc_03c.c)
-RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c NO_DETECT_LEAK)
+RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME bindc_05 LABELS gfortran llvm EXTRAFILES bindc_05c.c)
 RUN(NAME bindc_06 LABELS gfortran llvm EXTRAFILES bindc_06b.c)
 RUN(NAME bindc_07 LABELS gfortran llvm EXTRAFILES bindc_07.c)
@@ -1817,10 +1817,10 @@ RUN(NAME bindc_39 LABELS gfortran flang EXTRAFILES bindc_39c.c)
 RUN(NAME bindc_43 LABELS gfortran flang EXTRAFILES bindc_43c.c)
 RUN(NAME bindc_45 LABELS gfortran flang EXTRAFILES bindc_45c.c)
 RUN(NAME bindc_iso_fb_01 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_01c.c)
-RUN(NAME bindc_iso_fb_02 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_02c.c NO_DETECT_LEAK)
+RUN(NAME bindc_iso_fb_02 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_02c.c)
 RUN(NAME bindc_iso_fb_03 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_03c.c)
-RUN(NAME bindc_iso_fb_04 LABELS flang llvm EXTRAFILES bindc_iso_fb_04c.c NO_DETECT_LEAK)
-RUN(NAME bindc_iso_fb_05 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_05c.c NO_DETECT_LEAK)
+RUN(NAME bindc_iso_fb_04 LABELS flang llvm EXTRAFILES bindc_iso_fb_04c.c)
+RUN(NAME bindc_iso_fb_05 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_05c.c)
 RUN(NAME bindc_iso_fb_06 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_06c.c)
 RUN(NAME bindc_iso_fb_07 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_07c.c)
 RUN(NAME bindc_iso_fb_08 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_08c.c)
@@ -1835,45 +1835,45 @@ RUN(NAME case_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME case_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME case_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME select_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_04 LABELS gfortran
         EXTRAFILES select_type_03_module.f90 select_type_03.f90)
 RUN(NAME select_type_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
-RUN(NAME select_type_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME select_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST NO_DETECT_LEAK)
-RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
+RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK)
-RUN(NAME select_type_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK)
-RUN(NAME select_type_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME select_type_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME select_type_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME select_type_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
-RUN(NAME select_type_38 LABELS gfortran llvm NO_DETECT_LEAK)
-RUN(NAME select_type_39 LABELS gfortran llvm NO_DETECT_LEAK)
-RUN(NAME select_type_40 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME select_type_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_38 LABELS gfortran llvm)
+RUN(NAME select_type_39 LABELS gfortran llvm)
+RUN(NAME select_type_40 LABELS gfortran llvm)
 RUN(NAME select_type_41 LABELS gfortran llvm NO_DETECT_LEAK)
 
 RUN(NAME select_type_42 LABELS gfortran llvm)

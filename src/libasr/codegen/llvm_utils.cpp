@@ -9430,6 +9430,26 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_function, llvm_utils->i8_ptr));
 
+        // No-op finalize_members for intrinsic types (they have no allocatable
+        // components).  This keeps the vtable layout consistent with struct
+        // vtables so that unlimited polymorphic finalization can safely use
+        // vtable dispatch at offset 2 from the vptr.
+        std::string finalize_name = "_finalize_members_" +
+            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
+        llvm::Function* finalize_function = module->getFunction(finalize_name);
+        if (!finalize_function) {
+            llvm::FunctionType* finalize_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+            finalize_function = llvm::Function::Create(
+                finalize_type, llvm::Function::LinkOnceODRLinkage,
+                finalize_name, module);
+            llvm::BasicBlock* entry = llvm::BasicBlock::Create(
+                context, "entry", finalize_function);
+            llvm::IRBuilder<> tmp_builder(entry);
+            tmp_builder.CreateRetVoid();
+        }
+        slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
         std::string gv_name = "_VTable_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
@@ -9478,10 +9498,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
+        llvm::Function* finalize_members_function = define_finalize_struct_function(struct_sym, module);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_array_members_function, llvm_utils->i8_ptr));
+        struct_vtab_function_offset[struct_sym]["_lfortran_finalize_struct_members"] = slots.size() - 2;
+        slots.push_back(llvm::ConstantExpr::getBitCast(finalize_members_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -9500,6 +9523,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // populate copy function body after creating vtable
         fill_struct_copy_body(struct_sym, copy_function, module);
         fill_allocate_struct_body(struct_sym, allocate_array_members_function, module);
+        fill_finalize_struct_body(struct_sym, finalize_members_function, module);
     }
 
     void LLVMStruct::create_type_info_for_struct(ASR::symbol_t* struct_sym, llvm::Module* module)
@@ -9635,6 +9659,229 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, struct_sym, true);
         allocate_struct_array_members(struct_t, malloc_ptr, struct_signature, false);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+    }
+
+    llvm::Function* LLVMStruct::define_finalize_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr},
+            false
+        );
+
+        std::string func_name = "_finalize_members_";
+        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
+                            + "_" + ASRUtils::symbol_name(struct_sym);
+        llvm::Function *func = llvm::Function::Create(
+            funcType,
+            llvm::Function::LinkOnceODRLinkage,
+            func_name,
+            module
+        );
+        return func;
+    }
+
+    void LLVMStruct::fill_finalize_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module) 
+    {
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        llvm::Value* raw_ptr = &*func->arg_begin();
+
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        llvm::Type* struct_type = llvm_utils->getStructType(struct_t, module);
+        llvm::Value* struct_ptr = builder->CreateBitCast(raw_ptr, struct_type->getPointerTo());
+
+        bool is_extended = struct_t->m_parent != nullptr;
+
+        // Handle parent first by calling parent's finalize function
+        if (struct_t->m_parent) {
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(struct_t->m_parent);
+            std::string parent_func_name = "_finalize_members_";
+            parent_func_name += std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(parent_sym)))
+                              + "_" + std::string(ASRUtils::symbol_name(parent_sym));
+            llvm::Function* parent_fn = module->getFunction(parent_func_name);
+            if (parent_fn) {
+                llvm::Value* parent_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, 0);
+                builder->CreateCall(parent_fn, {builder->CreateBitCast(parent_ptr, llvm_utils->i8_ptr)});
+            }
+        }
+
+        // Free own members' data
+        for (size_t i = 0; i < struct_t->n_members; i++) {
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
+                struct_t->m_symtab->get_symbol(struct_t->m_members[i]));
+            ASR::ttype_t* member_type = member_var->m_type;
+            ASR::ttype_t* type_past_alloc = ASRUtils::type_get_past_allocatable(member_type);
+            int member_idx = (int)i + (is_extended ? 1 : 0);
+
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) {
+                if (ASRUtils::is_allocatable(member_type)) {
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(type_past_alloc);
+                    ASR::ttype_t* elem_asr_type = arr_t->m_type;
+                    // Only handle arrays of basic scalar types here;
+                    // arrays of structs/strings need expr context we don't have.
+                    if (!ASR::is_a<ASR::StructType_t>(*elem_asr_type)
+                            && !ASR::is_a<ASR::String_t>(*elem_asr_type)) {
+                        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, type_past_alloc, module);
+                        llvm::Value* member_ptr = llvm_utils->create_gep2(
+                            struct_type, struct_ptr, member_idx);
+                        llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
+                            desc_type->getPointerTo(), member_ptr);
+
+                        llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                            context, "arr_allocated", func);
+                        llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                            context, "arr_done", func);
+                        llvm::Value* is_null = builder->CreateICmpEQ(desc_ptr,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(desc_ptr->getType())));
+                        builder->CreateCondBr(is_null, merge_bb, then_bb);
+                        builder->SetInsertPoint(then_bb);
+
+                        // Free the data pointer (first field of the descriptor)
+                        llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, elem_asr_type, module);
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                            elem_type->getPointerTo(),
+                            llvm_utils->create_gep2(desc_type, desc_ptr, 0));
+                        llvm_utils->lfortran_free_nocheck(data_ptr);
+
+                        // Free the descriptor itself
+                        llvm_utils->lfortran_free_nocheck(desc_ptr);
+
+                        builder->CreateBr(merge_bb);
+                        builder->SetInsertPoint(merge_bb);
+                    }
+                }
+                continue;
+            }
+
+            // Handle non-array string members (string_descriptor)
+            if (ASR::is_a<ASR::String_t>(*type_past_alloc)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type_past_alloc);
+                if (str_t->m_physical_type != ASR::string_physical_typeType::DescriptorString) continue;
+
+                llvm::Value* member_ptr = llvm_utils->create_gep2(struct_type, struct_ptr, member_idx);
+                llvm::Value* data_ptr_ptr = llvm_utils->create_gep2(
+                    llvm_utils->string_descriptor, member_ptr, 0);
+                llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                    llvm_utils->character_type, data_ptr_ptr);
+                llvm_utils->lfortran_free_nocheck(data_ptr);
+                continue;
+            }
+
+            // Handle allocatable class-type members (e.g. class(X), allocatable)
+            if (ASRUtils::is_allocatable(member_type)
+                    && ASR::is_a<ASR::StructType_t>(*type_past_alloc)
+                    && !ASR::down_cast<ASR::StructType_t>(type_past_alloc)->m_is_cstruct) {
+
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
+                    member_var->m_type_declaration);
+                if (!ASR::is_a<ASR::Struct_t>(*type_decl)) continue;
+                ASR::Struct_t* member_struct = ASR::down_cast<ASR::Struct_t>(type_decl);
+
+                llvm::Type* class_type = llvm_utils->getClassType(member_struct);
+                llvm::Value* member_ptr = llvm_utils->create_gep2(
+                    struct_type, struct_ptr, member_idx);
+                llvm::Value* class_wrapper = llvm_utils->CreateLoad2(
+                    class_type->getPointerTo(), member_ptr);
+
+                llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                    context, "member_allocated", func);
+                llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                    context, "member_done", func);
+                llvm::Value* is_null = builder->CreateICmpEQ(class_wrapper,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(class_wrapper->getType())));
+                builder->CreateCondBr(is_null, merge_bb, then_bb);
+                builder->SetInsertPoint(then_bb);
+
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(context)->getPointerTo();
+                llvm::Type* i8PtrPtrTy = i8PtrTy->getPointerTo();
+
+                // Load struct data pointer from class wrapper slot [1]
+                llvm::Type* inner_struct_type = llvm_utils->getStructType(
+                    member_struct, module, true);
+                llvm::Value* struct_data = llvm_utils->CreateLoad2(
+                    inner_struct_type,
+                    llvm_utils->create_gep2(class_type, class_wrapper, 1));
+
+                // Guard: only finalize if struct data is non-null
+                llvm::BasicBlock* data_valid_bb = llvm::BasicBlock::Create(
+                    context, "data_valid", func);
+                llvm::BasicBlock* data_done_bb = llvm::BasicBlock::Create(
+                    context, "data_done", func);
+                llvm::Value* data_is_null = builder->CreateICmpEQ(struct_data,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(struct_data->getType())));
+                builder->CreateCondBr(data_is_null, data_done_bb, data_valid_bb);
+                builder->SetInsertPoint(data_valid_bb);
+
+                // VTable dispatch: load vptr from class wrapper slot [0],
+                // then call finalize at vptr offset 2 (copy=0, allocate=1, finalize=2)
+                llvm::Value* vptr = llvm_utils->CreateLoad2(i8PtrPtrTy,
+                    llvm_utils->create_gep2(class_type, class_wrapper, 0));
+                llvm::Value* fn_slot = llvm_utils->create_ptr_gep2(i8PtrTy, vptr, 2);
+                llvm::Value* fn_raw = llvm_utils->CreateLoad2(i8PtrTy, fn_slot);
+                llvm::FunctionType* fin_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {i8PtrTy}, false);
+                llvm::Value* fn_ptr = builder->CreateBitCast(
+                    fn_raw, fin_fn_type->getPointerTo());
+                builder->CreateCall(fin_fn_type, fn_ptr,
+                    {builder->CreateBitCast(struct_data, i8PtrTy)});
+
+                // Free the struct data
+                llvm_utils->lfortran_free_nocheck(struct_data);
+
+                builder->CreateBr(data_done_bb);
+                builder->SetInsertPoint(data_done_bb);
+
+                // Free the class wrapper itself
+                llvm_utils->lfortran_free_nocheck(class_wrapper);
+
+                builder->CreateBr(merge_bb);
+                builder->SetInsertPoint(merge_bb);
+                continue;
+            }
+
+            // Handle other allocatable scalar members (integer, real, etc.)
+            if (ASRUtils::is_allocatable(member_type)
+                    && !ASR::is_a<ASR::StructType_t>(*type_past_alloc)
+                    && !ASR::is_a<ASR::String_t>(*type_past_alloc)) {
+                llvm::Type* member_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    nullptr, type_past_alloc, module);
+                llvm::Value* member_ptr = llvm_utils->create_gep2(
+                    struct_type, struct_ptr, member_idx);
+                llvm::Value* alloc_ptr = llvm_utils->CreateLoad2(
+                    member_llvm_type->getPointerTo(), member_ptr);
+
+                llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(
+                    context, "scalar_allocated", func);
+                llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+                    context, "scalar_done", func);
+                llvm::Value* is_null = builder->CreateICmpEQ(alloc_ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(alloc_ptr->getType())));
+                builder->CreateCondBr(is_null, merge_bb, then_bb);
+                builder->SetInsertPoint(then_bb);
+
+                llvm_utils->lfortran_free_nocheck(alloc_ptr);
+
+                builder->CreateBr(merge_bb);
+                builder->SetInsertPoint(merge_bb);
+                continue;
+            }
+        }
+
         builder->CreateRetVoid();
 
         if (savedBB) {

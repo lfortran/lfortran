@@ -1386,6 +1386,7 @@ public:
 
         ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec;
         a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = nullptr;
+        ASR::expr_t* fmt_string_to_dealloc = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
@@ -1556,6 +1557,7 @@ public:
                 tmp_vec.push_back((ASR::asr_t*)do_loop);
 
                 a_fmt = fmt_string_var;
+                fmt_string_to_dealloc = fmt_string_var;
             }
             if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
                 diag.add(Diagnostic(
@@ -2309,6 +2311,13 @@ public:
         }
 
         tmp_vec.push_back(tmp);
+        if (fmt_string_to_dealloc) {
+            Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, fmt_string_to_dealloc);
+            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.n));
+            tmp_vec.push_back((ASR::asr_t*)dealloc_stmt);
+        }
         if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
             emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
             if (inserted_iostat) {

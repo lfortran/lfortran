@@ -332,6 +332,38 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
 
 /* --- End default allocator --- */
 
+/* --- CFI allocator (used by ISO_Fortran_binding.h) ---
+ *
+ * When --detect-leaks is enabled, the codegen calls
+ * _lfortran_init_cfi_allocator() at program start so that CFI_allocate
+ * and CFI_deallocate go through the tracked allocator.  When the
+ * allocator is not set (NULL), we fall back to plain calloc/free.
+ */
+static lfortran_allocator_t* _cfi_allocator = NULL;
+
+LFORTRAN_API void _lfortran_init_cfi_allocator(lfortran_allocator_t* al) {
+    _cfi_allocator = al;
+}
+
+LFORTRAN_API void* _lfortran_cfi_calloc(int64_t count, int64_t size) {
+    if (_cfi_allocator) {
+        void* ptr = ALLOCATOR_ALLOC(_cfi_allocator, count * size);
+        if (ptr) memset(ptr, 0, (size_t)count * (size_t)size);
+        return ptr;
+    }
+    return calloc((size_t)count, (size_t)size);
+}
+
+LFORTRAN_API void _lfortran_cfi_free(void* ptr) {
+    if (_cfi_allocator) {
+        ALLOCATOR_DEALLOC(_cfi_allocator, ptr);
+        return;
+    }
+    free(ptr);
+}
+
+/* --- End CFI allocator --- */
+
 /* Internal allocation wrappers — used for memory that stays within the
    runtime and is never returned to compiler-generated code. */
 

@@ -1183,6 +1183,19 @@ class ASRToLLVMVisitor;
                     bool const need_free = ( arr_physical_t == ASR::DescriptorArray
                                               || arr_physical_t == ASR::PointerArray) && in_struct;
                     if(need_free) {
+                        // For DescriptorArray of strings in a struct, the
+                        // string_descriptor is heap-allocated during struct
+                        // member init.  Free it before the array descriptor.
+                        ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                        if (arr_physical_t == ASR::array_physical_typeType::DescriptorArray
+                                && ASRUtils::extract_type(t_past)->type == ASR::ttypeType::String) {
+                            llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                            llvm::Type* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                            llvm::Value* data = builder_->CreateLoad(
+                                elem_llvm_t->getPointerTo(),
+                                llvm_utils_->create_gep2(arr_llvm_t, var_ptr, 0));
+                            llvm_utils_->lfortran_free_nocheck(data);
+                        }
                         llvm_utils_->lfortran_free_nocheck(var_ptr);
                     }
                 }
@@ -1355,38 +1368,119 @@ class ASRToLLVMVisitor;
 
             if (ASRUtils::is_class_type(t) &&
                     !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
-                ptr = llvm_utils_->CreateLoad2(
-                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
-                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
-            } else if (ASRUtils::is_class_type(t)) {
-                // {VTable*, struct*} -- Fetch struct
-                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
-                ptr = llvm_utils_->CreateLoad2(
-                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
-                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
-            }
+                // For polymorphic class types, use VTable dispatch to finalize
+                // the actual runtime type's members (not just the static base type).
+                llvm::Type* const class_llvm_type = get_llvm_type(t, struct_sym);
 
-            if (ASRUtils::is_class_type(t)) {
-                // Guard: if the inner struct pointer is null (e.g. class wrapper
-                // was only default-initialized for an absent optional argument),
-                // skip member finalization to avoid dereferencing a null pointer.
+                // Load struct pointer from class wrapper [1]
+                llvm::Value* struct_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                    llvm_utils_->create_gep2(class_llvm_type, ptr, 1));
+
+                // Guard: skip if struct pointer is null
                 llvm::BasicBlock* finalize_bb = llvm::BasicBlock::Create(
                     builder_->getContext(), "class_ptr_valid",
                     builder_->GetInsertBlock()->getParent());
                 llvm::BasicBlock* ret_bb = llvm::BasicBlock::Create(
                     builder_->getContext(), "class_ptr_null",
                     builder_->GetInsertBlock()->getParent());
-                llvm::Value* is_null = builder_->CreateICmpEQ(ptr,
+                llvm::Value* is_null = builder_->CreateICmpEQ(struct_ptr,
                     llvm::ConstantPointerNull::get(
-                        llvm::cast<llvm::PointerType>(ptr->getType())));
+                        llvm::cast<llvm::PointerType>(struct_ptr->getType())));
                 builder_->CreateCondBr(is_null, ret_bb, finalize_bb);
                 builder_->SetInsertPoint(ret_bb);
                 builder_->CreateRetVoid();
                 builder_->SetInsertPoint(finalize_bb);
+
+                // Load VTable pointer from class wrapper [0] (vptr points to VTable slot 2)
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
+                llvm::Type* i8PtrPtrTy = i8PtrTy->getPointerTo();
+                llvm::Value* vptr_slot = llvm_utils_->create_gep2(class_llvm_type, ptr, 0);
+                llvm::Value* vptr = llvm_utils_->CreateLoad2(i8PtrPtrTy, vptr_slot);
+
+                // GEP to finalize function at VTable offset 2 from vptr
+                // (copy=0, allocate=1, finalize=2)
+                llvm::Value* fn_slot = llvm_utils_->create_ptr_gep2(i8PtrTy, vptr, 2);
+                llvm::Value* fn_raw = llvm_utils_->CreateLoad2(i8PtrTy, fn_slot);
+                llvm::FunctionType* finalize_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(builder_->getContext()), {i8PtrTy}, false);
+                llvm::Value* fn_ptr = builder_->CreateBitCast(fn_raw,
+                    finalize_fn_type->getPointerTo());
+
+                // Call finalize function with struct pointer as i8*
+                builder_->CreateCall(finalize_fn_type, fn_ptr,
+                    {builder_->CreateBitCast(struct_ptr, i8PtrTy)});
+
+                END_CACHE(checkPoint_BB);
+                return;
+            } else if (ASRUtils::is_class_type(t)) {
+                // Unlimited polymorphic {VTable*, struct*}
+                // Use VTable dispatch to finalize the actual runtime type's
+                // members, since ~unlimited_polymorphic_type has no static
+                // members to iterate over.
+                llvm::Type* const class_llvm_type = get_llvm_type(t, struct_sym);
+
+                // Load struct pointer from class wrapper [1]
+                llvm::Value* struct_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
+                    llvm_utils_->create_gep2(class_llvm_type, ptr, 1));
+
+                // Guard: skip if struct pointer is null
+                llvm::BasicBlock* finalize_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_valid",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::BasicBlock* ret_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "class_ptr_null",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::Value* is_null = builder_->CreateICmpEQ(struct_ptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(struct_ptr->getType())));
+                builder_->CreateCondBr(is_null, ret_bb, finalize_bb);
+                builder_->SetInsertPoint(ret_bb);
+                builder_->CreateRetVoid();
+                builder_->SetInsertPoint(finalize_bb);
+
+                // Load VTable pointer from class wrapper [0]
+                // For intrinsic types (integer, real, etc.) stored in class(*),
+                // the vtable pointer is null — skip vtable dispatch in that case.
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
+                llvm::Type* i8PtrPtrTy = i8PtrTy->getPointerTo();
+                llvm::Value* vptr_slot = llvm_utils_->create_gep2(class_llvm_type, ptr, 0);
+                llvm::Value* vptr = llvm_utils_->CreateLoad2(i8PtrPtrTy, vptr_slot);
+
+                llvm::BasicBlock* has_vptr_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "has_vtable",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::BasicBlock* done_bb = llvm::BasicBlock::Create(
+                    builder_->getContext(), "finalize_done",
+                    builder_->GetInsertBlock()->getParent());
+                llvm::Value* vptr_is_null = builder_->CreateICmpEQ(vptr,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(vptr->getType())));
+                builder_->CreateCondBr(vptr_is_null, done_bb, has_vptr_bb);
+
+                builder_->SetInsertPoint(has_vptr_bb);
+                // GEP to finalize function at VTable offset 2 from vptr
+                // (copy=0, allocate=1, finalize=2)
+                llvm::Value* fn_slot = llvm_utils_->create_ptr_gep2(i8PtrTy, vptr, 2);
+                llvm::Value* fn_raw = llvm_utils_->CreateLoad2(i8PtrTy, fn_slot);
+                llvm::FunctionType* finalize_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(builder_->getContext()), {i8PtrTy}, false);
+                llvm::Value* fn_ptr = builder_->CreateBitCast(fn_raw,
+                    finalize_fn_type->getPointerTo());
+
+                // Call finalize function with struct pointer as i8*
+                builder_->CreateCall(finalize_fn_type, fn_ptr,
+                    {builder_->CreateBitCast(struct_ptr, i8PtrTy)});
+                builder_->CreateBr(done_bb);
+
+                builder_->SetInsertPoint(done_bb);
+                // Fall through to END_CACHE which terminates this cached function
+                END_CACHE(checkPoint_BB);
+                return;
             }
 
-            // Finalize members
+            // Finalize members (used for non-class structs and unlimited polymorphic)
             bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
@@ -1475,6 +1569,23 @@ class ASRToLLVMVisitor;
          *
          */ 
         void free_array_structs(llvm::Value* const data_ptr, ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym, llvm::Value* array_size){
+            // Unlimited polymorphic arrays store a single wrapper {VTable*, data*},
+            // not an array of wrappers.  Element-by-element iteration would
+            // read beyond the single wrapper into invalid memory.
+            // The wrapper itself is freed by free_array_ptr_to_consecutive_data;
+            // here we must free the inner data pointer it holds.
+            if (ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                llvm::Type* wrapper_type = llvm_utils_->getClassType(struct_sym);
+                llvm::Value* data_member_ptr = llvm_utils_->create_gep2(
+                    wrapper_type, data_ptr, 1);
+                llvm::Type* i8PtrTy = llvm::Type::getInt8Ty(
+                    builder_->getContext())->getPointerTo();
+                llvm::Value* inner_data = builder_->CreateLoad(
+                    i8PtrTy, data_member_ptr);
+                llvm_utils_->lfortran_free_nocheck(inner_data);
+                return;
+            }
+
             auto const iter_llvm_type =llvm::Type::getInt64Ty(builder_->getContext());
             auto const iter = builder_->CreateAlloca(iter_llvm_type, nullptr, "arrSize_iter");
             builder_->CreateStore(llvm::ConstantInt::get(iter_llvm_type, -1 , true), iter);
@@ -1856,8 +1967,11 @@ class ASRToLLVMVisitor;
                 case ASR::Logical:
                     return false;
                 case ASR::StructType:{
-                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
+                    // Class (polymorphic) types are always finalizable because
+                    // the runtime type may have allocatable members that need
+                    // cleanup, even if the static base type does not.
+                    if(ASRUtils::is_class_type(t)) { return true; }
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
                     // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
@@ -2251,6 +2365,9 @@ class ASRToLLVMVisitor;
 
             llvm::Function* define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             void fill_allocate_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
+
+            llvm::Function* define_finalize_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
+            void fill_finalize_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
 
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
                                                         llvm::Module* module);
