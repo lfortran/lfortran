@@ -1390,6 +1390,12 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Variable 'i' is not definable inside a DO loop as INTENT(INOUT) argument to subroutine 'sub_do_intent_loop'
+   --> tests/errors/continue_compilation_1.f90:644:32
+    |
+644 |        call sub_do_intent_loop(i)
+    |                                ^ 
+
 semantic error: Variable 'k' is not declared
    --> tests/errors/continue_compilation_1.f90:668:12
     |
