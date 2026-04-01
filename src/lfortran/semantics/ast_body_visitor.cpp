@@ -2952,6 +2952,9 @@ public:
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
+                    new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
+                }
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -2974,6 +2977,9 @@ public:
             } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
                 ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
+                    new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
+                }
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -3298,16 +3304,18 @@ public:
             ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
             
             if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
-                std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
-                std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
-                
-                diag.add(Diagnostic(
-                    "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
-                    Level::Error, Stage::Semantic, {
-                        Label("'" + var_name + "' is not allocatable or pointer", {alloc_expr->base.loc})
-                    }));
-                throw SemanticAbort();
+                ASR::ttype_t* sym_type = sym ? ASRUtils::symbol_type(sym) : nullptr;
+                if (!sym_type || (!ASRUtils::is_allocatable(sym_type) && !ASRUtils::is_pointer(sym_type))) {
+                    std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
+                    std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
+                    diag.add(Diagnostic(
+                        "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
+                        Level::Error, Stage::Semantic, {
+                            Label("'" + var_name + "' is not allocatable or pointer", {alloc_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         
@@ -3435,6 +3443,10 @@ public:
         if (ASR::is_a<ASR::ArraySection_t>(*v)) {
             ASR::ArraySection_t *arrs = ASR::down_cast<ASR::ArraySection_t>(v);
             return get_allocate_expr_sym(arrs->m_v);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*v)) {
+            ASR::ArrayPhysicalCast_t *apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(v);
+            return get_allocate_expr_sym(apc->m_arg);
         }
         LCOMPILERS_ASSERT(false);
         return nullptr;
