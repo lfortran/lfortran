@@ -2455,12 +2455,14 @@ public:
             {"nextrec", 16}, {"blank", 17}, {"position", 18}, {"action", 19},
             {"read", 20}, {"write", 21}, {"readwrite", 22}, {"delim", 23},
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
-            {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31}, 
-            {"iolength", 32}, {"sign", 33}, {"encoding", 34}};
+            {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31},
+            {"iolength", 32}, {"sign", 33}, {"encoding", 34},
+            {"stream", 35}, {"round", 36}, {"pending", 37},
+            {"asynchronous", 38}, {"iomsg", 39}};
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 34, args, 35, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 39, args, 40, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -2470,6 +2472,8 @@ public:
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
         ASR::expr_t *carriagecontrol = args[28], *size = args[29], *pos = args[30], *decimal = args[31];
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
+        ASR::expr_t *stream = args[35], *round = args[36], *pending = args[37];
+        ASR::expr_t *asynchronous = args[38], *iomsg = args[39];
         ;
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
@@ -2508,9 +2512,10 @@ public:
                                   nextrec, blank, position, action,
                                   read, write, readwrite, delim,
                                   pad, flen, blocksize, convert,
-                                  carriagecontrol, size, pos, iolength, 
+                                  carriagecontrol, size, pos, iolength,
                                   iolength_args.p, iolength_args.n, decimal,
-                                  sign, encoding);
+                                  sign, encoding, stream, round,
+                                  pending, asynchronous, iomsg);
     }
 
     void visit_Flush(const AST::Flush_t& x) {
