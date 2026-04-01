@@ -5544,10 +5544,18 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
         ASR::symbol_t* m_v = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
         if (m_v == nullptr) {
-            // we are dealing with an external/statement function, duplicate node with same symbol
             return ASR::make_Var_t(al, x->base.base.loc, x->m_v);
         }
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
+    }
+
+    ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::expr_t* m_v = duplicate_expr(x->m_v);
+        ASR::symbol_t* m_m = import_struct_instance_member(al, x->m_m, current_scope);
+        if (!m_m) m_m = x->m_m;
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        return ASR::make_StructInstanceMember_t(al, x->base.base.loc, m_v, m_m, m_type, m_value);
     }
 
 };
@@ -6008,6 +6016,21 @@ class CheckSymbolReplacer: public ASR::BaseExprReplacer<CheckSymbolReplacer> {
         if (x->m_original_name) {
             x->m_original_name = handle_symbol(x->m_original_name);
             ADD_ASR_DEPENDENCIES(current_scope, x->m_original_name, current_function_dependencies);
+        }
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<CheckSymbolReplacer>::replace_StructInstanceMember(x);
+        if (!result) return;
+        ASR::symbol_t* m_m = x->m_m;
+        SymbolTable* m_m_scope = ASRUtils::symbol_parent_symtab(m_m);
+        if (m_m_scope->get_counter() != current_scope->get_counter()) {
+            ASR::symbol_t* imported = import_struct_instance_member(al, m_m, current_scope);
+            if (imported) {
+                x->m_m = imported;
+            } else {
+                result = false;
+            }
         }
     }
 
