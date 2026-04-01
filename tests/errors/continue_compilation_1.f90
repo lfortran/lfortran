@@ -639,10 +639,10 @@ program continue_compilation_1
     interface undeclared_iface
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
-
-
-
-
+    ! do_loop_intent_inout
+    do i=1,3
+       call sub_do_intent_loop(i)
+    end do
 
 
 
@@ -677,5 +677,10 @@ program continue_compilation_1
         implicit none
         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
         if (abs(arr1)(1) /= 2471095) error stop
+    end subroutine
+    subroutine sub_do_intent_loop(x)
+        implicit none
+        integer, intent(inout) :: x
+        x = x + 1
     end subroutine
 end program

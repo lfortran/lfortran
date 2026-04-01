@@ -7397,6 +7397,51 @@ public:
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
 
+        // Check: do-loop variable must not be passed as intent(inout/out) argument
+        if (do_loop_variables.size() > 0 && final_sym) {
+            ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(final_sym);
+            if (ASR::is_a<ASR::Function_t>(*callee)) {
+                ASR::Function_t* callee_func = ASR::down_cast<ASR::Function_t>(callee);
+                std::string sub_name = ASRUtils::symbol_name(callee);
+                for (size_t i = 0; i < n_call_args; i++) {
+                    if (!(call_args[i].m_value && ASR::is_a<ASR::Var_t>(*call_args[i].m_value))) {
+                        continue;
+                    }
+                    ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(call_args[i].m_value);
+                    ASR::symbol_t* arg_sym = arg_var->m_v;
+                    if (std::find(do_loop_variables.begin(), do_loop_variables.end(), arg_sym)
+                            == do_loop_variables.end()) {
+                        continue;
+                    }
+
+                    // Check formal parameter intent
+                    if (i >= callee_func->n_args || !callee_func->m_args[i] ||
+                            !ASR::is_a<ASR::Var_t>(*callee_func->m_args[i])) {
+                        continue;
+                    }
+                    ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(callee_func->m_args[i])->m_v;
+                    if (!ASR::is_a<ASR::Variable_t>(*param_sym)) {
+                        continue;
+                    }
+                    ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(param_sym);
+                    if (param_var->m_intent == ASR::intentType::InOut ||
+                        param_var->m_intent == ASR::intentType::Out) {
+                        std::string intent_str = param_var->m_intent == ASR::intentType::InOut ?
+                            "INOUT" : "OUT";
+                        ASR::Variable_t* do_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                        diag.add(Diagnostic(
+                            "Variable '" + std::string(to_lower(do_var->m_name)) +
+                            "' is not definable inside a DO loop as INTENT(" + intent_str +
+                            ") argument to subroutine '" + sub_name + "'",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {call_args[i].loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
+            }
+        }
+
         if (final_sym) {
             ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(final_sym);
             if (ASR::is_a<ASR::Function_t>(*callee)) {
