@@ -1817,10 +1817,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                     }
                 }
             }
-            ASR::symbol_t* original_name = proc;
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*a_name)) {
-                original_name = a_name;
-            }
+            ASR::symbol_t* original_name = a_name;
             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, original_name,
                                             a_args.p, 1,
                                             return_type,
