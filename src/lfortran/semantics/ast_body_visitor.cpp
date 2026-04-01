@@ -7611,6 +7611,8 @@ public:
                 ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
                 diag::Level::Error, diag::Stage::Semantic, {
                 diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) + " expression, expected logical", {test->base.loc})}));
+            all_blocks_nesting--;
+            all_loops_blocks_nesting--;
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;
