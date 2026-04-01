@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             rp1d:
                                 (Struct
@@ -64,6 +65,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     rp1d
@@ -124,6 +126,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -158,6 +161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             hdf32:
                                                 (Variable
@@ -181,6 +185,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ndim:
                                                 (Variable
@@ -204,6 +209,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             scales:
                                                 (Variable
@@ -244,6 +250,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sds
@@ -413,6 +420,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sds:
                                 (ExternalSymbol

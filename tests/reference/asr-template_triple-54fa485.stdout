@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -80,6 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     add_integer
@@ -147,6 +150,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -170,6 +174,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -193,6 +198,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     max_integer
@@ -261,6 +267,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -284,6 +291,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -307,6 +315,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     min_integer
@@ -375,6 +384,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -398,6 +408,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -421,6 +432,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     minus_integer
@@ -488,6 +500,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     one_integer
@@ -547,6 +560,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     zero_integer
@@ -619,6 +633,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -642,6 +657,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -665,6 +681,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     add_real
@@ -732,6 +749,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -755,6 +773,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -778,6 +797,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     max_real
@@ -846,6 +866,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -869,6 +890,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -892,6 +914,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     min_real
@@ -960,6 +983,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -983,6 +1007,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -1006,6 +1031,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     minus_real
@@ -1073,6 +1099,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     one_real
@@ -1135,6 +1162,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -1158,6 +1186,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -1181,6 +1210,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     slash_real
@@ -1248,6 +1278,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     zero_real
@@ -1543,6 +1574,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1568,6 +1600,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1593,6 +1626,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_t
@@ -1651,6 +1685,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     magma_r
@@ -1692,6 +1727,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1717,6 +1753,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1742,6 +1779,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_t
@@ -1800,6 +1838,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             triple_l:
                                                 (Function
@@ -1830,6 +1869,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1855,6 +1895,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_l
@@ -1940,6 +1981,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1965,6 +2007,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_r
@@ -2191,6 +2234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             tar:
                                                 (Variable
@@ -2214,6 +2258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             triple_add_l:
                                                 (Function
@@ -2242,6 +2287,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2265,6 +2311,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_add_l
@@ -2340,6 +2387,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2363,6 +2411,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_add_r
@@ -2510,6 +2559,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             tmaxr:
                                                 (Variable
@@ -2533,6 +2583,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             triple_max_l:
                                                 (Function
@@ -2561,6 +2612,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2584,6 +2636,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_max_l
@@ -2659,6 +2712,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2682,6 +2736,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_max_r
@@ -2835,6 +2890,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             tmr:
                                                 (Variable
@@ -2858,6 +2914,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             triple_minus_l:
                                                 (Function
@@ -2886,6 +2943,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2909,6 +2967,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_minus_l
@@ -2984,6 +3043,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -3007,6 +3067,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     triple_minus_r

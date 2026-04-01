@@ -57,6 +57,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -122,6 +123,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             __1_t:
                                                 (Variable
@@ -145,6 +147,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             dir_sources:
                                                 (Variable
@@ -186,6 +189,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -214,6 +218,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             sources:
                                                 (Variable
@@ -255,6 +260,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     add_sources_from_dir
@@ -698,6 +704,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -723,6 +730,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             file_name:
                                                 (Variable
@@ -748,6 +756,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     srcfile_t

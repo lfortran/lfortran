@@ -59,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             j:
                                 (Variable
@@ -82,6 +83,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             k:
                                 (Variable
@@ -105,6 +107,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             l:
                                 (Variable
@@ -128,6 +131,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     subroutines_07
@@ -218,6 +222,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -241,6 +246,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             c:
                                                 (Variable
@@ -264,6 +270,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -287,6 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             kind:
                                                 (Variable
@@ -310,6 +318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     f

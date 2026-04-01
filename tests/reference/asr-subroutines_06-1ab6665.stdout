@@ -94,6 +94,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             set2:
                                                 (Variable
@@ -117,6 +118,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     assign_large
@@ -177,6 +179,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -200,6 +203,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     assign_logint8_large
@@ -267,6 +271,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             message:
                                                 (Variable
@@ -290,6 +295,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             module:
                                                 (Variable
@@ -313,6 +319,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             procedure:
                                                 (Variable
@@ -336,6 +343,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             status:
                                                 (Variable
@@ -359,6 +367,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     error_handler~genericprocedure

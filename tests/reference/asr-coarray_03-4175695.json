@@ -1,0 +1,13 @@
+{
+    "basename": "asr-coarray_03-4175695",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/coarray_03.f90",
+    "infile_hash": "d3cc712e35756867a9364b0ed5cde4fb8f6b62d3642cea5711539f2b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-coarray_03-4175695.stderr",
+    "stderr_hash": "436822cf43cc89ad7dd04a620c98b17ff870da296e76d402d50326b8",
+    "returncode": 2
+}

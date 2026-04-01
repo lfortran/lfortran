@@ -137,6 +137,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -160,6 +161,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -183,6 +185,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -206,6 +209,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -229,6 +233,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     __asr_avg_s_from_t
@@ -318,6 +323,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -341,6 +347,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -364,6 +371,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             s1:
                                                                 (Variable
@@ -387,6 +395,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             s2:
                                                                 (Variable
@@ -410,6 +419,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     avg_real_s_from_s
@@ -501,6 +511,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -524,6 +535,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -547,6 +559,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -570,6 +583,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -593,6 +607,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     avg_real_s_from_t
@@ -677,6 +692,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             s2:
                                                 (Variable
@@ -700,6 +716,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_template
@@ -865,6 +882,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -888,6 +906,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -911,6 +930,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     add_real
@@ -978,6 +998,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -1001,6 +1022,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -1024,6 +1046,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     slash_real
@@ -1116,6 +1139,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d_divided_by_s:
                                                 (Function
@@ -1146,6 +1170,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1171,6 +1196,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -1196,6 +1222,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     d_divided_by_s
@@ -1259,6 +1286,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1284,6 +1312,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -1309,6 +1338,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     d_divided_by_t
@@ -1372,6 +1402,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1397,6 +1428,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1422,6 +1454,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_d
@@ -1485,6 +1518,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1510,6 +1544,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1535,6 +1570,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_t
@@ -1593,6 +1629,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             t:
                                                 (Variable
@@ -1618,6 +1655,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     operations
@@ -1674,6 +1712,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -1699,6 +1738,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -1724,6 +1764,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             s1:
                                                                 (Variable
@@ -1749,6 +1790,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             s2:
                                                                 (Variable
@@ -1774,6 +1816,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     avg_s_from_s
@@ -1884,6 +1927,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -1909,6 +1953,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -1934,6 +1979,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -1959,6 +2005,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -1984,6 +2031,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     avg_s_from_t
@@ -2088,6 +2136,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d_divided_by_s:
                                                 (Function
@@ -2118,6 +2167,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -2143,6 +2193,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -2168,6 +2219,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     d_divided_by_s
@@ -2231,6 +2283,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -2256,6 +2309,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -2281,6 +2335,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     d_divided_by_t
@@ -2344,6 +2399,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -2369,6 +2425,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -2394,6 +2451,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_d
@@ -2457,6 +2515,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -2482,6 +2541,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -2507,6 +2567,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     plus_t
@@ -2565,6 +2626,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             t:
                                                 (Variable
@@ -2590,6 +2652,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     travel_tmpl

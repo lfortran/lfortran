@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i2:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i3:
                                 (Variable
@@ -81,6 +83,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r1:
                                 (Variable
@@ -110,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r2:
                                 (Variable
@@ -148,6 +152,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r3:
                                 (Variable
@@ -177,6 +182,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r4:
                                 (Variable
@@ -215,6 +221,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -238,6 +245,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y:
                                 (Variable
@@ -261,6 +269,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     constant_kinds

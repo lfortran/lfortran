@@ -260,7 +260,8 @@
                                         "is_volatile": false,
                                         "is_protected": false,
                                         "pass_attr": "NotMethod",
-                                        "self_argument": []
+                                        "self_argument": [],
+                                        "corank": 0
                                     },
                                     "loc": {
                                         "first": 38,

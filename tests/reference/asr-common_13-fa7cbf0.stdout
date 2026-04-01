@@ -202,6 +202,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     arrblock
@@ -288,6 +289,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_arrblock
@@ -329,6 +331,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             myzero:
                                                 (Variable
@@ -352,6 +355,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     myblock
@@ -421,6 +425,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_myblock
@@ -457,6 +462,7 @@
                     .false.
                     NotMethod
                     ()
+                    0
                 ),
             myblock:
                 (ExternalSymbol
@@ -490,6 +496,7 @@
                     .false.
                     NotMethod
                     ()
+                    0
                 ),
             myzero:
                 (Variable
@@ -513,6 +520,7 @@
                     .false.
                     NotMethod
                     ()
+                    0
                 ),
             struct_instance_arrblock:
                 (ExternalSymbol

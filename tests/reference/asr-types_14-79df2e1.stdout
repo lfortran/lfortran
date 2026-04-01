@@ -41,6 +41,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             s:
                                 (Variable
@@ -69,6 +70,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     types_14

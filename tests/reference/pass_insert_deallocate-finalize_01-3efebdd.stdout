@@ -36,6 +36,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             internal_sub:
                                 (Function
@@ -73,6 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             bl:
                                                 (Block
@@ -108,6 +110,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     bl
@@ -140,6 +143,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     internal_sub
@@ -212,6 +216,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             test_01:
                                 (ExternalSymbol
@@ -291,6 +296,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     ss
@@ -363,6 +369,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             str:
                                                 (Variable
@@ -388,6 +395,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_01

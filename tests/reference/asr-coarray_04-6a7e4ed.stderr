@@ -1,0 +1,5 @@
+semantic error: Coarray 'b' has corank 2 but 1 coindices were provided
+ --> tests/errors/coarray_04.f90:4:1
+  |
+4 | B[1] = 5
+  | ^^^^ 

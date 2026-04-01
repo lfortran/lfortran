@@ -87,6 +87,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             lst:
                                                                 (Variable
@@ -117,6 +118,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -142,6 +144,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     insert_t
@@ -243,6 +246,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             lst:
                                                                 (Variable
@@ -273,6 +277,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -296,6 +301,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -321,6 +327,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     insert_t_n
@@ -423,6 +430,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     array_tmpl
@@ -461,6 +469,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     r
@@ -499,6 +508,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -522,6 +532,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             insert_int:
                                                 (Function
@@ -550,6 +561,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             lst:
                                                                 (Variable
@@ -578,6 +590,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -601,6 +614,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     insert_int
@@ -690,6 +704,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             lst:
                                                                 (Variable
@@ -718,6 +733,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -741,6 +757,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -764,6 +781,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     insert_int_n
@@ -854,6 +872,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_template

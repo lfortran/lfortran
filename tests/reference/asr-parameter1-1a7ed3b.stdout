@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             s:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             three:
                                 (Variable
@@ -87,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             two:
                                 (Variable
@@ -116,6 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             zero:
                                 (Variable
@@ -145,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     dcstep

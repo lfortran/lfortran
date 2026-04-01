@@ -56,6 +56,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -464,6 +465,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r_ptr:
                                 (Variable
@@ -494,6 +496,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             temp_ptr:
                                 (Variable
@@ -517,6 +520,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             test_obj:
                                 (Struct
@@ -551,6 +555,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_obj

@@ -4611,6 +4611,14 @@ filename = "errors/coarray_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/coarray_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/coarray_04.f90"
+asr = true
+
+[[test]]
 filename = "errors/atomic_01.f90"
 asr = true
 

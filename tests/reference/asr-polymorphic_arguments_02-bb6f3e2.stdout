@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i_value:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             l_value:
                                 (Variable
@@ -87,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r_value:
                                 (Variable
@@ -122,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             str:
                                 (GenericProcedure
@@ -162,6 +166,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             str_scalar:
                                                 (Variable
@@ -185,6 +190,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~unlimited_polymorphic_type:
                                                 (Struct

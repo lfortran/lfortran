@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -62,6 +63,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 ),
                                                             c:
                                                                 (Variable
@@ -85,6 +87,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     block
@@ -174,6 +177,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     associate_block
@@ -208,6 +212,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             d:
                                 (Variable
@@ -231,6 +236,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     block_01
