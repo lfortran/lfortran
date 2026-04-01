@@ -640,7 +640,7 @@ program continue_compilation_1
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
 
-
+    integer, parameter :: n2 = "abc"
 
 
 

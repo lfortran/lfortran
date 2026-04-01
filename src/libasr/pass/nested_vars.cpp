@@ -625,8 +625,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             nullptr, ASR::DeferredLength, ASR::DescriptorString));
                     }
                 }
-                if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
+                if (is_allocatable && !ASRUtils::is_allocatable(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                }
+                if (is_pointer && !ASRUtils::is_pointer(var_type)) {
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
                 ASR::symbol_t* type_decl = nullptr;
                 if (m_derived_type_or_class_type) {
@@ -1006,6 +1009,53 @@ public:
     ASR::symbol_t *cur_func_sym = nullptr;
     bool calls_present = false;
     bool calls_in_loop_condition = false;
+    std::set<ASR::symbol_t*> nested_proc_dispatch_hosts;
+
+    static ASR::symbol_t* get_root_host_symbol(ASR::expr_t* expr) {
+        expr = ASRUtils::get_past_array_physical_cast(expr);
+        while (expr) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+                expr = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+                expr = ASRUtils::get_past_array_physical_cast(expr);
+                continue;
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+                expr = ASRUtils::get_past_array_physical_cast(expr);
+                continue;
+            }
+            if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+                expr = ASRUtils::get_past_array_physical_cast(expr);
+                continue;
+            }
+            if (ASR::is_a<ASR::Var_t>(*expr)) {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            }
+            break;
+        }
+        return nullptr;
+    }
+
+    bool value_is_nested_procedure(ASR::expr_t* value) {
+        value = ASRUtils::get_past_array_physical_cast(value);
+        if (value && ASR::is_a<ASR::Var_t>(*value)) {
+            ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
+            return is_nested_call_symbol(current_scope, v);
+        }
+        return false;
+    }
+
+    void record_nested_dispatch_host(ASR::expr_t* target, ASR::expr_t* value) {
+        if (!target || !value || !value_is_nested_procedure(value)) {
+            return;
+        }
+        ASR::symbol_t* host = get_root_host_symbol(target);
+        if (host) {
+            nested_proc_dispatch_hosts.insert(host);
+        }
+    }
 
     void mark_nested_procedure_arg(ASR::expr_t *arg_expr) {
         if (!arg_expr) {
@@ -1016,7 +1066,8 @@ public:
         }
         if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
-            if (is_nested_call_symbol(current_scope, var->m_v)) {
+            if (is_nested_call_symbol(current_scope, var->m_v) ||
+                nested_proc_dispatch_hosts.find(get_root_host_symbol(arg_expr)) != nested_proc_dispatch_hosts.end()) {
                 calls_present = true;
             }
         }
@@ -1026,6 +1077,16 @@ public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
     PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm) { }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        record_nested_dispatch_host(x.m_target, x.m_value);
+        PassUtils::PassVisitor<AssignNestedVars>::visit_Associate(x);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        record_nested_dispatch_host(x.m_target, x.m_value);
+        PassUtils::PassVisitor<AssignNestedVars>::visit_Assignment(x);
+    }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
@@ -1054,14 +1115,14 @@ public:
                             ext_sym = it_ext->second;
                         } else {
                             std::string original_name = ASRUtils::symbol_name(t);
-                            ASR::symbol_t *existing = current_scope->get_symbol(original_name);
+                            ASR::symbol_t *existing = current_scope->resolve_symbol(original_name);
                             if (existing != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
                                     ASRUtils::symbol_get_past_external(existing) == t) {
                                 ext_sym = existing;
                             } else {
                                 std::string unique_name = original_name;
                                 if (existing != nullptr) {
-                                    unique_name = current_scope->get_unique_name(original_name, false);
+                                    unique_name = current_scope->get_unique_name(original_name + "_nested_ctx", false);
                                 }
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                     al, t->base.loc,
@@ -1122,16 +1183,17 @@ public:
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
                         if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
+                            std::string unique_name = current_scope->get_unique_name(sym_name, false);
                             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
                             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                 al, t->base.loc,
                                 /* a_symtab */ current_scope,
-                                /* a_name */ s2c(al, current_scope->get_unique_name(sym_name, false)),
+                                /* a_name */ s2c(al, unique_name),
                                 s, ASRUtils::symbol_name(ASRUtils::get_asr_owner(s)),
                                 nullptr, 0, ASRUtils::symbol_name(s), ASR::accessType::Public
                             );
                             sym_ = ASR::down_cast<ASR::symbol_t>(fn);
-                            current_scope->add_symbol(sym_name, sym_);
+                            current_scope->add_symbol(unique_name, sym_);
                         }
                         LCOMPILERS_ASSERT(ext_sym != nullptr);
                         LCOMPILERS_ASSERT(sym_ != nullptr);
@@ -1300,6 +1362,8 @@ public:
         ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         ASR::symbol_t *sym_copy = cur_func_sym;
+        std::set<ASR::symbol_t*> nested_proc_dispatch_hosts_copy = nested_proc_dispatch_hosts;
+        nested_proc_dispatch_hosts.clear();
         cur_func_sym = (ASR::symbol_t*)&xx;
         current_scope = xx.m_symtab;
         transform_stmts(xx.m_body, xx.n_body);
@@ -1320,6 +1384,7 @@ public:
         }
         cur_func_sym = sym_copy;
         current_scope = current_scope_copy;
+        nested_proc_dispatch_hosts = nested_proc_dispatch_hosts_copy;
     }
 
     void visit_Program(const ASR::Program_t &x) {
@@ -1327,6 +1392,8 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = xx.m_symtab;
         ASR::symbol_t *sym_copy = cur_func_sym;
+        std::set<ASR::symbol_t*> nested_proc_dispatch_hosts_copy = nested_proc_dispatch_hosts;
+        nested_proc_dispatch_hosts.clear();
         cur_func_sym = (ASR::symbol_t*)&xx;
         transform_stmts(xx.m_body, xx.n_body);
 
@@ -1359,6 +1426,7 @@ public:
         }
         current_scope = current_scope_copy;
         cur_func_sym = sym_copy;
+        nested_proc_dispatch_hosts = nested_proc_dispatch_hosts_copy;
     }
 
     void visit_Module(const ASR::Module_t &x) {
@@ -1382,7 +1450,19 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
+        bool is_nested_dispatch_call = false;
+        ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (nested_proc_dispatch_hosts.find(call_sym) != nested_proc_dispatch_hosts.end()) {
+            is_nested_dispatch_call = true;
+        }
+        if (x.m_dt) {
+            ASR::symbol_t* dt_host = get_root_host_symbol(x.m_dt);
+            if (dt_host && nested_proc_dispatch_hosts.find(dt_host) != nested_proc_dispatch_hosts.end()) {
+                is_nested_dispatch_call = true;
+            }
+        }
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name)
+            || is_nested_dispatch_call;
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
@@ -1395,7 +1475,19 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
+        bool is_nested_dispatch_call = false;
+        ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (nested_proc_dispatch_hosts.find(call_sym) != nested_proc_dispatch_hosts.end()) {
+            is_nested_dispatch_call = true;
+        }
+        if (x.m_dt) {
+            ASR::symbol_t* dt_host = get_root_host_symbol(x.m_dt);
+            if (dt_host && nested_proc_dispatch_hosts.find(dt_host) != nested_proc_dispatch_hosts.end()) {
+                is_nested_dispatch_call = true;
+            }
+        }
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name)
+            || is_nested_dispatch_call;
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
