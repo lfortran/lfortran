@@ -392,6 +392,18 @@ semantic error: type mismatch in initialization: `string` cannot be assigned to 
 643 |     integer, parameter :: n2 = "abc"
     |                                ^^^^^ 
 
+semantic error: Initialization of `ptr_requires_target` must reduce to a compile time constant.
+   --> tests/errors/continue_compilation_1.f90:645:5
+    |
+645 |     integer, pointer :: ptr_requires_target => ptr_src_no_target
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization of `ptr_type_mismatch` must reduce to a compile time constant.
+   --> tests/errors/continue_compilation_1.f90:647:5
+    |
+647 |     real, pointer :: ptr_type_mismatch => ptr_tgt_i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Cannot convert LOGICAL to REAL
    --> tests/errors/continue_compilation_1.f90:674:24
     |

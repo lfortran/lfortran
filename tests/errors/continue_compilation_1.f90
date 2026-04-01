@@ -641,10 +641,10 @@ program continue_compilation_1
     end interface
 
     integer, parameter :: n2 = "abc"
-
-
-
-
+    integer :: ptr_src_no_target = 1
+    integer, pointer :: ptr_requires_target => ptr_src_no_target
+    integer, target :: ptr_tgt_i = 1
+    real, pointer :: ptr_type_mismatch => ptr_tgt_i
 
 
 
