@@ -321,38 +321,23 @@ public:
     }
 
     void append_namelist_declarations(SymbolTable *symtab, std::string &r) {
-        std::vector<std::string> namelist_order;
         for (auto &item : symtab->get_scope()) {
             if (is_a<ASR::Namelist_t>(*item.second)) {
-                namelist_order.push_back(item.first);
-            }
-        }
-        // Insertion sort ideal for smaller arrays
-        for (size_t i = 1; i < namelist_order.size(); i++) {
-            std::string key = namelist_order[i];
-            int j = i - 1;
-            while (j >= 0 && namelist_order[j] > key) {
-                namelist_order[j + 1] = namelist_order[j];
-                j--;
-            }
-            namelist_order[j + 1] = key;
-        }
-        for (auto &name : namelist_order) {
-            ASR::symbol_t *sym = symtab->get_symbol(name);
-            ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(sym);
-            std::string line = indent;
-            line += "namelist /";
-            line += nml->m_group_name;
-            line += "/ ";
-            for (size_t i = 0; i < nml->n_var_list; i++) {
-                line += ASRUtils::symbol_name(nml->m_var_list[i]);
-                if (i + 1 < nml->n_var_list) {
-                    line += ", ";
+                ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(item.second);
+                std::string line = indent;
+                line += "namelist /";
+                line += nml->m_group_name;
+                line += "/ ";
+                for (size_t i = 0; i < nml->n_var_list; i++) {
+                    line += ASRUtils::symbol_name(nml->m_var_list[i]);
+                    if (i + 1 < nml->n_var_list) {
+                        line += ", ";
+                    }
                 }
+                handle_line_truncation(line, 2);
+                line += "\n";
+                r += line;
             }
-            handle_line_truncation(line, 2);
-            line += "\n";
-            r += line;
         }
     }
 
