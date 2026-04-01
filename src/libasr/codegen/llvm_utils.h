@@ -1143,6 +1143,13 @@ class ASRToLLVMVisitor;
                 case ASR::Array:
                     llvm_utils_->lfortran_free_nocheck(ptr);
                 break;
+                case ASR::StructType:
+                    if(ASRUtils::is_class_type(t_past)){
+                        check_if_allocated_then_finalize(ptr, t, struct_sym, [this, ptr](){
+                            llvm_utils_->lfortran_free_nocheck(ptr);
+                        });
+                    }
+                break;
                 default:
                     throw LCompilersException("Unhandled Case.");
             }
@@ -1930,7 +1937,7 @@ class ASRToLLVMVisitor;
             }
         }
 
-        // Check if a pointer type is finalizable
+        // Check if a pointer type is finalizable (TRUE for cases where the compiler allocated some descriptor; User must free data himself)
         bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
             switch(t_past->type){
@@ -1938,12 +1945,13 @@ class ASRToLLVMVisitor;
                     return in_struct 
                         && (   ASRUtils::extract_physical_type(t_past) == ASR::DescriptorArray
                             || ASRUtils::extract_physical_type(t_past) == ASR::AssumedRankArray);
+                case ASR::StructType:
+                    return ASRUtils::is_class_type(t_past);
                 case ASR::Integer:
                 case ASR::Real:
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
-                case ASR::StructType:
                 case ASR::List:
                 case ASR::Dict:
                 case ASR::Tuple:

@@ -8884,53 +8884,22 @@ public:
                     x.m_target, target_base_type, module.get());
                 llvm::Value* target_ptr = llvm_target;
                 if (LLVM::is_llvm_pointer(*target_type)) {
+                    // Allocate wrapper on heap (This is the current convention)
                     llvm::Value* null_cond = builder->CreateICmpEQ(
                         llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
-                        llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
-                    // Use stack allocation for local pointer variables to avoid
-                    // heap leaks (pointers have no automatic deallocation).
-                    // Function return variables must stay heap-allocated because
-                    // the wrapper must outlive the callee's stack frame.
-                    bool target_is_local = false;
-                    if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                        ASR::Variable_t* target_v = ASR::down_cast<ASR::Variable_t>(
-                            ASRUtils::symbol_get_past_external(
-                                ASR::down_cast<ASR::Var_t>(x.m_target)->m_v));
-                        target_is_local = (target_v->m_intent == ASR::intentType::Local);
-                    }
-                    if (target_is_local) {
-                        llvm_utils->create_if_else(
-                            null_cond,
-                            [&]() {
-                                llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
-                                llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
-                                llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
-                                llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
-                                    target_llvm_type, nullptr, "class_str_wrapper");
-                                const llvm::DataLayout &dl = module->getDataLayout();
-                                uint64_t type_size = dl.getTypeAllocSize(target_llvm_type);
-                                builder->CreateMemSet(
-                                    builder->CreateBitCast(wrapper_ptr,
-                                        llvm::Type::getInt8Ty(context)->getPointerTo()),
-                                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
-                                    llvm::MaybeAlign());
-                                builder->CreateStore(wrapper_ptr, llvm_target);
-                            }, []() {});
-                    } else {
-                        llvm_utils->create_if_else(
-                            null_cond,
-                            [&]() {
-                                llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, target_base_type,
-                                    llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                                llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                    context, *module, *builder, wrapper_size);
-                                builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                    wrapper_size, llvm::MaybeAlign());
-                                wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
-                                builder->CreateStore(wrapper_ptr, llvm_target);
-                            }, []() {});
-                    }
+                            llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                    llvm_utils->create_if_else(
+                        null_cond,
+                        [&]() {
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, target_base_type,
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, wrapper_size);
+                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                wrapper_size, llvm::MaybeAlign());
+                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                            builder->CreateStore(wrapper_ptr, llvm_target);
+                        }, []() {});
                     target_ptr = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
                 }
                 struct_api->store_intrinsic_type_vptr(value_type,
@@ -9016,37 +8985,44 @@ public:
                 }
                 if (is_target_class && is_value_class) {
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_target, target_type, module.get());
-                    llvm_value = builder->CreateBitCast(llvm_value, target_llvm_type);
-                    builder->CreateStore(llvm_value, llvm_target);
+                        x.m_target, ASRUtils::extract_type(target_type), module.get());
+                    // Allocate wrapper on heap (This is the current convention we use for class types)
+                    llvm::Value* null_cond = builder->CreateICmpEQ(
+                        llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
+                        llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                    llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
+                        llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                    llvm_utils->create_if_else(
+                        null_cond,
+                        [&]() {
+                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, wrapper_size);
+                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                wrapper_size, llvm::MaybeAlign());
+                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                            builder->CreateStore(wrapper_ptr, llvm_target);
+                        }, []() {});
+                    builder->CreateMemCpy(  llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
+                                            llvm_value, llvm::MaybeAlign(),
+                                            wrapper_size);
                 } else if (is_target_class) {
                     // check_and_allocate_scalar(x.m_target, x.m_value, value_type, true);
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_target, ASRUtils::extract_type(target_type), module.get());
-                    
-                    // Allocate class wrapper on the stack (entry block alloca)
-                    // when associating a non-class value to a class pointer.
-                    // Stack allocation avoids a heap leak since pointer
-                    // variables do not get automatic deallocation at scope exit.
+                    // Allocate wrapper on heap (This is the current convention we use for class types)
                     llvm::Value* null_cond = builder->CreateICmpEQ(
                         llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
                         llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
                     llvm_utils->create_if_else(
                         null_cond,
                         [&]() {
-                            llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
-                            llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
-                            llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
-                            llvm::Value* wrapper_ptr = entry_builder.CreateAlloca(
-                                target_llvm_type, nullptr, "class_ptr_wrapper");
-                            const llvm::DataLayout &dl = module->getDataLayout();
-                            uint64_t type_size = dl.getTypeAllocSize(target_llvm_type);
-                            builder->CreateMemSet(
-                                builder->CreateBitCast(wrapper_ptr,
-                                    llvm::Type::getInt8Ty(context)->getPointerTo()),
-                                llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
-                                llvm::MaybeAlign());
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, wrapper_size);
+                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                wrapper_size, llvm::MaybeAlign());
+                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
                             builder->CreateStore(wrapper_ptr, llvm_target);
                         }, []() {});
                     llvm_target = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
