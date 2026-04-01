@@ -5140,6 +5140,7 @@ static int32_t seq_char_pending[MAXUNITS];
 static int32_t seq_char_record_len[MAXUNITS];
 
 static inline void seq_char_state_reset(int32_t unit_num) {
+    if (unit_num < 0 || unit_num >= MAXUNITS) return;
     seq_char_pending[unit_num] = 0;
     seq_char_record_len[unit_num] = 0;
 }
