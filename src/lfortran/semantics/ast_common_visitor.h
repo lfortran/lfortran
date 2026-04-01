@@ -12315,8 +12315,11 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), m_dims);
+        bool is_assumed_rank = ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var));
         int64_t compile_time_size = 1;
-        if (dim != nullptr) {
+        if (is_assumed_rank) {
+            compile_time_size = -1;
+        } else if (dim != nullptr) {
             int32_t dim_idx = -1;
             ASRUtils::extract_value(dim, dim_idx);
             if (dim_idx == -1) {
