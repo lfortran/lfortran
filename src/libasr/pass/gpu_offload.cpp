@@ -666,42 +666,48 @@ public:
         }
 
         // Resolve associate variables to their original targets if this
-        // DoConcurrentLoop is inside an AssociateBlock. The kernel function
-        // lives at the translation-unit level and cannot reference symbols
-        // from the AssociateBlock's scope.
-        if (current_scope->asr_owner &&
-            current_scope->asr_owner->type == ASR::asrType::symbol &&
-            is_a<ASR::AssociateBlock_t>(
-                *down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
-            ASR::AssociateBlock_t *ab = ASR::down_cast2<ASR::AssociateBlock_t>(
-                current_scope->asr_owner);
+        // DoConcurrentLoop is inside one or more nested AssociateBlocks.
+        // The kernel function lives at the translation-unit level and
+        // cannot reference symbols from any AssociateBlock's scope, so
+        // we walk up through all enclosing AssociateBlock ancestors and
+        // collect all their associate mappings.
+        {
             std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
-            for (size_t i = 0; i < ab->n_body; i++) {
-                if (is_a<ASR::Associate_t>(*ab->m_body[i])) {
-                    ASR::Associate_t *assoc = down_cast<ASR::Associate_t>(
-                        ab->m_body[i]);
-                    if (is_a<ASR::Var_t>(*assoc->m_target)) {
-                        ASR::symbol_t *assoc_sym =
-                            down_cast<ASR::Var_t>(assoc->m_target)->m_v;
-                        assoc_map[assoc_sym] = assoc->m_value;
-                    }
-                } else if (is_a<ASR::Assignment_t>(*ab->m_body[i])) {
-                    // associate(n => constant_expr) generates an
-                    // Assignment instead of Associate. Capture the
-                    // initial value for variables owned by this
-                    // AssociateBlock so they can be resolved.
-                    ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
-                        ab->m_body[i]);
-                    if (is_a<ASR::Var_t>(*asgn->m_target)) {
-                        ASR::symbol_t *sym =
-                            down_cast<ASR::Var_t>(asgn->m_target)->m_v;
-                        if (is_a<ASR::Variable_t>(*sym) &&
-                            down_cast<ASR::Variable_t>(sym)->m_parent_symtab
-                                == ab->m_symtab) {
-                            assoc_map[sym] = asgn->m_value;
+            SymbolTable *scope = current_scope;
+            while (scope && scope->asr_owner &&
+                   scope->asr_owner->type == ASR::asrType::symbol &&
+                   is_a<ASR::AssociateBlock_t>(
+                       *down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast2<ASR::AssociateBlock_t>(scope->asr_owner);
+                for (size_t i = 0; i < ab->n_body; i++) {
+                    if (is_a<ASR::Associate_t>(*ab->m_body[i])) {
+                        ASR::Associate_t *assoc = down_cast<ASR::Associate_t>(
+                            ab->m_body[i]);
+                        if (is_a<ASR::Var_t>(*assoc->m_target)) {
+                            ASR::symbol_t *assoc_sym =
+                                down_cast<ASR::Var_t>(assoc->m_target)->m_v;
+                            assoc_map[assoc_sym] = assoc->m_value;
+                        }
+                    } else if (is_a<ASR::Assignment_t>(*ab->m_body[i])) {
+                        // associate(n => constant_expr) generates an
+                        // Assignment instead of Associate. Capture the
+                        // initial value for variables owned by this
+                        // AssociateBlock so they can be resolved.
+                        ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
+                            ab->m_body[i]);
+                        if (is_a<ASR::Var_t>(*asgn->m_target)) {
+                            ASR::symbol_t *sym =
+                                down_cast<ASR::Var_t>(asgn->m_target)->m_v;
+                            if (is_a<ASR::Variable_t>(*sym) &&
+                                down_cast<ASR::Variable_t>(sym)->m_parent_symtab
+                                    == ab->m_symtab) {
+                                assoc_map[sym] = asgn->m_value;
+                            }
                         }
                     }
                 }
+                scope = scope->parent;
             }
             if (!assoc_map.empty()) {
                 AssociateVarResolver resolver(al, assoc_map);
