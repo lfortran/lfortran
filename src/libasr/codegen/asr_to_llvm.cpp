@@ -1765,12 +1765,12 @@ public:
     }
 
     void maybe_mark_save_array_allocation_leakable(ASR::expr_t* target_expr,
-            ASR::ttype_t* array_type, llvm::Type* desc_type, llvm::Value* desc_slot,
+            ASR::ttype_t* array_type, llvm::Type* desc_type, llvm::Value* desc_ptr_addr,
             llvm::Type* llvm_data_type) {
         if (!is_save_allocation_target(target_expr)) {
             return;
         }
-        llvm::Value* desc = llvm_utils->CreateLoad2(desc_type->getPointerTo(), desc_slot);
+        llvm::Value* desc = llvm_utils->CreateLoad2(desc_type->getPointerTo(), desc_ptr_addr);
         llvm::Value* allocated_ptr = nullptr;
         if (ASRUtils::is_array_of_strings(array_type)) {
             allocated_ptr = llvm_utils->get_stringArray_data(array_type, desc, false);
@@ -1811,8 +1811,9 @@ public:
                         amount_to_allocate = nullptr;
                     }
                     llvm_utils->allocate_allocatable_string(str, x_arr, amount_to_allocate);
-                    maybe_mark_save_allocation_leakable(tmp_expr,
-                        llvm_utils->get_string_data(str, x_arr));
+                    if (is_save_allocation_target(tmp_expr)) {
+                        mark_allocation_as_leakable(llvm_utils->get_string_data(str, x_arr));
+                    }
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
