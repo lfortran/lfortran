@@ -746,7 +746,10 @@ public:
                     orig_scope, kernel_scope, loc);
             }
 
-            ASR::ttype_t *dup_type = ASRUtils::duplicate_type(al, type);
+            // Strip Allocatable wrapper: GPU kernel parameters receive
+            // raw array data, not allocatable descriptors
+            ASR::ttype_t *dup_type = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(type));
 
             // Recompute dependencies from the type alone (symbolic_value
             // and value are nullptr for kernel parameters)
