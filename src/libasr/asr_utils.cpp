@@ -3623,7 +3623,10 @@ ASR::asr_t* make_ArraySize_t_util(
         ASRUtils::expr_value(a_dim), dim);
     ASR::ttype_t* array_func_type = nullptr;
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
-        a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+        ASR::expr_t* inner = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(inner))) {
+            a_v = inner;
+        }
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
