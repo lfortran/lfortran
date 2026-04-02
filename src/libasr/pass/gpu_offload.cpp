@@ -856,6 +856,39 @@ public:
         GpuSymbolCollector collector(al, involved_syms, enclosing_block_scope);
         collector.visit_DoConcurrentLoop(x);
 
+        // Also collect symbols referenced in the type expressions (array
+        // dimensions) of already-collected symbols. For example, if
+        // `tmp(size(b))` is used in the body, `tmp` is collected but `b`
+        // only appears in tmp's type — we must also pull `b` into
+        // involved_syms so it becomes a kernel parameter.
+        {
+            bool added = true;
+            while (added) {
+                added = false;
+                std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
+                GpuSymbolCollector type_collector(al, extra_syms, enclosing_block_scope);
+                for (auto &[sym_name, sym_info] : involved_syms) {
+                    ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start)
+                            type_collector.visit_expr(*arr->m_dims[d].m_start);
+                        if (arr->m_dims[d].m_length)
+                            type_collector.visit_expr(*arr->m_dims[d].m_length);
+                    }
+                }
+                for (auto &[name, info] : extra_syms) {
+                    if (involved_syms.find(name) == involved_syms.end()) {
+                        involved_syms[name] = info;
+                        added = true;
+                    }
+                }
+            }
+        }
+
         // Skip loops containing real(8)/integer(8) types — Metal has no double/int64 support
         for (auto &sym : involved_syms) {
             ASR::ttype_t *t = sym.second.first;
