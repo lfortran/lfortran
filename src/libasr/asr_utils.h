@@ -530,6 +530,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
         case ASR::symbolType::Namelist: return "Namelist";
+        case ASR::symbolType::GpuKernelFunction: return "GpuKernelFunction";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -883,6 +884,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
+        }
+        case ASR::symbolType::GpuKernelFunction: {
+            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_name;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -1364,6 +1368,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
         }
+        case ASR::symbolType::GpuKernelFunction: {
+            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab->parent;
+        }
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
@@ -1418,6 +1425,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::GpuKernelFunction: {
+            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab;
         }
         default : throw LCompilersException("Not implemented");
     }

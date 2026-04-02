@@ -640,11 +640,11 @@ program continue_compilation_1
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
 
-
-
-
-
-
+    integer, parameter :: n2 = "abc"
+    type(MyClass) :: ptr_src_no_target
+    type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
+    type(Base), target :: ptr_tgt_base
+    type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
 
 
 

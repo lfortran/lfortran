@@ -156,6 +156,13 @@ jobs:
                 ./run_tests.py -b llvm -f --std=f23 -nf16 $J_FLAG
             fi
 
+      - name: Test Metal GPU backend (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b metal -j3
+
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
