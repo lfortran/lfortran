@@ -85,43 +85,101 @@ static inline double lf_float128_to_double(const void *ptr) {
 // fp128 comparison runtime (macOS / no __float128)
 // -----------------------------------------------------
 
-#if defined(__APPLE__) || !HAVE_FLOAT128
+#if defined(__EMSCRIPTEN__)
 
-    int __eqtf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da == db) ? 0 : 1;
-    }
+// WASM ABI: fp128 passed as 4 x i64
+int __eqtf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
 
-    int __netf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da != db);
-    }
+    memcpy(a_bytes, &a_lo, 8);
+    memcpy(a_bytes + 8, &a_hi, 8);
 
-    int __lttf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da < db);
-    }
+    memcpy(b_bytes, &b_lo, 8);
+    memcpy(b_bytes + 8, &b_hi, 8);
 
-    int __letf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da <= db);
-    }
+    double da = lf_float128_to_double(a_bytes);
+    double db = lf_float128_to_double(b_bytes);
+    return (da == db) ? 0 : 1;
+}
 
-    int __gttf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da > db);
-    }
+int __netf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
 
-    int __getf2(const void *a, const void *b) {
-        double da = lf_float128_to_double(a);
-        double db = lf_float128_to_double(b);
-        return (da >= db);
-    }
+    return lf_float128_to_double(a_bytes) != lf_float128_to_double(b_bytes);
+}
+
+int __lttf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) < lf_float128_to_double(b_bytes);
+}
+
+int __letf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) <= lf_float128_to_double(b_bytes);
+}
+
+int __gttf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) > lf_float128_to_double(b_bytes);
+}
+
+int __getf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) >= lf_float128_to_double(b_bytes);
+}
+
+#elif defined(__APPLE__) || !HAVE_FLOAT128
+
+// Native fallback (pointer ABI)
+int __eqtf2(const void *a, const void *b) {
+    return (lf_float128_to_double(a) == lf_float128_to_double(b)) ? 0 : 1;
+}
+
+int __netf2(const void *a, const void *b) {
+    return lf_float128_to_double(a) != lf_float128_to_double(b);
+}
+
+int __lttf2(const void *a, const void *b) {
+    return lf_float128_to_double(a) < lf_float128_to_double(b);
+}
+
+int __letf2(const void *a, const void *b) {
+    return lf_float128_to_double(a) <= lf_float128_to_double(b);
+}
+
+int __gttf2(const void *a, const void *b) {
+    return lf_float128_to_double(a) > lf_float128_to_double(b);
+}
+
+int __getf2(const void *a, const void *b) {
+    return lf_float128_to_double(a) >= lf_float128_to_double(b);
+}
 
 #endif
 /* ----------------------------------------------------- */
