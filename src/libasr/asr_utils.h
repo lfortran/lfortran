@@ -3662,6 +3662,16 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             if (dims == nullptr) {
                 dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
                 dimsn = tnew->n_dims;
+                // UnboundedPointerArray cannot be reconstructed by
+                // make_Array_t_util auto-detection (it needs the
+                // is_dimension_star && is_argument flags only available during
+                // semantic analysis). Preserve it when duplicating with the
+                // same dimensions.
+                if (!override_physical_type &&
+                    tnew->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                    physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                    override_physical_type = true;
+                }
             }
             return ASRUtils::make_Array_t_util(al, tnew->base.base.loc,
                 duplicated_element_type, dimsp, dimsn, ASR::abiType::Source,
@@ -7801,16 +7811,6 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASRUtils::type_get_past_pointer(arg_type));
             ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_pointer(orig_arg_type));
-            // When the actual argument is UnboundedPointerArray and the formal
-            // parameter was incorrectly changed to DescriptorArray (e.g. by
-            // type duplication that doesn't preserve UnboundedPointerArray),
-            // skip inserting a cast — the argument already matches the
-            // intended calling convention for assumed-size arrays.
-            if (arg_array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
-                orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
-                ASRUtils::is_dimension_empty(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
-                orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
-            }
             bool is_orig_assumed_rank = false;
             if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                 is_orig_assumed_rank = true;
