@@ -5135,6 +5135,16 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
+// Pending bytes for sequential unformatted character records per unit.
+static int32_t seq_char_pending[MAXUNITS];
+static int32_t seq_char_record_len[MAXUNITS];
+
+static inline void seq_char_state_reset(int32_t unit_num) {
+    if (unit_num < 0 || unit_num >= MAXUNITS) return;
+    seq_char_pending[unit_num] = 0;
+    seq_char_record_len[unit_num] = 0;
+}
+
 // Pre-connect standard Fortran units at program startup.
 // The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
 // pre-connected, but their values are processor-dependent. Units 5/6/0 are
@@ -5204,6 +5214,7 @@ static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
 
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding) {
     _lfortran_init_standard_units();
+    seq_char_state_reset(unit_num);
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             // Update existing entry - only update filename if explicitly provided (not NULL)
@@ -5289,6 +5300,7 @@ char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
 }
 
 void remove_from_unit_to_file(int32_t unit_num) {
+    seq_char_state_reset(unit_num);
     int index = -1;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
@@ -6300,6 +6312,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
         exit(1);
     }
     rewind(filep);
+    seq_char_state_reset(unit_num);
 }
 
 LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
@@ -6657,7 +6670,8 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_mode;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -6665,10 +6679,26 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
     }
 
     if (unit_file_bin) {
-        if (fread(p, sizeof(*p), 1, filep) != 1) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
-            exit(1);
+        if (access_mode == 0) {
+            int32_t record_start = 0, record_end = 0;
+            if (fread(&record_start, sizeof(int32_t), 1, filep) != 1 ||
+                fread(p, sizeof(int64_t), 1, filep) != 1 ||
+                fread(&record_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int64_t from sequential binary file.\n");
+                exit(1);
+            }
+            if (record_start != (int32_t)sizeof(int64_t) || record_end != (int32_t)sizeof(int64_t)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid record marker while reading int64_t.\n");
+                exit(1);
+            }
+        } else {
+            if (fread(p, sizeof(*p), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int64_t from stream file.\n");
+                exit(1);
+            }
         }
     } else {
         int64_t temp;
@@ -7103,29 +7133,47 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
             }
             pad_with_spaces(*p, data_length, p_len);
         } else {
-            int32_t data_length = 0;
 
-            if (ftell(filep) == 0) {
-                if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+            if (seq_char_pending[unit_num] == 0) {
+                int32_t marker = 0;
+                if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    printf("Error reading data length from file.\n");
+                    printf("Error reading record marker from file.\n");
                     exit(1);
                 }
+                if (marker < 0) {
+                    if (iostat) { *iostat = 1; return; }
+                    printf("Error: Invalid record marker while reading character data.\n");
+                    exit(1);
+                }
+                seq_char_pending[unit_num] = marker;
+                seq_char_record_len[unit_num] = marker;
             }
 
-            long current_pos = ftell(filep);
-            fseek(filep, 0L, SEEK_END);
-            long end_pos = ftell(filep);
-            fseek(filep, current_pos, SEEK_SET);
-
-            data_length = (int32_t)(end_pos - current_pos - 4);
-
+            int32_t data_length = seq_char_pending[unit_num];
             if (data_length > p_len) data_length = (int32_t)p_len;
 
-            if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
+            if (data_length > 0 && fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 printf("Error reading data from file.\n");
                 exit(1);
+            }
+
+            seq_char_pending[unit_num] -= data_length;
+
+            if (seq_char_pending[unit_num] == 0) {
+                int32_t end_marker = 0;
+                if (fread(&end_marker, sizeof(int32_t), 1, filep) != 1) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    printf("Error reading trailing record marker from file.\n");
+                    exit(1);
+                }
+                if (end_marker != seq_char_record_len[unit_num]) {
+                    if (iostat) { *iostat = 1; return; }
+                    printf("Error: Mismatched record markers while reading character data.\n");
+                    exit(1);
+                }
+                seq_char_state_reset(unit_num);
             }
 
             pad_with_spaces(*p, data_length, p_len);
@@ -8916,7 +8964,8 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 
     bool unit_file_bin;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         fprintf(stderr, "No file found with given unit\n");
         exit(1);
@@ -8934,6 +8983,24 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
         } else if (ferror(fp)) {
             if (iostat) *iostat = 1;
         }
+    } else if (access_id == 0 && seq_char_pending[unit_num] > 0) {
+        if (fseek(fp, (long)seq_char_pending[unit_num], SEEK_CUR) != 0) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error skipping remaining record data in file.\n");
+            exit(1);
+        }
+        int32_t end_marker = 0;
+        if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
+            if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
+            fprintf(stderr, "Error reading trailing record marker from file.\n");
+            exit(1);
+        }
+        if (end_marker != seq_char_record_len[unit_num]) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Mismatched record markers while finalizing read.\n");
+            exit(1);
+        }
+        seq_char_state_reset(unit_num);
     }
 }
 
