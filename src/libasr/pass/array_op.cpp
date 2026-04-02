@@ -1050,6 +1050,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         for( size_t i = 0; i < vars.size(); i++ ) {
+            if (var_ranks[i] == 0) continue;
             Vec<ASR::array_index_t> indices;
             indices.reserve(al, var_ranks[i]);
             for( size_t j = 0; j < var_ranks[i]; j++ ) {
