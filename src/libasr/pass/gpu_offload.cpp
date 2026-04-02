@@ -676,26 +676,20 @@ public:
                     orig_scope, kernel_scope, loc);
             }
 
-            // Copy dependencies from the original variable
-            char **deps = nullptr;
-            size_t n_deps = 0;
-            if (orig_sym && is_a<ASR::Variable_t>(*orig_sym)) {
-                ASR::Variable_t *orig_var = down_cast<ASR::Variable_t>(orig_sym);
-                n_deps = orig_var->n_dependencies;
-                if (n_deps > 0) {
-                    deps = al.allocate<char*>(n_deps);
-                    for (size_t di = 0; di < n_deps; di++) {
-                        deps[di] = orig_var->m_dependencies[di];
-                    }
-                }
-            }
+            ASR::ttype_t *dup_type = ASRUtils::duplicate_type(al, type);
+
+            // Recompute dependencies from the type alone (symbolic_value
+            // and value are nullptr for kernel parameters)
+            SetChar deps_vec;
+            deps_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(
+                al, deps_vec, dup_type, nullptr, nullptr, sym_name);
 
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, sym_name), deps, n_deps,
+                    s2c(al, sym_name), deps_vec.p, deps_vec.size(),
                     ASR::intentType::InOut, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, type),
+                    ASR::storage_typeType::Default, dup_type,
                     type_decl, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
             kernel_scope->add_symbol(sym_name, param);
