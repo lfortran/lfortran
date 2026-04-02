@@ -81,7 +81,49 @@ static inline double lf_float128_to_double(const void *ptr) {
     return (double)ld;
 #endif
 }
+// -----------------------------------------------------
+// fp128 comparison runtime (macOS / no __float128)
+// -----------------------------------------------------
 
+#if defined(__APPLE__) || !HAVE_FLOAT128
+
+    int __eqtf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da == db) ? 0 : 1;
+    }
+
+    int __netf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da != db);
+    }
+
+    int __lttf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da < db);
+    }
+
+    int __letf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da <= db);
+    }
+
+    int __gttf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da > db);
+    }
+
+    int __getf2(const void *a, const void *b) {
+        double da = lf_float128_to_double(a);
+        double db = lf_float128_to_double(b);
+        return (da >= db);
+    }
+
+#endif
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
