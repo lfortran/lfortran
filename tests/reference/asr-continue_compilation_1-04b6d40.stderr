@@ -1,3 +1,20 @@
+semantic error: FUNCTION attribute of 'frexp' conflicts with SUBROUTINE attribute
+  --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
+   |
+53 |        subroutine frexp(x,n)
+   |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+57 |        end subroutine frexp
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^ declared as subroutine here
+   |
+45 |        function frexp(x,n) result(r)
+   |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+   |
+49 |        end function frexp
+   | ...~~~~~~~~~~~~~~~~~~~~~~ previously declared as function here
+
 semantic error: Derived type `another_undefined_type` is not defined
   --> tests/errors/continue_compilation_1.f90:79:9
    |

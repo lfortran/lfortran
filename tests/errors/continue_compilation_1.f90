@@ -41,28 +41,28 @@ module continue_compilation_1_mod
         integer :: x
     end type Base
 
+    interface frexp
+    function frexp(x,n) result(r)
+        real r
+        real, intent(in), value :: x
+        integer, intent(out) :: n
+    end function frexp
+    end interface frexp
+
+    interface frexp_duplicate
+    subroutine frexp(x,n)
+        real r
+        real, intent(in), value :: x
+        integer, intent(out) :: n
+    end subroutine frexp
+    end interface
+    
     type, extends(Base) :: Derived
         real :: r
     end type Derived
 
     type :: type_t
     end type type_t
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
