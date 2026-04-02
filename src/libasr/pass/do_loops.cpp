@@ -46,7 +46,7 @@ public:
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (pass_options.enable_gpu_offloading || pass_options.gpu_offload_metal) {
+        if (pass_options.enable_gpu_offloading) {
             return;
         }
         Vec<ASR::stmt_t*> body;body.reserve(al,1);

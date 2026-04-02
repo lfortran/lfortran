@@ -5,6 +5,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/intrinsic_functions.h>
 
 #include <sstream>
 #include <map>
@@ -32,10 +33,11 @@ public:
                 return "int";
             }
             case ASR::ttypeType::Real: {
-                int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
-                if (kind == 4) return "float";
-                if (kind == 8) return "double";
+                // Metal does not support double precision; use float for all
                 return "float";
+            }
+            case ASR::ttypeType::Logical: {
+                return "bool";
             }
             case ASR::ttypeType::Array: {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -50,11 +52,36 @@ public:
         return type->type == ASR::ttypeType::Array;
     }
 
-    ASR::ttype_t* get_element_type(ASR::ttype_t *type) {
-        if (type->type == ASR::ttypeType::Array) {
-            return ASR::down_cast<ASR::Array_t>(type)->m_type;
+    // Get total number of elements for a multi-dimensional array
+    int64_t get_total_elements(ASR::ttype_t *type) {
+        if (type->type != ASR::ttypeType::Array) return 1;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        int64_t total = 1;
+        for (size_t i = 0; i < arr->n_dims; i++) {
+            if (arr->m_dims[i].m_length &&
+                ASR::is_a<ASR::IntegerConstant_t>(*arr->m_dims[i].m_length)) {
+                total *= ASR::down_cast<ASR::IntegerConstant_t>(
+                    arr->m_dims[i].m_length)->m_n;
+            }
         }
-        return type;
+        return total;
+    }
+
+    // Get dimension sizes for linearized indexing
+    std::vector<int64_t> get_dim_sizes(ASR::ttype_t *type) {
+        std::vector<int64_t> sizes;
+        if (type->type != ASR::ttypeType::Array) return sizes;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t i = 0; i < arr->n_dims; i++) {
+            if (arr->m_dims[i].m_length &&
+                ASR::is_a<ASR::IntegerConstant_t>(*arr->m_dims[i].m_length)) {
+                sizes.push_back(ASR::down_cast<ASR::IntegerConstant_t>(
+                    arr->m_dims[i].m_length)->m_n);
+            } else {
+                sizes.push_back(0);
+            }
+        }
+        return sizes;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
@@ -72,7 +99,6 @@ public:
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
 
-        // Categorize args into buffers and scalars
         struct ArgInfo {
             std::string name;
             ASR::ttype_t *type;
@@ -103,7 +129,6 @@ public:
             }
         }
 
-        // Add thread_position_in_grid for 1D
         if (!args.empty()) src << ",\n";
         src << "    uint __thread_id [[thread_position_in_grid]]";
 
@@ -114,7 +139,6 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
-                // Skip arguments (already declared as kernel parameters)
                 bool is_arg = false;
                 for (size_t i = 0; i < args.size(); i++) {
                     if (args[i].name == std::string(var->m_name)) {
@@ -129,8 +153,6 @@ public:
             }
         }
 
-        // Emit kernel body (skip the loop variable assignment and bounds guard
-        // since we handle them specially)
         for (size_t i = 0; i < x.n_body; i++) {
             visit_stmt(x.m_body[i]);
         }
@@ -160,6 +182,14 @@ public:
                     visit_stmt(if_stmt->m_body[i]);
                 }
                 indent_level--;
+                if (if_stmt->n_orelse > 0) {
+                    src << get_indent() << "} else {\n";
+                    indent_level++;
+                    for (size_t i = 0; i < if_stmt->n_orelse; i++) {
+                        visit_stmt(if_stmt->m_orelse[i]);
+                    }
+                    indent_level--;
+                }
                 src << get_indent() << "}\n";
                 break;
             }
@@ -189,6 +219,11 @@ public:
                 src << c->m_r;
                 break;
             }
+            case ASR::exprType::LogicalConstant: {
+                ASR::LogicalConstant_t *c = ASR::down_cast<ASR::LogicalConstant_t>(expr);
+                src << (c->m_value ? "true" : "false");
+                break;
+            }
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
                 src << "(";
@@ -200,11 +235,19 @@ public:
             }
             case ASR::exprType::RealBinOp: {
                 ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
-                src << "(";
-                visit_expr(op->m_left);
-                src << " " << binop_str(op->m_op) << " ";
-                visit_expr(op->m_right);
-                src << ")";
+                if (op->m_op == ASR::binopType::Pow) {
+                    src << "pow(";
+                    visit_expr(op->m_left);
+                    src << ", ";
+                    visit_expr(op->m_right);
+                    src << ")";
+                } else {
+                    src << "(";
+                    visit_expr(op->m_left);
+                    src << " " << binop_str(op->m_op) << " ";
+                    visit_expr(op->m_right);
+                    src << ")";
+                }
                 break;
             }
             case ASR::exprType::IntegerCompare: {
@@ -216,6 +259,29 @@ public:
                 src << ")";
                 break;
             }
+            case ASR::exprType::RealCompare: {
+                ASR::RealCompare_t *op = ASR::down_cast<ASR::RealCompare_t>(expr);
+                src << "(";
+                visit_expr(op->m_left);
+                src << " " << cmpop_str(op->m_op) << " ";
+                visit_expr(op->m_right);
+                src << ")";
+                break;
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
+                src << "(-(";
+                visit_expr(u->m_arg);
+                src << "))";
+                break;
+            }
+            case ASR::exprType::RealUnaryMinus: {
+                ASR::RealUnaryMinus_t *u = ASR::down_cast<ASR::RealUnaryMinus_t>(expr);
+                src << "(-(";
+                visit_expr(u->m_arg);
+                src << "))";
+                break;
+            }
             case ASR::exprType::Cast: {
                 ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(expr);
                 std::string target_type = metal_type(c->m_type);
@@ -224,20 +290,128 @@ public:
                 src << ")";
                 break;
             }
+            case ASR::exprType::FunctionCall: {
+                ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
+                std::string fn_name(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(fc->m_name)));
+                // Handle lowered intrinsic functions
+                if (fn_name.find("_lcompilers_real_") == 0 ||
+                    fn_name.find("_lcompilers_dble_") == 0) {
+                    std::string target = metal_type(fc->m_type);
+                    src << "((" << target << ")";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_sqrt_") == 0) {
+                    src << "sqrt(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_abs_") == 0) {
+                    src << "abs(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_sin_") == 0) {
+                    src << "sin(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_cos_") == 0) {
+                    src << "cos(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_exp_") == 0) {
+                    src << "exp(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_mod_") == 0 ||
+                           fn_name.find("_lcompilers_optimization_mod_") == 0) {
+                    ASR::ttype_t *type = fc->m_type;
+                    if (type && type->type == ASR::ttypeType::Real) {
+                        src << "fmod(";
+                    } else {
+                        src << "((";
+                    }
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    if (type && type->type == ASR::ttypeType::Real) {
+                        src << ", ";
+                        if (fc->n_args > 1 && fc->m_args[1].m_value)
+                            visit_expr(fc->m_args[1].m_value);
+                        src << ")";
+                    } else {
+                        src << ") % (";
+                        if (fc->n_args > 1 && fc->m_args[1].m_value)
+                            visit_expr(fc->m_args[1].m_value);
+                        src << "))";
+                    }
+                } else if (fn_name.find("_lcompilers_min_") == 0 ||
+                           fn_name.find("_lcompilers_min0_") == 0) {
+                    src << "min(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ", ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_max_") == 0 ||
+                           fn_name.find("_lcompilers_max0_") == 0) {
+                    src << "max(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ", ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
+                } else {
+                    // Generic function call — emit as cast to return type
+                    std::string target = metal_type(fc->m_type);
+                    src << "((" << target << ")(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << "))";
+                }
+                break;
+            }
             case ASR::exprType::ArrayItem: {
                 ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
                 visit_expr(ai->m_v);
                 src << "[";
-                // Metal uses 0-based indexing; Fortran uses 1-based
-                // The index expression already includes the Fortran offset via
-                // the loop variable computation, so we subtract 1 here
-                src << "(int)(";
-                if (ai->n_args > 0 && ai->m_args[0].m_right) {
-                    visit_expr(ai->m_args[0].m_right);
-                } else if (ai->n_args > 0 && ai->m_args[0].m_left) {
-                    visit_expr(ai->m_args[0].m_left);
+                // Compute linearized 0-based index for multi-dim arrays
+                // Fortran: column-major, 1-based
+                // Metal: flat 0-based buffer
+                // For a(i,j) with dims (m,n): index = (j-1)*m + (i-1)
+                ASR::ttype_t *arr_type = ASRUtils::expr_type(ai->m_v);
+                std::vector<int64_t> dim_sizes = get_dim_sizes(arr_type);
+
+                if (ai->n_args == 1) {
+                    // 1D: simple index - 1
+                    ASR::expr_t *idx = ai->m_args[0].m_right ?
+                        ai->m_args[0].m_right : ai->m_args[0].m_left;
+                    if (idx) {
+                        src << "((int)(";
+                        visit_expr(idx);
+                        src << ") - 1)";
+                    } else {
+                        src << "0";
+                    }
+                } else {
+                    // Multi-dim: linearize column-major
+                    // index = (i1-1) + dim[0]*((i2-1) + dim[1]*((i3-1) + ...))
+                    // Build from innermost to outermost
+                    emit_linearized_index(ai, dim_sizes);
                 }
-                src << ") - 1]";
+                src << "]";
+                break;
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t *f =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                emit_intrinsic(f);
                 break;
             }
             case ASR::exprType::GpuThreadIndex: {
@@ -245,7 +419,6 @@ public:
                 break;
             }
             case ASR::exprType::GpuBlockIndex: {
-                // Not used with thread_position_in_grid
                 src << "0";
                 break;
             }
@@ -253,9 +426,107 @@ public:
                 src << "0";
                 break;
             }
+            case ASR::exprType::RealSqrt: {
+                ASR::RealSqrt_t *rs = ASR::down_cast<ASR::RealSqrt_t>(expr);
+                src << "sqrt(";
+                visit_expr(rs->m_arg);
+                src << ")";
+                break;
+            }
             default:
                 src << "/* unsupported expr type " << expr->type << " */";
                 break;
+        }
+    }
+
+    void emit_linearized_index(ASR::ArrayItem_t *ai,
+                               std::vector<int64_t> &dim_sizes) {
+        // Column-major linearization: index = sum_d( (idx_d - 1) * stride_d )
+        // stride_0 = 1, stride_1 = dim[0], stride_2 = dim[0]*dim[1], ...
+        bool first = true;
+        int64_t stride = 1;
+        for (size_t d = 0; d < ai->n_args; d++) {
+            ASR::expr_t *idx = ai->m_args[d].m_right ?
+                ai->m_args[d].m_right : ai->m_args[d].m_left;
+            if (!idx) continue;
+            if (!first) src << " + ";
+            first = false;
+            if (stride == 1) {
+                src << "((int)(";
+                visit_expr(idx);
+                src << ") - 1)";
+            } else {
+                src << "(" << stride << " * ((int)(";
+                visit_expr(idx);
+                src << ") - 1))";
+            }
+            if (d < dim_sizes.size()) {
+                stride *= dim_sizes[d];
+            }
+        }
+    }
+
+    void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        int64_t id = f->m_intrinsic_id;
+
+        if (id == static_cast<int64_t>(IEF::Sqrt)) {
+            src << "sqrt(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Abs)) {
+            src << "abs(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Sin)) {
+            src << "sin(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Cos)) {
+            src << "cos(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Exp)) {
+            src << "exp(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Mod)) {
+            // mod(a,b) in Fortran → a % b for integers, fmod for reals
+            ASR::ttype_t *type = ASRUtils::expr_type(f->m_args[0]);
+            if (type->type == ASR::ttypeType::Real) {
+                src << "fmod(";
+                visit_expr(f->m_args[0]);
+                src << ", ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            } else {
+                src << "(";
+                visit_expr(f->m_args[0]);
+                src << " % ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            }
+        } else if (id == static_cast<int64_t>(IEF::Min)) {
+            src << "min(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Max)) {
+            src << "max(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Real)) {
+            // Real cast: just emit the argument with a float cast
+            src << "((float)(";
+            visit_expr(f->m_args[0]);
+            src << "))";
+        } else {
+            src << "/* unsupported intrinsic " << id << " */(";
+            if (f->n_args > 0) visit_expr(f->m_args[0]);
+            src << ")";
         }
     }
 

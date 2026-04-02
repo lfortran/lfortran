@@ -9,6 +9,7 @@
 #include <libasr/string_utils.h>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace LCompilers {
@@ -18,7 +19,7 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
-// Collects all symbols referenced in a DoConcurrentLoop body+head
+// Collects all symbols referenced in expressions/statements
 class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
 public:
     Allocator &al;
@@ -64,6 +65,30 @@ public:
     }
 };
 
+// Collects local variables used in do concurrent body that are NOT
+// arrays and NOT the loop variables — these are per-thread temporaries
+class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
+public:
+    std::set<std::string> &local_vars;
+    std::set<std::string> &assigned_vars;
+
+    GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av)
+        : local_vars(lv), assigned_vars(av) {}
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        // Check if target is a simple Var (not ArrayItem)
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
+            std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
+            ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
+            if (!ASRUtils::is_array(type)) {
+                assigned_vars.insert(name);
+            }
+        }
+        ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
+    }
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -74,28 +99,113 @@ public:
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (!pass_options.gpu_offload_metal) {
-            return;
+    // Duplicate an expression, creating fresh Var references pointing to
+    // the given scope. Used to create kernel-scope copies of head expressions.
+    ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope) {
+        if (!expr) return nullptr;
+        Location loc = expr->base.loc;
+        switch (expr->type) {
+            case ASR::exprType::Var: {
+                ASR::Var_t *v = down_cast<ASR::Var_t>(expr);
+                std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
+                ASR::symbol_t *sym = scope->get_symbol(name);
+                if (sym) {
+                    return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                }
+                return expr;
+            }
+            case ASR::exprType::IntegerConstant: {
+                ASR::IntegerConstant_t *c = down_cast<ASR::IntegerConstant_t>(expr);
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, c->m_n, c->m_type, c->m_intboz_type));
+            }
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t *op = down_cast<ASR::IntegerBinOp_t>(expr);
+                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    dup_expr_to_scope(op->m_left, scope), op->m_op,
+                    dup_expr_to_scope(op->m_right, scope),
+                    op->m_type, nullptr));
+            }
+            default:
+                return expr;
         }
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (!pass_options.gpu_offload_metal) return;
+
+        // Skip loops with reduce clause (let do_loops handle as regular loop)
+        if (x.n_reduction > 0) return;
 
         Location loc = x.base.base.loc;
+        size_t n_dims = x.n_head;
+        if (n_dims == 0 || n_dims > 3) return;
 
-        if (x.n_head != 1) return;
+        for (size_t d = 0; d < n_dims; d++) {
+            if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) return;
+        }
 
-        ASR::do_loop_head_t &head = x.m_head[0];
-        if (!head.m_v || !head.m_start || !head.m_end) return;
-
-        // 1. Collect all symbols used in the loop
+        // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
         GpuSymbolCollector collector(al, involved_syms);
         collector.visit_DoConcurrentLoop(x);
 
-        ASR::Var_t *loop_var = ASR::down_cast<ASR::Var_t>(head.m_v);
-        std::string loop_var_name = to_lower(ASRUtils::symbol_name(loop_var->m_v));
+        // Skip loops containing real(8)/integer(8) types — Metal has no double/int64 support
+        for (auto &sym : involved_syms) {
+            ASR::ttype_t *t = sym.second.first;
+            ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
+            if (base_t->type == ASR::ttypeType::Real &&
+                ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
+            if (base_t->type == ASR::ttypeType::Integer &&
+                ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+        }
 
-        // Remove loop variable from involved_syms (kernel computes it)
-        involved_syms.erase(loop_var_name);
+        // Collect loop variable names
+        std::vector<std::string> loop_var_names;
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            loop_var_names.push_back(to_lower(ASRUtils::symbol_name(lv->m_v)));
+        }
+
+        // Find local scalar temporaries (assigned but not arrays, not loop vars)
+        std::set<std::string> local_vars, assigned_vars;
+        GpuLocalVarCollector lv_collector(local_vars, assigned_vars);
+        for (size_t i = 0; i < x.n_body; i++) {
+            lv_collector.visit_stmt(*x.m_body[i]);
+        }
+
+        // Separate into kernel params vs local vars
+        // Params: arrays + scalars that are read but NOT assigned in loop body
+        // (unless they're also read from arrays, in which case they're params)
+        // Local: scalars that are assigned in the loop body and not arrays
+        std::set<std::string> loop_var_set(loop_var_names.begin(), loop_var_names.end());
+
+        // Remove loop variables from involved_syms (kernel computes them)
+        for (auto &lvn : loop_var_names) {
+            involved_syms.erase(lvn);
+        }
+
+        // Identify which symbols are local temporaries (assigned scalar, non-array)
+        // vs kernel parameters (arrays or read-only scalars)
+        std::set<std::string> local_scalar_names;
+        for (auto &name : assigned_vars) {
+            if (loop_var_set.count(name)) continue;
+            auto it = involved_syms.find(name);
+            if (it != involved_syms.end()) {
+                ASR::ttype_t *type = it->second.first;
+                if (!ASRUtils::is_array(type)) {
+                    // Check if this variable is used as an array argument too
+                    // (e.g., a scalar that's also passed). For simplicity, only
+                    // treat as local if it's a simple scalar temp.
+                    local_scalar_names.insert(name);
+                }
+            }
+        }
+
+        // Remove local scalars from involved_syms (they become kernel locals)
+        for (auto &name : local_scalar_names) {
+            involved_syms.erase(name);
+        }
 
         // 2. Create kernel scope and parameters
         SymbolTable *tu_symtab = tu.m_symtab;
@@ -113,7 +223,6 @@ public:
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *type = sym_info.first;
 
-            // Create parameter in kernel scope
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
                     s2c(al, sym_name), nullptr, 0,
@@ -126,7 +235,6 @@ public:
             kernel_args.push_back(al,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
 
-            // Build call arg pointing to original symbol
             ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
             ASR::call_arg_t carg;
             carg.loc = loc;
@@ -134,27 +242,49 @@ public:
             call_args.push_back(al, carg);
         }
 
-        // Create loop variable in kernel scope (local, not a parameter)
-        {
-            ASR::ttype_t *loop_var_type = ASRUtils::symbol_type(loop_var->m_v);
+        // Create loop variables in kernel scope (local, not parameters)
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            ASR::ttype_t *loop_var_type = ASRUtils::symbol_type(lv->m_v);
+            std::string lvn = loop_var_names[d];
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, loop_var_name), nullptr, 0,
+                    s2c(al, lvn), nullptr, 0,
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default,
                     ASRUtils::duplicate_type(al, loop_var_type),
                     nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
-            kernel_scope->add_symbol(loop_var_name, param);
+            kernel_scope->add_symbol(lvn, param);
         }
 
-        // Save host-side refs to start/end BEFORE in-place replacement
-        // (replacement will modify the head to point to kernel scope)
-        ASR::expr_t *host_start = head.m_start;
-        ASR::expr_t *host_end = head.m_end;
+        // Create local scalar temporaries in kernel scope
+        for (auto &name : local_scalar_names) {
+            auto it_orig = orig_scope->resolve_symbol(name);
+            if (!it_orig) continue;
+            ASR::ttype_t *type = ASRUtils::symbol_type(it_orig);
+            ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
+                    s2c(al, name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+            kernel_scope->add_symbol(name, param);
+        }
 
-        // 3. Replace Var references in-place to point to kernel scope
-        // Only replace in the BODY, not the head (we need the head for host-side)
+        // Save host-side head expressions BEFORE in-place replacement
+        struct DimInfo {
+            ASR::expr_t *host_start;
+            ASR::expr_t *host_end;
+        };
+        std::vector<DimInfo> dim_info;
+        for (size_t d = 0; d < n_dims; d++) {
+            dim_info.push_back({x.m_head[d].m_start, x.m_head[d].m_end});
+        }
+
+        // 3. Replace Var references in body to point to kernel scope
         GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
         for (size_t i = 0; i < x.n_body; i++) {
             sym_replacer.visit_stmt(*x.m_body[i]);
@@ -162,7 +292,7 @@ public:
 
         // 4. Build kernel body
         Vec<ASR::stmt_t*> kernel_body;
-        kernel_body.reserve(al, x.n_body + 2);
+        kernel_body.reserve(al, x.n_body + 2 * n_dims + 1);
 
         ASR::ttype_t *int_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
@@ -174,46 +304,59 @@ public:
         ASR::expr_t *block_sz = ASRUtils::EXPR(
             ASR::make_GpuBlockSize_t(al, loc, 0, int_type, nullptr));
 
-        // global_idx = block_idx * block_size + thread_idx
-        ASR::expr_t *global_idx = ASRUtils::EXPR(
+        // flat_idx = block_idx * block_size + thread_idx
+        ASR::expr_t *flat_idx = ASRUtils::EXPR(
             ASR::make_IntegerBinOp_t(al, loc,
                 ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     block_idx, ASR::binopType::Mul, block_sz, int_type, nullptr)),
                 ASR::binopType::Add, thread_idx, int_type, nullptr));
 
-        // i = global_idx + start
-        // Create kernel-scope version of start (it may contain Vars from original scope)
-        // For simplicity, create a fresh constant 1 for start
-        ASR::expr_t *kernel_start = ASRUtils::EXPR(
-            ASR::make_IntegerConstant_t(al, loc, 1, int_type,
-                ASR::integerbozType::Decimal));
-        // For end, create a Var referencing kernel scope's n (if it exists)
-        ASR::symbol_t *kernel_n = kernel_scope->get_symbol("n");
-        ASR::expr_t *kernel_end;
-        if (kernel_n) {
-            kernel_end = ASRUtils::EXPR(ASR::make_Var_t(al, loc, kernel_n));
-        } else {
-            kernel_end = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 1000, int_type,
-                    ASR::integerbozType::Decimal));
+        // For multi-dimensional: linearize index
+        // For do concurrent (i=1:m, j=1:n, k=1:p):
+        //   flat = flat_idx
+        //   i = flat % m + 1;  flat = flat / m
+        //   j = flat % n + 1;  flat = flat / n
+        //   k = flat + 1  (last dim)
+        //   guard: flat_idx >= m*n*k → return
+
+        // Create kernel-scope versions of start/end for each dimension
+        std::vector<ASR::expr_t*> kernel_starts, kernel_ends;
+        for (size_t d = 0; d < n_dims; d++) {
+            kernel_starts.push_back(dup_expr_to_scope(dim_info[d].host_start, kernel_scope));
+            kernel_ends.push_back(dup_expr_to_scope(dim_info[d].host_end, kernel_scope));
         }
 
-        ASR::expr_t *i_value = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc, global_idx, ASR::binopType::Add,
-                kernel_start, int_type, nullptr));
+        // Compute total_elements for host-side grid size
+        // Also compute per-dim range: range_d = end_d - start_d + 1
+        // For kernel: dim_size_d = end_d - start_d + 1
+        ASR::expr_t *one_const = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, 1, int_type,
+                ASR::integerbozType::Decimal));
 
-        ASR::symbol_t *kernel_loop_var = kernel_scope->get_symbol(loop_var_name);
-        ASR::expr_t *kernel_i = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, kernel_loop_var));
+        // Compute total flat size for guard
+        ASR::expr_t *total_size_kernel = nullptr;
+        for (size_t d = 0; d < n_dims; d++) {
+            // dim_range = kernel_end - kernel_start + 1
+            ASR::expr_t *dim_range = ASRUtils::EXPR(
+                ASR::make_IntegerBinOp_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        kernel_ends[d], ASR::binopType::Sub,
+                        kernel_starts[d], int_type, nullptr)),
+                    ASR::binopType::Add, one_const, int_type, nullptr));
+            if (total_size_kernel == nullptr) {
+                total_size_kernel = dim_range;
+            } else {
+                total_size_kernel = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        total_size_kernel, ASR::binopType::Mul,
+                        dim_range, int_type, nullptr));
+            }
+        }
 
-        // i = global_idx + start
-        kernel_body.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc, kernel_i, i_value, nullptr, false, false)));
-
-        // if (i > end) return
+        // Guard: if (flat_idx >= total_size) return
         ASR::expr_t *guard = ASRUtils::EXPR(
-            ASR::make_IntegerCompare_t(al, loc, kernel_i,
-                ASR::cmpopType::Gt, kernel_end,
+            ASR::make_IntegerCompare_t(al, loc, flat_idx,
+                ASR::cmpopType::GtE, total_size_kernel,
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
         Vec<ASR::stmt_t*> guard_body;
         guard_body.reserve(al, 1);
@@ -225,6 +368,79 @@ public:
                 guard_body.p, guard_body.n,
                 guard_else.p, guard_else.n)));
 
+        // Compute per-dim loop variable from flat_idx
+        // We need a "remaining" variable in kernel scope
+        std::string remain_name = "__flat_idx";
+        {
+            ASR::symbol_t *remain_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
+                    s2c(al, remain_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, int_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+            kernel_scope->add_symbol(remain_name, remain_sym);
+        }
+        ASR::expr_t *remain_var = ASRUtils::EXPR(
+            ASR::make_Var_t(al, loc, kernel_scope->get_symbol(remain_name)));
+
+        // __flat_idx = flat_idx (the raw thread index)
+        kernel_body.push_back(al, ASRUtils::STMT(
+            ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false)));
+
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::expr_t *dim_range = ASRUtils::EXPR(
+                ASR::make_IntegerBinOp_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        kernel_ends[d], ASR::binopType::Sub,
+                        kernel_starts[d], int_type, nullptr)),
+                    ASR::binopType::Add, one_const, int_type, nullptr));
+
+            ASR::symbol_t *kvar = kernel_scope->get_symbol(loop_var_names[d]);
+            ASR::expr_t *kvar_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, kvar));
+
+            if (d < n_dims - 1) {
+                // loop_var = __flat_idx % dim_range + start
+                // Since ASR has no Mod binop, compute as: a - (a/b)*b
+                ASR::expr_t *div_part = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        remain_var, ASR::binopType::Div,
+                        dim_range, int_type, nullptr));
+                ASR::expr_t *mul_part = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        div_part, ASR::binopType::Mul,
+                        dim_range, int_type, nullptr));
+                ASR::expr_t *mod_val = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        remain_var, ASR::binopType::Sub,
+                        mul_part, int_type, nullptr));
+                ASR::expr_t *val = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        mod_val, ASR::binopType::Add,
+                        kernel_starts[d], int_type, nullptr));
+                kernel_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+
+                // __flat_idx = __flat_idx / dim_range
+                ASR::expr_t *div_val = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        remain_var, ASR::binopType::Div,
+                        dim_range, int_type, nullptr));
+                kernel_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, remain_var, div_val, nullptr, false, false)));
+            } else {
+                // Last dim: loop_var = __flat_idx + start
+                ASR::expr_t *val = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        remain_var, ASR::binopType::Add,
+                        kernel_starts[d], int_type, nullptr));
+                kernel_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+            }
+        }
+
         // Add original loop body (already remapped in-place)
         for (size_t i = 0; i < x.n_body; i++) {
             kernel_body.push_back(al, x.m_body[i]);
@@ -234,7 +450,7 @@ public:
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, kernel_args.n);
         for (size_t i = 0; i < kernel_args.n; i++) {
-            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel_args.p[i]);
+            ASR::Var_t *v = down_cast<ASR::Var_t>(kernel_args.p[i]);
             arg_types.push_back(al, ASRUtils::symbol_type(v->m_v));
         }
         ASR::ttype_t *fn_sig = ASRUtils::TYPE(
@@ -260,16 +476,36 @@ public:
             ASR::make_IntegerConstant_t(al, loc, 256, int_type,
                 ASR::integerbozType::Decimal));
 
-        // grid_size = (end - start + 256) / 256 using host scope refs
+        // Compute host-side total_elements = product of (end_d - start_d + 1)
+        ASR::expr_t *host_one = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, 1, int_type,
+                ASR::integerbozType::Decimal));
+        ASR::expr_t *host_total = nullptr;
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::expr_t *dim_range = ASRUtils::EXPR(
+                ASR::make_IntegerBinOp_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        dim_info[d].host_end, ASR::binopType::Sub,
+                        dim_info[d].host_start, int_type, nullptr)),
+                    ASR::binopType::Add, host_one, int_type, nullptr));
+            if (host_total == nullptr) {
+                host_total = dim_range;
+            } else {
+                host_total = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc,
+                        host_total, ASR::binopType::Mul,
+                        dim_range, int_type, nullptr));
+            }
+        }
 
-        ASR::expr_t *range = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc, host_end, ASR::binopType::Sub,
-                host_start, int_type, nullptr));
-        ASR::expr_t *range_plus = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc, range, ASR::binopType::Add,
-                block_size_const, int_type, nullptr));
+        // grid_size = (total + 255) / 256
+        ASR::expr_t *grid_padded = ASRUtils::EXPR(
+            ASR::make_IntegerBinOp_t(al, loc, host_total, ASR::binopType::Add,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 255, int_type,
+                    ASR::integerbozType::Decimal)),
+                int_type, nullptr));
         ASR::expr_t *grid_size = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc, range_plus, ASR::binopType::Div,
+            ASR::make_IntegerBinOp_t(al, loc, grid_padded, ASR::binopType::Div,
                 block_size_const, int_type, nullptr));
 
         pass_result.push_back(al, ASRUtils::STMT(
