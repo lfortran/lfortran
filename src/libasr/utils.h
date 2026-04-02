@@ -100,19 +100,6 @@ struct CompilerOptions {
     bool target_offload_enabled = false;
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
-    // Metadata for VLA workspace buffers in Metal GPU kernels.
-    // Populated by asr_to_metal, consumed by asr_to_llvm.
-    struct GpuVlaDim {
-        bool is_constant;
-        int64_t constant_value;
-        size_t call_arg_index;
-    };
-    struct GpuVlaWorkspace {
-        int buffer_index;
-        int elem_size;
-        std::vector<GpuVlaDim> dims;
-    };
-    std::vector<GpuVlaWorkspace> gpu_vla_workspaces;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;

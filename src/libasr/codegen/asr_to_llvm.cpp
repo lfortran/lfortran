@@ -63,6 +63,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/codegen/llvm_compat.h>
 #include <libasr/codegen/asr_to_metal.h>
+#include <libasr/codegen/gpu_utils.h>
 
 namespace LCompilers {
 
@@ -18966,7 +18967,9 @@ public:
         // buffer parameter.  Here we allocate host-side memory for those
         // buffers, pass them to the kernel, and free them after launch.
         std::vector<llvm::Value*> vla_workspace_ptrs;
-        if (!compiler_options.gpu_vla_workspaces.empty()) {
+        std::vector<GpuVlaWorkspace> gpu_vla_workspaces =
+            analyze_gpu_vla_workspaces(*kernel_func);
+        if (!gpu_vla_workspaces.empty()) {
             // Evaluate grid/block sizes to know the total thread count
             this->visit_expr(*x.m_grid_size);
             llvm::Value *gs = tmp;
@@ -18981,7 +18984,7 @@ public:
             llvm::Function *malloc_fn =
                 get_gpu_runtime_func("malloc", malloc_ft);
 
-            for (auto &ws : compiler_options.gpu_vla_workspaces) {
+            for (auto &ws : gpu_vla_workspaces) {
                 llvm::Value *per_thread_elems =
                     llvm::ConstantInt::get(i64, 1);
                 for (auto &dim : ws.dims) {
