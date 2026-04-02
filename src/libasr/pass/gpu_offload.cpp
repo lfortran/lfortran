@@ -639,13 +639,25 @@ public:
 
         // Detect if the do concurrent is inside a Block scope. If so,
         // block-local variables need to be collected as kernel parameters
-        // rather than skipped.
+        // rather than skipped. Walk up through AssociateBlock parents to
+        // find the enclosing Block (e.g., DoConcurrentLoop inside
+        // AssociateBlock inside Block).
         SymbolTable *enclosing_block_scope = nullptr;
-        if (current_scope->asr_owner &&
-            current_scope->asr_owner->type == ASR::asrType::symbol &&
-            is_a<ASR::Block_t>(
-                *down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
-            enclosing_block_scope = current_scope;
+        {
+            SymbolTable *scope = current_scope;
+            while (scope && scope->asr_owner &&
+                   scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (is_a<ASR::Block_t>(*owner_sym)) {
+                    enclosing_block_scope = scope;
+                    break;
+                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                    scope = scope->parent;
+                } else {
+                    break;
+                }
+            }
         }
 
         // 1. Collect all symbols from body AND head expressions
