@@ -3981,6 +3981,15 @@ public:
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                // For Pointer(Array(UnboundedPointerArray)), the initial load at
+                // the LLVM::is_llvm_pointer check gives float** (pointer to the
+                // data pointer). We need one more dereference to get float* (the
+                // actual data pointer) for the GEP-based element access.
+                if ( LLVM::is_llvm_pointer(*x_mv_type) ) {
+                    llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_v, x_mv_type_, module.get());
+                    array = llvm_utils->CreateLoad2(array_type, array);
+                }
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                 llvm::Type* type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
@@ -5222,7 +5231,9 @@ public:
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
-            if (ASRUtils::is_array(x.m_type)) {  // memorize arrays only.
+            if (ASRUtils::is_array(x.m_type) &&
+                ASRUtils::extract_physical_type(x.m_type) !=
+                    ASR::array_physical_typeType::UnboundedPointerArray) {  // memorize arrays only.
                 allocatable_array_details.push_back(
                     { ASRUtils::EXPR(ASR::make_Var_t(
                           al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
@@ -5238,7 +5249,9 @@ public:
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
-                } else if (ASRUtils::is_array(x.m_type)) {
+                } else if (ASRUtils::is_array(x.m_type) &&
+                           ASRUtils::extract_physical_type(x.m_type) !=
+                               ASR::array_physical_typeType::UnboundedPointerArray) {
                     // For pointer/allocatable array module variables, create a
                     // companion global descriptor so the pointer is never NULL.
                     // In separate compilation, main() cannot initialize
@@ -9347,6 +9360,21 @@ public:
                         case ASR::array_physical_typeType::PointerArray: {
                             break;
                         }
+                        case ASR::array_physical_typeType::UnboundedPointerArray: {
+                            // For UPA parameters stored directly as float* in
+                            // llvm_symtab (no alloca), we need to create an
+                            // alloca so that Pointer(UPA) globals (float**)
+                            // can point to it through one level of indirection.
+                            if (!llvm::isa<llvm::AllocaInst>(llvm_value) &&
+                                !llvm::isa<llvm::GlobalVariable>(llvm_value)) {
+                                llvm::Type* val_type = llvm_value->getType();
+                                llvm::AllocaInst* alloca_ = llvm_utils->CreateAlloca(
+                                    *builder, val_type, nullptr, "upa_ptr");
+                                builder->CreateStore(llvm_value, alloca_);
+                                llvm_value = alloca_;
+                            }
+                            break;
+                        }
                         default: {
                             LCOMPILERS_ASSERT(false);
                         }
@@ -11423,31 +11451,6 @@ public:
         builder->CreateStore(tmp_cast, data_ptr);
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-        Vec<ASR::dimension_t> patched_dims;
-        bool need_patch = false;
-        for (int i = 0; i < n_dims; i++) {
-            if (m_dims[i].m_start == nullptr || m_dims[i].m_length == nullptr) { // unbounded/assumed-size
-                need_patch = true;
-                break;
-            }
-        }
-        if (need_patch) {
-            patched_dims.reserve(al, n_dims);
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
-                al, m_type->base.loc, compiler_options.po.default_integer_kind));
-            for (int i = 0; i < n_dims; i++) {
-                ASR::dimension_t dim;
-                dim.loc = m_dims[i].loc;
-                dim.m_start = m_dims[i].m_start ? m_dims[i].m_start
-                    : ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, m_type->base.loc, 1, int_type));
-                dim.m_length = m_dims[i].m_length ? m_dims[i].m_length
-                    : ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, m_type->base.loc, 0, int_type));
-                patched_dims.push_back(al, dim);
-            }
-            m_dims = patched_dims.p;
-        }
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
         fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
