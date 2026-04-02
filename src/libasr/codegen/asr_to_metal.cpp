@@ -43,6 +43,9 @@ public:
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
                 return metal_type(arr->m_type);
             }
+            case ASR::ttypeType::StructType: {
+                return "/* unsupported struct type */";
+            }
             default:
                 return "float";
         }
@@ -96,20 +99,64 @@ public:
         }
     }
 
+    // Get the Metal struct name for a struct-typed variable
+    std::string get_struct_name(ASR::Variable_t *var) {
+        if (var->m_type_declaration) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                var->m_type_declaration);
+            if (ASR::is_a<ASR::Struct_t>(*s)) {
+                return ASR::down_cast<ASR::Struct_t>(s)->m_name;
+            }
+        }
+        return "unknown_struct";
+    }
+
+    bool is_struct_type(ASR::ttype_t *type) {
+        return ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(type));
+    }
+
+    // Emit a Metal struct definition for a Struct symbol
+    void emit_struct_def(ASR::Struct_t *st) {
+        src << "struct " << st->m_name << " {\n";
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+            if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
+                ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+                src << "    " << metal_type(mv->m_type) << " "
+                    << mv->m_name << ";\n";
+            }
+        }
+        src << "};\n\n";
+    }
+
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
+
+        // Emit struct type definitions used in this kernel
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                emit_struct_def(ASR::down_cast<ASR::Struct_t>(item.second));
+            }
+        }
 
         struct ArgInfo {
             std::string name;
             ASR::ttype_t *type;
             bool is_array;
+            bool is_struct;
+            std::string struct_name;
         };
         std::vector<ArgInfo> args;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
-            std::string arg_name(ASRUtils::symbol_name(v->m_v));
-            ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
-            args.push_back({arg_name, type, is_array_type(type)});
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            std::string arg_name(var->m_name);
+            ASR::ttype_t *type = var->m_type;
+            bool is_st = is_struct_type(type);
+            std::string sn = is_st ? get_struct_name(var) : "";
+            args.push_back({arg_name, type, is_array_type(type), is_st, sn});
         }
 
         src << "kernel void " << name << "(\n";
@@ -119,6 +166,9 @@ public:
             src << "    ";
             if (args[i].is_array) {
                 src << "device " << metal_type(args[i].type) << "* "
+                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+            } else if (args[i].is_struct) {
+                src << "constant " << args[i].struct_name << "& "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
             } else {
                 src << "constant " << metal_type(args[i].type) << "& "
@@ -147,8 +197,13 @@ public:
                     }
                 }
                 if (!is_arg) {
-                    src << get_indent() << metal_type(var->m_type) << " "
-                        << var->m_name << ";\n";
+                    if (is_struct_type(var->m_type)) {
+                        src << get_indent() << get_struct_name(var) << " "
+                            << var->m_name << ";\n";
+                    } else {
+                        src << get_indent() << metal_type(var->m_type) << " "
+                            << var->m_name << ";\n";
+                    }
                 }
             }
         }
@@ -431,6 +486,15 @@ public:
                 src << "sqrt(";
                 visit_expr(rs->m_arg);
                 src << ")";
+                break;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t *sm =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                visit_expr(sm->m_v);
+                src << ".";
+                ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(sm->m_m);
+                src << ASRUtils::symbol_name(mem);
                 break;
             }
             default:

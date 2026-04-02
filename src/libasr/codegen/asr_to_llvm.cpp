@@ -18902,6 +18902,18 @@ public:
                     byte_size = llvm::ConstantInt::get(i64, 1024 * elem_size);
                 }
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+            } else if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_type))) {
+                // Struct: arg_val is already a pointer to the struct data
+                llvm::Value *struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
+                llvm::Type *struct_type = arg_val->getType();
+                if (struct_type->isPointerTy()) {
+                    struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, arg_type, module.get());
+                }
+                uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
+                llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
+                builder->CreateCall(set_scalar_fn, {gpu_kernel, idx, struct_ptr, struct_size});
             } else {
                 // Scalar: store to alloca, pass pointer + size
                 llvm::AllocaInst *scalar_alloca = llvm_utils->CreateAlloca(arg_val->getType());

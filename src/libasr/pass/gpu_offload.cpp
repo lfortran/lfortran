@@ -51,6 +51,20 @@ public:
             x->m_v = new_sym;
         }
     }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+        // Replace the struct variable expression (e.g., Var x)
+        ASR::expr_t **current_expr_copy = current_expr;
+        current_expr = &(x->m_v);
+        replace_expr(x->m_v);
+        current_expr = current_expr_copy;
+        // Replace the member symbol to point to kernel scope's ExternalSymbol
+        std::string mem_name = to_lower(ASRUtils::symbol_name(x->m_m));
+        ASR::symbol_t *new_mem = kernel_scope.get_symbol(mem_name);
+        if (new_mem) {
+            x->m_m = new_mem;
+        }
+    }
 };
 
 class GpuReplaceSymbolsVisitor :
@@ -116,6 +130,16 @@ public:
                 assigned_vars.insert(name);
             }
         }
+        // Check if target is a StructInstanceMember (e.g., x%v = ...)
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+            ASR::StructInstanceMember_t *sm =
+                ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+            if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(sm->m_v);
+                std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
+                assigned_vars.insert(name);
+            }
+        }
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
     }
 };
@@ -142,6 +166,90 @@ public:
         replacer.current_expr = &copy;
         replacer.replace_expr(copy);
         return copy;
+    }
+
+    // For a struct-typed variable, get the type_declaration symbol
+    // from the original scope and ensure the Struct (and its member
+    // ExternalSymbols) exist in the kernel scope.
+    ASR::symbol_t* import_struct_type(ASR::symbol_t *orig_sym,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const Location &loc) {
+        if (!is_a<ASR::Variable_t>(*orig_sym)) return nullptr;
+        ASR::Variable_t *var = down_cast<ASR::Variable_t>(orig_sym);
+        if (!ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(var->m_type))) return nullptr;
+        ASR::symbol_t *type_decl = var->m_type_declaration;
+        if (!type_decl) return nullptr;
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
+        if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
+        ASR::Struct_t *orig_struct = down_cast<ASR::Struct_t>(struct_sym);
+        std::string struct_name = orig_struct->m_name;
+
+        // If already imported, return existing
+        ASR::symbol_t *existing = kernel_scope->get_symbol(struct_name);
+        if (existing) return existing;
+
+        // Deep-copy the Struct into kernel scope
+        SymbolTable *new_st = al.make_new<SymbolTable>(kernel_scope);
+        for (auto &item : orig_struct->m_symtab->get_scope()) {
+            ASR::symbol_t *member = item.second;
+            if (is_a<ASR::Variable_t>(*member)) {
+                ASR::Variable_t *mv = down_cast<ASR::Variable_t>(member);
+                ASR::symbol_t *new_member = down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, new_st,
+                        s2c(al, item.first), nullptr, 0,
+                        mv->m_intent, nullptr, nullptr,
+                        mv->m_storage, ASRUtils::duplicate_type(al, mv->m_type),
+                        nullptr, mv->m_abi, mv->m_access,
+                        mv->m_presence, false));
+                new_st->add_symbol(item.first, new_member);
+            }
+        }
+
+        // Duplicate the struct signature type
+        ASR::ttype_t *new_sig = ASRUtils::duplicate_type(al, orig_struct->m_struct_signature);
+
+        // Copy member names
+        char **new_members = al.allocate<char*>(orig_struct->n_members);
+        for (size_t i = 0; i < orig_struct->n_members; i++) {
+            new_members[i] = orig_struct->m_members[i];
+        }
+
+        ASR::asr_t *new_struct = ASR::make_Struct_t(al, loc,
+            new_st, s2c(al, struct_name), new_sig,
+            nullptr, 0,
+            new_members, orig_struct->n_members,
+            nullptr, 0,
+            orig_struct->m_abi, orig_struct->m_access,
+            orig_struct->m_is_packed, orig_struct->m_is_abstract,
+            nullptr, 0, nullptr, nullptr, nullptr, 0);
+        ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
+        kernel_scope->add_symbol(struct_name, kernel_struct);
+
+        // Create ExternalSymbol entries in kernel scope for each member,
+        // so that StructInstanceMember can reference them.
+        for (auto &item : orig_scope->get_scope()) {
+            if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+            ASR::ExternalSymbol_t *es = down_cast<ASR::ExternalSymbol_t>(item.second);
+            ASR::symbol_t *es_external = ASRUtils::symbol_get_past_external(es->m_external);
+            // Check if this ExternalSymbol refers to a member of our struct
+            if (ASRUtils::symbol_parent_symtab(es_external) == orig_struct->m_symtab) {
+                std::string es_name = item.first;
+                if (kernel_scope->get_symbol(es_name)) continue;
+                ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
+                    es->m_original_name);
+                if (!new_member_in_struct) continue;
+                ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
+                    kernel_scope, s2c(al, es_name),
+                    new_member_in_struct, s2c(al, struct_name),
+                    nullptr, 0, s2c(al, es->m_original_name),
+                    es->m_access);
+                kernel_scope->add_symbol(es_name,
+                    down_cast<ASR::symbol_t>(new_es));
+            }
+        }
+
+        return kernel_struct;
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
@@ -283,19 +391,26 @@ public:
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *type = sym_info.first;
 
+            // For struct-typed variables, import the Struct into kernel scope
+            ASR::symbol_t *type_decl = nullptr;
+            ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            if (orig_sym) {
+                type_decl = import_struct_type(orig_sym,
+                    orig_scope, kernel_scope, loc);
+            }
+
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
                     s2c(al, sym_name), nullptr, 0,
                     ASR::intentType::InOut, nullptr, nullptr,
                     ASR::storage_typeType::Default,
                     ASRUtils::duplicate_type(al, type),
-                    nullptr, ASR::abiType::Source,
+                    type_decl, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
             kernel_scope->add_symbol(sym_name, param);
             kernel_args.push_back(al,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
 
-            ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
             ASR::call_arg_t carg;
             carg.loc = loc;
             carg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, orig_sym));
@@ -323,13 +438,15 @@ public:
             auto it_orig = orig_scope->resolve_symbol(name);
             if (!it_orig) continue;
             ASR::ttype_t *type = ASRUtils::symbol_type(it_orig);
+            ASR::symbol_t *type_decl = import_struct_type(it_orig,
+                orig_scope, kernel_scope, loc);
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
                     s2c(al, name), nullptr, 0,
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default,
                     ASRUtils::duplicate_type(al, type),
-                    nullptr, ASR::abiType::Source,
+                    type_decl, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
             kernel_scope->add_symbol(name, param);
         }
