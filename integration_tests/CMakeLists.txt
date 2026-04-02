@@ -3213,6 +3213,7 @@ RUN(NAME read_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME read_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME read_65 LABELS gfortran llvm)
+RUN(NAME read_66 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
