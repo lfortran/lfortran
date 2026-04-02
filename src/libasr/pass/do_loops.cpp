@@ -42,6 +42,7 @@ public:
         StatementWalkVisitor(al), pass_options(pass_options_) { }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (!x.m_head.m_v) return;
         pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop, this->current_scope);
     }
 

@@ -584,8 +584,6 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return var->m_type_declaration;
         }
         default: {
-            throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
-                                + std::to_string(expression->type));
             return nullptr;
         }
     }
