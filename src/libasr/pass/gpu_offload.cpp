@@ -853,10 +853,24 @@ public:
             dim_info.push_back({x.m_head[d].m_start, x.m_head[d].m_end});
         }
 
-        // 3. Replace Var references in body to point to kernel scope
-        GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
+        // Deep-copy the body statements so that in-place symbol remapping
+        // does not corrupt types shared with the original function scope
+        // (e.g., ArrayBroadcast type sharing the same Array dimension Var
+        // nodes as the original variable's type).
+        ASRUtils::ExprStmtDuplicator body_dup(al);
+        body_dup.success = true;
+        Vec<ASR::stmt_t*> body_copy;
+        body_copy.reserve(al, x.n_body);
         for (size_t i = 0; i < x.n_body; i++) {
-            sym_replacer.visit_stmt(*x.m_body[i]);
+            ASR::stmt_t *copy = body_dup.duplicate_stmt(x.m_body[i]);
+            LCOMPILERS_ASSERT(copy);
+            body_copy.push_back(al, copy);
+        }
+
+        // 3. Replace Var references in copied body to point to kernel scope
+        GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
+        for (size_t i = 0; i < body_copy.n; i++) {
+            sym_replacer.visit_stmt(*body_copy.p[i]);
         }
 
         // 4. Build kernel body
@@ -1011,10 +1025,10 @@ public:
         }
 
         // Move Block symbols referenced by BlockCall into kernel scope
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*x.m_body[i])) {
+        for (size_t i = 0; i < body_copy.n; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body_copy.p[i])) {
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-                    x.m_body[i]);
+                    body_copy.p[i]);
                 if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
                     ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
                         bc->m_m);
@@ -1033,9 +1047,9 @@ public:
             }
         }
 
-        // Add original loop body (already remapped in-place)
-        for (size_t i = 0; i < x.n_body; i++) {
-            kernel_body.push_back(al, x.m_body[i]);
+        // Add copied loop body (already remapped)
+        for (size_t i = 0; i < body_copy.n; i++) {
+            kernel_body.push_back(al, body_copy.p[i]);
         }
 
         // 5. Build function signature
