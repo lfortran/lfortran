@@ -18928,7 +18928,8 @@ public:
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
             } else if (ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
-                // Struct: arg_val is already a pointer to the struct data
+                // Struct: pass as a buffer so the kernel can write to it
+                // and results are copied back to the host
                 llvm::Value *struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
                 llvm::Type *struct_type = arg_val->getType();
                 if (struct_type->isPointerTy()) {
@@ -18937,7 +18938,7 @@ public:
                 }
                 uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
                 llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
-                builder->CreateCall(set_scalar_fn, {gpu_kernel, idx, struct_ptr, struct_size});
+                builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, struct_ptr, struct_size});
             } else {
                 // Scalar: store to alloca, pass pointer + size
                 llvm::AllocaInst *scalar_alloca = llvm_utils->CreateAlloca(arg_val->getType());

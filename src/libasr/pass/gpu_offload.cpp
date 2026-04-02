@@ -123,18 +123,30 @@ public:
 
 // Resolves associate variable references to their original targets.
 // When a DoConcurrentLoop is inside an AssociateBlock, variables like `nn`
-// (associated with `n`) must be resolved to `n` before kernel extraction,
-// because the kernel scope cannot access the AssociateBlock's symbol table.
+// (associated with `n`) must be resolved to their associate value before
+// kernel extraction, because the kernel scope cannot access the
+// AssociateBlock's symbol table. The mapped expression may be a simple
+// Var (e.g., associate(nn => n)) or a complex expression such as
+// ArrayPhysicalCast(StructInstanceMember(...)) for derived-type components.
 class AssociateVarResolver : public ASR::BaseExprReplacer<AssociateVarResolver> {
 public:
-    std::map<ASR::symbol_t*, ASR::symbol_t*> &assoc_map;
-    AssociateVarResolver(std::map<ASR::symbol_t*, ASR::symbol_t*> &map)
-        : assoc_map(map) {}
+    Allocator &al;
+    std::map<ASR::symbol_t*, ASR::expr_t*> &assoc_map;
+    AssociateVarResolver(Allocator &al_,
+                         std::map<ASR::symbol_t*, ASR::expr_t*> &map)
+        : al(al_), assoc_map(map) {}
 
     void replace_Var(ASR::Var_t *x) {
         auto it = assoc_map.find(x->m_v);
         if (it != assoc_map.end()) {
-            x->m_v = it->second;
+            // Deep-copy so the original Associate expression is not
+            // modified when GpuReplaceSymbolsVisitor remaps symbols later
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.success = true;
+            ASR::expr_t *copy = dup.duplicate_expr(it->second);
+            if (copy) {
+                *current_expr = copy;
+            }
         }
     }
 };
@@ -143,8 +155,9 @@ class AssociateVarResolverVisitor :
     public ASR::CallReplacerOnExpressionsVisitor<AssociateVarResolverVisitor> {
 public:
     AssociateVarResolver replacer;
-    AssociateVarResolverVisitor(std::map<ASR::symbol_t*, ASR::symbol_t*> &map)
-        : replacer(map) {}
+    AssociateVarResolverVisitor(Allocator &al,
+                                std::map<ASR::symbol_t*, ASR::expr_t*> &map)
+        : replacer(al, map) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -348,7 +361,7 @@ public:
     // from the original scope and ensure the Struct (and its member
     // ExternalSymbols) exist in the kernel scope.
     ASR::symbol_t* import_struct_type(ASR::symbol_t *orig_sym,
-            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            SymbolTable * /*orig_scope*/, SymbolTable *kernel_scope,
             const Location &loc) {
         if (!is_a<ASR::Variable_t>(*orig_sym)) return nullptr;
         ASR::Variable_t *var = down_cast<ASR::Variable_t>(orig_sym);
@@ -358,8 +371,11 @@ public:
         if (!type_decl) return nullptr;
         ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
         if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
+        // Use the variable's declaring scope (where ExternalSymbols for
+        // struct members live), not the possibly-nested current scope.
+        SymbolTable *var_scope = var->m_parent_symtab;
         return import_struct_def(down_cast<ASR::Struct_t>(struct_sym),
-            orig_scope, kernel_scope, loc);
+            var_scope, kernel_scope, loc);
     }
 
     // Inline IntrinsicArrayFunction All inside a DoConcurrentLoop body.
@@ -597,7 +613,7 @@ public:
                 *down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
             ASR::AssociateBlock_t *ab = ASR::down_cast2<ASR::AssociateBlock_t>(
                 current_scope->asr_owner);
-            std::map<ASR::symbol_t*, ASR::symbol_t*> assoc_map;
+            std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
             for (size_t i = 0; i < ab->n_body; i++) {
                 if (is_a<ASR::Associate_t>(*ab->m_body[i])) {
                     ASR::Associate_t *assoc = down_cast<ASR::Associate_t>(
@@ -605,19 +621,12 @@ public:
                     if (is_a<ASR::Var_t>(*assoc->m_target)) {
                         ASR::symbol_t *assoc_sym =
                             down_cast<ASR::Var_t>(assoc->m_target)->m_v;
-                        ASR::expr_t *val = assoc->m_value;
-                        while (is_a<ASR::ArrayPhysicalCast_t>(*val)) {
-                            val = down_cast<ASR::ArrayPhysicalCast_t>(val)->m_arg;
-                        }
-                        if (is_a<ASR::Var_t>(*val)) {
-                            assoc_map[assoc_sym] =
-                                down_cast<ASR::Var_t>(val)->m_v;
-                        }
+                        assoc_map[assoc_sym] = assoc->m_value;
                     }
                 }
             }
             if (!assoc_map.empty()) {
-                AssociateVarResolver resolver(assoc_map);
+                AssociateVarResolver resolver(al, assoc_map);
                 for (size_t d = 0; d < n_dims; d++) {
                     ASR::expr_t *e;
                     e = x.m_head[d].m_start;
@@ -627,7 +636,7 @@ public:
                     e = x.m_head[d].m_increment;
                     if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
                 }
-                AssociateVarResolverVisitor resolver_visitor(assoc_map);
+                AssociateVarResolverVisitor resolver_visitor(al, assoc_map);
                 for (size_t i = 0; i < x.n_body; i++) {
                     resolver_visitor.visit_stmt(*x.m_body[i]);
                 }

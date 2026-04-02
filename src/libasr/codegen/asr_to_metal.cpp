@@ -133,6 +133,13 @@ public:
                 if (is_struct_type(mv->m_type)) {
                     src << "    " << get_struct_name(mv) << " "
                         << mv->m_name << ";\n";
+                } else if (is_array_type(mv->m_type)) {
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(mv->m_type);
+                    src << "    " << metal_type(arr->m_type) << " "
+                        << mv->m_name;
+                    int64_t total = get_total_elements(mv->m_type);
+                    src << "[" << total << "]";
+                    src << ";\n";
                 } else {
                     src << "    " << metal_type(mv->m_type) << " "
                         << mv->m_name << ";\n";
@@ -285,7 +292,7 @@ public:
                 src << "device " << metal_type(args[i].type) << "* "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
             } else if (args[i].is_struct) {
-                src << "constant " << args[i].struct_name << "& "
+                src << "device " << args[i].struct_name << "& "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
             } else {
                 src << "constant " << metal_type(args[i].type) << "& "
@@ -767,6 +774,12 @@ public:
                 src << ".";
                 ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(sm->m_m);
                 src << ASRUtils::symbol_name(mem);
+                break;
+            }
+            case ASR::exprType::ArrayPhysicalCast: {
+                ASR::ArrayPhysicalCast_t *apc =
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
+                visit_expr(apc->m_arg);
                 break;
             }
             default:
