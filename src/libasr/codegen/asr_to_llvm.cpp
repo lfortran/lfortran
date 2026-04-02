@@ -18878,18 +18878,42 @@ public:
             ASR::expr_t *arg_expr = x.m_args[i].m_value;
             if (!arg_expr) continue;
 
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+            bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(*arg_type)
+                && ASRUtils::is_array(arg_type);
+
+            // For allocatable arrays, we need the descriptor pointer
+            // (ptr_loads=1 loads the descriptor ptr from the alloca)
+            int64_t ptr_loads_copy = ptr_loads;
+            if (is_allocatable_array) {
+                ptr_loads = 1;
+            }
             this->visit_expr(*arg_expr);
+            ptr_loads = ptr_loads_copy;
             llvm::Value *arg_val = tmp;
 
             llvm::Value *idx = llvm::ConstantInt::get(i32, i);
 
-            // Check if the argument is an array or scalar
-            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
             if (ASRUtils::is_array(arg_type)) {
-                // Array: pass the data pointer and byte size
-                llvm::Value *data_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
-                // Compute size: for fixed arrays, use the known size
-                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg_type);
+                // For allocatable arrays, extract data pointer from descriptor
+                llvm::Value *data_ptr;
+                if (is_allocatable_array) {
+                    ASR::ttype_t *desc_asr_type =
+                        ASRUtils::type_get_past_allocatable(arg_type);
+                    llvm::Type *desc_type =
+                        llvm_utils->get_type_from_ttype_t_util(
+                            arg_expr, desc_asr_type, module.get());
+                    llvm::Value *data_ptr_ptr =
+                        arr_descr->get_pointer_to_data(desc_type, arg_val);
+                    data_ptr = llvm_utils->CreateLoad2(
+                        llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr_ptr);
+                    data_ptr = builder->CreatePointerCast(data_ptr, i8_ptr);
+                } else {
+                    data_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
+                }
+                // Compute size
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable(arg_type));
                 int elem_size = 4; // default float/int
                 if (arr->m_type->type == ASR::ttypeType::Real) {
                     int kind = ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
@@ -18917,6 +18941,19 @@ public:
                     byte_size = llvm::ConstantInt::get(i64, 1024 * elem_size);
                 }
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+            } else if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_type))) {
+                // Struct: pass as a buffer so the kernel can write to it
+                // and results are copied back to the host
+                llvm::Value *struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
+                llvm::Type *struct_type = arg_val->getType();
+                if (struct_type->isPointerTy()) {
+                    struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, arg_type, module.get());
+                }
+                uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
+                llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
+                builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, struct_ptr, struct_size});
             } else {
                 // Scalar: store to alloca, pass pointer + size
                 llvm::AllocaInst *scalar_alloca = llvm_utils->CreateAlloca(arg_val->getType());

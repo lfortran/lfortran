@@ -7237,7 +7237,23 @@ public:
                         std::string init_name = to_lower(
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
-                        if (!init_sym && variable_added_to_symtab) {
+                        bool is_pending_placeholder = false;
+                        if (init_sym) {
+                            ASR::symbol_t *init_sym_underlying =
+                                ASRUtils::symbol_get_past_external(init_sym);
+                            for (auto &pending_placeholder : pending_proc_placeholders) {
+                                ASR::symbol_t *pending_underlying =
+                                    ASRUtils::symbol_get_past_external(
+                                        pending_placeholder.second);
+                                if (pending_placeholder.first == init_name &&
+                                        pending_underlying == init_sym_underlying) {
+                                    is_pending_placeholder = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if ((!init_sym || is_pending_placeholder) &&
+                                variable_added_to_symtab) {
                             SymbolTable* init_resolve_scope = current_scope;
                             if (is_derived_type && current_scope->parent) {
                                 init_resolve_scope = current_scope->parent;
