@@ -19,8 +19,20 @@ class ASRToMetalVisitor
 public:
     std::stringstream src;
     int indent_level;
+    CompilerOptions &co;
 
-    ASRToMetalVisitor() : indent_level(0) {}
+    // VLA info collected during kernel signature generation,
+    // used by the BlockCall handler to emit device pointer offsets.
+    struct VlaInfo {
+        std::string var_name;
+        std::string elem_type_str;
+        int elem_size;
+        std::vector<ASR::expr_t*> dim_lengths;
+        int buffer_index;
+    };
+    std::vector<VlaInfo> current_vla_infos;
+
+    ASRToMetalVisitor(CompilerOptions &co_) : indent_level(0), co(co_) {}
 
     std::string get_indent() {
         return std::string(indent_level * 4, ' ');
@@ -309,10 +321,61 @@ public:
             args.push_back({arg_name, type, is_array_type(type), is_st, sn});
         }
 
+        // Scan blocks in the kernel body for VLAs (arrays with non-constant
+        // dimensions).  Metal Shading Language does not support variable-length
+        // arrays, so we convert each VLA into a per-thread slice of an
+        // additional device buffer parameter.
+        current_vla_infos.clear();
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[i])) continue;
+            ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+                x.m_body[i]);
+            if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    var->m_type);
+                bool has_vla = false;
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(
+                            *arr->m_dims[d].m_length)) {
+                        has_vla = true;
+                        break;
+                    }
+                }
+                if (!has_vla) continue;
+                VlaInfo info;
+                info.var_name = var->m_name;
+                info.elem_type_str = metal_type(arr->m_type);
+                if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
+                    info.elem_size = ASR::down_cast<ASR::Real_t>(
+                        arr->m_type)->m_kind;
+                } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
+                    info.elem_size = ASR::down_cast<ASR::Integer_t>(
+                        arr->m_type)->m_kind;
+                } else {
+                    info.elem_size = 4;
+                }
+                info.buffer_index = -1; // assigned below
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    info.dim_lengths.push_back(arr->m_dims[d].m_length);
+                }
+                current_vla_infos.push_back(info);
+            }
+        }
+
+        // Emit kernel signature
         src << "kernel void " << name << "(\n";
 
         int buffer_idx = 0;
+        bool has_prev = false;
         for (size_t i = 0; i < args.size(); i++) {
+            if (has_prev) src << ",\n";
             src << "    ";
             if (args[i].is_array) {
                 src << "device " << metal_type(args[i].type) << "* "
@@ -324,12 +387,54 @@ public:
                 src << "constant " << metal_type(args[i].type) << "& "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
             }
-            if (i < args.size() - 1) {
-                src << ",\n";
-            }
+            has_prev = true;
         }
 
-        if (!args.empty()) src << ",\n";
+        // Emit VLA workspace buffer parameters
+        for (size_t v = 0; v < current_vla_infos.size(); v++) {
+            current_vla_infos[v].buffer_index = buffer_idx;
+            // Build workspace descriptor for the LLVM codegen
+            CompilerOptions::GpuVlaWorkspace ws;
+            ws.buffer_index = buffer_idx;
+            ws.elem_size = current_vla_infos[v].elem_size;
+            for (size_t d = 0; d < current_vla_infos[v].dim_lengths.size();
+                    d++) {
+                ASR::expr_t *dim = current_vla_infos[v].dim_lengths[d];
+                CompilerOptions::GpuVlaDim vd;
+                if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
+                    vd.is_constant = true;
+                    vd.constant_value =
+                        ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
+                    vd.call_arg_index = 0;
+                } else if (dim && ASR::is_a<ASR::Var_t>(*dim)) {
+                    std::string dim_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(dim)->m_v);
+                    vd.is_constant = false;
+                    vd.constant_value = 0;
+                    vd.call_arg_index = 0;
+                    for (size_t a = 0; a < args.size(); a++) {
+                        if (args[a].name == dim_name) {
+                            vd.call_arg_index = a;
+                            break;
+                        }
+                    }
+                } else {
+                    vd.is_constant = true;
+                    vd.constant_value = 1;
+                    vd.call_arg_index = 0;
+                }
+                ws.dims.push_back(vd);
+            }
+            co.gpu_vla_workspaces.push_back(ws);
+
+            if (has_prev) src << ",\n";
+            src << "    device " << current_vla_infos[v].elem_type_str
+                << "* __vla_" << current_vla_infos[v].var_name
+                << " [[buffer(" << buffer_idx++ << ")]]";
+            has_prev = true;
+        }
+
+        if (has_prev) src << ",\n";
         src << "    uint __thread_id [[thread_position_in_grid]]";
 
         src << ")\n{\n";
@@ -442,9 +547,36 @@ public:
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (auto &item : block->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                            item.second);
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                        item.second);
+                    // Check if this variable is a VLA backed by a workspace
+                    // buffer (populated during kernel signature generation).
+                    std::string vname(v->m_name);
+                    auto vla_it = std::find_if(
+                        current_vla_infos.begin(), current_vla_infos.end(),
+                        [&](const VlaInfo &vi) {
+                            return vi.var_name == vname;
+                        });
+                    if (vla_it != current_vla_infos.end()) {
+                        // Emit a device pointer into the per-thread slice
+                        src << get_indent() << "device "
+                            << vla_it->elem_type_str << "* " << vname
+                            << " = __vla_" << vname
+                            << " + __thread_id * ";
+                        if (vla_it->dim_lengths.size() == 1) {
+                            visit_expr(vla_it->dim_lengths[0]);
+                        } else {
+                            src << "(";
+                            for (size_t d = 0;
+                                    d < vla_it->dim_lengths.size(); d++) {
+                                if (d > 0) src << " * ";
+                                visit_expr(vla_it->dim_lengths[d]);
+                            }
+                            src << ")";
+                        }
+                        src << ";\n";
+                    } else {
                         emit_local_var_decl(v);
                     }
                 }
@@ -637,6 +769,14 @@ public:
                 // Handle lowered intrinsic functions
                 if (fn_name.find("_lcompilers_real_") == 0 ||
                     fn_name.find("_lcompilers_dble_") == 0) {
+                    std::string target = metal_type(fc->m_type);
+                    src << "((" << target << ")";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_int_") == 0 ||
+                           fn_name.find("_lcompilers_nint_") == 0) {
                     std::string target = metal_type(fc->m_type);
                     src << "((" << target << ")";
                     if (fc->n_args > 0 && fc->m_args[0].m_value) {
@@ -921,9 +1061,9 @@ public:
 };
 
 Result<std::string> asr_to_metal(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics, CompilerOptions & /*co*/)
+    diag::Diagnostics &diagnostics, CompilerOptions &co)
 {
-    ASRToMetalVisitor v;
+    ASRToMetalVisitor v(co);
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {
