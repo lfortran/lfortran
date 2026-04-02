@@ -685,18 +685,41 @@ public:
                             down_cast<ASR::Var_t>(assoc->m_target)->m_v;
                         assoc_map[assoc_sym] = assoc->m_value;
                     }
+                } else if (is_a<ASR::Assignment_t>(*ab->m_body[i])) {
+                    // associate(n => constant_expr) generates an
+                    // Assignment instead of Associate. Capture the
+                    // initial value for variables owned by this
+                    // AssociateBlock so they can be resolved.
+                    ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
+                        ab->m_body[i]);
+                    if (is_a<ASR::Var_t>(*asgn->m_target)) {
+                        ASR::symbol_t *sym =
+                            down_cast<ASR::Var_t>(asgn->m_target)->m_v;
+                        if (is_a<ASR::Variable_t>(*sym) &&
+                            down_cast<ASR::Variable_t>(sym)->m_parent_symtab
+                                == ab->m_symtab) {
+                            assoc_map[sym] = asgn->m_value;
+                        }
+                    }
                 }
             }
             if (!assoc_map.empty()) {
                 AssociateVarResolver resolver(al, assoc_map);
+                ASR::DoConcurrentLoop_t &xx =
+                    const_cast<ASR::DoConcurrentLoop_t&>(x);
                 for (size_t d = 0; d < n_dims; d++) {
-                    ASR::expr_t *e;
-                    e = x.m_head[d].m_start;
-                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
-                    e = x.m_head[d].m_end;
-                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
-                    e = x.m_head[d].m_increment;
-                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
+                    if (xx.m_head[d].m_start) {
+                        resolver.current_expr = &(xx.m_head[d].m_start);
+                        resolver.replace_expr(xx.m_head[d].m_start);
+                    }
+                    if (xx.m_head[d].m_end) {
+                        resolver.current_expr = &(xx.m_head[d].m_end);
+                        resolver.replace_expr(xx.m_head[d].m_end);
+                    }
+                    if (xx.m_head[d].m_increment) {
+                        resolver.current_expr = &(xx.m_head[d].m_increment);
+                        resolver.replace_expr(xx.m_head[d].m_increment);
+                    }
                 }
                 AssociateVarResolverVisitor resolver_visitor(al, assoc_map);
                 for (size_t i = 0; i < x.n_body; i++) {
@@ -750,6 +773,26 @@ public:
                                 ASR::down_cast<ASR::Var_t>(
                                     assoc->m_target)->m_v;
                             assoc_map[sym] = assoc->m_value;
+                        }
+                    } else if (ASR::is_a<ASR::Assignment_t>(
+                                   *ab->m_body[ai])) {
+                        ASR::Assignment_t *asgn =
+                            ASR::down_cast<ASR::Assignment_t>(
+                                ab->m_body[ai]);
+                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
+                            ASR::symbol_t *sym =
+                                ASR::down_cast<ASR::Var_t>(
+                                    asgn->m_target)->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                                ASR::down_cast<ASR::Variable_t>(sym)
+                                    ->m_parent_symtab == ab->m_symtab) {
+                                assoc_map[sym] = asgn->m_value;
+                            } else {
+                                resolved_stmts.push_back(al,
+                                    ab->m_body[ai]);
+                            }
+                        } else {
+                            resolved_stmts.push_back(al, ab->m_body[ai]);
                         }
                     } else {
                         resolved_stmts.push_back(al, ab->m_body[ai]);
