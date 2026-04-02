@@ -62,6 +62,32 @@ public:
         return type->type == ASR::ttypeType::Array;
     }
 
+    // Emit a local variable declaration, including array dimensions.
+    // For scalars: `float x;`
+    // For arrays:  `float x[3];` or `float x[n];` (VLA)
+    void emit_local_var_decl(ASR::Variable_t *var) {
+        ASR::ttype_t *type = var->m_type;
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            src << get_indent() << metal_type(arr->m_type) << " "
+                << var->m_name;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                src << "[";
+                if (arr->m_dims[d].m_length) {
+                    visit_expr(arr->m_dims[d].m_length);
+                }
+                src << "]";
+            }
+            src << ";\n";
+        } else if (is_struct_type(type)) {
+            src << get_indent() << get_struct_name(var) << " "
+                << var->m_name << ";\n";
+        } else {
+            src << get_indent() << metal_type(type) << " "
+                << var->m_name << ";\n";
+        }
+    }
+
     // Get total number of elements for a multi-dimensional array
     int64_t get_total_elements(ASR::ttype_t *type) {
         if (type->type != ASR::ttypeType::Array) return 1;
@@ -321,13 +347,7 @@ public:
                     }
                 }
                 if (!is_arg) {
-                    if (is_struct_type(var->m_type)) {
-                        src << get_indent() << get_struct_name(var) << " "
-                            << var->m_name << ";\n";
-                    } else {
-                        src << get_indent() << metal_type(var->m_type) << " "
-                            << var->m_name << ";\n";
-                    }
+                    emit_local_var_decl(var);
                 }
             }
         }
@@ -425,9 +445,7 @@ public:
                     if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                             item.second);
-                        src << get_indent()
-                            << metal_type(v->m_type) << " "
-                            << item.first << ";\n";
+                        emit_local_var_decl(v);
                     }
                 }
                 for (size_t i = 0; i < block->n_body; i++) {

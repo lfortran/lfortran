@@ -34,6 +34,26 @@ public:
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        // Walk variable types in the block's symbol table to collect
+        // referenced symbols (e.g., VLA dimension expressions like n(i))
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                ASR::ttype_t *type = var->m_type;
+                if (ASR::is_a<ASR::Array_t>(*type)) {
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start) {
+                            visit_expr(*arr->m_dims[d].m_start);
+                        }
+                        if (arr->m_dims[d].m_length) {
+                            visit_expr(*arr->m_dims[d].m_length);
+                        }
+                    }
+                }
+            }
+        }
         for (size_t i = 0; i < block->n_body; i++) {
             visit_stmt(*block->m_body[i]);
         }
@@ -1039,6 +1059,32 @@ public:
                     GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
                     for (size_t j = 0; j < block->n_body; j++) {
                         block_replacer.visit_stmt(*block->m_body[j]);
+                    }
+                    // Remap type expressions of block-local variables
+                    // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
+                    GpuReplaceSymbols block_type_replacer(*kernel_scope);
+                    for (auto &item : block->m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                            item.second);
+                        ASR::ttype_t *type = var->m_type;
+                        if (ASR::is_a<ASR::Array_t>(*type)) {
+                            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                            for (size_t d = 0; d < arr->n_dims; d++) {
+                                if (arr->m_dims[d].m_start) {
+                                    block_type_replacer.current_expr =
+                                        &(arr->m_dims[d].m_start);
+                                    block_type_replacer.replace_expr(
+                                        arr->m_dims[d].m_start);
+                                }
+                                if (arr->m_dims[d].m_length) {
+                                    block_type_replacer.current_expr =
+                                        &(arr->m_dims[d].m_length);
+                                    block_type_replacer.replace_expr(
+                                        arr->m_dims[d].m_length);
+                                }
+                            }
+                        }
                     }
                     // Move Block from original scope to kernel scope
                     orig_scope->erase_symbol(block_name);
