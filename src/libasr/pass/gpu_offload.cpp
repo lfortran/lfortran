@@ -743,6 +743,48 @@ public:
                 for (size_t i = 0; i < x.n_body; i++) {
                     resolver_visitor.visit_stmt(*x.m_body[i]);
                 }
+                // The statement visitor above does not descend into
+                // BlockCall targets (Blocks have their own scope), so
+                // resolve associate aliases in both block body statements
+                // and block-local type expressions (e.g., `real a(n)` where
+                // `n` is an associate alias from an enclosing associate).
+                for (size_t i = 0; i < x.n_body; i++) {
+                    if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[i])) continue;
+                    ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+                        x.m_body[i]);
+                    if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                        bc->m_m);
+                    // Resolve in block body statements
+                    for (size_t j = 0; j < block->n_body; j++) {
+                        resolver_visitor.visit_stmt(*block->m_body[j]);
+                    }
+                    // Resolve in block-local array dimension expressions
+                    AssociateVarResolver type_resolver(al, assoc_map);
+                    for (auto &item : block->m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::Variable_t>(*item.second))
+                            continue;
+                        ASR::Variable_t *var =
+                            ASR::down_cast<ASR::Variable_t>(item.second);
+                        if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                        ASR::Array_t *arr =
+                            ASR::down_cast<ASR::Array_t>(var->m_type);
+                        for (size_t d = 0; d < arr->n_dims; d++) {
+                            if (arr->m_dims[d].m_start) {
+                                type_resolver.current_expr =
+                                    &(arr->m_dims[d].m_start);
+                                type_resolver.replace_expr(
+                                    arr->m_dims[d].m_start);
+                            }
+                            if (arr->m_dims[d].m_length) {
+                                type_resolver.current_expr =
+                                    &(arr->m_dims[d].m_length);
+                                type_resolver.replace_expr(
+                                    arr->m_dims[d].m_length);
+                            }
+                        }
+                    }
+                }
             }
         }
 
