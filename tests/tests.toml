@@ -5113,3 +5113,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/arrays_107.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_class_array_01.f90"
+llvm = true

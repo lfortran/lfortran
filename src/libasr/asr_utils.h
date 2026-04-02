@@ -8029,7 +8029,11 @@ static inline ASR::asr_t* make_Associate_t_util(
             size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
             Vec<ASR::dimension_t> dim_vec;
             Vec<ASR::dimension_t>* dim_vec_ptr = nullptr;
-            if( (!ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ||
+            if( value_ptype == ASR::array_physical_typeType::AssumedRankArray &&
+                target_n_dims > 0 ) {
+                dim_vec.from_pointer_n(target_m_dims, target_n_dims);
+                dim_vec_ptr = &dim_vec;
+            } else if( (!ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ||
                 !ASRUtils::is_dimension_empty(value_m_dims, value_n_dims)) &&
                 target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
                 if( !ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ) {
