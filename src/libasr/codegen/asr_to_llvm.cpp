@@ -18891,7 +18891,7 @@ public:
                     llvm::Value *data_ptr_ptr =
                         arr_descr->get_pointer_to_data(desc_type, arg_val);
                     data_ptr = llvm_utils->CreateLoad2(
-                        llvm::PointerType::getUnqual(context), data_ptr_ptr);
+                        llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr_ptr);
                     data_ptr = builder->CreatePointerCast(data_ptr, i8_ptr);
                 } else {
                     data_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
