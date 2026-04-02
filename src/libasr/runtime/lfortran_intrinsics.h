@@ -304,9 +304,6 @@ LFORTRAN_API void _lfortran_inquire(
     char *sign, int64_t sign_len,
     char *encoding, int64_t encoding_len,
     char *stream, int64_t stream_len,
-    char *round, int64_t round_len,
-    bool *pending,
-    char *asynchronous, int64_t asynchronous_len,
     char *iomsg, int64_t iomsg_len
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
