@@ -25,10 +25,12 @@ class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
 public:
     Allocator &al;
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols;
+    SymbolTable *enclosing_scope;
 
     GpuSymbolCollector(Allocator &al_,
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &syms)
-        : al(al_), symbols(syms) {}
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &syms,
+        SymbolTable *scope = nullptr)
+        : al(al_), symbols(syms), enclosing_scope(scope) {}
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
@@ -38,14 +40,18 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
-        // Skip variables local to Block scopes
+        // Skip variables local to Block scopes, except those in the
+        // enclosing Block scope (which need to become kernel parameters
+        // when a do concurrent is directly inside a Block)
         if (ASR::is_a<ASR::Variable_t>(*x.m_v)) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x.m_v);
             if (var->m_parent_symtab->asr_owner &&
                 ASR::is_a<ASR::Block_t>(
                     *ASR::down_cast<ASR::symbol_t>(
                         var->m_parent_symtab->asr_owner))) {
-                return;
+                if (var->m_parent_symtab != enclosing_scope) {
+                    return;
+                }
             }
         }
         std::string name = ASRUtils::symbol_name(x.m_v);
@@ -152,9 +158,11 @@ class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
 public:
     std::set<std::string> &local_vars;
     std::set<std::string> &assigned_vars;
+    SymbolTable *enclosing_scope;
 
-    GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av)
-        : local_vars(lv), assigned_vars(av) {}
+    GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av,
+        SymbolTable *scope = nullptr)
+        : local_vars(lv), assigned_vars(av), enclosing_scope(scope) {}
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
@@ -167,7 +175,7 @@ public:
         // Check if target is a simple Var (not ArrayItem)
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            // Skip variables local to Block scopes
+            // Skip variables local to Block scopes (except the enclosing scope)
             bool is_block_local = false;
             if (ASR::is_a<ASR::Variable_t>(*v->m_v)) {
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
@@ -175,7 +183,9 @@ public:
                     ASR::is_a<ASR::Block_t>(
                         *ASR::down_cast<ASR::symbol_t>(
                             var->m_parent_symtab->asr_owner))) {
-                    is_block_local = true;
+                    if (var->m_parent_symtab != enclosing_scope) {
+                        is_block_local = true;
+                    }
                 }
             }
             if (!is_block_local) {
@@ -627,9 +637,20 @@ public:
         // Inline IntrinsicArrayFunction All before kernel extraction
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
+        // Detect if the do concurrent is inside a Block scope. If so,
+        // block-local variables need to be collected as kernel parameters
+        // rather than skipped.
+        SymbolTable *enclosing_block_scope = nullptr;
+        if (current_scope->asr_owner &&
+            current_scope->asr_owner->type == ASR::asrType::symbol &&
+            is_a<ASR::Block_t>(
+                *down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            enclosing_block_scope = current_scope;
+        }
+
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
-        GpuSymbolCollector collector(al, involved_syms);
+        GpuSymbolCollector collector(al, involved_syms, enclosing_block_scope);
         collector.visit_DoConcurrentLoop(x);
 
         // Skip loops containing real(8)/integer(8) types — Metal has no double/int64 support
@@ -651,7 +672,7 @@ public:
 
         // Find local scalar temporaries (assigned but not arrays, not loop vars)
         std::set<std::string> local_vars, assigned_vars;
-        GpuLocalVarCollector lv_collector(local_vars, assigned_vars);
+        GpuLocalVarCollector lv_collector(local_vars, assigned_vars, enclosing_block_scope);
         for (size_t i = 0; i < x.n_body; i++) {
             lv_collector.visit_stmt(*x.m_body[i]);
         }
