@@ -1,4 +1,4 @@
-semantic error: FUNCTION attribute of 'frexp' conflicts with SUBROUTINE attribute
+semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
 53 |        subroutine frexp(x,n)

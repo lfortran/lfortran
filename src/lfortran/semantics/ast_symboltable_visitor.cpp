@@ -1505,8 +1505,8 @@ public:
                 if (existing_func->m_return_var != nullptr) {
                     std::string original_name = to_lower(std::string(x.m_name));
                     diag.add(diag::Diagnostic(
-                        "FUNCTION attribute of '" + original_name +
-                        "' conflicts with SUBROUTINE attribute",
+                        "`function` attribute of '" + original_name +
+                        "' conflicts with `subroutine` attribute",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("declared as subroutine here", {x.base.base.loc}),
                             diag::Label("previously declared as function here",
