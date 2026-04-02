@@ -39,7 +39,12 @@ public:
                 return "float";
             }
             case ASR::ttypeType::Logical: {
-                return "bool";
+                // Use int to match LLVM's i32 representation for Logical(4)
+                int kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+                if (kind == 1) return "char";
+                if (kind == 2) return "short";
+                if (kind == 4) return "int";
+                return "int";
             }
             case ASR::ttypeType::Array: {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -364,6 +369,46 @@ public:
                 src << get_indent() << "return;\n";
                 break;
             }
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+                src << get_indent() << "while (";
+                visit_expr(wl->m_test);
+                src << ") {\n";
+                indent_level++;
+                for (size_t i = 0; i < wl->n_body; i++) {
+                    visit_stmt(wl->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
+                break;
+            }
+            case ASR::stmtType::DoLoop: {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                src << get_indent() << "for (";
+                visit_expr(dl->m_head.m_v);
+                src << " = ";
+                visit_expr(dl->m_head.m_start);
+                src << "; ";
+                visit_expr(dl->m_head.m_v);
+                src << " <= ";
+                visit_expr(dl->m_head.m_end);
+                src << "; ";
+                visit_expr(dl->m_head.m_v);
+                if (dl->m_head.m_increment) {
+                    src << " += ";
+                    visit_expr(dl->m_head.m_increment);
+                } else {
+                    src << "++";
+                }
+                src << ") {\n";
+                indent_level++;
+                for (size_t i = 0; i < dl->n_body; i++) {
+                    visit_stmt(dl->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
+                break;
+            }
             default:
                 break;
         }
@@ -388,7 +433,7 @@ public:
             }
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t *c = ASR::down_cast<ASR::LogicalConstant_t>(expr);
-                src << (c->m_value ? "true" : "false");
+                src << (c->m_value ? "1" : "0");
                 break;
             }
             case ASR::exprType::IntegerBinOp: {
@@ -447,6 +492,88 @@ public:
                 src << "(-(";
                 visit_expr(u->m_arg);
                 src << "))";
+                break;
+            }
+            case ASR::exprType::LogicalBinOp: {
+                ASR::LogicalBinOp_t *op = ASR::down_cast<ASR::LogicalBinOp_t>(expr);
+                src << "((int)(";
+                visit_expr(op->m_left);
+                if (op->m_op == ASR::logicalbinopType::And) {
+                    src << " && ";
+                } else if (op->m_op == ASR::logicalbinopType::Or) {
+                    src << " || ";
+                } else {
+                    src << " /* unsupported logical op */ ";
+                }
+                visit_expr(op->m_right);
+                src << "))";
+                break;
+            }
+            case ASR::exprType::LogicalNot: {
+                ASR::LogicalNot_t *n = ASR::down_cast<ASR::LogicalNot_t>(expr);
+                src << "((int)(!(";
+                visit_expr(n->m_arg);
+                src << ")))";
+                break;
+            }
+            case ASR::exprType::LogicalCompare: {
+                ASR::LogicalCompare_t *op = ASR::down_cast<ASR::LogicalCompare_t>(expr);
+                src << "((int)(";
+                visit_expr(op->m_left);
+                src << " " << cmpop_str(op->m_op) << " ";
+                visit_expr(op->m_right);
+                src << "))";
+                break;
+            }
+            case ASR::exprType::ArrayBound: {
+                ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(expr);
+                if (ab->m_value) {
+                    visit_expr(ab->m_value);
+                } else {
+                    // For fixed-size arrays, compute from type info
+                    ASR::ttype_t *arr_type = ASRUtils::expr_type(ab->m_v);
+                    if (ASR::is_a<ASR::Array_t>(*arr_type)) {
+                        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arr_type);
+                        int dim_idx = 0;
+                        if (ab->m_dim) {
+                            if (ASR::is_a<ASR::IntegerConstant_t>(*ab->m_dim)) {
+                                dim_idx = ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ab->m_dim)->m_n - 1;
+                            }
+                        }
+                        if (dim_idx >= 0 && (size_t)dim_idx < arr->n_dims) {
+                            if (ab->m_bound == ASR::arrayboundType::LBound) {
+                                if (arr->m_dims[dim_idx].m_start) {
+                                    visit_expr(arr->m_dims[dim_idx].m_start);
+                                } else {
+                                    src << "1";
+                                }
+                            } else {
+                                // UBound = start + length - 1
+                                if (arr->m_dims[dim_idx].m_length &&
+                                    ASR::is_a<ASR::IntegerConstant_t>(
+                                        *arr->m_dims[dim_idx].m_length)) {
+                                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        arr->m_dims[dim_idx].m_length)->m_n;
+                                    int64_t start = 1;
+                                    if (arr->m_dims[dim_idx].m_start &&
+                                        ASR::is_a<ASR::IntegerConstant_t>(
+                                            *arr->m_dims[dim_idx].m_start)) {
+                                        start = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            arr->m_dims[dim_idx].m_start)->m_n;
+                                    }
+                                    src << (start + len - 1);
+                                } else {
+                                    src << "/* unknown ubound */";
+                                }
+                            }
+                        } else {
+                            src << "/* dim out of range */";
+                        }
+                    } else {
+                        src << "/* non-array bound */";
+                    }
+                }
                 break;
             }
             case ASR::exprType::Cast: {

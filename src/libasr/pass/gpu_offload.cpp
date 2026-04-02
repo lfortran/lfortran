@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/string_utils.h>
@@ -30,7 +31,7 @@ public:
         : al(al_), symbols(syms) {}
 
     void visit_Var(const ASR::Var_t &x) {
-        std::string name = to_lower(ASRUtils::symbol_name(x.m_v));
+        std::string name = ASRUtils::symbol_name(x.m_v);
         if (symbols.find(name) == symbols.end()) {
             symbols[name] = {ASRUtils::symbol_type(x.m_v),
                 ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v))};
@@ -45,7 +46,7 @@ public:
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
 
     void replace_Var(ASR::Var_t *x) {
-        std::string name = to_lower(ASRUtils::symbol_name(x->m_v));
+        std::string name = ASRUtils::symbol_name(x->m_v);
         ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
         if (new_sym) {
             x->m_v = new_sym;
@@ -59,7 +60,7 @@ public:
         replace_expr(x->m_v);
         current_expr = current_expr_copy;
         // Replace the member symbol to point to kernel scope's ExternalSymbol
-        std::string mem_name = to_lower(ASRUtils::symbol_name(x->m_m));
+        std::string mem_name = ASRUtils::symbol_name(x->m_m);
         ASR::symbol_t *new_mem = kernel_scope.get_symbol(mem_name);
         if (new_mem) {
             x->m_m = new_mem;
@@ -68,13 +69,13 @@ public:
 
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
         // Remap m_name to kernel scope symbol
-        std::string name = to_lower(ASRUtils::symbol_name(x->m_name));
+        std::string name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
         if (new_sym) {
             x->m_name = new_sym;
         }
         if (x->m_original_name) {
-            std::string orig_name = to_lower(ASRUtils::symbol_name(x->m_original_name));
+            std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
             ASR::symbol_t *new_orig = kernel_scope.get_symbol(orig_name);
             if (new_orig) {
                 x->m_original_name = new_orig;
@@ -142,7 +143,7 @@ public:
         // Check if target is a simple Var (not ArrayItem)
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
+            std::string name = ASRUtils::symbol_name(v->m_v);
             ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
             if (!ASRUtils::is_array(type)) {
                 assigned_vars.insert(name);
@@ -154,11 +155,21 @@ public:
                 ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
             if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(sm->m_v);
-                std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
+                std::string name = ASRUtils::symbol_name(v->m_v);
                 assigned_vars.insert(name);
             }
         }
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        // DoLoop loop variables are local temporaries
+        if (x.m_head.m_v && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_head.m_v);
+            std::string name = ASRUtils::symbol_name(v->m_v);
+            assigned_vars.insert(name);
+        }
+        ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_DoLoop(x);
     }
 };
 
@@ -304,6 +315,217 @@ public:
             orig_scope, kernel_scope, loc);
     }
 
+    // Inline IntrinsicArrayFunction All inside a DoConcurrentLoop body.
+    // Replaces:
+    //   eq(l) = all(a(:,l) == b(:,l))
+    // With:
+    //   __gpu_all_res = .true.
+    //   do __gpu_all_i = lbound(a,1), ubound(a,1)
+    //     if (.not. mask_element(__gpu_all_i)) __gpu_all_res = .false.
+    //   end do
+    //   eq(l) = __gpu_all_res
+    // This avoids complex lowered code (Associate, Allocate, FunctionCall)
+    // that the Metal backend cannot handle inside GPU kernels.
+    void inline_intrinsic_all(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 3);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::IntrinsicArrayFunction_t *iaf =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
+            // Only handle All (intrinsic_id == 0 for All)
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(iaf->m_arr_intrinsic_id)
+                    != ASRUtils::IntrinsicArrayFunctions::All) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (iaf->n_args < 1 || !iaf->m_args[0]) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::expr_t *mask = iaf->m_args[0];
+            Location loc = stmt->base.loc;
+
+            // The mask should be an array expression (e.g., RealCompare on arrays).
+            // We need to find the array dimension to loop over.
+            // Extract the first ArraySection to determine loop bounds.
+            ASR::expr_t *loop_start = nullptr;
+            ASR::expr_t *loop_end = nullptr;
+            // Walk the mask expression to find ArraySection
+            std::function<void(ASR::expr_t*)> find_bounds = [&](ASR::expr_t *e) {
+                if (loop_start) return; // already found
+                if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                    ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
+                    if (as->n_args > 0 && as->m_args[0].m_left && as->m_args[0].m_right) {
+                        loop_start = as->m_args[0].m_left;
+                        loop_end = as->m_args[0].m_right;
+                    }
+                } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                    ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
+                    find_bounds(rc->m_left);
+                    find_bounds(rc->m_right);
+                } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                    ASR::IntegerCompare_t *ic = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                    find_bounds(ic->m_left);
+                    find_bounds(ic->m_right);
+                } else if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                    ASR::LogicalBinOp_t *lb = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                    find_bounds(lb->m_left);
+                    find_bounds(lb->m_right);
+                }
+            };
+            find_bounds(mask);
+
+            if (!loop_start || !loop_end) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            changed = true;
+
+            ASR::ttype_t *logical_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4));
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            // Create loop variable __gpu_all_i
+            std::string loop_var_name = current_scope->get_unique_name("__gpu_all_i");
+            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                    s2c(al, loop_var_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, int_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(loop_var_name, loop_var_sym);
+            ASR::expr_t *loop_var = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, loop_var_sym));
+
+            // Create result variable __gpu_all_res
+            std::string res_var_name = current_scope->get_unique_name("__gpu_all_res");
+            ASR::symbol_t *res_var_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                    s2c(al, res_var_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, logical_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(res_var_name, res_var_sym);
+            ASR::expr_t *res_var = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, res_var_sym));
+
+            // __gpu_all_res = .true.
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var,
+                    ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
+                        true, logical_type)),
+                    nullptr, false, false)));
+
+            // Build element-wise mask expression by replacing ArraySection
+            // with ArrayItem indexed by loop_var
+            std::function<ASR::expr_t*(ASR::expr_t*)> elementize =
+                [&](ASR::expr_t *e) -> ASR::expr_t* {
+                if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                    ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
+                    // Replace the range dimension with the loop variable
+                    Vec<ASR::array_index_t> new_args;
+                    new_args.reserve(al, as->n_args);
+                    for (size_t i = 0; i < as->n_args; i++) {
+                        ASR::array_index_t idx;
+                        idx.loc = as->m_args[i].loc;
+                        if (as->m_args[i].m_left && as->m_args[i].m_right) {
+                            // This is a range — replace with loop variable
+                            idx.m_left = nullptr;
+                            idx.m_right = loop_var;
+                            idx.m_step = nullptr;
+                        } else {
+                            idx.m_left = as->m_args[i].m_left;
+                            idx.m_right = as->m_args[i].m_right;
+                            idx.m_step = as->m_args[i].m_step;
+                        }
+                        new_args.push_back(al, idx);
+                    }
+                    ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::expr_type(as->m_v));
+                    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                        as->m_v, new_args.p, new_args.n,
+                        elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                    ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
+                    return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc,
+                        elementize(rc->m_left), rc->m_op, elementize(rc->m_right),
+                        logical_type, nullptr));
+                } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                    ASR::IntegerCompare_t *ic = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                    return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                        elementize(ic->m_left), ic->m_op, elementize(ic->m_right),
+                        logical_type, nullptr));
+                } else if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                    ASR::LogicalBinOp_t *lb = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                    return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+                        elementize(lb->m_left), lb->m_op, elementize(lb->m_right),
+                        logical_type, nullptr));
+                }
+                return e;
+            };
+
+            ASR::expr_t *elem_mask = elementize(mask);
+
+            // Build loop body:
+            //   if (.not. elem_mask) __gpu_all_res = .false.
+            Vec<ASR::stmt_t*> loop_body;
+            loop_body.reserve(al, 1);
+            ASR::expr_t *not_mask = ASRUtils::EXPR(
+                ASR::make_LogicalNot_t(al, loc, elem_mask, logical_type, nullptr));
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var,
+                    ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
+                        false, logical_type)),
+                    nullptr, false, false)));
+            Vec<ASR::stmt_t*> if_else;
+            if_else.reserve(al, 0);
+            loop_body.push_back(al, ASRUtils::STMT(
+                ASR::make_If_t(al, loc, nullptr, not_mask,
+                    if_body.p, if_body.n, if_else.p, if_else.n)));
+
+            // do __gpu_all_i = loop_start, loop_end
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = loop_var;
+            head.m_start = loop_start;
+            head.m_end = loop_end;
+            head.m_increment = nullptr;
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr,
+                    head, loop_body.p, loop_body.n, nullptr, 0)));
+
+            // eq(l) = __gpu_all_res
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, asgn->m_target, res_var,
+                    nullptr, false, false)));
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal) return;
 
@@ -365,6 +587,9 @@ public:
             }
         }
 
+        // Inline IntrinsicArrayFunction All before kernel extraction
+        inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
         GpuSymbolCollector collector(al, involved_syms);
@@ -384,7 +609,7 @@ public:
         std::vector<std::string> loop_var_names;
         for (size_t d = 0; d < n_dims; d++) {
             ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
-            loop_var_names.push_back(to_lower(ASRUtils::symbol_name(lv->m_v)));
+            loop_var_names.push_back(ASRUtils::symbol_name(lv->m_v));
         }
 
         // Find local scalar temporaries (assigned but not arrays, not loop vars)
