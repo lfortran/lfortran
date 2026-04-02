@@ -3766,7 +3766,6 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::FunctionType: {
             ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(t);
-            //ASR::ttype_t* dup_type = duplicate_type(al, c->m_type, dims);
             Vec<ASR::ttype_t*> arg_types;
             arg_types.reserve(al, ft->n_arg_types);
             for( size_t i = 0; i < ft->n_arg_types; i++ ) {

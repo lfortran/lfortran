@@ -1512,6 +1512,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Do nothing
     }
 
+    void visit_Array(const ASR::Array_t& /*x*/) {
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // Handle case where LHS is StructInstanceMember over an array
@@ -1930,6 +1933,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+        xx.m_type = ASRUtils::duplicate_type(al, xx.m_type);
         visit_Call(x, "_function_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
@@ -2475,6 +2480,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_real_sqrt_");
     }
 
+    void replace_Array(ASR::Array_t* /*x*/) {}
+    void replace_FunctionType(ASR::FunctionType_t* /*x*/) {}
+
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
         ASR::expr_t** current_expr_copy_149 = current_expr;
         current_expr = &(x->m_v);
@@ -2487,10 +2495,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::expr_t** current_expr_copy_149 = current_expr;
-        current_expr = &(x->m_v);
         if( is_temporary_needed(x->m_v) ) {
+            ASR::expr_t* tmp_mv = x->m_v;
+            ASR::expr_t** tmp_expr = &tmp_mv;
+            current_expr = tmp_expr;
             force_replace_current_expr_for_array(current_expr, "_array_size_v", al, current_body, current_scope,
                                                     exprs_with_target, is_assignment_target_array_section_item);
+            *current_expr_copy_149 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                al, x->base.base.loc, *tmp_expr, x->m_dim, x->m_type, x->m_value));
         }
         current_expr = current_expr_copy_149;
     }
@@ -2530,6 +2542,15 @@ class ReplaceExprWithTemporaryVisitor:
 
     void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
         // Do nothing
+    }
+
+    void visit_Array(const ASR::Array_t& /*x*/) {
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+        xx.m_type = ASRUtils::duplicate_type(al, xx.m_type);
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_FunctionCall(x);
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -2809,6 +2830,12 @@ class TransformVariableInitialiser:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
+    }
+
+    void visit_Array(const ASR::Array_t& /*x*/) {
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -3292,11 +3319,39 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
 
 };
 
+class DuplicateFunctionTypeArgs : public ASR::BaseWalkVisitor<DuplicateFunctionTypeArgs> {
+    Allocator& al;
+
+    ASR::ttype_t* duplicate_type_preserve_physical(ASR::ttype_t* t) {
+        if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+            return ASRUtils::duplicate_type(al, t, nullptr,
+                arr->m_physical_type, true);
+        }
+        return ASRUtils::duplicate_type(al, t);
+    }
+
+public:
+    DuplicateFunctionTypeArgs(Allocator& al_) : al(al_) {}
+
+    void visit_FunctionType(const ASR::FunctionType_t& x) {
+        ASR::FunctionType_t& xx = const_cast<ASR::FunctionType_t&>(x);
+        for (size_t i = 0; i < xx.n_arg_types; i++) {
+            xx.m_arg_types[i] = duplicate_type_preserve_physical(xx.m_arg_types[i]);
+        }
+        if (xx.m_return_var_type) {
+            xx.m_return_var_type = duplicate_type_preserve_physical(xx.m_return_var_type);
+        }
+    }
+};
+
 void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &pass_options) {
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
+    DuplicateFunctionTypeArgs dup_ft(al);
+    dup_ft.visit_TranslationUnit(unit);
     ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
     remove_array_processing_node_visitor.visit_TranslationUnit(unit);
     ExprsWithTargetType exprs_with_target;

@@ -55,7 +55,7 @@ private:
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
-    bool _is_return_type_string;
+    bool _inside_function_type_check;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
     bool _inside_call = false;
@@ -66,7 +66,7 @@ private:
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false}, _inside_function_type_check{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -923,14 +923,15 @@ public:
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
 
-        // Allow any string variable that is either external or is not defined in this scope to pass FunctionType verification
+        // Allow variables that are either external or not in the current scope
+        // to pass FunctionType verification (e.g., formal arguments referenced
+        // from return types like dimension(size(arg,2)))
         if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) ||
-            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name)))) {
+            (_inside_function_type_check && !current_symtab->get_symbol(x_mv_name)))) {
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
         }
-        _is_return_type_string = false;
 
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s) || is_a<ASR::Struct_t>(*s),
@@ -1359,17 +1360,14 @@ public:
     }
 
     void visit_FunctionType(const FunctionType_t& x) {
-
         #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
             require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 
-        _is_return_type_string = false;
-        if (x.m_return_var_type) {
-            _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);
-        }
+        bool saved_inside_function_type_check = _inside_function_type_check;
+        _inside_function_type_check = true;
 
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
             verify_nonscoped_ttype(x.m_arg_types[i]);
@@ -1377,6 +1375,8 @@ public:
         if( x.m_return_var_type ) {
             verify_nonscoped_ttype(x.m_return_var_type);
         }
+
+        _inside_function_type_check = saved_inside_function_type_check;
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
