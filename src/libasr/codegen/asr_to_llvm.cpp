@@ -62,6 +62,7 @@
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <libasr/codegen/asr_to_metal.h>
 
 namespace LCompilers {
 
@@ -18796,6 +18797,194 @@ public:
         // No-op: coarray sync memory is not yet supported at runtime
     }
 
+    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t & /* x */) {
+        // GPU kernel functions are not lowered to LLVM IR.
+        // They are emitted as Metal/CUDA source by the device emitter.
+    }
+
+    llvm::Function* get_gpu_runtime_func(const std::string &name,
+            llvm::FunctionType *ftype) {
+        llvm::Function *fn = module->getFunction(name);
+        if (!fn) {
+            fn = llvm::Function::Create(ftype,
+                llvm::Function::ExternalLinkage, name, module.get());
+        }
+        return fn;
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
+            llvm::Type::getInt8Ty(context));
+        llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        llvm::Type *void_type = llvm::Type::getVoidTy(context);
+
+        // 1. lfortran_gpu_init() -> ctx
+        llvm::FunctionType *init_ft = llvm::FunctionType::get(i8_ptr, {}, false);
+        llvm::Function *init_fn = get_gpu_runtime_func("lfortran_gpu_init", init_ft);
+        llvm::Value *gpu_ctx = builder->CreateCall(init_fn, {});
+
+        // 2. Get the Metal source string and kernel name
+        ASR::GpuKernelFunction_t *kernel_func =
+            ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
+        std::string kernel_name(kernel_func->m_name);
+
+        // The Metal source is passed via compiler_options
+        std::string global_name = "__lfortran_gpu_metal_source_" + kernel_name;
+        llvm::Value *metal_src;
+        if (!compiler_options.gpu_metal_source.empty()) {
+            metal_src = builder->CreateGlobalStringPtr(
+                compiler_options.gpu_metal_source, global_name);
+        } else {
+            metal_src = builder->CreateGlobalStringPtr("", global_name);
+        }
+
+        llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
+
+        // 3. lfortran_gpu_load_kernel(ctx, source, entry_point) -> kernel
+        llvm::FunctionType *load_ft = llvm::FunctionType::get(
+            i8_ptr, {i8_ptr, i8_ptr, i8_ptr}, false);
+        llvm::Function *load_fn = get_gpu_runtime_func("lfortran_gpu_load_kernel", load_ft);
+        llvm::Value *gpu_kernel = builder->CreateCall(load_fn,
+            {gpu_ctx, metal_src, entry_name});
+
+        // 4. Set arguments
+        llvm::FunctionType *set_buffer_ft = llvm::FunctionType::get(
+            void_type, {i8_ptr, i32, i8_ptr, i64}, false);
+        llvm::Function *set_buffer_fn = get_gpu_runtime_func(
+            "lfortran_gpu_set_buffer_arg", set_buffer_ft);
+
+        llvm::FunctionType *set_scalar_ft = llvm::FunctionType::get(
+            void_type, {i8_ptr, i32, i8_ptr, i64}, false);
+        llvm::Function *set_scalar_fn = get_gpu_runtime_func(
+            "lfortran_gpu_set_scalar_arg", set_scalar_ft);
+
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg_expr = x.m_args[i].m_value;
+            if (!arg_expr) continue;
+
+            this->visit_expr(*arg_expr);
+            llvm::Value *arg_val = tmp;
+
+            llvm::Value *idx = llvm::ConstantInt::get(i32, i);
+
+            // Check if the argument is an array or scalar
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+            if (ASRUtils::is_array(arg_type)) {
+                // Array: pass the data pointer and byte size
+                llvm::Value *data_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
+                // Compute size: for fixed arrays, use the known size
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg_type);
+                int elem_size = 4; // default float/int
+                if (arr->m_type->type == ASR::ttypeType::Real) {
+                    int kind = ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
+                    elem_size = kind;
+                } else if (arr->m_type->type == ASR::ttypeType::Integer) {
+                    int kind = ASR::down_cast<ASR::Integer_t>(arr->m_type)->m_kind;
+                    elem_size = kind;
+                }
+                // Get the total number of elements from the array dimension
+                int64_t total_elements = 1;
+                bool fixed_size = true;
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*arr->m_dims[d].m_length)) {
+                        total_elements *= ASR::down_cast<ASR::IntegerConstant_t>(
+                            arr->m_dims[d].m_length)->m_n;
+                    } else {
+                        fixed_size = false;
+                    }
+                }
+                llvm::Value *byte_size;
+                if (fixed_size) {
+                    byte_size = llvm::ConstantInt::get(i64, total_elements * elem_size);
+                } else {
+                    byte_size = llvm::ConstantInt::get(i64, 1024 * elem_size);
+                }
+                builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+            } else {
+                // Scalar: store to alloca, pass pointer + size
+                llvm::AllocaInst *scalar_alloca = llvm_utils->CreateAlloca(arg_val->getType());
+                builder->CreateStore(arg_val, scalar_alloca);
+                llvm::Value *scalar_ptr = builder->CreatePointerCast(scalar_alloca, i8_ptr);
+                uint64_t sz = module->getDataLayout().getTypeAllocSize(arg_val->getType());
+                llvm::Value *scalar_size = llvm::ConstantInt::get(i64, sz);
+                builder->CreateCall(set_scalar_fn, {gpu_kernel, idx, scalar_ptr, scalar_size});
+            }
+        }
+
+        // 5. Launch: lfortran_gpu_launch(ctx, kernel, grid, block)
+        llvm::FunctionType *launch_ft = llvm::FunctionType::get(
+            void_type, {i8_ptr, i8_ptr, i8_ptr, i8_ptr}, false);
+        llvm::Function *launch_fn = get_gpu_runtime_func("lfortran_gpu_launch", launch_ft);
+
+        // Build grid[3] and block[3] arrays on stack
+        llvm::ArrayType *arr3 = llvm::ArrayType::get(i32, 3);
+        llvm::AllocaInst *grid_arr = llvm_utils->CreateAlloca(arr3);
+        llvm::AllocaInst *block_arr = llvm_utils->CreateAlloca(arr3);
+
+        // Evaluate grid_size and block_size
+        this->visit_expr(*x.m_grid_size);
+        llvm::Value *grid_size_val = tmp;
+        this->visit_expr(*x.m_block_size);
+        llvm::Value *block_size_val = tmp;
+
+        // Store grid = {grid_size, 1, 1}
+        auto *zero = llvm::ConstantInt::get(i32, 0);
+        auto *one_i32 = llvm::ConstantInt::get(i32, 1);
+        builder->CreateStore(grid_size_val,
+            builder->CreateGEP(arr3, grid_arr, {zero, zero}));
+        builder->CreateStore(one_i32,
+            builder->CreateGEP(arr3, grid_arr, {zero, one_i32}));
+        builder->CreateStore(one_i32,
+            builder->CreateGEP(arr3, grid_arr, {zero, llvm::ConstantInt::get(i32, 2)}));
+
+        // Store block = {block_size, 1, 1}
+        builder->CreateStore(block_size_val,
+            builder->CreateGEP(arr3, block_arr, {zero, zero}));
+        builder->CreateStore(one_i32,
+            builder->CreateGEP(arr3, block_arr, {zero, one_i32}));
+        builder->CreateStore(one_i32,
+            builder->CreateGEP(arr3, block_arr, {zero, llvm::ConstantInt::get(i32, 2)}));
+
+        llvm::Value *grid_ptr = builder->CreatePointerCast(grid_arr, i8_ptr);
+        llvm::Value *block_ptr = builder->CreatePointerCast(block_arr, i8_ptr);
+
+        builder->CreateCall(launch_fn, {gpu_ctx, gpu_kernel, grid_ptr, block_ptr});
+    }
+
+    void visit_GpuSync(const ASR::GpuSync_t & /* x */) {
+        // For the prototype, gpu_sync needs the context.
+        // We call lfortran_gpu_sync with a null pointer and let the runtime
+        // use the last command buffer. In a full implementation, the context
+        // would be tracked as module-level state.
+        llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
+            llvm::Type::getInt8Ty(context));
+        llvm::Type *void_type = llvm::Type::getVoidTy(context);
+
+        // For simplicity, call init again (it should cache/return same ctx)
+        llvm::FunctionType *init_ft = llvm::FunctionType::get(i8_ptr, {}, false);
+        llvm::Function *init_fn = get_gpu_runtime_func("lfortran_gpu_init", init_ft);
+        llvm::Value *gpu_ctx = builder->CreateCall(init_fn, {});
+
+        llvm::FunctionType *sync_ft = llvm::FunctionType::get(
+            void_type, {i8_ptr}, false);
+        llvm::Function *sync_fn = get_gpu_runtime_func("lfortran_gpu_sync", sync_ft);
+        builder->CreateCall(sync_fn, {gpu_ctx});
+    }
+
+    void visit_GpuThreadIndex(const ASR::GpuThreadIndex_t & /* x */) {
+        throw CodeGenError("GpuThreadIndex should not appear in LLVM backend");
+    }
+
+    void visit_GpuBlockIndex(const ASR::GpuBlockIndex_t & /* x */) {
+        throw CodeGenError("GpuBlockIndex should not appear in LLVM backend");
+    }
+
+    void visit_GpuBlockSize(const ASR::GpuBlockSize_t & /* x */) {
+        throw CodeGenError("GpuBlockSize should not appear in LLVM backend");
+    }
+
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint32_t& m_h, ASR::Variable_t*& orig_arg,
@@ -22770,6 +22959,15 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
+
+    // GPU Metal: generate Metal shader source after passes have created GpuKernelFunction nodes
+    if (co.gpu_backend == "metal" && co.gpu_metal_source.empty()) {
+        diag::Diagnostics metal_diag;
+        Result<std::string> metal_res = asr_to_metal(al, asr, metal_diag, co);
+        if (metal_res.ok) {
+            co.gpu_metal_source = metal_res.result;
+        }
+    }
 
     t1 = std::chrono::high_resolution_clock::now();
     try {
