@@ -675,9 +675,14 @@ public:
             std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
             SymbolTable *scope = current_scope;
             while (scope && scope->asr_owner &&
-                   scope->asr_owner->type == ASR::asrType::symbol &&
-                   is_a<ASR::AssociateBlock_t>(
-                       *down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                   scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (is_a<ASR::Block_t>(*owner_sym)) {
+                    scope = scope->parent;
+                    continue;
+                }
+                if (!is_a<ASR::AssociateBlock_t>(*owner_sym)) break;
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast2<ASR::AssociateBlock_t>(scope->asr_owner);
                 for (size_t i = 0; i < ab->n_body; i++) {
