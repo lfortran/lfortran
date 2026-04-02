@@ -72,6 +72,9 @@ set(SRC
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
+    pass/gpu_offload.cpp
+
+    codegen/asr_to_metal.cpp
 
     asr_verify.cpp
     asr_utils.cpp

@@ -540,6 +540,32 @@ public:
         function_dependencies = function_dependencies_copy;
     }
 
+    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+        require(x.m_symtab != nullptr,
+            "GpuKernelFunction::m_symtab cannot be nullptr");
+        require(x.m_symtab->parent == parent_symtab,
+            "GpuKernelFunction::m_symtab->parent is not the right parent");
+        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
+            "GpuKernelFunction::m_symtab::asr_owner must point to it");
+        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
+            "GpuKernelFunction::m_symtab->counter must be unique");
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        for (auto &a : x.m_symtab->get_scope()) {
+            LCOMPILERS_ASSERT(a.second);
+            this->visit_symbol(*a.second);
+        }
+        visit_ttype(*x.m_function_signature);
+        for (size_t i=0; i<x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+        }
+        for (size_t i=0; i<x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        current_symtab = parent_symtab;
+    }
+
     template <typename T>
     void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
