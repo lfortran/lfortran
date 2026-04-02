@@ -1132,6 +1132,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 if( existing_sym == nullptr ) {
                     char* new_func_sym_name_c = s2c(al, new_func_sym_name);
+                    char* orig_name_c = s2c(al, std::string(ASRUtils::symbol_name(new_func_sym)));
                     if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(func_ext_sym->m_external)) &&
                          ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(func_ext_sym->m_external))->m_type_declaration ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(func_ext_sym->m_external));
@@ -1144,13 +1145,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                             ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
                                 new_func_sym_name_c, new_func_sym, s2c(al, module_name),
-                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name_c,
+                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, orig_name_c,
                                 func_ext_sym->m_access));
                     } else {
                         new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                             ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
                                 new_func_sym_name_c, new_func_sym, func_ext_sym->m_module_name,
-                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name_c,
+                                func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, orig_name_c,
                                 func_ext_sym->m_access));
                     }
 
