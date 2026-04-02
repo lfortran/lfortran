@@ -333,6 +333,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal)")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -478,6 +479,11 @@ namespace LCompilers::CommandLineInterface {
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+
+        // set gpu offloading in pass options
+        if (compiler_options.gpu_backend == "metal") {
+            compiler_options.po.gpu_offload_metal = true;
+        }
 
         for (auto &f_flag : opts.f_flags) {
             if (f_flag == "PIC") {

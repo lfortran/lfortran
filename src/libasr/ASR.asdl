@@ -28,6 +28,7 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
+    | GpuKernelFunction(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, access access, location start_name, location end_name)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -86,6 +87,8 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
+    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
+    | GpuSync()
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -203,6 +206,9 @@ expr
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
     | RealSqrt(expr arg, ttype type, expr? value)
     | ArrayIsContiguous(expr array, ttype type, expr? value)
+    | GpuThreadIndex(int dim, ttype type, expr? value)
+    | GpuBlockIndex(int dim, ttype type, expr? value)
+    | GpuBlockSize(int dim, ttype type, expr? value)
 
 ttype
     = Integer(int kind)

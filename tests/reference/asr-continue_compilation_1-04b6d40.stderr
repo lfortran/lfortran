@@ -386,6 +386,30 @@ semantic error: variable cannot appear in character length expression
 638 |     character(len = char_len_var) :: char_nonconst
     |                     ^^^^^^^^^^^^ 
 
+semantic error: type mismatch in initialization: `string` cannot be assigned to `integer`
+   --> tests/errors/continue_compilation_1.f90:643:32
+    |
+643 |     integer, parameter :: n2 = "abc"
+    |                                ^^^^^ 
+
+semantic error: Pointer initialization target `ptr_src_no_target` must have the `target` attribute
+   --> tests/errors/continue_compilation_1.f90:645:5
+    |
+645 |     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+644 |     type(MyClass) :: ptr_src_no_target
+    |                      ~~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Type mismatch in pointer initialization of `ptr_type_mismatch`
+   --> tests/errors/continue_compilation_1.f90:647:5
+    |
+647 |     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+646 |     type(Base), target :: ptr_tgt_base
+    |                           ~~~~~~~~~~~~ target declared here
+
 semantic error: Cannot convert LOGICAL to REAL
    --> tests/errors/continue_compilation_1.f90:674:24
     |
