@@ -1300,44 +1300,17 @@ public:
             if (reparent) {
                 block->m_symtab->parent = kernel_scope;
             }
-            // Remap Var references inside the block body
-            GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
-            for (size_t j = 0; j < block->n_body; j++) {
-                block_replacer.visit_stmt(*block->m_body[j]);
-            }
-            // Also remap Var references inside AssociateBlock bodies
-            // within this Block, since the visitor does not descend
-            // into AssociateBlockCall targets automatically.
-            for (auto &item : block->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
-                    continue;
-                ASR::AssociateBlock_t *ab =
-                    ASR::down_cast<ASR::AssociateBlock_t>(
-                        item.second);
-                for (size_t j = 0; j < ab->n_body; j++) {
-                    block_replacer.visit_stmt(*ab->m_body[j]);
-                }
-            }
-            // Recursively process nested BlockCall statements
-            for (size_t j = 0; j < block->n_body; j++) {
-                if (ASR::is_a<ASR::BlockCall_t>(*block->m_body[j])) {
-                    ASR::BlockCall_t *inner_bc =
-                        ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
-                    if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
-                        process_block_for_kernel(
-                            ASR::down_cast<ASR::Block_t>(inner_bc->m_m),
-                            false);
-                    }
-                }
-            }
             // Pre-compute VLA dimension expressions that contain
             // FunctionCall nodes on the host side and pass the
             // results as scalar kernel parameters, because GPU
             // kernels cannot call arbitrary host-side functions.
-            // NOTE: The variable type and body expression types
-            // (e.g. ArrayBroadcast m_type) share the same
-            // Array_t pointer, so modifying the dimension here
-            // automatically fixes body expression types too.
+            // This must happen BEFORE body remapping: the variable
+            // type and body expression types (e.g. ArrayBroadcast
+            // m_type) may share the same Array_t pointer, so body
+            // remapping would change Var references in the shared
+            // dimension to point to kernel-scope symbols. The
+            // host_expr duplicate must capture the original
+            // (caller-scope) references for the host-side call args.
             {
                 ASRUtils::ExprStmtDuplicator dim_dup(al);
                 dim_dup.success = true;
@@ -1394,6 +1367,36 @@ public:
                             *dim_ptrs[e] = ASRUtils::EXPR(
                                 ASR::make_Var_t(al, loc, psym));
                         }
+                    }
+                }
+            }
+            // Remap Var references inside the block body
+            GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
+            for (size_t j = 0; j < block->n_body; j++) {
+                block_replacer.visit_stmt(*block->m_body[j]);
+            }
+            // Also remap Var references inside AssociateBlock bodies
+            // within this Block, since the visitor does not descend
+            // into AssociateBlockCall targets automatically.
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
+                    continue;
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        item.second);
+                for (size_t j = 0; j < ab->n_body; j++) {
+                    block_replacer.visit_stmt(*ab->m_body[j]);
+                }
+            }
+            // Recursively process nested BlockCall statements
+            for (size_t j = 0; j < block->n_body; j++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*block->m_body[j])) {
+                    ASR::BlockCall_t *inner_bc =
+                        ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
+                    if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
+                        process_block_for_kernel(
+                            ASR::down_cast<ASR::Block_t>(inner_bc->m_m),
+                            false);
                     }
                 }
             }
