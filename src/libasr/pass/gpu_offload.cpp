@@ -699,6 +699,12 @@ public:
                         // Assignment instead of Associate. Capture the
                         // initial value for variables owned by this
                         // AssociateBlock so they can be resolved.
+                        // Only add if the symbol isn't already mapped
+                        // (e.g., from a prior Associate node); otherwise
+                        // we would overwrite the real alias with a
+                        // regular assignment like `v = 0.`, whose RHS
+                        // may reference `v` itself and cause infinite
+                        // recursion during resolution.
                         ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
                             ab->m_body[i]);
                         if (is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -706,7 +712,8 @@ public:
                                 down_cast<ASR::Var_t>(asgn->m_target)->m_v;
                             if (is_a<ASR::Variable_t>(*sym) &&
                                 down_cast<ASR::Variable_t>(sym)->m_parent_symtab
-                                    == ab->m_symtab) {
+                                    == ab->m_symtab &&
+                                assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             }
                         }
@@ -796,7 +803,8 @@ public:
                                     asgn->m_target)->m_v;
                             if (ASR::is_a<ASR::Variable_t>(*sym) &&
                                 ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab) {
+                                    ->m_parent_symtab == ab->m_symtab &&
+                                assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             } else {
                                 resolved_stmts.push_back(al,
