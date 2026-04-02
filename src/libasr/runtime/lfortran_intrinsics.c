@@ -5912,7 +5912,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (iostat != NULL) {
             *iostat = 1;
             if (iomsg != NULL && iomsg_len > 0) {
-                const char *msg = "FILE and UNIT must not both be specified in INQUIRE";
+                char *msg = "FILE and UNIT must not both be specified in INQUIRE";
                 _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
             }
             return;
