@@ -10661,6 +10661,7 @@ public:
             x.m_target->type == ASR::exprType::ListItem ||
             x.m_target->type == ASR::exprType::DictItem ||
             x.m_target->type == ASR::exprType::UnionInstanceMember ||
+            x.m_target->type == ASR::exprType::ArrayPhysicalCast ||
             (x.m_target->type == ASR::exprType::FunctionCall &&
              ASRUtils::is_pointer(ASRUtils::expr_type(x.m_target))) ) {
             is_assignment_target = true;
