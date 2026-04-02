@@ -11782,9 +11782,18 @@ public:
         builder->CreateStore(tmp_cast, data_ptr);
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-        llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_allocatable(m_type), module.get());
-        fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
+        bool dims_known = true;
+        for (int r = 0; r < n_dims; r++) {
+            if (m_dims[r].m_start == nullptr || m_dims[r].m_length == nullptr) {
+                dims_known = false;
+                break;
+            }
+        }
+        if (dims_known) {
+            llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
+                ASRUtils::type_get_past_allocatable(m_type), module.get());
+            fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
+        }
         // Set CFI descriptor fields (elem_len, type, attribute)
         ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(array_ttype);
         llvm::DataLayout data_layout(module->getDataLayout());
