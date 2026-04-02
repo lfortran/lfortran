@@ -59,6 +59,14 @@ public:
         }
     }
 
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         // Skip variables local to Block scopes, except those in the
         // enclosing Block scope (which need to become kernel parameters
@@ -72,6 +80,14 @@ public:
                 if (var->m_parent_symtab != enclosing_scope) {
                     return;
                 }
+            }
+            // Skip variables local to AssociateBlock scopes — they are
+            // internal aliases that stay in the AssociateBlock's symtab
+            if (var->m_parent_symtab->asr_owner &&
+                ASR::is_a<ASR::AssociateBlock_t>(
+                    *ASR::down_cast<ASR::symbol_t>(
+                        var->m_parent_symtab->asr_owner))) {
+                return;
             }
         }
         std::string name = ASRUtils::symbol_name(x.m_v);
@@ -218,19 +234,31 @@ public:
         }
     }
 
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         // Check if target is a simple Var (not ArrayItem)
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            // Skip variables local to Block scopes (except the enclosing scope)
+            // Skip variables local to Block or AssociateBlock scopes
             bool is_block_local = false;
             if (ASR::is_a<ASR::Variable_t>(*v->m_v)) {
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                if (var->m_parent_symtab->asr_owner &&
-                    ASR::is_a<ASR::Block_t>(
-                        *ASR::down_cast<ASR::symbol_t>(
-                            var->m_parent_symtab->asr_owner))) {
-                    if (var->m_parent_symtab != enclosing_scope) {
+                if (var->m_parent_symtab->asr_owner) {
+                    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                        var->m_parent_symtab->asr_owner);
+                    if (ASR::is_a<ASR::Block_t>(*owner)) {
+                        if (var->m_parent_symtab != enclosing_scope) {
+                            is_block_local = true;
+                        }
+                    }
+                    if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
                         is_block_local = true;
                     }
                 }
@@ -680,6 +708,72 @@ public:
         // Inline IntrinsicArrayFunction All before kernel extraction
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
+        // Resolve AssociateBlocks inside the do concurrent body (e.g.,
+        // block { associate(nh => n) ... } within the loop). GPU kernels
+        // cannot use Pointer-based associate aliases, so we inline the
+        // associate targets and replace the AssociateBlockCall with the
+        // resolved statements.
+        for (size_t bi = 0; bi < x.n_body; bi++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[bi])) continue;
+            ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+                x.m_body[bi]);
+            if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+            Vec<ASR::stmt_t*> new_block_body;
+            new_block_body.reserve(al, block->n_body);
+            bool changed = false;
+            for (size_t si = 0; si < block->n_body; si++) {
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(
+                        *block->m_body[si])) {
+                    new_block_body.push_back(al, block->m_body[si]);
+                    continue;
+                }
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(
+                        block->m_body[si]);
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*abc->m_m)) {
+                    new_block_body.push_back(al, block->m_body[si]);
+                    continue;
+                }
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
+                Vec<ASR::stmt_t*> resolved_stmts;
+                resolved_stmts.reserve(al, ab->n_body);
+                for (size_t ai = 0; ai < ab->n_body; ai++) {
+                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
+                        ASR::Associate_t *assoc =
+                            ASR::down_cast<ASR::Associate_t>(
+                                ab->m_body[ai]);
+                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                            ASR::symbol_t *sym =
+                                ASR::down_cast<ASR::Var_t>(
+                                    assoc->m_target)->m_v;
+                            assoc_map[sym] = assoc->m_value;
+                        }
+                    } else {
+                        resolved_stmts.push_back(al, ab->m_body[ai]);
+                    }
+                }
+                if (!assoc_map.empty()) {
+                    AssociateVarResolverVisitor resolver(al, assoc_map);
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        resolver.visit_stmt(*resolved_stmts.p[ri]);
+                    }
+                }
+                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                    new_block_body.push_back(al, resolved_stmts.p[ri]);
+                }
+                std::string ab_name = ab->m_name;
+                block->m_symtab->erase_symbol(ab_name);
+                changed = true;
+            }
+            if (changed) {
+                block->m_body = new_block_body.p;
+                block->n_body = new_block_body.n;
+            }
+        }
+
         // Detect if the do concurrent is inside a Block scope. If so,
         // block-local variables need to be collected as kernel parameters
         // rather than skipped. Walk up through AssociateBlock parents to
@@ -1073,6 +1167,19 @@ public:
                     GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
                     for (size_t j = 0; j < block->n_body; j++) {
                         block_replacer.visit_stmt(*block->m_body[j]);
+                    }
+                    // Also remap Var references inside AssociateBlock bodies
+                    // within this Block, since the visitor does not descend
+                    // into AssociateBlockCall targets automatically.
+                    for (auto &item : block->m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
+                            continue;
+                        ASR::AssociateBlock_t *ab =
+                            ASR::down_cast<ASR::AssociateBlock_t>(
+                                item.second);
+                        for (size_t j = 0; j < ab->n_body; j++) {
+                            block_replacer.visit_stmt(*ab->m_body[j]);
+                        }
                     }
                     // Pre-compute VLA dimension expressions that contain
                     // FunctionCall nodes on the host side and pass the
