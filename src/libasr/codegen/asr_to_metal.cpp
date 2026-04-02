@@ -9,6 +9,8 @@
 
 #include <sstream>
 #include <map>
+#include <set>
+#include <vector>
 
 namespace LCompilers {
 
@@ -123,21 +125,131 @@ public:
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
                 ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
-                src << "    " << metal_type(mv->m_type) << " "
-                    << mv->m_name << ";\n";
+                if (is_struct_type(mv->m_type)) {
+                    src << "    " << get_struct_name(mv) << " "
+                        << mv->m_name << ";\n";
+                } else {
+                    src << "    " << metal_type(mv->m_type) << " "
+                        << mv->m_name << ";\n";
+                }
             }
         }
         src << "};\n\n";
     }
 
+    // Collect struct definitions in dependency order (nested structs first)
+    void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
+            std::set<std::string> &emitted,
+            std::vector<ASR::Struct_t*> &ordered) {
+        std::string name = st->m_name;
+        if (emitted.count(name)) return;
+        // Emit dependencies first
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+            if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
+                ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+                if (is_struct_type(mv->m_type) && mv->m_type_declaration) {
+                    ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                        mv->m_type_declaration);
+                    if (ASR::is_a<ASR::Struct_t>(*inner)) {
+                        collect_structs_ordered(
+                            ASR::down_cast<ASR::Struct_t>(inner),
+                            scope, emitted, ordered);
+                    }
+                }
+            }
+        }
+        emitted.insert(name);
+        ordered.push_back(st);
+    }
+
+    // Resolve a FunctionCall symbol to the actual Function ASR node
+    ASR::Function_t* resolve_function(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            return ASR::down_cast<ASR::Function_t>(sym);
+        }
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            ASR::StructMethodDeclaration_t *smd =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            return resolve_function(smd->m_proc);
+        }
+        return nullptr;
+    }
+
+    // Emit a Fortran function as a Metal inline function
+    void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
+        ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
+            fn->m_function_signature);
+        std::string ret_type = "void";
+        if (fn->m_return_var) {
+            ret_type = metal_type(ASRUtils::expr_type(fn->m_return_var));
+        }
+        src << "inline " << ret_type << " " << metal_name << "(";
+        bool first = true;
+        for (size_t i = 0; i < fn->n_args; i++) {
+            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            // Skip 'self'/'class' argument (pass attribute)
+            if (ftype->m_arg_types[i] &&
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ftype->m_arg_types[i]))) {
+                continue;
+            }
+            if (!first) src << ", ";
+            first = false;
+            src << metal_type(arg->m_type) << " " << arg->m_name;
+        }
+        src << ") {\n";
+        indent_level++;
+        // Declare return variable if present
+        if (fn->m_return_var) {
+            ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+            src << get_indent() << ret_type << " " << rv->m_name << ";\n";
+        }
+        for (size_t i = 0; i < fn->n_body; i++) {
+            visit_stmt(fn->m_body[i]);
+        }
+        if (fn->m_return_var) {
+            ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+            src << get_indent() << "return " << rv->m_name << ";\n";
+        }
+        indent_level--;
+        src << "}\n\n";
+    }
+
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
 
-        // Emit struct type definitions used in this kernel
+        // Emit struct type definitions in dependency order
+        std::set<std::string> emitted_structs;
+        std::vector<ASR::Struct_t*> ordered_structs;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                emit_struct_def(ASR::down_cast<ASR::Struct_t>(item.second));
+                collect_structs_ordered(
+                    ASR::down_cast<ASR::Struct_t>(item.second),
+                    x.m_symtab, emitted_structs, ordered_structs);
             }
+        }
+        for (ASR::Struct_t *st : ordered_structs) {
+            emit_struct_def(st);
+        }
+
+        // Emit inline function definitions for type-bound procedures
+        // referenced in this kernel
+        std::set<std::string> emitted_funcs;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
+                item.second);
+            ASR::Function_t *fn = resolve_function(resolved);
+            if (!fn) continue;
+            std::string fn_name(fn->m_name);
+            if (emitted_funcs.count(fn_name)) continue;
+            emitted_funcs.insert(fn_name);
+            emit_function_def(fn, fn_name);
         }
 
         struct ArgInfo {
@@ -423,12 +535,24 @@ public:
                         visit_expr(fc->m_args[1].m_value);
                     src << ")";
                 } else {
-                    // Generic function call — emit as cast to return type
-                    std::string target = metal_type(fc->m_type);
-                    src << "((" << target << ")(";
-                    if (fc->n_args > 0 && fc->m_args[0].m_value)
-                        visit_expr(fc->m_args[0].m_value);
-                    src << "))";
+                    // User-defined function call — emit as fn(args)
+                    // Resolve to actual function name
+                    ASR::Function_t *fn = resolve_function(fc->m_name);
+                    std::string call_name = fn ? std::string(fn->m_name) : fn_name;
+                    src << call_name << "(";
+                    bool first_arg = true;
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        if (fc->m_args[i].m_value) {
+                            // Skip struct-typed arguments (self/class)
+                            ASR::ttype_t *arg_type = ASRUtils::expr_type(
+                                fc->m_args[i].m_value);
+                            if (is_struct_type(arg_type)) continue;
+                            if (!first_arg) src << ", ";
+                            first_arg = false;
+                            visit_expr(fc->m_args[i].m_value);
+                        }
+                    }
+                    src << ")";
                 }
                 break;
             }

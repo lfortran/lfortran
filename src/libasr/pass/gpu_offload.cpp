@@ -65,6 +65,24 @@ public:
             x->m_m = new_mem;
         }
     }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        // Remap m_name to kernel scope symbol
+        std::string name = to_lower(ASRUtils::symbol_name(x->m_name));
+        ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
+        if (new_sym) {
+            x->m_name = new_sym;
+        }
+        if (x->m_original_name) {
+            std::string orig_name = to_lower(ASRUtils::symbol_name(x->m_original_name));
+            ASR::symbol_t *new_orig = kernel_scope.get_symbol(orig_name);
+            if (new_orig) {
+                x->m_original_name = new_orig;
+            }
+        }
+        // Call base to handle arguments, type, value, dt
+        ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_FunctionCall(x);
+    }
 };
 
 class GpuReplaceSymbolsVisitor :
@@ -168,21 +186,12 @@ public:
         return copy;
     }
 
-    // For a struct-typed variable, get the type_declaration symbol
-    // from the original scope and ensure the Struct (and its member
-    // ExternalSymbols) exist in the kernel scope.
-    ASR::symbol_t* import_struct_type(ASR::symbol_t *orig_sym,
+    // Import a Struct definition into kernel scope, recursively handling
+    // nested struct-typed members. Also creates ExternalSymbol entries
+    // in kernel_scope for members referenced from orig_scope.
+    ASR::symbol_t* import_struct_def(ASR::Struct_t *orig_struct,
             SymbolTable *orig_scope, SymbolTable *kernel_scope,
             const Location &loc) {
-        if (!is_a<ASR::Variable_t>(*orig_sym)) return nullptr;
-        ASR::Variable_t *var = down_cast<ASR::Variable_t>(orig_sym);
-        if (!ASR::is_a<ASR::StructType_t>(
-                *ASRUtils::extract_type(var->m_type))) return nullptr;
-        ASR::symbol_t *type_decl = var->m_type_declaration;
-        if (!type_decl) return nullptr;
-        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
-        if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
-        ASR::Struct_t *orig_struct = down_cast<ASR::Struct_t>(struct_sym);
         std::string struct_name = orig_struct->m_name;
 
         // If already imported, return existing
@@ -195,14 +204,39 @@ public:
             ASR::symbol_t *member = item.second;
             if (is_a<ASR::Variable_t>(*member)) {
                 ASR::Variable_t *mv = down_cast<ASR::Variable_t>(member);
+                // If the member itself has StructType, recursively import
+                // the inner struct so we can set its type_declaration
+                ASR::symbol_t *member_type_decl = nullptr;
+                if (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(mv->m_type)) &&
+                        mv->m_type_declaration) {
+                    ASR::symbol_t *inner_sym =
+                        ASRUtils::symbol_get_past_external(
+                            mv->m_type_declaration);
+                    if (is_a<ASR::Struct_t>(*inner_sym)) {
+                        member_type_decl = import_struct_def(
+                            down_cast<ASR::Struct_t>(inner_sym),
+                            orig_scope, kernel_scope, loc);
+                    }
+                }
                 ASR::symbol_t *new_member = down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, new_st,
                         s2c(al, item.first), nullptr, 0,
                         mv->m_intent, nullptr, nullptr,
                         mv->m_storage, ASRUtils::duplicate_type(al, mv->m_type),
-                        nullptr, mv->m_abi, mv->m_access,
+                        member_type_decl, mv->m_abi, mv->m_access,
                         mv->m_presence, false));
                 new_st->add_symbol(item.first, new_member);
+            } else if (is_a<ASR::StructMethodDeclaration_t>(*member)) {
+                ASR::StructMethodDeclaration_t *smd =
+                    down_cast<ASR::StructMethodDeclaration_t>(member);
+                ASR::asr_t *new_smd = ASR::make_StructMethodDeclaration_t(
+                    al, loc, new_st, s2c(al, item.first),
+                    smd->m_self_argument, smd->m_proc_name,
+                    smd->m_proc, smd->m_abi,
+                    smd->m_is_deferred, smd->m_is_nopass);
+                new_st->add_symbol(item.first,
+                    down_cast<ASR::symbol_t>(new_smd));
             }
         }
 
@@ -250,6 +284,24 @@ public:
         }
 
         return kernel_struct;
+    }
+
+    // For a struct-typed variable, get the type_declaration symbol
+    // from the original scope and ensure the Struct (and its member
+    // ExternalSymbols) exist in the kernel scope.
+    ASR::symbol_t* import_struct_type(ASR::symbol_t *orig_sym,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const Location &loc) {
+        if (!is_a<ASR::Variable_t>(*orig_sym)) return nullptr;
+        ASR::Variable_t *var = down_cast<ASR::Variable_t>(orig_sym);
+        if (!ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(var->m_type))) return nullptr;
+        ASR::symbol_t *type_decl = var->m_type_declaration;
+        if (!type_decl) return nullptr;
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
+        if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
+        return import_struct_def(down_cast<ASR::Struct_t>(struct_sym),
+            orig_scope, kernel_scope, loc);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
