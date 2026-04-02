@@ -65,6 +65,37 @@ public:
     }
 };
 
+// Resolves associate variable references to their original targets.
+// When a DoConcurrentLoop is inside an AssociateBlock, variables like `nn`
+// (associated with `n`) must be resolved to `n` before kernel extraction,
+// because the kernel scope cannot access the AssociateBlock's symbol table.
+class AssociateVarResolver : public ASR::BaseExprReplacer<AssociateVarResolver> {
+public:
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &assoc_map;
+    AssociateVarResolver(std::map<ASR::symbol_t*, ASR::symbol_t*> &map)
+        : assoc_map(map) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        auto it = assoc_map.find(x->m_v);
+        if (it != assoc_map.end()) {
+            x->m_v = it->second;
+        }
+    }
+};
+
+class AssociateVarResolverVisitor :
+    public ASR::CallReplacerOnExpressionsVisitor<AssociateVarResolverVisitor> {
+public:
+    AssociateVarResolver replacer;
+    AssociateVarResolverVisitor(std::map<ASR::symbol_t*, ASR::symbol_t*> &map)
+        : replacer(map) {}
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+};
+
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
@@ -99,36 +130,18 @@ public:
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
 
-    // Duplicate an expression, creating fresh Var references pointing to
-    // the given scope. Used to create kernel-scope copies of head expressions.
+    // Duplicate an expression, remapping all Var references to point to the
+    // given scope. Used to create kernel-scope copies of head expressions.
     ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope) {
         if (!expr) return nullptr;
-        Location loc = expr->base.loc;
-        switch (expr->type) {
-            case ASR::exprType::Var: {
-                ASR::Var_t *v = down_cast<ASR::Var_t>(expr);
-                std::string name = to_lower(ASRUtils::symbol_name(v->m_v));
-                ASR::symbol_t *sym = scope->get_symbol(name);
-                if (sym) {
-                    return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-                }
-                return expr;
-            }
-            case ASR::exprType::IntegerConstant: {
-                ASR::IntegerConstant_t *c = down_cast<ASR::IntegerConstant_t>(expr);
-                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, c->m_n, c->m_type, c->m_intboz_type));
-            }
-            case ASR::exprType::IntegerBinOp: {
-                ASR::IntegerBinOp_t *op = down_cast<ASR::IntegerBinOp_t>(expr);
-                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                    dup_expr_to_scope(op->m_left, scope), op->m_op,
-                    dup_expr_to_scope(op->m_right, scope),
-                    op->m_type, nullptr));
-            }
-            default:
-                return expr;
-        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.success = true;
+        ASR::expr_t *copy = duplicator.duplicate_expr(expr);
+        if (!copy) return expr;
+        GpuReplaceSymbols replacer(*scope);
+        replacer.current_expr = &copy;
+        replacer.replace_expr(copy);
+        return copy;
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
@@ -143,6 +156,53 @@ public:
 
         for (size_t d = 0; d < n_dims; d++) {
             if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) return;
+        }
+
+        // Resolve associate variables to their original targets if this
+        // DoConcurrentLoop is inside an AssociateBlock. The kernel function
+        // lives at the translation-unit level and cannot reference symbols
+        // from the AssociateBlock's scope.
+        if (current_scope->asr_owner &&
+            current_scope->asr_owner->type == ASR::asrType::symbol &&
+            is_a<ASR::AssociateBlock_t>(
+                *down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            ASR::AssociateBlock_t *ab = ASR::down_cast2<ASR::AssociateBlock_t>(
+                current_scope->asr_owner);
+            std::map<ASR::symbol_t*, ASR::symbol_t*> assoc_map;
+            for (size_t i = 0; i < ab->n_body; i++) {
+                if (is_a<ASR::Associate_t>(*ab->m_body[i])) {
+                    ASR::Associate_t *assoc = down_cast<ASR::Associate_t>(
+                        ab->m_body[i]);
+                    if (is_a<ASR::Var_t>(*assoc->m_target)) {
+                        ASR::symbol_t *assoc_sym =
+                            down_cast<ASR::Var_t>(assoc->m_target)->m_v;
+                        ASR::expr_t *val = assoc->m_value;
+                        while (is_a<ASR::ArrayPhysicalCast_t>(*val)) {
+                            val = down_cast<ASR::ArrayPhysicalCast_t>(val)->m_arg;
+                        }
+                        if (is_a<ASR::Var_t>(*val)) {
+                            assoc_map[assoc_sym] =
+                                down_cast<ASR::Var_t>(val)->m_v;
+                        }
+                    }
+                }
+            }
+            if (!assoc_map.empty()) {
+                AssociateVarResolver resolver(assoc_map);
+                for (size_t d = 0; d < n_dims; d++) {
+                    ASR::expr_t *e;
+                    e = x.m_head[d].m_start;
+                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
+                    e = x.m_head[d].m_end;
+                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
+                    e = x.m_head[d].m_increment;
+                    if (e) { resolver.current_expr = &e; resolver.replace_expr(e); }
+                }
+                AssociateVarResolverVisitor resolver_visitor(assoc_map);
+                for (size_t i = 0; i < x.n_body; i++) {
+                    resolver_visitor.visit_stmt(*x.m_body[i]);
+                }
+            }
         }
 
         // 1. Collect all symbols from body AND head expressions
