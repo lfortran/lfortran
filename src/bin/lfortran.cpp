@@ -2438,6 +2438,8 @@ int main_app(int argc, char *argv[]) {
                 compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::ImplicitInterface);
             } else if (warn_name == "naming-convention") {
                 compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::NamingConvention);
+            } else if (warn_name == "recursive-function-call") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::RecursiveFunctionCall);
             } else if (warn_name == "other") {
                 compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::Other);
             } else {

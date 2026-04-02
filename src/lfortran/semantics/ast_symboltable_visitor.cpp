@@ -2895,19 +2895,19 @@ public:
             if (expr_holder && *expr_holder && ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
                 ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
 
-                if (((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name) {
+                bool is_recursive_call = ((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name;
+
+                if (is_recursive_call) {
                     diag.add(diag::Diagnostic(
                         "Recursive function call detected in variable declaration",
                         diag::Level::Warning,
                         diag::Stage::Semantic,
                         {diag::Label("", {func_call->base.base.loc})},
-                        diag::WarningID::Other // Tagged for silencing
+                        diag::WarningID::RecursiveFunctionCall
                     ));
                 }
 
                 // Add called function as dependency to the owning-function's scope
-                // ExternalSymbol calls are not tracked as function dependencies
-                // (consistent with how the verify pass collects dependencies)
                 if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
                     SetChar func_dep;
                     func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
@@ -3293,7 +3293,7 @@ public:
                     diag::Level::Warning, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})
                     },
-                    diag::WarningID::UnusedVariable // <--- ADD THIS LINE
+                    diag::WarningID::UnusedVariable
                 ));
             }
             current_procedure_args.push_back(arg);

@@ -84,6 +84,7 @@ enum class WarningID {
     UnusedVariable,
     ImplicitInterface,
     NamingConvention,
+    RecursiveFunctionCall,
     Other,
     None // Default for Errors and non-configurable messages
 };
@@ -94,6 +95,7 @@ inline std::string warn_id_to_string(WarningID id) {
         case WarningID::UnusedVariable:  return "unused-variable";
         case WarningID::ImplicitInterface: return "implicit-interface";
         case WarningID::NamingConvention:  return "naming-convention";
+        case WarningID::RecursiveFunctionCall:  return "recursive-function-call";
         case WarningID::Other:             return "other";
         default:                           return "";
     }
