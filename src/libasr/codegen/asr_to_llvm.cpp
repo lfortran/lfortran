@@ -63,6 +63,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/codegen/llvm_compat.h>
 #include <libasr/codegen/asr_to_metal.h>
+#include <libasr/codegen/gpu_utils.h>
 
 namespace LCompilers {
 
@@ -18884,6 +18885,9 @@ public:
         llvm::Function *set_scalar_fn = get_gpu_runtime_func(
             "lfortran_gpu_set_scalar_arg", set_scalar_ft);
 
+        // Save scalar arg LLVM values for VLA workspace size computation
+        std::vector<llvm::Value*> call_arg_values(x.n_args, nullptr);
+
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *arg_expr = x.m_args[i].m_value;
             if (!arg_expr) continue;
@@ -18973,6 +18977,65 @@ public:
                 llvm::Value *scalar_size = llvm::ConstantInt::get(i64, sz);
                 builder->CreateCall(set_scalar_fn, {gpu_kernel, idx, scalar_ptr, scalar_size});
             }
+
+            // Save scalar arg values for VLA workspace size computation
+            if (!ASRUtils::is_array(arg_type) &&
+                    !ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(arg_type))) {
+                call_arg_values[i] = arg_val;
+            }
+        }
+
+        // 4b. Allocate and pass VLA workspace buffers
+        // Metal does not support variable-length arrays in shaders, so the
+        // Metal codegen converts each block-local VLA into an extra device
+        // buffer parameter.  Here we allocate host-side memory for those
+        // buffers, pass them to the kernel, and free them after launch.
+        std::vector<llvm::Value*> vla_workspace_ptrs;
+        std::vector<GpuVlaWorkspace> gpu_vla_workspaces =
+            analyze_gpu_vla_workspaces(*kernel_func);
+        if (!gpu_vla_workspaces.empty()) {
+            // Evaluate grid/block sizes to know the total thread count
+            this->visit_expr(*x.m_grid_size);
+            llvm::Value *gs = tmp;
+            this->visit_expr(*x.m_block_size);
+            llvm::Value *bs = tmp;
+            llvm::Value *total_threads = builder->CreateMul(
+                builder->CreateIntCast(gs, i64, true),
+                builder->CreateIntCast(bs, i64, true));
+
+            llvm::FunctionType *malloc_ft =
+                llvm::FunctionType::get(i8_ptr, {i64}, false);
+            llvm::Function *malloc_fn =
+                get_gpu_runtime_func("malloc", malloc_ft);
+
+            for (auto &ws : gpu_vla_workspaces) {
+                llvm::Value *per_thread_elems =
+                    llvm::ConstantInt::get(i64, 1);
+                for (auto &dim : ws.dims) {
+                    if (dim.is_constant) {
+                        per_thread_elems = builder->CreateMul(
+                            per_thread_elems,
+                            llvm::ConstantInt::get(i64, dim.constant_value));
+                    } else {
+                        llvm::Value *dim_val =
+                            call_arg_values[dim.call_arg_index];
+                        per_thread_elems = builder->CreateMul(
+                            per_thread_elems,
+                            builder->CreateIntCast(dim_val, i64, true));
+                    }
+                }
+                llvm::Value *workspace_size = builder->CreateMul(
+                    builder->CreateMul(total_threads, per_thread_elems),
+                    llvm::ConstantInt::get(i64, ws.elem_size));
+                llvm::Value *ptr =
+                    builder->CreateCall(malloc_fn, {workspace_size});
+                vla_workspace_ptrs.push_back(ptr);
+                llvm::Value *buf_idx =
+                    llvm::ConstantInt::get(i32, ws.buffer_index);
+                builder->CreateCall(set_buffer_fn,
+                    {gpu_kernel, buf_idx, ptr, workspace_size});
+            }
         }
 
         // 5. Launch: lfortran_gpu_launch(ctx, kernel, grid, block)
@@ -19013,6 +19076,17 @@ public:
         llvm::Value *block_ptr = builder->CreatePointerCast(block_arr, i8_ptr);
 
         builder->CreateCall(launch_fn, {gpu_ctx, gpu_kernel, grid_ptr, block_ptr});
+
+        // 6. Free VLA workspace buffers allocated in step 4b
+        if (!vla_workspace_ptrs.empty()) {
+            llvm::FunctionType *free_ft =
+                llvm::FunctionType::get(void_type, {i8_ptr}, false);
+            llvm::Function *free_fn =
+                get_gpu_runtime_func("free", free_ft);
+            for (llvm::Value *ptr : vla_workspace_ptrs) {
+                builder->CreateCall(free_fn, {ptr});
+            }
+        }
     }
 
     void visit_GpuSync(const ASR::GpuSync_t & /* x */) {
