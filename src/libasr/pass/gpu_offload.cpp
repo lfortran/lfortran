@@ -399,9 +399,23 @@ public:
                     orig_scope, kernel_scope, loc);
             }
 
+            // Copy dependencies from the original variable
+            char **deps = nullptr;
+            size_t n_deps = 0;
+            if (orig_sym && is_a<ASR::Variable_t>(*orig_sym)) {
+                ASR::Variable_t *orig_var = down_cast<ASR::Variable_t>(orig_sym);
+                n_deps = orig_var->n_dependencies;
+                if (n_deps > 0) {
+                    deps = al.allocate<char*>(n_deps);
+                    for (size_t di = 0; di < n_deps; di++) {
+                        deps[di] = orig_var->m_dependencies[di];
+                    }
+                }
+            }
+
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, sym_name), nullptr, 0,
+                    s2c(al, sym_name), deps, n_deps,
                     ASR::intentType::InOut, nullptr, nullptr,
                     ASR::storage_typeType::Default,
                     ASRUtils::duplicate_type(al, type),
@@ -449,6 +463,31 @@ public:
                     type_decl, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
             kernel_scope->add_symbol(name, param);
+        }
+
+        // Remap symbol references in kernel parameter types (e.g., array
+        // dimension expressions like s(x%n) that still point to the
+        // original scope after duplicate_type).
+        {
+            GpuReplaceSymbols type_replacer(*kernel_scope);
+            for (auto &item : kernel_scope->get_scope()) {
+                if (!is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = down_cast<ASR::Variable_t>(item.second);
+                ASR::ttype_t *type = var->m_type;
+                if (ASR::is_a<ASR::Array_t>(*type)) {
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                    for (size_t i = 0; i < arr->n_dims; i++) {
+                        if (arr->m_dims[i].m_start) {
+                            type_replacer.current_expr = &(arr->m_dims[i].m_start);
+                            type_replacer.replace_expr(arr->m_dims[i].m_start);
+                        }
+                        if (arr->m_dims[i].m_length) {
+                            type_replacer.current_expr = &(arr->m_dims[i].m_length);
+                            type_replacer.replace_expr(arr->m_dims[i].m_length);
+                        }
+                    }
+                }
+            }
         }
 
         // Save host-side head expressions BEFORE in-place replacement
@@ -624,11 +663,26 @@ public:
         }
 
         // 5. Build function signature
+        // FunctionType arg_types must not contain scope-bound expressions,
+        // so strip dimension expressions that reference variables.
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, kernel_args.n);
         for (size_t i = 0; i < kernel_args.n; i++) {
             ASR::Var_t *v = down_cast<ASR::Var_t>(kernel_args.p[i]);
-            arg_types.push_back(al, ASRUtils::symbol_type(v->m_v));
+            ASR::ttype_t *t = ASRUtils::symbol_type(v->m_v);
+            if (ASR::is_a<ASR::Array_t>(*t)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+                ASR::dimension_t *new_dims = al.allocate<ASR::dimension_t>(arr->n_dims);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    new_dims[d].loc = arr->m_dims[d].loc;
+                    new_dims[d].m_start = nullptr;
+                    new_dims[d].m_length = nullptr;
+                }
+                t = ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
+                    arr->m_type, new_dims, arr->n_dims,
+                    arr->m_physical_type));
+            }
+            arg_types.push_back(al, t);
         }
         ASR::ttype_t *fn_sig = ASRUtils::TYPE(
             ASR::make_FunctionType_t(al, loc,
