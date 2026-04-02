@@ -58,6 +58,7 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/do_concurrent_to_openmp.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
@@ -115,6 +116,7 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
+            {"do_concurrent_to_openmp", &pass_do_concurrent_to_openmp},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
@@ -244,6 +246,7 @@ namespace LCompilers {
                 "global_stmts",
                 "init_expr",
                 "function_call_in_declaration",
+                "do_concurrent_to_openmp",
                 "openmp",
                 "implied_do_loops",
                 "array_struct_temporary",
