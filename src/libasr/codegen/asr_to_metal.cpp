@@ -409,6 +409,27 @@ public:
                 src << get_indent() << "}\n";
                 break;
             }
+            case ASR::stmtType::BlockCall: {
+                ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+                src << get_indent() << "{\n";
+                indent_level++;
+                for (auto &item : block->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                            item.second);
+                        src << get_indent()
+                            << metal_type(v->m_type) << " "
+                            << item.first << ";\n";
+                    }
+                }
+                for (size_t i = 0; i < block->n_body; i++) {
+                    visit_stmt(block->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
+                break;
+            }
             default:
                 break;
         }

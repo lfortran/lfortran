@@ -30,7 +30,24 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &syms)
         : al(al_), symbols(syms) {}
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
+        // Skip variables local to Block scopes
+        if (ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x.m_v);
+            if (var->m_parent_symtab->asr_owner &&
+                ASR::is_a<ASR::Block_t>(
+                    *ASR::down_cast<ASR::symbol_t>(
+                        var->m_parent_symtab->asr_owner))) {
+                return;
+            }
+        }
         std::string name = ASRUtils::symbol_name(x.m_v);
         if (symbols.find(name) == symbols.end()) {
             symbols[name] = {ASRUtils::symbol_type(x.m_v),
@@ -139,14 +156,34 @@ public:
     GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av)
         : local_vars(lv), assigned_vars(av) {}
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         // Check if target is a simple Var (not ArrayItem)
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            std::string name = ASRUtils::symbol_name(v->m_v);
-            ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
-            if (!ASRUtils::is_array(type)) {
-                assigned_vars.insert(name);
+            // Skip variables local to Block scopes
+            bool is_block_local = false;
+            if (ASR::is_a<ASR::Variable_t>(*v->m_v)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                if (var->m_parent_symtab->asr_owner &&
+                    ASR::is_a<ASR::Block_t>(
+                        *ASR::down_cast<ASR::symbol_t>(
+                            var->m_parent_symtab->asr_owner))) {
+                    is_block_local = true;
+                }
+            }
+            if (!is_block_local) {
+                std::string name = ASRUtils::symbol_name(v->m_v);
+                ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
+                if (!ASRUtils::is_array(type)) {
+                    assigned_vars.insert(name);
+                }
             }
         }
         // Check if target is a StructInstanceMember (e.g., x%v = ...)
@@ -925,6 +962,29 @@ public:
                         kernel_starts[d], int_type, nullptr));
                 kernel_body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+            }
+        }
+
+        // Move Block symbols referenced by BlockCall into kernel scope
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*x.m_body[i])) {
+                ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+                    x.m_body[i]);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                        bc->m_m);
+                    std::string block_name = block->m_name;
+                    // Reparent the block's symbol table under kernel scope
+                    block->m_symtab->parent = kernel_scope;
+                    // Remap Var references inside the block body
+                    GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
+                    for (size_t j = 0; j < block->n_body; j++) {
+                        block_replacer.visit_stmt(*block->m_body[j]);
+                    }
+                    // Move Block from original scope to kernel scope
+                    orig_scope->erase_symbol(block_name);
+                    kernel_scope->add_symbol(block_name, bc->m_m);
+                }
             }
         }
 
