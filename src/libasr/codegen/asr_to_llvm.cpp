@@ -3893,6 +3893,14 @@ public:
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type, array);
             }
+            if (array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
+                !LLVM::is_llvm_pointer(*x_mv_type)) {
+                llvm::Type *desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_v, x_mv_type_, module.get());
+                if (array->getType() == desc_type->getPointerTo()->getPointerTo()) {
+                    array = llvm_utils->CreateLoad2(desc_type->getPointerTo(), array);
+                }
+            }
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
