@@ -5831,6 +5831,16 @@ public:
                             array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
                         }
                     }
+                    if (ASRUtils::is_logical(*value_type) && ASRUtils::is_integer(*target_type)) {
+                        if (!compiler_options.logical_casting) {
+                            diag.add(Diagnostic(
+                                "Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
                     }
