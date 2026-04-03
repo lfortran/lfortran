@@ -18938,21 +18938,56 @@ public:
                 }
                 // Get the total number of elements from the array dimension
                 int64_t total_elements = 1;
-                bool fixed_size = true;
+                bool all_constant = true;
+                bool has_null_dim = false;
                 for (size_t d = 0; d < arr->n_dims; d++) {
                     if (arr->m_dims[d].m_length &&
                         ASR::is_a<ASR::IntegerConstant_t>(*arr->m_dims[d].m_length)) {
                         total_elements *= ASR::down_cast<ASR::IntegerConstant_t>(
                             arr->m_dims[d].m_length)->m_n;
                     } else {
-                        fixed_size = false;
+                        all_constant = false;
+                        if (!arr->m_dims[d].m_length) {
+                            has_null_dim = true;
+                        }
                     }
                 }
                 llvm::Value *byte_size;
-                if (fixed_size) {
+                if (all_constant) {
                     byte_size = llvm::ConstantInt::get(i64, total_elements * elem_size);
+                } else if (has_null_dim && is_allocatable_array) {
+                    // Allocatable arrays: get size from the descriptor
+                    ASR::ttype_t *desc_asr_type =
+                        ASRUtils::type_get_past_allocatable(arg_type);
+                    llvm::Type *desc_type =
+                        llvm_utils->get_type_from_ttype_t_util(
+                            arg_expr, desc_asr_type, module.get());
+                    llvm::Value *n_elems = arr_descr->get_array_size(
+                        desc_type, arg_val, nullptr, 4);
+                    llvm::Value *n_elems_64 =
+                        builder->CreateSExtOrTrunc(n_elems, i64);
+                    byte_size = builder->CreateMul(n_elems_64,
+                        llvm::ConstantInt::get(i64, elem_size));
                 } else {
-                    byte_size = llvm::ConstantInt::get(i64, 1024 * elem_size);
+                    // Compute array size at runtime from dimension expressions
+                    llvm::Value *total_val = llvm::ConstantInt::get(i64, 1);
+                    int64_t ptr_loads_copy2 = ptr_loads;
+                    ptr_loads = 2;
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_length) {
+                            this->visit_expr(*arr->m_dims[d].m_length);
+                            llvm::Value *dim_len = tmp;
+                            if (dim_len->getType()->isPointerTy()) {
+                                dim_len = llvm_utils->CreateLoad2(
+                                    llvm::Type::getInt32Ty(context), dim_len);
+                            }
+                            dim_len = builder->CreateSExtOrTrunc(dim_len, i64);
+                            total_val = builder->CreateMul(total_val, dim_len);
+                        }
+                    }
+                    ptr_loads = ptr_loads_copy2;
+                    byte_size = builder->CreateMul(total_val,
+                        llvm::ConstantInt::get(i64, elem_size));
                 }
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
             } else if (ASR::is_a<ASR::StructType_t>(
