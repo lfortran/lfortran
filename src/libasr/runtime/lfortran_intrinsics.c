@@ -81,7 +81,7 @@ static inline double lf_float128_to_double(const void *ptr) {
 // fp128 comparison runtime (macOS / no __float128)
 // -----------------------------------------------------
 
-#if defined(__EMSCRIPTEN__)
+#if !HAVE_FLOAT128
 
 // WASM ABI: fp128 passed as 4 x i64
 int __eqtf2(uint64_t a_hi, uint64_t a_lo,
@@ -148,33 +148,6 @@ int __getf2(uint64_t a_hi, uint64_t a_lo,
     memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
 
     return lf_float128_to_double(a_bytes) >= lf_float128_to_double(b_bytes);
-}
-
-#elif defined(__APPLE__) || !HAVE_FLOAT128
-
-// Native fallback (pointer ABI)
-int __eqtf2(const void *a, const void *b) {
-    return (lf_float128_to_double(a) == lf_float128_to_double(b)) ? 0 : 1;
-}
-
-int __netf2(const void *a, const void *b) {
-    return lf_float128_to_double(a) != lf_float128_to_double(b);
-}
-
-int __lttf2(const void *a, const void *b) {
-    return lf_float128_to_double(a) < lf_float128_to_double(b);
-}
-
-int __letf2(const void *a, const void *b) {
-    return lf_float128_to_double(a) <= lf_float128_to_double(b);
-}
-
-int __gttf2(const void *a, const void *b) {
-    return lf_float128_to_double(a) > lf_float128_to_double(b);
-}
-
-int __getf2(const void *a, const void *b) {
-    return lf_float128_to_double(a) >= lf_float128_to_double(b);
 }
 
 #endif
