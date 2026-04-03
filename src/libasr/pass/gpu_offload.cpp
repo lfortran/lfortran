@@ -295,6 +295,35 @@ public:
     }
 };
 
+// Collects all Function symbols referenced by FunctionCall/SubroutineCall
+// nodes in the do concurrent body so they can be imported into the kernel.
+class GpuFunctionCollector : public ASR::BaseWalkVisitor<GpuFunctionCollector> {
+public:
+    std::map<std::string, ASR::symbol_t*> functions;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*resolved)) {
+            std::string name = ASRUtils::symbol_name(x.m_name);
+            if (functions.find(name) == functions.end()) {
+                functions[name] = x.m_name;
+            }
+        }
+        ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*resolved)) {
+            std::string name = ASRUtils::symbol_name(x.m_name);
+            if (functions.find(name) == functions.end()) {
+                functions[name] = x.m_name;
+            }
+        }
+        ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_SubroutineCall(x);
+    }
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -1081,6 +1110,30 @@ public:
                     type_decl, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
             kernel_scope->add_symbol(name, param);
+        }
+
+        // Import functions/subroutines called in the do concurrent body
+        // into the kernel scope so FunctionCall/SubroutineCall nodes
+        // can reference them after symbol remapping.
+        {
+            GpuFunctionCollector func_collector;
+            for (size_t i = 0; i < x.n_body; i++) {
+                func_collector.visit_stmt(*x.m_body[i]);
+            }
+            ASRUtils::SymbolDuplicator sym_dup(al);
+            for (auto &[func_name, func_sym] : func_collector.functions) {
+                if (kernel_scope->get_symbol(func_name)) continue;
+                ASR::symbol_t *resolved =
+                    ASRUtils::symbol_get_past_external(func_sym);
+                if (ASR::is_a<ASR::Function_t>(*resolved)) {
+                    ASR::symbol_t *dup = sym_dup.duplicate_Function(
+                        ASR::down_cast<ASR::Function_t>(resolved),
+                        kernel_scope);
+                    if (dup) {
+                        kernel_scope->add_symbol(func_name, dup);
+                    }
+                }
+            }
         }
 
         // Remap symbol references in kernel parameter types (e.g., array
