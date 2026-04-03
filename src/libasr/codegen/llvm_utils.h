@@ -1758,7 +1758,22 @@ class ASRToLLVMVisitor;
                     return true;
                 }
             }
-            if (v->m_storage == ASR::Parameter) return true;
+            if (v->m_storage == ASR::Parameter) {
+                // Keep most PARAMETER symbols non-finalizable. A narrow
+                // exception is program-scope parameter structs whose runtime
+                // construction can allocate member storage (for example,
+                // fixed-length character members initialized from constructors).
+                // Those need scope-exit finalization to avoid leaks.
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             if (v->m_storage == ASR::Save) {
                 // Save variables in functions persist across calls and must not
                 // be finalized at function exit.  In the main Program, however,
