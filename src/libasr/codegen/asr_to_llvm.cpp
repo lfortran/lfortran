@@ -15180,7 +15180,8 @@ public:
                     array_llvm_ty);
                 fill_array_details(array_llvm_ty, array_llvm 
                     , llvm_utils->get_StringType(array_ty->m_type)
-                    , array_ty->m_dims, array_ty->n_dims);
+                    , array_ty->m_dims, array_ty->n_dims,
+                    false, false);
                 builder->CreateStore(string_llvm, arr_descr->get_pointer_to_data(array_llvm_ty, array_llvm));
                 tmp = array_llvm;
             }
