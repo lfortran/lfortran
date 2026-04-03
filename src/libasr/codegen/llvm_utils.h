@@ -1734,8 +1734,46 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
-            if (v->m_intent != ASR::Local) return true;
-            if (v->m_storage == ASR::Parameter) return true;
+            if (v->m_intent != ASR::Local) {
+                // Most non-local variables are not owned by this scope and must
+                // not be finalized here. One exception appears with ENTRY lowering:
+                // extra return variables are emitted as intent(return_var) locals.
+                // We should finalize those, but still skip the actual function
+                // return variable, which is owned by the caller.
+                if (v->m_intent == ASR::intentType::ReturnVar) {
+                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                        v->m_parent_symtab->asr_owner);
+                    if (!ASR::is_a<ASR::Function_t>(*owner)) {
+                        return true;
+                    }
+                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
+                    if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                        ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(
+                            fn->m_return_var)->m_v;
+                        if (ret_sym == &v->base) {
+                            return true;
+                        }
+                    }
+                } else {
+                    return true;
+                }
+            }
+            if (v->m_storage == ASR::Parameter) {
+                // Keep most PARAMETER symbols non-finalizable. A narrow
+                // exception is program-scope parameter structs whose runtime
+                // construction can allocate member storage (for example,
+                // fixed-length character members initialized from constructors).
+                // Those need scope-exit finalization to avoid leaks.
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             if (v->m_storage == ASR::Save) {
                 // Save variables in functions persist across calls and must not
                 // be finalized at function exit.  In the main Program, however,
