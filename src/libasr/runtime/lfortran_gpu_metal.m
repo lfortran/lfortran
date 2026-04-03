@@ -67,7 +67,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     if (!library) {
         fprintf(stderr, "lfortran_gpu_load_kernel: Failed to compile Metal shader:\n%s\n",
                 [[error localizedDescription] UTF8String]);
-        return NULL;
+        exit(1);
     }
 
     NSString *name = [NSString stringWithUTF8String:entry_point];
@@ -75,7 +75,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     if (!function) {
         fprintf(stderr, "lfortran_gpu_load_kernel: Function '%s' not found in shader\n",
                 entry_point);
-        return NULL;
+        exit(1);
     }
 
     id<MTLComputePipelineState> pipeline =
@@ -83,7 +83,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     if (!pipeline) {
         fprintf(stderr, "lfortran_gpu_load_kernel: Failed to create pipeline:\n%s\n",
                 [[error localizedDescription] UTF8String]);
-        return NULL;
+        exit(1);
     }
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));

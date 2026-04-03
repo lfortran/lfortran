@@ -699,6 +699,12 @@ public:
                         // Assignment instead of Associate. Capture the
                         // initial value for variables owned by this
                         // AssociateBlock so they can be resolved.
+                        // Only add if the symbol isn't already mapped
+                        // (e.g., from a prior Associate node); otherwise
+                        // we would overwrite the real alias with a
+                        // regular assignment like `v = 0.`, whose RHS
+                        // may reference `v` itself and cause infinite
+                        // recursion during resolution.
                         ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
                             ab->m_body[i]);
                         if (is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -706,7 +712,8 @@ public:
                                 down_cast<ASR::Var_t>(asgn->m_target)->m_v;
                             if (is_a<ASR::Variable_t>(*sym) &&
                                 down_cast<ASR::Variable_t>(sym)->m_parent_symtab
-                                    == ab->m_symtab) {
+                                    == ab->m_symtab &&
+                                assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             }
                         }
@@ -735,6 +742,48 @@ public:
                 AssociateVarResolverVisitor resolver_visitor(al, assoc_map);
                 for (size_t i = 0; i < x.n_body; i++) {
                     resolver_visitor.visit_stmt(*x.m_body[i]);
+                }
+                // The statement visitor above does not descend into
+                // BlockCall targets (Blocks have their own scope), so
+                // resolve associate aliases in both block body statements
+                // and block-local type expressions (e.g., `real a(n)` where
+                // `n` is an associate alias from an enclosing associate).
+                for (size_t i = 0; i < x.n_body; i++) {
+                    if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[i])) continue;
+                    ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+                        x.m_body[i]);
+                    if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                        bc->m_m);
+                    // Resolve in block body statements
+                    for (size_t j = 0; j < block->n_body; j++) {
+                        resolver_visitor.visit_stmt(*block->m_body[j]);
+                    }
+                    // Resolve in block-local array dimension expressions
+                    AssociateVarResolver type_resolver(al, assoc_map);
+                    for (auto &item : block->m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::Variable_t>(*item.second))
+                            continue;
+                        ASR::Variable_t *var =
+                            ASR::down_cast<ASR::Variable_t>(item.second);
+                        if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                        ASR::Array_t *arr =
+                            ASR::down_cast<ASR::Array_t>(var->m_type);
+                        for (size_t d = 0; d < arr->n_dims; d++) {
+                            if (arr->m_dims[d].m_start) {
+                                type_resolver.current_expr =
+                                    &(arr->m_dims[d].m_start);
+                                type_resolver.replace_expr(
+                                    arr->m_dims[d].m_start);
+                            }
+                            if (arr->m_dims[d].m_length) {
+                                type_resolver.current_expr =
+                                    &(arr->m_dims[d].m_length);
+                                type_resolver.replace_expr(
+                                    arr->m_dims[d].m_length);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -796,7 +845,8 @@ public:
                                     asgn->m_target)->m_v;
                             if (ASR::is_a<ASR::Variable_t>(*sym) &&
                                 ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab) {
+                                    ->m_parent_symtab == ab->m_symtab &&
+                                assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             } else {
                                 resolved_stmts.push_back(al,
@@ -855,6 +905,39 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
         GpuSymbolCollector collector(al, involved_syms, enclosing_block_scope);
         collector.visit_DoConcurrentLoop(x);
+
+        // Also collect symbols referenced in the type expressions (array
+        // dimensions) of already-collected symbols. For example, if
+        // `tmp(size(b))` is used in the body, `tmp` is collected but `b`
+        // only appears in tmp's type — we must also pull `b` into
+        // involved_syms so it becomes a kernel parameter.
+        {
+            bool added = true;
+            while (added) {
+                added = false;
+                std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
+                GpuSymbolCollector type_collector(al, extra_syms, enclosing_block_scope);
+                for (auto &[sym_name, sym_info] : involved_syms) {
+                    ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start)
+                            type_collector.visit_expr(*arr->m_dims[d].m_start);
+                        if (arr->m_dims[d].m_length)
+                            type_collector.visit_expr(*arr->m_dims[d].m_length);
+                    }
+                }
+                for (auto &[name, info] : extra_syms) {
+                    if (involved_syms.find(name) == involved_syms.end()) {
+                        involved_syms[name] = info;
+                        added = true;
+                    }
+                }
+            }
+        }
 
         // Skip loops containing real(8)/integer(8) types — Metal has no double/int64 support
         for (auto &sym : involved_syms) {
@@ -1206,7 +1289,144 @@ public:
             }
         }
 
-        // Move Block symbols referenced by BlockCall into kernel scope
+        // Move Block symbols referenced by BlockCall into kernel scope.
+        // This helper processes a block and recursively handles any nested
+        // BlockCall statements, since GpuReplaceSymbolsVisitor does not
+        // descend into BlockCall/AssociateBlockCall automatically.
+        // `reparent` is true only for the top-level block; nested blocks
+        // keep their existing parent (the enclosing block's symtab).
+        std::function<void(ASR::Block_t*, bool)> process_block_for_kernel =
+            [&](ASR::Block_t *block, bool reparent) {
+            if (reparent) {
+                block->m_symtab->parent = kernel_scope;
+            }
+            // Pre-compute VLA dimension expressions that contain
+            // FunctionCall nodes on the host side and pass the
+            // results as scalar kernel parameters, because GPU
+            // kernels cannot call arbitrary host-side functions.
+            // This must happen BEFORE body remapping: the variable
+            // type and body expression types (e.g. ArrayBroadcast
+            // m_type) may share the same Array_t pointer, so body
+            // remapping would change Var references in the shared
+            // dimension to point to kernel-scope symbols. The
+            // host_expr duplicate must capture the original
+            // (caller-scope) references for the host-side call args.
+            {
+                ASRUtils::ExprStmtDuplicator dim_dup(al);
+                dim_dup.success = true;
+                for (auto &item : block->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second))
+                        continue;
+                    ASR::Variable_t *bvar =
+                        ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (!ASR::is_a<ASR::Array_t>(*bvar->m_type))
+                        continue;
+                    ASR::Array_t *arr =
+                        ASR::down_cast<ASR::Array_t>(bvar->m_type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        ASR::expr_t **dim_ptrs[2] = {
+                            &arr->m_dims[d].m_start,
+                            &arr->m_dims[d].m_length};
+                        for (int e = 0; e < 2; e++) {
+                            if (!*dim_ptrs[e]) continue;
+                            if (!expr_has_function_call(
+                                    *dim_ptrs[e]))
+                                continue;
+                            ASR::expr_t *host_expr =
+                                dim_dup.duplicate_expr(
+                                    *dim_ptrs[e]);
+                            std::string pname =
+                                kernel_scope->get_unique_name(
+                                    "__lfortran_gpu_dim_", false);
+                            ASR::ttype_t *ptype =
+                                ASRUtils::duplicate_type(al,
+                                    ASRUtils::expr_type(
+                                        *dim_ptrs[e]));
+                            ASR::symbol_t *psym =
+                                ASR::down_cast<ASR::symbol_t>(
+                                    ASRUtils::make_Variable_t_util(
+                                        al, loc, kernel_scope,
+                                        s2c(al, pname),
+                                        nullptr, 0,
+                                        ASR::intentType::InOut,
+                                        nullptr, nullptr,
+                                        ASR::storage_typeType::Default,
+                                        ptype, nullptr,
+                                        ASR::abiType::Source,
+                                        ASR::accessType::Public,
+                                        ASR::presenceType::Required,
+                                        false));
+                            kernel_scope->add_symbol(pname, psym);
+                            kernel_args.push_back(al,
+                                ASRUtils::EXPR(ASR::make_Var_t(
+                                    al, loc, psym)));
+                            ASR::call_arg_t carg;
+                            carg.loc = loc;
+                            carg.m_value = host_expr;
+                            call_args.push_back(al, carg);
+                            *dim_ptrs[e] = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, loc, psym));
+                        }
+                    }
+                }
+            }
+            // Remap Var references inside the block body
+            GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
+            for (size_t j = 0; j < block->n_body; j++) {
+                block_replacer.visit_stmt(*block->m_body[j]);
+            }
+            // Also remap Var references inside AssociateBlock bodies
+            // within this Block, since the visitor does not descend
+            // into AssociateBlockCall targets automatically.
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
+                    continue;
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        item.second);
+                for (size_t j = 0; j < ab->n_body; j++) {
+                    block_replacer.visit_stmt(*ab->m_body[j]);
+                }
+            }
+            // Recursively process nested BlockCall statements
+            for (size_t j = 0; j < block->n_body; j++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*block->m_body[j])) {
+                    ASR::BlockCall_t *inner_bc =
+                        ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
+                    if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
+                        process_block_for_kernel(
+                            ASR::down_cast<ASR::Block_t>(inner_bc->m_m),
+                            false);
+                    }
+                }
+            }
+            // Remap type expressions of block-local variables
+            // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
+            GpuReplaceSymbols block_type_replacer(*kernel_scope);
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                ASR::ttype_t *type = var->m_type;
+                if (ASR::is_a<ASR::Array_t>(*type)) {
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start) {
+                            block_type_replacer.current_expr =
+                                &(arr->m_dims[d].m_start);
+                            block_type_replacer.replace_expr(
+                                arr->m_dims[d].m_start);
+                        }
+                        if (arr->m_dims[d].m_length) {
+                            block_type_replacer.current_expr =
+                                &(arr->m_dims[d].m_length);
+                            block_type_replacer.replace_expr(
+                                arr->m_dims[d].m_length);
+                        }
+                    }
+                }
+            }
+        };
         for (size_t i = 0; i < body_copy.n; i++) {
             if (ASR::is_a<ASR::BlockCall_t>(*body_copy.p[i])) {
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
@@ -1215,119 +1435,7 @@ public:
                     ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
                         bc->m_m);
                     std::string block_name = block->m_name;
-                    // Reparent the block's symbol table under kernel scope
-                    block->m_symtab->parent = kernel_scope;
-                    // Remap Var references inside the block body
-                    GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
-                    for (size_t j = 0; j < block->n_body; j++) {
-                        block_replacer.visit_stmt(*block->m_body[j]);
-                    }
-                    // Also remap Var references inside AssociateBlock bodies
-                    // within this Block, since the visitor does not descend
-                    // into AssociateBlockCall targets automatically.
-                    for (auto &item : block->m_symtab->get_scope()) {
-                        if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
-                            continue;
-                        ASR::AssociateBlock_t *ab =
-                            ASR::down_cast<ASR::AssociateBlock_t>(
-                                item.second);
-                        for (size_t j = 0; j < ab->n_body; j++) {
-                            block_replacer.visit_stmt(*ab->m_body[j]);
-                        }
-                    }
-                    // Pre-compute VLA dimension expressions that contain
-                    // FunctionCall nodes on the host side and pass the
-                    // results as scalar kernel parameters, because GPU
-                    // kernels cannot call arbitrary host-side functions.
-                    // NOTE: The variable type and body expression types
-                    // (e.g. ArrayBroadcast m_type) share the same
-                    // Array_t pointer, so modifying the dimension here
-                    // automatically fixes body expression types too.
-                    {
-                        ASRUtils::ExprStmtDuplicator dim_dup(al);
-                        dim_dup.success = true;
-                        for (auto &item : block->m_symtab->get_scope()) {
-                            if (!ASR::is_a<ASR::Variable_t>(*item.second))
-                                continue;
-                            ASR::Variable_t *bvar =
-                                ASR::down_cast<ASR::Variable_t>(item.second);
-                            if (!ASR::is_a<ASR::Array_t>(*bvar->m_type))
-                                continue;
-                            ASR::Array_t *arr =
-                                ASR::down_cast<ASR::Array_t>(bvar->m_type);
-                            for (size_t d = 0; d < arr->n_dims; d++) {
-                                ASR::expr_t **dim_ptrs[2] = {
-                                    &arr->m_dims[d].m_start,
-                                    &arr->m_dims[d].m_length};
-                                for (int e = 0; e < 2; e++) {
-                                    if (!*dim_ptrs[e]) continue;
-                                    if (!expr_has_function_call(
-                                            *dim_ptrs[e]))
-                                        continue;
-                                    ASR::expr_t *host_expr =
-                                        dim_dup.duplicate_expr(
-                                            *dim_ptrs[e]);
-                                    std::string pname =
-                                        kernel_scope->get_unique_name(
-                                            "__lfortran_gpu_dim_", false);
-                                    ASR::ttype_t *ptype =
-                                        ASRUtils::duplicate_type(al,
-                                            ASRUtils::expr_type(
-                                                *dim_ptrs[e]));
-                                    ASR::symbol_t *psym =
-                                        ASR::down_cast<ASR::symbol_t>(
-                                            ASRUtils::make_Variable_t_util(
-                                                al, loc, kernel_scope,
-                                                s2c(al, pname),
-                                                nullptr, 0,
-                                                ASR::intentType::InOut,
-                                                nullptr, nullptr,
-                                                ASR::storage_typeType::Default,
-                                                ptype, nullptr,
-                                                ASR::abiType::Source,
-                                                ASR::accessType::Public,
-                                                ASR::presenceType::Required,
-                                                false));
-                                    kernel_scope->add_symbol(pname, psym);
-                                    kernel_args.push_back(al,
-                                        ASRUtils::EXPR(ASR::make_Var_t(
-                                            al, loc, psym)));
-                                    ASR::call_arg_t carg;
-                                    carg.loc = loc;
-                                    carg.m_value = host_expr;
-                                    call_args.push_back(al, carg);
-                                    *dim_ptrs[e] = ASRUtils::EXPR(
-                                        ASR::make_Var_t(al, loc, psym));
-                                }
-                            }
-                        }
-                    }
-                    // Remap type expressions of block-local variables
-                    // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
-                    GpuReplaceSymbols block_type_replacer(*kernel_scope);
-                    for (auto &item : block->m_symtab->get_scope()) {
-                        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-                        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                            item.second);
-                        ASR::ttype_t *type = var->m_type;
-                        if (ASR::is_a<ASR::Array_t>(*type)) {
-                            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-                            for (size_t d = 0; d < arr->n_dims; d++) {
-                                if (arr->m_dims[d].m_start) {
-                                    block_type_replacer.current_expr =
-                                        &(arr->m_dims[d].m_start);
-                                    block_type_replacer.replace_expr(
-                                        arr->m_dims[d].m_start);
-                                }
-                                if (arr->m_dims[d].m_length) {
-                                    block_type_replacer.current_expr =
-                                        &(arr->m_dims[d].m_length);
-                                    block_type_replacer.replace_expr(
-                                        arr->m_dims[d].m_length);
-                                }
-                            }
-                        }
-                    }
+                    process_block_for_kernel(block, true);
                     // Move Block from original scope to kernel scope
                     orig_scope->erase_symbol(block_name);
                     kernel_scope->add_symbol(block_name, bc->m_m);

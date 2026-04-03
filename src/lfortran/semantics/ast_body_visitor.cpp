@@ -2455,12 +2455,13 @@ public:
             {"nextrec", 16}, {"blank", 17}, {"position", 18}, {"action", 19},
             {"read", 20}, {"write", 21}, {"readwrite", 22}, {"delim", 23},
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
-            {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31}, 
-            {"iolength", 32}, {"sign", 33}, {"encoding", 34}};
+            {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31},
+            {"iolength", 32}, {"sign", 33}, {"encoding", 34},
+            {"stream", 35}, {"iomsg", 36}};
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 34, args, 35, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 36, args, 37, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -2470,7 +2471,7 @@ public:
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
         ASR::expr_t *carriagecontrol = args[28], *size = args[29], *pos = args[30], *decimal = args[31];
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
-        ;
+        ASR::expr_t *stream = args[35], *iomsg = args[36];
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && i!=32 && args[i] ) {
@@ -2508,9 +2509,9 @@ public:
                                   nextrec, blank, position, action,
                                   read, write, readwrite, delim,
                                   pad, flen, blocksize, convert,
-                                  carriagecontrol, size, pos, iolength, 
+                                  carriagecontrol, size, pos, iolength,
                                   iolength_args.p, iolength_args.n, decimal,
-                                  sign, encoding);
+                                  sign, encoding, stream, iomsg);
     }
 
     void visit_Flush(const AST::Flush_t& x) {
@@ -2952,6 +2953,9 @@ public:
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
+                    new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
+                }
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -2974,6 +2978,9 @@ public:
             } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
                 ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
+                    new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
+                }
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -3298,16 +3305,18 @@ public:
             ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
             
             if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
-                std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
-                std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
-                
-                diag.add(Diagnostic(
-                    "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
-                    Level::Error, Stage::Semantic, {
-                        Label("'" + var_name + "' is not allocatable or pointer", {alloc_expr->base.loc})
-                    }));
-                throw SemanticAbort();
+                ASR::ttype_t* sym_type = sym ? ASRUtils::symbol_type(sym) : nullptr;
+                if (!sym_type || (!ASRUtils::is_allocatable(sym_type) && !ASRUtils::is_pointer(sym_type))) {
+                    std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
+                    std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
+                    diag.add(Diagnostic(
+                        "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
+                        Level::Error, Stage::Semantic, {
+                            Label("'" + var_name + "' is not allocatable or pointer", {alloc_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         
@@ -3436,7 +3445,12 @@ public:
             ASR::ArraySection_t *arrs = ASR::down_cast<ASR::ArraySection_t>(v);
             return get_allocate_expr_sym(arrs->m_v);
         }
-        LCOMPILERS_ASSERT(false);
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*v)) {
+            ASR::ArrayPhysicalCast_t *apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(v);
+            return get_allocate_expr_sym(apc->m_arg);
+        }
+        throw LCompilersException("get_allocate_expr_sym: unhandled expression type " +
+            std::to_string(v->type));
         return nullptr;
     }
 
@@ -3710,6 +3724,10 @@ public:
             current_scope = parent_scope;
         }
 
+        if (!array_var_name.empty()) {
+            assumed_rank_arrays.erase(array_var_name);
+        }
+
         tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
@@ -3842,12 +3860,17 @@ public:
                 bool is_assumed_rank = arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
 
                 if (is_assumed_rank) {
-                    int known_rank = selector_variable ? [&]() {
+                    int known_rank = -1;
+                    if (selector_variable) {
                         auto it = assumed_rank_arrays.find(selector_variable->m_name);
-                        return it != assumed_rank_arrays.end() ? it->second : 0;
-                    }() : 0;
+                        if (it != assumed_rank_arrays.end()) {
+                            known_rank = it->second;
+                        }
+                    }
                     if (known_rank > 0) {
                         result = ASRUtils::create_array_type_with_empty_dims(al, known_rank, guard_type);
+                    } else if (known_rank == 0) {
+                        result = guard_type;
                     } else {
                         result = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, guard_type, arr->m_dims, arr->n_dims,
@@ -4081,15 +4104,11 @@ public:
                                 type_stmt_type->base.base.loc, selector_ttype, selector_type);
                             is_selector_array = ASRUtils::is_array(
                                 ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(selector_ttype)));
+                                    ASRUtils::type_get_past_pointer(view_type)));
                         } else {
                             view_type = selector_type;
                         }
                         if (is_selector_array) {
-                            // For arrays, use old mechanism: rewrite the type to the guard type.
-                            // Array indexing in semantic analysis requires the variable to have
-                            // the correct element type; ClassToIntrinsic wrapping would break
-                            // ArrayItem creation because the Cast obscures the array nature.
                             assoc_variable->m_type = view_type;
                         } else {
                             // Design (C): Do NOT rewrite assoc_variable->m_type to the guard type.
@@ -7584,6 +7603,7 @@ public:
 
     void visit_If(const AST::If_t &x) {
         all_blocks_nesting++;
+        all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
@@ -7592,6 +7612,8 @@ public:
                 ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
                 diag::Level::Error, diag::Stage::Semantic, {
                 diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) + " expression, expected logical", {test->base.loc})}));
+            all_blocks_nesting--;
+            all_loops_blocks_nesting--;
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;
@@ -7613,6 +7635,7 @@ public:
         tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
         all_blocks_nesting--;
+        all_loops_blocks_nesting--;
     }
 
     void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
