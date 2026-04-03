@@ -2051,7 +2051,31 @@ public:
         src = r;
     }
 
-    // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {
+        std::string r = indent;
+        r += "call c_f_pointer(";
+        
+        visit_expr(*x.m_cptr);
+        r += src + ", ";
+        
+        visit_expr(*x.m_ptr);
+        r += src;
+        
+        if (x.m_shape) {
+            r += ", ";
+            visit_expr(*x.m_shape);
+            r += src;
+        }    
+            
+        if (x.m_lower_bounds) {
+            r += ", ";
+            visit_expr(*x.m_lower_bounds);
+            r += src;
+        }
+        
+        r += ")\n";
+        src = r;
+    }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));

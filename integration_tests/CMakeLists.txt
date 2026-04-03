@@ -1838,8 +1838,8 @@ RUN(NAME associate_06 LABELS gfortran EXTRAFILES
 
 RUN(NAME lfortran_intrinsic_sin LABELS gfortran llvm EXTRAFILES lfortran_intrinsic_sin_c.c)
 
-RUN(NAME bindc1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME bindc2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME bindc1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME bindc2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc5 LABELS gfortran llvm)
