@@ -744,11 +744,23 @@ public:
             ASR::expr_t *loop_start = as->m_args[range_dim].m_left;
             ASR::expr_t *loop_end = as->m_args[range_dim].m_right;
 
-            // Create loop variable __gpu_sec_i
-            std::string loop_var_name = current_scope->get_unique_name(
+            // Create loop variable __gpu_sec_i in the containing
+            // function/program scope, not in any enclosing AssociateBlock
+            // scope. The GPU kernel extraction skips AssociateBlock-local
+            // symbols, so placing the temp there would leave a dangling
+            // reference after the body is copied into the kernel.
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+            std::string loop_var_name = var_scope->get_unique_name(
                 "__gpu_sec_i");
             ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                ASRUtils::make_Variable_t_util(al, loc, var_scope,
                     s2c(al, loop_var_name), nullptr, 0,
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default,
@@ -756,7 +768,7 @@ public:
                     nullptr, ASR::abiType::Source,
                     ASR::accessType::Public,
                     ASR::presenceType::Required, false));
-            current_scope->add_symbol(loop_var_name, loop_var_sym);
+            var_scope->add_symbol(loop_var_name, loop_var_sym);
             ASR::expr_t *loop_var = ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, loop_var_sym));
 
