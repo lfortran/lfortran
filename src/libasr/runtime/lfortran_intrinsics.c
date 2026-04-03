@@ -5590,7 +5590,8 @@ _lfortran_open(int32_t unit_num,
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0,
+        NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -5916,8 +5917,18 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     int32_t *iostat, int32_t *nextrec,
                                     char* decimal, int64_t decimal_len,
                                     char *sign, int64_t sign_len,
-                                    char *encoding, int64_t encoding_len) {
+                                    char *encoding, int64_t encoding_len,
+                                    char *stream, int64_t stream_len,
+                                    char *iomsg, int64_t iomsg_len) {
     if (f_name_data && unit_num != -1) {
+        if (iostat != NULL) {
+            *iostat = 1;
+            if (iomsg != NULL && iomsg_len > 0) {
+                char *msg = "FILE and UNIT must not both be specified in INQUIRE";
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+            }
+            return;
+        }
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
@@ -6111,8 +6122,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
+        if (stream != NULL) {
+            if (access_id == 1) {
+                _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
+            }
+        }
         if (iostat != NULL) {
             *iostat = 0;
+            // iomsg is left unchanged on success per Fortran standard
         }
     }
     if (unit_num != -1) {
@@ -6297,8 +6316,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
+        if (stream != NULL) {
+            if (access_id == 1) {
+                _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
+            }
+        }
         if (iostat != NULL) {
             *iostat = 0;
+            // iomsg is left unchanged on success per Fortran standard
         }
     }
 }

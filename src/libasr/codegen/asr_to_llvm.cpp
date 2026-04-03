@@ -17360,6 +17360,8 @@ public:
         llvm::Value *decimal_val{}, *decimal_len{};
         llvm::Value *sign_val{}, *sign_len{};
         llvm::Value *encoding_val{}, *encoding_len{};
+        llvm::Value *stream_val{}, *stream_len{};
+        llvm::Value *iomsg_val{}, *iomsg_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -17706,6 +17708,28 @@ public:
             encoding_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_stream) {
+            this->visit_expr_load_wrapper(x.m_stream, 0);
+            std::tie(stream_val, stream_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_stream),
+                    tmp);
+        } else {
+            stream_val = llvm::Constant::getNullValue(character_type);
+            stream_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_iomsg) {
+            this->visit_expr_load_wrapper(x.m_iomsg, 0);
+            std::tie(iomsg_val, iomsg_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_iomsg),
+                    tmp);
+        } else {
+            iomsg_val = llvm::Constant::getNullValue(character_type);
+            iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -17735,7 +17759,9 @@ public:
                         llvm::Type::getInt32Ty(context)->getPointerTo(), // nextrec
                         character_type, llvm::Type::getInt64Ty(context),  // decimal_data, decimal_len
                         character_type, llvm::Type::getInt64Ty(context),   // sign_data, sign_len
-                        character_type, llvm::Type::getInt64Ty(context)    // encoding_data, encoding_len
+                        character_type, llvm::Type::getInt64Ty(context),   // encoding_data, encoding_len
+                        character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
+                        character_type, llvm::Type::getInt64Ty(context)    // iomsg_data, iomsg_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17759,7 +17785,9 @@ public:
             iostat, nextrec,
             decimal_val, decimal_len,
             sign_val, sign_len,
-            encoding_val, encoding_len});
+            encoding_val, encoding_len,
+            stream_val, stream_len,
+            iomsg_val, iomsg_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
