@@ -1835,11 +1835,12 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     Allocator &al, const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
+    ASR::ttype_t *operand_type = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(operand));
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~sub");
 
     if (!sym) {
-        if (ASR::is_a<ASR::StructType_t>(*operand_type) && !ASRUtils::is_class_type(operand_type)) {
+        if (ASR::is_a<ASR::StructType_t>(*operand_type)) {
             ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(operand));
             if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
