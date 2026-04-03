@@ -296,6 +296,18 @@ public:
             emit_function_def(fn, fn_name);
         }
 
+        // Emit inline function definitions for internal functions
+        // duplicated into the kernel scope by the gpu_offload pass
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                item.second);
+            std::string fn_name(fn->m_name);
+            if (emitted_funcs.count(fn_name)) continue;
+            emitted_funcs.insert(fn_name);
+            emit_function_def(fn, fn_name);
+        }
+
         struct ArgInfo {
             std::string name;
             ASR::ttype_t *type;
