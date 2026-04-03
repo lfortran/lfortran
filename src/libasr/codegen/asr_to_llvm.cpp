@@ -15740,16 +15740,35 @@ public:
                 }
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
-                    std::vector<llvm::Type*> types {
-                        type_arg->getPointerTo(),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()};
-                    if(runtime_func_name == "_lfortran_read_array_char"){
-                        types.insert(types.begin()+1, llvm::Type::getInt64Ty(context));
-                    }
-                    if(runtime_func_name == "_lfortran_read_array_logical"){
-                        types.insert(types.begin()+2, llvm::Type::getInt32Ty(context));
+                    std::vector<llvm::Type*> types;
+                    if (runtime_func_name == "_lfortran_read_array_char") {
+                        // (char *p, int64_t len, int size, int unit, int32_t *iostat)
+                        types = {
+                            type_arg->getPointerTo(),
+                            llvm::Type::getInt64Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                        };
+                    } else if (runtime_func_name == "_lfortran_read_array_logical") {
+                        // (void *p, int size, int kind, int stride, int unit, int32_t *iostat)
+                        types = {
+                            type_arg->getPointerTo(),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                        };
+                    } else {
+                        // (T *p, int size, int stride, int unit, int32_t *iostat)
+                        types = {
+                            type_arg->getPointerTo(),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                        };
                     }
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), types, false);
@@ -16207,12 +16226,14 @@ public:
                                     size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
 
                                     llvm::Function* fn = get_read_function(arr_type);
+                                    llvm::Value* stride_val = llvm::ConstantInt::get(
+                                        llvm::Type::getInt32Ty(context), 1);
                                     if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
                                         int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                                         llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                                        builder->CreateCall(fn, {section_ptr, size, kind_val, unit_val, iostat});
+                                        builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
                                     } else {
-                                        builder->CreateCall(fn, {section_ptr, size, unit_val, iostat});
+                                        builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
                                     }
                                     continue;
                                 }
@@ -16268,12 +16289,14 @@ public:
 
                                 // Call array read function
                                 llvm::Function* fn = get_read_function(arr_type);
+                                llvm::Value* stride_val = llvm::ConstantInt::get(
+                                    llvm::Type::getInt32Ty(context), 1);
                                 if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
                                     int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                                     llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                                    builder->CreateCall(fn, {section_ptr, size, kind_val, unit_val, iostat});
+                                    builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
                                 } else {
-                                    builder->CreateCall(fn, {section_ptr, size, unit_val, iostat});
+                                    builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
                                 }
                                 continue;
                             }
@@ -16503,6 +16526,22 @@ public:
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
                     ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(type));
+                    llvm::Value* descriptor_stride_i32 = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 1);
+                    if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                        llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i],
+                            ASRUtils::type_get_past_allocatable_pointer(type),
+                            module.get());
+                        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            llvm_arr_type, original_array_representation);
+                        llvm::Value* dim_zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                        llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(
+                            dim_des_arr, dim_zero);
+                        llvm::Value* stride_val = arr_descr->get_stride(dim_desc);
+                        descriptor_stride_i32 = builder->CreateIntCast(
+                            stride_val, llvm::Type::getInt32Ty(context), true);
+                    }
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
                         var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
                     }
@@ -16527,10 +16566,10 @@ public:
                             ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
                         llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                        builder->CreateCall(fn, {arr, tmp, kind_val, unit_val, iostat});
+                        builder->CreateCall(fn, {arr, tmp, kind_val, descriptor_stride_i32, unit_val, iostat});
                         tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {arr, tmp, unit_val, iostat});
+                        builder->CreateCall(fn, {arr, tmp, descriptor_stride_i32, unit_val, iostat});
                         tmp = nullptr;
                     }
                 } else {
