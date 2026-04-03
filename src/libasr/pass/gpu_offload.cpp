@@ -682,6 +682,136 @@ public:
         }
     }
 
+    // Inline ArraySection assignments inside a DoConcurrentLoop body.
+    // Replaces:
+    //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
+    // With:
+    //   do __gpu_sec_i = 1, n(l)
+    //     b(__gpu_sec_i, l) = 1.0
+    //   end do
+    // This avoids complex lowered code (descriptor temps, ArrayBound)
+    // that the Metal backend cannot handle inside GPU kernels.
+    void inline_array_section_assignment(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 2);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::ArraySection_t>(*asgn->m_target)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(
+                asgn->m_target);
+
+            // Find the range dimension (has both m_left and m_right set,
+            // meaning it's a slice like 1:n(l), not a scalar index)
+            int range_dim = -1;
+            for (size_t i = 0; i < as->n_args; i++) {
+                if (as->m_args[i].m_left && as->m_args[i].m_right
+                        && as->m_args[i].m_step) {
+                    if (range_dim != -1) {
+                        // Multiple range dims — not handled yet
+                        range_dim = -1;
+                        break;
+                    }
+                    range_dim = (int)i;
+                }
+            }
+            if (range_dim == -1) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            // Extract the scalar value from the RHS. Handle
+            // ArrayBroadcast (wraps a scalar for array assignment).
+            ASR::expr_t *scalar_value = asgn->m_value;
+            if (ASR::is_a<ASR::ArrayBroadcast_t>(*scalar_value)) {
+                scalar_value = ASR::down_cast<ASR::ArrayBroadcast_t>(
+                    scalar_value)->m_array;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            ASR::expr_t *loop_start = as->m_args[range_dim].m_left;
+            ASR::expr_t *loop_end = as->m_args[range_dim].m_right;
+
+            // Create loop variable __gpu_sec_i
+            std::string loop_var_name = current_scope->get_unique_name(
+                "__gpu_sec_i");
+            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                    s2c(al, loop_var_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, int_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(loop_var_name, loop_var_sym);
+            ASR::expr_t *loop_var = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, loop_var_sym));
+
+            // Build ArrayItem: replace the range dim with loop_var,
+            // keep scalar-index dims as-is
+            Vec<ASR::array_index_t> new_args;
+            new_args.reserve(al, as->n_args);
+            for (size_t i = 0; i < as->n_args; i++) {
+                ASR::array_index_t idx;
+                idx.loc = as->m_args[i].loc;
+                if ((int)i == range_dim) {
+                    idx.m_left = nullptr;
+                    idx.m_right = loop_var;
+                    idx.m_step = nullptr;
+                } else {
+                    idx.m_left = as->m_args[i].m_left;
+                    idx.m_right = as->m_args[i].m_right;
+                    idx.m_step = as->m_args[i].m_step;
+                }
+                new_args.push_back(al, idx);
+            }
+            ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+                ASRUtils::expr_type(as->m_v));
+            ASR::expr_t *array_item = ASRUtils::EXPR(
+                ASR::make_ArrayItem_t(al, loc, as->m_v,
+                    new_args.p, new_args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+
+            // Build loop body: array_item = scalar_value
+            Vec<ASR::stmt_t*> loop_body;
+            loop_body.reserve(al, 1);
+            loop_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, array_item, scalar_value,
+                    nullptr, false, false)));
+
+            // Build DoLoop
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = loop_var;
+            head.m_start = loop_start;
+            head.m_end = loop_end;
+            head.m_increment = nullptr;
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr,
+                    head, loop_body.p, loop_body.n, nullptr, 0)));
+
+            changed = true;
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal) return;
 
@@ -831,6 +961,10 @@ public:
 
         // Inline IntrinsicArrayFunction All before kernel extraction
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline ArraySection assignments before kernel extraction
+        inline_array_section_assignment(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Resolve AssociateBlocks inside the do concurrent body (e.g.,
         // block { associate(nh => n) ... } within the loop). GPU kernels
