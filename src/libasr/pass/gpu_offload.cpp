@@ -917,6 +917,89 @@ public:
             }
         }
 
+        // Resolve bare AssociateBlockCall statements directly in the
+        // do concurrent body (not wrapped in a BlockCall). GPU kernels
+        // cannot use Pointer-based associate aliases, so we inline the
+        // associate targets and replace each AssociateBlockCall with
+        // the resolved statements.
+        {
+            Vec<ASR::stmt_t*> new_dc_body;
+            new_dc_body.reserve(al, x.n_body);
+            bool dc_changed = false;
+            for (size_t bi = 0; bi < x.n_body; bi++) {
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*x.m_body[bi])) {
+                    new_dc_body.push_back(al, x.m_body[bi]);
+                    continue;
+                }
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(
+                        x.m_body[bi]);
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*abc->m_m)) {
+                    new_dc_body.push_back(al, x.m_body[bi]);
+                    continue;
+                }
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
+                Vec<ASR::stmt_t*> resolved_stmts;
+                resolved_stmts.reserve(al, ab->n_body);
+                for (size_t ai = 0; ai < ab->n_body; ai++) {
+                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
+                        ASR::Associate_t *assoc =
+                            ASR::down_cast<ASR::Associate_t>(
+                                ab->m_body[ai]);
+                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                            ASR::symbol_t *sym =
+                                ASR::down_cast<ASR::Var_t>(
+                                    assoc->m_target)->m_v;
+                            assoc_map[sym] = assoc->m_value;
+                        }
+                    } else if (ASR::is_a<ASR::Assignment_t>(
+                                   *ab->m_body[ai])) {
+                        ASR::Assignment_t *asgn =
+                            ASR::down_cast<ASR::Assignment_t>(
+                                ab->m_body[ai]);
+                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
+                            ASR::symbol_t *sym =
+                                ASR::down_cast<ASR::Var_t>(
+                                    asgn->m_target)->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                                ASR::down_cast<ASR::Variable_t>(sym)
+                                    ->m_parent_symtab == ab->m_symtab &&
+                                assoc_map.find(sym) == assoc_map.end()) {
+                                assoc_map[sym] = asgn->m_value;
+                            } else {
+                                resolved_stmts.push_back(al,
+                                    ab->m_body[ai]);
+                            }
+                        } else {
+                            resolved_stmts.push_back(al, ab->m_body[ai]);
+                        }
+                    } else {
+                        resolved_stmts.push_back(al, ab->m_body[ai]);
+                    }
+                }
+                if (!assoc_map.empty()) {
+                    AssociateVarResolverVisitor resolver(al, assoc_map);
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        resolver.visit_stmt(*resolved_stmts.p[ri]);
+                    }
+                }
+                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                    new_dc_body.push_back(al, resolved_stmts.p[ri]);
+                }
+                std::string ab_name = ab->m_name;
+                current_scope->erase_symbol(ab_name);
+                dc_changed = true;
+            }
+            if (dc_changed) {
+                ASR::DoConcurrentLoop_t &xx =
+                    const_cast<ASR::DoConcurrentLoop_t&>(x);
+                xx.m_body = new_dc_body.p;
+                xx.n_body = new_dc_body.n;
+            }
+        }
+
         // Detect if the do concurrent is inside a Block scope. If so,
         // block-local variables need to be collected as kernel parameters
         // rather than skipped. Walk up through AssociateBlock parents to
