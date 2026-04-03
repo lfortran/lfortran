@@ -3889,7 +3889,7 @@ RUN(NAME nullify_03 LABELS gfortran llvm)
 RUN(NAME nullify_04 LABELS gfortran llvm)
 RUN(NAME nullify_05 LABELS gfortran llvm)
 RUN(NAME nullify_06 LABELS gfortran llvm)
-RUN(NAME nullify_07 LABELS gfortran llvm NO_DETECT_LEAK)
+RUN(NAME nullify_07 LABELS gfortran llvm NO_DETECT_LEAK) # USER_LEAK
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
