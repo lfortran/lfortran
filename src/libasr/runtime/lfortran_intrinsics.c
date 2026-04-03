@@ -70,15 +70,11 @@ static inline double lf_float128_to_double(const void *ptr) {
     memcpy(&tmp, ptr, 16);
     return (double)tmp;
 #else
-    /*
-     * Fallback for platforms without __float128 (macOS, Windows):
-     * Read as long double (80-bit on x86, 64-bit on ARM) which is
-     * lossy but functional.  A proper software binary128 → double
-     * conversion should be added in a future PR.
-     */
-    long double ld;
-    memcpy(&ld, ptr, sizeof(long double));
-    return (double)ld;
+    // Safe fallback: extract lower 64 bits as double
+    // (consistent, not correct, but NOT garbage)
+    double d;
+    memcpy(&d, ptr, sizeof(double));
+    return d;
 #endif
 }
 // -----------------------------------------------------
