@@ -672,19 +672,16 @@ public:
                                 }
                             } else {
                                 // UBound = start + length - 1
-                                if (arr->m_dims[dim_idx].m_length &&
-                                    ASR::is_a<ASR::IntegerConstant_t>(
-                                        *arr->m_dims[dim_idx].m_length)) {
-                                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        arr->m_dims[dim_idx].m_length)->m_n;
-                                    int64_t start = 1;
-                                    if (arr->m_dims[dim_idx].m_start &&
-                                        ASR::is_a<ASR::IntegerConstant_t>(
-                                            *arr->m_dims[dim_idx].m_start)) {
-                                        start = ASR::down_cast<ASR::IntegerConstant_t>(
-                                            arr->m_dims[dim_idx].m_start)->m_n;
+                                if (arr->m_dims[dim_idx].m_length) {
+                                    src << "(";
+                                    if (arr->m_dims[dim_idx].m_start) {
+                                        visit_expr(arr->m_dims[dim_idx].m_start);
+                                    } else {
+                                        src << "1";
                                     }
-                                    src << (start + len - 1);
+                                    src << " + ";
+                                    visit_expr(arr->m_dims[dim_idx].m_length);
+                                    src << " - 1)";
                                 } else {
                                     src << "/* unknown ubound */";
                                 }
