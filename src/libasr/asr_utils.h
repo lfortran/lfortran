@@ -8219,7 +8219,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
-    if( ASRUtils::is_array(type) ) {
+    if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
         if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
