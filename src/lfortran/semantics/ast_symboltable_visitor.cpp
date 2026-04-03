@@ -1496,6 +1496,32 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
+        // Check for function/subroutine attribute conflict
+        ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_name);
+        if (existing_sym != nullptr) {
+            ASR::symbol_t* existing_past_ext = ASRUtils::symbol_get_past_external(existing_sym);
+            if (ASR::is_a<ASR::Function_t>(*existing_past_ext)) {
+                ASR::Function_t* existing_func = ASR::down_cast<ASR::Function_t>(existing_past_ext);
+                if (existing_func->m_return_var != nullptr) {
+                    std::string original_name = to_lower(std::string(x.m_name));
+                    diag.add(diag::Diagnostic(
+                        "`function` attribute of '" + original_name +
+                        "' conflicts with `subroutine` attribute",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("declared as subroutine here", {x.base.base.loc}),
+                            diag::Label("previously declared as function here",
+                                        {existing_past_ext->base.loc}, false)
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
+                    // In continue mode, keep going after recording the diagnostic.
+                    parent_scope->erase_symbol(sym_name);
+                }
+            }
+        }
+
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
