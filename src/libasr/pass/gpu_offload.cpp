@@ -614,7 +614,7 @@ public:
                         }
                         new_args.push_back(al, idx);
                     }
-                    ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
                         ASRUtils::expr_type(as->m_v));
                     return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                         as->m_v, new_args.p, new_args.n,
@@ -790,7 +790,7 @@ public:
                 }
                 new_args.push_back(al, idx);
             }
-            ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(as->m_v));
             ASR::expr_t *array_item = ASRUtils::EXPR(
                 ASR::make_ArrayItem_t(al, loc, as->m_v,
@@ -1317,6 +1317,70 @@ public:
             carg.loc = loc;
             carg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, orig_sym));
             call_args.push_back(al, carg);
+        }
+
+        // For multi-dimensional allocatable arrays, pass dimension sizes
+        // as extra integer kernel parameters so the Metal backend can
+        // compute correct linearised strides (allocatable dims have no
+        // compile-time m_length, which causes stride-0 in Metal codegen).
+        for (auto &[sym_name, sym_info] : involved_syms) {
+            ASR::ttype_t *orig_type = sym_info.first;
+            if (!ASRUtils::is_allocatable(orig_type)) continue;
+            ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(orig_type);
+            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+            if (arr->n_dims < 2) continue;
+
+            // Locate the kernel-scope Variable whose type we must update
+            ASR::symbol_t *k_sym = kernel_scope->get_symbol(sym_name);
+            LCOMPILERS_ASSERT(k_sym);
+            ASR::Variable_t *k_var = ASR::down_cast<ASR::Variable_t>(k_sym);
+            ASR::ttype_t *k_type = k_var->m_type;
+            ASR::Array_t *k_arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable(k_type));
+
+            ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            for (size_t d = 0; d < k_arr->n_dims; d++) {
+                std::string dim_name = "__dim_" + sym_name + "_"
+                    + std::to_string(d);
+                ASR::symbol_t *dim_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
+                        s2c(al, dim_name), nullptr, 0,
+                        ASR::intentType::InOut, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, int_type_dim),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                kernel_scope->add_symbol(dim_name, dim_sym);
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
+
+                // Host-side value: size(arr, dim=d+1)
+                ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, (int64_t)(d + 1),
+                        int_type_dim, ASR::integerbozType::Decimal));
+                ASR::expr_t *host_size = ASRUtils::EXPR(
+                    ASR::make_ArraySize_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc, orig_sym)),
+                        dim_expr, int_type_dim, nullptr));
+                ASR::call_arg_t carg;
+                carg.loc = loc;
+                carg.m_value = host_size;
+                call_args.push_back(al, carg);
+
+                // Set dimension length in kernel-scope array type
+                k_arr->m_dims[d].m_length = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, dim_sym));
+                if (!k_arr->m_dims[d].m_start) {
+                    k_arr->m_dims[d].m_start = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, 1,
+                            int_type_dim, ASR::integerbozType::Decimal));
+                }
+            }
         }
 
         // Create loop variables in kernel scope (local, not parameters)
