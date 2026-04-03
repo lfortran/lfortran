@@ -53,8 +53,7 @@ typedef enum {
  * Portability layer for 128-bit floating point (fp128 / real(16)).
  *
  * __float128 is available on Linux with GCC and Clang.
- * On macOS and Windows it is not available; we define a 16-byte struct
- * and convert to double for printing (lossy but functional).
+ * On macOS and Windows it is not available
  * A future PR will implement proper 128-bit arithmetic on all platforms.
  */
 #if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
@@ -70,11 +69,11 @@ static inline double lf_float128_to_double(const void *ptr) {
     memcpy(&tmp, ptr, 16);
     return (double)tmp;
 #else
-    // Safe fallback: extract lower 64 bits as double
-    // (consistent, not correct, but NOT garbage)
-    double d;
-    memcpy(&d, ptr, sizeof(double));
-    return d;
+/*
+ * NOTE:
+ * On macOS, fp128 comparisons require custom runtime support.
+ * Current implementation is partial due to ASR storing values as double.
+ */
 #endif
 }
 // -----------------------------------------------------
@@ -83,7 +82,6 @@ static inline double lf_float128_to_double(const void *ptr) {
 
 #if !HAVE_FLOAT128
 
-// WASM ABI: fp128 passed as 4 x i64
 int __eqtf2(uint64_t a_hi, uint64_t a_lo,
             uint64_t b_hi, uint64_t b_lo)
 {

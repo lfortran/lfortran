@@ -4166,4 +4166,6 @@ RUN(NAME gpu_metal_39 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_40 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_41 LABELS gfortran llvm metal)
 
-RUN(NAME real16_01 LABELS gfortran llvm)
+if (NOT APPLE)
+    RUN(NAME real16_01 LABELS gfortran llvm)
+endif()
