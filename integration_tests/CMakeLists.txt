@@ -2030,6 +2030,8 @@ RUN(NAME operator_overloading_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_34 LABELS gfortran llvm EXTRAFILES
     operator_overloading_34_mod.f90)
+RUN(NAME operator_overloading_35 LABELS gfortran llvm EXTRAFILES
+    operator_overloading_35_mod.f90)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

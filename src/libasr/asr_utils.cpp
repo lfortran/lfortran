@@ -1875,7 +1875,7 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
     for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-        ASR::symbol_t* proc = gen_proc->m_procs[i];
+        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
         switch(proc->type) {
             case ASR::symbolType::Function: {
                 process_overloaded_unary_minus_function(proc, operand, operand_type,
