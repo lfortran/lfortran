@@ -962,6 +962,238 @@ public:
         }
     }
 
+    // Inline whole-array assignments whose RHS contains ArraySection
+    // wrapped in elemental operations (e.g., b = abs(a(:,l))).
+    // Replaces:
+    //   b = abs(a(:,l))
+    // With:
+    //   do __gpu_elem_i = lbound(a,1), ubound(a,1)
+    //     b(__gpu_elem_i) = abs(a(__gpu_elem_i, l))
+    //   end do
+    void inline_elemental_array_var_assignment(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 2);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+
+            // Only handle Var targets with array type
+            if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::ttype_t *target_type = ASRUtils::expr_type(asgn->m_target);
+            if (!ASR::is_a<ASR::Array_t>(*target_type)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            // Walk the RHS to find the first ArraySection
+            ASR::ArraySection_t *first_as = nullptr;
+            std::function<void(ASR::expr_t*)> find_array_section =
+                [&](ASR::expr_t *e) {
+                if (first_as) return;
+                if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                    first_as = ASR::down_cast<ASR::ArraySection_t>(e);
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+                    ASR::IntrinsicElementalFunction_t *f =
+                        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        if (f->m_args[i]) find_array_section(f->m_args[i]);
+                    }
+                } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    ASR::RealBinOp_t *rb = ASR::down_cast<ASR::RealBinOp_t>(e);
+                    find_array_section(rb->m_left);
+                    find_array_section(rb->m_right);
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    find_array_section(ib->m_left);
+                    find_array_section(ib->m_right);
+                } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+                    ASR::ArrayBroadcast_t *ab = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
+                    find_array_section(ab->m_array);
+                } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                    ASR::ArrayPhysicalCast_t *apc =
+                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(e);
+                    find_array_section(apc->m_arg);
+                }
+            };
+            find_array_section(asgn->m_value);
+
+            if (!first_as) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            // Find the range dimension
+            int range_dim = -1;
+            for (size_t i = 0; i < first_as->n_args; i++) {
+                if (first_as->m_args[i].m_left && first_as->m_args[i].m_right
+                        && first_as->m_args[i].m_step) {
+                    if (range_dim != -1) {
+                        range_dim = -1;
+                        break;
+                    }
+                    range_dim = (int)i;
+                }
+            }
+            if (range_dim == -1) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            ASR::expr_t *loop_start = first_as->m_args[range_dim].m_left;
+            ASR::expr_t *loop_end = first_as->m_args[range_dim].m_right;
+
+            // Create loop variable in the containing function/program scope
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+            std::string loop_var_name = var_scope->get_unique_name(
+                "__gpu_elem_i");
+            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                    s2c(al, loop_var_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, int_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            var_scope->add_symbol(loop_var_name, loop_var_sym);
+            ASR::expr_t *loop_var = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, loop_var_sym));
+
+            // Elementize: replace ArraySection with ArrayItem, recurse
+            // into elemental wrappers
+            std::function<ASR::expr_t*(ASR::expr_t*)> elementize =
+                [&](ASR::expr_t *e) -> ASR::expr_t* {
+                if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                    ASR::ArraySection_t *as =
+                        ASR::down_cast<ASR::ArraySection_t>(e);
+                    Vec<ASR::array_index_t> new_args;
+                    new_args.reserve(al, as->n_args);
+                    for (size_t i = 0; i < as->n_args; i++) {
+                        ASR::array_index_t idx;
+                        idx.loc = as->m_args[i].loc;
+                        if (as->m_args[i].m_left && as->m_args[i].m_right
+                                && as->m_args[i].m_step) {
+                            idx.m_left = nullptr;
+                            idx.m_right = loop_var;
+                            idx.m_step = nullptr;
+                        } else {
+                            idx.m_left = as->m_args[i].m_left;
+                            idx.m_right = as->m_args[i].m_right;
+                            idx.m_step = as->m_args[i].m_step;
+                        }
+                        new_args.push_back(al, idx);
+                    }
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(as->m_v));
+                    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                        as->m_v, new_args.p, new_args.n,
+                        elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+                    ASR::IntrinsicElementalFunction_t *f =
+                        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                    Vec<ASR::expr_t*> new_args;
+                    new_args.reserve(al, f->n_args);
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        new_args.push_back(al,
+                            f->m_args[i] ? elementize(f->m_args[i])
+                                         : nullptr);
+                    }
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(
+                        ASR::make_IntrinsicElementalFunction_t(al, loc,
+                            f->m_intrinsic_id, new_args.p, new_args.n,
+                            f->m_overload_id, elem_type, f->m_value));
+                } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    ASR::RealBinOp_t *rb =
+                        ASR::down_cast<ASR::RealBinOp_t>(e);
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                        elementize(rb->m_left), rb->m_op,
+                        elementize(rb->m_right), elem_type, nullptr));
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    ASR::IntegerBinOp_t *ib =
+                        ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        elementize(ib->m_left), ib->m_op,
+                        elementize(ib->m_right), elem_type, nullptr));
+                } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+                    return ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array;
+                } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                    return elementize(
+                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+                }
+                return e;
+            };
+
+            // Build LHS ArrayItem: b(loop_var)
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(target_type);
+            Vec<ASR::array_index_t> lhs_args;
+            lhs_args.reserve(al, 1);
+            ASR::array_index_t lhs_idx;
+            lhs_idx.loc = loc;
+            lhs_idx.m_left = nullptr;
+            lhs_idx.m_right = loop_var;
+            lhs_idx.m_step = nullptr;
+            lhs_args.push_back(al, lhs_idx);
+            ASR::expr_t *lhs_item = ASRUtils::EXPR(
+                ASR::make_ArrayItem_t(al, loc, asgn->m_target,
+                    lhs_args.p, lhs_args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+
+            // Build RHS: elementize the value expression
+            ASR::expr_t *rhs_item = elementize(asgn->m_value);
+
+            // Build loop body: lhs_item = rhs_item
+            Vec<ASR::stmt_t*> loop_body;
+            loop_body.reserve(al, 1);
+            loop_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, lhs_item, rhs_item,
+                    nullptr, false, false)));
+
+            // Build DoLoop
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = loop_var;
+            head.m_start = loop_start;
+            head.m_end = loop_end;
+            head.m_increment = nullptr;
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr,
+                    head, loop_body.p, loop_body.n, nullptr, 0)));
+
+            changed = true;
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal) return;
 
@@ -1172,6 +1404,10 @@ public:
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline whole-array elemental assignments (e.g., b = abs(a(:,l)))
+        inline_elemental_array_var_assignment(
             const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Resolve AssociateBlocks inside the do concurrent body (e.g.,
