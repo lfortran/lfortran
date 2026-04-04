@@ -109,22 +109,6 @@ public:
         return total;
     }
 
-    // Get dimension sizes for linearized indexing
-    std::vector<int64_t> get_dim_sizes(ASR::ttype_t *type) {
-        std::vector<int64_t> sizes;
-        if (type->type != ASR::ttypeType::Array) return sizes;
-        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-        for (size_t i = 0; i < arr->n_dims; i++) {
-            if (arr->m_dims[i].m_length &&
-                ASR::is_a<ASR::IntegerConstant_t>(*arr->m_dims[i].m_length)) {
-                sizes.push_back(ASR::down_cast<ASR::IntegerConstant_t>(
-                    arr->m_dims[i].m_length)->m_n);
-            } else {
-                sizes.push_back(0);
-            }
-        }
-        return sizes;
-    }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
@@ -290,6 +274,18 @@ public:
                 item.second);
             ASR::Function_t *fn = resolve_function(resolved);
             if (!fn) continue;
+            std::string fn_name(fn->m_name);
+            if (emitted_funcs.count(fn_name)) continue;
+            emitted_funcs.insert(fn_name);
+            emit_function_def(fn, fn_name);
+        }
+
+        // Emit inline function definitions for internal functions
+        // duplicated into the kernel scope by the gpu_offload pass
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                item.second);
             std::string fn_name(fn->m_name);
             if (emitted_funcs.count(fn_name)) continue;
             emitted_funcs.insert(fn_name);
@@ -819,7 +815,6 @@ public:
                 // Metal: flat 0-based buffer
                 // For a(i,j) with dims (m,n): index = (j-1)*m + (i-1)
                 ASR::ttype_t *arr_type = ASRUtils::expr_type(ai->m_v);
-                std::vector<int64_t> dim_sizes = get_dim_sizes(arr_type);
 
                 if (ai->n_args == 1) {
                     // 1D: simple index - 1
@@ -836,7 +831,7 @@ public:
                     // Multi-dim: linearize column-major
                     // index = (i1-1) + dim[0]*((i2-1) + dim[1]*((i3-1) + ...))
                     // Build from innermost to outermost
-                    emit_linearized_index(ai, dim_sizes);
+                    emit_linearized_index(ai, arr_type);
                 }
                 src << "]";
                 break;
@@ -888,18 +883,24 @@ public:
     }
 
     void emit_linearized_index(ASR::ArrayItem_t *ai,
-                               std::vector<int64_t> &dim_sizes) {
+                               ASR::ttype_t *arr_type) {
         // Column-major linearization: index = sum_d( (idx_d - 1) * stride_d )
         // stride_0 = 1, stride_1 = dim[0], stride_2 = dim[0]*dim[1], ...
+        // Strides are built as string expressions to handle variable dims.
+        ASR::Array_t *arr = nullptr;
+        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(arr_type);
+        if (ASR::is_a<ASR::Array_t>(*inner)) {
+            arr = ASR::down_cast<ASR::Array_t>(inner);
+        }
         bool first = true;
-        int64_t stride = 1;
+        std::string stride = "1";
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right ?
                 ai->m_args[d].m_right : ai->m_args[d].m_left;
             if (!idx) continue;
             if (!first) src << " + ";
             first = false;
-            if (stride == 1) {
+            if (stride == "1") {
                 src << "((int)(";
                 visit_expr(idx);
                 src << ") - 1)";
@@ -908,8 +909,24 @@ public:
                 visit_expr(idx);
                 src << ") - 1))";
             }
-            if (d < dim_sizes.size()) {
-                stride *= dim_sizes[d];
+            if (arr && d < arr->n_dims) {
+                ASR::expr_t *dim_len = arr->m_dims[d].m_length;
+                std::string len_str = "0";
+                if (dim_len) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
+                        len_str = std::to_string(
+                            ASR::down_cast<ASR::IntegerConstant_t>(
+                                dim_len)->m_n);
+                    } else if (ASR::is_a<ASR::Var_t>(*dim_len)) {
+                        len_str = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
+                    }
+                }
+                if (stride == "1") {
+                    stride = len_str;
+                } else {
+                    stride = "(" + stride + " * " + len_str + ")";
+                }
             }
         }
     }
