@@ -910,9 +910,13 @@ public:
                     // This prevents double-free on the next loop iteration: without nullification,
                     // the ExplicitDeallocate at the start of the loop would try to free memory
                     // that belongs to the source array (was aliased via Associate).
+                    // In the non-contiguous case, deallocate the heap-allocated temporary
+                    // that was used for copy-in (and copy-out).
                     body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                         ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
-                    }, {}));
+                    }, {
+                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                    }));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                 }

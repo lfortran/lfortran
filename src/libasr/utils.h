@@ -66,6 +66,7 @@ struct PassOptions {
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
     bool enable_gpu_offloading = false;
+    bool gpu_offload_metal = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
@@ -97,6 +98,8 @@ struct CompilerOptions {
     bool fast = false;
     bool openmp = false;
     bool target_offload_enabled = false;
+    std::string gpu_backend = "";
+    std::string gpu_metal_source = "";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;

@@ -301,7 +301,10 @@ LFORTRAN_API void _lfortran_inquire(
     char *unformatted, int64_t unformatted_len,
     int32_t *iostat, int32_t *nextrec,
     char *decimal, int64_t decimal_len,
-    char *sign, int64_t sign_len
+    char *sign, int64_t sign_len,
+    char *encoding, int64_t encoding_len,
+    char *stream, int64_t stream_len,
+    char *iomsg, int64_t iomsg_len
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
@@ -310,19 +313,19 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, 

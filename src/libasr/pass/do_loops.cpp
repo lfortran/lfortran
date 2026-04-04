@@ -47,7 +47,6 @@ public:
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (pass_options.enable_gpu_offloading) {
-            // DoConcurrentLoop is handled in the MLIR backend
             return;
         }
         Vec<ASR::stmt_t*> body;body.reserve(al,1);
