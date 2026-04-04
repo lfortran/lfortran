@@ -968,6 +968,61 @@ public:
                     }
                 };
                 resolve_assoc_in_blocks(x.m_body, x.n_body);
+                // Resolve associate aliases in enclosing Block scopes'
+                // variable type expressions. When a do concurrent is
+                // inside a Block that is inside an AssociateBlock, the
+                // block-local arrays may use associate variables in
+                // their dimension expressions (e.g., `real r(size(n))`
+                // where `n` is an associate alias). These must be
+                // resolved before kernel extraction moves the block
+                // into the kernel scope where the AssociateBlock's
+                // symtab is no longer reachable.
+                {
+                    SymbolTable *bs = current_scope;
+                    while (bs && bs->asr_owner &&
+                           bs->asr_owner->type == ASR::asrType::symbol) {
+                        ASR::symbol_t *owner = down_cast<ASR::symbol_t>(
+                            bs->asr_owner);
+                        if (is_a<ASR::Block_t>(*owner)) {
+                            AssociateVarResolver type_resolver(al,
+                                assoc_map);
+                            for (auto &item : bs->get_scope()) {
+                                if (!ASR::is_a<ASR::Variable_t>(
+                                        *item.second))
+                                    continue;
+                                ASR::Variable_t *var =
+                                    ASR::down_cast<ASR::Variable_t>(
+                                        item.second);
+                                if (!ASR::is_a<ASR::Array_t>(
+                                        *var->m_type))
+                                    continue;
+                                ASR::Array_t *arr =
+                                    ASR::down_cast<ASR::Array_t>(
+                                        var->m_type);
+                                for (size_t d = 0; d < arr->n_dims;
+                                     d++) {
+                                    if (arr->m_dims[d].m_start) {
+                                        type_resolver.current_expr =
+                                            &(arr->m_dims[d].m_start);
+                                        type_resolver.replace_expr(
+                                            arr->m_dims[d].m_start);
+                                    }
+                                    if (arr->m_dims[d].m_length) {
+                                        type_resolver.current_expr =
+                                            &(arr->m_dims[d].m_length);
+                                        type_resolver.replace_expr(
+                                            arr->m_dims[d].m_length);
+                                    }
+                                }
+                            }
+                            bs = bs->parent;
+                        } else if (is_a<ASR::AssociateBlock_t>(*owner)) {
+                            bs = bs->parent;
+                        } else {
+                            break;
+                        }
+                    }
+                }
             }
         }
 
