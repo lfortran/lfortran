@@ -1431,6 +1431,12 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.
+   --> tests/errors/continue_compilation_1.f90:648:5
+    |
+648 |     a(1) = .true.
+    |     ^^^^^^^^^^^^^ 
+
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18
     |
