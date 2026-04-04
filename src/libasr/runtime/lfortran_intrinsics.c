@@ -69,11 +69,13 @@ static inline double lf_float128_to_double(const void *ptr) {
     memcpy(&tmp, ptr, 16);
     return (double)tmp;
 #else
-/*
- * NOTE:
+ /*NOTE:
  * On macOS, fp128 comparisons require custom runtime support.
  * Current implementation is partial due to ASR storing values as double.
+ * Currently we return 0.0 as placeholder, but this should be replaced with a proper conversion in the future.
  */
+    return 0.0;
+ 
 #endif
 }
 // -----------------------------------------------------
