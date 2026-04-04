@@ -4125,6 +4125,21 @@ public:
                                 ASR::ttype_t* assoc_type = selector_ttype ? selector_ttype
                                     : ASRUtils::expr_type(m_selector);
                                 assoc_type = ASRUtils::type_get_past_allocatable(assoc_type);
+                                bool was_ptr = ASR::is_a<ASR::Pointer_t>(*assoc_type);
+                                ASR::ttype_t* assoc_base = ASRUtils::type_get_past_pointer(assoc_type);
+                                if (ASR::is_a<ASR::Array_t>(*assoc_base) &&
+                                        ASR::down_cast<ASR::Array_t>(assoc_base)->m_physical_type ==
+                                            ASR::array_physical_typeType::AssumedRankArray &&
+                                        selector_variable) {
+                                    auto it = assumed_rank_arrays.find(selector_variable->m_name);
+                                    if (it != assumed_rank_arrays.end() && it->second == 0) {
+                                        assoc_type = ASRUtils::extract_type(assoc_base);
+                                        if (was_ptr) {
+                                            assoc_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                                                type_stmt_type->base.base.loc, assoc_type));
+                                        }
+                                    }
+                                }
                                 if (!ASR::is_a<ASR::Pointer_t>(*assoc_type)) {
                                     assoc_type = ASRUtils::make_Pointer_t_util(al,
                                         type_stmt_type->base.base.loc, assoc_type);
