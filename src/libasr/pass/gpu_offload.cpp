@@ -146,12 +146,21 @@ public:
         std::string name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
         if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name)) {
-            // ExternalSymbol name differs from resolved function name;
-            // try the underlying function's name (e.g., "construct"
-            // instead of "~mytype_t@construct").
-            std::string resolved_name = ASRUtils::symbol_name(
-                ASRUtils::symbol_get_past_external(x->m_name));
-            new_sym = kernel_scope.get_symbol(resolved_name);
+            // Try sanitized ExternalSymbol name (handles disambiguated
+            // functions where different modules define same-named functions)
+            std::string sanitized = name;
+            for (char &c : sanitized) {
+                if (c == '~' || c == '@') c = '_';
+            }
+            new_sym = kernel_scope.get_symbol(sanitized);
+            if (!new_sym) {
+                // ExternalSymbol name differs from resolved function name;
+                // try the underlying function's name (e.g., "construct"
+                // instead of "~mytype_t@construct").
+                std::string resolved_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(x->m_name));
+                new_sym = kernel_scope.get_symbol(resolved_name);
+            }
         }
         if (new_sym) {
             x->m_name = new_sym;
@@ -1671,14 +1680,28 @@ public:
                     // the kernel's struct copies (not the module's).
                     std::string real_name =
                         ASRUtils::symbol_name(resolved);
-                    if (!kernel_scope->get_symbol(real_name)) {
+                    // When two modules define functions with the same
+                    // name (e.g., both have "my_construct"), the first
+                    // gets added under real_name. For subsequent
+                    // collisions, sanitize the ExternalSymbol name to
+                    // a valid C identifier to disambiguate.
+                    std::string dup_name = real_name;
+                    if (kernel_scope->get_symbol(real_name)) {
+                        dup_name = func_name;
+                        for (char &c : dup_name) {
+                            if (c == '~' || c == '@') c = '_';
+                        }
+                    }
+                    if (!kernel_scope->get_symbol(dup_name)) {
                         ASR::symbol_t *dup =
                             sym_dup.duplicate_Function(
                                 ASR::down_cast<ASR::Function_t>(
                                     resolved),
                                 kernel_scope);
                         if (dup) {
-                            kernel_scope->add_symbol(real_name, dup);
+                            ASR::down_cast<ASR::Function_t>(dup)
+                                ->m_name = s2c(al, dup_name);
+                            kernel_scope->add_symbol(dup_name, dup);
                             // The duplicated function still references
                             // the module's struct definitions. Remap
                             // ExternalSymbol targets and Variable
