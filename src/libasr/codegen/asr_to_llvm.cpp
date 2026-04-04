@@ -8518,21 +8518,28 @@ public:
         // For local pointer variables, reuse the existing descriptor
         // or stack-allocate a new one. This avoids heap leaks since
         // pointer variables have no automatic deallocation at scope exit.
-        // For non-local pointers, heap-allocate so the descriptor survives
-        // after the function returns.
+        // For pointer dummy arguments, always reuse the caller-provided
+        // descriptor so we don't allocate and leak a new descriptor per call.
+        // For other non-local pointers, heap-allocate so the descriptor
+        // survives after the function returns.
         llvm::Value* new_desc;
         bool target_is_local = (ptr_var->m_intent == ASR::intentType::Local);
-        if (target_is_local) {
+        bool target_is_dummy = ASRUtils::is_arg_dummy(ptr_var->m_intent);
+        if (target_is_local || target_is_dummy) {
             llvm::Value* current_desc_ptr = llvm_utils->CreateLoad2(
                 target_type_llvm->getPointerTo(), target_desc);
-            llvm::Value* is_null = builder->CreateICmpEQ(current_desc_ptr,
-                llvm::ConstantPointerNull::get(target_type_llvm->getPointerTo()));
-            llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
-            llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
-            llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
-            llvm::Value* stack_desc = entry_builder.CreateAlloca(
-                target_type_llvm, nullptr, "ptr_section_desc");
-            new_desc = builder->CreateSelect(is_null, stack_desc, current_desc_ptr);
+            if (target_is_dummy) {
+                new_desc = current_desc_ptr;
+            } else {
+                llvm::Value* is_null = builder->CreateICmpEQ(current_desc_ptr,
+                    llvm::ConstantPointerNull::get(target_type_llvm->getPointerTo()));
+                llvm::Function* cur_fn = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock& entry_bb = cur_fn->getEntryBlock();
+                llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
+                llvm::Value* stack_desc = entry_builder.CreateAlloca(
+                    target_type_llvm, nullptr, "ptr_section_desc");
+                new_desc = builder->CreateSelect(is_null, stack_desc, current_desc_ptr);
+            }
         } else {
             // Allocate descriptor on the heap so it survives after this
             // function returns (the caller holds a pointer).
