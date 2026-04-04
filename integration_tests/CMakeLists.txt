@@ -1093,7 +1093,7 @@ RUN(NAME format_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME format_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME format_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1625,7 +1625,7 @@ RUN(NAME intrinsics_410 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8) # maxloc/minloc/shape with -fdefault-integer-8
 RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
-RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # max_loc FAST
+RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # max_loc FAST USER_LEAK
 RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar(char(0))
 RUN(NAME intrinsics_414 LABELS gfortran llvm) # system
 RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum/product with scalar mask = .true.
