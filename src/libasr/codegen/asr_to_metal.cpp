@@ -15,6 +15,19 @@
 
 namespace LCompilers {
 
+class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
+public:
+    std::set<std::string> called;
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        called.insert(ASRUtils::symbol_name(x.m_name));
+        ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        called.insert(ASRUtils::symbol_name(x.m_name));
+        ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_SubroutineCall(x);
+    }
+};
+
 class ASRToMetalVisitor
 {
 public:
@@ -25,6 +38,12 @@ public:
     // VLA info collected during kernel signature generation,
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
+
+    // Maps array parameter names to their synthesized size parameter
+    // names within the current function being emitted. Populated by
+    // emit_function_def for DescriptorArray parameters and consumed
+    // by visit_expr when emitting ArraySize.
+    std::map<std::string, std::string> func_array_size_params;
 
     ASRToMetalVisitor(CompilerOptions &co_) : indent_level(0), co(co_) {}
 
@@ -75,7 +94,13 @@ public:
         ASR::ttype_t *type = var->m_type;
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-            src << get_indent() << metal_type(arr->m_type) << " "
+            std::string elem_type;
+            if (is_struct_type(arr->m_type)) {
+                elem_type = get_struct_name(var);
+            } else {
+                elem_type = metal_type(arr->m_type);
+            }
+            src << get_indent() << elem_type << " "
                 << var->m_name;
             for (size_t d = 0; d < arr->n_dims; d++) {
                 src << "[";
@@ -109,10 +134,66 @@ public:
         return total;
     }
 
+    // Emit the total size of an array expression (product of dimensions).
+    // Used at function call sites to pass array sizes for DescriptorArray
+    // parameters that are represented as device pointers in Metal.
+    void emit_array_size_expr(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(expr);
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            bool first_d = true;
+            src << "(";
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_length) {
+                    if (!first_d) src << " * ";
+                    first_d = false;
+                    visit_expr(arr->m_dims[d].m_length);
+                }
+            }
+            if (first_d) src << "0";
+            src << ")";
+        } else if (ASR::is_a<ASR::Var_t>(*expr)) {
+            std::string name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            auto it = func_array_size_params.find(name);
+            if (it != func_array_size_params.end()) {
+                src << it->second;
+            } else {
+                src << "/* unknown array size */";
+            }
+        } else {
+            src << "/* unknown array size */";
+        }
+    }
+
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
+
+        // Collect and emit struct definitions from all kernels once,
+        // before any kernel code, to avoid redefinition errors when
+        // multiple kernels reference the same struct type.
+        std::set<std::string> emitted_structs;
+        std::vector<ASR::Struct_t*> ordered_structs;
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) continue;
+            ASR::GpuKernelFunction_t &kf =
+                *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+            for (auto &kitem : kf.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*kitem.second)) {
+                    collect_structs_ordered(
+                        ASR::down_cast<ASR::Struct_t>(kitem.second),
+                        kf.m_symtab, emitted_structs, ordered_structs);
+                }
+            }
+        }
+        for (ASR::Struct_t *st : ordered_structs) {
+            emit_struct_def(st);
+        }
 
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
@@ -207,6 +288,7 @@ public:
 
     // Emit a Fortran function as a Metal inline function
     void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
+        func_array_size_params.clear();
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -218,15 +300,35 @@ public:
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-            // Skip 'self'/'class' argument (pass attribute)
+            // Struct-typed argument
             if (ftype->m_arg_types[i] &&
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(ftype->m_arg_types[i]))) {
+                if (!first) src << ", ";
+                first = false;
+                // Out/InOut struct args are passed by reference
+                // using device address space since they typically
+                // originate from device buffer arrays in kernels
+                if (arg->m_intent == ASR::intentType::Out ||
+                    arg->m_intent == ASR::intentType::InOut) {
+                    src << "device " << get_struct_name(arg) << "& "
+                        << arg->m_name;
+                } else {
+                    src << get_struct_name(arg) << " " << arg->m_name;
+                }
                 continue;
             }
             if (!first) src << ", ";
             first = false;
-            src << metal_type(arg->m_type) << " " << arg->m_name;
+            if (is_array_type(arg->m_type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg->m_type);
+                src << "device " << metal_type(arr->m_type) << "* " << arg->m_name;
+                std::string size_name = std::string("__size_") + arg->m_name;
+                src << ", int " << size_name;
+                func_array_size_params[std::string(arg->m_name)] = size_name;
+            } else {
+                src << metal_type(arg->m_type) << " " << arg->m_name;
+            }
         }
         src << ") {\n";
         indent_level++;
@@ -235,6 +337,43 @@ public:
             ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
             src << get_indent() << ret_type << " " << rv->m_name << ";\n";
+        }
+        // Declare Parameter (constant) variables from the function scope
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (var->m_storage != ASR::storage_typeType::Parameter) continue;
+            if (!var->m_value) continue;
+            src << get_indent() << "const " << metal_type(var->m_type)
+                << " " << var->m_name << " = ";
+            visit_expr(var->m_value);
+            src << ";\n";
+        }
+        // Declare local variables (non-argument, non-return, non-parameter)
+        {
+            std::set<std::string> arg_names;
+            for (size_t i = 0; i < fn->n_args; i++) {
+                ASR::Variable_t *a = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+                arg_names.insert(std::string(a->m_name));
+            }
+            std::string ret_name;
+            if (fn->m_return_var) {
+                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+                ret_name = rv->m_name;
+            }
+            for (auto &item : fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                if (var->m_storage == ASR::storage_typeType::Parameter)
+                    continue;
+                if (arg_names.count(std::string(var->m_name))) continue;
+                if (std::string(var->m_name) == ret_name) continue;
+                emit_local_var_decl(var);
+            }
         }
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
@@ -246,24 +385,11 @@ public:
         }
         indent_level--;
         src << "}\n\n";
+        func_array_size_params.clear();
     }
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
-
-        // Emit struct type definitions in dependency order
-        std::set<std::string> emitted_structs;
-        std::vector<ASR::Struct_t*> ordered_structs;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                collect_structs_ordered(
-                    ASR::down_cast<ASR::Struct_t>(item.second),
-                    x.m_symtab, emitted_structs, ordered_structs);
-            }
-        }
-        for (ASR::Struct_t *st : ordered_structs) {
-            emit_struct_def(st);
-        }
 
         // Emit inline function definitions for type-bound procedures
         // referenced in this kernel
@@ -281,15 +407,49 @@ public:
         }
 
         // Emit inline function definitions for internal functions
-        // duplicated into the kernel scope by the gpu_offload pass
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                item.second);
-            std::string fn_name(fn->m_name);
-            if (emitted_funcs.count(fn_name)) continue;
-            emitted_funcs.insert(fn_name);
-            emit_function_def(fn, fn_name);
+        // duplicated into the kernel scope by the gpu_offload pass.
+        // Topologically sort so callees are emitted before callers.
+        {
+            std::map<std::string, ASR::Function_t*> kernel_funcs;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                std::string fn_name(fn->m_name);
+                if (emitted_funcs.count(fn_name)) continue;
+                kernel_funcs[fn_name] = fn;
+            }
+            std::vector<std::string> sorted_funcs;
+            std::set<std::string> visited, in_stack;
+            std::function<void(const std::string&)> topo_sort =
+                [&](const std::string &name) {
+                if (visited.count(name)) return;
+                visited.insert(name);
+                in_stack.insert(name);
+                auto it = kernel_funcs.find(name);
+                if (it != kernel_funcs.end()) {
+                    GpuFuncCallCollector call_collector;
+                    ASR::Function_t *fn = it->second;
+                    for (size_t i = 0; i < fn->n_body; i++) {
+                        call_collector.visit_stmt(*fn->m_body[i]);
+                    }
+                    for (auto &callee : call_collector.called) {
+                        if (kernel_funcs.count(callee) &&
+                                !in_stack.count(callee)) {
+                            topo_sort(callee);
+                        }
+                    }
+                }
+                in_stack.erase(name);
+                sorted_funcs.push_back(name);
+            };
+            for (auto &[name, fn] : kernel_funcs) {
+                topo_sort(name);
+            }
+            for (auto &fn_name : sorted_funcs) {
+                emitted_funcs.insert(fn_name);
+                emit_function_def(kernel_funcs[fn_name], fn_name);
+            }
         }
 
         struct ArgInfo {
@@ -307,7 +467,16 @@ public:
             std::string arg_name(var->m_name);
             ASR::ttype_t *type = var->m_type;
             bool is_st = is_struct_type(type);
-            std::string sn = is_st ? get_struct_name(var) : "";
+            // Get struct name for both struct-typed and array-of-struct
+            // variables via m_type_declaration
+            std::string sn = "";
+            if (var->m_type_declaration) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    sn = ASR::down_cast<ASR::Struct_t>(s)->m_name;
+                }
+            }
             args.push_back({arg_name, type, is_array_type(type), is_st, sn});
         }
 
@@ -315,24 +484,59 @@ public:
         // non-constant dimensions) using the shared GPU utility.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
 
+        // Collect scalar args for packing into a single struct buffer
+        struct ScalarArg {
+            std::string name;
+            std::string metal_type_str;
+        };
+        std::vector<ScalarArg> scalar_args;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array && !args[i].is_struct) {
+                scalar_args.push_back({args[i].name,
+                    metal_type(args[i].type)});
+            }
+        }
+
+        // Emit scalar args struct definition (before kernel) if needed
+        std::string scalar_struct_name = "__ScalarArgs_" + name;
+        if (!scalar_args.empty()) {
+            src << "struct " << scalar_struct_name << " {\n";
+            for (auto &sa : scalar_args) {
+                src << "    " << sa.metal_type_str << " "
+                    << sa.name << ";\n";
+            }
+            src << "};\n\n";
+        }
+
         // Emit kernel signature
         src << "kernel void " << name << "(\n";
 
         int buffer_idx = 0;
         bool has_prev = false;
         for (size_t i = 0; i < args.size(); i++) {
-            if (has_prev) src << ",\n";
-            src << "    ";
             if (args[i].is_array) {
-                src << "device " << metal_type(args[i].type) << "* "
+                if (has_prev) src << ",\n";
+                src << "    ";
+                std::string elem_type = !args[i].struct_name.empty()
+                    ? args[i].struct_name
+                    : metal_type(args[i].type);
+                src << "device " << elem_type << "* "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                has_prev = true;
             } else if (args[i].is_struct) {
+                if (has_prev) src << ",\n";
+                src << "    ";
                 src << "device " << args[i].struct_name << "& "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-            } else {
-                src << "constant " << metal_type(args[i].type) << "& "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                has_prev = true;
             }
+        }
+
+        // Emit packed scalar struct as a single buffer
+        if (!scalar_args.empty()) {
+            if (has_prev) src << ",\n";
+            src << "    constant " << scalar_struct_name
+                << "& __scalar_args [[buffer(" << buffer_idx++ << ")]]";
             has_prev = true;
         }
 
@@ -372,6 +576,12 @@ public:
 
         src << ")\n{\n";
         indent_level++;
+
+        // Unpack scalar args from the struct into local variables
+        for (auto &sa : scalar_args) {
+            src << get_indent() << sa.metal_type_str << " "
+                << sa.name << " = __scalar_args." << sa.name << ";\n";
+        }
 
         // Declare local variables (non-argument variables in kernel scope)
         for (auto &item : x.m_symtab->get_scope()) {
@@ -525,6 +735,46 @@ public:
                 }
                 indent_level--;
                 src << get_indent() << "}\n";
+                break;
+            }
+            case ASR::stmtType::AssociateBlockCall: {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                src << get_indent() << "{\n";
+                indent_level++;
+                for (auto &item : ab->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                        item.second);
+                    emit_local_var_decl(v);
+                }
+                for (size_t i = 0; i < ab->n_body; i++) {
+                    visit_stmt(ab->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
+                break;
+            }
+            case ASR::stmtType::SubroutineCall: {
+                ASR::SubroutineCall_t *sc =
+                    ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+                ASR::Function_t *fn = resolve_function(sc->m_name);
+                std::string call_name = fn
+                    ? std::string(fn->m_name)
+                    : std::string(ASRUtils::symbol_name(
+                          ASRUtils::symbol_get_past_external(sc->m_name)));
+                src << get_indent() << call_name << "(";
+                bool first_arg = true;
+                for (size_t i = 0; i < sc->n_args; i++) {
+                    if (sc->m_args[i].m_value) {
+                        if (!first_arg) src << ", ";
+                        first_arg = false;
+                        visit_expr(sc->m_args[i].m_value);
+                    }
+                }
+                src << ");\n";
                 break;
             }
             default:
@@ -793,13 +1043,15 @@ public:
                     bool first_arg = true;
                     for (size_t i = 0; i < fc->n_args; i++) {
                         if (fc->m_args[i].m_value) {
-                            // Skip struct-typed arguments (self/class)
                             ASR::ttype_t *arg_type = ASRUtils::expr_type(
                                 fc->m_args[i].m_value);
-                            if (is_struct_type(arg_type)) continue;
                             if (!first_arg) src << ", ";
                             first_arg = false;
                             visit_expr(fc->m_args[i].m_value);
+                            if (is_array_type(arg_type)) {
+                                src << ", ";
+                                emit_array_size_expr(fc->m_args[i].m_value);
+                            }
                         }
                     }
                     src << ")";
@@ -874,6 +1126,41 @@ public:
                 ASR::ArrayPhysicalCast_t *apc =
                     ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
                 visit_expr(apc->m_arg);
+                break;
+            }
+            case ASR::exprType::ArraySize: {
+                ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
+                if (as->m_value) {
+                    visit_expr(as->m_value);
+                } else if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
+                    std::string arr_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+                    auto it = func_array_size_params.find(arr_name);
+                    if (it != func_array_size_params.end()) {
+                        src << it->second;
+                    } else {
+                        ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+                        if (ASR::is_a<ASR::Array_t>(*arr_type)) {
+                            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                                arr_type);
+                            bool first_dim = true;
+                            src << "(";
+                            for (size_t d = 0; d < arr->n_dims; d++) {
+                                if (arr->m_dims[d].m_length) {
+                                    if (!first_dim) src << " * ";
+                                    first_dim = false;
+                                    visit_expr(arr->m_dims[d].m_length);
+                                }
+                            }
+                            if (first_dim) src << "0";
+                            src << ")";
+                        } else {
+                            src << "/* unknown array size */";
+                        }
+                    }
+                } else {
+                    src << "/* unsupported ArraySize */";
+                }
                 break;
             }
             default:
