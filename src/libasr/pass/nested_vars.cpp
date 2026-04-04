@@ -600,8 +600,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
                     ASR::array_physical_typeType orig_physical_type =
                         ASRUtils::extract_physical_type(var_type);
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(
-                        al, var_type, orig_physical_type, true);
+                    if (orig_physical_type ==
+                            ASR::array_physical_typeType::UnboundedPointerArray) {
+                        var_type = ASRUtils::duplicate_type_with_empty_dims(
+                            al, var_type, orig_physical_type, true);
+                    } else {
+                        var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
+                    }
                     if (is_allocatable) {
                         var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
                     } else {
