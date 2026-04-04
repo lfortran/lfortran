@@ -663,6 +663,12 @@ public:
                     ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
                     find_bounds(ib->m_left);
                     find_bounds(ib->m_right);
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+                    ASR::IntrinsicElementalFunction_t *ief =
+                        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                    for (size_t i = 0; i < ief->n_args; i++) {
+                        if (ief->m_args[i]) find_bounds(ief->m_args[i]);
+                    }
                 }
             };
             find_bounds(mask);
@@ -772,6 +778,21 @@ public:
                     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         elementize(ib->m_left), ib->m_op, elementize(ib->m_right),
                         int_elem_type, nullptr));
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+                    ASR::IntrinsicElementalFunction_t *ief =
+                        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                    Vec<ASR::expr_t*> new_args;
+                    new_args.reserve(al, ief->n_args);
+                    for (size_t i = 0; i < ief->n_args; i++) {
+                        new_args.push_back(al, ief->m_args[i]
+                            ? elementize(ief->m_args[i]) : nullptr);
+                    }
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(
+                        ASR::make_IntrinsicElementalFunction_t(al, loc,
+                            ief->m_intrinsic_id, new_args.p, new_args.n,
+                            ief->m_overload_id, elem_type, nullptr));
                 }
                 return e;
             };
