@@ -26,6 +26,12 @@ public:
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
 
+    // Maps array parameter names to their synthesized size parameter
+    // names within the current function being emitted. Populated by
+    // emit_function_def for DescriptorArray parameters and consumed
+    // by visit_expr when emitting ArraySize.
+    std::map<std::string, std::string> func_array_size_params;
+
     ASRToMetalVisitor(CompilerOptions &co_) : indent_level(0), co(co_) {}
 
     std::string get_indent() {
@@ -107,6 +113,41 @@ public:
             }
         }
         return total;
+    }
+
+    // Emit the total size of an array expression (product of dimensions).
+    // Used at function call sites to pass array sizes for DescriptorArray
+    // parameters that are represented as device pointers in Metal.
+    void emit_array_size_expr(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(expr);
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            bool first_d = true;
+            src << "(";
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_length) {
+                    if (!first_d) src << " * ";
+                    first_d = false;
+                    visit_expr(arr->m_dims[d].m_length);
+                }
+            }
+            if (first_d) src << "0";
+            src << ")";
+        } else if (ASR::is_a<ASR::Var_t>(*expr)) {
+            std::string name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            auto it = func_array_size_params.find(name);
+            if (it != func_array_size_params.end()) {
+                src << it->second;
+            } else {
+                src << "/* unknown array size */";
+            }
+        } else {
+            src << "/* unknown array size */";
+        }
     }
 
 
@@ -207,6 +248,7 @@ public:
 
     // Emit a Fortran function as a Metal inline function
     void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
+        func_array_size_params.clear();
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -226,7 +268,15 @@ public:
             }
             if (!first) src << ", ";
             first = false;
-            src << metal_type(arg->m_type) << " " << arg->m_name;
+            if (is_array_type(arg->m_type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg->m_type);
+                src << "device " << metal_type(arr->m_type) << "* " << arg->m_name;
+                std::string size_name = std::string("__size_") + arg->m_name;
+                src << ", int " << size_name;
+                func_array_size_params[std::string(arg->m_name)] = size_name;
+            } else {
+                src << metal_type(arg->m_type) << " " << arg->m_name;
+            }
         }
         src << ") {\n";
         indent_level++;
@@ -246,6 +296,7 @@ public:
         }
         indent_level--;
         src << "}\n\n";
+        func_array_size_params.clear();
     }
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
@@ -527,6 +578,26 @@ public:
                 src << get_indent() << "}\n";
                 break;
             }
+            case ASR::stmtType::AssociateBlockCall: {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                src << get_indent() << "{\n";
+                indent_level++;
+                for (auto &item : ab->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                        item.second);
+                    emit_local_var_decl(v);
+                }
+                for (size_t i = 0; i < ab->n_body; i++) {
+                    visit_stmt(ab->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
+                break;
+            }
             default:
                 break;
         }
@@ -800,6 +871,10 @@ public:
                             if (!first_arg) src << ", ";
                             first_arg = false;
                             visit_expr(fc->m_args[i].m_value);
+                            if (is_array_type(arg_type)) {
+                                src << ", ";
+                                emit_array_size_expr(fc->m_args[i].m_value);
+                            }
                         }
                     }
                     src << ")";
@@ -874,6 +949,41 @@ public:
                 ASR::ArrayPhysicalCast_t *apc =
                     ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
                 visit_expr(apc->m_arg);
+                break;
+            }
+            case ASR::exprType::ArraySize: {
+                ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
+                if (as->m_value) {
+                    visit_expr(as->m_value);
+                } else if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
+                    std::string arr_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+                    auto it = func_array_size_params.find(arr_name);
+                    if (it != func_array_size_params.end()) {
+                        src << it->second;
+                    } else {
+                        ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+                        if (ASR::is_a<ASR::Array_t>(*arr_type)) {
+                            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                                arr_type);
+                            bool first_dim = true;
+                            src << "(";
+                            for (size_t d = 0; d < arr->n_dims; d++) {
+                                if (arr->m_dims[d].m_length) {
+                                    if (!first_dim) src << " * ";
+                                    first_dim = false;
+                                    visit_expr(arr->m_dims[d].m_length);
+                                }
+                            }
+                            if (first_dim) src << "0";
+                            src << ")";
+                        } else {
+                            src << "/* unknown array size */";
+                        }
+                    }
+                } else {
+                    src << "/* unsupported ArraySize */";
+                }
                 break;
             }
             default:

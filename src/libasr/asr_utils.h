@@ -5558,15 +5558,33 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
 {
     public:
     SymbolTable* current_scope;
+    bool use_resolve_symbol = false;
     ExprStmtWithScopeDuplicator(Allocator &al, SymbolTable* current_scope): BaseExprStmtDuplicator(al), current_scope(current_scope) {}
 
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
-        ASR::symbol_t* m_v = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+        std::string name = ASRUtils::symbol_name(x->m_v);
+        ASR::symbol_t* m_v = use_resolve_symbol
+            ? current_scope->resolve_symbol(name)
+            : current_scope->get_symbol(name);
         if (m_v == nullptr) {
             // we are dealing with an external/statement function, duplicate node with same symbol
             return ASR::make_Var_t(al, x->base.base.loc, x->m_v);
         }
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
+    }
+
+    ASR::asr_t* duplicate_AssociateBlockCall(ASR::AssociateBlockCall_t* x) {
+        std::string name = ASRUtils::symbol_name(x->m_m);
+        ASR::symbol_t* m_m = current_scope->get_symbol(name);
+        if (m_m == nullptr) m_m = x->m_m;
+        return ASR::make_AssociateBlockCall_t(al, x->base.base.loc, m_m);
+    }
+
+    ASR::asr_t* duplicate_BlockCall(ASR::BlockCall_t* x) {
+        std::string name = ASRUtils::symbol_name(x->m_m);
+        ASR::symbol_t* m_m = current_scope->get_symbol(name);
+        if (m_m == nullptr) m_m = x->m_m;
+        return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, m_m);
     }
 
 };
@@ -5853,6 +5871,44 @@ class SymbolDuplicator {
         SymbolTable* destination_symtab) {
         SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(function->m_symtab, function_symtab);
+
+        // Re-duplicate AssociateBlock bodies with scope awareness.
+        // duplicate_AssociateBlock uses a non-scoped duplicator, so Var
+        // references in the body still point to original symbols. Now
+        // that all symbols exist in function_symtab, re-duplicate from
+        // the original bodies using a scoped duplicator that resolves
+        // symbols through the new scope chain.
+        for (auto &item : function_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second)) continue;
+            ASR::AssociateBlock_t *new_ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+            ASR::symbol_t *orig_sym = function->m_symtab->get_symbol(
+                item.first);
+            if (!orig_sym ||
+                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym)) continue;
+            ASR::AssociateBlock_t *orig_ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(orig_sym);
+            Vec<ASR::stmt_t*> ab_body;
+            ab_body.reserve(al, orig_ab->n_body);
+            ASRUtils::ExprStmtWithScopeDuplicator ab_dup(
+                al, new_ab->m_symtab);
+            ab_dup.use_resolve_symbol = true;
+            ab_dup.allow_procedure_calls = true;
+            ab_dup.allow_reshape = true;
+            bool ab_ok = true;
+            for (size_t i = 0; i < orig_ab->n_body; i++) {
+                ab_dup.success = true;
+                ASR::stmt_t* s = ab_dup.duplicate_stmt(
+                    orig_ab->m_body[i]);
+                if (!ab_dup.success) { ab_ok = false; break; }
+                ab_body.push_back(al, s);
+            }
+            if (ab_ok) {
+                new_ab->m_body = ab_body.p;
+                new_ab->n_body = ab_body.n;
+            }
+        }
+
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);
 
