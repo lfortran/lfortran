@@ -367,6 +367,25 @@ public:
         return copy;
     }
 
+    // Find a Struct in kernel_scope by name, with PDT fallback.
+    // If the exact name is not found (e.g., "network_t"), look for a
+    // PDT instantiation (e.g., "network_t_4") that has a member named
+    // member_name. Returns the Struct symbol or nullptr.
+    ASR::symbol_t* find_kernel_struct(SymbolTable *kernel_scope,
+            const std::string &struct_name,
+            const std::string &member_name) {
+        ASR::symbol_t *sym = kernel_scope->get_symbol(struct_name);
+        if (sym && is_a<ASR::Struct_t>(*sym)) return sym;
+        for (auto &item : kernel_scope->get_scope()) {
+            if (!is_a<ASR::Struct_t>(*item.second)) continue;
+            ASR::Struct_t *s = down_cast<ASR::Struct_t>(item.second);
+            if (s->m_symtab->get_symbol(member_name)) {
+                return item.second;
+            }
+        }
+        return nullptr;
+    }
+
     // Import a Struct definition into kernel scope, recursively handling
     // nested struct-typed members. Also creates ExternalSymbol entries
     // in kernel_scope for members referenced from orig_scope.
@@ -447,8 +466,24 @@ public:
             if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
             ASR::ExternalSymbol_t *es = down_cast<ASR::ExternalSymbol_t>(item.second);
             ASR::symbol_t *es_external = ASRUtils::symbol_get_past_external(es->m_external);
-            // Check if this ExternalSymbol refers to a member of our struct
-            if (ASRUtils::symbol_parent_symtab(es_external) == orig_struct->m_symtab) {
+            // Check if this ExternalSymbol refers to a member of our struct.
+            // For PDT instantiations (e.g., network_t_4), also match
+            // ExternalSymbols pointing to the PDT template struct
+            // (e.g., network_t) when the instantiated struct has a
+            // member with the same original name.
+            SymbolTable *es_parent_st =
+                ASRUtils::symbol_parent_symtab(es_external);
+            bool is_member = (es_parent_st == orig_struct->m_symtab);
+            if (!is_member && es_parent_st->asr_owner &&
+                    es_parent_st->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *es_struct_owner =
+                    down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
+                if (is_a<ASR::Struct_t>(*es_struct_owner) &&
+                        new_st->get_symbol(es->m_original_name)) {
+                    is_member = true;
+                }
+            }
+            if (is_member) {
                 std::string es_name = item.first;
                 if (kernel_scope->get_symbol(es_name)) continue;
                 ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
@@ -1589,14 +1624,17 @@ public:
                             std::string struct_name =
                                 down_cast<ASR::Struct_t>(struct_owner)
                                     ->m_name;
+                            std::string orig_name =
+                                ASRUtils::symbol_name(resolved);
                             ASR::symbol_t *kernel_struct =
-                                kernel_scope->get_symbol(struct_name);
+                                find_kernel_struct(kernel_scope,
+                                    struct_name, orig_name);
                             if (kernel_struct &&
                                     is_a<ASR::Struct_t>(*kernel_struct)) {
+                                struct_name = down_cast<ASR::Struct_t>(
+                                    kernel_struct)->m_name;
                                 ASR::Struct_t *ks =
                                     down_cast<ASR::Struct_t>(kernel_struct);
-                                std::string orig_name =
-                                    ASRUtils::symbol_name(resolved);
                                 ASR::symbol_t *kernel_method =
                                     ks->m_symtab->get_symbol(orig_name);
                                 if (kernel_method) {
@@ -1702,13 +1740,14 @@ public:
                                     std::string sname =
                                         down_cast<ASR::Struct_t>(
                                             struct_owner)->m_name;
+                                    std::string mname =
+                                        ASRUtils::symbol_name(
+                                            resolved);
                                     ASR::symbol_t *ks =
-                                        kernel_scope->get_symbol(sname);
+                                        find_kernel_struct(kernel_scope,
+                                            sname, mname);
                                     if (ks &&
                                             is_a<ASR::Struct_t>(*ks)) {
-                                        std::string mname =
-                                            ASRUtils::symbol_name(
-                                                resolved);
                                         ASR::symbol_t *km =
                                             down_cast<ASR::Struct_t>(ks)
                                                 ->m_symtab

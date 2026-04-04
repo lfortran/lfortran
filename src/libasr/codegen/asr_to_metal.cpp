@@ -260,10 +260,13 @@ public:
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-            // Skip 'self'/'class' argument (pass attribute)
+            // Struct-typed argument (self/class): pass by value
             if (ftype->m_arg_types[i] &&
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(ftype->m_arg_types[i]))) {
+                if (!first) src << ", ";
+                first = false;
+                src << get_struct_name(arg) << " " << arg->m_name;
                 continue;
             }
             if (!first) src << ", ";
@@ -864,10 +867,8 @@ public:
                     bool first_arg = true;
                     for (size_t i = 0; i < fc->n_args; i++) {
                         if (fc->m_args[i].m_value) {
-                            // Skip struct-typed arguments (self/class)
                             ASR::ttype_t *arg_type = ASRUtils::expr_type(
                                 fc->m_args[i].m_value);
-                            if (is_struct_type(arg_type)) continue;
                             if (!first_arg) src << ", ";
                             first_arg = false;
                             visit_expr(fc->m_args[i].m_value);
