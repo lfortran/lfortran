@@ -169,6 +169,41 @@ public:
         }
     }
 
+    // Emit extra size arguments for allocatable array members of a
+    // struct-typed function call argument. The sizes are looked up
+    // from the kernel's __size_<struct>_<member> scalar parameters.
+    void emit_struct_member_sizes(ASR::expr_t *expr) {
+        ASR::Variable_t *var = nullptr;
+        std::string var_name;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                var = ASR::down_cast<ASR::Variable_t>(sym);
+                var_name = var->m_name;
+            }
+        }
+        if (!var || !var->m_type_declaration) return;
+        ASR::symbol_t *st_sym =
+            ASRUtils::symbol_get_past_external(var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*st_sym)) return;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(st_sym);
+        for (size_t m = 0; m < st->n_members; m++) {
+            ASR::symbol_t *mem =
+                st->m_symtab->get_symbol(st->m_members[m]);
+            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+            ASR::Variable_t *mv =
+                ASR::down_cast<ASR::Variable_t>(mem);
+            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+            ASR::ttype_t *inner =
+                ASRUtils::type_get_past_allocatable(mv->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+            std::string size_var = "__size_" + var_name + "_"
+                + st->m_members[m];
+            src << ", " << size_var;
+        }
+    }
+
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
@@ -315,6 +350,41 @@ public:
                         << arg->m_name;
                 } else {
                     src << get_struct_name(arg) << " " << arg->m_name;
+                }
+                // Add size parameters for allocatable array members
+                if (arg->m_type_declaration) {
+                    ASR::symbol_t *st_sym =
+                        ASRUtils::symbol_get_past_external(
+                            arg->m_type_declaration);
+                    if (ASR::is_a<ASR::Struct_t>(*st_sym)) {
+                        ASR::Struct_t *st =
+                            ASR::down_cast<ASR::Struct_t>(st_sym);
+                        for (size_t m = 0; m < st->n_members; m++) {
+                            ASR::symbol_t *mem =
+                                st->m_symtab->get_symbol(
+                                    st->m_members[m]);
+                            if (!mem ||
+                                !ASR::is_a<ASR::Variable_t>(*mem))
+                                continue;
+                            ASR::Variable_t *mv =
+                                ASR::down_cast<ASR::Variable_t>(mem);
+                            if (!ASRUtils::is_allocatable(mv->m_type))
+                                continue;
+                            ASR::ttype_t *inner =
+                                ASRUtils::type_get_past_allocatable(
+                                    mv->m_type);
+                            if (!ASR::is_a<ASR::Array_t>(*inner))
+                                continue;
+                            std::string size_name =
+                                "__size_" + std::string(arg->m_name)
+                                + "_" + st->m_members[m];
+                            src << ", int " << size_name;
+                            std::string key =
+                                std::string(arg->m_name) + "."
+                                + st->m_members[m];
+                            func_array_size_params[key] = size_name;
+                        }
+                    }
                 }
                 continue;
             }
@@ -1051,6 +1121,9 @@ public:
                             if (is_array_type(arg_type)) {
                                 src << ", ";
                                 emit_array_size_expr(fc->m_args[i].m_value);
+                            } else if (is_struct_type(arg_type)) {
+                                emit_struct_member_sizes(
+                                    fc->m_args[i].m_value);
                             }
                         }
                     }
@@ -1157,6 +1230,30 @@ public:
                         } else {
                             src << "/* unknown array size */";
                         }
+                    }
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
+                    ASR::StructInstanceMember_t *sm =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(
+                            as->m_v);
+                    if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                        std::string struct_name =
+                            ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::Var_t>(
+                                    sm->m_v)->m_v);
+                        std::string mem_name =
+                            ASRUtils::symbol_name(
+                                ASRUtils::symbol_get_past_external(
+                                    sm->m_m));
+                        std::string key =
+                            struct_name + "." + mem_name;
+                        auto sit = func_array_size_params.find(key);
+                        if (sit != func_array_size_params.end()) {
+                            src << sit->second;
+                        } else {
+                            src << "/* unknown struct member array size */";
+                        }
+                    } else {
+                        src << "/* unsupported ArraySize */";
                     }
                 } else {
                     src << "/* unsupported ArraySize */";

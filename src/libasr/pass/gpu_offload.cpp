@@ -416,6 +416,13 @@ public:
     // Struct var names that have any non-allocatable-array member access
     std::set<std::string> has_non_alloc_access;
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_v);
@@ -1037,6 +1044,265 @@ public:
         }
     }
 
+    // Inline IntrinsicArrayFunction MatMul inside a DoConcurrentLoop body.
+    // Replaces:
+    //   c = matmul(a, b)
+    // With nested DoLoops that compute the matrix multiplication directly.
+    // This avoids generating a call to _lcompilers_matmul which is not
+    // available inside Metal GPU kernels.
+    void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 4);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::IntrinsicArrayFunction_t *iaf =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    iaf->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::MatMul) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            // Strip ArrayPhysicalCast from arguments
+            ASR::expr_t *arg_a = iaf->m_args[0];
+            ASR::expr_t *arg_b = iaf->m_args[1];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_a)) {
+                arg_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_a)->m_arg;
+            }
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_b)) {
+                arg_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_b)->m_arg;
+            }
+
+            ASR::ttype_t *type_a = ASRUtils::expr_type(arg_a);
+            ASR::ttype_t *type_b = ASRUtils::expr_type(arg_b);
+            ASR::dimension_t *dims_a = nullptr, *dims_b = nullptr;
+            int rank_a = ASRUtils::extract_dimensions_from_ttype(type_a, dims_a);
+            int rank_b = ASRUtils::extract_dimensions_from_ttype(type_b, dims_b);
+
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(asgn->m_target));
+
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+
+            auto make_loop_var = [&](const std::string &prefix) -> ASR::expr_t* {
+                std::string name = var_scope->get_unique_name(prefix);
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, int_type),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(name, sym);
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+            };
+
+            auto make_array_item_1d = [&](ASR::expr_t *arr,
+                    ASR::expr_t *idx) -> ASR::expr_t* {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, 1);
+                ASR::array_index_t ai;
+                ai.loc = loc;
+                ai.m_left = nullptr;
+                ai.m_right = idx;
+                ai.m_step = nullptr;
+                args.push_back(al, ai);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
+                    args.p, args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+            };
+
+            auto make_array_item_2d = [&](ASR::expr_t *arr,
+                    ASR::expr_t *idx1, ASR::expr_t *idx2) -> ASR::expr_t* {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, 2);
+                ASR::array_index_t ai1;
+                ai1.loc = loc;
+                ai1.m_left = nullptr;
+                ai1.m_right = idx1;
+                ai1.m_step = nullptr;
+                args.push_back(al, ai1);
+                ASR::array_index_t ai2;
+                ai2.loc = loc;
+                ai2.m_left = nullptr;
+                ai2.m_right = idx2;
+                ai2.m_step = nullptr;
+                args.push_back(al, ai2);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
+                    args.p, args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+            };
+
+            auto make_do_loop = [&](ASR::expr_t *var, ASR::expr_t *start,
+                    ASR::expr_t *end, Vec<ASR::stmt_t*> &body) -> ASR::stmt_t* {
+                ASR::do_loop_head_t head;
+                head.loc = loc;
+                head.m_v = var;
+                head.m_start = start;
+                head.m_end = end;
+                head.m_increment = nullptr;
+                return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                    head, body.p, body.n, nullptr, 0));
+            };
+
+            ASR::expr_t *zero;
+            if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
+                    0.0, elem_type));
+            } else {
+                zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    0, elem_type, ASR::integerbozType::Decimal));
+            }
+
+            int64_t overload_id = iaf->m_overload_id;
+
+            if (overload_id == 2 && rank_a == 2 && rank_b == 1) {
+                // c(i) = sum_k a(i,k) * b(k)
+                ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
+                ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
+
+                ASR::expr_t *c_i = make_array_item_1d(asgn->m_target, var_i);
+                ASR::expr_t *a_ik = make_array_item_2d(arg_a, var_i, var_k);
+                ASR::expr_t *b_k = make_array_item_1d(arg_b, var_k);
+
+                // k-loop body: c(i) = c(i) + a(i,k) * b(k)
+                Vec<ASR::stmt_t*> k_body;
+                k_body.reserve(al, 1);
+                ASR::expr_t *prod = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, a_ik,
+                        ASR::binopType::Mul, b_k, elem_type, nullptr));
+                ASR::expr_t *sum = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, c_i,
+                        ASR::binopType::Add, prod, elem_type, nullptr));
+                k_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_i, sum,
+                        nullptr, false, false)));
+
+                // i-loop body: c(i) = 0; do k ...
+                Vec<ASR::stmt_t*> i_body;
+                i_body.reserve(al, 2);
+                i_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_i, zero,
+                        nullptr, false, false)));
+                i_body.push_back(al,
+                    make_do_loop(var_k, dims_a[1].m_start,
+                        dims_a[1].m_length, k_body));
+
+                new_body.push_back(al,
+                    make_do_loop(var_i, dims_a[0].m_start,
+                        dims_a[0].m_length, i_body));
+            } else if (overload_id == 1 && rank_a == 1 && rank_b == 2) {
+                // c(j) = sum_k a(k) * b(k, j)
+                ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
+                ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
+
+                ASR::expr_t *c_j = make_array_item_1d(asgn->m_target, var_j);
+                ASR::expr_t *a_k = make_array_item_1d(arg_a, var_k);
+                ASR::expr_t *b_kj = make_array_item_2d(arg_b, var_k, var_j);
+
+                Vec<ASR::stmt_t*> k_body;
+                k_body.reserve(al, 1);
+                ASR::expr_t *prod = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, a_k,
+                        ASR::binopType::Mul, b_kj, elem_type, nullptr));
+                ASR::expr_t *sum = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, c_j,
+                        ASR::binopType::Add, prod, elem_type, nullptr));
+                k_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_j, sum,
+                        nullptr, false, false)));
+
+                Vec<ASR::stmt_t*> j_body;
+                j_body.reserve(al, 2);
+                j_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_j, zero,
+                        nullptr, false, false)));
+                j_body.push_back(al,
+                    make_do_loop(var_k, dims_b[0].m_start,
+                        dims_b[0].m_length, k_body));
+
+                new_body.push_back(al,
+                    make_do_loop(var_j, dims_b[1].m_start,
+                        dims_b[1].m_length, j_body));
+            } else if (overload_id == 3 && rank_a == 2 && rank_b == 2) {
+                // c(i,j) = sum_k a(i,k) * b(k,j)
+                ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
+                ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
+                ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
+
+                ASR::expr_t *c_ij = make_array_item_2d(asgn->m_target,
+                    var_i, var_j);
+                ASR::expr_t *a_ik = make_array_item_2d(arg_a, var_i, var_k);
+                ASR::expr_t *b_kj = make_array_item_2d(arg_b, var_k, var_j);
+
+                Vec<ASR::stmt_t*> k_body;
+                k_body.reserve(al, 1);
+                ASR::expr_t *prod = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, a_ik,
+                        ASR::binopType::Mul, b_kj, elem_type, nullptr));
+                ASR::expr_t *sum = ASRUtils::EXPR(
+                    ASR::make_RealBinOp_t(al, loc, c_ij,
+                        ASR::binopType::Add, prod, elem_type, nullptr));
+                k_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_ij, sum,
+                        nullptr, false, false)));
+
+                Vec<ASR::stmt_t*> j_body;
+                j_body.reserve(al, 2);
+                j_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, c_ij, zero,
+                        nullptr, false, false)));
+                j_body.push_back(al,
+                    make_do_loop(var_k, dims_a[1].m_start,
+                        dims_a[1].m_length, k_body));
+
+                Vec<ASR::stmt_t*> i_body;
+                i_body.reserve(al, 1);
+                i_body.push_back(al,
+                    make_do_loop(var_j, dims_b[1].m_start,
+                        dims_b[1].m_length, j_body));
+
+                new_body.push_back(al,
+                    make_do_loop(var_i, dims_a[0].m_start,
+                        dims_a[0].m_length, i_body));
+            } else {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            changed = true;
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     // Inline ArraySection assignments inside a DoConcurrentLoop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
@@ -1258,7 +1524,100 @@ public:
             find_array_section(asgn->m_value);
 
             if (!first_as) {
-                new_body.push_back(al, stmt);
+                // Handle whole-array broadcast assignment:
+                //   x = 1.0  (Var_array = ArrayBroadcast(scalar))
+                // Convert to: do __gpu_bc_i = 1, size(x); x(i) = 1.0; end do
+                if (!ASR::is_a<ASR::ArrayBroadcast_t>(*asgn->m_value)) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                ASR::ArrayBroadcast_t *ab = ASR::down_cast<ASR::ArrayBroadcast_t>(
+                    asgn->m_value);
+                ASR::expr_t *scalar_value = ab->m_array;
+
+                Location loc = stmt->base.loc;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(target_type);
+
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(target_type);
+                ASR::dimension_t *dims = arr->m_dims;
+                size_t n_dims = arr->n_dims;
+
+                SymbolTable *var_scope = current_scope;
+                while (var_scope && var_scope->asr_owner &&
+                       var_scope->asr_owner->type == ASR::asrType::symbol &&
+                       ASR::is_a<ASR::AssociateBlock_t>(
+                           *ASR::down_cast<ASR::symbol_t>(
+                               var_scope->asr_owner))) {
+                    var_scope = var_scope->parent;
+                }
+
+                auto make_bc_loop_var = [&](const std::string &prefix) -> ASR::expr_t* {
+                    std::string name = var_scope->get_unique_name(prefix);
+                    ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                            s2c(al, name), nullptr, 0,
+                            ASR::intentType::Local, nullptr, nullptr,
+                            ASR::storage_typeType::Default,
+                            ASRUtils::duplicate_type(al, int_type),
+                            nullptr, ASR::abiType::Source,
+                            ASR::accessType::Public,
+                            ASR::presenceType::Required, false));
+                    var_scope->add_symbol(name, sym);
+                    return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                };
+
+                std::vector<ASR::expr_t*> loop_vars;
+                for (size_t d = 0; d < n_dims; d++) {
+                    loop_vars.push_back(make_bc_loop_var("__gpu_bc_i"));
+                }
+
+                Vec<ASR::array_index_t> lhs_args;
+                lhs_args.reserve(al, n_dims);
+                for (size_t d = 0; d < n_dims; d++) {
+                    ASR::array_index_t idx;
+                    idx.loc = loc;
+                    idx.m_left = nullptr;
+                    idx.m_right = loop_vars[d];
+                    idx.m_step = nullptr;
+                    lhs_args.push_back(al, idx);
+                }
+                ASR::expr_t *lhs_item = ASRUtils::EXPR(
+                    ASR::make_ArrayItem_t(al, loc, asgn->m_target,
+                        lhs_args.p, lhs_args.n, elem_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+
+                Vec<ASR::stmt_t*> innermost_body;
+                innermost_body.reserve(al, 1);
+                innermost_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, lhs_item, scalar_value,
+                        nullptr, false, false)));
+
+                // Build nested loops from innermost to outermost dimension
+                ASR::stmt_t *loop_nest = nullptr;
+                for (int d = (int)n_dims - 1; d >= 0; d--) {
+                    ASR::do_loop_head_t head;
+                    head.loc = loc;
+                    head.m_v = loop_vars[d];
+                    head.m_start = dims[d].m_start;
+                    head.m_end = dims[d].m_length;
+                    head.m_increment = nullptr;
+                    if (loop_nest == nullptr) {
+                        loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                            nullptr, head, innermost_body.p, innermost_body.n,
+                            nullptr, 0));
+                    } else {
+                        Vec<ASR::stmt_t*> outer_body;
+                        outer_body.reserve(al, 1);
+                        outer_body.push_back(al, loop_nest);
+                        loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                            nullptr, head, outer_body.p, outer_body.n,
+                            nullptr, 0));
+                    }
+                }
+                new_body.push_back(al, loop_nest);
+                changed = true;
                 continue;
             }
 
@@ -1632,6 +1991,9 @@ public:
 
         // Inline IntrinsicArrayFunction All before kernel extraction
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline IntrinsicArrayFunction MatMul before kernel extraction
+        inline_intrinsic_matmul(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
@@ -2224,6 +2586,93 @@ public:
                         ASR::make_IntegerConstant_t(al, loc, 1,
                             int_type_dim, ASR::integerbozType::Decimal));
                 }
+            }
+        }
+
+        // Add total-size kernel parameters for allocatable array members
+        // of struct-typed kernel parameters. These sizes are needed by
+        // Metal inline functions that call size() on struct members.
+        for (auto &[sym_name, sym_info] : involved_syms) {
+            ASR::ttype_t *type = sym_info.first;
+            ASR::ttype_t *inner_t = ASRUtils::type_get_past_allocatable(type);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(inner_t)))
+                continue;
+            ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
+            ASR::Variable_t *orig_var =
+                down_cast<ASR::Variable_t>(orig_sym);
+            if (!orig_var->m_type_declaration) continue;
+            ASR::symbol_t *struct_sym =
+                ASRUtils::symbol_get_past_external(
+                    orig_var->m_type_declaration);
+            if (!is_a<ASR::Struct_t>(*struct_sym)) continue;
+            ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
+            ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            for (size_t m = 0; m < st->n_members; m++) {
+                ASR::symbol_t *mem_sym =
+                    st->m_symtab->get_symbol(st->m_members[m]);
+                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
+                    continue;
+                ASR::Variable_t *mv =
+                    down_cast<ASR::Variable_t>(mem_sym);
+                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+                ASR::ttype_t *mem_inner =
+                    ASRUtils::type_get_past_allocatable(mv->m_type);
+                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
+                std::string size_name = "__size_" + sym_name + "_"
+                    + std::string(st->m_members[m]);
+                ASR::symbol_t *size_sym =
+                    ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc,
+                            kernel_scope, s2c(al, size_name),
+                            nullptr, 0,
+                            ASR::intentType::InOut, nullptr,
+                            nullptr,
+                            ASR::storage_typeType::Default,
+                            ASRUtils::duplicate_type(al, int_type_sz),
+                            nullptr, ASR::abiType::Source,
+                            ASR::accessType::Public,
+                            ASR::presenceType::Required, false));
+                kernel_scope->add_symbol(size_name, size_sym);
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                        size_sym)));
+                // Host-side: size(struct%member) (total size)
+                // Look up the member symbol in the original struct's
+                // scope for the ExternalSymbol reference used in the
+                // program scope (needed for StructInstanceMember).
+                ASR::symbol_t *orig_mem_ref = nullptr;
+                for (auto &scope_item :
+                        orig_scope->get_scope()) {
+                    if (!is_a<ASR::ExternalSymbol_t>(
+                            *scope_item.second)) continue;
+                    ASR::ExternalSymbol_t *es =
+                        down_cast<ASR::ExternalSymbol_t>(
+                            scope_item.second);
+                    ASR::symbol_t *resolved =
+                        ASRUtils::symbol_get_past_external(
+                            es->m_external);
+                    if (resolved == mem_sym) {
+                        orig_mem_ref = scope_item.second;
+                        break;
+                    }
+                }
+                if (!orig_mem_ref) orig_mem_ref = mem_sym;
+                ASR::expr_t *host_member = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            orig_sym)),
+                        orig_mem_ref, mv->m_type, nullptr));
+                ASR::expr_t *host_size = ASRUtils::EXPR(
+                    ASR::make_ArraySize_t(al, loc,
+                        host_member, nullptr, int_type_sz,
+                        nullptr));
+                ASR::call_arg_t carg;
+                carg.loc = loc;
+                carg.m_value = host_size;
+                call_args.push_back(al, carg);
             }
         }
 
@@ -3171,6 +3620,15 @@ public:
                         item.second);
                 for (size_t j = 0; j < ab->n_body; j++) {
                     block_replacer.visit_stmt(*ab->m_body[j]);
+                }
+            }
+            // Replace StructInstanceMember references to decomposed
+            // allocatable members inside the block body.
+            if (!decomp_map.empty()) {
+                GpuDecomposeStructVisitor block_decomp(al, kernel_scope,
+                    decomp_map);
+                for (size_t j = 0; j < block->n_body; j++) {
+                    block_decomp.visit_stmt(*block->m_body[j]);
                 }
             }
             // Recursively process nested BlockCall statements
