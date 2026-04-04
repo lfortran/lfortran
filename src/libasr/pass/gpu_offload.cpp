@@ -326,6 +326,21 @@ public:
         }
         ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_SubroutineCall(x);
     }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
 };
 
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
@@ -456,7 +471,7 @@ public:
     // from the original scope and ensure the Struct (and its member
     // ExternalSymbols) exist in the kernel scope.
     ASR::symbol_t* import_struct_type(ASR::symbol_t *orig_sym,
-            SymbolTable * /*orig_scope*/, SymbolTable *kernel_scope,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
             const Location &loc) {
         if (!is_a<ASR::Variable_t>(*orig_sym)) return nullptr;
         ASR::Variable_t *var = down_cast<ASR::Variable_t>(orig_sym);
@@ -466,11 +481,15 @@ public:
         if (!type_decl) return nullptr;
         ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
         if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
-        // Use the variable's declaring scope (where ExternalSymbols for
-        // struct members live), not the possibly-nested current scope.
-        SymbolTable *var_scope = var->m_parent_symtab;
+        // Use orig_scope (the do concurrent's enclosing scope) rather
+        // than var->m_parent_symtab. When the do concurrent is inside
+        // an AssociateBlock, ExternalSymbol entries for struct members
+        // (e.g., type-bound procedure references) are migrated from
+        // inner associate scopes into orig_scope during associate
+        // resolution. The variable's declaring scope may be a parent
+        // of orig_scope and would not contain these migrated symbols.
         return import_struct_def(down_cast<ASR::Struct_t>(struct_sym),
-            var_scope, kernel_scope, loc);
+            orig_scope, kernel_scope, loc);
     }
 
     // Inline IntrinsicArrayFunction All inside a DoConcurrentLoop body.
@@ -1525,10 +1544,26 @@ public:
             }
             ASRUtils::SymbolDuplicator sym_dup(al);
             for (auto &[func_name, func_sym] : func_collector.functions) {
-                if (kernel_scope->get_symbol(func_name)) continue;
                 ASR::symbol_t *resolved =
                     ASRUtils::symbol_get_past_external(func_sym);
-                if (ASR::is_a<ASR::Function_t>(*resolved)) {
+                // Skip functions that are already accessible through the
+                // kernel scope's parent chain (e.g., TU-scope generated
+                // helpers from the function_call_in_declaration pass).
+                // These don't need to be duplicated into the kernel.
+                if (kernel_scope->parent &&
+                        kernel_scope->parent->resolve_symbol(
+                            ASRUtils::symbol_name(resolved))) {
+                    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(
+                            *resolved)) {
+                        continue;
+                    }
+                }
+                if (kernel_scope->get_symbol(func_name)) {
+                    // ExternalSymbol already created (e.g., by
+                    // import_struct_def). Still need to import the
+                    // function body for StructMethodDeclaration calls
+                    // so the Metal backend can generate shader code.
+                } else if (ASR::is_a<ASR::Function_t>(*resolved)) {
                     ASR::symbol_t *dup = sym_dup.duplicate_Function(
                         ASR::down_cast<ASR::Function_t>(resolved),
                         kernel_scope);
@@ -1576,6 +1611,117 @@ public:
                                             ASR::accessType::Public);
                                     kernel_scope->add_symbol(func_name,
                                         down_cast<ASR::symbol_t>(new_es));
+                                }
+                            }
+                        }
+                    }
+                }
+                // For type-bound procedure calls, also import the
+                // underlying Function body into the kernel scope so
+                // the Metal backend can generate shader code.
+                // For submodule procedures, the module-scope Function
+                // is just an interface (no body); find and import the
+                // submodule implementation instead.
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *resolved)) {
+                    ASR::StructMethodDeclaration_t *smd =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                            resolved);
+                    ASR::symbol_t *proc_sym =
+                        ASRUtils::symbol_get_past_external(smd->m_proc);
+                    if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                        ASR::Function_t *proc_func =
+                            ASR::down_cast<ASR::Function_t>(proc_sym);
+                        std::string pname =
+                            ASRUtils::symbol_name(proc_sym);
+                        if (!kernel_scope->get_symbol(pname)) {
+                            ASR::FunctionType_t *ftype =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    proc_func->m_function_signature);
+                            if (ftype->m_deftype ==
+                                    ASR::deftypeType::Interface) {
+                                // Submodule interface: find the
+                                // Implementation in a submodule.
+                                for (auto &tu_item :
+                                        tu.m_symtab->get_scope()) {
+                                    if (!ASR::is_a<ASR::Module_t>(
+                                            *tu_item.second)) continue;
+                                    ASR::Module_t *mod =
+                                        ASR::down_cast<ASR::Module_t>(
+                                            tu_item.second);
+                                    ASR::symbol_t *impl_sym =
+                                        mod->m_symtab->get_symbol(pname);
+                                    if (!impl_sym ||
+                                        !ASR::is_a<ASR::Function_t>(
+                                            *impl_sym)) continue;
+                                    ASR::Function_t *impl_func =
+                                        ASR::down_cast<ASR::Function_t>(
+                                            impl_sym);
+                                    ASR::FunctionType_t *impl_ft =
+                                        ASR::down_cast<ASR::FunctionType_t>(
+                                            impl_func
+                                                ->m_function_signature);
+                                    if (impl_ft->m_deftype !=
+                                            ASR::deftypeType::Implementation)
+                                        continue;
+                                    ASR::symbol_t *dup =
+                                        sym_dup.duplicate_Function(
+                                            impl_func, kernel_scope);
+                                    if (dup) {
+                                        kernel_scope->add_symbol(
+                                            pname, dup);
+                                    }
+                                    break;
+                                }
+                            } else {
+                                // Non-submodule: function has a body.
+                                ASR::symbol_t *dup =
+                                    sym_dup.duplicate_Function(
+                                        proc_func, kernel_scope);
+                                if (dup) {
+                                    kernel_scope->add_symbol(pname, dup);
+                                }
+                            }
+                        }
+                        // Update the StructMethodDeclaration in the
+                        // kernel's struct to point to the kernel-scope
+                        // function copy instead of the original module
+                        // interface (which may have no body).
+                        ASR::symbol_t *kernel_func =
+                            kernel_scope->get_symbol(pname);
+                        if (kernel_func) {
+                            SymbolTable *method_st =
+                                ASRUtils::symbol_parent_symtab(resolved);
+                            if (method_st->asr_owner &&
+                                    method_st->asr_owner->type ==
+                                        ASR::asrType::symbol) {
+                                ASR::symbol_t *struct_owner =
+                                    down_cast<ASR::symbol_t>(
+                                        method_st->asr_owner);
+                                if (is_a<ASR::Struct_t>(*struct_owner)) {
+                                    std::string sname =
+                                        down_cast<ASR::Struct_t>(
+                                            struct_owner)->m_name;
+                                    ASR::symbol_t *ks =
+                                        kernel_scope->get_symbol(sname);
+                                    if (ks &&
+                                            is_a<ASR::Struct_t>(*ks)) {
+                                        std::string mname =
+                                            ASRUtils::symbol_name(
+                                                resolved);
+                                        ASR::symbol_t *km =
+                                            down_cast<ASR::Struct_t>(ks)
+                                                ->m_symtab
+                                                ->get_symbol(mname);
+                                        if (km && is_a<
+                                            ASR::StructMethodDeclaration_t
+                                                >(*km)) {
+                                            down_cast<ASR::
+                                                StructMethodDeclaration_t
+                                                    >(km)->m_proc =
+                                                        kernel_func;
+                                        }
+                                    }
                                 }
                             }
                         }
