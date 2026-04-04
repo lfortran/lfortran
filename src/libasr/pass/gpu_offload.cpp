@@ -1928,21 +1928,45 @@ public:
                 }
             }
         };
-        for (size_t i = 0; i < body_copy.n; i++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*body_copy.p[i])) {
-                ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-                    body_copy.p[i]);
-                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
-                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
-                        bc->m_m);
-                    std::string block_name = block->m_name;
-                    process_block_for_kernel(block, true);
-                    // Move Block from original scope to kernel scope
-                    orig_scope->erase_symbol(block_name);
-                    kernel_scope->add_symbol(block_name, bc->m_m);
+        // Recursively find and move all BlockCall targets from any
+        // nesting depth (e.g., BlockCall inside a DoLoop inside the
+        // do concurrent body) into the kernel scope.
+        std::function<void(ASR::stmt_t**, size_t)>
+            move_blocks_to_kernel = [&](ASR::stmt_t **stmts,
+                                        size_t n_stmts) {
+            for (size_t i = 0; i < n_stmts; i++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+                    ASR::BlockCall_t *bc =
+                        ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
+                    if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                        ASR::Block_t *block =
+                            ASR::down_cast<ASR::Block_t>(bc->m_m);
+                        std::string block_name = block->m_name;
+                        process_block_for_kernel(block, true);
+                        if (orig_scope->get_symbol(block_name)) {
+                            orig_scope->erase_symbol(block_name);
+                        }
+                        if (!kernel_scope->get_symbol(block_name)) {
+                            kernel_scope->add_symbol(block_name, bc->m_m);
+                        }
+                    }
+                } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
+                    ASR::DoLoop_t *dl =
+                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                    move_blocks_to_kernel(dl->m_body, dl->n_body);
+                } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                    ASR::If_t *ifs =
+                        ASR::down_cast<ASR::If_t>(stmts[i]);
+                    move_blocks_to_kernel(ifs->m_body, ifs->n_body);
+                    move_blocks_to_kernel(ifs->m_orelse, ifs->n_orelse);
+                } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
+                    ASR::WhileLoop_t *wl =
+                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                    move_blocks_to_kernel(wl->m_body, wl->n_body);
                 }
             }
-        }
+        };
+        move_blocks_to_kernel(body_copy.p, body_copy.n);
 
         // Add copied loop body (already remapped)
         for (size_t i = 0; i < body_copy.n; i++) {
