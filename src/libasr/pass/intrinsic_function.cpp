@@ -92,6 +92,16 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             *current_expr = x->m_value;
             return;
         }
+        if (in_ttype) {
+            replace_ttype(x->m_type);
+            for (size_t i = 0; i < x->n_args; i++) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &(x->m_args[i]);
+                self().replace_expr(x->m_args[i]);
+                current_expr = current_expr_copy;
+            }
+            return;
+        }
         replace_ttype(x->m_type);
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicArrayFunctions in the argument first:
