@@ -78,7 +78,7 @@ ifcont:                                           ; preds = %else2, %then1
 
 ifcont3:                                          ; preds = %ifcont, %then
   %10 = alloca i64, align 8
-  %11 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %10, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %marks)
+  %11 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %10, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %marks)
   %12 = load i64, i64* %10, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -132,7 +132,7 @@ ifcont8:                                          ; preds = %else7, %then6
 
 ifcont9:                                          ; preds = %ifcont8, %then4
   %31 = alloca i64, align 8
-  %32 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.13, i32 0, i32 0), i64* %31, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.15, i32* %marks)
+  %32 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.13, i32 0, i32 0), i64* %31, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.15, i32* %marks)
   %33 = load i64, i64* %31, align 8
   %stringFormat_desc10 = alloca %string_descriptor, align 8
   %34 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 0
@@ -167,7 +167,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 
