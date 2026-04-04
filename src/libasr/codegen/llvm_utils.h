@@ -1017,7 +1017,7 @@ class ASRToLLVMVisitor;
             } else if(ASRUtils::is_pointer(t)) {
                 finalize_pointer(ptr, t, struct_sym);
             } else {
-                finalize_type(ptr, t, struct_sym);
+                finalize_type(ptr, t, struct_sym, in_struct);
             }
         }
 
@@ -1260,14 +1260,14 @@ class ASRToLLVMVisitor;
         }
 
         /// Dispatches to the correct finalizer based on type.
-        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+        void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
                 case(ASR::String):
                     finalize_string(var_ptr, t);
                 break;
                 case(ASR::Array) :  
-                    finalize_array(var_ptr, t, struct_sym);
+                    finalize_array(var_ptr, t, struct_sym, in_struct);
                 break;
                 case(ASR::StructType) :  
                     finalize_struct(var_ptr, t, struct_sym);
@@ -1330,7 +1330,7 @@ class ASRToLLVMVisitor;
          * @param t array ASR type
          * @param struct_sym if it's an array of struct. nullptr otherwise.
          */
-        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
@@ -1342,7 +1342,7 @@ class ASRToLLVMVisitor;
 
             switch(arr_t->m_physical_type){
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
-                    std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym);
+                    std::string const cache_key = "descriptorArray_" + get_type_key(t, struct_sym) + (in_struct ? "__in_struct":"");
                     if(is_cached(cache_key)){
                         call_cached_finalizer(cache_key, {arr});
                         return;
@@ -1359,7 +1359,7 @@ class ASRToLLVMVisitor;
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
 
-                    free_array_ptr_to_consecutive_data(data, arr_t->m_type);
+                    free_array_ptr_to_consecutive_data(data, t, arr_t->m_type, in_struct);
                     END_CACHE(checkpoint_BB);
                 break;
                 }
@@ -1370,7 +1370,7 @@ class ASRToLLVMVisitor;
                     verify(arr, llvm_type_verify_against);
                     auto const data = arr;
                     free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
-                    free_array_ptr_to_consecutive_data(data, arr_t->m_type);
+                    free_array_ptr_to_consecutive_data(data, t, arr_t->m_type, in_struct);
                     break;
                 }
                 case ASR::SIMDArray :
@@ -1612,10 +1612,17 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* const t){
+        void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* arr, ASR::ttype_t* const t, bool in_struct){
             if(ASRUtils::extract_type(t)->type == ASR::String){ 
-                // Array of strings are special handled. 
-                // it's always stack allocated. (e.g. StringDescriptor -> {i8*, i64})
+                if (in_struct && ASRUtils::is_array(arr) && ASRUtils::is_character(*t)) {
+                    // Free string descriptor for descriptor arrays. This is done for a string
+                    // array inside a struct.
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arr);
+                    if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray
+                        && arr_t->m_type->type == ASR::ttypeType::String) {
+                        llvm_utils_->lfortran_free_nocheck(ptr);
+                    }
+                }
                 return;
             } else if (ASRUtils::non_unlimited_polymorphic_class(t)){
                 // Class => {VTable* , underlying_struct*}
