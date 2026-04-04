@@ -969,7 +969,8 @@ public:
                     visit_expr(ab->m_value);
                 } else {
                     // For fixed-size arrays, compute from type info
-                    ASR::ttype_t *arr_type = ASRUtils::expr_type(ab->m_v);
+                    ASR::ttype_t *arr_type = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(ab->m_v));
                     if (ASR::is_a<ASR::Array_t>(*arr_type)) {
                         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arr_type);
                         int dim_idx = 0;
