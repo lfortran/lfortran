@@ -611,41 +611,60 @@ public:
 
         // Create ExternalSymbol entries in kernel scope for each member,
         // so that StructInstanceMember can reference them.
-        for (auto &item : orig_scope->get_scope()) {
-            if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            ASR::ExternalSymbol_t *es = down_cast<ASR::ExternalSymbol_t>(item.second);
-            ASR::symbol_t *es_external = ASRUtils::symbol_get_past_external(es->m_external);
-            // Check if this ExternalSymbol refers to a member of our struct.
-            // For PDT instantiations (e.g., network_t_4), also match
-            // ExternalSymbols pointing to the PDT template struct
-            // (e.g., network_t) when the instantiated struct has a
-            // member with the same original name.
-            SymbolTable *es_parent_st =
-                ASRUtils::symbol_parent_symtab(es_external);
-            bool is_member = (es_parent_st == orig_struct->m_symtab);
-            if (!is_member && es_parent_st->asr_owner &&
-                    es_parent_st->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *es_struct_owner =
-                    down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
-                if (is_a<ASR::Struct_t>(*es_struct_owner) &&
-                        new_st->get_symbol(es->m_original_name)) {
-                    is_member = true;
+        // Search orig_scope and walk up through AssociateBlock/Block
+        // parent scopes, because when the do concurrent is inside an
+        // AssociateBlock the ExternalSymbol entries for struct members
+        // live in the enclosing function scope, not in the
+        // AssociateBlock's scope.
+        SymbolTable *search_scope = orig_scope;
+        while (search_scope) {
+            for (auto &item : search_scope->get_scope()) {
+                if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                ASR::ExternalSymbol_t *es = down_cast<ASR::ExternalSymbol_t>(item.second);
+                ASR::symbol_t *es_external = ASRUtils::symbol_get_past_external(es->m_external);
+                // Check if this ExternalSymbol refers to a member of our struct.
+                // For PDT instantiations (e.g., network_t_4), also match
+                // ExternalSymbols pointing to the PDT template struct
+                // (e.g., network_t) when the instantiated struct has a
+                // member with the same original name.
+                SymbolTable *es_parent_st =
+                    ASRUtils::symbol_parent_symtab(es_external);
+                bool is_member = (es_parent_st == orig_struct->m_symtab);
+                if (!is_member && es_parent_st->asr_owner &&
+                        es_parent_st->asr_owner->type == ASR::asrType::symbol) {
+                    ASR::symbol_t *es_struct_owner =
+                        down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
+                    if (is_a<ASR::Struct_t>(*es_struct_owner) &&
+                            new_st->get_symbol(es->m_original_name)) {
+                        is_member = true;
+                    }
+                }
+                if (is_member) {
+                    std::string es_name = item.first;
+                    if (kernel_scope->get_symbol(es_name)) continue;
+                    ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
+                        es->m_original_name);
+                    if (!new_member_in_struct) continue;
+                    ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
+                        kernel_scope, s2c(al, es_name),
+                        new_member_in_struct, s2c(al, struct_name),
+                        nullptr, 0, s2c(al, es->m_original_name),
+                        es->m_access);
+                    kernel_scope->add_symbol(es_name,
+                        down_cast<ASR::symbol_t>(new_es));
                 }
             }
-            if (is_member) {
-                std::string es_name = item.first;
-                if (kernel_scope->get_symbol(es_name)) continue;
-                ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
-                    es->m_original_name);
-                if (!new_member_in_struct) continue;
-                ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
-                    kernel_scope, s2c(al, es_name),
-                    new_member_in_struct, s2c(al, struct_name),
-                    nullptr, 0, s2c(al, es->m_original_name),
-                    es->m_access);
-                kernel_scope->add_symbol(es_name,
-                    down_cast<ASR::symbol_t>(new_es));
+            if (search_scope->asr_owner &&
+                    search_scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner = down_cast<ASR::symbol_t>(
+                    search_scope->asr_owner);
+                if (is_a<ASR::AssociateBlock_t>(*owner) ||
+                        is_a<ASR::Block_t>(*owner)) {
+                    search_scope = search_scope->parent;
+                    continue;
+                }
             }
+            break;
         }
 
         return kernel_struct;
@@ -2729,6 +2748,26 @@ public:
         for (size_t d = 0; d < n_dims; d++) {
             kernel_starts.push_back(dup_expr_to_scope(dim_info[d].host_start, kernel_scope));
             kernel_ends.push_back(dup_expr_to_scope(dim_info[d].host_end, kernel_scope));
+        }
+
+        // Decompose StructInstanceMember references in kernel head
+        // expressions. After associate resolution, head bounds may
+        // contain e.g. ArraySize(StructInstanceMember(Var(arg), nodes))
+        // where arg was decomposed and removed from involved_syms.
+        // Replace these with Var(arg__nodes) to match the kernel params.
+        if (!decomp_map.empty()) {
+            GpuDecomposeStructReplacer head_decomp(al, kernel_scope,
+                decomp_map);
+            for (size_t d = 0; d < n_dims; d++) {
+                if (kernel_starts[d]) {
+                    head_decomp.current_expr = &kernel_starts[d];
+                    head_decomp.replace_expr(kernel_starts[d]);
+                }
+                if (kernel_ends[d]) {
+                    head_decomp.current_expr = &kernel_ends[d];
+                    head_decomp.replace_expr(kernel_ends[d]);
+                }
+            }
         }
 
         // Compute total_elements for host-side grid size
