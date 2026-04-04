@@ -1,4 +1,4 @@
-module legacy_array_sections_18_mod
+module legacy_array_sections_19_mod
   implicit none
 contains
 
@@ -28,9 +28,9 @@ contains
     call dsort(xtemp)
   end subroutine dfcmn
 
-end module
+end module legacy_array_sections_19_mod
 
-program legacy_array_sections_18
-  use legacy_array_sections_18_mod
+program legacy_array_sections_19
+  use legacy_array_sections_19_mod
   implicit none
-end program
+end program legacy_array_sections_19

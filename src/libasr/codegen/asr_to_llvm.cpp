@@ -3981,10 +3981,6 @@ public:
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                // For Pointer(Array(UnboundedPointerArray)), the initial load at
-                // the LLVM::is_llvm_pointer check gives float** (pointer to the
-                // data pointer). We need one more dereference to get float* (the
-                // actual data pointer) for the GEP-based element access.
                 if ( LLVM::is_llvm_pointer(*x_mv_type) ) {
                     llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, x_mv_type_, module.get());
@@ -9361,10 +9357,6 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::UnboundedPointerArray: {
-                            // For UPA parameters stored directly as float* in
-                            // llvm_symtab (no alloca), we need to create an
-                            // alloca so that Pointer(UPA) globals (float**)
-                            // can point to it through one level of indirection.
                             if (!llvm::isa<llvm::AllocaInst>(llvm_value) &&
                                 !llvm::isa<llvm::GlobalVariable>(llvm_value)) {
                                 llvm::Type* val_type = llvm_value->getType();
