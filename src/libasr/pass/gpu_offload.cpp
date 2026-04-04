@@ -1524,7 +1524,100 @@ public:
             find_array_section(asgn->m_value);
 
             if (!first_as) {
-                new_body.push_back(al, stmt);
+                // Handle whole-array broadcast assignment:
+                //   x = 1.0  (Var_array = ArrayBroadcast(scalar))
+                // Convert to: do __gpu_bc_i = 1, size(x); x(i) = 1.0; end do
+                if (!ASR::is_a<ASR::ArrayBroadcast_t>(*asgn->m_value)) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                ASR::ArrayBroadcast_t *ab = ASR::down_cast<ASR::ArrayBroadcast_t>(
+                    asgn->m_value);
+                ASR::expr_t *scalar_value = ab->m_array;
+
+                Location loc = stmt->base.loc;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(target_type);
+
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(target_type);
+                ASR::dimension_t *dims = arr->m_dims;
+                size_t n_dims = arr->n_dims;
+
+                SymbolTable *var_scope = current_scope;
+                while (var_scope && var_scope->asr_owner &&
+                       var_scope->asr_owner->type == ASR::asrType::symbol &&
+                       ASR::is_a<ASR::AssociateBlock_t>(
+                           *ASR::down_cast<ASR::symbol_t>(
+                               var_scope->asr_owner))) {
+                    var_scope = var_scope->parent;
+                }
+
+                auto make_bc_loop_var = [&](const std::string &prefix) -> ASR::expr_t* {
+                    std::string name = var_scope->get_unique_name(prefix);
+                    ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                            s2c(al, name), nullptr, 0,
+                            ASR::intentType::Local, nullptr, nullptr,
+                            ASR::storage_typeType::Default,
+                            ASRUtils::duplicate_type(al, int_type),
+                            nullptr, ASR::abiType::Source,
+                            ASR::accessType::Public,
+                            ASR::presenceType::Required, false));
+                    var_scope->add_symbol(name, sym);
+                    return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                };
+
+                std::vector<ASR::expr_t*> loop_vars;
+                for (size_t d = 0; d < n_dims; d++) {
+                    loop_vars.push_back(make_bc_loop_var("__gpu_bc_i"));
+                }
+
+                Vec<ASR::array_index_t> lhs_args;
+                lhs_args.reserve(al, n_dims);
+                for (size_t d = 0; d < n_dims; d++) {
+                    ASR::array_index_t idx;
+                    idx.loc = loc;
+                    idx.m_left = nullptr;
+                    idx.m_right = loop_vars[d];
+                    idx.m_step = nullptr;
+                    lhs_args.push_back(al, idx);
+                }
+                ASR::expr_t *lhs_item = ASRUtils::EXPR(
+                    ASR::make_ArrayItem_t(al, loc, asgn->m_target,
+                        lhs_args.p, lhs_args.n, elem_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+
+                Vec<ASR::stmt_t*> innermost_body;
+                innermost_body.reserve(al, 1);
+                innermost_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, lhs_item, scalar_value,
+                        nullptr, false, false)));
+
+                // Build nested loops from innermost to outermost dimension
+                ASR::stmt_t *loop_nest = nullptr;
+                for (int d = (int)n_dims - 1; d >= 0; d--) {
+                    ASR::do_loop_head_t head;
+                    head.loc = loc;
+                    head.m_v = loop_vars[d];
+                    head.m_start = dims[d].m_start;
+                    head.m_end = dims[d].m_length;
+                    head.m_increment = nullptr;
+                    if (loop_nest == nullptr) {
+                        loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                            nullptr, head, innermost_body.p, innermost_body.n,
+                            nullptr, 0));
+                    } else {
+                        Vec<ASR::stmt_t*> outer_body;
+                        outer_body.reserve(al, 1);
+                        outer_body.push_back(al, loop_nest);
+                        loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                            nullptr, head, outer_body.p, outer_body.n,
+                            nullptr, 0));
+                    }
+                }
+                new_body.push_back(al, loop_nest);
+                changed = true;
                 continue;
             }
 
