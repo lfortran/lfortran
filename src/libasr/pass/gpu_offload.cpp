@@ -844,8 +844,11 @@ public:
         // cannot reference symbols from any AssociateBlock's scope, so
         // we walk up through all enclosing AssociateBlock ancestors and
         // collect all their associate mappings.
+        // The map is declared outside the block so it is available later
+        // when resolving inner AssociateBlockCalls in the loop body.
+        std::map<ASR::symbol_t*, ASR::expr_t*> enclosing_assoc_map;
         {
-            std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
+            std::map<ASR::symbol_t*, ASR::expr_t*> &assoc_map = enclosing_assoc_map;
             SymbolTable *scope = current_scope;
             while (scope && scope->asr_owner &&
                    scope->asr_owner->type == ASR::asrType::symbol) {
@@ -1062,7 +1065,8 @@ public:
                 }
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
-                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
+                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map(
+                    enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
                 for (size_t ai = 0; ai < ab->n_body; ai++) {
@@ -1143,7 +1147,12 @@ public:
                 }
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
-                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map;
+                // Start with mappings from enclosing AssociateBlocks so
+                // that references to outer associate variables (e.g., `m`
+                // from an outer `associate(m => n)`) are resolved even
+                // when they appear inside an inner associate block.
+                std::map<ASR::symbol_t*, ASR::expr_t*> assoc_map(
+                    enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
                 for (size_t ai = 0; ai < ab->n_body; ai++) {
