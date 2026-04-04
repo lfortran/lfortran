@@ -2009,17 +2009,84 @@ public:
             call_args.push_back(al, carg);
         }
 
-        // For multi-dimensional allocatable arrays, pass dimension sizes
-        // as extra integer kernel parameters so the Metal backend can
-        // compute correct linearised strides (allocatable dims have no
-        // compile-time m_length, which causes stride-0 in Metal codegen).
+        // Pass dimension sizes for decomposed allocatable struct
+        // members so the kernel can compute ArraySize and strides.
+        {
+            ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            for (auto &di : decomp_infos) {
+                ASR::ttype_t *inner =
+                    ASRUtils::type_get_past_allocatable(di.alloc_type);
+                if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+
+                ASR::symbol_t *k_sym =
+                    kernel_scope->get_symbol(di.param_name);
+                LCOMPILERS_ASSERT(k_sym);
+                ASR::Variable_t *k_var =
+                    ASR::down_cast<ASR::Variable_t>(k_sym);
+                ASR::Array_t *k_arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable(k_var->m_type));
+
+                ASR::symbol_t *orig_struct_sym =
+                    orig_scope->resolve_symbol(di.struct_name);
+                ASR::expr_t *host_member_expr = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            orig_struct_sym)),
+                        di.orig_mem_sym, di.alloc_type, nullptr));
+
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    std::string dim_name = "__dim_" + di.param_name
+                        + "_" + std::to_string(d);
+                    ASR::symbol_t *dim_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(al, loc,
+                                kernel_scope, s2c(al, dim_name),
+                                nullptr, 0,
+                                ASR::intentType::InOut, nullptr,
+                                nullptr,
+                                ASR::storage_typeType::Default,
+                                ASRUtils::duplicate_type(al,
+                                    int_type_dim),
+                                nullptr, ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required, false));
+                    kernel_scope->add_symbol(dim_name, dim_sym);
+                    kernel_args.push_back(al,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            dim_sym)));
+
+                    ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc,
+                            (int64_t)(d + 1), int_type_dim,
+                            ASR::integerbozType::Decimal));
+                    ASR::expr_t *host_size = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, loc,
+                            host_member_expr, dim_expr,
+                            int_type_dim, nullptr));
+                    ASR::call_arg_t carg;
+                    carg.loc = loc;
+                    carg.m_value = host_size;
+                    call_args.push_back(al, carg);
+
+                    k_arr->m_dims[d].m_length = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, dim_sym));
+                    if (!k_arr->m_dims[d].m_start) {
+                        k_arr->m_dims[d].m_start = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, loc, 1,
+                                int_type_dim,
+                                ASR::integerbozType::Decimal));
+                    }
+                }
+            }
+        }
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *orig_type = sym_info.first;
             if (!ASRUtils::is_allocatable(orig_type)) continue;
             ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(orig_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
-            if (arr->n_dims < 2) continue;
 
             // Locate the kernel-scope Variable whose type we must update
             ASR::symbol_t *k_sym = kernel_scope->get_symbol(sym_name);
@@ -2643,6 +2710,41 @@ public:
                         for (size_t bi = 0; bi < block->n_body; bi++) {
                             fn_replacer.visit_stmt(*block->m_body[bi]);
                         }
+                    }
+                }
+            }
+        }
+
+        // Decompose StructInstanceMember references in kernel variable
+        // type expressions (e.g., ArraySize(StructInstanceMember(Var(x),
+        // nodes)) in VLA dimensions). When a struct variable is fully
+        // decomposed into flat-array parameters, it is removed from the
+        // kernel scope, but other variables' VLA dimensions may still
+        // reference it through StructInstanceMember. Replace those with
+        // the decomposed flat-array parameter Var before general symbol
+        // remapping.
+        if (!decomp_map.empty()) {
+            GpuDecomposeStructReplacer type_decomp(al, kernel_scope,
+                decomp_map);
+            for (auto &item : kernel_scope->get_scope()) {
+                if (!is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = down_cast<ASR::Variable_t>(
+                    item.second);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    var->m_type);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_start) {
+                        type_decomp.current_expr =
+                            &(arr->m_dims[d].m_start);
+                        type_decomp.replace_expr(
+                            arr->m_dims[d].m_start);
+                    }
+                    if (arr->m_dims[d].m_length) {
+                        type_decomp.current_expr =
+                            &(arr->m_dims[d].m_length);
+                        type_decomp.replace_expr(
+                            arr->m_dims[d].m_length);
                     }
                 }
             }
