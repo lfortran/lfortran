@@ -5587,6 +5587,17 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
         return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, m_m);
     }
 
+    ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::expr_t* m_v = duplicate_expr(x->m_v);
+        std::string member_name = ASRUtils::symbol_name(x->m_m);
+        ASR::symbol_t* m_m = current_scope->resolve_symbol(member_name);
+        if (m_m == nullptr) m_m = x->m_m;
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
+            m_v, m_m, m_type, m_value);
+    }
+
 };
 
 

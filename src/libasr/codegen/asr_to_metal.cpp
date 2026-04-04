@@ -81,7 +81,13 @@ public:
         ASR::ttype_t *type = var->m_type;
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-            src << get_indent() << metal_type(arr->m_type) << " "
+            std::string elem_type;
+            if (is_struct_type(arr->m_type)) {
+                elem_type = get_struct_name(var);
+            } else {
+                elem_type = metal_type(arr->m_type);
+            }
+            src << get_indent() << elem_type << " "
                 << var->m_name;
             for (size_t d = 0; d < arr->n_dims; d++) {
                 src << "[";
@@ -260,13 +266,22 @@ public:
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-            // Struct-typed argument (self/class): pass by value
+            // Struct-typed argument
             if (ftype->m_arg_types[i] &&
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(ftype->m_arg_types[i]))) {
                 if (!first) src << ", ";
                 first = false;
-                src << get_struct_name(arg) << " " << arg->m_name;
+                // Out/InOut struct args are passed by reference
+                // using device address space since they typically
+                // originate from device buffer arrays in kernels
+                if (arg->m_intent == ASR::intentType::Out ||
+                    arg->m_intent == ASR::intentType::InOut) {
+                    src << "device " << get_struct_name(arg) << "& "
+                        << arg->m_name;
+                } else {
+                    src << get_struct_name(arg) << " " << arg->m_name;
+                }
                 continue;
             }
             if (!first) src << ", ";
@@ -361,7 +376,16 @@ public:
             std::string arg_name(var->m_name);
             ASR::ttype_t *type = var->m_type;
             bool is_st = is_struct_type(type);
-            std::string sn = is_st ? get_struct_name(var) : "";
+            // Get struct name for both struct-typed and array-of-struct
+            // variables via m_type_declaration
+            std::string sn = "";
+            if (var->m_type_declaration) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    sn = ASR::down_cast<ASR::Struct_t>(s)->m_name;
+                }
+            }
             args.push_back({arg_name, type, is_array_type(type), is_st, sn});
         }
 
@@ -378,7 +402,10 @@ public:
             if (has_prev) src << ",\n";
             src << "    ";
             if (args[i].is_array) {
-                src << "device " << metal_type(args[i].type) << "* "
+                std::string elem_type = !args[i].struct_name.empty()
+                    ? args[i].struct_name
+                    : metal_type(args[i].type);
+                src << "device " << elem_type << "* "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
             } else if (args[i].is_struct) {
                 src << "device " << args[i].struct_name << "& "
@@ -599,6 +626,26 @@ public:
                 }
                 indent_level--;
                 src << get_indent() << "}\n";
+                break;
+            }
+            case ASR::stmtType::SubroutineCall: {
+                ASR::SubroutineCall_t *sc =
+                    ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+                ASR::Function_t *fn = resolve_function(sc->m_name);
+                std::string call_name = fn
+                    ? std::string(fn->m_name)
+                    : std::string(ASRUtils::symbol_name(
+                          ASRUtils::symbol_get_past_external(sc->m_name)));
+                src << get_indent() << call_name << "(";
+                bool first_arg = true;
+                for (size_t i = 0; i < sc->n_args; i++) {
+                    if (sc->m_args[i].m_value) {
+                        if (!first_arg) src << ", ";
+                        first_arg = false;
+                        visit_expr(sc->m_args[i].m_value);
+                    }
+                }
+                src << ");\n";
                 break;
             }
             default:
