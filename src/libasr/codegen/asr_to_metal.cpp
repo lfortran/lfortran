@@ -304,6 +304,18 @@ public:
                 ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
             src << get_indent() << ret_type << " " << rv->m_name << ";\n";
         }
+        // Declare Parameter (constant) variables from the function scope
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (var->m_storage != ASR::storage_typeType::Parameter) continue;
+            if (!var->m_value) continue;
+            src << get_indent() << "const " << metal_type(var->m_type)
+                << " " << var->m_name << " = ";
+            visit_expr(var->m_value);
+            src << ";\n";
+        }
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
         }

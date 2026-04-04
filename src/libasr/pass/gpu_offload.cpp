@@ -357,6 +357,43 @@ public:
     }
 };
 
+// Collects Var references in function bodies that point to symbols
+// not reachable through the function's scope chain. This happens when
+// a contained function references host-scope variables (e.g., Parameters)
+// that are not present in the kernel scope hierarchy.
+class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
+public:
+    SymbolTable *func_scope;
+    std::map<std::string, ASR::symbol_t*> dangling;
+    DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
+    void visit_Var(const ASR::Var_t &x) {
+        std::string name = ASRUtils::symbol_name(x.m_v);
+        if (!func_scope->resolve_symbol(name) &&
+                dangling.find(name) == dangling.end()) {
+            dangling[name] = x.m_v;
+        }
+    }
+};
+
+// Fixes dangling Var references in function bodies by resolving symbol
+// names through the function's scope chain and replacing the Var target.
+class DanglingVarFixer : public ASR::BaseWalkVisitor<DanglingVarFixer> {
+public:
+    SymbolTable *func_scope;
+    std::set<std::string> &target_names;
+    DanglingVarFixer(SymbolTable *fs, std::set<std::string> &names)
+        : func_scope(fs), target_names(names) {}
+    void visit_Var(const ASR::Var_t &x) {
+        std::string name = ASRUtils::symbol_name(x.m_v);
+        if (target_names.count(name)) {
+            ASR::symbol_t *new_sym = func_scope->resolve_symbol(name);
+            if (new_sym) {
+                const_cast<ASR::Var_t&>(x).m_v = new_sym;
+            }
+        }
+    }
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -1888,6 +1925,97 @@ public:
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // Fix dangling variable references in duplicated kernel functions.
+        // When a contained function references variables from the original
+        // enclosing scope (e.g., a program-scope Parameter used by a
+        // contained function), the duplicated function body retains the
+        // original Var references which are unreachable from the kernel.
+        // For Parameter variables, clone them into the function's scope.
+        // For other variables, add them as extra kernel parameters.
+        {
+            for (auto &item : kernel_scope->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                DanglingVarCollector dvc(func->m_symtab);
+                for (size_t bi = 0; bi < func->n_body; bi++) {
+                    dvc.visit_stmt(*func->m_body[bi]);
+                }
+                if (dvc.dangling.empty()) continue;
+
+                std::set<std::string> fixed_names;
+                for (auto &[name, orig_sym] : dvc.dangling) {
+                    if (!ASR::is_a<ASR::Variable_t>(*orig_sym)) continue;
+                    ASR::Variable_t *orig_var =
+                        ASR::down_cast<ASR::Variable_t>(orig_sym);
+                    if (orig_var->m_storage ==
+                            ASR::storage_typeType::Parameter) {
+                        ASR::symbol_t *new_var =
+                            ASR::down_cast<ASR::symbol_t>(
+                                ASRUtils::make_Variable_t_util(al, loc,
+                                    func->m_symtab, s2c(al, name),
+                                    nullptr, 0,
+                                    ASR::intentType::Local,
+                                    orig_var->m_symbolic_value,
+                                    orig_var->m_value,
+                                    ASR::storage_typeType::Parameter,
+                                    ASRUtils::duplicate_type(al,
+                                        orig_var->m_type),
+                                    nullptr, orig_var->m_abi,
+                                    orig_var->m_access,
+                                    ASR::presenceType::Required, false));
+                        func->m_symtab->add_symbol(name, new_var);
+                        fixed_names.insert(name);
+                    } else {
+                        if (!kernel_scope->get_symbol(name)) {
+                            ASR::ttype_t *dup_type =
+                                ASRUtils::duplicate_type(al,
+                                    ASRUtils::type_get_past_allocatable(
+                                        orig_var->m_type));
+                            SetChar deps_vec;
+                            deps_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(
+                                al, deps_vec, dup_type, nullptr,
+                                nullptr, name);
+                            ASR::symbol_t *param =
+                                ASR::down_cast<ASR::symbol_t>(
+                                    ASRUtils::make_Variable_t_util(al,
+                                        loc, kernel_scope,
+                                        s2c(al, name),
+                                        deps_vec.p, deps_vec.size(),
+                                        ASR::intentType::InOut,
+                                        nullptr, nullptr,
+                                        ASR::storage_typeType::Default,
+                                        dup_type, nullptr,
+                                        ASR::abiType::Source,
+                                        ASR::accessType::Public,
+                                        ASR::presenceType::Required,
+                                        false));
+                            kernel_scope->add_symbol(name, param);
+                            kernel_args.push_back(al,
+                                ASRUtils::EXPR(ASR::make_Var_t(
+                                    al, loc, param)));
+                            ASR::symbol_t *host_sym =
+                                orig_scope->resolve_symbol(name);
+                            ASR::call_arg_t carg;
+                            carg.loc = loc;
+                            carg.m_value = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, loc,
+                                    host_sym ? host_sym : orig_sym));
+                            call_args.push_back(al, carg);
+                        }
+                        fixed_names.insert(name);
+                    }
+                }
+                if (!fixed_names.empty()) {
+                    DanglingVarFixer fixer(func->m_symtab, fixed_names);
+                    for (size_t bi = 0; bi < func->n_body; bi++) {
+                        fixer.visit_stmt(*func->m_body[bi]);
                     }
                 }
             }
