@@ -8966,6 +8966,7 @@ public:
                 // `arg` is represented as an assumed-rank array descriptor even when rank==0,
                 // but `assoc` is a scalar class pointer. Associate the scalar wrapper pointer
                 // (descriptor.data) rather than bitcasting the whole descriptor.
+                LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::extract_type(value_type)))
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
@@ -8974,7 +8975,24 @@ public:
                     x.m_value, ASRUtils::extract_type(value_type), module.get());
                 llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
                     value_el_type->getPointerTo(), value_data_ptr);
-                builder->CreateStore(wrapper_ptr, llvm_target);
+                llvm::Type* const target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, ASRUtils::extract_type(target_type), module.get());
+                llvm::Value* const wrapper_size = SizeOfTypeUtil(
+                    x.m_target, ASRUtils::type_get_past_pointer(target_type),
+                    llvm_utils->getIntType(4),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                // Allocate wrapper if doesn't exist.
+                llvm::Value* null_cond = builder->CreateICmpEQ(
+                    llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
+                    llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                llvm_utils->create_if_else(
+                    null_cond, [&]() {
+                        llvm::Value* target_wrapper = llvm_utils->alloc_zeroed_type(target_llvm_type);
+                        builder->CreateStore(target_wrapper, llvm_target);
+                    }, []() {});
+                llvm::Value* const target_wrapper = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
+                builder->CreateMemCpy(target_wrapper, llvm::MaybeAlign(),
+                                      wrapper_ptr, llvm::MaybeAlign(), wrapper_size);
             } else if ((is_target_class || is_value_class) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(value_type)) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type))) {
