@@ -208,17 +208,31 @@ define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymo
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %"~unlimited_polymorphic_type"* %0, null
-  br i1 %2, label %is_allocated.then, label %is_allocated.else
+  br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  %3 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
+  %4 = load %"~unlimited_polymorphic_type"*, i8** %3, align 8
+  %5 = icmp ne %"~unlimited_polymorphic_type"* %4, null
+  br i1 %5, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  %6 = bitcast %"~unlimited_polymorphic_type"* %4 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
   br label %is_allocated.ifcont
 
-is_allocated.else:                                ; preds = %entry
+is_allocated.else:                                ; preds = %is_allocated.then
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  %7 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
   ret void
 }
 
