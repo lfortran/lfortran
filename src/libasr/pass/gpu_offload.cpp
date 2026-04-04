@@ -2429,6 +2429,27 @@ public:
             ASR::ttype_t *flat_type = ASRUtils::duplicate_type(al,
                 ASRUtils::type_get_past_allocatable(di.alloc_type));
 
+            ASR::symbol_t *flat_type_decl = nullptr;
+            if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(flat_type))) {
+                ASR::symbol_t *mem_resolved =
+                    ASRUtils::symbol_get_past_external(di.orig_mem_sym);
+                if (is_a<ASR::Variable_t>(*mem_resolved)) {
+                    ASR::Variable_t *mv =
+                        down_cast<ASR::Variable_t>(mem_resolved);
+                    if (mv->m_type_declaration) {
+                        ASR::symbol_t *inner_struct_sym =
+                            ASRUtils::symbol_get_past_external(
+                                mv->m_type_declaration);
+                        if (is_a<ASR::Struct_t>(*inner_struct_sym)) {
+                            flat_type_decl = import_struct_def(
+                                down_cast<ASR::Struct_t>(inner_struct_sym),
+                                orig_scope, kernel_scope, loc);
+                        }
+                    }
+                }
+            }
+
             SetChar deps_vec;
             deps_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(
@@ -2439,7 +2460,7 @@ public:
                     s2c(al, di.param_name), deps_vec.p, deps_vec.size(),
                     ASR::intentType::InOut, nullptr, nullptr,
                     ASR::storage_typeType::Default, flat_type,
-                    nullptr, ASR::abiType::Source,
+                    flat_type_decl, ASR::abiType::Source,
                     ASR::accessType::Public,
                     ASR::presenceType::Required, false));
             kernel_scope->add_symbol(di.param_name, param);
@@ -2592,9 +2613,12 @@ public:
         // Add total-size kernel parameters for allocatable array members
         // of struct-typed kernel parameters. These sizes are needed by
         // Metal inline functions that call size() on struct members.
+        // Skip array-of-structs variables — StructInstanceMember requires
+        // a scalar struct base, not an array of structs.
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *type = sym_info.first;
             ASR::ttype_t *inner_t = ASRUtils::type_get_past_allocatable(type);
+            if (ASRUtils::is_array(inner_t)) continue;
             if (!ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(inner_t)))
                 continue;
@@ -2680,9 +2704,12 @@ public:
         // kernel parameters that were NOT fully decomposed. These provide
         // the actual array data as separate device buffers so that Metal
         // inline functions can index into allocatable members.
+        // Skip array-of-structs variables — StructInstanceMember requires
+        // a scalar struct base, not an array of structs.
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *type = sym_info.first;
             ASR::ttype_t *inner_t = ASRUtils::type_get_past_allocatable(type);
+            if (ASRUtils::is_array(inner_t)) continue;
             if (!ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(inner_t)))
                 continue;
@@ -2711,6 +2738,19 @@ public:
                     + std::string(st->m_members[m]);
                 ASR::ttype_t *data_type =
                     ASRUtils::duplicate_type(al, mem_inner);
+                ASR::symbol_t *data_type_decl = nullptr;
+                if (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(data_type)) &&
+                        mv->m_type_declaration) {
+                    ASR::symbol_t *inner_struct_sym =
+                        ASRUtils::symbol_get_past_external(
+                            mv->m_type_declaration);
+                    if (is_a<ASR::Struct_t>(*inner_struct_sym)) {
+                        data_type_decl = import_struct_def(
+                            down_cast<ASR::Struct_t>(inner_struct_sym),
+                            orig_scope, kernel_scope, loc);
+                    }
+                }
                 SetChar deps_vec;
                 deps_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(
@@ -2725,7 +2765,7 @@ public:
                             nullptr,
                             ASR::storage_typeType::Default,
                             data_type,
-                            nullptr, ASR::abiType::Source,
+                            data_type_decl, ASR::abiType::Source,
                             ASR::accessType::Public,
                             ASR::presenceType::Required, false));
                 kernel_scope->add_symbol(data_name, data_sym);
