@@ -350,6 +350,31 @@ public:
             visit_expr(var->m_value);
             src << ";\n";
         }
+        // Declare local variables (non-argument, non-return, non-parameter)
+        {
+            std::set<std::string> arg_names;
+            for (size_t i = 0; i < fn->n_args; i++) {
+                ASR::Variable_t *a = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+                arg_names.insert(std::string(a->m_name));
+            }
+            std::string ret_name;
+            if (fn->m_return_var) {
+                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+                ret_name = rv->m_name;
+            }
+            for (auto &item : fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                if (var->m_storage == ASR::storage_typeType::Parameter)
+                    continue;
+                if (arg_names.count(std::string(var->m_name))) continue;
+                if (std::string(var->m_name) == ret_name) continue;
+                emit_local_var_decl(var);
+            }
+        }
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
         }
