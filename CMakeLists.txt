@@ -329,6 +329,27 @@ if (WITH_LLVM)
     endif()
 endif()
 
+# Liric backend (independent of LLVM -- both can be ON)
+set(WITH_LIRIC no CACHE BOOL "Build with liric backend")
+set(LIRIC_ROOT "" CACHE PATH "Path to liric source or install directory")
+if (WITH_LIRIC)
+    find_path(LIRIC_INCLUDE_DIR liric/liric_session.h
+        PATHS "${LIRIC_ROOT}/include" "${LIRIC_ROOT}/../include")
+    find_library(LIRIC_LIBRARY liric
+        PATHS "${LIRIC_ROOT}/build" "${LIRIC_ROOT}/lib" "${LIRIC_ROOT}"
+        NO_DEFAULT_PATH)
+    if (NOT LIRIC_INCLUDE_DIR OR NOT LIRIC_LIBRARY)
+        message(FATAL_ERROR "liric not found. Set LIRIC_ROOT.")
+    endif()
+    message(STATUS "Using liric: ${LIRIC_LIBRARY}")
+    add_library(p::liric INTERFACE IMPORTED)
+    set_property(TARGET p::liric PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES "${LIRIC_INCLUDE_DIR}")
+    set_property(TARGET p::liric PROPERTY
+        INTERFACE_LINK_LIBRARIES "${LIRIC_LIBRARY}")
+    set(HAVE_LFORTRAN_LIRIC yes)
+endif()
+
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
@@ -438,6 +459,7 @@ message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
 message("WITH_LSP: ${WITH_LSP}")
 message("WITH_FMT: ${WITH_FMT}")
+message("WITH_LIRIC: ${WITH_LIRIC}")
 message("WITH_BENCHMARKS: ${WITH_BENCHMARKS}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
