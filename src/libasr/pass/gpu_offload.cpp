@@ -416,6 +416,13 @@ public:
     // Struct var names that have any non-allocatable-array member access
     std::set<std::string> has_non_alloc_access;
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_v);
@@ -3171,6 +3178,15 @@ public:
                         item.second);
                 for (size_t j = 0; j < ab->n_body; j++) {
                     block_replacer.visit_stmt(*ab->m_body[j]);
+                }
+            }
+            // Replace StructInstanceMember references to decomposed
+            // allocatable members inside the block body.
+            if (!decomp_map.empty()) {
+                GpuDecomposeStructVisitor block_decomp(al, kernel_scope,
+                    decomp_map);
+                for (size_t j = 0; j < block->n_body; j++) {
+                    block_decomp.visit_stmt(*block->m_body[j]);
                 }
             }
             // Recursively process nested BlockCall statements
