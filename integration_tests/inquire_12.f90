@@ -1,61 +1,69 @@
-! Test INQUIRE statement with pending and asynchronous keywords
-program test_inquire_keywords
+program inquire_12
     implicit none
-    integer :: unit_num, ios
+    integer :: u, ios
+    character(len=256) :: stream_val, msg, access_mode
     character(len=256) :: filename
-    character(len=256) :: async_val
-    logical :: pending_val
-    
-    filename = "test_inquire_file.dat"
-    
-    ! Create a test file
-    open(newunit=unit_num, file=filename, status='replace', access='stream', action='write', iostat=ios)
-    if (ios /= 0) then
-        print *, "Error opening file for write"
+
+    filename = "test_stream_iomsg.dat"
+
+    print *, "==== STREAM + IOMSG TESTS ===="
+
+    ! Case 1: STREAM
+    open(newunit=u, file=filename, status="replace", access="stream", iostat=ios)
+    write(u) 42
+
+    msg = ""
+    inquire(unit=u, stream=stream_val, iomsg=msg, iostat=ios)
+
+    if (trim(stream_val) /= "YES") error stop
+
+    close(u)
+
+    ! Case 2: SEQUENTIAL
+    open(newunit=u, file=filename, status="old", access="sequential", iostat=ios)
+
+    msg = ""
+    inquire(unit=u, stream=stream_val, iomsg=msg, iostat=ios)
+
+    if (trim(stream_val) /= "NO") error stop
+
+    close(u)
+
+    ! Case 3: unopened
+    msg = ""
+    inquire(unit=999, stream=stream_val, iomsg=msg, iostat=ios)
+
+    ! Case 4: FILE
+    msg = ""
+    inquire(file=filename, stream=stream_val, iomsg=msg, iostat=ios)
+
+    ! Case 6: ACCESS
+    open(newunit=u, file=filename, status="old", access="stream", iostat=ios)
+
+    msg = ""
+    inquire(unit=u, access=access_mode, stream=stream_val, iomsg=msg)
+
+    if (trim(access_mode) /= "STREAM") error stop
+
+    close(u)
+
+ ! -------------------------------
+! Case 7: IOMSG behavior
+! -------------------------------
+msg = "RANDOM_GARBAGE"
+ios = -999
+
+inquire(file=filename, iomsg=msg, iostat=ios)
+
+print *, "[CASE 7] IOMSG behavior"
+print *, "  ios   =", ios
+print *, "  iomsg =", trim(msg)
+
+! Only check iomsg if error occurred
+if (ios /= 0) then
+    if (len_trim(msg) == 0) then
+        print *, "FAIL: iomsg should contain message on error"
         error stop
     end if
-    write(unit_num) 123
-    close(unit_num)
-    
-    ! Open file for reading
-    open(newunit=unit_num, file=filename, status='old', access='stream', &
-         action='read', iostat=ios)
-    if (ios /= 0) then
-        print *, "Error opening file for read"
-        error stop
-    end if
-    
-    ! INQUIRE with pending and asynchronous keywords
-    inquire(unit=unit_num, pending=pending_val, asynchronous=async_val, &
-            iostat=ios)
-    
-    if (ios /= 0) then
-        print *, "INQUIRE failed with iostat=", ios
-        error stop
-    end if
-    
-    print *, "Pending: ", pending_val
-    print *, "Asynchronous: ", trim(async_val)
-    
-    ! Validate results
-    if (pending_val) then
-        print *, "ERROR: Expected pending=.false., got .true."
-        error stop
-    end if
-    
-    if (trim(async_val) /= "NO") then
-        print *, "ERROR: Expected asynchronous='NO', got '", trim(async_val), "'"
-        error stop
-    end if
-    
-    close(unit_num)
-    
-    ! Clean up
-    open(unit=10, file=filename, status='old', iostat=ios)
-    if (ios == 0) then
-        close(10, status='delete')
-    end if
-    
-    print *, "All tests passed!"
-    
-end program test_inquire_keywords
+end if
+end program inquire_12

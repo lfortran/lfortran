@@ -541,6 +541,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Do nothing
     }
 
+    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& /*x*/) {
+        // GPU kernel functions are emitted by the Metal/CUDA codegen
+        // which handles array operations directly. The array_op pass
+        // must not transform functions inside them (e.g. expanding
+        // elemental functions into array loops would produce broken code
+        // that references outer-scope array variables from within a
+        // scalar-parameter helper function in the GPU shader).
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         /* 
         Handle FileWrite with character-array arguments, where x and a are arrays:
