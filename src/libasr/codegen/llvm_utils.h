@@ -2096,21 +2096,6 @@ class ASRToLLVMVisitor;
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
-        /// Collect symbols that are targets of Associate statements in a block body.
-        /// These are aliases and must not be finalized (they don't own the data).
-        static std::set<ASR::symbol_t*> collect_associate_targets(
-                ASR::stmt_t** body, size_t n_body) {
-            std::set<ASR::symbol_t*> targets;
-            for (size_t i = 0; i < n_body; i++) {
-                if (ASR::is_a<ASR::Associate_t>(*body[i])) {
-                    auto& assoc = *ASR::down_cast<ASR::Associate_t>(body[i]);
-                    if (ASR::is_a<ASR::Var_t>(*assoc.m_target)) {
-                        targets.insert(ASR::down_cast<ASR::Var_t>(assoc.m_target)->m_v);
-                    }
-                }
-            }
-            return targets;
-        }
 
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
@@ -2118,22 +2103,11 @@ class ASRToLLVMVisitor;
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
             insert_BB_for_readability(finalize_str.c_str());
 
-            // Collect associate targets from block body — these are aliases
-            // (e.g. typed views in select type) and must not be finalized.
-            std::set<ASR::symbol_t*> assoc_targets;
-            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
-            if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::Block_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::AssociateBlock_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            }
 
             auto MAP = symtab->get_scope();
             for(auto &str_sym_pair : MAP){
                 ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym) && assoc_targets.find(sym) == assoc_targets.end()){
+                if (is_variable(sym)){
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }
