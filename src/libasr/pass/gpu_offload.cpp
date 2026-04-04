@@ -1114,6 +1114,24 @@ public:
                 for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
                     new_block_body.push_back(al, resolved_stmts.p[ri]);
                 }
+                // Migrate ExternalSymbol entries (e.g., type-bound
+                // procedure references like `1_t_f`) from the
+                // AssociateBlock's symtab to the enclosing scope
+                // before erasing it. These symbols are still
+                // referenced by FunctionCall/SubroutineCall nodes
+                // in the resolved statements and must remain
+                // reachable for import_struct_def.
+                for (auto &es_item : ab->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
+                            *es_item.second)) continue;
+                    if (!current_scope->get_symbol(es_item.first)) {
+                        ASR::down_cast<ASR::ExternalSymbol_t>(
+                            es_item.second)->m_parent_symtab =
+                                current_scope;
+                        current_scope->add_symbol(es_item.first,
+                            es_item.second);
+                    }
+                }
                 std::string ab_name = ab->m_name;
                 block->m_symtab->erase_symbol(ab_name);
                 changed = true;
@@ -1199,6 +1217,20 @@ public:
                 }
                 for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
                     new_dc_body.push_back(al, resolved_stmts.p[ri]);
+                }
+                // Migrate ExternalSymbol entries from the
+                // AssociateBlock's symtab to the enclosing scope
+                // before erasing it (same as above for BlockCall).
+                for (auto &es_item : ab->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
+                            *es_item.second)) continue;
+                    if (!current_scope->get_symbol(es_item.first)) {
+                        ASR::down_cast<ASR::ExternalSymbol_t>(
+                            es_item.second)->m_parent_symtab =
+                                current_scope;
+                        current_scope->add_symbol(es_item.first,
+                            es_item.second);
+                    }
                 }
                 std::string ab_name = ab->m_name;
                 current_scope->erase_symbol(ab_name);
