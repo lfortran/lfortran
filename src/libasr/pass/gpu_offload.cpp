@@ -655,6 +655,14 @@ public:
                     ASR::LogicalBinOp_t *lb = ASR::down_cast<ASR::LogicalBinOp_t>(e);
                     find_bounds(lb->m_left);
                     find_bounds(lb->m_right);
+                } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    ASR::RealBinOp_t *rb = ASR::down_cast<ASR::RealBinOp_t>(e);
+                    find_bounds(rb->m_left);
+                    find_bounds(rb->m_right);
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    find_bounds(ib->m_left);
+                    find_bounds(ib->m_right);
                 }
             };
             find_bounds(mask);
@@ -750,6 +758,20 @@ public:
                     return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
                         elementize(lb->m_left), lb->m_op, elementize(lb->m_right),
                         logical_type, nullptr));
+                } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    ASR::RealBinOp_t *rb = ASR::down_cast<ASR::RealBinOp_t>(e);
+                    ASR::ttype_t *real_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                        elementize(rb->m_left), rb->m_op, elementize(rb->m_right),
+                        real_type, nullptr));
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    ASR::ttype_t *int_elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        elementize(ib->m_left), ib->m_op, elementize(ib->m_right),
+                        int_elem_type, nullptr));
                 }
                 return e;
             };
