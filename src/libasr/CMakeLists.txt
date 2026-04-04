@@ -109,6 +109,8 @@ if (WITH_LLVM)
     endif()
 endif()
 
+set(SRC ${SRC} codegen/asr_to_liric.cpp)
+
 set(LFORTRAN_UTILS
   assert.h
   colors.h
@@ -146,6 +148,9 @@ endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
     target_link_libraries(lfortran_utils p::llvm)
+endif()
+if (WITH_LIRIC)
+    target_link_libraries(asr p::liric)
 endif()
 
 # Install the dwarf_convert.py and dat_convert.py
