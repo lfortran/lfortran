@@ -273,6 +273,28 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     }
 };
 
+class CleanupDegenerateArraySection: public ASR::BaseExprReplacer<CleanupDegenerateArraySection> {
+    public:
+    Allocator& al;
+    CleanupDegenerateArraySection(Allocator& al_): al(al_) {}
+
+    void replace_ArraySection(ASR::ArraySection_t* x) {
+        ASR::BaseExprReplacer<CleanupDegenerateArraySection>::replace_ArraySection(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x->m_v))) {
+            *current_expr = x->m_v;
+        }
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<CleanupDegenerateArraySection>::replace_StructInstanceMember(x);
+        if (ASRUtils::is_array(x->m_type) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) &&
+            !ASRUtils::is_array(ASRUtils::symbol_type(x->m_m))) {
+            x->m_type = ASRUtils::extract_type(x->m_type);
+        }
+    }
+};
+
 class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     private:
@@ -1164,6 +1186,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( size_t i = 0; i < fix_types_args.size(); i++ ) {
             array_broadcast_visitor.current_expr = fix_types_args[i];
             array_broadcast_visitor.call_replacer();
+        }
+
+        CleanupDegenerateArraySection cleanup(al);
+        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
+            cleanup.current_expr = fix_types_args[i];
+            cleanup.replace_expr(*fix_types_args[i]);
         }
 
         FixTypeVisitor fix_types(al);
