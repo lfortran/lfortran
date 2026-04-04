@@ -1623,10 +1623,36 @@ public:
         // Import functions/subroutines called in the do concurrent body
         // into the kernel scope so FunctionCall/SubroutineCall nodes
         // can reference them after symbol remapping.
+        // Collect transitively: if f() calls g(), both must be imported.
         {
             GpuFunctionCollector func_collector;
             for (size_t i = 0; i < x.n_body; i++) {
                 func_collector.visit_stmt(*x.m_body[i]);
+            }
+            {
+                bool added = true;
+                while (added) {
+                    added = false;
+                    GpuFunctionCollector transitive_collector;
+                    for (auto &[fn_name, fn_sym] : func_collector.functions) {
+                        ASR::symbol_t *fn_resolved =
+                            ASRUtils::symbol_get_past_external(fn_sym);
+                        if (ASR::is_a<ASR::Function_t>(*fn_resolved)) {
+                            ASR::Function_t *fn =
+                                ASR::down_cast<ASR::Function_t>(fn_resolved);
+                            for (size_t i = 0; i < fn->n_body; i++) {
+                                transitive_collector.visit_stmt(*fn->m_body[i]);
+                            }
+                        }
+                    }
+                    for (auto &[name, sym] : transitive_collector.functions) {
+                        if (func_collector.functions.find(name) ==
+                                func_collector.functions.end()) {
+                            func_collector.functions[name] = sym;
+                            added = true;
+                        }
+                    }
+                }
             }
             ASRUtils::SymbolDuplicator sym_dup(al);
             for (auto &[func_name, func_sym] : func_collector.functions) {
@@ -2017,6 +2043,22 @@ public:
                     for (size_t bi = 0; bi < func->n_body; bi++) {
                         fixer.visit_stmt(*func->m_body[bi]);
                     }
+                }
+            }
+        }
+
+        // Remap FunctionCall/SubroutineCall references inside duplicated
+        // kernel functions. When function f() calls g() and both are
+        // duplicated into the kernel scope, f's body still references the
+        // original g from the program scope. Fix those up.
+        {
+            for (auto &item : kernel_scope->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
+                for (size_t bi = 0; bi < func->n_body; bi++) {
+                    fn_replacer.visit_stmt(*func->m_body[bi]);
                 }
             }
         }

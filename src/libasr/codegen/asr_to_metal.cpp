@@ -15,6 +15,19 @@
 
 namespace LCompilers {
 
+class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
+public:
+    std::set<std::string> called;
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        called.insert(ASRUtils::symbol_name(x.m_name));
+        ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        called.insert(ASRUtils::symbol_name(x.m_name));
+        ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_SubroutineCall(x);
+    }
+};
+
 class ASRToMetalVisitor
 {
 public:
@@ -362,15 +375,49 @@ public:
         }
 
         // Emit inline function definitions for internal functions
-        // duplicated into the kernel scope by the gpu_offload pass
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                item.second);
-            std::string fn_name(fn->m_name);
-            if (emitted_funcs.count(fn_name)) continue;
-            emitted_funcs.insert(fn_name);
-            emit_function_def(fn, fn_name);
+        // duplicated into the kernel scope by the gpu_offload pass.
+        // Topologically sort so callees are emitted before callers.
+        {
+            std::map<std::string, ASR::Function_t*> kernel_funcs;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                std::string fn_name(fn->m_name);
+                if (emitted_funcs.count(fn_name)) continue;
+                kernel_funcs[fn_name] = fn;
+            }
+            std::vector<std::string> sorted_funcs;
+            std::set<std::string> visited, in_stack;
+            std::function<void(const std::string&)> topo_sort =
+                [&](const std::string &name) {
+                if (visited.count(name)) return;
+                visited.insert(name);
+                in_stack.insert(name);
+                auto it = kernel_funcs.find(name);
+                if (it != kernel_funcs.end()) {
+                    GpuFuncCallCollector call_collector;
+                    ASR::Function_t *fn = it->second;
+                    for (size_t i = 0; i < fn->n_body; i++) {
+                        call_collector.visit_stmt(*fn->m_body[i]);
+                    }
+                    for (auto &callee : call_collector.called) {
+                        if (kernel_funcs.count(callee) &&
+                                !in_stack.count(callee)) {
+                            topo_sort(callee);
+                        }
+                    }
+                }
+                in_stack.erase(name);
+                sorted_funcs.push_back(name);
+            };
+            for (auto &[name, fn] : kernel_funcs) {
+                topo_sort(name);
+            }
+            for (auto &fn_name : sorted_funcs) {
+                emitted_funcs.insert(fn_name);
+                emit_function_def(kernel_funcs[fn_name], fn_name);
+            }
         }
 
         struct ArgInfo {
