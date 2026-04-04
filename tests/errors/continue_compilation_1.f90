@@ -645,7 +645,7 @@ program continue_compilation_1
     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
     type(Base), target :: ptr_tgt_base
     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
-
+    a(1) = .true.
 
 
 
