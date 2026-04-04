@@ -1065,21 +1065,16 @@ public:
             ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(
                 asgn->m_target);
 
-            // Find the range dimension (has both m_left and m_right set,
-            // meaning it's a slice like 1:n(l), not a scalar index)
-            int range_dim = -1;
+            // Collect all range dimensions (have m_left, m_right, m_step
+            // set, meaning it's a slice like 1:n, not a scalar index)
+            std::vector<int> range_dims;
             for (size_t i = 0; i < as->n_args; i++) {
                 if (as->m_args[i].m_left && as->m_args[i].m_right
                         && as->m_args[i].m_step) {
-                    if (range_dim != -1) {
-                        // Multiple range dims — not handled yet
-                        range_dim = -1;
-                        break;
-                    }
-                    range_dim = (int)i;
+                    range_dims.push_back((int)i);
                 }
             }
-            if (range_dim == -1) {
+            if (range_dims.empty()) {
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -1096,14 +1091,8 @@ public:
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
 
-            ASR::expr_t *loop_start = as->m_args[range_dim].m_left;
-            ASR::expr_t *loop_end = as->m_args[range_dim].m_right;
-
-            // Create loop variable __gpu_sec_i in the containing
-            // function/program scope, not in any enclosing AssociateBlock
-            // scope. The GPU kernel extraction skips AssociateBlock-local
-            // symbols, so placing the temp there would leave a dangling
-            // reference after the body is copied into the kernel.
+            // Create loop variable(s) in the containing function/program
+            // scope, not in any enclosing AssociateBlock scope.
             SymbolTable *var_scope = current_scope;
             while (var_scope && var_scope->asr_owner &&
                    var_scope->asr_owner->type == ASR::asrType::symbol &&
@@ -1112,33 +1101,45 @@ public:
                            var_scope->asr_owner))) {
                 var_scope = var_scope->parent;
             }
-            std::string loop_var_name = var_scope->get_unique_name(
-                "__gpu_sec_i");
-            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                    s2c(al, loop_var_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, int_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            var_scope->add_symbol(loop_var_name, loop_var_sym);
-            ASR::expr_t *loop_var = ASRUtils::EXPR(
-                ASR::make_Var_t(al, loc, loop_var_sym));
 
-            // Build ArrayItem: replace the range dim with loop_var,
+            // Create a loop variable for each range dimension
+            std::vector<ASR::expr_t*> loop_vars(range_dims.size());
+            for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                std::string loop_var_name = var_scope->get_unique_name(
+                    "__gpu_sec_i");
+                ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, loop_var_name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, int_type),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(loop_var_name, loop_var_sym);
+                loop_vars[ri] = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, loop_var_sym));
+            }
+
+            // Build ArrayItem: replace each range dim with its loop var,
             // keep scalar-index dims as-is
             Vec<ASR::array_index_t> new_args;
             new_args.reserve(al, as->n_args);
             for (size_t i = 0; i < as->n_args; i++) {
                 ASR::array_index_t idx;
                 idx.loc = as->m_args[i].loc;
-                if ((int)i == range_dim) {
-                    idx.m_left = nullptr;
-                    idx.m_right = loop_var;
-                    idx.m_step = nullptr;
-                } else {
+                // Check if this dimension is a range dimension
+                bool is_range = false;
+                for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                    if ((int)i == range_dims[ri]) {
+                        idx.m_left = nullptr;
+                        idx.m_right = loop_vars[ri];
+                        idx.m_step = nullptr;
+                        is_range = true;
+                        break;
+                    }
+                }
+                if (!is_range) {
                     idx.m_left = as->m_args[i].m_left;
                     idx.m_right = as->m_args[i].m_right;
                     idx.m_step = as->m_args[i].m_step;
@@ -1152,23 +1153,36 @@ public:
                     new_args.p, new_args.n, elem_type,
                     ASR::arraystorageType::ColMajor, nullptr));
 
-            // Build loop body: array_item = scalar_value
-            Vec<ASR::stmt_t*> loop_body;
-            loop_body.reserve(al, 1);
-            loop_body.push_back(al, ASRUtils::STMT(
+            // Build innermost loop body: array_item = scalar_value
+            Vec<ASR::stmt_t*> inner_body;
+            inner_body.reserve(al, 1);
+            inner_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, array_item, scalar_value,
                     nullptr, false, false)));
 
-            // Build DoLoop
-            ASR::do_loop_head_t head;
-            head.loc = loc;
-            head.m_v = loop_var;
-            head.m_start = loop_start;
-            head.m_end = loop_end;
-            head.m_increment = nullptr;
-            new_body.push_back(al, ASRUtils::STMT(
-                ASR::make_DoLoop_t(al, loc, nullptr,
-                    head, loop_body.p, loop_body.n, nullptr, 0)));
+            // Build nested DoLoops from innermost to outermost
+            ASR::stmt_t *loop_stmt = nullptr;
+            for (int ri = (int)range_dims.size() - 1; ri >= 0; ri--) {
+                int dim = range_dims[ri];
+                ASR::do_loop_head_t head;
+                head.loc = loc;
+                head.m_v = loop_vars[ri];
+                head.m_start = as->m_args[dim].m_left;
+                head.m_end = as->m_args[dim].m_right;
+                head.m_increment = nullptr;
+
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 1);
+                if (loop_stmt) {
+                    body.push_back(al, loop_stmt);
+                } else {
+                    body.push_back(al, inner_body[0]);
+                }
+                loop_stmt = ASRUtils::STMT(
+                    ASR::make_DoLoop_t(al, loc, nullptr,
+                        head, body.p, body.n, nullptr, 0));
+            }
+            new_body.push_back(al, loop_stmt);
 
             changed = true;
         }
