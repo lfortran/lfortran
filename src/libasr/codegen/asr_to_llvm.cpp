@@ -2285,11 +2285,12 @@ public:
             } else {
                 throw CodeGenError("Only StructInstanceMember and Variable are supported Nullify type");
             }
+            ASR::ttype_t* const sym_type = ASRUtils::symbol_type(tmp_sym);
 
             llvm::Type* tp = llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
-                ASRUtils::symbol_type(tmp_sym))), module.get());
+                sym_type)), module.get());
 
             llvm::Type* dest_type = tp->getPointerTo();
             if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(tmp_sym)))) {
@@ -2316,6 +2317,11 @@ public:
                     ASRUtils::expr_type(x.m_vars[i]), module.get()), target, 1);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), len);
                 builder->CreateStore(np, data_target);
+            } else if(ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(sym_type))) {
+                llvm::Value* const wrapper_ptr = llvm_utils->CreateLoad2(dest_type, target);
+                llvm_utils->lfortran_free_nocheck(wrapper_ptr);
+                llvm::Value* const np = llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(dest_type));
+                builder->CreateStore(np, target);
             } else {
                 llvm::Value* np = builder->CreateIntToPtr(
                     llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
