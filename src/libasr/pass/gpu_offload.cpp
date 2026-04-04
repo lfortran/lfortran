@@ -1783,10 +1783,12 @@ public:
                             }
                         }
                     }
-                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*func_sym)) {
-                    // Non-function ExternalSymbol (e.g., GenericProcedure
-                    // from m_original_name). Create a matching
-                    // ExternalSymbol in the kernel scope.
+                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*func_sym) &&
+                           !ASR::is_a<ASR::StructMethodDeclaration_t>(
+                               *resolved)) {
+                    // Non-function, non-method ExternalSymbol (e.g.,
+                    // GenericProcedure from m_original_name). Create a
+                    // matching ExternalSymbol in the kernel scope.
                     ASR::ExternalSymbol_t *es =
                         ASR::down_cast<ASR::ExternalSymbol_t>(func_sym);
                     ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(
@@ -1979,6 +1981,65 @@ public:
             }
         }
 
+        // Fix up struct references in ALL duplicated kernel functions.
+        // After duplication, ExternalSymbol targets and Variable
+        // m_type_declarations may still reference the original module's
+        // struct definitions. Remap them to the kernel's copies.
+        {
+            for (auto &item : kernel_scope->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t *dfunc = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                for (auto &ditem : dfunc->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ditem.second)) {
+                        ASR::ExternalSymbol_t *es =
+                            ASR::down_cast<ASR::ExternalSymbol_t>(
+                                ditem.second);
+                        ASR::symbol_t *target =
+                            ASRUtils::symbol_get_past_external(
+                                es->m_external);
+                        SymbolTable *tp =
+                            ASRUtils::symbol_parent_symtab(target);
+                        if (tp->asr_owner &&
+                                tp->asr_owner->type ==
+                                    ASR::asrType::symbol) {
+                            ASR::symbol_t *os =
+                                down_cast<ASR::symbol_t>(tp->asr_owner);
+                            if (is_a<ASR::Struct_t>(*os)) {
+                                std::string sn =
+                                    down_cast<ASR::Struct_t>(os)->m_name;
+                                ASR::symbol_t *ks =
+                                    kernel_scope->get_symbol(sn);
+                                if (ks && is_a<ASR::Struct_t>(*ks)) {
+                                    ASR::symbol_t *nt =
+                                        down_cast<ASR::Struct_t>(ks)
+                                            ->m_symtab->get_symbol(
+                                                es->m_original_name);
+                                    if (nt) es->m_external = nt;
+                                }
+                            }
+                        }
+                    } else if (ASR::is_a<ASR::Variable_t>(
+                                   *ditem.second)) {
+                        ASR::Variable_t *var =
+                            ASR::down_cast<ASR::Variable_t>(
+                                ditem.second);
+                        if (var->m_type_declaration &&
+                                is_a<ASR::Struct_t>(
+                                    *ASRUtils::symbol_get_past_external(
+                                        var->m_type_declaration))) {
+                            std::string sn = ASRUtils::symbol_name(
+                                ASRUtils::symbol_get_past_external(
+                                    var->m_type_declaration));
+                            ASR::symbol_t *ks =
+                                kernel_scope->get_symbol(sn);
+                            if (ks) var->m_type_declaration = ks;
+                        }
+                    }
+                }
+            }
+        }
+
         // Fix dangling variable references in duplicated kernel functions.
         // When a contained function references variables from the original
         // enclosing scope (e.g., a program-scope Parameter used by a
@@ -2074,6 +2135,11 @@ public:
         // kernel functions. When function f() calls g() and both are
         // duplicated into the kernel scope, f's body still references the
         // original g from the program scope. Fix those up.
+        // Also descend into AssociateBlock and Block bodies within
+        // duplicated functions — the statement visitor does not enter
+        // these sub-scopes, so FunctionCall m_name references inside
+        // them (e.g., type-bound procedure calls in associate blocks)
+        // still point to the original scope after duplication.
         {
             for (auto &item : kernel_scope->get_scope()) {
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
@@ -2082,6 +2148,24 @@ public:
                 GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fn_replacer.visit_stmt(*func->m_body[bi]);
+                }
+                for (auto &fn_item : func->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::AssociateBlock_t>(
+                            *fn_item.second)) {
+                        ASR::AssociateBlock_t *ab =
+                            ASR::down_cast<ASR::AssociateBlock_t>(
+                                fn_item.second);
+                        for (size_t bi = 0; bi < ab->n_body; bi++) {
+                            fn_replacer.visit_stmt(*ab->m_body[bi]);
+                        }
+                    } else if (ASR::is_a<ASR::Block_t>(
+                                   *fn_item.second)) {
+                        ASR::Block_t *block =
+                            ASR::down_cast<ASR::Block_t>(fn_item.second);
+                        for (size_t bi = 0; bi < block->n_body; bi++) {
+                            fn_replacer.visit_stmt(*block->m_body[bi]);
+                        }
+                    }
                 }
             }
         }
