@@ -305,7 +305,8 @@ public:
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
-        if (ASR::is_a<ASR::Function_t>(*resolved)) {
+        if (ASR::is_a<ASR::Function_t>(*resolved) ||
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved)) {
             std::string name = ASRUtils::symbol_name(x.m_name);
             if (functions.find(name) == functions.end()) {
                 functions[name] = x.m_name;
@@ -316,7 +317,8 @@ public:
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
-        if (ASR::is_a<ASR::Function_t>(*resolved)) {
+        if (ASR::is_a<ASR::Function_t>(*resolved) ||
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved)) {
             std::string name = ASRUtils::symbol_name(x.m_name);
             if (functions.find(name) == functions.end()) {
                 functions[name] = x.m_name;
@@ -1532,6 +1534,51 @@ public:
                         kernel_scope);
                     if (dup) {
                         kernel_scope->add_symbol(func_name, dup);
+                    }
+                } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                               *resolved)) {
+                    // Type-bound procedure call: the resolved symbol is
+                    // a StructMethodDeclaration inside a Struct's symtab.
+                    // Create an ExternalSymbol in the kernel scope that
+                    // points to the corresponding method declaration in
+                    // the kernel's copy of the struct (imported earlier
+                    // by import_struct_def for the struct-typed variable).
+                    SymbolTable *method_st =
+                        ASRUtils::symbol_parent_symtab(resolved);
+                    if (method_st->asr_owner &&
+                            method_st->asr_owner->type ==
+                                ASR::asrType::symbol) {
+                        ASR::symbol_t *struct_owner =
+                            down_cast<ASR::symbol_t>(method_st->asr_owner);
+                        if (is_a<ASR::Struct_t>(*struct_owner)) {
+                            std::string struct_name =
+                                down_cast<ASR::Struct_t>(struct_owner)
+                                    ->m_name;
+                            ASR::symbol_t *kernel_struct =
+                                kernel_scope->get_symbol(struct_name);
+                            if (kernel_struct &&
+                                    is_a<ASR::Struct_t>(*kernel_struct)) {
+                                ASR::Struct_t *ks =
+                                    down_cast<ASR::Struct_t>(kernel_struct);
+                                std::string orig_name =
+                                    ASRUtils::symbol_name(resolved);
+                                ASR::symbol_t *kernel_method =
+                                    ks->m_symtab->get_symbol(orig_name);
+                                if (kernel_method) {
+                                    ASR::asr_t *new_es =
+                                        ASR::make_ExternalSymbol_t(al, loc,
+                                            kernel_scope,
+                                            s2c(al, func_name),
+                                            kernel_method,
+                                            s2c(al, struct_name),
+                                            nullptr, 0,
+                                            s2c(al, orig_name),
+                                            ASR::accessType::Public);
+                                    kernel_scope->add_symbol(func_name,
+                                        down_cast<ASR::symbol_t>(new_es));
+                                }
+                            }
+                        }
                     }
                 }
             }
