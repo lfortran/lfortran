@@ -403,6 +403,95 @@ public:
     }
 };
 
+// Collects StructInstanceMember references to allocatable array members
+// in the do concurrent body. Used to decompose struct-typed kernel
+// parameters into separate flat array buffers for Metal.
+class GpuAllocStructMemberCollector :
+    public ASR::BaseWalkVisitor<GpuAllocStructMemberCollector> {
+public:
+    // Maps struct_var_name -> { member_name -> (member_sym, member_type) }
+    std::map<std::string,
+        std::map<std::string, std::pair<ASR::symbol_t*, ASR::ttype_t*>>>
+            alloc_members;
+    // Struct var names that have any non-allocatable-array member access
+    std::set<std::string> has_non_alloc_access;
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_v);
+            std::string struct_name = ASRUtils::symbol_name(v->m_v);
+            ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(x.m_m);
+            std::string mem_name = ASRUtils::symbol_name(mem);
+            ASR::ttype_t *mem_type = x.m_type;
+            if (ASRUtils::is_allocatable(mem_type)) {
+                ASR::ttype_t *inner =
+                    ASRUtils::type_get_past_allocatable(mem_type);
+                if (ASR::is_a<ASR::Array_t>(*inner)) {
+                    alloc_members[struct_name][mem_name] =
+                        {x.m_m, mem_type};
+                } else {
+                    has_non_alloc_access.insert(struct_name);
+                }
+            } else {
+                has_non_alloc_access.insert(struct_name);
+            }
+        }
+        ASR::BaseWalkVisitor<GpuAllocStructMemberCollector>::
+            visit_StructInstanceMember(x);
+    }
+};
+
+// Replaces StructInstanceMember(Var(x), a) with Var(x__a) for
+// allocatable array members that have been decomposed into separate
+// kernel parameters.
+class GpuDecomposeStructReplacer :
+    public ASR::BaseExprReplacer<GpuDecomposeStructReplacer> {
+public:
+    Allocator &al;
+    SymbolTable *kernel_scope;
+    std::map<std::pair<std::string, std::string>, std::string> &decomp_map;
+
+    GpuDecomposeStructReplacer(Allocator &al_, SymbolTable *scope,
+        std::map<std::pair<std::string, std::string>, std::string> &dmap)
+        : al(al_), kernel_scope(scope), decomp_map(dmap) {}
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+        if (ASR::is_a<ASR::Var_t>(*x->m_v)) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x->m_v);
+            std::string struct_name = ASRUtils::symbol_name(v->m_v);
+            ASR::symbol_t *mem =
+                ASRUtils::symbol_get_past_external(x->m_m);
+            std::string mem_name = ASRUtils::symbol_name(mem);
+            auto key = std::make_pair(struct_name, mem_name);
+            auto it = decomp_map.find(key);
+            if (it != decomp_map.end()) {
+                ASR::symbol_t *param_sym =
+                    kernel_scope->get_symbol(it->second);
+                if (param_sym) {
+                    *current_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, x->base.base.loc, param_sym));
+                    return;
+                }
+            }
+        }
+        ASR::BaseExprReplacer<GpuDecomposeStructReplacer>::
+            replace_StructInstanceMember(x);
+    }
+};
+
+class GpuDecomposeStructVisitor :
+    public ASR::CallReplacerOnExpressionsVisitor<GpuDecomposeStructVisitor> {
+public:
+    GpuDecomposeStructReplacer replacer;
+    GpuDecomposeStructVisitor(Allocator &al, SymbolTable *scope,
+        std::map<std::pair<std::string, std::string>, std::string> &dmap)
+        : replacer(al, scope, dmap) {}
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -1757,6 +1846,46 @@ public:
             involved_syms.erase(name);
         }
 
+        // Decompose struct variables with allocatable array members.
+        // Metal cannot represent allocatable descriptors inside structs,
+        // so we extract each allocatable array member into a separate
+        // kernel buffer parameter and replace StructInstanceMember
+        // references in the body with the new flat-array Var.
+        GpuAllocStructMemberCollector alloc_collector;
+        for (size_t i = 0; i < x.n_body; i++) {
+            alloc_collector.visit_stmt(*x.m_body[i]);
+        }
+        // Maps (struct_name, member_name) -> decomposed parameter name
+        std::map<std::pair<std::string, std::string>, std::string>
+            decomp_map;
+        // Info for creating host-side call arguments later
+        struct DecompInfo {
+            std::string struct_name;
+            std::string member_name;
+            std::string param_name;
+            ASR::symbol_t *orig_mem_sym;
+            ASR::ttype_t *alloc_type;
+        };
+        std::vector<DecompInfo> decomp_infos;
+        for (auto &[struct_name, members] :
+                alloc_collector.alloc_members) {
+            if (involved_syms.find(struct_name) == involved_syms.end())
+                continue;
+            for (auto &[mem_name, mem_info] : members) {
+                std::string param_name = struct_name + "__" + mem_name;
+                decomp_map[{struct_name, mem_name}] = param_name;
+                decomp_infos.push_back({struct_name, mem_name,
+                    param_name, mem_info.first, mem_info.second});
+            }
+            // If struct only accessed through allocatable members,
+            // remove from involved_syms (it won't be passed as a
+            // kernel parameter)
+            if (alloc_collector.has_non_alloc_access.find(struct_name)
+                    == alloc_collector.has_non_alloc_access.end()) {
+                involved_syms.erase(struct_name);
+            }
+        }
+
         // 2. Create kernel scope and parameters
         SymbolTable *tu_symtab = tu.m_symtab;
         std::string kernel_name = tu_symtab->get_unique_name(
@@ -1807,6 +1936,43 @@ public:
             ASR::call_arg_t carg;
             carg.loc = loc;
             carg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, orig_sym));
+            call_args.push_back(al, carg);
+        }
+
+        // Create kernel parameters for decomposed allocatable struct
+        // members. Each allocatable array member becomes a separate
+        // flat-array buffer parameter.
+        for (auto &di : decomp_infos) {
+            ASR::ttype_t *flat_type = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(di.alloc_type));
+
+            SetChar deps_vec;
+            deps_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(
+                al, deps_vec, flat_type, nullptr, nullptr, di.param_name);
+
+            ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
+                    s2c(al, di.param_name), deps_vec.p, deps_vec.size(),
+                    ASR::intentType::InOut, nullptr, nullptr,
+                    ASR::storage_typeType::Default, flat_type,
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            kernel_scope->add_symbol(di.param_name, param);
+            kernel_args.push_back(al,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
+
+            // Host-side: pass StructInstanceMember(Var(x), member)
+            ASR::symbol_t *orig_struct_sym =
+                orig_scope->resolve_symbol(di.struct_name);
+            ASR::call_arg_t carg;
+            carg.loc = loc;
+            carg.m_value = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                        orig_struct_sym)),
+                    di.orig_mem_sym, di.alloc_type, nullptr));
             call_args.push_back(al, carg);
         }
 
@@ -2496,6 +2662,17 @@ public:
             ASR::stmt_t *copy = body_dup.duplicate_stmt(x.m_body[i]);
             LCOMPILERS_ASSERT(copy);
             body_copy.push_back(al, copy);
+        }
+
+        // Replace StructInstanceMember references to decomposed
+        // allocatable members with Var references to the new
+        // flat-array kernel parameters, before general symbol remapping.
+        if (!decomp_map.empty()) {
+            GpuDecomposeStructVisitor decomp_visitor(al, kernel_scope,
+                decomp_map);
+            for (size_t i = 0; i < body_copy.n; i++) {
+                decomp_visitor.visit_stmt(*body_copy.p[i]);
+            }
         }
 
         // 3. Replace Var references in copied body to point to kernel scope

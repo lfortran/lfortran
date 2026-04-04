@@ -18963,9 +18963,15 @@ public:
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
             bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(*arg_type)
                 && ASRUtils::is_array(arg_type);
+            bool is_struct_member_alloc = is_allocatable_array
+                && ASR::is_a<ASR::StructInstanceMember_t>(*arg_expr);
 
             // For allocatable arrays, we need the descriptor pointer
-            // (ptr_loads=1 loads the descriptor ptr from the alloca)
+            // (ptr_loads=1 loads the descriptor ptr from the alloca).
+            // For StructInstanceMember of an allocatable array,
+            // visit_StructInstanceMember returns a pointer to the
+            // allocatable member field (T**); we load once afterward
+            // to get T* (the descriptor pointer).
             int64_t ptr_loads_copy = ptr_loads;
             if (is_allocatable_array) {
                 ptr_loads = 1;
@@ -18973,6 +18979,20 @@ public:
             this->visit_expr(*arg_expr);
             ptr_loads = ptr_loads_copy;
             llvm::Value *arg_val = tmp;
+
+            // StructInstanceMember for an allocatable array returns
+            // a pointer to the allocatable-pointer field within the
+            // struct (i.e., descriptor**). Load once to get the
+            // descriptor pointer that get_pointer_to_data expects.
+            if (is_struct_member_alloc) {
+                ASR::ttype_t *desc_asr_type =
+                    ASRUtils::type_get_past_allocatable(arg_type);
+                llvm::Type *desc_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, desc_asr_type, module.get());
+                arg_val = llvm_utils->CreateLoad2(
+                    desc_type->getPointerTo(), arg_val);
+            }
 
             llvm::Value *idx = llvm::ConstantInt::get(i32, i);
 
