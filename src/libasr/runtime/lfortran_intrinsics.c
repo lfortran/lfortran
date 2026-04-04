@@ -5579,7 +5579,7 @@ _lfortran_open(int32_t unit_num,
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
-        NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0);
+        NULL, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -5906,11 +5906,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char* decimal, int64_t decimal_len,
                                     char *sign, int64_t sign_len,
                                     char *encoding, int64_t encoding_len,
-                                    char *stream, int64_t stream_len,
-                                    char *round, int64_t round_len,
                                     bool *pending,
-                                    char *asynchronous, int64_t asynchronous_len,
-                                    char *iomsg, int64_t iomsg_len) {
+                                    char *asynchronous, int64_t asynchronous_len) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -6105,24 +6102,11 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
-        if (stream != NULL) {
-            if (access_id == 1) {
-                _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
-            } else {
-                _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
-            }
-        }
-        if (round != NULL) {
-            _lfortran_copy_str_and_pad(round, round_len, "PROCESSOR_DEFINED", 17);
-        }
         if (pending != NULL) {
             *pending = false;
         }
         if (asynchronous != NULL) {
             _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
-        }
-        if (iomsg != NULL && iostat != NULL && *iostat != 0) {
-            _lfortran_copy_str_and_pad(iomsg, iomsg_len, "", 0);
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -6310,24 +6294,11 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
-        if (stream != NULL) {
-            if (access_id == 1) {
-                _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
-            } else {
-                _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
-            }
-        }
-        if (round != NULL) {
-            _lfortran_copy_str_and_pad(round, round_len, "PROCESSOR_DEFINED", 17);
-        }
         if (pending != NULL) {
             *pending = false;
         }
         if (asynchronous != NULL) {
             _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
-        }
-        if (iomsg != NULL && iostat != NULL && *iostat != 0) {
-            _lfortran_copy_str_and_pad(iomsg, iomsg_len, "", 0);
         }
         if (iostat != NULL) {
             *iostat = 0;
