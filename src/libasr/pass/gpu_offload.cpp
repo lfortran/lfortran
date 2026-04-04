@@ -2589,6 +2589,93 @@ public:
             }
         }
 
+        // Add total-size kernel parameters for allocatable array members
+        // of struct-typed kernel parameters. These sizes are needed by
+        // Metal inline functions that call size() on struct members.
+        for (auto &[sym_name, sym_info] : involved_syms) {
+            ASR::ttype_t *type = sym_info.first;
+            ASR::ttype_t *inner_t = ASRUtils::type_get_past_allocatable(type);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(inner_t)))
+                continue;
+            ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
+            ASR::Variable_t *orig_var =
+                down_cast<ASR::Variable_t>(orig_sym);
+            if (!orig_var->m_type_declaration) continue;
+            ASR::symbol_t *struct_sym =
+                ASRUtils::symbol_get_past_external(
+                    orig_var->m_type_declaration);
+            if (!is_a<ASR::Struct_t>(*struct_sym)) continue;
+            ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
+            ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            for (size_t m = 0; m < st->n_members; m++) {
+                ASR::symbol_t *mem_sym =
+                    st->m_symtab->get_symbol(st->m_members[m]);
+                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
+                    continue;
+                ASR::Variable_t *mv =
+                    down_cast<ASR::Variable_t>(mem_sym);
+                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+                ASR::ttype_t *mem_inner =
+                    ASRUtils::type_get_past_allocatable(mv->m_type);
+                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
+                std::string size_name = "__size_" + sym_name + "_"
+                    + std::string(st->m_members[m]);
+                ASR::symbol_t *size_sym =
+                    ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc,
+                            kernel_scope, s2c(al, size_name),
+                            nullptr, 0,
+                            ASR::intentType::InOut, nullptr,
+                            nullptr,
+                            ASR::storage_typeType::Default,
+                            ASRUtils::duplicate_type(al, int_type_sz),
+                            nullptr, ASR::abiType::Source,
+                            ASR::accessType::Public,
+                            ASR::presenceType::Required, false));
+                kernel_scope->add_symbol(size_name, size_sym);
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                        size_sym)));
+                // Host-side: size(struct%member) (total size)
+                // Look up the member symbol in the original struct's
+                // scope for the ExternalSymbol reference used in the
+                // program scope (needed for StructInstanceMember).
+                ASR::symbol_t *orig_mem_ref = nullptr;
+                for (auto &scope_item :
+                        orig_scope->get_scope()) {
+                    if (!is_a<ASR::ExternalSymbol_t>(
+                            *scope_item.second)) continue;
+                    ASR::ExternalSymbol_t *es =
+                        down_cast<ASR::ExternalSymbol_t>(
+                            scope_item.second);
+                    ASR::symbol_t *resolved =
+                        ASRUtils::symbol_get_past_external(
+                            es->m_external);
+                    if (resolved == mem_sym) {
+                        orig_mem_ref = scope_item.second;
+                        break;
+                    }
+                }
+                if (!orig_mem_ref) orig_mem_ref = mem_sym;
+                ASR::expr_t *host_member = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            orig_sym)),
+                        orig_mem_ref, mv->m_type, nullptr));
+                ASR::expr_t *host_size = ASRUtils::EXPR(
+                    ASR::make_ArraySize_t(al, loc,
+                        host_member, nullptr, int_type_sz,
+                        nullptr));
+                ASR::call_arg_t carg;
+                carg.loc = loc;
+                carg.m_value = host_size;
+                call_args.push_back(al, carg);
+            }
+        }
+
         // Create loop variables in kernel scope (local, not parameters)
         for (size_t d = 0; d < n_dims; d++) {
             ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
