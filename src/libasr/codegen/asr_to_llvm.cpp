@@ -19062,11 +19062,20 @@ public:
                     *ASRUtils::extract_type(arg_type))) {
                 // Struct: pass as a buffer so the kernel can write to it
                 // and results are copied back to the host
-                llvm::Value *struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
-                llvm::Type *struct_type = arg_val->getType();
-                if (struct_type->isPointerTy()) {
+                llvm::Value *struct_ptr;
+                llvm::Type *struct_type;
+                if (arg_val->getType()->isPointerTy()) {
+                    struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
                     struct_type = llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, arg_type, module.get());
+                } else {
+                    // Host-associated struct loaded as a value (e.g. via
+                    // nested context); store to an alloca to get a pointer.
+                    struct_type = arg_val->getType();
+                    llvm::AllocaInst *struct_alloca =
+                        llvm_utils->CreateAlloca(struct_type);
+                    builder->CreateStore(arg_val, struct_alloca);
+                    struct_ptr = builder->CreatePointerCast(struct_alloca, i8_ptr);
                 }
                 uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
                 llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
