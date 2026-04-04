@@ -539,6 +539,10 @@ filename = "warnings/preprocess_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/precision_real_01.f90"
+asr = true
+
+[[test]]
 filename = "preprocessor1.f90"
 asr_preprocess = true
 
