@@ -2174,7 +2174,6 @@ public:
             if (!ASRUtils::is_allocatable(orig_type)) continue;
             ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(orig_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
 
             // Locate the kernel-scope Variable whose type we must update
             ASR::symbol_t *k_sym = kernel_scope->get_symbol(sym_name);
