@@ -18956,6 +18956,14 @@ public:
         // Save scalar arg LLVM values for VLA workspace size computation
         std::vector<llvm::Value*> call_arg_values(x.n_args, nullptr);
 
+        // Track scalar args to pack into a single struct buffer
+        struct ScalarArgInfo {
+            llvm::Value *value;
+            llvm::Type *type;
+        };
+        std::vector<ScalarArgInfo> scalar_arg_infos;
+        int buffer_idx = 0;
+
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *arg_expr = x.m_args[i].m_value;
             if (!arg_expr) continue;
@@ -18994,9 +19002,8 @@ public:
                     desc_type->getPointerTo(), arg_val);
             }
 
-            llvm::Value *idx = llvm::ConstantInt::get(i32, i);
-
             if (ASRUtils::is_array(arg_type)) {
+                llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                 // For allocatable arrays, extract data pointer from descriptor
                 llvm::Value *data_ptr;
                 if (is_allocatable_array) {
@@ -19080,6 +19087,7 @@ public:
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
             } else if (ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
+                llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                 // Struct: pass as a buffer so the kernel can write to it
                 // and results are copied back to the host
                 llvm::Value *struct_ptr;
@@ -19101,13 +19109,8 @@ public:
                 llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
                 builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, struct_ptr, struct_size});
             } else {
-                // Scalar: store to alloca, pass pointer + size
-                llvm::AllocaInst *scalar_alloca = llvm_utils->CreateAlloca(arg_val->getType());
-                builder->CreateStore(arg_val, scalar_alloca);
-                llvm::Value *scalar_ptr = builder->CreatePointerCast(scalar_alloca, i8_ptr);
-                uint64_t sz = module->getDataLayout().getTypeAllocSize(arg_val->getType());
-                llvm::Value *scalar_size = llvm::ConstantInt::get(i64, sz);
-                builder->CreateCall(set_scalar_fn, {gpu_kernel, idx, scalar_ptr, scalar_size});
+                // Scalar: collect for packing into a single struct buffer
+                scalar_arg_infos.push_back({arg_val, arg_val->getType()});
             }
 
             // Save scalar arg values for VLA workspace size computation
@@ -19116,6 +19119,36 @@ public:
                         *ASRUtils::extract_type(arg_type))) {
                 call_arg_values[i] = arg_val;
             }
+        }
+
+        // Pack all scalar args into a single struct buffer
+        if (!scalar_arg_infos.empty()) {
+            std::vector<llvm::Type*> field_types;
+            for (auto &si : scalar_arg_infos) {
+                field_types.push_back(si.type);
+            }
+            llvm::StructType *scalar_struct =
+                llvm::StructType::get(context, field_types, false);
+            llvm::AllocaInst *struct_alloca =
+                llvm_utils->CreateAlloca(scalar_struct);
+            for (size_t s = 0; s < scalar_arg_infos.size(); s++) {
+                std::vector<llvm::Value*> gep_idx = {
+                    llvm::ConstantInt::get(i32, 0),
+                    llvm::ConstantInt::get(i32, s)};
+                llvm::Value *field_ptr = llvm_utils->CreateGEP2(
+                    scalar_struct, struct_alloca, gep_idx);
+                builder->CreateStore(scalar_arg_infos[s].value, field_ptr);
+            }
+            llvm::Value *scalar_buf_ptr =
+                builder->CreatePointerCast(struct_alloca, i8_ptr);
+            uint64_t struct_sz =
+                module->getDataLayout().getTypeAllocSize(scalar_struct);
+            llvm::Value *scalar_buf_size =
+                llvm::ConstantInt::get(i64, struct_sz);
+            llvm::Value *scalar_buf_idx =
+                llvm::ConstantInt::get(i32, buffer_idx++);
+            builder->CreateCall(set_scalar_fn,
+                {gpu_kernel, scalar_buf_idx, scalar_buf_ptr, scalar_buf_size});
         }
 
         // 4b. Allocate and pass VLA workspace buffers

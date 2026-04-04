@@ -25,9 +25,38 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
+// Classify kernel arguments into buffer (array/struct) and scalar categories.
+// Returns the count of buffer args and scalar args respectively.
+inline std::pair<int, int> classify_gpu_kernel_args(
+        const ASR::GpuKernelFunction_t &kernel) {
+    int n_buffer = 0, n_scalar = 0;
+    for (size_t i = 0; i < kernel.n_args; i++) {
+        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(v->m_v));
+        ASR::ttype_t *type = var->m_type;
+        if (ASRUtils::is_array(type) ||
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(type))) {
+            n_buffer++;
+        } else {
+            n_scalar++;
+        }
+    }
+    return {n_buffer, n_scalar};
+}
+
+// Compute the Metal buffer index where VLA workspace buffers start.
+// Buffer layout: [buffer_args...] [scalar_struct?] [vla_workspaces...]
+// Scalar args are packed into a single struct buffer when present.
+inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    return n_buffer + (n_scalar > 0 ? 1 : 0);
+}
+
 // Analyze a GPU kernel function for variable-length arrays in blocks.
 // Returns workspace metadata for each VLA found, with buffer indices
-// assigned sequentially starting after the kernel's regular arguments.
+// assigned sequentially starting after the kernel's packed arguments.
 inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         const ASR::GpuKernelFunction_t &kernel) {
     // Build the kernel argument name list for mapping dim vars to arg indices
@@ -39,8 +68,8 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         arg_names.push_back(std::string(var->m_name));
     }
 
-    // Buffer index starts after all regular kernel arguments
-    int buffer_idx = static_cast<int>(kernel.n_args);
+    // Buffer index starts after buffer args + optional scalar struct
+    int buffer_idx = gpu_vla_buffer_start(kernel);
 
     std::vector<GpuVlaWorkspace> result;
 

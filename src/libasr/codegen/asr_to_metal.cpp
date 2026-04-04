@@ -452,27 +452,59 @@ public:
         // non-constant dimensions) using the shared GPU utility.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
 
+        // Collect scalar args for packing into a single struct buffer
+        struct ScalarArg {
+            std::string name;
+            std::string metal_type_str;
+        };
+        std::vector<ScalarArg> scalar_args;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array && !args[i].is_struct) {
+                scalar_args.push_back({args[i].name,
+                    metal_type(args[i].type)});
+            }
+        }
+
+        // Emit scalar args struct definition (before kernel) if needed
+        std::string scalar_struct_name = "__ScalarArgs_" + name;
+        if (!scalar_args.empty()) {
+            src << "struct " << scalar_struct_name << " {\n";
+            for (auto &sa : scalar_args) {
+                src << "    " << sa.metal_type_str << " "
+                    << sa.name << ";\n";
+            }
+            src << "};\n\n";
+        }
+
         // Emit kernel signature
         src << "kernel void " << name << "(\n";
 
         int buffer_idx = 0;
         bool has_prev = false;
         for (size_t i = 0; i < args.size(); i++) {
-            if (has_prev) src << ",\n";
-            src << "    ";
             if (args[i].is_array) {
+                if (has_prev) src << ",\n";
+                src << "    ";
                 std::string elem_type = !args[i].struct_name.empty()
                     ? args[i].struct_name
                     : metal_type(args[i].type);
                 src << "device " << elem_type << "* "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                has_prev = true;
             } else if (args[i].is_struct) {
+                if (has_prev) src << ",\n";
+                src << "    ";
                 src << "device " << args[i].struct_name << "& "
                     << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-            } else {
-                src << "constant " << metal_type(args[i].type) << "& "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                has_prev = true;
             }
+        }
+
+        // Emit packed scalar struct as a single buffer
+        if (!scalar_args.empty()) {
+            if (has_prev) src << ",\n";
+            src << "    constant " << scalar_struct_name
+                << "& __scalar_args [[buffer(" << buffer_idx++ << ")]]";
             has_prev = true;
         }
 
@@ -512,6 +544,12 @@ public:
 
         src << ")\n{\n";
         indent_level++;
+
+        // Unpack scalar args from the struct into local variables
+        for (auto &sa : scalar_args) {
+            src << get_indent() << sa.metal_type_str << " "
+                << sa.name << " = __scalar_args." << sa.name << ";\n";
+        }
 
         // Declare local variables (non-argument variables in kernel scope)
         for (auto &item : x.m_symtab->get_scope()) {
