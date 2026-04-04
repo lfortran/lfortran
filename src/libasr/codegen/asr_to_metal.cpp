@@ -174,6 +174,27 @@ public:
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
 
+        // Collect and emit struct definitions from all kernels once,
+        // before any kernel code, to avoid redefinition errors when
+        // multiple kernels reference the same struct type.
+        std::set<std::string> emitted_structs;
+        std::vector<ASR::Struct_t*> ordered_structs;
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) continue;
+            ASR::GpuKernelFunction_t &kf =
+                *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+            for (auto &kitem : kf.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*kitem.second)) {
+                    collect_structs_ordered(
+                        ASR::down_cast<ASR::Struct_t>(kitem.second),
+                        kf.m_symtab, emitted_structs, ordered_structs);
+                }
+            }
+        }
+        for (ASR::Struct_t *st : ordered_structs) {
+            emit_struct_def(st);
+        }
+
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 visit_GpuKernelFunction(
@@ -344,20 +365,6 @@ public:
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
-
-        // Emit struct type definitions in dependency order
-        std::set<std::string> emitted_structs;
-        std::vector<ASR::Struct_t*> ordered_structs;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                collect_structs_ordered(
-                    ASR::down_cast<ASR::Struct_t>(item.second),
-                    x.m_symtab, emitted_structs, ordered_structs);
-            }
-        }
-        for (ASR::Struct_t *st : ordered_structs) {
-            emit_struct_def(st);
-        }
 
         // Emit inline function definitions for type-bound procedures
         // referenced in this kernel
