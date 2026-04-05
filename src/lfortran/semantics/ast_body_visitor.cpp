@@ -2461,7 +2461,7 @@ public:
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 36, args, 37, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 38, args, 39, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];

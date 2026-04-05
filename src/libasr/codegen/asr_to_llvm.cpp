@@ -17786,7 +17786,7 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),   // sign_data, sign_len
                         character_type, llvm::Type::getInt64Ty(context),   // encoding_data, encoding_len
                         character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
-                        character_type, llvm::Type::getInt64Ty(context)    // iomsg_data, iomsg_len
+                        character_type, llvm::Type::getInt64Ty(context),    // iomsg_data, iomsg_len
                         llvm::Type::getInt1Ty(context)->getPointerTo(),    // pending
                         character_type, llvm::Type::getInt64Ty(context)    // asynchronous_data, asynchronous_len
                     }, false);
