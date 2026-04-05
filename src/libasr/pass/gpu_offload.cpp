@@ -1768,6 +1768,172 @@ public:
         }
     }
 
+    // Inline IntrinsicArrayFunction Transpose inside a DoConcurrentLoop body.
+    // Replaces:
+    //   b = transpose(a)
+    // With:
+    //   do __gpu_tr_j = 1, n
+    //     do __gpu_tr_i = 1, m
+    //       b(__gpu_tr_i, __gpu_tr_j) = a(__gpu_tr_j, __gpu_tr_i)
+    //     end do
+    //   end do
+    // This avoids generating a call to _lcompilers_transpose which is not
+    // available inside Metal GPU kernels.
+    void inline_intrinsic_transpose(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 4);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            ASR::expr_t *value = asgn->m_value;
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
+                value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(value)->m_arg;
+            }
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::IntrinsicArrayFunction_t *iaf =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    iaf->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::Transpose) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            ASR::expr_t *arr_arg = iaf->m_args[0];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr_arg)) {
+                arr_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    arr_arg)->m_arg;
+            }
+
+            ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+            if (rank != 2) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(asgn->m_target));
+
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+
+            auto make_var = [&](const std::string &prefix) -> ASR::expr_t* {
+                std::string name = var_scope->get_unique_name(prefix);
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, int_type),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(name, sym);
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+            };
+
+            auto make_array_item_2d = [&](ASR::expr_t *arr,
+                    ASR::expr_t *idx1, ASR::expr_t *idx2) -> ASR::expr_t* {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, 2);
+                ASR::array_index_t ai1;
+                ai1.loc = loc;
+                ai1.m_left = nullptr;
+                ai1.m_right = idx1;
+                ai1.m_step = nullptr;
+                args.push_back(al, ai1);
+                ASR::array_index_t ai2;
+                ai2.loc = loc;
+                ai2.m_left = nullptr;
+                ai2.m_right = idx2;
+                ai2.m_step = nullptr;
+                args.push_back(al, ai2);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
+                    args.p, args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+            };
+
+            // a is (m, n) => b = transpose(a) is (n, m)
+            // b(i, j) = a(j, i) for i=1..n, j=1..m
+            ASR::expr_t *var_i = make_var("__gpu_tr_i");
+            ASR::expr_t *var_j = make_var("__gpu_tr_j");
+
+            ASR::expr_t *b_ij = make_array_item_2d(asgn->m_target,
+                var_i, var_j);
+            ASR::expr_t *a_ji = make_array_item_2d(arr_arg,
+                var_j, var_i);
+
+            // Inner loop body: b(i, j) = a(j, i)
+            Vec<ASR::stmt_t*> inner_body;
+            inner_body.reserve(al, 1);
+            inner_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, b_ij, a_ji,
+                    nullptr, false, false)));
+
+            // i loops over rows of b = columns of a (dim 1 of result)
+            // j loops over columns of b = rows of a (dim 0 of result)
+            // a(m, n): dims[0] = m, dims[1] = n
+            // b(n, m): i = 1..n, j = 1..m
+            ASR::expr_t *i_start = dims[1].m_start;
+            ASR::expr_t *i_end = dims[1].m_length;
+            ASR::expr_t *j_start = dims[0].m_start;
+            ASR::expr_t *j_end = dims[0].m_length;
+
+            ASR::do_loop_head_t inner_head;
+            inner_head.loc = loc;
+            inner_head.m_v = var_i;
+            inner_head.m_start = i_start;
+            inner_head.m_end = i_end;
+            inner_head.m_increment = nullptr;
+            ASR::stmt_t *inner_loop = ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr, inner_head,
+                    inner_body.p, inner_body.n, nullptr, 0));
+
+            Vec<ASR::stmt_t*> outer_body;
+            outer_body.reserve(al, 1);
+            outer_body.push_back(al, inner_loop);
+
+            ASR::do_loop_head_t outer_head;
+            outer_head.loc = loc;
+            outer_head.m_v = var_j;
+            outer_head.m_start = j_start;
+            outer_head.m_end = j_end;
+            outer_head.m_increment = nullptr;
+            ASR::stmt_t *outer_loop = ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr, outer_head,
+                    outer_body.p, outer_body.n, nullptr, 0));
+
+            new_body.push_back(al, outer_loop);
+            changed = true;
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     // Inline ArraySection assignments inside a DoConcurrentLoop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
@@ -2568,6 +2734,9 @@ public:
 
         // Inline IntrinsicArrayFunction Sum before kernel extraction
         inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline IntrinsicArrayFunction Transpose before kernel extraction
+        inline_intrinsic_transpose(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
