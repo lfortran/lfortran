@@ -436,8 +436,13 @@ jobs:
           python src/libasr/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
           python src/libasr/wasm_instructions_visitor.py
           python src/libasr/intrinsic_func_registry_util_gen.py
-          cmake -S . -B build \
-            -G Ninja \
+          cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && cd ../../..
+          cd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && cd ../../..
+          cd src/lfortran/parser && bison -Wall -d parser.yy && cd ../../..
+          python src/server/generator/generate_lsp_code.py \
+            --schema src/server/generator/metaModel.json \
+            --target-language c++ --output-dir src/server
+          cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DWITH_LIRIC=yes \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
