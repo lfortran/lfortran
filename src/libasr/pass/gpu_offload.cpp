@@ -1623,14 +1623,6 @@ public:
                 continue;
             }
 
-            // Extract the scalar value from the RHS. Handle
-            // ArrayBroadcast (wraps a scalar for array assignment).
-            ASR::expr_t *scalar_value = asgn->m_value;
-            if (ASR::is_a<ASR::ArrayBroadcast_t>(*scalar_value)) {
-                scalar_value = ASR::down_cast<ASR::ArrayBroadcast_t>(
-                    scalar_value)->m_array;
-            }
-
             Location loc = stmt->base.loc;
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
@@ -1697,28 +1689,119 @@ public:
                     new_args.p, new_args.n, elem_type,
                     ASR::arraystorageType::ColMajor, nullptr));
 
-            // If the RHS is an array expression (e.g., a(i)%v returning
-            // a FixedSizeArray), index into it with the loop variables
-            // for element-wise access.
-            ASR::ttype_t *rhs_type = ASRUtils::expr_type(scalar_value);
-            if (ASR::is_a<ASR::Array_t>(*rhs_type)) {
-                Vec<ASR::array_index_t> rhs_args;
-                rhs_args.reserve(al, range_dims.size());
-                for (size_t ri = 0; ri < range_dims.size(); ri++) {
-                    ASR::array_index_t idx;
-                    idx.loc = loc;
-                    idx.m_left = nullptr;
-                    idx.m_right = loop_vars[ri];
-                    idx.m_step = nullptr;
-                    rhs_args.push_back(al, idx);
+            // Elementize: recursively replace ArraySection with
+            // ArrayItem and unwrap ArrayBroadcast in the RHS
+            std::function<ASR::expr_t*(ASR::expr_t*)> elementize_rhs =
+                [&](ASR::expr_t *e) -> ASR::expr_t* {
+                if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                    ASR::ArraySection_t *rhs_as =
+                        ASR::down_cast<ASR::ArraySection_t>(e);
+                    Vec<ASR::array_index_t> rhs_new_args;
+                    rhs_new_args.reserve(al, rhs_as->n_args);
+                    size_t rv_idx = 0;
+                    for (size_t i = 0; i < rhs_as->n_args; i++) {
+                        ASR::array_index_t idx;
+                        idx.loc = rhs_as->m_args[i].loc;
+                        if (rhs_as->m_args[i].m_left &&
+                                rhs_as->m_args[i].m_right &&
+                                rhs_as->m_args[i].m_step) {
+                            if (rv_idx < loop_vars.size()) {
+                                idx.m_left = nullptr;
+                                idx.m_right = loop_vars[rv_idx];
+                                idx.m_step = nullptr;
+                                rv_idx++;
+                            } else {
+                                idx = rhs_as->m_args[i];
+                            }
+                        } else {
+                            idx.m_left = rhs_as->m_args[i].m_left;
+                            idx.m_right = rhs_as->m_args[i].m_right;
+                            idx.m_step = rhs_as->m_args[i].m_step;
+                        }
+                        rhs_new_args.push_back(al, idx);
+                    }
+                    ASR::ttype_t *rhs_elem = ASRUtils::extract_type(
+                        ASRUtils::expr_type(rhs_as->m_v));
+                    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                        rhs_as->m_v, rhs_new_args.p, rhs_new_args.n,
+                        rhs_elem, ASR::arraystorageType::ColMajor,
+                        nullptr));
+                } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+                    return ASR::down_cast<ASR::ArrayBroadcast_t>(
+                        e)->m_array;
+                } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    ASR::RealBinOp_t *rb =
+                        ASR::down_cast<ASR::RealBinOp_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealBinOp_t(al,
+                        loc, elementize_rhs(rb->m_left), rb->m_op,
+                        elementize_rhs(rb->m_right), et, nullptr));
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    ASR::IntegerBinOp_t *ib =
+                        ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+                        loc, elementize_rhs(ib->m_left), ib->m_op,
+                        elementize_rhs(ib->m_right), et, nullptr));
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(
+                        *e)) {
+                    ASR::IntrinsicElementalFunction_t *f =
+                        ASR::down_cast<
+                            ASR::IntrinsicElementalFunction_t>(e);
+                    Vec<ASR::expr_t*> new_fargs;
+                    new_fargs.reserve(al, f->n_args);
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        new_fargs.push_back(al,
+                            f->m_args[i]
+                                ? elementize_rhs(f->m_args[i])
+                                : nullptr);
+                    }
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(
+                        ASR::make_IntrinsicElementalFunction_t(al,
+                            loc, f->m_intrinsic_id, new_fargs.p,
+                            new_fargs.n, f->m_overload_id, et,
+                            f->m_value));
+                } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                    return elementize_rhs(
+                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                            e)->m_arg);
+                } else if (ASR::is_a<ASR::Cast_t>(*e)) {
+                    ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+                    ASR::ttype_t *ct = c->m_type;
+                    if (ASR::is_a<ASR::Array_t>(*ct)) {
+                        ct = ASRUtils::extract_type(ct);
+                    }
+                    return ASRUtils::EXPR(ASR::make_Cast_t(al, loc,
+                        elementize_rhs(c->m_arg), c->m_kind, ct,
+                        c->m_value, nullptr));
                 }
-                ASR::ttype_t *rhs_elem_type = ASRUtils::extract_type(
-                    rhs_type);
-                scalar_value = ASRUtils::EXPR(
-                    ASR::make_ArrayItem_t(al, loc, scalar_value,
-                        rhs_args.p, rhs_args.n, rhs_elem_type,
-                        ASR::arraystorageType::ColMajor, nullptr));
-            }
+                // Fallback: if still array-typed, wrap with ArrayItem
+                ASR::ttype_t *e_type = ASRUtils::expr_type(e);
+                if (ASR::is_a<ASR::Array_t>(*e_type)) {
+                    Vec<ASR::array_index_t> rhs_args;
+                    rhs_args.reserve(al, range_dims.size());
+                    for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                        ASR::array_index_t idx;
+                        idx.loc = loc;
+                        idx.m_left = nullptr;
+                        idx.m_right = loop_vars[ri];
+                        idx.m_step = nullptr;
+                        rhs_args.push_back(al, idx);
+                    }
+                    ASR::ttype_t *rhs_elem = ASRUtils::extract_type(
+                        e_type);
+                    return ASRUtils::EXPR(
+                        ASR::make_ArrayItem_t(al, loc, e,
+                            rhs_args.p, rhs_args.n, rhs_elem,
+                            ASR::arraystorageType::ColMajor, nullptr));
+                }
+                return e;
+            };
+            ASR::expr_t *scalar_value = elementize_rhs(asgn->m_value);
 
             // Build innermost loop body: array_item = scalar_value
             Vec<ASR::stmt_t*> inner_body;
