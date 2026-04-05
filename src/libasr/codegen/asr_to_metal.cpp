@@ -1484,12 +1484,30 @@ public:
                         if (ei + 1 < sz) src << get_indent();
                     }
                 } else if (!target_is_local_alloc && rhs_is_local_alloc) {
-                    // RHS is a local alloc array but target is a scalar
-                    // (e.g., a(i) = alloc_var): index with [0]
-                    visit_expr(a->m_target);
-                    src << " = ";
-                    visit_expr(a->m_value);
-                    src << "[0];\n";
+                    if (target_is_array_buffer) {
+                        // Target is a fixed-size array, RHS is a local
+                        // alloc array: copy element-wise since C-style
+                        // arrays are not assignable in Metal.
+                        std::string rname = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
+                        auto sit = alloc_array_sizes.find(rname);
+                        int64_t sz = (sit != alloc_array_sizes.end())
+                            ? sit->second : 1;
+                        for (int64_t ei = 0; ei < sz; ei++) {
+                            visit_expr(a->m_target);
+                            src << "[" << ei << "] = ";
+                            visit_expr(a->m_value);
+                            src << "[" << ei << "];\n";
+                            if (ei + 1 < sz) src << get_indent();
+                        }
+                    } else {
+                        // RHS is a local alloc array but target is a scalar
+                        // (e.g., a(i) = alloc_var): index with [0]
+                        visit_expr(a->m_target);
+                        src << " = ";
+                        visit_expr(a->m_value);
+                        src << "[0];\n";
+                    }
                 } else if (deref_target && rhs_is_array_or_alloc) {
                     src << "*";
                     visit_expr(a->m_target);
