@@ -1484,14 +1484,6 @@ public:
                     arr_arg)->m_arg;
             }
 
-            ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
-            ASR::dimension_t *dims = nullptr;
-            int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
-            if (rank < 1 || !dims[0].m_start || !dims[0].m_length) {
-                new_body.push_back(al, stmt);
-                continue;
-            }
-
             ASR::ttype_t *elem_type = iaf->m_type;
 
             SymbolTable *var_scope = current_scope;
@@ -1534,31 +1526,84 @@ public:
                 ASR::make_Assignment_t(al, loc, res_var, zero,
                     nullptr, false, false)));
 
-            // For each dimension, create a nested loop
-            // For 1D: do k = lb, ub; res = res + a(k); end do
-            // For nD: nested loops over all dimensions
             std::vector<ASR::expr_t*> loop_vars;
-            for (int d = 0; d < rank; d++) {
-                loop_vars.push_back(make_var("__gpu_sum_k", int_type));
+            std::vector<ASR::expr_t*> loop_starts;
+            std::vector<ASR::expr_t*> loop_ends;
+            std::vector<ASR::expr_t*> loop_steps;
+            Vec<ASR::array_index_t> idx_args;
+            ASR::expr_t *base_arr = nullptr;
+
+            if (ASR::is_a<ASR::ArraySection_t>(*arr_arg)) {
+                // ArraySection (e.g., x(:,i)): loop over range dimensions,
+                // use scalar indices directly
+                ASR::ArraySection_t *section =
+                    ASR::down_cast<ASR::ArraySection_t>(arr_arg);
+                base_arr = section->m_v;
+                std::vector<size_t> range_dims;
+                for (size_t d = 0; d < section->n_args; d++) {
+                    if (section->m_args[d].m_left != nullptr) {
+                        range_dims.push_back(d);
+                    }
+                }
+                if (range_dims.empty()) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                    size_t d = range_dims[ri];
+                    loop_vars.push_back(make_var("__gpu_sum_k", int_type));
+                    loop_starts.push_back(section->m_args[d].m_left);
+                    loop_ends.push_back(section->m_args[d].m_right);
+                    loop_steps.push_back(section->m_args[d].m_step);
+                }
+                idx_args.reserve(al, section->n_args);
+                size_t lv_idx = 0;
+                for (size_t d = 0; d < section->n_args; d++) {
+                    ASR::array_index_t ai;
+                    ai.loc = loc;
+                    ai.m_left = nullptr;
+                    ai.m_step = nullptr;
+                    if (section->m_args[d].m_left != nullptr) {
+                        ai.m_right = loop_vars[lv_idx++];
+                    } else {
+                        ai.m_right = section->m_args[d].m_right;
+                    }
+                    idx_args.push_back(al, ai);
+                }
+            } else {
+                // Whole array: loop over all dimensions
+                ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
+                ASR::dimension_t *dims = nullptr;
+                int rank = ASRUtils::extract_dimensions_from_ttype(
+                    arr_type, dims);
+                if (rank < 1 || !dims[0].m_start || !dims[0].m_length) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                base_arr = arr_arg;
+                for (int d = 0; d < rank; d++) {
+                    loop_vars.push_back(make_var("__gpu_sum_k", int_type));
+                    loop_starts.push_back(dims[d].m_start);
+                    loop_ends.push_back(dims[d].m_length);
+                    loop_steps.push_back(nullptr);
+                }
+                idx_args.reserve(al, rank);
+                for (int d = 0; d < rank; d++) {
+                    ASR::array_index_t ai;
+                    ai.loc = loc;
+                    ai.m_left = nullptr;
+                    ai.m_right = loop_vars[d];
+                    ai.m_step = nullptr;
+                    idx_args.push_back(al, ai);
+                }
             }
 
-            // Build array element access: a(k1, k2, ...)
-            Vec<ASR::array_index_t> idx_args;
-            idx_args.reserve(al, rank);
-            for (int d = 0; d < rank; d++) {
-                ASR::array_index_t ai;
-                ai.loc = loc;
-                ai.m_left = nullptr;
-                ai.m_right = loop_vars[d];
-                ai.m_step = nullptr;
-                idx_args.push_back(al, ai);
-            }
             ASR::expr_t *arr_elem = ASRUtils::EXPR(
-                ASR::make_ArrayItem_t(al, loc, arr_arg,
+                ASR::make_ArrayItem_t(al, loc, base_arr,
                     idx_args.p, idx_args.n, elem_type,
                     ASR::arraystorageType::ColMajor, nullptr));
 
-            // res = res + a(k1, k2, ...)
+            // res = res + a(k1, k2, ...) or a(k1, i, ...)
             ASR::expr_t *add_expr;
             if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 add_expr = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
@@ -1574,21 +1619,20 @@ public:
                     nullptr, false, false));
 
             // Build nested loops from innermost to outermost
+            int n_loops = (int)loop_vars.size();
             Vec<ASR::stmt_t*> innermost_body;
             innermost_body.reserve(al, 1);
             innermost_body.push_back(al, accum_stmt);
 
             ASR::stmt_t *loop_nest = nullptr;
-            for (int d = rank - 1; d >= 0; d--) {
+            for (int d = n_loops - 1; d >= 0; d--) {
                 ASR::do_loop_head_t head;
                 head.loc = loc;
                 head.m_v = loop_vars[d];
-                head.m_start = dims[d].m_start;
-                head.m_end = dims[d].m_length;
-                head.m_increment = nullptr;
-                Vec<ASR::stmt_t*> &body = (d == rank - 1)
-                    ? innermost_body : *reinterpret_cast<Vec<ASR::stmt_t*>*>(0);
-                if (d == rank - 1) {
+                head.m_start = loop_starts[d];
+                head.m_end = loop_ends[d];
+                head.m_increment = loop_steps[d];
+                if (d == n_loops - 1) {
                     loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
                         nullptr, head, innermost_body.p, innermost_body.n,
                         nullptr, 0));
