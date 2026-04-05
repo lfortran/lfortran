@@ -237,12 +237,14 @@ if (WITH_LIRIC)
         message(FATAL_ERROR "Could not find libliric in ${LIRIC_DIR}")
     endif()
     message(STATUS "Using liric: ${LIRIC_LIB}")
-    message(STATUS "Liric includes: ${LIRIC_DIR}/include")
+    message(STATUS "Liric includes: ${LIRIC_DIR}/include/liric")
     add_library(p::llvm INTERFACE IMPORTED)
     set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-        "${LIRIC_DIR}/include")
+        "${LIRIC_DIR}/include/liric" "${LIRIC_DIR}/include")
     set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_OPTIONS
-        $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>)
+        $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>
+        $<$<COMPILE_LANGUAGE:CXX>:-include>
+        $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/libasr/codegen/liric_llvm_alias.h>)
     set(_lfortran_liric_link_libs "${LIRIC_LIB}" stdc++)
     if (LIRIC_REQUIRE_REAL_LLVM_LINK)
         find_package(LLVM REQUIRED)
