@@ -3481,6 +3481,9 @@ public:
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
+            // expr_holder may resolve to non-FunctionCall nodes (e.g.
+            // StructInstanceMember for type-bound member access in dimension
+            // expressions), so we guard instead of asserting FunctionCall_t.
             if (ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
                 ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
                 if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
