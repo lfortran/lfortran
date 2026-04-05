@@ -68,6 +68,11 @@ public:
     // to dereference the pointer when assigning to these params.
     std::set<std::string> alloc_pointer_params;
 
+    // True when emitting an inline function body (not a kernel body).
+    // Used to suppress array buffer indexing logic that only applies
+    // to kernel-level device buffer parameters.
+    bool in_inline_function = false;
+
     ASRToMetalVisitor(CompilerOptions &co_) : indent_level(0), co(co_) {}
 
     std::string get_indent() {
@@ -641,9 +646,11 @@ public:
                 emit_local_var_decl(var);
             }
         }
+        in_inline_function = true;
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
         }
+        in_inline_function = false;
         if (fn->m_return_var) {
             ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
@@ -1186,13 +1193,44 @@ public:
                         deref_target = true;
                     }
                 }
-                if (deref_target) {
+                // When assigning a whole allocatable/array value to an
+                // alloc_pointer_param (thread T*) or a device buffer,
+                // the RHS may be a data pointer (device T*). In Metal,
+                // copy the first element: *target = rhs[0] or
+                // target[0] = rhs.
+                ASR::ttype_t *rhs_type = ASRUtils::expr_type(a->m_value);
+                bool rhs_is_array_or_alloc =
+                    ASRUtils::is_allocatable(rhs_type)
+                    || is_array_type(rhs_type)
+                    || is_array_type(
+                        ASRUtils::type_get_past_allocatable(rhs_type));
+                ASR::ttype_t *tgt_type = ASRUtils::expr_type(a->m_target);
+                bool target_is_array_buffer =
+                    !deref_target
+                    && !in_inline_function
+                    && ASR::is_a<ASR::Var_t>(*a->m_target)
+                    && is_array_type(tgt_type)
+                    && !ASRUtils::is_allocatable(tgt_type);
+                if (deref_target && rhs_is_array_or_alloc) {
                     src << "*";
+                    visit_expr(a->m_target);
+                    src << " = ";
+                    visit_expr(a->m_value);
+                    src << "[0];\n";
+                } else if (target_is_array_buffer) {
+                    visit_expr(a->m_target);
+                    src << "[0] = ";
+                    visit_expr(a->m_value);
+                    src << ";\n";
+                } else {
+                    if (deref_target) {
+                        src << "*";
+                    }
+                    visit_expr(a->m_target);
+                    src << " = ";
+                    visit_expr(a->m_value);
+                    src << ";\n";
                 }
-                visit_expr(a->m_target);
-                src << " = ";
-                visit_expr(a->m_value);
-                src << ";\n";
                 break;
             }
             case ASR::stmtType::If: {
@@ -1360,6 +1398,8 @@ public:
                             src << ", ";
                             emit_array_size_expr(sc->m_args[i].m_value);
                         } else if (is_struct_type(arg_type)) {
+                            emit_struct_member_data_ptrs(
+                                sc->m_args[i].m_value);
                             emit_struct_member_sizes(
                                 sc->m_args[i].m_value);
                         }
@@ -1796,10 +1836,24 @@ public:
             case ASR::exprType::StructInstanceMember: {
                 ASR::StructInstanceMember_t *sm =
                     ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(sm->m_m);
+                std::string mem_name = ASRUtils::symbol_name(mem);
+                // For allocatable array members with a known data pointer
+                // parameter, emit the data pointer instead of struct.member
+                // (the struct field is just a descriptor, not the data).
+                if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                    std::string struct_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
+                    std::string key = struct_name + "." + mem_name;
+                    auto it = func_array_data_params.find(key);
+                    if (it != func_array_data_params.end()) {
+                        src << it->second;
+                        break;
+                    }
+                }
                 visit_expr(sm->m_v);
                 src << ".";
-                ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(sm->m_m);
-                src << ASRUtils::symbol_name(mem);
+                src << mem_name;
                 break;
             }
             case ASR::exprType::ArrayPhysicalCast: {
