@@ -68,6 +68,11 @@ public:
     // to dereference the pointer when assigning to these params.
     std::set<std::string> alloc_pointer_params;
 
+    // Tracks array parameters in the current inline function that are
+    // emitted as thread pointers (thread T*). Used by the Assignment
+    // handler to emit element-by-element copy for whole-array assignments.
+    std::set<std::string> func_array_params;
+
     // Tracks local Allocatable(Array) variables in the current kernel
     // that have been declared as fixed-size arrays. Used to:
     // - skip '&' prefix in SubroutineCall (array decays to pointer)
@@ -744,6 +749,7 @@ public:
     void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
         func_array_size_params.clear();
         func_array_data_params.clear();
+        func_array_params.clear();
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -828,10 +834,19 @@ public:
             first = false;
             if (is_array_type(arg->m_type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg->m_type);
-                src << "device " << metal_type(arr->m_type) << "* " << arg->m_name;
+                // FixedSizeArray out params (from subroutine_from_function)
+                // receive local thread-space temporaries; DescriptorArray
+                // params receive device buffer pointers from the kernel.
+                bool use_thread = (arr->m_physical_type
+                    == ASR::array_physical_typeType::FixedSizeArray);
+                src << (use_thread ? "thread " : "device ")
+                    << metal_type(arr->m_type) << "* " << arg->m_name;
                 std::string size_name = std::string("__size_") + arg->m_name;
                 src << ", int " << size_name;
                 func_array_size_params[std::string(arg->m_name)] = size_name;
+                if (use_thread) {
+                    func_array_params.insert(std::string(arg->m_name));
+                }
             } else if (ASRUtils::is_allocatable(arg->m_type)) {
                 // Allocatable out parameter (from subroutine_from_function):
                 // pass as thread-space pointer on Metal so both whole-array
@@ -903,6 +918,7 @@ public:
         func_array_size_params.clear();
         func_array_data_params.clear();
         alloc_pointer_params.clear();
+        func_array_params.clear();
     }
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
@@ -1434,6 +1450,7 @@ public:
                 // already work with pointers.
                 bool deref_target = false;
                 bool target_is_local_alloc = false;
+                bool target_is_func_array_param = false;
                 if (ASR::is_a<ASR::Var_t>(*a->m_target)) {
                     std::string tname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
@@ -1442,6 +1459,9 @@ public:
                     }
                     if (local_alloc_arrays.count(tname)) {
                         target_is_local_alloc = true;
+                    }
+                    if (func_array_params.count(tname)) {
+                        target_is_func_array_param = true;
                     }
                 }
                 // When assigning a whole allocatable/array value to an
@@ -1514,6 +1534,21 @@ public:
                     src << " = ";
                     visit_expr(a->m_value);
                     src << "[0];\n";
+                } else if (target_is_func_array_param && rhs_is_array_or_alloc) {
+                    // Target is an array parameter (thread T*) and RHS is
+                    // a fixed-size array (e.g., struct member). Copy
+                    // element-by-element using the size parameter.
+                    std::string tname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+                    auto sit = func_array_size_params.find(tname);
+                    std::string size_var = (sit != func_array_size_params.end())
+                        ? sit->second : "1";
+                    src << "for (int __copy_i = 0; __copy_i < "
+                        << size_var << "; __copy_i++) ";
+                    visit_expr(a->m_target);
+                    src << "[__copy_i] = ";
+                    visit_expr(a->m_value);
+                    src << "[__copy_i];\n";
                 } else if (target_is_array_buffer) {
                     visit_expr(a->m_target);
                     src << "[0] = ";
