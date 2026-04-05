@@ -82,7 +82,7 @@ define i32 @main(i32 %0, i8** %1) {
   %36 = load %string_descriptor, %string_descriptor* %surname, align 1
   %37 = alloca %string_descriptor, align 8
   store %string_descriptor %36, %string_descriptor* %37, align 1
-  %38 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @serialization_info, i32 0, i32 0), i64* %31, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.8, %string_descriptor* %33, %string_descriptor* %35, %string_descriptor* %37)
+  %38 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @serialization_info, i32 0, i32 0), i64* %31, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.8, %string_descriptor* %33, %string_descriptor* %35, %string_descriptor* %37)
   %39 = load i64, i64* %31, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -148,7 +148,7 @@ declare i8* @_lfortran_get_default_allocator()
 
 declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 

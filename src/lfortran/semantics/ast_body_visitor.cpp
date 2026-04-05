@@ -359,7 +359,7 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr,
-            *a_decimal = nullptr;
+            *a_decimal = nullptr, *a_round = nullptr;
         int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -832,6 +832,27 @@ public:
                     throw SemanticAbort();
                 }
 
+            } else if (m_arg_str == std::string("round")) {
+                if (a_round != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `round` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_round = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_round_type = ASRUtils::expr_type(a_round);
+                if (!ASRUtils::is_character(*a_round_type)) {
+                    diag.add(Diagnostic(
+                        "`round` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
             }
             else {
                 const std::unordered_set<std::string> unsupported_args {"fileopt", "pad"};
@@ -883,7 +904,7 @@ public:
             a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round);
         tmp_vec.push_back(tmp);
         if (err_label != -1) {
             emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);
@@ -2457,11 +2478,11 @@ public:
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31},
             {"iolength", 32}, {"sign", 33}, {"encoding", 34},
-            {"stream", 35}, {"iomsg", 36}};
+            {"stream", 35}, {"iomsg", 36}, {"round", 37}};
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 36, args, 37, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 37, args, 38, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -2471,7 +2492,7 @@ public:
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
         ASR::expr_t *carriagecontrol = args[28], *size = args[29], *pos = args[30], *decimal = args[31];
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
-        ASR::expr_t *stream = args[35], *iomsg = args[36];
+        ASR::expr_t *stream = args[35], *iomsg = args[36], *round = args[37];
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && i!=32 && args[i] ) {
@@ -2511,7 +2532,7 @@ public:
                                   pad, flen, blocksize, convert,
                                   carriagecontrol, size, pos, iolength,
                                   iolength_args.p, iolength_args.n, decimal,
-                                  sign, encoding, stream, iomsg);
+                                  sign, encoding, stream, iomsg, round);
     }
 
     void visit_Flush(const AST::Flush_t& x) {

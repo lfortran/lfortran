@@ -2717,13 +2717,13 @@ void free_serialization_info(Serialization_Info* s_info){
     va_end(*s_info->current_arg_info.args);
 }
 
-FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode);
+FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode);
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
-    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, ...)
+    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, ...)
 {
     va_list args;
-    va_start(args, sign_mode);
+    va_start(args, round_mode);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
     result[0] = '\0';
     (*result_size) = 0;
@@ -2788,12 +2788,22 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     // Initialize is_SP_specifier based on unit 6's sign mode
     // Unit 6 is stdout, which is what PRINT uses
     int32_t unit_6_sign_mode;
-    get_file_pointer_from_unit(6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &unit_6_sign_mode, NULL, NULL);
+    get_file_pointer_from_unit(6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &unit_6_sign_mode, NULL, NULL, NULL);
     bool is_SP_specifier = (sign_mode == 1 || unit_6_sign_mode == 1);  // 1 = sign='plus'
     int item_start = 0;
     bool array = false;
     bool BreakWhileLoop= false;
-    char rounding_mode = 'n';  // 'n'=nearest, 'u'=up, 'd'=down, 'z'=zero
+    // Initialize rounding mode from the unit's round specifier
+    // 0=processor_defined, 1=up, 2=down, 3=zero, 4=nearest, 5=compatible
+    char rounding_mode;
+    switch (round_mode) {
+        case 1: rounding_mode = 'u'; break;  // UP
+        case 2: rounding_mode = 'd'; break;  // DOWN
+        case 3: rounding_mode = 'z'; break;  // ZERO
+        case 4: rounding_mode = 'n'; break;  // NEAREST
+        case 5: rounding_mode = 'n'; break;  // COMPATIBLE (treated as nearest)
+        default: rounding_mode = 'n'; break; // PROCESSOR_DEFINED -> nearest
+    }
     int scale = 0;
     while (1) {
         bool consumed_data_item_in_cycle = false;
@@ -5129,6 +5139,7 @@ struct UNIT_FILE {
     int sign_mode;  // 0=processor_defined, 1=plus, 2=suppress
     int decimal_mode; // 0=point, 1=comma
     int encoding; // 0=unknown, 1=UTF-8, 2=default
+    int round_mode; // 0=processor_defined, 1=up, 2=down, 3=zero, 4=nearest, 5=compatible
 };
 
 int32_t last_index_used = -1;
@@ -5167,6 +5178,7 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[0].sign_mode = 0;  // processor_defined
     unit_to_file[0].decimal_mode = 0; // point
     unit_to_file[0].encoding = 0; // unknown
+    unit_to_file[0].round_mode = 0; // processor_defined
 
     // Unit 6: stdout (write-only, formatted, sequential)
     unit_to_file[1].unit = 6;
@@ -5181,6 +5193,7 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[1].sign_mode = 0;  // processor_defined
     unit_to_file[1].decimal_mode = 0; // point
     unit_to_file[1].encoding = 0; // unknown
+    unit_to_file[1].round_mode = 0; // processor_defined
 
     // Unit 0: stderr (write-only, formatted, sequential)
     unit_to_file[2].unit = 0;
@@ -5195,6 +5208,7 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[2].sign_mode = 0;  // processor_defined
     unit_to_file[2].decimal_mode = 0; // point
     unit_to_file[2].encoding = 0; // unknown
+    unit_to_file[2].round_mode = 0; // processor_defined
 
     last_index_used = 2;
 }
@@ -5212,7 +5226,7 @@ static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
     return count;
 }
 
-void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding) {
+void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding, int round_mode) {
     _lfortran_init_standard_units();
     seq_char_state_reset(unit_num);
     for( int i = 0; i <= last_index_used; i++ ) {
@@ -5232,6 +5246,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].sign_mode = sign_mode;
             unit_to_file[i].decimal_mode = decimal_mode;
             unit_to_file[i].encoding = encoding;
+            unit_to_file[i].round_mode = round_mode;
             return;  // Don't add duplicate entry
         }
     }
@@ -5254,9 +5269,10 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].sign_mode = sign_mode;
     unit_to_file[last_index_used].decimal_mode = decimal_mode;
     unit_to_file[last_index_used].encoding = encoding;
+    unit_to_file[last_index_used].round_mode = round_mode;
 }
 
-FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode) {
+FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode) {
     _lfortran_init_standard_units();
     // Initialize all output params to safe defaults for unconnected units
     if (unit_file_bin) *unit_file_bin = false;
@@ -5269,6 +5285,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
     if (sign_mode) *sign_mode = 0;
     if (decimal_mode) *decimal_mode = 0;
     if (encoding_mode) *encoding_mode = 0;
+    if (round_mode) *round_mode = 0;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             if (unit_file_bin) *unit_file_bin = unit_to_file[i].unit_file_bin;
@@ -5281,6 +5298,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
             if (sign_mode) *sign_mode = unit_to_file[i].sign_mode;
             if (decimal_mode) *decimal_mode = unit_to_file[i].decimal_mode;
             if (encoding_mode) *encoding_mode = unit_to_file[i].encoding;
+            if (round_mode) *round_mode = unit_to_file[i].round_mode;
             return unit_to_file[i].filep;
         }
     }
@@ -5456,7 +5474,9 @@ _lfortran_open(int32_t unit_num,
                char* sign,
                int64_t sign_len,
                char* decimal,
-               int64_t decimal_len)
+               int64_t decimal_len,
+               char* round,
+               int64_t round_len)
 {
     if (iostat != NULL) {
         *iostat = 0;
@@ -5563,8 +5583,15 @@ _lfortran_open(int32_t unit_num,
         decimal_len = 5;
         ini_decimal = false;
     }
+
+    bool ini_round = true;
+    if (round == NULL) {
+        round = "processor_defined";
+        round_len = 17;
+        ini_round = false;
+    }
     bool file_exists[1] = { false };
-    FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     trim_trailing_spaces(&f_name, &f_name_len, ini_file);
     trim_trailing_spaces(&status, &status_len, ini_status);
@@ -5590,7 +5617,7 @@ _lfortran_open(int32_t unit_num,
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0,
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
         NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
@@ -5751,6 +5778,27 @@ _lfortran_open(int32_t unit_num,
         decimal_mode = 1;
     }
 
+    // Determine round mode: 0=processor_defined, 1=up, 2=down, 3=zero, 4=nearest, 5=compatible
+    trim_trailing_spaces(&round, &round_len, ini_round);
+    char* round_c = to_c_string((const fchar*)round, round_len);
+    int round_mode_val = 0;  // default: processor_defined
+    if (streql(round_c, "up")) {
+        round_mode_val = 1;
+    } else if (streql(round_c, "down")) {
+        round_mode_val = 2;
+    } else if (streql(round_c, "zero")) {
+        round_mode_val = 3;
+    } else if (streql(round_c, "nearest")) {
+        round_mode_val = 4;
+    } else if (streql(round_c, "compatible")) {
+        round_mode_val = 5;
+    } else if (!streql(round_c, "processor_defined")) {
+        fprintf(stderr,
+            "Warning: ROUND='%s' is not recognized, treated as PROCESSOR_DEFINED\n",
+            round_c
+        );
+    }
+
     // Determine sign mode: 0=processor_defined, 1=plus, 2=suppress
     int sign_mode = 0;  // default
     if (streql(sign_c, "plus")) {
@@ -5776,7 +5824,7 @@ _lfortran_open(int32_t unit_num,
         if (already_open) {
             // Unit is already open, but we still need to update its properties like sign_mode
             // Pass NULL for filename to preserve the existing filename
-            store_unit_file(unit_num, NULL, already_open, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, streql(decimal_c, ",") ? 1 : decimal_mode, encoding_mode);
+            store_unit_file(unit_num, NULL, already_open, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, streql(decimal_c, ",") ? 1 : decimal_mode, encoding_mode, round_mode_val);
             internal_free(f_name_c);
             internal_free(status_c);
             internal_free(form_c);
@@ -5787,6 +5835,7 @@ _lfortran_open(int32_t unit_num,
             internal_free(encoding_c);
             internal_free(sign_c);
             internal_free(decimal_c);
+            internal_free(round_c);
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
@@ -5804,7 +5853,7 @@ _lfortran_open(int32_t unit_num,
             internal_free(position_c);
         }
         // f_name_c is stored in the unit table, do not free it
-        store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, decimal_mode, encoding_mode);
+        store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, decimal_mode, encoding_mode, round_mode_val);
         internal_free(status_c);
         internal_free(form_c);
         internal_free(access_c);
@@ -5814,6 +5863,7 @@ _lfortran_open(int32_t unit_num,
         internal_free(encoding_c);
         internal_free(sign_c);
         internal_free(decimal_c);
+        internal_free(round_c);
         return (int64_t) fd;
     }
     internal_free(f_name_c);
@@ -5826,6 +5876,7 @@ _lfortran_open(int32_t unit_num,
     internal_free(encoding_c);
     internal_free(sign_c);
     internal_free(decimal_c);
+    internal_free(round_c);
     return 0;
 }
 
@@ -5840,7 +5891,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
         }
     } else {
         bool unit_file_bin;
-        FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if( filep == NULL ) {
             if ( unit_num == 6 ) {
                 // special case: flush OUTPUT_UNIT
@@ -5896,6 +5947,16 @@ LFORTRAN_API int32_t _lfortran_get_sign_mode(int32_t unit_num) {
     return 0; // processor_defined
 }
 
+LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num) {
+    _lfortran_init_standard_units();
+    for( int i = 0; i <= last_index_used; i++ ) {
+        if( unit_to_file[i].unit == unit_num && unit_to_file[i].filep != NULL ) {
+            return unit_to_file[i].round_mode;
+        }
+    }
+    return 0; // processor_defined
+}
+
 // // int _lfortran_current_decimal_mode_global = 0; (removed)
 
 // // Local decimal mode handled via explicit arguments now. (removed)
@@ -5919,7 +5980,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *sign, int64_t sign_len,
                                     char *encoding, int64_t encoding_len,
                                     char *stream, int64_t stream_len,
-                                    char *iomsg, int64_t iomsg_len) {
+                                    char *iomsg, int64_t iomsg_len,
+                                    char *round, int64_t round_len) {
     if (f_name_data && unit_num != -1) {
         if (iostat != NULL) {
             *iostat = 1;
@@ -5942,6 +6004,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int sign_mode;
         int decimal_mode;
         int encoding_mode;
+        int round_mode_val;
         int32_t unit_recl = 0;
         char *c_f_name_data = to_c_string(f_name_data, f_name_len);
         if (named != NULL) {
@@ -5976,7 +6039,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *number = u_num;
         }
         
-        fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode);
+        fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode, &round_mode_val);
         if (write != NULL) {
             if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
@@ -6129,6 +6192,25 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
             }
         }
+        if (round != NULL) {
+            if (unit_file_bin || u_num == -1) {
+                _lfortran_copy_str_and_pad(round, round_len, "UNDEFINED", 9);
+            } else {
+                if (round_mode_val == 1) {
+                    _lfortran_copy_str_and_pad(round, round_len, "UP", 2);
+                } else if (round_mode_val == 2) {
+                    _lfortran_copy_str_and_pad(round, round_len, "DOWN", 4);
+                } else if (round_mode_val == 3) {
+                    _lfortran_copy_str_and_pad(round, round_len, "ZERO", 4);
+                } else if (round_mode_val == 4) {
+                    _lfortran_copy_str_and_pad(round, round_len, "NEAREST", 7);
+                } else if (round_mode_val == 5) {
+                    _lfortran_copy_str_and_pad(round, round_len, "COMPATIBLE", 10);
+                } else {
+                    _lfortran_copy_str_and_pad(round, round_len, "PROCESSOR_DEFINED", 17);
+                }
+            }
+        }
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
@@ -6144,8 +6226,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int decimal_mode;
         int sign_mode;
         int encoding_mode;
+        int round_mode_val;
         int32_t unit_recl = 0;
-        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode);
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode, &round_mode_val);
         if (get_file_name_from_unit(unit_num, &unit_file_bin) != NULL) {
             *exists = true;
         } else {
@@ -6323,6 +6406,25 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
             }
         }
+        if (round != NULL) {
+            if (unit_file_bin || fp == NULL) {
+                _lfortran_copy_str_and_pad(round, round_len, "UNDEFINED", 9);
+            } else {
+                if (round_mode_val == 1) {
+                    _lfortran_copy_str_and_pad(round, round_len, "UP", 2);
+                } else if (round_mode_val == 2) {
+                    _lfortran_copy_str_and_pad(round, round_len, "DOWN", 4);
+                } else if (round_mode_val == 3) {
+                    _lfortran_copy_str_and_pad(round, round_len, "ZERO", 4);
+                } else if (round_mode_val == 4) {
+                    _lfortran_copy_str_and_pad(round, round_len, "NEAREST", 7);
+                } else if (round_mode_val == 5) {
+                    _lfortran_copy_str_and_pad(round, round_len, "COMPATIBLE", 10);
+                } else {
+                    _lfortran_copy_str_and_pad(round, round_len, "PROCESSOR_DEFINED", 17);
+                }
+            }
+        }
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
@@ -6333,7 +6435,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
         printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
         exit(1);
@@ -6345,7 +6447,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
         printf("Specified UNIT %d in ENDFILE is not created or connected.\n", unit_num);
         exit(1);
@@ -6360,7 +6462,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
-    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
@@ -6403,7 +6505,7 @@ LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *
 
     FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, 
                                           &read_access, &write_access, &delim, 
-                                          &blank_zero, &unit_recl, NULL, NULL, NULL);
+                                          &blank_zero, &unit_recl, NULL, NULL, NULL, NULL);
     if (fp == NULL) {
         if (iostat != NULL) {
             *iostat = 5001; // unit not connected
@@ -6542,7 +6644,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -6613,7 +6715,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "Internal Compiler Error: No file found with given unit number %d.\n", unit_num);
@@ -6698,7 +6800,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -6780,7 +6882,7 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -6892,7 +6994,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -6964,7 +7066,7 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7043,7 +7145,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7115,7 +7217,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7186,7 +7288,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7252,7 +7354,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
     bool read_access, write_access;
     int delim_value;
     FILE *filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-                                             &access_id, &read_access, &write_access, &delim_value, NULL, NULL, NULL, NULL, NULL);
+                                             &access_id, &read_access, &write_access, &delim_value, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7556,7 +7658,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7630,7 +7732,7 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7703,7 +7805,7 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7784,7 +7886,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7879,7 +7981,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7977,7 +8079,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8050,7 +8152,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8109,7 +8211,7 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
         filep = stdin;
         unit_file_bin = false;
     } else {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if (!filep) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
@@ -8163,7 +8265,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8882,7 +8984,7 @@ LFORTRAN_API void _lfortran_formatted_read(
         int32_t unit_recl = 0;
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-            &access_id, NULL, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, NULL);
+            &access_id, NULL, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, NULL, NULL);
         inputSource.access_id = access_id;
         inputSource.record_len = unit_recl;
         if (!inputSource.file) {
@@ -9192,7 +9294,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
 
     bool unit_file_bin;
     int access_id;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         fprintf(stderr, "No file found with given unit\n");
         exit(1);
@@ -9259,7 +9361,7 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
         return;
     }
 
-    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "No file found with given unit number %d.\n", unit_num);
@@ -9308,7 +9410,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     bool read_access, write_access;
     int delim;
     int32_t unit_recl = 0;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, &unit_recl, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, &unit_recl, NULL, NULL, NULL, NULL);
 
     // Check if write is allowed (action='read' sets write_access=false)
     // Only check if unit was found in table (filep != NULL); unconnected units fall through to stdout
@@ -10160,7 +10262,7 @@ LFORTRAN_API void _lpython_close(int64_t fd)
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     if (iostat) {
         *iostat = 0;
@@ -10978,7 +11080,7 @@ LFORTRAN_API void _lfortran_namelist_write(
     bool read_access, write_access;
     int delim;
     int decimal_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, NULL, NULL, &decimal_mode, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, NULL, NULL, &decimal_mode, NULL, NULL);
 
     if (filep && !write_access) {
         if (iostat) {
@@ -11756,7 +11858,7 @@ LFORTRAN_API void _lfortran_namelist_read(
     int access_id;
     int decimal_mode;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, &decimal_mode, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, &decimal_mode, NULL, NULL);
 
     if (filep && !read_access) {
         if (iostat) {
