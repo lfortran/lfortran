@@ -228,13 +228,21 @@ endif()
 if (WITH_LIRIC)
     add_compile_definitions(WITH_LIRIC)
     if ("${LIRIC_DIR}" STREQUAL "")
-        message(FATAL_ERROR "WITH_LIRIC requires LIRIC_DIR to be set")
-    endif()
-    find_library(LIRIC_LIB liric
-        PATHS "${LIRIC_DIR}/build" "${LIRIC_DIR}/lib" "${LIRIC_DIR}"
-        NO_DEFAULT_PATH)
-    if (NOT LIRIC_LIB)
-        message(FATAL_ERROR "Could not find libliric in ${LIRIC_DIR}")
+        include(FetchContent)
+        FetchContent_Declare(liric
+            GIT_REPOSITORY https://github.com/krystophny/liric.git
+            GIT_TAG main)
+        FetchContent_MakeAvailable(liric)
+        set(LIRIC_DIR "${liric_SOURCE_DIR}")
+        set(LIRIC_LIB liric)
+        message(STATUS "Fetched liric: ${LIRIC_DIR}")
+    else()
+        find_library(LIRIC_LIB liric
+            PATHS "${LIRIC_DIR}/build" "${LIRIC_DIR}/lib" "${LIRIC_DIR}"
+            NO_DEFAULT_PATH)
+        if (NOT LIRIC_LIB)
+            message(FATAL_ERROR "Could not find libliric in ${LIRIC_DIR}")
+        endif()
     endif()
     message(STATUS "Using liric: ${LIRIC_LIB}")
     message(STATUS "Liric includes: ${LIRIC_DIR}/include/liric")
