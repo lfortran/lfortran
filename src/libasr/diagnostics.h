@@ -5,6 +5,10 @@
 #include <libasr/location.h>
 #include <libasr/stacktrace.h>
 
+#include <string>
+#include <vector>
+#include <set>
+
 namespace LCompilers {
 
 struct LocationManager;
@@ -74,6 +78,30 @@ enum Stage {
 };
 
 /*
+ * Unique identifiers for warnings so they can be toggled via CLI
+ */
+enum class WarningID {
+    UnusedVariable,
+    ImplicitInterface,
+    NamingConvention,
+    RecursiveFunctionCall,
+    Other,
+    None // Default for Errors and non-configurable messages
+};
+
+// Helper to convert the ID to a string flag name
+inline std::string warn_id_to_string(WarningID id) {
+    switch (id) {
+        case WarningID::UnusedVariable:  return "unused-variable";
+        case WarningID::ImplicitInterface: return "implicit-interface";
+        case WarningID::NamingConvention:  return "naming-convention";
+        case WarningID::RecursiveFunctionCall:  return "recursive-function-call";
+        case WarningID::Other:             return "other";
+        default:                           return "";
+    }
+}
+
+/*
  * A diagnostic message has a level and message and labels.
  *
  * Errors have zero or more primary and zero or more secondary labels.
@@ -98,6 +126,7 @@ enum Stage {
 struct Diagnostic {
     Level level;
     Stage stage;
+    WarningID warn_id = WarningID::None;
     std::string message;
     std::vector<Label> labels;
     std::vector<Diagnostic> children;
@@ -108,12 +137,14 @@ struct Diagnostic {
 
     Diagnostic(const std::string &message, const Level &level,
         const Stage &stage,
-        const std::vector<Label> &labels
-        ) : level{level}, stage{stage}, message{message}, labels{labels} {}
+        const std::vector<Label> &labels,
+        WarningID warn_id = WarningID::None
+        ) : level{level}, stage{stage}, warn_id{warn_id}, message{message}, labels{labels} {}
 };
 
 struct Diagnostics {
     std::vector<Diagnostic> diagnostics;
+    std::set<WarningID> disabled_warnings;
 
     std::string render(LocationManager &lm, const CompilerOptions &compiler_options);
 
@@ -126,6 +157,10 @@ struct Diagnostics {
     bool has_style() const;
 
     void add(const Diagnostic &d) {
+        if ((d.level == Level::Warning || d.level == Level::Style) &&
+        disabled_warnings.find(d.warn_id) != disabled_warnings.end()) {
+            return;
+        }
         diagnostics.push_back(d);
     }
 
@@ -133,17 +168,18 @@ struct Diagnostics {
             const std::vector<Location> &locations,
             const std::string &error_label,
             const Level &level,
-            const Stage &stage
+            const Stage &stage,
+             WarningID warn_id = WarningID::None
             ) {
-        diagnostics.push_back(
-            Diagnostic(message, level, stage, {Label(error_label, locations)})
+        add(
+            Diagnostic(message, level, stage, {Label(error_label, locations)}, warn_id)
         );
     }
 
     void semantic_warning_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Warning, Stage::Semantic);
+            Level::Warning, Stage::Semantic, warn_id);
     }
 
     void semantic_error_label(const std::string &message,
@@ -153,21 +189,21 @@ struct Diagnostics {
     }
 
     void tokenizer_warning_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Warning, Stage::Tokenizer);
+            Level::Warning, Stage::Tokenizer, warn_id);
     }
 
     void parser_warning_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Warning, Stage::Parser);
+            Level::Warning, Stage::Parser, warn_id);
     }
 
     void codegen_warning_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Warning, Stage::CodeGen);
+            Level::Warning, Stage::CodeGen, warn_id);
     }
 
     void codegen_error_label(const std::string &message,
@@ -177,15 +213,15 @@ struct Diagnostics {
     }
 
     void tokenizer_style_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Style, Stage::Tokenizer);
+            Level::Style, Stage::Tokenizer, warn_id);
     }
 
     void parser_style_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
+            const std::vector<Location> &locations, const std::string &error_label, WarningID warn_id = WarningID::None) {
         message_label(message, locations, error_label,
-            Level::Style, Stage::Parser);
+            Level::Style, Stage::Parser, warn_id);
     }
 
     void semantic_style_label(const std::string &message,

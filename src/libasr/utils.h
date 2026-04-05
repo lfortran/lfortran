@@ -5,6 +5,8 @@
 #include <vector>
 #include <filesystem>
 #include <libasr/containers.h>
+#include <set>
+#include <libasr/diagnostics.h>
 
 namespace LCompilers {
 
@@ -124,6 +126,7 @@ struct CompilerOptions {
     bool generate_code_for_global_procedures = false;
     bool show_warnings = true;
     bool show_style_suggestions = true;
+    std::set<LCompilers::diag::WarningID> disabled_warnings;
     bool logical_casting = false;
     bool show_error_banner = true;
     bool bounds_checking = true;

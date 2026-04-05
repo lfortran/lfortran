@@ -582,6 +582,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     std::vector<LCompilers::LFortran::YYSTYPE> stypes;
     std::vector<LCompilers::Location> locations;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::LocationManager lm;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -626,6 +627,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -656,6 +658,7 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -722,6 +725,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -777,6 +781,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -803,6 +808,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -852,6 +858,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -877,6 +884,7 @@ int emit_c(const std::string &infile,
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -912,6 +920,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -935,6 +944,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -959,6 +969,7 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -1006,6 +1017,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;
+            diagnostics.disabled_warnings = compiler_options.disabled_warnings;
             LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
 
             std::string modfile_binary = LCompilers::save_modfile(*tu, lm);
@@ -1061,6 +1073,7 @@ int handle_mlir(const std::string &infile,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1112,6 +1125,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<std::string> llvm
         = fe.get_llvm(input, lm, pass_manager, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1133,6 +1147,7 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     // TODO: Remove this and accept pass manager in emit_asm
     LCompilers::PassManager lpm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -1187,6 +1202,7 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.intrinsic_module_name_mangling = true;
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
@@ -1343,6 +1359,7 @@ int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -1371,6 +1388,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
     std::string input;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::FortranEvaluator fe(compiler_options);
     Allocator al(64*1024*1024); // Allocate 64 MB
     LCompilers::LFortran::AST::TranslationUnit_t* ast;
@@ -1472,6 +1490,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
     std::string input;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::FortranEvaluator fe(compiler_options);
     Allocator al(64*1024*1024); // Allocate 64 MB
     LCompilers::LFortran::AST::TranslationUnit_t* ast;
@@ -1582,6 +1601,7 @@ int compile_to_object_file_cpp(const std::string &infile,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1693,6 +1713,7 @@ int compile_to_object_file_c(const std::string &infile,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1786,6 +1807,7 @@ int compile_to_binary_fortran(const std::string &infile,
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -2242,6 +2264,7 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    diagnostics.disabled_warnings = compiler_options.disabled_warnings;
     LCompilers::Result<std::string> res = cpp.run(input, lm, cpp.macro_definitions, diagnostics);
     std::string s;
     if (res.ok) {
@@ -2271,6 +2294,7 @@ namespace wasm {
                         LCompilers::FortranEvaluator fe(compiler_options); \
                         LCompilers::LocationManager lm; \
                         LCompilers::diag::Diagnostics diagnostics; \
+                        diagnostics.disabled_warnings = compiler_options.disabled_warnings; \
                         { \
                             LCompilers::LocationManager::FileLocations fl; \
                             fl.in_filename = "input"; \
@@ -2418,6 +2442,28 @@ int main_app(int argc, char *argv[]) {
         std::string option = std::string(argv[i]);
         if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
             lcompilers_commandline_options += option + " ";
+        }
+    }
+
+    // --- Parse -Wno- flags into CompilerOptions ---
+    for (int i = 1; i < argc; i++) {
+        std::string arg = std::string(argv[i]);
+        if (arg.size() > 5 && arg.substr(0, 5) == "-Wno-") {
+            std::string warn_name = arg.substr(5);
+            
+            if (warn_name == "unused-variable") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::UnusedVariable);
+            } else if (warn_name == "implicit-interface") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::ImplicitInterface);
+            } else if (warn_name == "naming-convention") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::NamingConvention);
+            } else if (warn_name == "recursive-function-call") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::RecursiveFunctionCall);
+            } else if (warn_name == "other") {
+                compiler_options.disabled_warnings.insert(LCompilers::diag::WarningID::Other);
+            } else {
+                std::cerr << "lfortran: warning: unknown -Wno-" << warn_name << std::endl;
+            }
         }
     }
 
