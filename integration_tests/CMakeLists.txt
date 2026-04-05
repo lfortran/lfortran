@@ -1921,6 +1921,7 @@ RUN(NAME select_type_45 LABELS gfortran llvm)
 RUN(NAME select_type_46 LABELS gfortran llvm)
 RUN(NAME select_type_47 LABELS gfortran llvm)
 RUN(NAME select_type_48 LABELS gfortran llvm)
+RUN(NAME select_type_49 LABELS gfortran llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2327,6 +2328,8 @@ RUN(NAME derived_types_134 LABELS gfortran llvm EXTRAFILES derived_types_134_mod
 RUN(NAME derived_types_135 LABELS gfortran llvm)
 RUN(NAME derived_types_136 LABELS gfortran llvm)
 RUN(NAME derived_types_137 LABELS gfortran llvm)
+RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
