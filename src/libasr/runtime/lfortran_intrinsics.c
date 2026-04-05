@@ -8607,16 +8607,31 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         int32_t n_elems  = va_arg(*args, int32_t);
         int32_t stride   = va_arg(*args, int32_t);
         (*arg_idx)++;
-        size_t esz = (elem_tc == 5) ? sizeof(double) : sizeof(float);
+        bool is_complex = (elem_tc == 6 || elem_tc == 7);
+        int32_t component_tc = elem_tc;
+        if (component_tc == 6) component_tc = 4;
+        if (component_tc == 7) component_tc = 5;
+        size_t component_sz = (component_tc == 5) ? sizeof(double) : sizeof(float);
+        size_t elem_sz = is_complex ? (2 * component_sz) : component_sz;
         int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
         int read_width = (width > 0) ? width : 15;
         for (int32_t i = 0; i < n_elems; i++) {
-            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * esz;
+            void* elem_ptr = (char*)data_ptr + (size_t)i * (size_t)stride * elem_sz;
             char* buffer = NULL; int field_len = 0;
             if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
                             consumed_newline, &buffer, &field_len)) break;
-            parse_real_from_buffer(buffer, field_len, elem_ptr, elem_tc, scale_factor, decimal_places);
+            parse_real_from_buffer(buffer, field_len, elem_ptr, component_tc, scale_factor, decimal_places);
             internal_free(buffer);
+
+            if (is_complex) {
+                void* imag_ptr = (char*)elem_ptr + component_sz;
+                buffer = NULL;
+                field_len = 0;
+                if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                                consumed_newline, &buffer, &field_len)) break;
+                parse_real_from_buffer(buffer, field_len, imag_ptr, component_tc, scale_factor, decimal_places);
+                internal_free(buffer);
+            }
         }
         return true;
     }
