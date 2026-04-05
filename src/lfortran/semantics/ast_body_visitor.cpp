@@ -3727,7 +3727,7 @@ public:
         }
 
         if (!array_var_name.empty()) {
-            assumed_rank_arrays.erase(array_var_name);
+            get_assumed_rank_arrays().erase(array_var_name);
         }
 
         tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 

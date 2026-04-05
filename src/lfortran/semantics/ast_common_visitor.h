@@ -14530,12 +14530,12 @@ public:
             return nullptr;
         }
         std::string specific_var_name = var_name;
-        bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
+        bool is_specific_type_intrinsic = get_intrinsic_mapping().count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
-                var_name = intrinsic_mapping.at(var_name).first;
+                var_name = get_intrinsic_mapping().at(var_name).first;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {

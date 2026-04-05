@@ -276,6 +276,13 @@ if (WITH_LIRIC)
     endif()
     set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
         ${_lfortran_liric_link_libs})
+    # liric bundles openlibm which may contain non-PIC objects (R_X86_64_32S)
+    # from hand-written assembly; disable PIE for the final executables.
+    if (UNIX AND NOT APPLE)
+        add_link_options(
+            $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-no-pie>
+            -Wl,--allow-multiple-definition)
+    endif()
     set(HAVE_LFORTRAN_LLVM yes)
     set(WITH_LLVM yes)
 elseif (WITH_LLVM)
