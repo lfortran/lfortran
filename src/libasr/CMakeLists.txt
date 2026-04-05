@@ -147,6 +147,26 @@ if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
     target_link_libraries(lfortran_utils p::llvm)
 endif()
+if (WITH_LIRIC)
+    # Second compilation of codegen against liric, in namespace LCompilers_Liric
+    add_library(asr_liric STATIC
+        codegen/evaluator.cpp
+        codegen/asr_to_llvm.cpp
+        codegen/llvm_array_utils.cpp
+        codegen/llvm_utils.cpp
+        codegen/liric_bridge.cpp
+    )
+    target_include_directories(asr_liric BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
+    target_include_directories(asr_liric BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+    target_link_libraries(asr_liric lfortran_utils p::liric)
+    # Duplicate symbol resolution: liric-compiled codegen has hidden visibility,
+    # the bridge exports entry points. --allow-multiple-definition resolves
+    # duplicate symbols from double-compilation against the main asr library.
+    target_compile_options(asr_liric PRIVATE -fvisibility=hidden)
+    if (NOT MSVC)
+        target_compile_options(asr_liric PRIVATE -Wno-deprecated-declarations)
+    endif()
+endif()
 
 # Install the dwarf_convert.py and dat_convert.py
 install(

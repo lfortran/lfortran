@@ -100,6 +100,39 @@ enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir, liric
 };
 
+#ifdef HAVE_LFORTRAN_LIRIC
+extern "C" int liric_compile_to_object(
+    void *asr, void *diag, void *al, void *lpm,
+    void *co, const char *infile, void *lm, const char *outfile);
+extern "C" int liric_link_executable(const char *const *objects, int n,
+    const char *outfile);
+extern "C" const char *liric_get_version();
+extern "C" const char *liric_get_default_target();
+
+int compile_src_to_object_file_liric(const std::string &infile,
+        const std::string &outfile, CompilerOptions &compiler_options,
+        LCompilers::PassManager &lpm)
+{
+    std::string input = read_file_ok(infile);
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    auto result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!result.ok) return 1;
+    auto *asr = result.result;
+    Allocator al(64*1024*1024);
+    return liric_compile_to_object(asr, &diagnostics, &al, &lpm,
+        &compiler_options, infile.c_str(), &lm, outfile.c_str());
+}
+#endif
+
 std::string get_system_temp_dir()
 {
     #ifdef _WIN32
@@ -1929,7 +1962,24 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm || backend == Backend::liric || backend == Backend::mlir) {
+    if (backend == Backend::liric) {
+#ifdef HAVE_LFORTRAN_LIRIC
+        // Direct executable emission - no system linker needed
+        std::vector<const char *> obj_ptrs;
+        for (const auto &f : infiles) obj_ptrs.push_back(f.c_str());
+        int err = liric_link_executable(obj_ptrs.data(), obj_ptrs.size(),
+            outfile.c_str());
+        if (err) {
+            std::cerr << "Liric direct executable emission failed." << std::endl;
+            return 10;
+        }
+        return 0;
+#else
+        std::cerr << "The liric backend requires -DWITH_LIRIC=ON." << std::endl;
+        return 1;
+#endif
+    }
+    if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -2020,7 +2070,7 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
-                if ((backend == Backend::llvm || backend == Backend::liric) &&
+                if ((backend == Backend::llvm) &&
                         compiler_options.po.enable_gpu_offloading &&
                         std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
                     std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
@@ -2692,7 +2742,7 @@ int main_app(int argc, char *argv[]) {
         return emit_fortran(opts.arg_file, compiler_options);
     }
     if (opts.arg_S) {
-        if (backend == Backend::llvm || backend == Backend::liric) {
+        if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             int result = compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
             if (compiler_options.time_report) {
@@ -2716,12 +2766,20 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.arg_c) {
         int result;
-        if (backend == Backend::llvm || backend == Backend::liric) {
+        if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
                 compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            return 1;
+#endif
+        } else if (backend == Backend::liric) {
+#ifdef HAVE_LFORTRAN_LIRIC
+            result = compile_src_to_object_file_liric(opts.arg_file, outfile,
+                compiler_options, lfortran_pass_manager);
+#else
+            std::cerr << "The liric backend requires -DWITH_LIRIC=ON." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
@@ -2774,7 +2832,15 @@ int main_app(int argc, char *argv[]) {
                 return compile_to_binary_x86(arg_file, outfile,
                         compiler_options.time_report, compiler_options);
             }
-            if (backend == Backend::llvm || backend == Backend::liric) {
+            if (backend == Backend::liric) {
+#ifdef HAVE_LFORTRAN_LIRIC
+                err = compile_src_to_object_file_liric(arg_file, tmp_o,
+                    compiler_options, lfortran_pass_manager);
+#else
+                std::cerr << "The liric backend requires -DWITH_LIRIC=ON." << std::endl;
+                return 1;
+#endif
+            } else if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
                     compiler_options, lfortran_pass_manager);
