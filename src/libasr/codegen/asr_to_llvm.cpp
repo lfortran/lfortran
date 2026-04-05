@@ -19473,8 +19473,6 @@ public:
                                 builder->CreatePointerCast(
                                     data_ptr,
                                     struct_llvm->getPointerTo());
-                            llvm::Value *i32_0 =
-                                llvm::ConstantInt::get(i32, 0);
                             llvm::FunctionType *mft =
                                 llvm::FunctionType::get(
                                     i8_ptr, {i64}, false);
