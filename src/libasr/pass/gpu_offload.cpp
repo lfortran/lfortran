@@ -2075,6 +2075,19 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
+            // Recurse into BlockCall bodies
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    inline_array_section_in_body(block->m_body,
+                        block->n_body, changed);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2417,6 +2430,19 @@ public:
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 inline_elemental_array_var_in_body(dl->m_body, dl->n_body,
                     changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            // Recurse into BlockCall bodies
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    inline_elemental_array_var_in_body(block->m_body,
+                        block->n_body, changed);
+                }
                 new_body.push_back(al, stmt);
                 continue;
             }
