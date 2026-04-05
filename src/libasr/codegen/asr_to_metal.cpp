@@ -393,34 +393,106 @@ public:
         alloc_array_size_exprs.clear();
         ptr_to_local_alloc.clear();
         // Step 1: For each function in kernel scope, find Allocate
-        // stmts and record param_index → size
+        // stmts and record param_index → size. Also detect assignments
+        // of FixedSizeArray locals to output parameters (the passes may
+        // lower allocatable array constants into a local FixedSizeArray
+        // assigned to the out parameter, removing the Allocate).
         std::map<std::string, std::map<size_t, int64_t>> func_allocs;
         for (auto &item : kf.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
                 item.second);
             std::string fn_name(fn->m_name);
-            for (size_t si = 0; si < fn->n_body; si++) {
-                if (fn->m_body[si]->type != ASR::stmtType::Allocate)
-                    continue;
-                ASR::Allocate_t *alloc = ASR::down_cast<ASR::Allocate_t>(
-                    fn->m_body[si]);
-                for (size_t ai = 0; ai < alloc->n_args; ai++) {
-                    if (!alloc->m_args[ai].m_a) continue;
-                    if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
-                        continue;
-                    std::string alloc_var = ASRUtils::symbol_name(
+            // Build a set of parameter names for quick lookup
+            std::set<std::string> param_names;
+            for (size_t pi = 0; pi < fn->n_args; pi++) {
+                ASR::Variable_t *pv =
+                    ASR::down_cast<ASR::Variable_t>(
                         ASR::down_cast<ASR::Var_t>(
-                            alloc->m_args[ai].m_a)->m_v);
-                    int64_t sz = compute_alloc_size(alloc->m_args[ai]);
-                    if (sz <= 0) continue;
+                            fn->m_args[pi])->m_v);
+                param_names.insert(std::string(pv->m_name));
+            }
+            // Build a map of local FixedSizeArray variable names → sizes
+            std::map<std::string, int64_t> local_fixed_sizes;
+            for (auto &sym : fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*sym.second)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(sym.second);
+                ASR::ttype_t *vtype = var->m_type;
+                if (!ASR::is_a<ASR::Array_t>(*vtype)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(vtype);
+                if (arr->m_physical_type !=
+                        ASR::array_physical_typeType::FixedSizeArray)
+                    continue;
+                int64_t total = 1;
+                bool all_const = true;
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                            ASR::is_a<ASR::IntegerConstant_t>(
+                                *arr->m_dims[d].m_length)) {
+                        total *= ASR::down_cast<ASR::IntegerConstant_t>(
+                            arr->m_dims[d].m_length)->m_n;
+                    } else {
+                        all_const = false;
+                        break;
+                    }
+                }
+                if (all_const && total > 0) {
+                    local_fixed_sizes[std::string(var->m_name)] = total;
+                }
+            }
+            for (size_t si = 0; si < fn->n_body; si++) {
+                if (fn->m_body[si]->type == ASR::stmtType::Allocate) {
+                    ASR::Allocate_t *alloc =
+                        ASR::down_cast<ASR::Allocate_t>(fn->m_body[si]);
+                    for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                        if (!alloc->m_args[ai].m_a) continue;
+                        if (!ASR::is_a<ASR::Var_t>(
+                                *alloc->m_args[ai].m_a))
+                            continue;
+                        std::string alloc_var = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                alloc->m_args[ai].m_a)->m_v);
+                        int64_t sz = compute_alloc_size(
+                            alloc->m_args[ai]);
+                        if (sz <= 0) continue;
+                        for (size_t pi = 0; pi < fn->n_args; pi++) {
+                            ASR::Variable_t *pv =
+                                ASR::down_cast<ASR::Variable_t>(
+                                    ASR::down_cast<ASR::Var_t>(
+                                        fn->m_args[pi])->m_v);
+                            if (std::string(pv->m_name) == alloc_var) {
+                                func_allocs[fn_name][pi] = sz;
+                                break;
+                            }
+                        }
+                    }
+                } else if (fn->m_body[si]->type ==
+                        ASR::stmtType::Assignment) {
+                    ASR::Assignment_t *asgn =
+                        ASR::down_cast<ASR::Assignment_t>(
+                            fn->m_body[si]);
+                    if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*asgn->m_value)) continue;
+                    std::string tgt_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            asgn->m_target)->m_v);
+                    std::string val_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            asgn->m_value)->m_v);
+                    if (!param_names.count(tgt_name)) continue;
+                    auto fit = local_fixed_sizes.find(val_name);
+                    if (fit == local_fixed_sizes.end()) continue;
                     for (size_t pi = 0; pi < fn->n_args; pi++) {
                         ASR::Variable_t *pv =
                             ASR::down_cast<ASR::Variable_t>(
                                 ASR::down_cast<ASR::Var_t>(
                                     fn->m_args[pi])->m_v);
-                        if (std::string(pv->m_name) == alloc_var) {
-                            func_allocs[fn_name][pi] = sz;
+                        if (std::string(pv->m_name) == tgt_name) {
+                            if (!func_allocs[fn_name].count(pi)) {
+                                func_allocs[fn_name][pi] =
+                                    fit->second;
+                            }
                             break;
                         }
                     }
@@ -1299,22 +1371,74 @@ public:
             }
         }
         // Pre-scan the inline function body for Allocate statements
-        // so we know sizes of function-internal allocatable arrays
-        // (needed for scalar-to-array broadcast assignments).
-        for (size_t i = 0; i < fn->n_body; i++) {
-            if (fn->m_body[i]->type == ASR::stmtType::Allocate) {
-                ASR::Allocate_t *alloc =
-                    ASR::down_cast<ASR::Allocate_t>(fn->m_body[i]);
-                for (size_t ai = 0; ai < alloc->n_args; ai++) {
-                    if (!alloc->m_args[ai].m_a) continue;
-                    if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
-                        continue;
-                    std::string vname = ASRUtils::symbol_name(
+        // and assignments from FixedSizeArray locals to allocatable
+        // parameters, so we know sizes of function-internal allocatable
+        // arrays (needed for array copy and broadcast assignments).
+        {
+            // Collect sizes of local FixedSizeArray variables
+            std::map<std::string, int64_t> local_fixed_sizes;
+            for (auto &sym : fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*sym.second)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(sym.second);
+                ASR::ttype_t *vtype = var->m_type;
+                if (!ASR::is_a<ASR::Array_t>(*vtype)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(vtype);
+                if (arr->m_physical_type !=
+                        ASR::array_physical_typeType::FixedSizeArray)
+                    continue;
+                int64_t total = 1;
+                bool all_const = true;
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                            ASR::is_a<ASR::IntegerConstant_t>(
+                                *arr->m_dims[d].m_length)) {
+                        total *= ASR::down_cast<ASR::IntegerConstant_t>(
+                            arr->m_dims[d].m_length)->m_n;
+                    } else {
+                        all_const = false;
+                        break;
+                    }
+                }
+                if (all_const && total > 0) {
+                    local_fixed_sizes[std::string(var->m_name)] = total;
+                }
+            }
+            for (size_t i = 0; i < fn->n_body; i++) {
+                if (fn->m_body[i]->type == ASR::stmtType::Allocate) {
+                    ASR::Allocate_t *alloc =
+                        ASR::down_cast<ASR::Allocate_t>(fn->m_body[i]);
+                    for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                        if (!alloc->m_args[ai].m_a) continue;
+                        if (!ASR::is_a<ASR::Var_t>(
+                                *alloc->m_args[ai].m_a))
+                            continue;
+                        std::string vname = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                alloc->m_args[ai].m_a)->m_v);
+                        int64_t sz = compute_alloc_size(
+                            alloc->m_args[ai]);
+                        if (sz > 0) {
+                            alloc_array_sizes[vname] = sz;
+                        }
+                    }
+                } else if (fn->m_body[i]->type ==
+                        ASR::stmtType::Assignment) {
+                    ASR::Assignment_t *asgn =
+                        ASR::down_cast<ASR::Assignment_t>(
+                            fn->m_body[i]);
+                    if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*asgn->m_value)) continue;
+                    std::string tgt_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(
-                            alloc->m_args[ai].m_a)->m_v);
-                    int64_t sz = compute_alloc_size(alloc->m_args[ai]);
-                    if (sz > 0) {
-                        alloc_array_sizes[vname] = sz;
+                            asgn->m_target)->m_v);
+                    std::string val_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            asgn->m_value)->m_v);
+                    auto fit = local_fixed_sizes.find(val_name);
+                    if (fit != local_fixed_sizes.end() &&
+                            !alloc_array_sizes.count(tgt_name)) {
+                        alloc_array_sizes[tgt_name] = fit->second;
                     }
                 }
             }
@@ -2066,11 +2190,27 @@ public:
                         src << "[0];\n";
                     }
                 } else if (deref_target && rhs_is_array_or_alloc) {
-                    src << "*";
-                    visit_expr(a->m_target);
-                    src << " = ";
-                    visit_expr(a->m_value);
-                    src << "[0];\n";
+                    // Array copy to allocatable pointer param (e.g.,
+                    // v = array_const where v is thread T*). Copy
+                    // element-wise using the known size.
+                    std::string tname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+                    auto sit = alloc_array_sizes.find(tname);
+                    if (sit != alloc_array_sizes.end() && sit->second > 1) {
+                        for (int64_t ei = 0; ei < sit->second; ei++) {
+                            visit_expr(a->m_target);
+                            src << "[" << ei << "] = ";
+                            visit_expr(a->m_value);
+                            src << "[" << ei << "];\n";
+                            if (ei + 1 < sit->second) src << get_indent();
+                        }
+                    } else {
+                        src << "*";
+                        visit_expr(a->m_target);
+                        src << " = ";
+                        visit_expr(a->m_value);
+                        src << "[0];\n";
+                    }
                 } else if (target_is_func_array_param && rhs_is_array_or_alloc) {
                     // Target is an array parameter (thread T*) and RHS is
                     // a fixed-size array (e.g., struct member). Copy
@@ -2584,7 +2724,12 @@ public:
                                         if (eit != alloc_array_size_exprs.end()) {
                                             src << eit->second;
                                         } else {
-                                            src << "/* unknown ubound */";
+                                            auto sit = alloc_array_sizes.find(vname);
+                                            if (sit != alloc_array_sizes.end()) {
+                                                src << sit->second;
+                                            } else {
+                                                src << "/* unknown ubound */";
+                                            }
                                         }
                                     }
                                 } else {
