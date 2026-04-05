@@ -1642,6 +1642,14 @@ public:
         for (size_t si = 0; si < n_stmts; si++) {
             ASR::stmt_t *stmt = stmts[si];
 
+            // Recurse into DoLoop bodies
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                inline_sum_in_stmts(dl->m_body, dl->n_body, scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
             // Recurse into Block bodies
             if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
                 ASR::BlockCall_t *bc =
