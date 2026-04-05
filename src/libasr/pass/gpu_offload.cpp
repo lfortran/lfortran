@@ -1063,6 +1063,13 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t &bc = *ASR::down_cast<ASR::BlockCall_t>(stmt);
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc.m_m);
+                inline_matmul_stmts(block->m_body, block->n_body);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
