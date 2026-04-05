@@ -97,7 +97,7 @@ namespace lsi = LCompilers::LLanguageServer::Interface;
 #endif
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran, mlir
+    llvm, c, cpp, x86, wasm, fortran, mlir, liric
 };
 
 std::string get_system_temp_dir()
@@ -1929,7 +1929,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm || backend == Backend::mlir) {
+    if (backend == Backend::llvm || backend == Backend::liric || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -2020,7 +2020,7 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
-                if (backend == Backend::llvm &&
+                if ((backend == Backend::llvm || backend == Backend::liric) &&
                         compiler_options.po.enable_gpu_offloading &&
                         std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
                     std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
@@ -2531,8 +2531,17 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::fortran;
     } else if (opts.arg_backend == "mlir") {
         backend = Backend::mlir;
+    } else if (opts.arg_backend == "liric") {
+#ifdef HAVE_LFORTRAN_LIRIC
+        backend = Backend::liric;
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
+#else
+        std::cerr << "The liric backend requires building with -DWITH_LIRIC=ON." << std::endl;
+        return 1;
+#endif
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir, liric." << std::endl;
         return 1;
     }
 
@@ -2683,7 +2692,7 @@ int main_app(int argc, char *argv[]) {
         return emit_fortran(opts.arg_file, compiler_options);
     }
     if (opts.arg_S) {
-        if (backend == Backend::llvm) {
+        if (backend == Backend::llvm || backend == Backend::liric) {
 #ifdef HAVE_LFORTRAN_LLVM
             int result = compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
             if (compiler_options.time_report) {
@@ -2707,7 +2716,7 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.arg_c) {
         int result;
-        if (backend == Backend::llvm) {
+        if (backend == Backend::llvm || backend == Backend::liric) {
 #ifdef HAVE_LFORTRAN_LLVM
             result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
                 compiler_options, lfortran_pass_manager, opts.arg_c);
@@ -2765,7 +2774,7 @@ int main_app(int argc, char *argv[]) {
                 return compile_to_binary_x86(arg_file, outfile,
                         compiler_options.time_report, compiler_options);
             }
-            if (backend == Backend::llvm) {
+            if (backend == Backend::llvm || backend == Backend::liric) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
                     compiler_options, lfortran_pass_manager);
