@@ -27,6 +27,8 @@ struct GpuVlaWorkspace {
 
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
+// For struct array args with allocatable array members, counts 3 extra
+// buffers per member (data, offsets, sizes) as emitted by Metal codegen.
 inline std::pair<int, int> classify_gpu_kernel_args(
         const ASR::GpuKernelFunction_t &kernel) {
     int n_buffer = 0, n_scalar = 0;
@@ -39,6 +41,29 @@ inline std::pair<int, int> classify_gpu_kernel_args(
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(type))) {
             n_buffer++;
+            if (ASRUtils::is_array(type) && var->m_type_declaration) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                    for (size_t m = 0; m < st->n_members; m++) {
+                        ASR::symbol_t *mem =
+                            st->m_symtab->get_symbol(st->m_members[m]);
+                        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem))
+                            continue;
+                        ASR::Variable_t *mv =
+                            ASR::down_cast<ASR::Variable_t>(mem);
+                        if (!ASRUtils::is_allocatable(mv->m_type))
+                            continue;
+                        ASR::ttype_t *inner =
+                            ASRUtils::type_get_past_allocatable(
+                                mv->m_type);
+                        if (!ASR::is_a<ASR::Array_t>(*inner))
+                            continue;
+                        n_buffer += 3;
+                    }
+                }
+            }
         } else {
             n_scalar++;
         }
@@ -88,6 +113,100 @@ inline ASR::Allocate_t* find_allocate_for_var(
         }
     }
     return nullptr;
+}
+
+// Try to evaluate an ASR integer expression as a compile-time constant.
+inline bool try_eval_int_constant(ASR::expr_t *e, int64_t &val) {
+    if (!e) return false;
+    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+        val = ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+        return true;
+    }
+    ASR::expr_t *v = ASRUtils::expr_value(e);
+    if (v && v != e) return try_eval_int_constant(v, val);
+    if (ASR::is_a<ASR::Cast_t>(*e)) {
+        return try_eval_int_constant(
+            ASR::down_cast<ASR::Cast_t>(e)->m_arg, val);
+    }
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+        int64_t l, r;
+        auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+        if (!try_eval_int_constant(op->m_left, l)) return false;
+        if (!try_eval_int_constant(op->m_right, r)) return false;
+        switch (op->m_op) {
+            case ASR::binopType::Add: val = l + r; return true;
+            case ASR::binopType::Sub: val = l - r; return true;
+            case ASR::binopType::Mul: val = l * r; return true;
+            case ASR::binopType::Div:
+                if (r != 0) { val = l / r; return true; }
+                return false;
+            default: return false;
+        }
+    }
+    return false;
+}
+
+// Try to resolve ArraySize(ptr_var, dim) to a constant by tracing an
+// Associate statement back to an ArraySection with constant bounds.
+inline bool try_resolve_array_size_via_associate(
+        ASR::ArraySize_t *as,
+        ASR::stmt_t **body, size_t n_body,
+        int64_t &result) {
+    if (!as->m_v || !ASR::is_a<ASR::Var_t>(*as->m_v)) return false;
+    std::string var_name = ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+    int64_t target_dim = 1;
+    if (as->m_dim) {
+        if (!try_eval_int_constant(as->m_dim, target_dim)) return false;
+    }
+    for (size_t i = 0; i < n_body; i++) {
+        if (!ASR::is_a<ASR::Associate_t>(*body[i])) continue;
+        ASR::Associate_t *assoc =
+            ASR::down_cast<ASR::Associate_t>(body[i]);
+        if (!ASR::is_a<ASR::Var_t>(*assoc->m_target)) continue;
+        std::string tname = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
+        if (tname != var_name) continue;
+        if (!ASR::is_a<ASR::ArraySection_t>(*assoc->m_value)) return false;
+        ASR::ArraySection_t *sec =
+            ASR::down_cast<ASR::ArraySection_t>(assoc->m_value);
+        int range_dim = 0;
+        for (size_t d = 0; d < sec->n_args; d++) {
+            ASR::array_index_t &idx = sec->m_args[d];
+            if (idx.m_left == nullptr) continue;
+            range_dim++;
+            if (range_dim == target_dim) {
+                int64_t start_val, end_val, stride_val = 1;
+                if (!try_eval_int_constant(idx.m_left, start_val))
+                    return false;
+                if (!try_eval_int_constant(idx.m_right, end_val))
+                    return false;
+                if (idx.m_step &&
+                        !try_eval_int_constant(idx.m_step, stride_val))
+                    return false;
+                if (stride_val == 0) return false;
+                result = (end_val - start_val) / stride_val + 1;
+                if (result < 0) result = 0;
+                return true;
+            }
+        }
+        return false;
+    }
+    return false;
+}
+
+// Try to resolve an Allocate dimension to a compile-time constant,
+// including tracing ArraySize through Associate statements.
+inline bool try_resolve_alloc_dim_constant(
+        ASR::expr_t *dim,
+        ASR::stmt_t **body, size_t n_body,
+        int64_t &result) {
+    if (try_eval_int_constant(dim, result)) return true;
+    if (ASR::is_a<ASR::ArraySize_t>(*dim)) {
+        return try_resolve_array_size_via_associate(
+            ASR::down_cast<ASR::ArraySize_t>(dim), body, n_body, result);
+    }
+    return false;
 }
 
 // Helper to extract a kernel argument reference from a complex Allocate
@@ -198,12 +317,20 @@ inline void scan_kernel_scope_alloc_vlas(
                     ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
                 vd.call_arg_index = 0;
             } else if (dim) {
-                vd.is_constant = false;
-                vd.constant_value = 0;
-                vd.call_arg_index = 0;
-                size_t idx = 0;
-                if (find_arg_var_in_expr(dim, arg_names, idx)) {
-                    vd.call_arg_index = idx;
+                int64_t const_val;
+                if (try_resolve_alloc_dim_constant(
+                        dim, kernel.m_body, kernel.n_body, const_val)) {
+                    vd.is_constant = true;
+                    vd.constant_value = const_val;
+                    vd.call_arg_index = 0;
+                } else {
+                    vd.is_constant = false;
+                    vd.constant_value = 0;
+                    vd.call_arg_index = 0;
+                    size_t idx = 0;
+                    if (find_arg_var_in_expr(dim, arg_names, idx)) {
+                        vd.call_arg_index = idx;
+                    }
                 }
             } else {
                 vd.is_constant = true;

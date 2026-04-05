@@ -103,6 +103,11 @@ public:
     // to kernel-level device buffer parameters.
     bool in_inline_function = false;
 
+    // When >= 0, array/pointer Var nodes should be indexed with this
+    // element index in visit_expr. Used for element-wise array
+    // operations (comparisons, etc.) inside assignment loops.
+    int64_t array_elem_index = -1;
+
     ASRToMetalVisitor(CompilerOptions &co_) : indent_level(0), co(co_) {}
 
     std::string get_indent() {
@@ -196,7 +201,11 @@ public:
                         << " + __thread_id * (";
                     for (size_t d = 0; d < vla_it->dims.size(); d++) {
                         if (d > 0) src << " * ";
-                        visit_expr(vla_it->dims[d].dim_expr);
+                        if (vla_it->dims[d].is_constant) {
+                            src << vla_it->dims[d].constant_value;
+                        } else {
+                            visit_expr(vla_it->dims[d].dim_expr);
+                        }
                     }
                     src << ");\n";
                     local_alloc_arrays.insert(vname);
@@ -1972,11 +1981,20 @@ public:
                     auto sit = alloc_array_sizes.find(tname);
                     int64_t sz = (sit != alloc_array_sizes.end())
                         ? sit->second : 1;
+                    bool rhs_is_simple_var = ASR::is_a<ASR::Var_t>(
+                        *a->m_value);
                     for (int64_t ei = 0; ei < sz; ei++) {
                         visit_expr(a->m_target);
                         src << "[" << ei << "] = ";
-                        visit_expr(a->m_value);
-                        src << "[" << ei << "];\n";
+                        if (rhs_is_simple_var) {
+                            visit_expr(a->m_value);
+                            src << "[" << ei << "]";
+                        } else {
+                            array_elem_index = ei;
+                            visit_expr(a->m_value);
+                            array_elem_index = -1;
+                        }
+                        src << ";\n";
                         if (ei + 1 < sz) src << get_indent();
                     }
                 } else if (!target_is_local_alloc && rhs_is_local_alloc) {
@@ -2166,13 +2184,21 @@ public:
                             << " = __vla_" << vname
                             << " + __thread_id * ";
                         if (vla_it->dims.size() == 1) {
-                            visit_expr(vla_it->dims[0].dim_expr);
+                            if (vla_it->dims[0].is_constant) {
+                                src << vla_it->dims[0].constant_value;
+                            } else {
+                                visit_expr(vla_it->dims[0].dim_expr);
+                            }
                         } else {
                             src << "(";
                             for (size_t d = 0;
                                     d < vla_it->dims.size(); d++) {
                                 if (d > 0) src << " * ";
-                                visit_expr(vla_it->dims[d].dim_expr);
+                                if (vla_it->dims[d].is_constant) {
+                                    src << vla_it->dims[d].constant_value;
+                                } else {
+                                    visit_expr(vla_it->dims[d].dim_expr);
+                                }
                             }
                             src << ")";
                         }
@@ -2332,6 +2358,13 @@ public:
             case ASR::exprType::Var: {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(expr);
                 src << ASRUtils::symbol_name(v->m_v);
+                if (array_elem_index >= 0) {
+                    ASR::ttype_t *vtype = ASRUtils::expr_type(expr);
+                    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable_pointer(vtype);
+                    if (ASR::is_a<ASR::Array_t>(*inner)) {
+                        src << "[" << array_elem_index << "]";
+                    }
+                }
                 break;
             }
             case ASR::exprType::IntegerConstant: {
