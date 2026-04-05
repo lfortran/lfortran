@@ -670,6 +670,8 @@ public:
         // non-constant dimensions) using the shared GPU utility.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
 
+        bool packed_mode = gpu_kernel_needs_buffer_packing(x);
+
         // Collect scalar args for packing into a single struct buffer
         struct ScalarArg {
             std::string name;
@@ -683,13 +685,87 @@ public:
             }
         }
 
+        // In packed mode, collect info about arrays/structs that will
+        // be packed into a single combined buffer
+        struct PackedArrayInfo {
+            std::string name;
+            std::string elem_type;
+            bool is_struct_ref;
+            std::string struct_name;
+            int64_t byte_size;
+            int64_t offset;
+        };
+        std::vector<PackedArrayInfo> packed_arrays;
+
+        if (packed_mode) {
+            int64_t current_offset = 0;
+            for (size_t i = 0; i < args.size(); i++) {
+                if (!args[i].is_array && !args[i].is_struct) continue;
+
+                std::string elem_type;
+                int64_t byte_size = 0;
+                if (args[i].is_array) {
+                    elem_type = !args[i].struct_name.empty()
+                        ? args[i].struct_name
+                        : metal_type(args[i].type);
+                    ASR::ttype_t *base_type =
+                        ASRUtils::type_get_past_allocatable(args[i].type);
+                    if (ASR::is_a<ASR::Array_t>(*base_type)) {
+                        ASR::Array_t *arr =
+                            ASR::down_cast<ASR::Array_t>(base_type);
+                        int elem_size = 4;
+                        if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
+                            elem_size = ASR::down_cast<ASR::Real_t>(
+                                arr->m_type)->m_kind;
+                        } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
+                            elem_size = ASR::down_cast<ASR::Integer_t>(
+                                arr->m_type)->m_kind;
+                        }
+                        int64_t total_elements = 1;
+                        for (size_t d = 0; d < arr->n_dims; d++) {
+                            if (arr->m_dims[d].m_length &&
+                                ASR::is_a<ASR::IntegerConstant_t>(
+                                    *arr->m_dims[d].m_length)) {
+                                total_elements *=
+                                    ASR::down_cast<ASR::IntegerConstant_t>(
+                                        arr->m_dims[d].m_length)->m_n;
+                            }
+                        }
+                        byte_size = total_elements * elem_size;
+                    }
+                }
+
+                int align = PACKED_BUFFER_ALIGN;
+                if (current_offset % align != 0) {
+                    current_offset += align - (current_offset % align);
+                }
+
+                packed_arrays.push_back({
+                    args[i].name, elem_type, args[i].is_struct,
+                    args[i].struct_name, byte_size, current_offset
+                });
+
+                if (byte_size > 0) {
+                    current_offset += byte_size;
+                }
+            }
+        }
+
         // Emit scalar args struct definition (before kernel) if needed
         std::string scalar_struct_name = "__ScalarArgs_" + name;
-        if (!scalar_args.empty()) {
+        bool has_scalar_struct = !scalar_args.empty() ||
+            (packed_mode && !packed_arrays.empty());
+
+        if (has_scalar_struct) {
             src << "struct " << scalar_struct_name << " {\n";
             for (auto &sa : scalar_args) {
                 src << "    " << sa.metal_type_str << " "
                     << sa.name << ";\n";
+            }
+            if (packed_mode) {
+                for (auto &pa : packed_arrays) {
+                    src << "    uint __offset_" << pa.name << ";\n";
+                }
             }
             src << "};\n\n";
         }
@@ -699,27 +775,34 @@ public:
 
         int buffer_idx = 0;
         bool has_prev = false;
-        for (size_t i = 0; i < args.size(); i++) {
-            if (args[i].is_array) {
-                if (has_prev) src << ",\n";
-                src << "    ";
-                std::string elem_type = !args[i].struct_name.empty()
-                    ? args[i].struct_name
-                    : metal_type(args[i].type);
-                src << "device " << elem_type << "* "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-                has_prev = true;
-            } else if (args[i].is_struct) {
-                if (has_prev) src << ",\n";
-                src << "    ";
-                src << "device " << args[i].struct_name << "& "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-                has_prev = true;
+
+        if (packed_mode) {
+            src << "    device char* __packed_arrays [[buffer("
+                << buffer_idx++ << ")]]";
+            has_prev = true;
+        } else {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i].is_array) {
+                    if (has_prev) src << ",\n";
+                    src << "    ";
+                    std::string elem_type = !args[i].struct_name.empty()
+                        ? args[i].struct_name
+                        : metal_type(args[i].type);
+                    src << "device " << elem_type << "* "
+                        << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                    has_prev = true;
+                } else if (args[i].is_struct) {
+                    if (has_prev) src << ",\n";
+                    src << "    ";
+                    src << "device " << args[i].struct_name << "& "
+                        << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                    has_prev = true;
+                }
             }
         }
 
         // Emit packed scalar struct as a single buffer
-        if (!scalar_args.empty()) {
+        if (has_scalar_struct) {
             if (has_prev) src << ",\n";
             src << "    constant " << scalar_struct_name
                 << "& __scalar_args [[buffer(" << buffer_idx++ << ")]]";
@@ -767,6 +850,25 @@ public:
         for (auto &sa : scalar_args) {
             src << get_indent() << sa.metal_type_str << " "
                 << sa.name << " = __scalar_args." << sa.name << ";\n";
+        }
+
+        // In packed mode, unpack array pointers from the combined buffer
+        if (packed_mode) {
+            for (auto &pa : packed_arrays) {
+                if (pa.is_struct_ref) {
+                    src << get_indent() << "device " << pa.struct_name
+                        << "& " << pa.name
+                        << " = *(device " << pa.struct_name
+                        << "*)(__packed_arrays + __scalar_args.__offset_"
+                        << pa.name << ");\n";
+                } else {
+                    src << get_indent() << "device " << pa.elem_type
+                        << "* " << pa.name
+                        << " = (device " << pa.elem_type
+                        << "*)(__packed_arrays + __scalar_args.__offset_"
+                        << pa.name << ");\n";
+                }
+            }
         }
 
         // Populate func_array_size_params and func_array_data_params

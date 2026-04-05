@@ -18969,6 +18969,16 @@ public:
             llvm::Type *type;
         };
         std::vector<ScalarArgInfo> scalar_arg_infos;
+
+        bool packed_mode = gpu_kernel_needs_buffer_packing(*kernel_func);
+
+        // In packed mode, collect buffer arg info for deferred packing
+        struct BufferArgInfo {
+            llvm::Value *data_ptr;
+            llvm::Value *byte_size;
+        };
+        std::vector<BufferArgInfo> buffer_arg_infos;
+
         int buffer_idx = 0;
 
         for (size_t i = 0; i < x.n_args; i++) {
@@ -19010,7 +19020,6 @@ public:
             }
 
             if (ASRUtils::is_array(arg_type)) {
-                llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                 // For allocatable arrays, extract data pointer from descriptor
                 llvm::Value *data_ptr;
                 if (is_allocatable_array) {
@@ -19091,10 +19100,14 @@ public:
                     byte_size = builder->CreateMul(total_val,
                         llvm::ConstantInt::get(i64, elem_size));
                 }
-                builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+                if (packed_mode) {
+                    buffer_arg_infos.push_back({data_ptr, byte_size});
+                } else {
+                    llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
+                    builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+                }
             } else if (ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
-                llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                 // Struct: pass as a buffer so the kernel can write to it
                 // and results are copied back to the host
                 llvm::Value *struct_ptr;
@@ -19114,7 +19127,12 @@ public:
                 }
                 uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
                 llvm::Value *struct_size = llvm::ConstantInt::get(i64, sz);
-                builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, struct_ptr, struct_size});
+                if (packed_mode) {
+                    buffer_arg_infos.push_back({struct_ptr, struct_size});
+                } else {
+                    llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
+                    builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, struct_ptr, struct_size});
+                }
             } else {
                 // Scalar: collect for packing into a single struct buffer
                 scalar_arg_infos.push_back({arg_val, arg_val->getType()});
@@ -19128,23 +19146,91 @@ public:
             }
         }
 
-        // Pack all scalar args into a single struct buffer
-        if (!scalar_arg_infos.empty()) {
+        // In packed mode: allocate combined buffer, copy data in, and set
+        // as a single Metal buffer. Offsets go into the scalar struct.
+        llvm::Value *packed_buf_ptr = nullptr;
+        std::vector<llvm::Value*> packed_offsets;
+        std::vector<llvm::Value*> packed_sizes;
+        if (packed_mode && !buffer_arg_infos.empty()) {
+            llvm::Value *align_val = llvm::ConstantInt::get(i64,
+                PACKED_BUFFER_ALIGN - 1);
+            llvm::Value *align_mask = llvm::ConstantInt::get(i64,
+                ~(int64_t)(PACKED_BUFFER_ALIGN - 1));
+
+            // Compute aligned offsets for each buffer arg
+            llvm::Value *running = llvm::ConstantInt::get(i64, 0);
+            for (size_t bi = 0; bi < buffer_arg_infos.size(); bi++) {
+                // Align running offset up to PACKED_BUFFER_ALIGN
+                llvm::Value *aligned = builder->CreateAnd(
+                    builder->CreateAdd(running, align_val), align_mask);
+                packed_offsets.push_back(aligned);
+                packed_sizes.push_back(buffer_arg_infos[bi].byte_size);
+                running = builder->CreateAdd(aligned,
+                    buffer_arg_infos[bi].byte_size);
+            }
+            llvm::Value *total_size = running;
+
+            // Allocate combined buffer
+            llvm::FunctionType *malloc_ft =
+                llvm::FunctionType::get(i8_ptr, {i64}, false);
+            llvm::Function *malloc_fn =
+                get_gpu_runtime_func("malloc", malloc_ft);
+            packed_buf_ptr = builder->CreateCall(malloc_fn, {total_size});
+
+            // memcpy each array's data into the combined buffer
+            for (size_t bi = 0; bi < buffer_arg_infos.size(); bi++) {
+                llvm::Value *dest = builder->CreateGEP(
+                    llvm::Type::getInt8Ty(context), packed_buf_ptr,
+                    packed_offsets[bi]);
+                builder->CreateMemCpy(dest, llvm::MaybeAlign(1),
+                    buffer_arg_infos[bi].data_ptr, llvm::MaybeAlign(1),
+                    buffer_arg_infos[bi].byte_size);
+            }
+
+            // Set combined buffer as Metal buffer 0
+            buffer_idx = 0;
+            llvm::Value *buf0_idx = llvm::ConstantInt::get(i32, buffer_idx++);
+            builder->CreateCall(set_buffer_fn,
+                {gpu_kernel, buf0_idx, packed_buf_ptr, total_size});
+        }
+
+        // Pack all scalar args (and offsets in packed mode) into a struct
+        bool has_scalar_struct = !scalar_arg_infos.empty() ||
+            (packed_mode && !buffer_arg_infos.empty());
+        if (has_scalar_struct) {
             std::vector<llvm::Type*> field_types;
             for (auto &si : scalar_arg_infos) {
                 field_types.push_back(si.type);
+            }
+            if (packed_mode) {
+                for (size_t bi = 0; bi < buffer_arg_infos.size(); bi++) {
+                    field_types.push_back(i32); // uint offset
+                }
             }
             llvm::StructType *scalar_struct =
                 llvm::StructType::get(context, field_types, false);
             llvm::AllocaInst *struct_alloca =
                 llvm_utils->CreateAlloca(scalar_struct);
+            unsigned field_idx = 0;
             for (size_t s = 0; s < scalar_arg_infos.size(); s++) {
                 std::vector<llvm::Value*> gep_idx = {
                     llvm::ConstantInt::get(i32, 0),
-                    llvm::ConstantInt::get(i32, s)};
+                    llvm::ConstantInt::get(i32, field_idx++)};
                 llvm::Value *field_ptr = llvm_utils->CreateGEP2(
                     scalar_struct, struct_alloca, gep_idx);
                 builder->CreateStore(scalar_arg_infos[s].value, field_ptr);
+            }
+            if (packed_mode) {
+                for (size_t bi = 0; bi < packed_offsets.size(); bi++) {
+                    std::vector<llvm::Value*> gep_idx = {
+                        llvm::ConstantInt::get(i32, 0),
+                        llvm::ConstantInt::get(i32, field_idx++)};
+                    llvm::Value *field_ptr = llvm_utils->CreateGEP2(
+                        scalar_struct, struct_alloca, gep_idx);
+                    llvm::Value *offset_i32 =
+                        builder->CreateTrunc(packed_offsets[bi], i32);
+                    builder->CreateStore(offset_i32, field_ptr);
+                }
             }
             llvm::Value *scalar_buf_ptr =
                 builder->CreatePointerCast(struct_alloca, i8_ptr);
@@ -19248,6 +19334,25 @@ public:
         llvm::Value *block_ptr = builder->CreatePointerCast(block_arr, i8_ptr);
 
         builder->CreateCall(launch_fn, {gpu_ctx, gpu_kernel, grid_ptr, block_ptr});
+
+        // 5b. In packed mode, copy data back from the combined buffer
+        // to the original host arrays, then free the combined buffer.
+        if (packed_mode && packed_buf_ptr) {
+            for (size_t bi = 0; bi < buffer_arg_infos.size(); bi++) {
+                llvm::Value *src_ptr = builder->CreateGEP(
+                    llvm::Type::getInt8Ty(context), packed_buf_ptr,
+                    packed_offsets[bi]);
+                builder->CreateMemCpy(
+                    buffer_arg_infos[bi].data_ptr, llvm::MaybeAlign(1),
+                    src_ptr, llvm::MaybeAlign(1),
+                    buffer_arg_infos[bi].byte_size);
+            }
+            llvm::FunctionType *free_packed_ft =
+                llvm::FunctionType::get(void_type, {i8_ptr}, false);
+            llvm::Function *free_packed_fn =
+                get_gpu_runtime_func("free", free_packed_ft);
+            builder->CreateCall(free_packed_fn, {packed_buf_ptr});
+        }
 
         // 6. Free VLA workspace buffers allocated in step 4b
         if (!vla_workspace_ptrs.empty()) {

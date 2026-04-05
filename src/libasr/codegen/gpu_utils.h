@@ -46,10 +46,54 @@ inline std::pair<int, int> classify_gpu_kernel_args(
     return {n_buffer, n_scalar};
 }
 
+// Count VLA workspaces in a kernel without assigning buffer indices.
+inline int count_gpu_vla_workspaces(const ASR::GpuKernelFunction_t &kernel) {
+    int count = 0;
+    for (size_t i = 0; i < kernel.n_body; i++) {
+        if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
+        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+            kernel.m_body[i]);
+        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_length &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(
+                            *arr->m_dims[d].m_length)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+static const int MAX_METAL_BUFFERS = 31;
+static const int PACKED_BUFFER_ALIGN = 16;
+
+// Determine whether a kernel needs buffer packing because its total
+// buffer count exceeds Metal's 31-slot limit.
+inline bool gpu_kernel_needs_buffer_packing(
+        const ASR::GpuKernelFunction_t &kernel) {
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    int n_vla = count_gpu_vla_workspaces(kernel);
+    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
+    return total > MAX_METAL_BUFFERS;
+}
+
 // Compute the Metal buffer index where VLA workspace buffers start.
-// Buffer layout: [buffer_args...] [scalar_struct?] [vla_workspaces...]
-// Scalar args are packed into a single struct buffer when present.
+// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
+// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
 inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
+    if (gpu_kernel_needs_buffer_packing(kernel)) {
+        return 2;
+    }
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
     return n_buffer + (n_scalar > 0 ? 1 : 0);
 }
