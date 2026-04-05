@@ -98,6 +98,11 @@ public:
     // arrays (thread-space memory) rather than device buffer arrays.
     std::set<std::string> ptr_to_local_alloc;
 
+    // Tracks function names already emitted across all kernels in the
+    // current translation unit, preventing duplicate definitions when
+    // multiple kernels call the same module function.
+    std::set<std::string> emitted_funcs;
+
     // True when emitting an inline function body (not a kernel body).
     // Used to suppress array buffer indexing logic that only applies
     // to kernel-level device buffer parameters.
@@ -994,6 +999,7 @@ public:
             emit_struct_def(st);
         }
 
+        emitted_funcs.clear();
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 visit_GpuKernelFunction(
@@ -1348,7 +1354,6 @@ public:
 
         // Emit inline function definitions for type-bound procedures
         // referenced in this kernel
-        std::set<std::string> emitted_funcs;
         for (auto &item : x.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
             ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
