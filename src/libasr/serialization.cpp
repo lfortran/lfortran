@@ -126,8 +126,6 @@ public:
 
     ASR::symbol_t *read_symbol() {
         uint64_t symtab_id = read_int64();
-        // TODO: read the symbol's location information here, after saving
-        // it in write_symbol() above
         uint64_t symbol_type = read_int8();
         std::string symbol_name  = read_string();
         if (id_symtab_map.find(symtab_id) == id_symtab_map.end()) {

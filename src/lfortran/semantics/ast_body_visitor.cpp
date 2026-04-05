@@ -3616,6 +3616,7 @@ public:
     }
 
     void visit_SelectRank(const AST::SelectRank_t& x) {
+        all_loops_blocks_nesting++;
         if ( !x.m_selector ) {
             diag.add(Diagnostic(
                 "Selector expression is missing in select rank statement.",
@@ -3728,11 +3729,14 @@ public:
             assumed_rank_arrays.erase(array_var_name);
         }
 
-        tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
+        all_loops_blocks_nesting--;
+        tmp = ASR::make_SelectRank_t(al, x.base.base.loc, x.m_stmt_name,
+                    m_selector, select_rank_body.p, 
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
+        all_loops_blocks_nesting++;
         // TODO: We might need to re-order all ASR::TypeStmtName
         // before ASR::ClassStmt as per GFortran's semantics
         if( !x.m_selector ) {
@@ -4005,7 +4009,7 @@ public:
                                 // Use the guard type (selector_type) as element type, preserving array structure from selector
                                 selector_type = make_typed_selector_view_type(
                                     type_stmt_name->base.base.loc, ASRUtils::type_get_past_allocatable(selector_variable_type), selector_type);
-                            } else if (ASRUtils::is_pointer(selector_variable_type) || assoc_sym) {
+                            } else if (!selector_variable_type || ASRUtils::is_pointer(selector_variable_type) || assoc_sym) {
                                 selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             }
                             selector_m_type_declaration = sym;
@@ -4121,6 +4125,21 @@ public:
                                 ASR::ttype_t* assoc_type = selector_ttype ? selector_ttype
                                     : ASRUtils::expr_type(m_selector);
                                 assoc_type = ASRUtils::type_get_past_allocatable(assoc_type);
+                                bool was_ptr = ASR::is_a<ASR::Pointer_t>(*assoc_type);
+                                ASR::ttype_t* assoc_base = ASRUtils::type_get_past_pointer(assoc_type);
+                                if (ASR::is_a<ASR::Array_t>(*assoc_base) &&
+                                        ASR::down_cast<ASR::Array_t>(assoc_base)->m_physical_type ==
+                                            ASR::array_physical_typeType::AssumedRankArray &&
+                                        selector_variable) {
+                                    auto it = assumed_rank_arrays.find(selector_variable->m_name);
+                                    if (it != assumed_rank_arrays.end() && it->second == 0) {
+                                        assoc_type = ASRUtils::extract_type(assoc_base);
+                                        if (was_ptr) {
+                                            assoc_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                                                type_stmt_type->base.base.loc, assoc_type));
+                                        }
+                                    }
+                                }
                                 if (!ASR::is_a<ASR::Pointer_t>(*assoc_type)) {
                                     assoc_type = ASRUtils::make_Pointer_t_util(al,
                                         type_stmt_type->base.base.loc, assoc_type);
@@ -4298,6 +4317,7 @@ public:
             selector_variable->n_dependencies = selector_variable_n_dependencies;
         }
 
+        all_loops_blocks_nesting--;
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
